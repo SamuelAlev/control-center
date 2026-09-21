@@ -445,7 +445,6 @@ class SpaceRow extends StatelessWidget implements CcFluidHoverTarget {
   }
 }
 
-// ── Dialogs ────────────────────────────────────────────────────────────────
 
 /// Opens a small single-field rename dialog with [initialValue] prefilled and
 /// returns the trimmed new name — null when cancelled, emptied or unchanged,

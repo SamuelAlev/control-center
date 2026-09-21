@@ -1,34 +1,9 @@
 #!/usr/bin/env bash
 #
-# Verifies that a packaged directory carries every native library the artifact
-# REQUIRES and fails the build when one is missing.
+# Verifies every REQUIRED native for a role/OS is present under build/natives
+# (or NATIVES). Reads the matrix from scripts/lib/natives.sh. Fail-hard.
+# Usage: scripts/release/verify_natives.sh <role> <os>
 #
-# The matrix itself lives in scripts/lib/natives.sh — one row per library, read
-# by this script and by cc_server_package.sh and pinned against the Dart
-# runtime table by test/tooling/native_matrix_test.dart. This script owns the
-# MATCHING rules (platform prefix/extension, dot-bounded base names); it does
-# not own the list.
-#
-# Every native is required. There is no degraded mode: a bundle missing one
-# either crashes the desktop's meeting recorder or refuses to boot its server,
-# so catching it here beats shipping an artifact that dies on first launch.
-#
-# Roles:
-#   desktop  the Flutter app's own native dir. Needs aec (the meeting recorder's
-#            echo canceller runs CLIENT-side, in the Flutter isolate) plus the
-#            code-graph natives the in-app indexer uses. Does NOT need the
-#            server-only set — the desktop spawns cc_server, whose libs are
-#            verified under the `server` role.
-#   server   a cc_server bundle's library dir: everything the boot preflight
-#            probes. A miss here means the binary refuses to start.
-#
-# Usage:
-#   scripts/release/verify_natives.sh <dir> <macos|linux|windows> <desktop|server>
-#   scripts/release/verify_natives.sh --dir A --dir B <os> <role>
-#
-# Repeatable --dir exists because a cc_server bundle splits its libraries across
-# two directories depending on platform layout; a native satisfies the check
-# when it is present in ANY of them.
 set -euo pipefail
 
 REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"

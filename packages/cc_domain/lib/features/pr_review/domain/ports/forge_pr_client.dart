@@ -229,25 +229,10 @@ class ForgeBranchComparison {
 
 /// A forge's pull-request API, in domain terms.
 ///
-/// This is the seam the whole multi-forge feature turns on. Everything above it
-/// — SWR caching, review drafts, the RPC catalog, the UI — speaks only domain
-/// entities and never learns which forge answered. Everything below it is one
-/// vendor's REST/GraphQL vocabulary, confined to that vendor's adapter together
-/// with its wire models and mappers.
-///
-/// Three rules for implementers:
-///
-/// 1. **Return domain entities, never wire models.** The adapter owns the
-///    anti-corruption mapping; nothing vendor-shaped may escape it.
-/// 2. **Honour [capabilities].** A method whose capability flag is false must
-///    throw [ForgeUnsupportedError], not return a plausible-looking empty
-///    result — an empty list means "none", which is a different claim from
-///    "this forge cannot tell you". The UI hides the affordance either way,
-///    so the throw only fires when something bypassed the check.
-/// 3. **Numbers are per-repo, ids are opaque.** [PullRequest.number] is the
-///    user-facing per-repo integer (GitHub PR number, GitLab MR `iid`,
-///    Bitbucket PR id); [PullRequest.externalId] is whatever globally-unique
-///    string the forge uses and is never parsed by callers.
+/// Multi-forge seam: above speaks domain only; below is vendor wire+mappers.
+/// Return domain entities, never wire models. Honour [capabilities] — unsupported
+/// methods throw [ForgeUnsupportedError] (empty ≠ unsupported).
+/// [PullRequest.number] is per-repo; [PullRequest.externalId] is opaque.
 abstract interface class ForgePrClient {
   /// The forge this client talks to.
   ForgeHost get forge;

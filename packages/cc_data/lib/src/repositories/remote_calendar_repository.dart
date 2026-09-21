@@ -1,27 +1,14 @@
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 
-/// Reads synced calendar events + connected accounts over the RPC client
-/// instead of a local database.
+/// Reads synced calendar events + connected accounts over the RPC client instead of a local
+/// database.
 ///
-/// Backs the web build and the desktop in REMOTE mode. The calendar surface is
-/// workspace-scoped and the workspace rides in the request args (the host is
-/// stateless — it binds no "current workspace"). Mirrors the `calendar.*` ops
-/// + the `calendar.watch*` subscriptions in the host catalog.
-///
-/// The reads take an OPTIONAL `workspaceId`. Omitting it leaves
-/// `RemoteRpcClient` to inject its ambient active workspace, which is what the
-/// desktop wants — the calendar always follows the active route. A caller that
-/// keeps a stream open ACROSS a workspace switch must name the workspace
-/// instead: a subscription captures its args once and re-registers with them
-/// on every reconnect, so an ambient-scoped stream opened in workspace A keeps
-/// answering for A after the user moves to B.
-///
-/// The READ surface plus the OAuth-free meeting↔event linking writes are
-/// exposed. Account/RSVP writes, the sync reconciler and the alert sweep all
-/// depend on the host-resident OAuth tokens + Google API client, so they run
-/// host-side and have no RPC surface; meeting linking is a pure junction-table
-/// write, so it IS served (the recorded meeting is workspace-scoped host-side).
+/// Backs the web build and the desktop in REMOTE mode.
+/// The calendar surface is workspace-scoped and the workspace rides in the request args
+/// (the host is stateless — it binds no "current workspace").
+/// Omitting it leaves `RemoteRpcClient` to inject its ambient active workspace, which is
+/// what the desktop wants — the calendar always follows the active route.
 class RemoteCalendarRepository {
   /// Creates a [RemoteCalendarRepository] over [_client].
   RemoteCalendarRepository(this._client);

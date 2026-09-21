@@ -11,23 +11,12 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Settings → Workspace → General: the workspace's own policy fields.
-///
-/// Both of these existed in the schema, on the wire and in the domain entity,
-/// with **no UI anywhere** — so a security control shipped unreachable:
-///
-///  * `secretExcludeGlobs` — extra path globs hidden from viewers and guests on
-///    code-bearing surfaces, layered on top of `SecretExclusionPolicy`'s
-///    built-in defaults.
-///  * `reviewConcurrency` — how many reviewers `dispatch_reviewers` fans out to
-///    when no explicit concurrency is given.
-///
-/// It also owns the workspace's default **review level**, which belongs beside
-/// the fan-out it interacts with rather than in a card of its own.
-///
-/// Two write lanes, deliberately: the two fields above go through
-/// `workspace.upsert` behind the Save button, while the review level rides
-/// `workspace_settings` and saves on selection. Admin-gated: these are
-/// workspace policy, not preferences.
+/// It also owns the workspace's default review level, which belongs beside the fan-out
+/// it interacts with rather than in a card of its own.
+/// Two write lanes, deliberately: the two fields above go through `workspace.upsert` behind
+/// the Save button, while the review level rides `workspace_settings` and saves on
+/// selection.
+/// Admin-gated: these are workspace policy, not preferences.
 class WorkspacePolicySection extends ConsumerStatefulWidget {
   /// Creates a [WorkspacePolicySection].
   const WorkspacePolicySection({super.key, required this.workspaceId});

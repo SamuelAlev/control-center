@@ -57,33 +57,14 @@ class ConversationDao extends DatabaseAccessor<WorkspaceDatabase>
             ]))
           .get();
 
-  /// Idempotently returns the space's standing conversation id: its oldest
-  /// active, unanchored conversation, or — when the space has none, e.g. one
-  /// freshly provisioned — a newly minted row with its own uuid and NO title.
-  /// There is no main-id aliasing.
+  /// Idempotently returns the space's standing conversation id: oldest active
+  /// unanchored conversation, or a newly minted untitled row (no main-id
+  /// aliasing). Excludes archived rows and threads.
   ///
-  /// The minted row stays untitled on purpose: the UI renders an empty title
-  /// as "Untitled conversation" and the workspace's title model (when one is
-  /// configured) names it from its first human message — see
-  /// `ConversationTitleService`, whose default-title rule covers the empty
-  /// string. A read path has no better name to offer, and a space-name label
-  /// only pretended it did.
-  ///
-  /// Archived rows and threads are both excluded on purpose. A space whose
-  /// conversations have all been closed would otherwise hand back a closed
-  /// one (invisible in the switcher, so a send would land nowhere the reader
-  /// can see), and a thread is anchored to a message inside another
-  /// conversation — it can never be the stream a space opens on.
-  /// The look-up and the insert run in ONE transaction, and that is the whole
-  /// point rather than hygiene. Every read path that resolves "the space's
-  /// conversation" lands here — a message watch, an artifact watch, a dispatch
-  /// that named no stream — and opening a space fires several of them at once.
-  /// Read-then-insert without a transaction let all of them see no standing
-  /// row and each insert one, so opening a PR review space minted three
-  /// identical conversations named after the space, next to the named ones the
-  /// reviewers had created. There is no unique index to lean on: "the standing
-  /// conversation" is a predicate (active AND unanchored AND oldest), not a
-  /// column.
+  /// Lookup+insert run in one transaction (no unique index on the standing
+  /// predicate; concurrent openers otherwise mint duplicates). Empty title is
+  /// intentional — `ConversationTitleService` names from the first human
+  /// message.
   Future<String> ensureStandingConversation({
     required String workspaceId,
     required String spaceId,

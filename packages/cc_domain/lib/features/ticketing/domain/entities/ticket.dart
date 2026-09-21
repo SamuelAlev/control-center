@@ -5,26 +5,14 @@ import 'package:cc_domain/features/ticketing/domain/entities/ticket_priority.dar
 import 'package:cc_domain/features/ticketing/domain/entities/ticket_provider.dart';
 import 'package:cc_domain/features/ticketing/domain/entities/ticket_status.dart';
 
-/// A dumb issue-tracking artifact — a unit of work the agents and humans track,
-/// but no longer the surface agents execute against.
+/// A dumb issue-tracking artifact — tracked work, not the surface agents execute
+/// against.
 ///
-/// One `Ticket` aggregate spans two persisted concerns (kept on a single row;
-/// see `TicketsTable`):
-///
-/// * the **mirror** — provider / externalKey / url / title / description /
-///   priority / labels / rawStatus / status / timestamps. For remote providers
-///   this is a cache; the remote is the source of truth and a refresh rewrites
-///   only these fields.
-/// * the **overlay** — Control-Center-only metadata the remote knows nothing
-///   about: assignedAgentId / assignedTeamId / delegatedByAgentId / spaceId /
-///   parentTicketId / projectId / linkedPrIds. A remote refresh never touches
-///   these.
-///
-/// Assignment is pure metadata: setting `assignedAgentId` records ownership but
-/// dispatches nothing. Agent work lives in conversations (a hidden one when a
-/// pipeline spawns it) and the structured-output contract lives on the
-/// `AgentRunLog`. The optional `spaceId` links a ticket to the conversation
-/// it was spun out of (the "create ticket from conversation" path).
+/// One row, two concerns: **mirror** (provider fields; remote is source of
+/// truth on refresh) and **overlay** (assignedAgentId/team/delegation/spaceId/
+/// parent/project/linkedPrIds — refresh never touches). Assignment is metadata
+/// only; execution is in conversations. Optional `spaceId` links the source
+/// conversation.
 class Ticket {
   /// Creates a [Ticket].
   Ticket({

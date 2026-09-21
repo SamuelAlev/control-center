@@ -16,24 +16,14 @@ import 'package:cc_domain/features/plan_studio/domain/services/plan_graph_mermai
 import 'package:cc_domain/features/plan_studio/domain/value_objects/plan_graph.dart';
 import 'package:uuid/uuid.dart';
 
-/// The plan-mode output contract (PRD 17 §8): the Planner emits a typed
-/// [PlanDocument] instead of prose.
+/// The plan-mode output contract (PRD 17 §8): the Planner emits a typed [PlanDocument]
+/// instead of prose.
 ///
-/// The conversation + workspace are resolved server-side from the agent's
-/// active run (same resolution as `exit_plan_mode`), so a plan can only land
-/// in the conversation the agent is actually working in. The graph is
-/// validated structurally (unique keys, real deps, acyclic) and violations
-/// come back verbatim so the agent self-corrects in the same run. A resubmit
-/// supersedes the conversation's previous proposed plan and bumps the
-/// revision — the document keeps one live body per conversation.
-///
-/// A successful submit also posts a typed `plan` message into the conversation.
-/// Without that, a submitted plan was
-/// invisible from the room it was authored in: the only way to find it was to
-/// navigate to Plan Studio and notice a new card. The message carries the plan
-/// id only — the bubble watches the row, so `proposed → approved → superseded`
-/// re-renders live with no feed churn (the same shape
-/// `propose_orchestration` uses).
+/// The conversation + workspace are resolved server-side from the agent's active run (same
+/// resolution as `exit_plan_mode`), so a plan can only land in the conversation the agent
+/// is actually working in.
+/// The graph is validated structurally (unique keys, real deps, acyclic) and violations
+/// come back verbatim so the agent self-corrects in the same run.
 class SubmitPlanTool extends McpTool {
   /// Creates a [SubmitPlanTool].
   SubmitPlanTool({

@@ -11,26 +11,15 @@ import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
 import 'package:cc_server_core/src/identity/sso_provisioner.dart';
 import 'package:crypto/crypto.dart';
 
-/// OIDC single sign-on configuration. SSO is strictly optional: with no issuer
-/// configured the whole surface is absent and a solo operator never sees it.
+/// OIDC SSO config (optional). Settings → Server → SSO only — no `CC_OIDC_*` env path.
 ///
-/// Configured in **Settings → Server → Single sign-on** and nowhere else — the
-/// saved row is pushed in by `SsoSettingsService.loadAndApply` at boot. There
-/// is deliberately no `CC_OIDC_*` environment path: a connection that could
-/// arrive from two places is one the settings screen can disagree with.
-///
-///  * [issuer] — the issuer base URL (enables SSO when set).
-///  * [clientId] — the public-client id registered at the issuer.
-///  * [clientSecret] — only CONFIDENTIAL IdP clients need one (public clients
-///    authenticate with PKCE alone). Never part of the persisted connection
-///    row — the settings service holds it in the secrets store.
-///  * [defaultRole] — role for users with no mapped group. `owner` is refused
-///    at the save path: SSO must never mint a workspace owner.
-///  * [groupRoleMap] — maps a group-claim value to a role.
-///  * [groupsClaim] — the claim carrying group names (default `groups`).
-///  * [autoMemberMode] — whether SSO users are auto-added to workspace
-///    memberships on first login.
-///  * [allowJit] — whether an unknown identity may provision an account.
+/// * [issuer] — base URL; empty disables SSO.
+/// * [clientId] — public-client id at the issuer.
+/// * [clientSecret] — confidential clients only; secrets store, not the connection row.
+/// * [defaultRole] — when no group maps; `owner` refused at save (SSO must not mint owners).
+/// * [groupRoleMap] / [groupsClaim] — group → role (default claim `groups`).
+/// * [autoMemberMode] — auto-add to workspaces on login.
+/// * [allowJit] — unknown identities may provision an account.
 class OidcConfig {
   /// Creates an [OidcConfig].
   const OidcConfig({
@@ -102,24 +91,8 @@ class OidcConfig {
   );
 }
 
-/// Optional OIDC login for teams that want SSO — never required.
-///
-/// Authorization-code + PKCE as a public client: `beginLogin` builds the
-/// authorization URL (state + nonce + S256 challenge held server-side,
-/// single-use, short-lived); `handleCallback` exchanges the code at the
-/// issuer's token endpoint and provisions the user just-in-time. Claims are
-/// taken from the token-endpoint response, which this server fetches
-/// directly from the issuer over TLS — the browser never supplies them —
-/// so no local JWT signature verification is repeated here; the `iss`,
-/// `aud`, `sub` and `nonce` claims ARE still validated against what this
-/// server requested, so a token minted for a different issuer/audience or
-/// login attempt is refused even though its bytes came over TLS.
-///
-/// JIT provisioning lives in the shared [SsoProvisioner] (extracted from
-/// this service; the SAML path rides the identical semantics): users match
-/// by email (then handle); new users are created and granted membership in
-/// every workspace at the role mapped from the group claim (or the
-/// configured default). Existing memberships are never downgraded.
+/// Optional OIDC login (auth code + PKCE). Claims come from the token endpoint over TLS;
+/// still validates `iss`/`aud`/`sub`/`nonce`. JIT via [SsoProvisioner] (same as SAML).
 class OidcService {
   /// Creates an [OidcService].
   OidcService({

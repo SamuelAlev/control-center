@@ -2,23 +2,9 @@ import 'dart:io';
 
 import 'package:test/test.dart';
 
-/// Pins the DERIVED permission catalog.
-///
-/// `RepoOp.permission` computes `<domain>:<tier>` from an op's name prefix and
-/// the role floor it already enforces, so all ~550 ops carry a permission
-/// without anyone typing one. That derivation is what keeps a NEW op gated by
-/// default — but it also means a new op prefix silently mints a new
-/// permission domain nobody reviewed, and custom roles are written in exactly
-/// that vocabulary.
-///
-/// So the DOMAIN set is pinned here: adding an op under a new prefix fails
-/// until a human acknowledges the new domain, and removing the last op of a
-/// domain fails until the stale entry goes. The per-op tier needs no pinning
-/// — `permission_parity_test.dart` proves it equals the enforced role floor
-/// for every op and preset.
-///
-/// Source-level (grep), like the other catalog ratchets: instantiating the
-/// real catalog takes ~40 dependencies.
+/// Pins derived permission DOMAINS from op-name prefixes (new prefix / stale
+/// domain fails CI). Per-op tiers covered by `permission_parity_test.dart`.
+/// Source-level grep.
 void main() {
   Directory repoRoot() {
     var dir = Directory.current;

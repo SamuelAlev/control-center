@@ -5,37 +5,14 @@ import 'package:control_center/shared/editor/editor_layout_node.dart';
 import 'package:control_center/shared/editor/editor_tab.dart';
 import 'package:flutter/widgets.dart' show Axis, IconData;
 
-/// JSON (de)serialisation for an editor split tree, generalised so every editor
-/// host (messaging IDE, PR workbench) shares one codec instead of copying it.
+/// Shared JSON codec for editor split trees (structure only).
 ///
-/// Only the *structure* is persisted: tree shape, region weights and tab order.
-/// FOCUS IS DELIBERATELY NOT PERSISTED — a restored layout always opens on the
-/// first tab of the first leaf, so reopening a space or a PR lands somewhere
-/// predictable instead of wherever the last session happened to stop. The URL's
-/// `?tab=` remains the one thing that can name a different tab on load, which
-/// keeps deep links and refresh working without turning focus into saved state.
-/// Live runtime state (terminal PTYs, webviews) is never persisted — restored
-/// terminal/browser tabs come back blank. Node ids are NOT persisted (they are
-/// in-memory handles); fresh ids are minted on decode. Decoding is fully
-/// defensive: any malformed payload yields `null` so a corrupt cache entry can
-/// never crash the IDE — the caller then seeds a fresh default layout.
-///
-/// Host-specific behaviour arrives through the constructor:
-/// - [restorableKinds] — the whitelist of kinds that round-trip; a decoded tab
-///   of any other kind is dropped and any kind in [dropOnEncode] is never
-///   written (transient / non-serialisable-arg kinds like a live diff).
-/// - [requiredStringArgs] — per-kind required String args; a decoded tab
-///   missing any is dropped (it would throw on render).
-/// - [iconFor] — resolves the icon for a restored tab.
-/// - [aliasKind] — optional decode-time kind rewrite (e.g. legacy
-///   `pr.aiReview`/`pr.reviewStudio` → `pr.review`), applied before the
-///   whitelist check so old snapshots restore onto the merged kind.
-/// - [rewriteArgsOnDecode] — optional decode-time arg rewrite. RESTORING a tab
-///   is not the same act as opening one: a tab whose live body costs real
-///   resources to create (an enclosed VM) must come back as an affordance, not
-///   as a running machine. Hosts use this to stamp [EditorLayoutCodec.deferStartArg].
-/// - [transientArgs] — arg keys never written on encode, for flags a decode
-///   adds so they cannot accumulate in the persisted payload.
+/// Persists shape, weights, tab order — not focus (always first tab of first
+/// leaf; `?tab=` is the only load-time override), not PTYs/webviews, not node
+/// ids (minted on decode). Malformed → `null`. Constructor: [restorableKinds],
+/// [dropOnEncode], [requiredStringArgs], [iconFor], [aliasKind],
+/// [rewriteArgsOnDecode] (e.g. stamp [deferStartArg] so enclosed VMs restore as
+/// affordances), [transientArgs] (never re-encoded).
 class EditorLayoutCodec {
   /// Creates a codec bound to one host's tab vocabulary.
   const EditorLayoutCodec({

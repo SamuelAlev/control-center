@@ -85,27 +85,12 @@ class SlackEnvelope {
 /// as it needs (an agent dispatch takes minutes).
 typedef SlackEnvelopeHandler = Future<void> Function(SlackEnvelope envelope);
 
-/// A long-lived Socket Mode connection for ONE Control Center workspace.
+/// Long-lived Socket Mode connection for one workspace (outbound WSS; no
+/// public endpoint). Client is born with [workspaceId] — no scan-back mapping.
 ///
-/// Socket Mode is what makes a Slack app work from a server with no public
-/// endpoint: instead of Slack POSTing to a webhook, `cc_server` dials *out* over
-/// WSS and Slack pushes events down that connection. One client per connected
-/// workspace, each born knowing its [workspaceId] — so an inbound event never
-/// has to be mapped back to a workspace by scanning.
-///
-/// Three protocol details are load-bearing:
-///
-///  * **Ack within 3 seconds, before processing.** Slack redelivers an envelope
-///    it has not seen acknowledged, so the ack is sent the moment the frame is
-///    parsed and the handler runs afterwards. Acking after the work would turn
-///    every slow agent dispatch into a duplicate delivery.
-///  * **`disconnect` is routine, not an error.** Slack rotates connections
-///    (typically hourly and before maintenance) by sending
-///    `type: disconnect, reason: refresh_requested`. That reconnects promptly
-///    and does NOT escalate the backoff; only real failures do.
-///  * **A rejected token is terminal.** `invalid_auth` / `token_revoked` cannot
-///    be fixed by retrying, so the client stops and reports [lastError] for the
-///    settings surface instead of hammering Slack forever.
+/// Ack within 3s before handling (Slack redelivers unacked). `disconnect` with
+/// `refresh_requested` is routine — reconnect without escalating backoff.
+/// `invalid_auth` / `token_revoked` are terminal ([lastError], no retry loop).
 class SlackSocketModeClient {
   /// Creates a [SlackSocketModeClient].
   SlackSocketModeClient({

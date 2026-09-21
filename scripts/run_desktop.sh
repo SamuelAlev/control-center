@@ -1,36 +1,9 @@
 #!/usr/bin/env bash
 #
-# Runs the Control Center desktop app locally WITH a bundled cc_server backend,
-# the same way a packaged release does — so the thin-client local mode works
-# from a dev build without depending on the working directory or a hand-built
-# `dart build cli` in the source tree.
+# Build/embed cc_server beside the desktop app and launch (same layout as a
+# packaged release). Resolver looks beside the executable first.
+# Usage: scripts/run_desktop.sh  (MODE=release / SKIP_APP_BUILD=1 optional)
 #
-# The desktop is a thin client: at boot it spawns `cc_server` (which owns the
-# database) and talks to it over loopback RPC. `CcServerLauncher.resolve` looks
-# for the server FIRST beside the app executable:
-#   * macOS: <App>.app/Contents/Resources/cc_server/bin/cc_server
-#   * Linux: <bundle>/cc_server/bin/cc_server
-# and only then falls back to the source tree (`apps/cc_server/build/cli/...`,
-# which requires the right CWD). This script builds the server bundle and embeds
-# it at that exe-relative location — the same `ensure_cc_server_bundle` +
-# `stage_natives` pair scripts/release/{macos,linux}_package.sh use — so the
-# local mode resolves the server regardless of CWD.
-#
-# Prefer the remote mode instead? Just run the app normally and choose
-# "Connect to a remote server" on the setup screen — no bundled server needed.
-#
-# Environment / flags:
-#   MODE            debug | profile | release   (default: debug)
-#   SKIP_APP_BUILD  1 → reuse the already-built desktop app, only (re)embed
-#   REBUILD_SERVER  1 → force a fresh `dart build cli` even if a bundle exists
-#   NO_RUN          1 → build + embed only, do not launch the app
-#   SKIP_VERIFY     1 → skip the required-natives gate (a partial dev tree)
-#   NATIVES         staged natives dir (default: build/natives)
-#
-# Usage:
-#   scripts/run_desktop.sh                 # debug build, embed, launch
-#   MODE=release scripts/run_desktop.sh    # release build, embed, launch
-#   SKIP_APP_BUILD=1 scripts/run_desktop.sh
 set -euo pipefail
 
 REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"

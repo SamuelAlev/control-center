@@ -3,20 +3,10 @@ import 'package:cc_harness/tools.dart';
 
 /// Asks the human a structured question and blocks until they answer.
 ///
-/// The gap this fills: an agent that hits a genuine fork — which of three
-/// libraries, which of two migration strategies — has exactly two bad options
-/// without it. It can guess, and be wrong halfway through the work; or it can
-/// stop and write a paragraph asking, which ends the turn and makes the human
-/// re-prompt to continue. This keeps the run alive across the question.
-///
-/// Distinct from the approval gate (`ConfirmationPort`): that one asks "may I
-/// do this?" about an action the agent already chose. This asks the human to
-/// make the choice.
-///
-/// **The tool IS the user interaction**, so the dispatch layer must not wrap it
-/// in a second approval prompt — a confirmation dialog in front of a question
-/// dialog. `SandboxDispatchDeps` lists it in its interaction-tool set for
-/// exactly that reason.
+/// Keeps the run alive across a real fork (vs guessing or ending the turn).
+/// Distinct from [ConfirmationPort] ("may I?") — this asks the human to choose.
+/// Listed as an interaction tool so dispatch does not wrap it in a second
+/// approval dialog.
 class AskUserTool extends HarnessTool {
   /// Creates an [AskUserTool] that renders into [_spaceId] of [_workspaceId].
   AskUserTool({

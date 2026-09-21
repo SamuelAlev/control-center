@@ -2,24 +2,8 @@ import 'dart:io';
 
 import 'package:test/test.dart';
 
-/// Guards the "works in tests, `opUnknown` in the app" footgun (FINDINGS §13.4).
-///
-/// The repo-RPC surface is a closed allow-list: the client (`cc_data`) reaches
-/// the server by calling a stable op NAME (`_client.call('agents.get', …)`),
-/// and the server routes that name to a `RepoOp` in `buildRemoteRpcCatalog`.
-/// If a client calls an op the catalog never declares, the dispatcher returns
-/// `opUnknown` at runtime — a silent break unit tests miss (see the documented
-/// `repos.*`-unwired incident). And because the registry is a
-/// `{for (o in ops) o.name: o}` map, two `RepoOp`s sharing a name silently
-/// shadow one another.
-///
-/// This is a source-level (grep) test — no need to instantiate the ~40-dependency
-/// catalog. It parses the op-name string literals on both sides and asserts:
-///   1. no duplicate `RepoOp` name (silent-shadowing),
-///   2. every client `.call('…')` op name is declared server-side.
-///
-/// It intentionally only checks statically-literal names (dynamic `'x.$y'` op
-/// names — a handful of model/watch prefixes — are skipped, never false-flagged).
+/// Client `.call('…')` op names must exist in the server catalog; no duplicate
+/// `RepoOp` names (silent shadowing). Source-level; skips dynamic names.
 void main() {
   // Resolve the repo root whether the test runs from there or a package dir.
   Directory repoRoot() {

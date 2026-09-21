@@ -1,12 +1,10 @@
 // CI logs → structured failure signals: the join between a red check and the
 // diff that turned it red.
-//
 // "3 checks failed" makes a reviewer go and read three logs. "lib/auth.dart:88
 // — AuthService refreshes on 401" puts the failure on the line that caused it,
 // which is the only form a reviewer can act on without leaving the page. This
 // file is the parsing half of that: logs in (already fetched and tail-truncated
 // by the caller), typed signals out.
-//
 // Best-effort by construction, with a deliberately asymmetric contract: every
 // recognizer here is a heuristic over an unstable, vendor-specific text format,
 // so a miss costs a reviewer nothing (the panel shows what was found) while a
@@ -14,7 +12,6 @@
 // When in doubt this parser reports NOTHING. An empty result means "found
 // nothing" — callers distinguish that from "unavailable" on their own, and can
 // only keep doing so if we never pad the result to look useful.
-//
 // Pure: string matching over an in-memory log. No I/O, no natives.
 
 /// One stack/source frame extracted from a CI log.
@@ -129,12 +126,10 @@ class CiLogParser {
 
   /// Parses [logs] into the failing tests, error lines and source frames it
   /// names.
-  ///
   /// Recognizes Dart/Flutter `package:test`, jest/vitest, pytest and a generic
   /// prefix fallback (`Error:`, `ERROR`, `FAILED`, `##[error]`, …). ANSI colour
   /// and GitHub Actions' per-line timestamp prefix are stripped first, because
   /// CI logs are coloured and timestamped and neither is content.
-  ///
   /// Never throws. Unrecognized input — empty, binary, a single line — yields
   /// empty lists.
   CiSignals parse(String logs) {

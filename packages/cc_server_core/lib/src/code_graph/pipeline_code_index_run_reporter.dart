@@ -10,37 +10,12 @@ import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_run_re
 import 'package:cc_domain/features/pipelines/domain/templates/builtin_template_seeds.dart';
 import 'package:uuid/uuid.dart';
 
-/// [CodeIndexRunReporter] that publishes background index runs as runs of the
-/// `index_code` template — the same rows the engine writes when that template is
-/// started manually or by `RepoAdded`, so a watcher reindex lands in the runs
-/// table, the sidebar's running count and the run history beside them.
+/// Projects watcher index work as `index_code` pipeline run rows (not via `PipelineEngine.start`).
 ///
-/// It writes those rows DIRECTLY rather than calling `PipelineEngine.start` and
-/// that is the whole design decision here. `start` would run the template's own
-/// `code.index` body, which indexes the LINKED checkout — but the watcher's runs
-/// are per-checkout (most of them are worktree partitions), already debounced,
-/// already gated by a concurrency ceiling the engine knows nothing about and
-/// the watcher needs the [CodeIndexResult] back to do its own bookkeeping. Going
-/// through the engine would mean a second indexer invocation with the wrong
-/// partition, racing the one that reported it. So the run row here is a
-/// PROJECTION of work the watcher owns, not a request to do work.
-///
-/// Two consequences follow from that, both deliberate:
-///
-/// * no `PipelineRunStarted`/`PipelineRunCompleted` domain events are published.
-///   Those events are the engine's lifecycle and event triggers listen to them;
-///   a reindex firing them would let a background save cascade into other
-///   pipelines and OS notifications;
-/// * the engine must not adopt these rows on resume.
-///   [PipelineCodeIndexRunReporter.reapInterrupted] closes out the ones a crash
-///   left non-terminal and the server calls it before `resumeAll()`.
-///
-/// Because a projection is FOR an operator, it is also filtered for one: a run
-/// publishes only once it crosses
-/// [PipelineCodeIndexRunReporter.defaultPublishFileFloor] files or
-/// [PipelineCodeIndexRunReporter.defaultPublishAfter] of wall time (a failure
-/// always publishes). Every save is a run and every run was a row, which meant
-/// the visibility this class exists to provide was drowning in itself.
+/// Writes directly: `start` would re-index the linked checkout and race the watcher.
+/// No lifecycle domain events (would cascade triggers/notifications). [reapInterrupted]
+/// before `resumeAll()` so the engine does not adopt non-terminal rows. Publishes only after
+/// [defaultPublishFileFloor] files or [defaultPublishAfter] (failures always publish).
 class PipelineCodeIndexRunReporter implements CodeIndexRunReporter {
   /// Creates a reporter over the pipeline-run repository. `onError` receives
   /// reporting failures, which are never surfaced to the indexer.

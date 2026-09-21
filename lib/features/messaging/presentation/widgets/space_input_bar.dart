@@ -223,23 +223,13 @@ class _SpaceInputBarState extends ConsumerState<SpaceInputBar> {
     }
     final content = dispatched;
 
-    // Mid-run steering: if agents are already working in this conversation and
-    // the user submits plain conversational text (no @agent, no slash command),
-    // the submission becomes a QUEUED STEERING CARD (the strip below the
-    // trail) instead of a new turn — the server persists it as a conversation
-    // row, live harness runs inject it at their next turn boundary, and
-    // anything still queued when the last run ends is converted to a normal
-    // message. No toast: the card appearing in the strip IS the feedback.
-    // Scoped to this pane's conversation for the same reason as the stop
-    // affordance: steering must reach the runs the user is looking at.
-    //
-    // ATTACHMENTS ARE NEVER STEERED. The queue carries a String and nothing
-    // else, all the way down to the loop's steering inbox — there is no lane
-    // for an image on it. Steering a submission that had pictures attached
-    // delivered the words and silently dropped the pictures, so the agent was
-    // told to "look at these screenshots" and given four filenames. A message
-    // with something attached is a real turn: it falls through to the normal
-    // send, which uploads the blobs and puts them on the agent's user turn.
+    // Mid-run steering: if agents are already working in this conversation and the user
+    // submits plain conversational text (no @agent, no slash command), the submission becomes
+    // a QUEUED STEERING CARD (the strip below the trail) instead of a new turn — the server
+    // persists it as a conversation row, live harness runs inject it at their next turn
+    // boundary, and anything still queued when the last run ends is converted to a normal
+    // message.
+    // No toast: the card appearing in the strip IS the feedback.
     final hasAgentMention = s.mentions.any((m) => m.kind == 'agent');
     if (!parsedCommand.isCommand &&
         !hasAgentMention &&

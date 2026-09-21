@@ -42,23 +42,12 @@ const Duration _sessionTtl = Duration(hours: 12);
 /// for this long (cheap re-opens, surviving tab flicker) before being killed.
 const Duration _idleGrace = Duration(minutes: 10);
 
-/// Pure-Dart [CodeServerPort] for the headless `cc_server`: owns code-server
-/// subprocesses — one per `(workspaceId, worktreePath)`, reused across tabs,
-/// reference-counted, idle-GC'd — and exposes them over the `codeServer.*` RPC
-/// ops + the `/proxy/vscode/` reverse proxy.
+/// Pure-Dart [CodeServerPort]: one code-server per `(workspaceId, worktreePath)`,
+/// refcounted, idle-GC'd; `codeServer.*` RPC + `/proxy/vscode/`.
 ///
-/// code-server binds **loopback only** (`127.0.0.1:0`) and opens the
-/// conversation's isolated CoW worktree as its `--folder`, so user edits land
-/// beside agent edits and surface in the Source Control panel automatically.
-///
-/// **Worktree resolution is strict.** The worktree comes from
-/// [IsolatedRepoRepository.forUnitRepo] for the caller's `(workspaceId,
-/// spaceId, repoId)`; a foreign id yields no worktree → no session (mirrors
-/// the `repos.readFile` link check). It NEVER falls back to the raw checkout.
-///
-/// **Workspace isolation is enforced on every op.** [ensureSession] records the
-/// owning workspace; [closeSession] / [lookup] validate it, so one workspace
-/// cannot reach another's code-server (the workspace-isolation invariant).
+/// Binds loopback only; opens the CoW worktree from
+/// [IsolatedRepoRepository.forUnitRepo] — never the raw checkout. Foreign ids
+/// → no session. [ensureSession]/[closeSession]/[lookup] enforce workspace.
 class CodeServerService implements CodeServerPort {
   /// Creates the service over an [isolatedRepos] resolver (worktree lookup), a
   /// `filesystem` (workspace layout) and a [_dataRoot] (managed code-server
@@ -117,30 +106,13 @@ class CodeServerService implements CodeServerPort {
   /// installs once per server, not per worktree, so re-opens are instant.
   String get _extensionsDir => p.join(_dataRoot, 'code-server', 'extensions');
 
-  /// Seeds code-server's User `settings.json` so the embedded editor opens
-  /// TRUSTED and as an **editor-only** surface — the app shell owns the tab
-  /// strip, the activity/nav, the status bar and the terminal, so code-server's
-  /// own copies are hidden to avoid a doubled, colliding chrome.
-  ///
-  /// * **Trust:** Workspace Trust otherwise gates the language server, tasks and
-  ///   debug behind a prompt the embedded editor can't answer well.
-  /// * **Chrome:** the activity bar, status bar, editor tab strip, menu bar,
-  ///   command centre, chat toolbar and layout controls are hidden; the
-  ///   welcome/tips editors are suppressed; the primary and secondary side bars
-  ///   and the bottom panel are closed by the bridge extension on activation and
-  ///   again when the user clicks or moves the caret in the editor (see
-  ///   [_bridgeExtensionSource]). With
-  ///   the tab strip off (`showTabs: none`) opening a file
-  ///   (including a cmd-click "go to definition" inside the editor) REPLACES the
-  ///   single visible editor instead of stacking a VS Code tab that competes with
-  ///   the app's own tabs.
-  ///
-  /// [autoSave] is the client's editor auto-save preference (`files.autoSave`)
-  /// written verbatim after sanitisation; the app pushes it on every open so a
-  /// changed preference applies on the next open (VS Code hot-reloads
-  /// `settings.json`).
-  ///
-  /// Merges into any existing settings so a user's other tweaks survive.
+  /// Seeds code-server User `settings.json`: trusted + editor-only chrome.
+///
+/// Trust avoids language-server/tasks/debug prompts the embed cannot answer.
+/// Hides activity/status/tab/menu/chat chrome (app shell owns those); bridge
+/// closes side bars/panel on activation and editor focus. `showTabs: none` so
+/// navigation replaces the single editor (no competing VS Code tabs).
+/// [autoSave] written verbatim after sanitise; merges existing settings.
   Future<void> _ensureWorkbenchSettings(
     String workspaceId,
     String autoSave,
@@ -214,7 +186,6 @@ class CodeServerService implements CodeServerPort {
     settings['files.autoSaveDelay'] = 1000;
     settings['files.hotExit'] = 'off';
 
-    // ── Control Center look & feel ──────────────────────────────────────────
     // Use the app's code font (Fira Code, with ligatures) so the embedded editor
     // matches the rest of the app; fall back to platform monospaces if the user
     // doesn't have Fira Code installed for the webview to pick up.
@@ -928,8 +899,6 @@ class CodeServerService implements CodeServerPort {
     }
   }
 
-  // ── Bridge extension (in-editor navigation → app tabs) ────────────────────
-
   @override
   Stream<CodeServerOpenRequest> watchOpenRequests(String workspaceId) =>
       _openRequests.stream.where((r) => r.workspaceId == workspaceId);
@@ -1480,24 +1449,11 @@ const String _bridgeVsixManifest = '''
 </PackageManifest>
 ''';
 
-/// Source of the bundled bridge extension (plain CommonJS for the Node
-/// extension host). Each editor WINDOW pins itself to the file it was opened on
-/// (its "entry"); when the user navigates that window to a different file
-/// (cmd-click go-to-definition, an Explorer open, …) it POSTs the target back to
-/// cc_server's capability-scoped report endpoint (`CC_IDE_REPORT_URL`) — the app
-/// opens it as its own tab — and closes the drifted editor so this window stays
-/// on its entry file (keeping the app-tab title correct). A new app tab opens a
-/// fresh window whose entry is that file, so there is no report loop.
-///
-/// It also (a) reports each text document's unsaved (dirty) state to the same
-/// endpoint (`{type:'dirty', path, dirty}`) so the app can render a per-tab
-/// unsaved-changes dot, (b) opens `CC_IDE_COMMANDS_URL` as an SSE stream and
-/// executes reverse commands cc_server pushes — today `{cmd:'save', path}`,
-/// which saves that file so the app's Save-on-close writes to disk — and (c)
-/// keeps code-server's own side bars and bottom panel closed: once on activate
-/// (with retries for folder-restore) and again when the user clicks or moves
-/// the caret in the editor, skipping programmatic selection changes so a view
-/// click cannot snap chrome shut as a side effect.
+/// Bundled bridge extension source (CommonJS). Each window pins its entry
+/// file; navigation POSTs the target to `CC_IDE_REPORT_URL` (app opens a tab)
+/// and closes the drifted editor. Also reports dirty state, consumes
+/// `CC_IDE_COMMANDS_URL` SSE (`save`), and keeps side bars/panel closed on
+/// activate + user editor focus (skips programmatic selection).
 const String _bridgeExtensionSource = r'''
 const vscode = require('vscode');
 const http = require('http');

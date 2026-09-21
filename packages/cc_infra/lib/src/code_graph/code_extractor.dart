@@ -87,7 +87,6 @@ class CodeExtractor {
     return ExtractionResult(symbols: symbols, edges: edges);
   }
 
-  // --- Pass 1: definitions -------------------------------------------------
 
   List<_Def> _collectDefinitions(List<QueryMatch> matches) {
     final defs = <_Def>[];
@@ -177,7 +176,6 @@ class CodeExtractor {
     return symbols;
   }
 
-  // --- Pass 2: edges -------------------------------------------------------
 
   List<CodeEdge> _buildEdges(
     String workspaceId,
@@ -287,7 +285,6 @@ class CodeExtractor {
     return edges;
   }
 
-  // --- Helpers -------------------------------------------------------------
 
   /// Innermost OTHER container def whose byte range strictly contains [def].
   _Def? _innermostContainer(List<_Def> defs, _Def def) {
@@ -353,24 +350,13 @@ class CodeExtractor {
       kind == CodeSymbolKind.setter ||
       kind == CodeSymbolKind.constructor;
 
-  /// Whether an import URI names something OUTSIDE the indexed tree — a
-  /// package in `node_modules`, a Node builtin, or the Dart SDK — and so can
-  /// never bind to a repo symbol.
+  /// Whether an import URI is outside the indexed tree (never binds a repo
+  /// symbol): node_modules / Node builtin / Dart SDK.
   ///
-  /// Node resolution semantics make this purely syntactic for the JS family:
-  /// a specifier that is not relative (`./`, `../`), absolute (`/`) or a
-  /// package-internal subpath (`#`) is looked up in `node_modules`, always.
-  /// `@scope/pkg` is included by that rule; so are bundler aliases like
-  /// `@/utils`, which is fine — an alias target is a path, not a symbol name,
-  /// so it could never bind either way.
-  ///
-  /// PHP `use` targets are the deliberate exception: a qualified name
-  /// (`App\Domain\Thing` vs `PHPUnit\Framework\TestCase`) is a symbol name
-  /// that genuinely binds when the definition is in the repo, and extraction
-  /// cannot tell vendor from app namespace — those are left to the
-  /// post-resolution prune. Dart `package:`/relative URIs stay for the same
-  /// reason a monorepo's own packages matter; only the `dart:` SDK is
-  /// unambiguously external.
+  /// JS family: non-relative/absolute/`#` specifiers resolve in `node_modules`
+  /// (includes `@scope/pkg` and bundler aliases). PHP `use` and Dart
+  /// `package:`/relative stay for post-resolution (or monorepo packages); only
+  /// `dart:` is unambiguously external.
   bool _isExternalModuleSpecifier(String uri, String languageId) {
     switch (languageId) {
       case 'typescript' || 'tsx' || 'javascript':

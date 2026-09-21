@@ -152,7 +152,6 @@ class NativeEditorLauncher implements EditorLauncherPort {
     }
   }
 
-  // ── Catalog & resolution ──────────────────────────────────────────────
 
   List<_CatalogEntry> _catalog() => _catalogCache ??= _buildCatalog();
 
@@ -194,7 +193,6 @@ class NativeEditorLauncher implements EditorLauncherPort {
     return null;
   }
 
-  // ── macOS ─────────────────────────────────────────────────────────────
 
   List<_CatalogEntry> _macCatalog() {
     final home = _home;
@@ -253,7 +251,6 @@ class NativeEditorLauncher implements EditorLauncherPort {
     ];
   }
 
-  // ── Windows ───────────────────────────────────────────────────────────
 
   List<_CatalogEntry> _windowsCatalog() {
     final localAppData = _env['LOCALAPPDATA'];
@@ -352,7 +349,6 @@ class NativeEditorLauncher implements EditorLauncherPort {
     ];
   }
 
-  // ── Linux ─────────────────────────────────────────────────────────────
 
   List<_CatalogEntry> _linuxCatalog() {
     final binDirs = _linuxBinDirs();

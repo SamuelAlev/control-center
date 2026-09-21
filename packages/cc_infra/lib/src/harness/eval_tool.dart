@@ -4,22 +4,11 @@ import 'dart:convert';
 import 'package:cc_harness/tools.dart';
 import 'package:cc_infra/src/eval/eval_kernel.dart';
 
-/// Runs code in a persistent interpreter that keeps its variables between
-/// calls.
+/// Persistent interpreter cells that keep variables between calls.
 ///
-/// **Why this is not `bash python -c`.** Loading a dataframe costs seconds and
-/// a hundred megabytes; charting it costs milliseconds. A one-shot command pays
-/// the load on every question, so an agent exploring data asks fewer questions
-/// than it should — and each answer arrives as text it then has to re-parse.
-/// Here the second cell starts where the first stopped, and a figure comes back
-/// as an image the transcript renders.
-///
-/// **Code inside a cell can call the agent's own tools.** `tool("read", {...})`
-/// re-enters the harness registry, so a cell can fan out over a hundred files
-/// through `read` or delegate through `task` without the model spending a turn
-/// per item. Those calls pass the same `ActionClass` guardrails and approval a
-/// model-issued call does — the bridge re-enters the registry, it does not go
-/// around it.
+/// Not `bash python -c` — reload cost kills exploratory loops; figures return
+/// as images. Cells may `tool(...)` into the harness registry with the same
+/// ActionClass/approval path (re-enter, do not bypass).
 class EvalTool extends HarnessTool {
   /// Creates an [EvalTool].
   EvalTool({

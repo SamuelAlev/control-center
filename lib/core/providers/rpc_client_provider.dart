@@ -10,7 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// `cc_data` `RpcX` repositories) drive both targets without any per-feature
 /// platform binding — they all just `ref.watch(rpcClientProvider)`:
 ///
-///  - Both **desktop** and **web** default to throwing — there is no
+/// - Both desktop and web default to throwing — there is no
 ///    in-process host on either target. `cc_server` is the sole owner of the
 ///    database, MCP registry and execution; the desktop composition root
 ///    spawns or connects to it and overrides this provider with the

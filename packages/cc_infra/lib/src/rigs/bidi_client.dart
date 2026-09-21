@@ -1,30 +1,14 @@
 // Drives an enclosed Firefox over WebDriver BiDi.
 //
-// Not "CDP with a different browser": Firefox's remote agent answers BiDi and
-// NOTHING else — a current build 404s `/json/version`, so there is no CDP
-// endpoint to fall back to. BiDi is a different shape as well as a different
-// vocabulary: one WebSocket carrying `{id, method, params}` commands and
-// `{type: event}` notifications, addressed to a BROWSING CONTEXT rather than
-// to a target session.
+// Firefox's remote agent answers BiDi only — `/json/version` 404s, no CDP
+// fallback. One WebSocket of `{id, method, params}` / `{type: event}`,
+// addressed to a browsing context.
 //
-// Three things about this transport are load-bearing and were each measured
-// against a real rig rather than read off a spec:
-//
-//  * **The `Host` header must name the port Firefox itself listens on.** The
-//    remote agent binds guest loopback unconditionally, so the host reaches it
-//    through the guest's socat relay on a DIFFERENT port, and Firefox rejects
-//    the upgrade with a bare `400` when the header's port is not its own.
-//    `--remote-allow-hosts` does NOT fix this (its entries are host names; the
-//    port check is separate and unconditional), so the client sends the
-//    guest-side authority explicitly. Without it every Firefox rig fails to
-//    attach with no diagnostic beyond "400".
-//  * **BiDi has no screencast.** The live view polls stills. Firefox can
-//    encode them as JPEG (`format: {type: 'image/jpeg'}`), which is why this
-//    engine needs no host-side transcode — the frames are already what the
-//    MJPEG lane carries.
-//  * **BiDi has no "can I go back?"**. `browsingContext.traverseHistory` moves
-//    and errors when there is no entry; nothing reports reachability. So the
-//    client keeps its own index, corrected by what the engine actually does.
+// `Host` must name the port Firefox itself listens on: the host reaches it
+// through a socat relay on a different port, and Firefox rejects the upgrade
+// with a bare `400` otherwise. `--remote-allow-hosts` does not fix the port
+// check. No screencast — live view polls JPEG stills. No "can I go back?" —
+// `traverseHistory` errors when empty, so the client tracks its own index.
 library;
 
 import 'dart:async';
@@ -249,7 +233,6 @@ class BidiClient extends ScriptedBrowserEngineClient
     return context;
   }
 
-  // ── Transport ───────────────────────────────────────────────────────────
 
   Future<Map<String, dynamic>> _send(
     String method,
@@ -417,7 +400,6 @@ class BidiClient extends ScriptedBrowserEngineClient
     closePermissionHost();
   }
 
-  // ── The scripted primitives ─────────────────────────────────────────────
 
   @override
   Future<Object?> evaluateJson(String expression) async {
@@ -454,7 +436,6 @@ class BidiClient extends ScriptedBrowserEngineClient
     await _send('input.performActions', {'context': _ctx, 'actions': sources});
   }
 
-  // ── Navigation ──────────────────────────────────────────────────────────
 
   @override
   Future<bool> navigate(
@@ -559,7 +540,6 @@ class BidiClient extends ScriptedBrowserEngineClient
   /// Whether the page is mid-load, from the navigation events.
   bool get loading => _loading;
 
-  // ── Capture and viewport ────────────────────────────────────────────────
 
   @override
   Future<String> captureScreenshot({
@@ -622,7 +602,6 @@ class BidiClient extends ScriptedBrowserEngineClient
     });
   }
 
-  // ── Files ───────────────────────────────────────────────────────────────
 
   @override
   Future<bool> setFileInputFiles({

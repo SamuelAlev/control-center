@@ -1,42 +1,10 @@
 #!/usr/bin/env bash
 #
-# Source it; don't execute it:
-#   source scripts/lib/natives.sh   # then cc_natives_for <role> <os>
+# Source it: `source scripts/lib/natives.sh` then `cc_natives_for <role> <os>`.
+# Required-native matrix (pinned to runtime by test). Row: base|roles|platforms|description
+# (base without lib/ext; roles desktop|server; platforms all|!windows). rift is the
+# Windows exemption (git worktree backend). Missing native ⇒ refuse to ship/boot.
 #
-# THE required-native matrix. One row per shipped FFI library.
-#
-# This used to be stated four times for four audiences, in two different shell
-# implementations, with four comments asking the reader to "change them
-# together": verify_natives.sh's `require` list, cc_server_package.sh's separate
-# `require_native` list, the runtime table in
-# packages/cc_server_core/lib/src/cc_server_runtime.dart and
-# native_preflight.dart. Now the two shell consumers read this file and
-# test/tooling/native_matrix_test.dart asserts the Dart runtime table agrees
-# with it, so a drift is a failing test rather than a boot failure on a user's
-# machine.
-#
-# Row format — pipe-delimited, four fields:
-#
-#   base|roles|platforms|description
-#
-#   base         the library's base name, WITHOUT the platform prefix (`lib` on
-#                macOS/Linux, none on Windows) or extension. Matching is
-#                dot-bounded, so `tree-sitter` never matches
-#                libtree-sitter-dart.dylib and a versioned soname
-#                (libfoo.so.1.2.3) still does.
-#   roles        comma-separated: `desktop` (the Flutter app's own native dir),
-#                `server` (a cc_server bundle's lib dir — everything the boot
-#                preflight probes).
-#   platforms    `all`, or `!windows` for the single documented exemption.
-#   description  what breaks without it; printed verbatim in failures.
-#
-# Every native is REQUIRED. There is no degraded mode: a missing library means a
-# broken install, so packaging refuses to produce the artifact rather than
-# shipping something that dies on first launch.
-#
-# rift is the one platform exemption: there is no MSVC copy-on-write backend, so
-# on Windows plain `git worktree` is the BACKEND rather than a degradation (see
-# `RiftRepoIsolationAdapter.missingRiftIsExpected`).
 
 CC_NATIVES=(
   # Client-side: the meeting recorder's echo canceller runs in the Flutter
@@ -82,27 +50,9 @@ CC_NATIVES=(
   "rift_ffi|server|!windows|copy-on-write worktrees"
 )
 
-# THE RUNTIME ABI FLOOR (Linux).
-#
-# "Present" and "loadable" are different claims, and shipping the first while
-# asserting the second is how a release boots into `required native libraries
-# are missing` with every file sitting right there on disk. The preflight probes
-# by `dlopen`, so a library whose symbol versions the runtime's glibc/libstdc++
-# do not provide is reported MISSING — sending whoever reads that message to
-# look at staging, which was never wrong.
-#
-# Measured, on the demo container: natives compiled on the ubuntu-24.04 runner
-# (glibc 2.39, libstdc++ 14) needed `__isoc23_strtol` (GLIBC_2.38 — glibc ≥2.38
-# headers redirect `strtol` whenever `_GNU_SOURCE` is defined, which every C
-# dependency here does), `pidfd_spawnp`/`pidfd_getpid` (GLIBC_2.39, from Rust
-# std's spawn path) and GLIBCXX_3.4.32. The image ran debian:bookworm-slim,
-# which ships glibc 2.36 and libstdc++ 12 — so rift, fff and lame could not
-# load and the server refused to boot.
-#
-# These two values are what the RUNTIME BASE IMAGE below provides.
-# verify_natives.sh fails a Linux bundle whose libraries need anything newer, so
-# a builder/runtime mismatch is a red packaging step instead of an operator's
-# boot. To raise them, raise the base image first — never the other way round.
+# Linux RUNTIME ABI floor: preflight dlopens, so a newer glibc/libstdc++ symbol
+# than the base image reports as "missing". verify_natives.sh fails bundles that
+# need anything newer. Raise the base image before raising these maxima.
 CC_NATIVES_BASE_IMAGE="debian:trixie-slim" # docker/cc_server/Dockerfile
 CC_NATIVES_GLIBC_MAX="2.41"                # Debian 13 glibc
 CC_NATIVES_GLIBCXX_MAX="3.4.33"            # Debian 13 libstdc++ (GCC 14)

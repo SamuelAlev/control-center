@@ -35,11 +35,9 @@ class AgentMentionParser {
 
   /// Parses `@name` mentions out of PROSE — text an agent wrote itself, rather
   /// than a line a human typed into the composer.
-  ///
   /// Stricter than [parseMentions] because the input is different in kind: a
   /// composer line is short and deliberate, while a turn is long, quotes code
   /// and pastes logs. Three rules keep an incidental `@` from waking somebody:
-  ///
   /// * code is not prose — fenced blocks and inline spans are removed first, so
   ///   a `@Override` in a Java snippet or a `pip install foo@1.2` in a shell
   ///   block cannot mention anyone;
@@ -47,7 +45,6 @@ class AgentMentionParser {
   ///   pin, never a mention (`sam@host.com`, `pkg/@scope`, `node@20`);
   /// * a token keeps its inner hyphens, so `@code-reviewer` resolves as itself
   ///   instead of silently reaching an agent whose name starts with `code`.
-  ///
   /// Returns lowercase tokens, deduplicated, in order of first appearance.
   /// Resolving those tokens to agents is the caller's job and must be exact —
   /// this parser deliberately reports candidates, not decisions.

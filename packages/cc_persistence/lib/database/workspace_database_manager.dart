@@ -5,54 +5,16 @@ import 'package:cc_persistence/database/workspace/workspace_database.dart';
 import 'package:cc_persistence/src/server_database.dart';
 import 'package:drift/drift.dart';
 
-/// Hands out per-workspace databases — one directory, one database, per
-/// workspace (`<dataDir>/<workspaceId>/workspace.db`).
+/// Hands out per-workspace DBs at `<dataDir>/<workspaceId>/workspace.db`.
 ///
-/// This is the seam the whole split hangs on. Every repository that touches
-/// workspace-scoped data holds a manager instead of a DAO and resolves its DAO
-/// per call: `_dbs.of(workspaceId).agentDao`. Because the repository methods
-/// already took a required `workspaceId` (a rule this codebase enforced long
-/// before the split), that resolution is mechanical and the workspace can never
-/// be inferred or defaulted.
-///
-/// ## `of()` is synchronous, on purpose
-///
-/// It returns a [WorkspaceDatabase] over a `LazyDatabase`, so constructing one
-/// touches no disk: the file open, schema creation and `beforeOpen` all happen
-/// on the first query. Had `of()` been async, every `Stream`-returning
-/// repository method in the codebase would have had to become
-/// `Stream.fromFuture(...).asyncExpand(...)` — a few hundred call sites made
-/// worse for no benefit. Opening is still lazy; it is just lazy one level down.
-///
-/// ## Lifetime: a workspace someone is USING stays open; a fan-out's is not
-///
-/// A database opened to serve a workspace-scoped request stays open until
-/// [close]/[closeAll]/[dropAndClose] — that workspace is in use, and a
-/// closed-and-reopened one would pay FTS/trigger install and `vector_init`
-/// again for nothing (and its live drift `.watch()` subscriptions would die).
-///
-/// A database opened only to answer a CROSS-workspace question is different,
-/// and is what [useTransiently] exists for. The first all-workspace read used
-/// to open every workspace file — including soft-deleted ones — and leave them
-/// all resident for the process's lifetime, each holding a background isolate
-/// and an 8 MB page cache, so one dashboard load made a ten-workspace install
-/// pay ten cold opens and keep ten connections for a list it rendered once.
-/// [useTransiently] closes the file afterwards **if this call is what opened
-/// it and nothing else has claimed it since** — so a workspace a person is
-/// actually in is never closed out from under them, and the sweep that merely
-/// visited it does not pin it.
-///
-/// The integrity check is the reason that would otherwise be a bad trade:
-/// `quick_check` is 2.8s on a large file and it ran on EVERY open, so
-/// close-and-reopen would turn a dashboard refresh into a multi-second stall.
-/// It is a statement about the FILE, not about the connection, so it now runs
-/// once per file per process ([_integrityChecked]) and a reopen skips it.
-///
-/// [openCount] is logged past [softOpenLimit] so the day the "handful of
-/// workspaces" assumption stops holding is visible rather than mysterious. If
-/// it does, the next step is one shared `DriftIsolate` serving every workspace
-/// connection instead of one background isolate per file — which is why
-/// [executorFactory] is injectable rather than hard-coded.
+/// Repositories hold this manager and resolve DAOs per call
+/// (`_dbs.of(workspaceId).agentDao`) — never cache a DAO (pins the first
+/// workspace). [of] is sync over `LazyDatabase` so Stream repos stay sync.
+/// In-use DBs stay open until [close]/[closeAll]/[dropAndClose];
+/// [useTransiently] closes cross-workspace fan-out opens that nothing else
+/// claimed. `quick_check` runs once per file per process ([_integrityChecked]).
+/// [openCount] past [softOpenLimit] is logged; [executorFactory] is injectable
+/// for a future shared DriftIsolate.
 class WorkspaceDatabaseManager {
   /// Creates a manager rooted at [dataDir].
   ///

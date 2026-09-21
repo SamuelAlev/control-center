@@ -1,21 +1,9 @@
 #!/usr/bin/env bash
 #
-# Prepares the mobile rig surface: an Android SDK, a system image and a virtual
-# device the server can drive over adb.
+# Installs Android SDK/emulator pieces for host-managed Android rigs (reuses
+# Android Studio when present). Distinguishes no SDK / no emulator / no AVD.
+# Usage: scripts/rigs/setup_android.sh
 #
-# The mobile surface is the odd one out. The computer surface boots a qcow2 we
-# build (scripts/rigs/build_image.sh) and the terminal and browser surfaces
-# boot digest-pinned OCI images smolvm pulls — every one of them an artifact
-# the app manages. Android is not an image we can ship: the emulator, its
-# system images and their licences come from Google's SDK, so the honest thing
-# is to install that SDK rather than to pretend there is a "download" button
-# for it.
-#
-#   scripts/rigs/setup_android.sh          # install the SDK + create a device
-#   scripts/rigs/setup_android.sh start    # boot the device and wait for it
-#   scripts/rigs/setup_android.sh status   # what is installed / running
-#
-# Nothing here runs as root and nothing is installed outside the SDK directory.
 
 set -euo pipefail
 

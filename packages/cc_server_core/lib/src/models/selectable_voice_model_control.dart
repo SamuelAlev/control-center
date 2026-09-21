@@ -5,22 +5,9 @@ import 'package:cc_infra/cc_infra.dart';
 import 'package:cc_server_core/src/models/managed_model_control.dart';
 import 'package:dio/dio.dart';
 
-/// A server-side [SelectableModelControl] for the ASR / voice model: a thin
-/// client can list the installable models (`models.voiceCatalog`), switch the
-/// active one (`models.selectVoice`) and install/remove it
-/// (`models.installVoice` / …) — the SERVER owns the on-disk models.
+/// Server-side [SelectableModelControl] for ASR/voice models.
 ///
-/// This is the headless `cc_server` counterpart to lib's selectable
-/// `DesktopVoiceModelControl` (which drives the in-process Riverpod registry).
-/// Embedding & diarization stay plain [ManagedModelControl]s — each is a single
-/// fixed asset with nothing to select.
-///
-/// Internally it COMPOSES a [ManagedModelControl] bound to the currently-
-/// selected model and rebuilds it on [select]. The lifecycle stream survives a
-/// switch: [watch] forwards a long-lived broadcast (`_out`) that re-pipes from
-/// each inner control, so a subscriber's `models.watchVoice` subscription keeps
-/// animating progress and snaps to the new model's status the instant the user
-/// picks a different one.
+/// Thin adapter over the managed model store; selection is install-wide.
 class SelectableVoiceModelControl implements SelectableModelControl {
   /// Creates a control rooted at [_paths].
   ///

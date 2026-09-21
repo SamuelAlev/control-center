@@ -47,23 +47,13 @@ abstract class AecEngine {
 
 /// Stateful owner of one native WebRTC AEC3 instance.
 ///
-/// Cancels the remote's speaker bleed out of the microphone using the system
-/// loopback as the far-end reference. Works on fixed 10 ms blocks of mono PCM16
-/// ([blockBytes] bytes = [blockFrames] samples @ 16 kHz). Feed each far-end
-/// (loopback) block via [processReverse] and each near-end (mic) block via
-/// [processCapture]; AEC3 estimates the echo-path delay internally and aligns
-/// the two streams itself.
-///
-/// **Main-isolate only.** The instance wraps a raw native [Pointer] handle (not
-/// sendable across isolates) and is stateful, so every call for a given
-/// processor must come from the isolate that created it. Each 10 ms block is
-/// sub-millisecond work, far cheaper than shipping audio over a port — mirroring
-/// how rift does inline FFI while only the heavy sherpa decode is isolated.
-///
-/// [create] throws [AecUnavailable] when the native library is absent /
-/// incompatible — a broken install, not a runtime condition, so it fails loudly
-/// instead of silently recording an echo-laden track. All target platforms are
-/// little-endian, matching the PCM16 byte order on the wire.
+/// Cancels the remote's speaker bleed out of the microphone using the system loopback as
+/// the far-end reference.
+/// Works on fixed 10 ms blocks of mono PCM16 ([blockBytes] bytes = [blockFrames] samples @
+/// 16 kHz).
+/// **Main-isolate only.** The instance wraps a raw native [Pointer] handle (not sendable
+/// across isolates) and is stateful, so every call for a given processor must come from the
+/// isolate that created it.
 class AecProcessor implements AecEngine {
   AecProcessor._(this._bindings, this._handle)
     : _ref = malloc<Int16>(blockFrames),

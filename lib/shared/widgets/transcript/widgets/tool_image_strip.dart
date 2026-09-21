@@ -9,7 +9,7 @@ import 'package:flutter/widgets.dart';
 /// `mobile_use` / `ios_use` screenshot, a rendered chart — as a row of
 /// thumbnails that open in the shared lightbox.
 ///
-/// **Why this exists.** The harness has carried tool-result images to the model
+/// Why this exists. The harness has carried tool-result images to the model
 /// since it was written, and both providers put them on the wire. The
 /// transcript dropped them, so a run that screenshotted every step showed the
 /// human a column of tool calls asserting a screenshot was taken and nothing to

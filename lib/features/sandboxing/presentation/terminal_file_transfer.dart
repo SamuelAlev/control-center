@@ -1,21 +1,7 @@
 // Files and rich clipboard content across a terminal's boundary.
-//
-// A terminal has no coordinate space and no drop target, so "drag a file in"
-// and "paste an image" both mean the same thing here: put the thing where the
-// shell can reach it and type its PATH at the prompt. That is what a person
-// dropping a CSV onto a shell actually wants — a path to pass to a command —
-// and it is the only reading that survives the terminal being INSIDE a VM,
-// where the host's own path means nothing.
-//
-// Two destinations, and the difference is the whole reason this file exists:
-//
-//  * A host-shell terminal already shares this computer's filesystem, so a
-//    dropped file needs no transfer at all. Its own path is typed, and
-//    nothing is copied anywhere.
-//  * An enclosed (`microvm`) terminal is a different machine. The bytes are
-//    copied into it and the GUEST's path is typed. Typing the host path there
-//    would produce a command that fails with "no such file", which is a
-//    worse outcome than not supporting the drop.
+// That is what a person dropping a CSV onto a shell actually wants — a path to pass to a
+// command — and it is the only reading that survives the terminal being INSIDE a VM, where
+// the host's own path means nothing.
 library;
 
 import 'dart:typed_data';

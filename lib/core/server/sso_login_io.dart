@@ -9,24 +9,12 @@ import 'package:control_center/core/server/sso_pair_link.dart';
 import 'package:control_center/shared/utils/open_url.dart';
 
 /// VM `/auth/providers` probe.
-///
-/// It accepts the probed host's SELF-SIGNED certificate, narrowed to that
-/// exact host:port — the same bargain (and the same reasoning) as
-/// `identityProbeClientFactory`. A non-loopback `cc_server` serves TLS with
-/// a self-signed certificate BY DESIGN, so a strict `HttpClient` fails the
-/// handshake and the probe returns nothing; the connect screen then hides
-/// every "Sign in with …" button and single sign-on looks like a feature the
-/// desktop does not have, while the browser — already taught to trust that
-/// certificate — shows it on the web client. That asymmetry is the bug this
-/// callback fixes.
-///
-/// Why it is safe: the document is unauthenticated and carries no secret
-/// (ids, kinds, labels, one bool), the login itself runs in the system
-/// browser, which does full validation, and the credential it mints is
-/// verified cryptographically by the Ed25519 handshake in `connectToEntry`
-/// — so a poisoned probe fails closed there rather than being trusted. Do
-/// NOT widen this to `HttpOverrides.global`, which would disable validation
-/// app-wide.
+/// A non-loopback `cc_server` serves TLS with a self-signed certificate BY DESIGN, so a
+/// strict `HttpClient` fails the handshake and the probe returns nothing; the connect
+/// screen then hides every "Sign in with …" button and single sign-on looks like a feature
+/// the desktop does not have, while the browser — already taught to trust that certificate
+/// — shows it on the web client.
+/// That asymmetry is the bug this callback fixes.
 Future<AuthProvidersSnapshot?> probeAuthProvidersImpl(String origin) async {
   final uri = Uri.tryParse('$origin/auth/providers');
   if (uri == null || uri.host.isEmpty) {

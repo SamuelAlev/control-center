@@ -2,31 +2,10 @@ import 'dart:io';
 
 import 'package:test/test.dart';
 
-/// The ActionClass ratchet (PRD 24 §1): keeps the unified-guardrail effect
-/// declarations honest and complete.
-///
-/// Every concrete harness tool (`packages/cc_infra/lib/src/harness/tools/*.dart`)
-/// and every MCP tool (`packages/cc_mcp/lib/src/tools/*.dart`) declares the
-/// worst-case `ActionClass` set it can effect. The base classes supply a
-/// conservative default (harness: exec ⇒ {processSpawn}, write ⇒
-/// {fileWriteOutsideWorktree}, read ⇒ {}; MCP ⇒ {}); a tool whose worst case
-/// exceeds that default overrides `Set<ActionClass> get actionClasses`.
-///
-/// This is a SOURCE-LEVEL (grep) ratchet — the same style as
-/// `undo_class_coverage_test.dart` — because most tools need heavy
-/// repositories/ports/services to construct. It enforces two invariants against
-/// the real tool source:
-///
-///   1. Each tool's EFFECTIVE ActionClass set (its override, or the base
-///      default it inherits) EXACTLY equals a curated `expected` entry — the
-///      human-reviewed source of truth for a security-sensitive declaration.
-///   2. Every tool file on disk is present in `expected` and every `expected`
-///      key exists on disk. A NEW mutating tool therefore fails CI until a human
-///      adds it here and states its effects — it cannot silently ship with an
-///      undeclared (falsely-harmless) effect set.
-///
-/// Under-declaring an effect is a silent security hole; over-declaring only
-/// costs an extra prompt. When in doubt the curated set includes the effect.
+/// ActionClass ratchet: every harness/MCP tool's effective `actionClasses`
+/// must exactly match a curated `expected` entry, and disk ↔ expected stay
+/// 1:1 so a new mutating tool cannot ship undeclared. Under-declaring is a
+/// silent security hole; when in doubt include the effect. Source-level grep.
 void main() {
   final root = _repoRoot();
 
@@ -262,23 +241,9 @@ void main() {
     _assertMatches(declared, expectedMcp, scope: 'MCP');
   });
 
-  // ---------------------------------------------------------------------------
-  // RepoOps. The RPC catalog is the OTHER surface that performs effects — a
-  // connected client drives it exactly the way a model drives a tool, and the
-  // same guardrail store gates both (`repo_op.dart` forwards `actionClasses`
-  // into the policy check). It was invisible to this ratchet, which is how
-  // three rig port ops shipped as `mutate` with no declaration at all.
-  //
-  // Scanning all ~490 ops for a curated map would be unmaintainable, so the
-  // ratchet is two narrower invariants that between them close the hole:
-  //
-  //   1. Every op that DECLARES classes matches a curated map exactly, both
-  //      directions — so a declaration cannot be weakened or dropped silently.
-  //   2. Every MUTATING op in an EFFECT FAMILY (the prefixes below, whose ops
-  //      by construction reach a hypervisor, a host listener, a git remote or
-  //      the filesystem) must declare at least one class. A new `rig.*` op
-  //      therefore fails CI until a human states its effects.
-  // ---------------------------------------------------------------------------
+  // RepoOps share the same guardrail store. Ratchet: (1) every op that
+  // declares classes matches a curated map both ways; (2) every mutating op
+  // in an effect-family prefix must declare at least one class.
 
   // Curated source of truth for the RPC catalog, same contract as the tool
   // maps above: a human reviews every change.

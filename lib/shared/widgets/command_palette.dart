@@ -131,7 +131,6 @@ void showCommandPalette(
   );
 }
 
-// ─── Body ─────────────────────────────────────────────────────────────────────
 
 /// Moves the palette selection by [delta] rows (+1 down, -1 up).
 class _NavigateIntent extends Intent {
@@ -476,7 +475,6 @@ class _PaletteView {
   int get hashCode => Object.hash(query, selectedIndex);
 }
 
-// ─── Entries ──────────────────────────────────────────────────────────────────
 
 class _PaletteEntry {
   const _PaletteEntry._({this.header, this.command, this.cmdIndex});
@@ -493,7 +491,6 @@ class _PaletteEntry {
   bool get isHeader => header != null;
 }
 
-// ─── Search header ────────────────────────────────────────────────────────────
 
 class _SearchHeader extends StatelessWidget {
   const _SearchHeader({required this.controller, required this.onSubmit});
@@ -535,7 +532,6 @@ class _SearchHeader extends StatelessWidget {
   }
 }
 
-// ─── Category header ──────────────────────────────────────────────────────────
 
 class _CategoryHeader extends StatelessWidget {
   const _CategoryHeader({required this.label});
@@ -571,7 +567,6 @@ class _CategoryHeader extends StatelessWidget {
   }
 }
 
-// ─── Command row ──────────────────────────────────────────────────────────────
 
 class _CommandRow extends StatelessWidget {
   const _CommandRow({
@@ -709,7 +704,6 @@ class _Leading extends StatelessWidget {
   }
 }
 
-// ─── Empty ────────────────────────────────────────────────────────────────────
 
 class _EmptyResults extends StatelessWidget {
   const _EmptyResults();
@@ -732,7 +726,6 @@ class _EmptyResults extends StatelessWidget {
   }
 }
 
-// ─── Highlighted query text ───────────────────────────────────────────────────
 
 class _HighlightedText extends StatelessWidget {
   const _HighlightedText({

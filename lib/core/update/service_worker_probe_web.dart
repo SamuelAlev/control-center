@@ -5,8 +5,8 @@ import 'dart:js_interop';
 
 import 'package:web/web.dart' as web;
 
-/// Whether the Flutter service worker has a new version **installed and
-/// waiting** behind the active one — the browser-side second signal that a
+/// Whether the Flutter service worker has a new version installed and
+/// waiting behind the active one — the browser-side second signal that a
 /// new deploy exists (the primary signal is `/deploy.json`).
 ///
 /// A waiting worker means the new build's assets are already cached; a

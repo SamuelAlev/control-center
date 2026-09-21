@@ -6,25 +6,13 @@ import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/widgets.dart';
 
 /// Renders arbitrary JSON as an indented, readable tree.
-///
-/// Generalized out of the pipeline step-detail panel, which was the ONLY place
-/// in the app that rendered a structured agent output — and did it with a
-/// private widget, so `submit_output` payloads were readable in exactly one
-/// screen. Artifacts made a shared renderer necessary; the pipelines panel now
-/// uses this one.
-///
-/// Objects and arrays collapse; scalars are typed by color AND by shape (quoted
-/// strings, bare numbers, italic `null`) so the tree never depends on color
-/// alone to be legible.
-///
-/// The tree lays out inside the width it is GIVEN and wraps a long scalar onto
-/// continuation lines. Do NOT wrap it in a horizontal [SingleChildScrollView]:
-/// that hands it unbounded width, which silently turns the [Flexible] on every
-/// value into a no-op — the row then renders at its intrinsic width and the
-/// viewport clips it, so a file path or a PR title reads as truncated with a
-/// pan gesture (no scrollbar, no mouse drag on desktop) as the only way to
-/// finish the sentence. Wrapping is also the better read in a side panel: the
-/// key column stays put instead of scrolling out of view with the value.
+/// Generalized out of the pipeline step-detail panel, which was the ONLY place in the app
+/// that rendered a structured agent output — and did it with a private widget, so
+/// `submit_output` payloads were readable in exactly one screen.
+/// Objects and arrays collapse; scalars are typed by color AND by shape (quoted strings,
+/// bare numbers, italic `null`) so the tree never depends on color alone to be legible.
+/// Do NOT wrap it in a horizontal [SingleChildScrollView]: that hands it unbounded width,
+/// which silently turns the [Flexible] on every value into a no-op — the row then renders
 class JsonTreeView extends StatelessWidget {
   /// Creates a [JsonTreeView] over an already-decoded [value].
   const JsonTreeView({

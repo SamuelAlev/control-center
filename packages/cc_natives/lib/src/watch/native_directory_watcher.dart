@@ -48,22 +48,15 @@ DynamicLibrary? defaultWatcherLibraryResolver() => tryOpenFirst(
   nativeLibraryCandidates(watcherLibraryBaseName, envVar: watcherLibraryEnvVar),
 );
 
-/// [DirectoryChangeWatcher] over the native `cc_watcher` library — recursive
-/// FSEvents (macOS) / ReadDirectoryChangesW (Windows) / ignore-aware inotify
-/// (Linux) watching with NO full-tree scan on any Dart isolate.
+/// [DirectoryChangeWatcher] over the native `cc_watcher` library — recursive FSEvents
+/// (macOS) / ReadDirectoryChangesW (Windows) / ignore-aware inotify (Linux) watching with
+/// NO full-tree scan on any Dart isolate.
 ///
-/// `package:watcher`'s `DirectoryWatcher` performs a full recursive scan of
-/// the tree on construction and cannot skip `node_modules`/`build`; arming a
-/// realistic worktree fleet with it froze the server isolate for a measured
-/// 65 seconds. The native watches kernel-recursively (or installs its Linux
-/// per-dir watches on its own thread) and applies the ignore list at the
-/// source, so [create] is O(1) for the caller.
-///
-/// Event delivery is a POLLING DRAIN: one process-wide timer
-/// ([pumpInterval], default 500 ms) drains every live handle. The consumer
-/// debounces changes for 2 s anyway, a drain is inherently coalescing and
-/// polling avoids vendoring `dart_api_dl` into the Rust crate for a latency
-/// nobody consumes.
+/// `package:watcher`'s `DirectoryWatcher` performs a full recursive scan of the tree on
+/// construction and cannot skip `node_modules`/`build`; arming a realistic worktree fleet
+/// with it froze the server isolate for a measured 65 seconds.
+/// The native watches kernel-recursively (or installs its Linux per-dir watches on its own
+/// thread) and applies the ignore list at the source, so [create] is O(1) for the caller.
 class NativeDirectoryWatcher implements DirectoryChangeWatcher {
   NativeDirectoryWatcher._(this._bindings, this._handle, this.root, this._log);
 
@@ -102,21 +95,12 @@ class NativeDirectoryWatcher implements DirectoryChangeWatcher {
 
   /// Creates a native watch on [root].
   ///
-  /// Throws [WatcherUnavailable] when the dylib cannot be loaded (a broken
-  /// install — callers must let it propagate), or a [StateError] when the native
-  /// refuses this particular [root] (vanished mid-arm, watch-descriptor limits):
-  /// that one is per-root and operational, so a caller arming many checkouts
-  /// should catch it and retry that root later.
-  ///
-  /// Synchronous by design: the arm path in the watch service is synchronous,
-  /// and the native `cc_watch_create` never blocks (the Linux watch-install
-  /// walk runs on the native thread).
-  ///
-  /// [ignoreDirNames] are directory NAMES whose subtrees are never watched
-  /// or reported (feed `SourceFileWalker.watchIgnoredDirs`). [queueCapacity]
-  /// bounds distinct pending paths before the native degrades to a
-  /// rescan-needed signal; [maxWatches] bounds Linux inotify watches
-  /// (0 = unlimited).
+  /// Throws [WatcherUnavailable] when the dylib cannot be loaded (a broken install — callers
+  /// must let it propagate), or a [StateError] when the native refuses this particular [root]
+  /// (vanished mid-arm, watch-descriptor limits): that one is per-root and operational, so a
+  /// caller arming many checkouts should catch it and retry that root later.
+  /// Synchronous by design: the arm path in the watch service is synchronous, and the native
+  /// `cc_watch_create` never blocks (the Linux watch-install walk runs on the native thread).
   static NativeDirectoryWatcher create(
     String root, {
     required Set<String> ignoreDirNames,

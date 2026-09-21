@@ -74,23 +74,13 @@ _Meta? _metaOf(AstNode node) {
 
 /// Structural search over a materialized tree.
 ///
-/// **What makes this a matcher and not a regex with extra steps.** A pattern is
-/// parsed by the SAME grammar as the searched source, so `foo(a, b)` matches a
-/// call however it is spaced, commented or line-broken, and does not match the
-/// same characters inside a string. And a metavariable repeated in one pattern
-/// must capture equal text: `if ($X) dispose($X)` matches a guard that disposes
-/// what it tested and does NOT match `if (a) dispose(b)`. That equality
-/// constraint is the whole reason to have metavariables rather than wildcards,
-/// and it is the property a textual search cannot express at all.
-///
-/// **Why the pattern is unwrapped before matching.** A pattern is parsed as a
-/// whole source file, so `foo($X)` arrives as
-/// `program → expression_statement → call_expression`. Matching that literally
-/// would only ever find calls that are themselves whole statements. The
-/// significant node is the deepest one that still spans the entire pattern
-/// text, so the wrappers the grammar added to make it a valid file are
-/// discarded — and only those, because the moment a node has two named
-/// children the descent stops.
+/// **What makes this a matcher and not a regex with extra steps.** A pattern is parsed by
+/// the SAME grammar as the searched source, so `foo(a, b)` matches a call however it is
+/// spaced, commented or line-broken, and does not match the same characters inside a
+/// string.
+/// And a metavariable repeated in one pattern must capture equal text: `if ($X)
+/// dispose($X)` matches a guard that disposes what it tested and does NOT match `if (a)
+/// dispose(b)`.
 class AstPatternMatcher {
   /// Creates a matcher for [pattern], a tree parsed from pattern source.
   ///

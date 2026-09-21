@@ -8,29 +8,12 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// A global, always-on-top surface that lists agent actions awaiting a human
-/// decision for conversations that are **not** currently on screen.
-///
-/// When the conversation is open, the permission prompt renders the same
-/// request inline above the composer and this overlay hides it, so the
-/// operator never answers twice.
-///
-/// The SERVER blocks an agent whenever it hits an approval-gated action
-/// (a destructive command, a privileged MCP tool) and publishes the request to
-/// every connected client over `confirmation.watchPending`; it stays blocked
-/// until someone responds (there is no timeout). This is the desktop/web
-/// responder — the counterpart to the phone's approval screen — so a user at
-/// the desktop can unblock the agent without reaching for their phone.
-///
-/// Renders nothing when nothing is pending, so it is safe to mount permanently
-/// in the app shell.
-///
-/// Several pending requests render as a DECK, not a scrolling list: one card is
-/// answerable and the rest peek out behind it, three deep at most. So a host
-/// with twenty blocked agents occupies exactly as much screen as one with four
-/// — the overlay floats over whatever the user is actually doing, and an
-/// approval queue that grows to fill the window is worse than one that stays a
-/// fixed corner. The count above the deck carries what the cap cannot show.
+/// A global, always-on-top surface that lists agent actions awaiting a human decision for
+/// conversations that are not currently on screen.
+/// When the conversation is open, the permission prompt renders the same request inline
+/// above the composer and this overlay hides it, so the operator never answers twice.
+/// This is the desktop/web responder — the counterpart to the phone's approval screen — so
+/// a user at the desktop can unblock the agent without reaching for their phone.
 class AgentApprovalOverlay extends ConsumerStatefulWidget {
   /// Creates an [AgentApprovalOverlay].
   const AgentApprovalOverlay({super.key});

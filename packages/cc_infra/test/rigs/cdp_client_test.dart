@@ -1289,13 +1289,11 @@ void main() {
     });
   });
 
-  // ---------------------------------------------------------------------------
   // Attach-address validation. `/json/list` is read over loopback but its BODY
   // is written by the browser INSIDE the guest, so `webSocketDebuggerUrl` is
   // untrusted data like every other extract. Attaching to whatever it names
   // would let a compromised guest have the HOST dial an arbitrary address and
   // then feed it attacker-chosen "CDP frames".
-  // ---------------------------------------------------------------------------
   group('requireDebuggerSocketUri', () {
     test('accepts the normal loopback target', () {
       final uri = requireDebuggerSocketUri(

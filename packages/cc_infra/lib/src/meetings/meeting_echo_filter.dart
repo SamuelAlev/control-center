@@ -32,33 +32,14 @@ class EchoCandidate {
   final int emitMs;
 }
 
-/// Removes the duplicate "me" windows that arise when the microphone picks up
-/// the remote participants playing out of the speakers/headphones.
+/// Drops mic "me" windows that are speaker-bleed echoes of "them".
 ///
-/// The system loopback ("them") never captures the mic, so "them" is always the
-/// authoritative copy and the mic echo is a degraded, fragmented duplicate of
-/// it. Resolution is therefore strictly one-directional: a "me" window that
-/// matches a near-contemporaneous "them" window is dropped; "them" is never
-/// dropped, held, or reordered.
-///
-/// Ordering is handled both ways. "them" is committed immediately and buffered;
-/// a "me" that matches a buffered "them" is dropped on arrival (them-first). A
-/// "me" with no match yet is *held* so a later "them" can still cancel it
-/// (me-first). The hold is adaptive (see [noteSystemActivity]): long
-/// ([activeHoldMs]) while the remote is playing — the bleed's authoritative
-/// "them" window is longer and emitted seconds later, so the hold must outlast
-/// that lag — and brief ([idleHoldMs]) while the remote is quiet, when no echo
-/// is possible. The invariant [activeHoldMs] >= [matchWindowMs] guarantees a
-/// held "me" never commits before its same-band "them" could cancel it.
-///
-/// When the remote is quiet (the user is speaking into silence, or there is no
-/// bleed at all) nothing matches, every "me" commits after the short
-/// [idleHoldMs] and the only effect is a negligible latency on the user's own
-/// lines. A "me" spoken *over* the remote is held for [activeHoldMs] and then
-/// committed if no "them" claimed it — correct, just delayed.
-///
-/// Pure Dart (logs through [CcInfraLog]); the live desktop recorder controller
-/// and the headless server's `MeetingRecordingService` both drive it.
+/// System loopback is authoritative; matching is one-way (never drop/reorder
+/// "them"). "them" commits immediately and buffers; matching "me" drops on
+/// arrival. Unmatched "me" is held for a later "them" cancel — hold is
+/// [activeHoldMs] while remote is playing ([noteSystemActivity]) and
+/// [idleHoldMs] when quiet. Invariant: [activeHoldMs] >= [matchWindowMs].
+/// Quiet remote: "me" commits after [idleHoldMs] (small latency only).
 class MeetingEchoFilter {
   /// Creates a [MeetingEchoFilter].
   ///

@@ -82,19 +82,16 @@ class PipelineNodeConfig {
 
   /// Workspace-scoped repo ids to provision when this node starts its own
   /// conversation (the space clone/code-index scope).
-  ///
   /// Empty (the default) keeps the legacy behavior: the conversation
   /// worktree clones every workspace repo, which is heavy on IO/FS for
   /// workspaces with many repos. A non-empty list scopes provisioning to the
   /// listed repos only. Entries support `{{key}}` substitution against
   /// pipeline state and trigger payload at execution time (e.g.
   /// `['{{repo_id}}']` clones only the repo the run is processing).
-  ///
   /// Read by the node that OPENS a conversation (`messaging.createSpace`),
   /// because a conversation IS the checkout. An agent node joins a room it did
   /// not open, so a scope declared there is read by nothing — the validator
   /// rejects it rather than letting an author set it and watch it do nothing.
-  ///
   /// An empty list means every workspace repo; `extras['allRepos']` asks for
   /// that explicitly. Entries support `{{key}}` placeholders, so one template
   /// can scope itself to whichever repo its trigger names.

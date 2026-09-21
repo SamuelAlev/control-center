@@ -261,7 +261,6 @@ final newsfeedRefreshControllerProvider =
       NewsfeedRefreshController.new,
     );
 
-// ── Settings ─────────────────────────────────────────────────────────────
 
 /// Where to open an article when the card is clicked.
 enum ArticleOpenMode {
@@ -338,7 +337,6 @@ final contentBlockingProvider =
       ContentBlockingController.new,
     );
 
-// ── Filter List Auto-Update ──────────────────────────────────────────────
 
 /// Controller that tracks the state of filter-list updates and exposes
 /// manual refresh / auto-update operations.

@@ -2,27 +2,14 @@ import 'package:cc_domain/core/domain/ports/confirmation_port.dart';
 import 'package:cc_domain/features/sandboxing/domain/entities/sandbox_exec_grant.dart';
 import 'package:cc_domain/features/sandboxing/domain/repositories/sandbox_exec_grant_repository.dart';
 
-/// Owns the operator conversation about running binaries from inside an
-/// agent's worktree, and turns the answers into the exec roots the sandbox
-/// profile re-opens.
+/// Operator conversation for running binaries from an agent's worktree →
+/// sandbox exec roots.
 ///
-/// **Why this needs a conversation at all.** The macOS profile denies
-/// `process-exec` across `$HOME`, which is what stops a binary being written
-/// somewhere writable and run from there. A CoW worktree lives under `$HOME`,
-/// so the same rule blocks every tool a checked-out repo installs for itself —
-/// `node_modules/.bin/husky`, `.venv/bin/pytest`. Neither outcome is right by
-/// default: silently blocking them breaks ordinary work, and silently allowing
-/// them re-opens the hole. So the operator is asked, once per tree.
-///
-/// **The two moments it can ask, and why both exist.** A Seatbelt profile is
-/// written before the process starts and is fixed for that process's life, and
-/// the kernel offers no "ask" verdict — so a denial observed mid-run can never
-/// be rescued, only recorded. [approvedRoots] therefore asks BEFORE the profile
-/// is generated, where an answer still changes the run in front of the
-/// operator. [recordDeniedExec] is the fallback for a tree nobody anticipated:
-/// it asks after the fact, and the answer applies from the next command (the
-/// harness rebuilds its profile per command) or the next dispatch (an external
-/// CLI runs under one profile for the whole run).
+/// macOS denies `process-exec` under `$HOME`, which also blocks
+/// `node_modules/.bin` / `.venv/bin` in CoW worktrees — ask once per tree.
+/// [approvedRoots] asks before the Seatbelt profile is written (fixed for the
+/// process). [recordDeniedExec] asks after a surprise denial; applies on the
+/// next command (harness) or next dispatch (CLI).
 class SandboxExecGrantService {
   /// Creates a [SandboxExecGrantService].
   SandboxExecGrantService({

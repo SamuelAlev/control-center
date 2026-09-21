@@ -1,22 +1,11 @@
 // Frame resynchronisation for a rig's watch lane.
-//
-// The server relays an open-ended body of images concatenated with no framing
-// between them, which is literally what every surface produces (the guest
-// agent's ffmpeg, Chromium's screencast, the host transcode of Android's
-// H.264, and a polled browser engine's stills). This finds frame boundaries by
-// scanning for the format's own start and end markers rather than trusting a
-// multipart boundary, so a truncated or oddly-framed part cannot
-// desynchronise the stream permanently.
-//
-// TWO formats, one algorithm. Most lanes are JPEG; WebKit's is PNG, because
-// classic WebDriver has no format parameter and answers PNG — and carrying
-// those bytes as they are beats both a host transcode (an ffmpeg the host may
-// not have, for a browser) and a server-side decode (real CPU on the isolate
-// that answers RPCs). The stream says which it is in its content type.
-//
-// Split out of the widget because it is the hot path — it runs on the UI
-// isolate for every chunk of a 24 fps 1080p stream — and because a pure object
-// over bytes is testable, which the widget is not.
+// Most lanes are JPEG; WebKit's is PNG, because classic WebDriver has no format parameter
+// and answers PNG — and carrying those bytes as they are beats both a host transcode (an
+// ffmpeg the host may not have, for a browser) and a server-side decode (real CPU on the
+// isolate that answers RPCs).
+// Split out of the widget because it is the hot path — it runs on the UI isolate for every
+// chunk of a 24 fps 1080p stream — and because a pure object over bytes is testable, which
+// the widget is not.
 library;
 
 import 'dart:typed_data';
@@ -48,7 +37,7 @@ const List<int> kPngIend = [0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82];
 
 /// Accumulates stream chunks and yields complete frames.
 ///
-/// **Incremental by construction.** The first version rebuilt the whole
+/// Incremental by construction. The first version rebuilt the whole
 /// accumulated buffer (`BytesBuilder.toBytes()`, a full copy) on every chunk
 /// and rescanned all of it from byte zero for both markers — O(n·m) per chunk
 /// on the UI isolate, which at 1080p/24 fps is megabytes per second of memcpy

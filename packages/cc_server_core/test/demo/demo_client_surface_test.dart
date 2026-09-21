@@ -255,24 +255,7 @@ void main() {
       );
     }
 
-    // Every `.call('x.y'` the client can reach — BOTH trees. The root `lib/`
-    // holds ~106 direct calls; `packages/cc_data` holds ~387, because that is
-    // where the repository adapters live. Scanning only the first missed the
-    // three quarters of the surface that actually talks to the server.
-    //
-    // A `cc_data` call that catches `opUnknown` and returns an empty/false
-    // value is already the fix this test asks for, so it is not a finding.
-    // Those catches are the reason the adapter tree can be scanned at all
-    // without a hundred-line allowlist.
-    // In the adapter tree only READS are enforced, and that split is the
-    // point of the test rather than a shortcut. A read runs when a screen
-    // opens, so its failure IS the screen — that is the red text in the
-    // screenshots. A mutation runs when someone presses a control they chose
-    // to press, and its failure is a toast over a page that still looks right.
-    // The demo disables the controls that matter (add/delete repo, save
-    // lifecycle script) and the rest are behind surfaces a visitor does not
-    // reach; enforcing all 164 of them here would mean an allowlist longer
-    // than the test.
+    // Inventory every `.call('x.y'` the client can reach (root lib + packages) for the demo lockdown ratchet.
     final root = _repoRoot();
     final called = <String, Set<String>>{};
     for (final tree in ['lib', 'packages/cc_data/lib']) {

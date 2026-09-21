@@ -15,7 +15,7 @@ import 'package:flutter/widgets.dart';
 /// code wraps every line and reads worse than the single-column diff.
 const double kSplitDiffMinWidth = 560;
 
-/// Renders a **side-by-side** diff between [oldText] and [newText]: the old text
+/// Renders a side-by-side diff between [oldText] and [newText]: the old text
 /// in the left pane, the new text in the right, aligned row by row with fillers
 /// opposite unbalanced insertions/deletions.
 ///

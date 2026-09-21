@@ -8,22 +8,12 @@ import 'package:cc_natives/cc_natives.dart';
 /// installs anything; it only asks where the staged libraries are.
 typedef GrammarPathResolver = Future<GrammarPaths?> Function(String languageId);
 
-/// Holds the one tree-sitter parser the structural tools share.
+/// Shared tree-sitter parser for structural tools.
 ///
-/// **Why one, held here, rather than one per tool call.** A `TreeSitterParser`
-/// owns native handles — a parser per language, a compiled-query cache — and
-/// those are allocations an isolate's death does NOT reclaim. One per
-/// `ast_grep` call would leak a parser per call unless every path out of the
-/// tool disposed it, and would throw away the per-language setup that makes the
-/// second file cheaper than the first.
-///
-/// **Why warming is explicit and not lazy-on-first-use.** Resolving grammars
-/// touches the filesystem, and the tool registry is built synchronously per
-/// run — a lazy resolve would mean the FIRST run of a fresh server silently has
-/// no structural tools while every later one does, which is the kind of
-/// difference nobody reproduces. So the server warms it once, after the ready
-/// banner: the desktop parses that banner under a hard 20s timeout and kills
-/// the child on expiry, so nothing that touches disk belongs before it.
+/// One instance: native handles leak if created per call; query cache makes
+/// later files cheaper. Warm explicitly after the ready banner (lazy resolve
+/// would leave the first run without structural tools; disk I/O must not run
+/// before the desktop's 20s ready timeout).
 class AstParserProvider {
   /// Creates an [AstParserProvider] over [_resolve].
   AstParserProvider({required this._resolve});

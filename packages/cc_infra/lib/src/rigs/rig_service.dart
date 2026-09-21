@@ -643,7 +643,6 @@ class RigService implements RigPort, RigPortsPort {
       return RigActionResult.error('Rig $rigId is not open in this workspace.');
     }
 
-    // ── The take-over chokepoint ──────────────────────────────────────────
     // Mutual exclusion is enforced HERE, in the one place every action passes
     // through, rather than by asking a model to behave. Observation stays
     // allowed while a human drives: an agent that can still look can still
@@ -725,13 +724,8 @@ class RigService implements RigPort, RigPortsPort {
     return result;
   }
 
-  // ── The clipboard and file lanes ────────────────────────────────────────
-  //
-  // Same chokepoint as [act] — take-over exclusivity, the activity clock, the
-  // action log — reached through [_admit] so the three rules cannot be
-  // implemented three slightly different ways. What is deliberately NOT the
-  // same is what gets written down: these carry bytes, and the log records
-  // only how many.
+  // Clipboard and file lanes: same chokepoint as [act] via [_admit]; the log
+  // records byte counts only, never the bytes.
 
   @override
   Future<RigClipboardData> readClipboard({
@@ -1610,7 +1604,6 @@ class RigService implements RigPort, RigPortsPort {
     return null;
   }
 
-  // ── Ports (RigPortsPort; mechanism in rig_port_service.dart) ─────────────
 
   @override
   Stream<Map<String, dynamic>> watchPorts(String workspaceId, String rigId) =>
@@ -1752,7 +1745,6 @@ class RigService implements RigPort, RigPortsPort {
     }
   }
 
-  // ── Internals ───────────────────────────────────────────────────────────
 
   Future<void> _boot(_LiveRig live) async {
     final rig = live.rig;
@@ -2438,24 +2430,10 @@ class RigService implements RigPort, RigPortsPort {
 
   /// What [action] looks like once it is safe to persist.
   ///
-  /// `type` and `fill` carry whatever was typed, and the take-over path sends
-  /// a human's keystrokes as `type`: without this a person taking control to
-  /// enter a password writes it in plaintext into the workspace database,
-  /// where it outlives the rig by the retention window. Agents get the same
-  /// treatment — an agent pasting a token is the same leak with a different
-  /// author.
-  ///
-  /// It happens HERE because this is the single chokepoint every action passes
-  /// through on its way to storage, so a verb added later is covered by
-  /// construction rather than by remembering. The length and the hash keep the
-  /// questions an audit actually asks answerable ("was something typed here?",
-  /// "was it the same string twice?") without keeping the string. The hash is
-  /// NOT a defence for a short text: one `type` per character means many
-  /// one-character hashes, and those are brute-forced instantly.
-  ///
-  /// The summary is redacted with it. It sits in the next column and quotes
-  /// the same text, so leaving it would make the argument redaction
-  /// decorative.
+  /// `type`/`fill` (and take-over keystrokes) redact plaintext at this
+  /// chokepoint — length + hash keep "was something typed?" answerable without
+  /// storing the string. Hash is not a defence for short text. Summary is
+  /// redacted with the args (same text, next column).
   ({Map<String, dynamic> args, String summary}) _auditPayload(
     RigAction action,
   ) {

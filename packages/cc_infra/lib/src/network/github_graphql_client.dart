@@ -760,23 +760,10 @@ class GitHubGraphQLClient {
     return name.replaceAll(RegExp(r'[_-]+'), ' ').trim();
   }
 
-  /// Fetches the first page of open pull requests for many repos in a **single
-  /// GraphQL request** (one aliased `repository` node per repo), with the list
-  /// fields, diff/comment/check metrics, requested reviewers and the data
-  /// needed to derive `reviewed-by-me` — all at once.
-  ///
-  /// This replaces what was a 3×N REST/GraphQL fan-out on the dashboard (per
-  /// repo: `GET /pulls` + a `reviewed-by:@me` search + a metrics query) with a
-  /// single round-trip. PRs are ordered `CREATED_AT DESC` to match the REST
-  /// `GET /pulls` default, so a later REST `loadMore` page lines up with this
-  /// first page.
-  ///
-  /// Large repo lists are split into chunks of [_prBatchChunkSize] to bound
-  /// each request's cost under GitHub's GraphQL secondary rate limit; chunks run
-  /// sequentially, one request each. The result tolerates partial failure: a
-  /// repo whose
-  /// alias errored (no access, etc.) is omitted from
-  /// [GitHubPrBatchResult.byIndex] rather than failing the whole batch.
+  /// First page of open PRs for many repos in one GraphQL request (aliased
+  /// `repository` nodes): list fields, metrics, reviewers. Chunked at
+  /// [_prBatchChunkSize]; ordered `CREATED_AT DESC` to match REST. Partial
+  /// failure omits that alias from [GitHubPrBatchResult.byIndex].
   Future<GitHubPrBatchResult> fetchOpenPullRequestsBatch(
     List<({String owner, String name})> repos, {
     CancelToken? cancelToken,
@@ -819,27 +806,13 @@ class GitHubGraphQLClient {
     return GitHubPrBatchResult(viewerLogin: null, byIndex: byIndex);
   }
 
-  /// Maximum repos per GraphQL request. Bounds how much work GitHub does for one
-  /// request: each repo contributes up to 100 PRs and every PR fans out into
-  /// `reviewRequests` + `latestReviews` + `statusCheckRollup`. Batching 20 repos
-  /// (≈2000 PRs) made the query so heavy GitHub's gateway returned **HTTP 504**
-  /// before finishing; combined with dropping the mergeability computation (see
-  /// `_prListFieldsFragment`), 5 repos/request (≈500 PRs) keeps each request
-  /// inside the gateway budget. Chunks run sequentially — 5 repos is 1 request,
-  /// 50 repos is 10. If 504s persist (watch the `createDio` error log for the
-  /// query + response), lower this further.
+  /// Max repos per list request. Larger batches (e.g. 20) hit gateway HTTP 504;
+  /// 5 keeps each request inside budget. Chunks run sequentially.
   static const int _prBatchChunkSize = 5;
 
-  /// Repos per request for the checks/review enrichment pass, deliberately
-  /// smaller than [_prBatchChunkSize].
-  ///
-  /// `statusCheckRollup` makes GitHub walk every open PR's head commit and
-  /// roll up its check runs, so this query is far heavier per repo than the
-  /// list it enriches — at 5 repos × 100 PRs it draws **HTTP 502/504 several
-  /// times an hour** against a busy org (measured across five repos),
-  /// and those chunks come back with no data at all. Two repos per request
-  /// keeps each one inside the gateway budget and, when one does fail anyway,
-  /// costs the sweep two repos' fresh checks instead of five.
+  /// Repos per checks/review enrichment request — smaller than
+  /// [_prBatchChunkSize] because `statusCheckRollup` is heavier; at 5×100 PRs
+  /// gateway 502/504 was routine. Failure then costs two repos' checks, not five.
   static const int _prChecksChunkSize = 2;
 
   /// Open PRs fetched per repo on the first page. Matches the REST list's
@@ -889,24 +862,11 @@ class GitHubGraphQLClient {
     return b.toString();
   }
 
-  /// Fetches `statusCheckRollup` + `reviewDecision` for the first page of open
-  /// PRs across [repos], at [_prBatchPageSize] per repo and
-  /// [_prChecksChunkSize] repos per request. Returns a map keyed by the
-  /// caller's repo-input index, then by PR number, containing the raw
-  /// `StatusState` string (or null when no checks are configured) and the raw
-  /// `PullRequestReviewDecision` string (or null when no reviews are required
-  /// or given).
-  ///
-  /// Called as phase 2 of progressive loading: [fetchOpenPullRequestsBatch]
-  /// omits both fields so the list can render immediately, then this fetches
-  /// them in parallel and the provider overlays the results.
-  ///
-  /// A repo index ABSENT from the result was not read this pass — it is not
-  /// the same claim as an index mapping to an empty map, which means the repo
-  /// answered and has no open PRs. Callers that persist these values must keep
-  /// their previous state for an absent index rather than writing "no checks";
-  /// null and "nothing" decode to the same enum, and announcing the difference
-  /// as news is what turned every gateway timeout into a repeat notification.
+  /// `statusCheckRollup` + `reviewDecision` for open PRs ([_prBatchPageSize] per
+  /// repo, [_prChecksChunkSize] per request). Phase 2 after
+  /// [fetchOpenPullRequestsBatch]. Absent repo index = unread this pass (keep
+  /// prior state); empty map = answered with no open PRs. Treating absent as
+  /// "no checks" turns gateway timeouts into repeat notifications.
   Future<Map<int, Map<int, GitHubPrStatusOverlay>>> fetchOpenPullRequestsChecks(
     List<({String owner, String name})> repos, {
     CancelToken? cancelToken,
@@ -984,33 +944,12 @@ class GitHubGraphQLClient {
   String _escapeGraphqlString(String s) =>
       s.replaceAll(r'\', r'\\').replaceAll('"', r'\"');
 
-  /// Core PR list fields — scalars, diff size, comments and requested
-  /// reviewers. Intentionally excludes `statusCheckRollup` (inside
-  /// `lastCommit: commits(last: 1)`):
-  ///
-  /// - `statusCheckRollup` is relatively cheap per PR but not free; across
-  ///   100 PRs × N repos on every load it is the dominant remaining latency.
-  ///   Dropping it here lets the list render immediately (phase 1). Checks are
-  ///   fetched in a separate, parallel pass via [fetchOpenPullRequestsChecks]
-  ///   (phase 2) and overlaid onto the already-visible rows.
-  ///
-  /// Other omissions (unchanged from before):
-  /// - `body`/`bodyHtml`/`changedFiles`/`commitsTotal` — peek-panel only, lazy
-  ///   via `peekPrContentProvider`.
-  /// - `url`/`mergedAt` — no list consumer reads them.
-  /// - `mergeStateStatus` — forces per-PR mergeability computation → caused
-  ///   HTTP 504s on the original 20-repo batch; lane classifier falls back.
-  ///   Merge readiness is derived from `reviewDecision` + the checks rollup
-  ///   instead, and confirmed with ONE targeted REST call on the transition —
-  ///   never re-added here, and never to [_prChecksFragment] either, which
-  ///   runs even more often.
-  /// - `latestReviews` — "reviewed by me" filter is lazy via
-  ///   [searchReviewedByPullRequests], not carried per-PR.
-  /// `headRefOid` IS carried: it is a plain scalar (not a connection and not
-  /// a computed field, so it is not what blew the gateway budget) and two
-  /// things need it. `PrHeadChanged` — and therefore the stale-review
-  /// notification — can only fire when the poller can see the head move, and
-  /// the merge-readiness dedupe has to re-arm when the author pushes.
+  /// Core PR list fields. Omits `statusCheckRollup` (phase 2 via
+  /// [fetchOpenPullRequestsChecks]); `body`/`url`/`mergedAt`/`mergeStateStatus`
+  /// (`mergeStateStatus` caused 504s — never re-add here or in
+  /// [_prChecksFragment]); `latestReviews` (lazy via
+  /// [searchReviewedByPullRequests]). Keeps `headRefOid` for [PrHeadChanged]
+  /// and merge-readiness dedupe.
   static const String _prListFieldsCoreBody = r'''
   number
   title
@@ -1074,24 +1013,11 @@ fragment PrChecksFields on PullRequest {
   }
 }''';
 
-  /// The dashboard's "priority reviews" panel shows only the PRs that request
-  /// the operator's review. Fetching that handful through
-  /// [fetchOpenPullRequestsBatch] is wasteful — that query pulls *every* open
-  /// PR in *every* repo (100/repo) with full reviewer/check connections, then
-  /// the dashboard discards all but a few. This is the lean alternative: GitHub
-  /// filters server-side (`is:pr is:open draft:false review-requested:<login>`,
-  /// scoped to [repos]), so only the matching PRs come back, carrying just the
-  /// fields that panel renders (title, branch, age, diff size, comments).
-  ///
-  /// Returns the raw GraphQL `PullRequest` node maps (each with a
-  /// `repository.nameWithOwner` for grouping under the caller's repo set), so
-  /// this network model stays free of feature-domain types — the pr_review
-  /// mapper decodes them. The caller still applies the ">24h stale" cut.
-  ///
-  /// Repos are chunked into groups of [_reviewSearchChunkSize] so no single
-  /// search query grows past GitHub's query-length limit; chunks run
-  /// sequentially (one request each), matching [fetchOpenPullRequestsBatch]'s
-  /// rate-limit discipline. A typical single-repo workspace is one request.
+  /// Lean search for open non-draft PRs requesting [reviewerLogin]'s review
+  /// (`review-requested:<login>`), scoped to [repos]. Avoids
+  /// [fetchOpenPullRequestsBatch]'s full open-PR pull. Chunked at
+  /// [_reviewSearchChunkSize]. Returns raw GraphQL nodes; caller applies
+  /// stale cut.
   Future<List<Map<String, dynamic>>> searchReviewRequestedPullRequests({
     required String reviewerLogin,
     required List<({String owner, String name})> repos,
@@ -1182,43 +1108,12 @@ fragment PrChecksFields on PullRequest {
     );
   }
 
-  /// One sweep of the viewer's own pull-request activity, in a **single**
-  /// request.
-  ///
-  /// This is the replacement for `GET /notifications`, which no GitHub App
-  /// token — installation *or* user-to-server — can ever read (GitHub answers
-  /// "Resource not accessible by integration", permanently, because no App
-  /// permission grants that endpoint). Since signing in mints a GitHub App user
-  /// token, the inbox lane was dead for every install that had not additionally
-  /// pasted a classic PAT. `search` is reachable by every credential kind, so
-  /// this lane works the same for an App token, an OAuth token and a PAT.
-  ///
-  /// The four lanes ride four **aliased** searches in one HTTP request and one
-  /// rate-limit charge. Each is a server-side predicate, which is what makes
-  /// this *cheaper* than the inbox poll it replaces rather than merely
-  /// equivalent: the old path fetched threads and then spent an extra per-thread
-  /// GraphQL round-trip verifying whether the review was really pending and
-  /// whether the PR was really merged. Here GitHub applied both predicates
-  /// before answering.
-  ///
-  /// Deliberately **not** scoped by `repo:`. The old inbox was global and the
-  /// caller filtered it against its repo→workspace index; keeping that shape
-  /// means one request regardless of how many repos are linked, instead of one
-  /// per five-repo chunk. The caller still drops anything it cannot route.
-  ///
-  /// [since] bounds the three activity lanes (the pending-review lane is a
-  /// *set*, not a delta, so it is unbounded by design — a review requested
-  /// months ago is still pending today). Pass the previous sweep's start, minus
-  /// an overlap: GitHub's search index lags writes by seconds to a minute, so
-  /// an exactly-abutting window silently drops events. Over-fetching is free
-  /// here because the caller dedupes.
-  ///
-  /// One caveat, stated rather than smoothed: a **user-to-server token only
-  /// sees repos the App is installed on**. A linked repo without the
-  /// installation returns nothing from these searches and simply goes quiet —
-  /// it does not error, so there is no failure to report. Every other surface
-  /// in the product needs that installation too, so this narrows nothing that
-  /// was otherwise working.
+  /// One sweep of viewer PR activity in a single request (four aliased
+  /// searches). Replaces `GET /notifications` — App tokens cannot read that
+  /// endpoint; no PAT fallback. Not scoped by `repo:` (caller filters). [since]
+  /// bounds activity lanes only; pending-review is an unbounded set. Overlap
+  /// [since] — search index lags. User-to-server tokens only see App-installed
+  /// repos (silent empty, not error).
   Future<GitHubViewerActivity> searchViewerPullRequestActivity({
     DateTime? since,
     CancelToken? cancelToken,
@@ -1292,26 +1187,11 @@ fragment viewerPr on PullRequest {
     return out;
   }
 
-  /// Searches the open pull requests the server's bot identity is being
-  /// invoked on: PRs whose conversation @mentions [botLogin] or its bare
-  /// slug (GitHub does not resolve `@slug` to an app account, so the short
-  /// form needs a raw comment-TEXT lane to be discoverable at all), and PRs
-  /// carrying [label] (the reviewer-assignment stand-in — an installed app
-  /// cannot hold the native requested-reviewer slot, so a label is the
-  /// explicit "review this" ask).
-  ///
-  /// Same shape and cost discipline as [searchViewerPullRequestActivity]:
-  /// one aliased request for every lane, deliberately not scoped by `repo:`
-  /// (the caller filters against its repo→workspace index), and [since]
-  /// bounds ONLY the mention lanes — the label lane is an unbounded *set*
-  /// whose membership is itself the trigger state, exactly like the
-  /// pending-review lane of the viewer sweep.
-  ///
-  /// The bot login carries brackets (`app[bot]`) and the label may contain
-  /// spaces, so both ride as quoted search values. The short-alias lane is
-  /// phrase-matched over comment text (`in:comments "@slug"`), which also
-  /// catches full-login mentions as a substring — harmless, the caller
-  /// dedupes per PR and per comment id.
+  /// Open PRs invoking the bot: @mentions of [botLogin] or bare slug (GitHub
+  /// does not resolve `@slug` to an app — needs `in:comments`), plus [label]
+  /// (apps cannot hold requested-reviewer). Same shape as
+  /// [searchViewerPullRequestActivity]: one aliased request, not `repo:`-scoped;
+  /// [since] bounds mention lanes only; label lane is an unbounded set.
   Future<
     ({
       List<GitHubViewerPr> mentioned,
@@ -1646,35 +1526,15 @@ fragment viewerPr on PullRequest {
     }
   }
 
-  /// Fetches a GitHub identity's profile (name, bio, avatar, contribution
-  /// calendar) via the GraphQL API.
+  /// Fetches a GitHub identity's profile via GraphQL.
   ///
-  /// GitHub App bots (`login[bot]`) are skipped: they are `Bot` nodes, not
-  /// `User` or `Organization`. The app *slug* (no `[bot]`) is a different
-  /// identity — `repositoryOwner(login:)` cannot resolve it either — so a
-  /// GraphQL `NOT_FOUND` falls through to `GET /apps/{slug}` rather than
-  /// throwing. That is what a hover on a check-run app or an `@parced`-style
-  /// mention hits; throwing `Could not resolve to a User` logged a server
-  /// error for a login GitHub never claimed was a person.
-  ///
-  /// `repositoryOwner` covers User *and* Organization in one field: asking
-  /// `user(login:)` for an org (or an app) always came back `NOT_FOUND` in
-  /// the errors array with `user: null`, which the previous parser treated
-  /// as a hard failure.
-  ///
-  /// Tolerant of a PARTIAL answer, because one credential kind cannot read all
-  /// of it: a GitHub App installation token is refused `organizations.nodes
-  /// .teams` ("Resource not accessible by integration"), and since `teams` is
-  /// non-null in the schema GitHub nulls the whole org node and reports one
-  /// FORBIDDEN error per org — while `login`, `name`, `bio`, `status` and the
-  /// contribution calendar all resolved in the same response. Throwing on the
-  /// errors array (what [_runQuery] does) discarded that complete answer and
-  /// blanked the hover card. The caller fetches on the acting user's own token,
-  /// where nothing is forbidden; this keeps the app-identity FALLBACK — a
-  /// member who has not connected GitHub — showing a profile without orgs
-  /// instead of an error. A response with no owner at all and a *non*-NOT_FOUND
-  /// errors array still throws: that is a real failure (bad credential, schema
-  /// error), not "this login is an org or an app".
+  /// Bot logins (`login[bot]`) are skipped. App slugs (no `[bot]`) miss
+  /// `repositoryOwner` → fall through to `GET /apps/{slug}` instead of throwing.
+  /// Uses `repositoryOwner` (User and Organization). Tolerates a partial answer:
+  /// an App installation token is forbidden on `organizations.nodes.teams`, so
+  /// GitHub nulls org nodes with FORBIDDEN while login/bio/calendar still
+  /// resolve — throwing on the errors array (as [_runQuery] does) blanked the
+  /// hover card. No owner plus a non-NOT_FOUND errors array still throws.
   Future<GitHubUserProfile?> getUserProfile({
     required String login,
     CancelToken? cancelToken,

@@ -9,23 +9,9 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/widgets.dart';
 
-/// A horizontal timing waterfall over a run's step-runs: each bar is offset and
-/// sized to the step's slice of the run's wall-clock window. Failed steps
-/// expand their error inline. A restarted step also draws its archived previous
-/// tries as faded ghost bars, so a retried failure keeps its place on the
-/// timeline instead of being overwritten by the new attempt. Reads only the
-/// persisted step-run rows — no new data plumbing.
-///
-/// The header shows the run's **active** duration (PRD 25 §6) — the sum of the
-/// time it was actually running — and, when a stop→restart gap exists, a
-/// discontinuity chip labelling the excluded idle time. The step bars stay
-/// scaled to the wall-clock window so their relative positions are unchanged.
-///
-/// **Collapsed by default.** On a long pipeline the bars pushed the canvas — the
-/// thing you actually navigate — off screen, so the timing detail sits behind a
-/// disclosure whose summary row (active total + idle gap) is the part worth
-/// glancing at. Expanded, the bars scroll inside a capped height rather than
-/// growing the column without limit.
+/// A horizontal timing waterfall over a run's step-runs: each bar is offset and sized to
+/// the step's slice of the run's wall-clock window.
+/// Failed steps expand their error inline.
 class PipelineRunWaterfall extends StatefulWidget {
   /// Creates a [PipelineRunWaterfall].
   const PipelineRunWaterfall({

@@ -21,69 +21,13 @@ import 'package:cc_domain/features/pipelines/domain/templates/dispatch_conversat
     show priorStepRunSpaceId, resolveConfiguredSpaceId;
 import 'package:cc_domain/features/pr_review/domain/value_objects/review_level.dart';
 
-/// Registers the generic `messaging.createSpace` body — the node every
-/// agent-bearing pipeline opens with.
+/// Registers `messaging.createSpace` — opens one space per agent-bearing run.
 ///
-/// It resolves ONE conversation for the whole run, up front, and writes its id
-/// to `config.outputKey` (default [kPipelineSpaceStateKey]) so each downstream
-/// agent step names it as its room (`extras['spaceId']`) and opens its own
-/// titled stream inside it. That is the shape the `pr_review` template already
-/// had, generalized: without it every agent step minted its OWN hidden
-/// conversation, which meant one checkout of the same repo per branch of a
-/// fan-out and as many rooms nobody could see.
-///
-/// **The room's checkout replaces the clone.** A space's worktree is a
-/// copy-on-write copy of the linked checkout (rift), scrubbed to a pristine
-/// tree and — for a pull request — fetched and checked out at the PR head. That
-/// is seconds and no network transfer, where a clone re-downloads the whole
-/// repository per run. With `extras['awaitReady']` the node waits for that
-/// checkout and publishes its path as `repoLocalPath`, so the scripts, routers
-/// and prompts that already read that key keep working — pointed at the CoW
-/// worktree instead of a fresh clone.
-///
-/// Three further properties are the point of the node:
-///
-/// * **The conversation is visible.** No `pipelineRunId` is stamped on a space
-///   it creates, so it is a normal room in the sidebar rather than a
-///   pipeline-managed one only the step-detail panel can reach.
-/// * **The work starts early.** `createSpace` returns as soon as the row is
-///   written and provisioning runs in the background, so a node that does not
-///   need the path (`awaitReady` unset) lets the checkout happen while the
-///   deterministic steps ahead of the agents are still running.
-/// * **The scope is stated, never inferred.** `config.repoIds` is the exact set
-///   of repos the room checks out and `extras['agentIds']` the exact roster it
-///   opens with. An empty repo scope means NO repos, not every repo — the
-///   opposite of `dispatchConversationStep`'s legacy fallback, because a node
-///   that exists to declare a scope must not silently escalate to checking out
-///   the whole workspace when a `{{placeholder}}` fails to resolve. Pass
-///   `extras['allRepos'] == true` to ask for every workspace repo explicitly.
-///
-/// **A room is not a stream.** The node opens the SPACE — the checkout, the
-/// roster, the provisioning — and by default opens no conversation inside it,
-/// because the agent steps downstream each open their own named one and a
-/// second, unwritten stream is exactly the "Untitled conversation" nobody
-/// asked for. `extras['createConversation']` turns that into an explicit
-/// choice: with it the node also opens ONE conversation, titled
-/// `extras['conversationTitle']` (falling back to the room's own name), and
-/// publishes its id as [kPipelineConversationStateKey] alongside the space id.
-/// Turn it on for a template with a single agent step and give that step the
-/// same title — the step's own `createConversation(reuseExisting: true)` then
-/// resolves back to this one. Left off, the room stands empty until its first
-/// agent step runs, and anything that READS the room in that window (the
-/// sidebar, the step-detail panel) mints an untitled standing conversation
-/// beside the named one the agent later opens.
-///
-/// Agents that only run on SOME paths (a router branch, a level-gated reviewer)
-/// are deliberately left off the roster: `dispatchConversationStep` adds an
-/// agent to the room when it actually dispatches it, so seeding them here would
-/// only fill the participant list with agents that never spoke.
-///
-/// [ensureReviewSpace] backs `extras['pr']`: it resolves the pull request's ONE
-/// backing space — the same room the PR page opens — through the same closure
-/// `messaging.createSpace` uses, so a template that reviews a PR and a human
-/// opening that PR can never end up looking at two different checkouts. Absent
-/// on a host that wires no resolver, which fails the node rather than silently
-/// falling back to a room checked out on the default branch.
+/// Writes space id to `config.outputKey` ([kPipelineSpaceStateKey]); agents use
+/// `extras['spaceId']`. CoW worktree (PR head when set); `awaitReady` publishes
+/// `repoLocalPath`. Exact `repoIds`/`agentIds` (empty repos = none). Default: no
+/// conversation; `createConversation` opens one as
+/// [kPipelineConversationStateKey]. [ensureReviewSpace] backs `extras['pr']`.
 void registerCreateSpaceBody(
   PipelineBodyRegistry registry, {
   required PipelineTemplateRepository templateRepository,
@@ -681,19 +625,16 @@ Mode _resolveMode(PipelineNodeConfig config) {
 
 /// Resolves a node's configured repo selection (the node config's `repoIds`)
 /// against the pipeline state and trigger payload.
-///
 /// Entries support `{{key}}` placeholders; an entry that does not resolve
 /// completely is dropped, because a seeded template's `['{{repo_id}}']` has to
 /// survive trigger paths whose payload carries no repo (a scheduled sweep).
 /// What survives is the scope; see [_resolveRepoScope] for what an empty
 /// result means — NO repos, unless the node opted into `allRepos`.
-///
 /// An entry may name the branch its worktree is cut from as
 /// `<repoId>@<branch>` — the placeholder pass runs over the WHOLE entry, so
 /// either half can come from the trigger (`{{repo_id}}@{{head_ref}}`). The
 /// branch is the BASE, not the working branch: the worktree still gets its own
 /// `conv/<space>` branch cut from it, so nothing an agent commits lands there.
-///
 /// Private to this file: a conversation IS the checkout, so the node that
 /// opens one is the only node that reads this.
 _RepoScope _resolveScopedRepoIds(

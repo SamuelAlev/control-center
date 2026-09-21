@@ -2,31 +2,16 @@ import 'package:cc_domain/features/subscriptions/subscriptions.dart';
 
 /// One Claude Code login Control Center can run the `claude-code` adapter on.
 ///
-/// ## Why accounts exist at all
+/// Credential lives where `CLAUDE_CONFIG_DIR` points; when set, the macOS
+/// Keychain is never consulted. CC needs its own directory for two reasons:
+/// (1) Seatbelt denies `~/Library/Keychains` and a denied lookup looks like
+/// "Not logged in" — point the CLI at a readable dir without handing agents
+/// the whole keychain; (2) one directory per account is the CLI's isolation
+/// for credential, identity, settings, and session history.
 ///
-/// Claude Code's credential lives wherever `CLAUDE_CONFIG_DIR` points, and when
-/// that variable is set the macOS Keychain is never consulted. Control Center
-/// needs its own directory for two independent reasons and they happen to have
-/// the same answer:
-///
-///  1. **The sandbox.** Every Seatbelt profile denies reads under
-///     `~/Library/Keychains` (see `SandboxPolicyResolver.secretsDenyReadRels`),
-///     and a denied keychain lookup does not fail loudly — it returns "item not
-///     found", which Claude Code reports as `Not logged in · Please run
-///     /login`. Pointing the CLI at a directory it can actually read is the fix
-///     that does not also hand every sandboxed agent the whole login keychain.
-///  2. **Multiple logins.** One directory per account is the only isolation the
-///     CLI offers, and it is a complete one: credential, identity, settings and
-///     session history all move with it.
-///
-/// ## What is authoritative
-///
-/// Only [id] and [label] are Control Center's. Everything else —
-/// [email], [orgName], [subscriptionType], [loggedIn] — is **read back from
-/// `claude auth status --json`** run against this account's directory, never
-/// written by us. That matters: the CLI owns the login (the operator runs
-/// `claude auth login` in a terminal), so any identity we cached would be a
-/// guess that goes stale the moment they sign in as someone else.
+/// Only [id] and [label] are CC's. [email], [orgName], [subscriptionType],
+/// [loggedIn] are read back from `claude auth status --json` against this
+/// directory — never written by us (the operator runs `claude auth login`).
 class ClaudeAccount {
   /// Creates a [ClaudeAccount].
   const ClaudeAccount({
@@ -133,14 +118,12 @@ class ClaudeAccount {
   /// When the OAuth access token in this account's directory stops being
   /// accepted, read from the credential itself. Null when the directory holds
   /// no credential, or one that carries no expiry.
-  ///
   /// This is the signal `claude auth status` does not give: it reports the
   /// credential's SHAPE, so a directory whose token expired hours ago still
   /// answers `loggedIn: true`. Before this was read, an expired account showed
   /// as a healthy row while its usage probe 401'd every ten minutes forever and
   /// every run dispatched to it failed to authenticate — the roster and reality
   /// disagreeing with nothing on screen to explain it.
-  ///
   /// Nothing here renews it. Claude Code's own CLI refreshes the token when it
   /// runs against that directory (and Control Center mirrors the newer
   /// credential in); Control Center never mints one itself, which is the same

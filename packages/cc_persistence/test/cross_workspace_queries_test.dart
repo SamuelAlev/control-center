@@ -6,24 +6,8 @@ import 'package:test/test.dart';
 
 import 'helpers/test_database.dart';
 
-/// Covers [CrossWorkspaceQueries] — the ONE sanctioned way to read across
-/// workspace database files.
-///
-/// Before the split, spanning workspaces was an ordinary `SELECT` with no
-/// `WHERE workspace_id`. Now it means opening several files and the behaviour of
-/// *how* they are combined is real logic that the dashboards, startup
-/// reconcilers and retention sweeps all depend on. Three properties in
-/// particular are load-bearing and are pinned here:
-///
-///  * **Failure isolation.** One corrupt or locked workspace file must not blank
-///    the dashboard for the other nine — but the failure must be reported, not
-///    swallowed.
-///  * **No half-populated first emission.** A merged live view emits only once
-///    every workspace has produced a value, so a subscriber never sees a short
-///    list that then grows (which reads as rows appearing from nowhere).
-///  * **Correct global top-N.** Taking N rows from *each* file before merging is
-///    what makes a global "most recent N" correct; taking fewer would drop rows
-///    that outrank another workspace's.
+/// [CrossWorkspaceQueries]: failure isolation, no half-populated first merge
+/// emission, and correct global top-N across workspace files.
 void main() {
   // These tests deliberately open several WorkspaceDatabase instances at once —
   // that is the subject. Drift's duplicate-instance warning is about sharing one

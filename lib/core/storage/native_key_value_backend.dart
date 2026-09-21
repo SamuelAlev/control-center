@@ -3,21 +3,13 @@ import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:nativeapi/nativeapi.dart' show Preferences;
 
 /// The nativeapi preferences scope this install reads and writes.
-///
-/// nativeapi's no-arg `Preferences()` uses the scope `default`, which lands in
-/// a MACHINE-GLOBAL store shared by every app on the box that uses the package
-/// (macOS: the `com.nativeapi.preferences.default` NSUserDefaults suite) — the
-/// root cause of dev-build state leaking into the production install. Scoping
-/// gives this app its own store (macOS: `com.nativeapi.preferences.<scope>`;
+/// nativeapi's no-arg `Preferences()` uses the scope `default`, which lands in a
+/// MACHINE-GLOBAL store shared by every app on the box that uses the package (macOS: the
+/// `com.nativeapi.preferences.default` NSUserDefaults suite) — the root cause of dev-build
+/// state leaking into the production install.
+/// Scoping gives this app its own store (macOS: `com.nativeapi.preferences.<scope>`;
 /// Windows: `HKCU\Software\NativeAPI\Preferences\<scope>`; Linux:
-/// `~/.config/nativeapi/preferences_<scope>.conf`) and debug builds get a
-/// `.dev`-suffixed scope so a dev run never shares — or pollutes — the
-/// production install's preferences.
-///
-/// There is deliberately NO migration from the old `default` scope: values
-/// there are simply orphaned and device-local preferences (theme, layout,
-/// onboarding flag) reset once. Credentials are unaffected (they live in the
-/// OS keychain, not here).
+/// `~/.config/nativeapi/preferences_<scope>.conf`) and debug builds get a `.dev`-suffixed
 const String appPreferencesScope = kDebugMode
     ? 'com.alev.control-center.dev'
     : 'com.alev.control-center';

@@ -128,10 +128,6 @@ sealed class AgentProcessEvent {
   int get hashCode => Object.hash(type, content);
 }
 
-// ---------------------------------------------------------------------------
-// Concrete event subtypes
-// ---------------------------------------------------------------------------
-
 /// Agent produced visible text output.
 class TextEvent extends AgentProcessEvent {
   /// Creates a text output event.

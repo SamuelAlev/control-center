@@ -1,28 +1,9 @@
-// The CC TextMate theme JSON, authored from the canonical syntax palettes in
-// `lib/shared/utils/syntax_palette.dart`. The two must not drift: a test
-// asserts every palette value appears in the corresponding JSON
-// (test/shared/syntax/cc_shiki_theme_test.dart). Bump `kCcThemeRevision` in
-// cc_shiki_theme.dart whenever either string changes — cached tokens are keyed
-// on it.
+// CC TextMate theme JSON from `syntax_palette.dart` (drift-tested).
+// Bump `kCcThemeRevision` when either changes (cache key).
 //
-// Authoring rules (the reason this looks different from a stock VS Code
-// theme):
-//
-// - `editor.foreground` is the NEUTRAL SENTINEL `#010203`. Shiki assigns the
-//   editor foreground to every token no theme rule matches; the adapter in
-//   cc_shiki_theme.dart maps exactly that hex back to `null` so unmatched
-//   tokens inherit the surface's base text style (which deliberately differs
-//   per surface: diff rows, markdown fences and previews each set their own
-//   base color).
-// - Scopes in `_ccNeutralScopes` are FORCED to the sentinel. TextMate
-//   grammars scope ordinary identifiers (`variable.other`), punctuation and
-//   operators aggressively; highlight.js never colored those and neither do
-//   we. This is the deliberate switch to flip if we ever want GitHub-accurate
-//   operator/punctuation coloring.
-// - No `fontStyle` anywhere — no italics, no bold. The adapter ignores the
-//   field regardless.
-// - Later rules win on equal specificity (vscode-textmate semantics), so the
-//   neutral overrides come LAST.
+// `editor.foreground` = sentinel `#010203` → adapter maps to null (inherit).
+// `_ccNeutralScopes` forced to sentinel (no ident/punct coloring). No
+// `fontStyle`. Neutral overrides last (later rules win).
 
 /// Neutral scopes forced back to the sentinel foreground, shared by both
 /// themes. Kept in one place so light/dark cannot diverge.

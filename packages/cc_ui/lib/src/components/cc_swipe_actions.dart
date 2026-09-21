@@ -44,23 +44,10 @@ class CcSwipeAction {
   final VoidCallback onTriggered;
 }
 
-/// Wraps a row so a horizontal drag uncovers an action panel behind it, in the
-/// idiom of a mobile mail list: drag one way to acknowledge, the other to
-/// delete, release past the threshold to commit.
-///
-/// Two properties are deliberate:
-///
-/// * **The row always settles back to rest**, including after it fires. A
-///   consuming action (delete) is expected to remove the row from the list by
-///   the normal state path; the panel does not hold it off-screen waiting for
-///   that. Holding it would mean inventing a stuck state to recover from when
-///   the write fails, and there is no honest recovery from "the row is gone but
-///   the server still has it".
-/// * **The gesture is never the only way to reach the action.** It is
-///   discoverable only by trying it, so a caller must keep a pointer- and
-///   keyboard-reachable path (an overflow menu, a toolbar) to the same verbs.
-///   The panel contributes [CustomSemanticsAction]s so assistive technology
-///   gets them too, but those are additive, not the affordance.
+/// Horizontal swipe uncovering an action panel (mail-list idiom). Row always
+/// settles back to rest after fire (caller removes via normal state). Gesture
+/// must not be the only path — keep pointer/keyboard affordances;
+/// [CustomSemanticsAction]s are additive.
 class CcSwipeActions extends StatefulWidget {
   /// Creates a [CcSwipeActions].
   const CcSwipeActions({

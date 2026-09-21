@@ -31,25 +31,13 @@ class MotifEvent {
   final int timbre;
 }
 
-/// Phrase-structured melodic scheduling — the replacement for the old
-/// Poisson-triggered bells.
+/// Phrase-structured melodic scheduling (replaces Poisson bells).
 ///
-/// Notes land on an (inaudible) beat grid with small onset jitter, grouped
-/// into short phrases of 2–4 notes separated by long rests, so sparse events
-/// read as intentional instead of accidental. Pitches walk the pentatonic
-/// table with the melodic-expectancy rules that make melodies feel "expected"
-/// (Temperley/Narmour/Huron): mostly single-degree steps, a soft attractor
-/// toward the register center and gap-fill (a leap is answered by a step
-/// back the other way). Phrase openings snap to the current pad chord so the
-/// line always agrees with the harmony. Density is a live parameter (weather
-/// and daypart thin it out) expressed in notes per minute; rests stretch to
-/// hit it. About half the notes trail a quiet one-beat echo on the opposite
-/// side of the stereo field — cheap call-and-response. An optional
-/// [ascentBias] reinterprets the existing up/down coin flip so Rise
-/// phrases tend to rise without consuming extra PRNG draws.
-///
-/// Everything is a pure function of the [SeededPrng] and the sample clock;
-/// advancing is boundary-exact so renders are independent of block size.
+/// Notes on a beat grid with jitter, phrases of 2–4 with long rests; pentatonic
+/// steps with center attractor and gap-fill; openings snap to the pad chord.
+/// Density is notes/min (weather/daypart); ~half echo opposite stereo.
+/// [ascentBias] biases Rise without extra PRNG. Pure in [SeededPrng] + clock;
+/// boundary-exact.
 class MotifScheduler {
   /// Creates a scheduler over [scaleMidi] (ascending) with a pulse grid of
   /// [beatsPerMinute] at [sampleRate].

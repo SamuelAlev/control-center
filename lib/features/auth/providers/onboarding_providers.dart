@@ -27,21 +27,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 const _onboardingCompleteKey = 'onboarding_complete';
 
 /// Whether this user has ever finished first-run setup.
-///
-/// `true` = yes, `false` = definitively not, `null` = not known yet because
-/// identity has not resolved. Null is NOT "no": treating it as one would route
-/// a returning operator into onboarding for the frame before identity lands,
-/// and the guard never redirects away from onboarding once you are in it — so
-/// they would be stranded there.
-///
-/// Sourced from `users.onboarding_finished_at` on the caller's own identity,
-/// with **no device-local lane at all**. It used to read a synced preference
-/// local-copy-first, which was wrong in a way that only showed up on a second
-/// install: the preference sync's one-time promotion pass pushes a device's
-/// local values onto whatever account first signs in there, so a machine that
-/// had onboarded once marked a brand-new user as already set up. The gate then
-/// read "has been set up before" and offered the re-auth screen — a sign-in
-/// and none of the setup that account had never done.
+/// `true` = yes, `false` = definitively not, `null` = not known yet because identity has
+/// not resolved.
+/// Null is NOT "no": treating it as one would route a returning operator into onboarding
+/// for the frame before identity lands, and the guard never redirects away from onboarding
+/// once you are in it — so they would be stranded there.
+/// It used to read a synced preference local-copy-first, which was wrong in a way that only
+/// showed up on a second install: the preference sync's one-time promotion pass pushes a
 final onboardingFinishedProvider = Provider<bool?>((ref) {
   final identity = ref.watch(currentIdentityProvider);
   if (!identity.hasValue && !identity.hasError) {

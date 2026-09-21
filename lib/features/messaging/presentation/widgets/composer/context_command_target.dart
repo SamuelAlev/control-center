@@ -47,28 +47,13 @@ class ContextTargetUnknownAgent extends ContextCommandTarget {
 }
 
 /// Resolves `/context [agent]` for a space.
-///
-/// [agentIdsInSpace] are the agent participants; [namesById] is the workspace
-/// roster (only entries in the space are consulted). [args] is the raw command
-/// tail — a leading `@` is tolerated, because the operator is naming an agent
-/// and that is how they are named everywhere else in the composer.
-/// [currentAgentId] is the agent the space is currently ABOUT — the one the
-/// header's context meter is reading (`spaceMeteredAgentIdProvider`).
-///
-/// A single-agent space never consults [args] at all: the answer is not in
-/// doubt, and refusing a stray word would make the common case the fussy one.
-///
-/// A bare `/context` past one agent used to refuse and ask which. It no longer
-/// does: it opens [currentAgentId], the same window the header meters, so the
-/// command and the counter can never disagree about what "the context" means
-/// here. A stale or absent hint falls back to the first participant rather than
-/// dead-ending on a prompt — the explorer names the agent it opened, and
-/// `/context <name>` is one keystroke away.
-///
-/// A TYPED name is still matched EXACTLY (case-insensitive) and never fuzzily:
-/// two agents in a space hold two different context windows, so a near-miss
-/// that opened the other one would be a plausible-looking answer to a question
-/// nobody asked.
+/// [agentIdsInSpace] are the agent participants; [namesById] is the workspace roster (only
+/// entries in the space are consulted).
+/// A single-agent space never consults [args] at all: the answer is not in doubt, and
+/// refusing a stray word would make the common case the fussy one.
+/// A bare `/context` past one agent used to refuse and ask which.
+/// It no longer does: it opens [currentAgentId], the same window the header meters, so the
+/// command and the counter can never disagree about what "the context" means here.
 ContextCommandTarget resolveContextTarget({
   required List<String> agentIdsInSpace,
   required Map<String, String> namesById,

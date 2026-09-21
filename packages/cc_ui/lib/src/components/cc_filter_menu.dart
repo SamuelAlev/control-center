@@ -109,22 +109,10 @@ class CcFilterCategory {
   final String Function(int hidden)? hiddenCountLabel;
 }
 
-/// A compact filter dropdown: a trigger opening a panel of filter categories,
-/// each disclosing a searchable checkbox flyout with per-option population
-/// counts — the pattern for narrowing a large list (PR inboxes, tables) by
-/// several dimensions from one unobtrusive button.
-///
-/// The root panel carries its own search field to jump to a category; each
-/// flyout carries one to narrow its options. Hovering a category opens its
-/// flyout beside the row (with a short grace when another flyout is already
-/// open, so a diagonal reach survives); clicking, `→`, or `Enter` opens it
-/// and moves focus into its search field. Toggling an option never closes
-/// the menu, so several values compose in one open session. `Esc`/`←` step
-/// back out of a flyout, `Esc` at the root closes the menu.
-///
-/// Like every off-Material overlay surface, the panels supply their own
-/// complete [DefaultTextStyle] — root-overlay content would otherwise inherit
-/// WidgetsApp's 48px error fallback.
+/// Compact multi-dimension filter: category panel + searchable checkbox
+/// flyouts with counts. Hover/→/Enter opens flyout (grace for diagonal reach);
+/// toggles keep the menu open; Esc/← step back. Panels supply their own
+/// [DefaultTextStyle] (root overlay otherwise gets WidgetsApp's 48px fallback).
 class CcFilterMenu extends StatefulWidget {
   /// Creates a [CcFilterMenu].
   const CcFilterMenu({

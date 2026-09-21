@@ -23,23 +23,13 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// Source Control panel: VS Code's source-control view for the conversation —
-/// one collapsible section per repo, each with a commit message + split button
-/// and the repo's changes split into **Staged changes** (the git index) and
-/// **Changes** (working tree + untracked).
-///
-/// The panel is scoped to the repos the space actually CLONED
-/// ([spaceWorktreesProvider]): a workspace can link a dozen repos while a space
-/// checks out one, and a repo with no worktree here has no working tree to
-/// diff, stage or commit — listing it would offer actions that cannot run.
-/// The header's second line is that worktree's branch.
-///
-/// Staging is REAL git (`repos.stage` / `repos.unstage` → `git add` /
-/// `git reset`), so a commit ships exactly the staged index. "Commit & push"
-/// pushes the conversation's own branch to `origin`, which is what makes it
-/// available to open a pull request from. Clicking a changed file opens a
-/// multi-file "Review code" tab anchored to it; "Open in editor" opens it in
-/// the conversation's editor; "Discard" restores it to HEAD.
+/// Source Control panel: VS Code's source-control view for the conversation — one
+/// collapsible section per repo, each with a commit message + split button and the repo's
+/// changes split into Staged changes (the git index) and
+/// The panel is scoped to the repos the space actually CLONED ([spaceWorktreesProvider]): a
+/// workspace can link a dozen repos while a space checks out one, and a repo with no
+/// worktree here has no working tree to diff, stage or commit — listing it would offer
+/// actions that cannot run.
 class SourceControlPanel extends ConsumerWidget {
   /// Creates a [SourceControlPanel].
   const SourceControlPanel({

@@ -1,22 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 /// A parsed VS Code-style `when` clause.
-///
-/// Supports the operators used by VS Code keybinding rules:
-///
-///   * bare context keys, evaluated for truthiness — `editorFocus`
-///   * negation — `!textInputFocus`
-///   * equality / inequality — `route == '/inbox'`, `mode != insert`
-///   * regex match — `route =~ /^\/pull-requests\//`
-///   * boolean `&&` and `||` with `()` grouping
-///
-/// A clause is evaluated against a `Map<String, Object?>` context. A key is
-/// truthy when present and not one of `null`, `false`, `''`, `0`, `'false'`.
-/// Right-hand comparison values may be quoted (`'x'` / `"x"`) or bare words
-/// (so a path literal like `/settings/agents` works unquoted).
-///
-/// Parsing is cached per clause string, so repeated evaluation (the dispatcher
-/// re-evaluates every clause whenever the context changes) is cheap.
+/// A key is truthy when present and not one of `null`, `false`, `''`, `0`, `'false'`.
 class WhenClause {
   WhenClause._(this._predicate);
 
@@ -68,7 +53,6 @@ class WhenClause {
 
   static String _stringify(Object? value) => value?.toString() ?? '';
 
-  // ── Tokenizer ──────────────────────────────────────────────────────────
 
   static List<_Token> _tokenize(String src) {
     final tokens = <_Token>[];

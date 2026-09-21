@@ -16,9 +16,7 @@ import 'package:cc_domain/testing/fake_workspace_repository.dart';
 import 'package:cc_mcp/src/tools/code_graph_tools.dart';
 import 'package:test/test.dart';
 
-// ---------------------------------------------------------------------------
 // Helpers
-// ---------------------------------------------------------------------------
 
 const _wsId = 'ws-1';
 const _repoId = 'repo-1';
@@ -57,9 +55,7 @@ Repo _repo({String id = _repoId}) => Repo(
   updatedAt: DateTime(2026, 1, 1),
 );
 
-// ---------------------------------------------------------------------------
 // Fakes
-// ---------------------------------------------------------------------------
 
 class _FakeEmbeddingPort implements EmbeddingPort {
   _FakeEmbeddingPort({this.isReady = true});
@@ -343,9 +339,7 @@ class _FakeCodeGraphRepository implements CodeGraphRepository {
   Future<void> ingestFiles(List<CodeFileIngest> files) async {}
 }
 
-// ---------------------------------------------------------------------------
 // Tests
-// ---------------------------------------------------------------------------
 
 void main() {
   late FakeWorkspaceRepository wsRepo;

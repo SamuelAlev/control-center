@@ -1095,27 +1095,14 @@ class MessagingService implements MessagingPort {
   /// as history, so this only bounds the summons itself.
   static const int _wakePromptMaxChars = 4000;
 
-  /// Wakes the teammates an agent named in its OWN finished turn ("@architect
-  /// can you weigh in?").
+  /// Wakes teammates named in an agent's finished turn ("@architect …").
   ///
-  /// The prompt's Summons block promises this, so it is honoured here at a
-  /// chokepoint rather than left as inert prose — an unkept promise made every
-  /// handoff an agent believed it had performed silently vanish.
-  ///
-  /// What bounds it (none of it by prompt instruction):
-  ///
-  /// * **What counts as a mention** — [AgentMentionParser.parseProseMentions]:
-  ///   never inside code, never an address or a version pin.
-  /// * **Who it resolves to** — [MentionWakePolicy]: exact name, no prefix
-  ///   match, ambiguity resolves to nobody, self-mentions do nothing.
-  /// * **How far it can travel** — [DelegationGuards] depth and cycle checks
-  ///   over [chain]. Autonomy and budget are NOT checked here: this path mints
-  ///   no new authority and inherits the run's own envelope, unlike
-  ///   `delegate_task`, which can hand work to a differently-scoped agent.
-  /// * **How often** — [PairRateLimiter], per ordered pair.
-  ///
-  /// Best-effort throughout: the turn that produced the mention is already
-  /// persisted and completed, so nothing here may throw back into it.
+  /// Honours the Summons prompt promise at this chokepoint. Bounds:
+  /// [AgentMentionParser.parseProseMentions] (no code/addresses/version pins);
+  /// [MentionWakePolicy] (exact name, no prefix, ambiguity → nobody, no self);
+  /// [DelegationGuards] depth/cycle over [chain] (not autonomy/budget — no new
+  /// authority, unlike `delegate_task`); [PairRateLimiter] per ordered pair.
+  /// Best-effort: must not throw into the already-completed turn.
   Future<void> _wakeMentionedAgents({
     required String workspaceId,
     required String spaceId,

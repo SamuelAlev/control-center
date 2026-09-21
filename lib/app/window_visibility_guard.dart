@@ -6,60 +6,20 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:nativeapi/nativeapi.dart' show WindowManager;
 
-/// Repairs the launch-time lifecycle state that leaves the first window black.
+/// Repairs stale [AppLifecycleState.hidden] that leaves a visible window black.
 ///
-/// The macOS runner is headless: every window is created from Dart (see
-/// `AppWindows`), and the desktop only gets there after it has spawned or
-/// connected its `cc_server` — seconds on a first boot, longer on a fresh data
-/// directory. The engine derives `AppLifecycleState` from AppKit
-/// notifications, and the one that fires during launch,
-/// `NSApplicationWillBecomeActiveNotification`, resolves the state by scanning
-/// `NSApp.windows` for a visible one (`FlutterEngine.mm`
-/// `handleWillBecomeActive`). At that moment this app has NO windows, so the
-/// engine reports [AppLifecycleState.hidden].
+/// Headless macOS: windows are created from Dart after `cc_server` connects.
+/// At launch (and when one main window replaces another), AppKit's
+/// `handleWillBecomeActive` finds no visible window and reports `hidden`, which
+/// sets `SchedulerBinding.framesEnabled = false` — later `scheduleFrame()` is a
+/// no-op and nothing rasterizes (flutter/flutter#155977 can leave occlusion
+/// stale). Schedule repairs per show ([onMainWindowShown]), not once.
 ///
-/// `hidden` sets `SchedulerBinding.framesEnabled = false`, which makes every
-/// later `scheduleFrame()` a no-op. The window is then created and shown and
-/// the widget tree builds into it — and nothing is ever rasterized: a black
-/// window, with no error anywhere. Only the two paths that bypass
-/// `framesEnabled` bring it back, which is exactly what the two accidental
-/// workarounds are: Cmd-Tab out and back (the engine re-runs
-/// `handleWillBecomeActive`, this time finding a visible window, and sends
-/// `resumed`, which re-enables frames) and nudging the window's size by a
-/// pixel (`handleMetricsChanged` → `scheduleForcedFrame`, which ignores
-/// `framesEnabled`).
-///
-/// Usually the occlusion-state notification that follows the window's
-/// appearance repairs the state on its own. `NSApplication.occlusionState`
-/// latches stale — the engine says so itself in the comment above
-/// `handleWillBecomeActive` (flutter/flutter#155977) — so on a slow boot it
-/// does not, and the app is left painting nothing into a window that is right
-/// there on screen.
-///
-/// The same hole opens mid-session, without any launch involved, every time
-/// one main window replaces another: the pre-app setup window is destroyed
-/// before the primary window is created, so the app briefly owns nothing
-/// visible and the engine disables frames again. That is why the repair passes
-/// are scheduled per SHOW rather than once (see [onMainWindowShown]).
-///
-/// The correction has two strengths. Rewriting the state from Dart (pushing
-/// `resumed` through the lifecycle channel) is applied ONLY where it can be
-/// proven wrong: one of this app's own main windows holds keyboard focus, so
-/// the app is frontmost and `hidden` cannot be true. Everything else is left
-/// alone — a genuine `hidden` (Cmd-H, minimized, fully occluded) is what stops
-/// the primary window burning GPU memory on frames nobody can see (see
-/// `ForegroundTickerGate`), so this guard must never out-argue the platform
-/// about it.
-///
-/// Repairing through a REAL platform event (see [_nativeNudgeMainWindow]) is
-/// held to the weaker proof of a main window merely being VISIBLE, because it
-/// does not argue with the platform at all — it gives the window server an
-/// event to recompute occlusion from and lets the engine draw its own
-/// conclusion. This is the path that reaches the login flows (invite code,
-/// SSO), where the app is not frontmost at the moment the stale `hidden`
-/// latches and the focus proof is therefore unavailable precisely where the
-/// repair is needed most: the window the operator is staring at stays black
-/// until they Cmd-Tab or resize it by hand.
+/// Push synthetic `resumed` only when a main window holds keyboard focus —
+/// never invent frontmost over a genuine `hidden` ([ForegroundTickerGate]).
+/// When focus cannot be proven (invite/SSO), [_nativeNudgeMainWindow] issues a
+/// real 1px resize so AppKit recomputes occlusion and
+/// `handleMetricsChanged` forces a frame past `framesEnabled`.
 class WindowVisibilityGuard with WidgetsBindingObserver {
   /// Creates a guard.
   ///
@@ -271,32 +231,12 @@ bool _nativeMainWindowFocused() {
 /// polls agree on — a 120ms blip never spans two polls.
 const Duration _nudgeHoldDuration = Duration(milliseconds: 120);
 
-/// Re-asserts a visible main window with a real 1px resize, held briefly.
+/// Real 1px resize when focus cannot prove the app is frontmost (invite/SSO).
 ///
-/// This is the repair that works when focus cannot be proven — the invite-code
-/// and SSO logins land exactly there, with the app not frontmost at the moment
-/// the stale `hidden` latches. It is deliberately a REAL AppKit event rather
-/// than (only) the synthetic `resumed` the guard pushes through the lifecycle
-/// channel, because the two halves of the failure live on different sides:
-///
-///  - The ENGINE's `_visible` latch (FlutterEngine.mm, from AppKit occlusion)
-///    is what pushed `hidden`, and a channel message written by Dart cannot
-///    touch it — the next occlusion notification re-pushes `hidden` and frames
-///    die again. A window resize makes the window server recompute occlusion,
-///    so the engine itself sends the correction (the Cmd-Tab fix).
-///  - The FRAMEWORK's `framesEnabled` gate is what swallows every later
-///    `scheduleFrame()`. A resize delivers a metrics change, and
-///    `handleMetricsChanged` forces a frame that ignores the gate (the
-///    1px-resize fix).
-///
-/// The operator has been doing this by hand; this is the same nudge, issued
-/// by the guard while a main window is demonstrably on screen. The restore is
-/// scheduled (see [_nudgeHoldDuration]) and re-resolves the window, so a
-/// window closed in between is left alone. Full-screen windows are skipped
-/// (`setContentSize:` on one is ignored at best), as are minimized ones
-/// (nudging a window in the Dock proves nothing about visibility).
-///
-/// Returns whether a window was found and nudged.
+/// Dart `resumed` cannot clear the engine's AppKit occlusion latch; a resize
+/// does, and `handleMetricsChanged` forces a frame past `framesEnabled`. Hold
+/// [_nudgeHoldDuration], re-resolve the window, skip full-screen and minimized.
+/// Returns whether a window was nudged.
 bool _nativeNudgeMainWindow() {
   // One at a time: `dressKnownWindows` reports every main window on every
   // show, so a single hook can reach here twice within one turn — and two

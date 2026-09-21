@@ -35,25 +35,12 @@ class GuidedGoalStep {
   bool get isReady => objective != null;
 }
 
-/// Turns a rough request into an objective an agent can pursue unsupervised.
+/// Turns a rough request into an unsupervised agent objective via interview.
 ///
-/// **Why an interview rather than a template.** An autonomous goal is the one
-/// place a vague brief is genuinely expensive: the loop runs for hours on an
-/// objective whose "done" nobody defined, and then reports success on its own
-/// terms. Every question here corresponds to a way that goes wrong — no
-/// checkable success means it decides when it is finished; no verification
-/// command means it grades its own homework; no cap means it cannot fail, only
-/// run out of money; no boundaries means it edits whatever seems related; no
-/// stop conditions means it guesses at ambiguity rather than asking.
-///
-/// **The syntactic review is the floor, not the ceiling.** [reviewGoalObjective]
-/// is pure and needs no model call: it cannot tell a good success criterion
-/// from a bad one, but it can tell a MISSING one from a present one and it
-/// catches the specific phrasings that sound checkable and are not. The model
-/// is what turns a rough sentence into the five sections; the review is what
-/// refuses to accept the result when a section is missing. Without the review,
-/// a model that decides the objective "looks complete" ends the interview
-/// early — which is the failure the interview exists to prevent.
+/// Vague briefs are expensive on long autonomous runs. Each question maps to a
+/// failure mode: missing success/verification/cap/boundaries/stop conditions.
+/// [reviewGoalObjective] is the syntactic floor (missing vs present; fake-
+/// checkable phrasing) — without it a model can end the interview early.
 class GuidedGoalService {
   /// Creates a [GuidedGoalService].
   GuidedGoalService({

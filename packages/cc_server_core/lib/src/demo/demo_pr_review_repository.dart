@@ -18,23 +18,9 @@ import 'package:cc_persistence/database/workspace/workspace_database.dart';
 import 'package:cc_server_core/src/demo/demo_pr_cache.dart';
 import 'package:cc_server_core/src/pr_review/pr_cache_codec.dart';
 
-/// A PR-review repository that is structurally offline.
+/// Offline PR-review repository for the demo: seeded fixtures only, no forge I/O.
 ///
-/// It holds no Dio, no forge client and no token: every read is decoded out
-/// of the workspace's own `caches` table (seeded by `DemoSeeder`) and every
-/// write goes straight back into the same rows. A demo visitor can therefore
-/// leave an inline comment, reply in a thread, react and submit a review, and
-/// watch their words appear in the thread — with nothing leaving the container.
-///
-/// Reads ride `CacheDao.watch`, which is a live Drift query, so a write-back
-/// updates every open stream without any change-signal plumbing.
-///
-/// It extends [EmptyPrReviewRepository] so the ~45-member interface stays
-/// satisfied as it grows: anything not overridden here degrades to that class's
-/// inert default rather than failing to compile. The verbs with no write-back
-/// (merge, close, assignees, reviewers, stacks, upload) are deliberately left
-/// inert AND are denied at the op layer by `DemoProfile.deniedMutations`, so a
-/// visitor never presses a button whose effect does not exist.
+/// Mutating forge writes no-op or return canned success so the UI stays interactive.
 class DemoPrReviewRepository extends EmptyPrReviewRepository {
   /// Creates a repository over one workspace database and one `owner/repo`.
   DemoPrReviewRepository({

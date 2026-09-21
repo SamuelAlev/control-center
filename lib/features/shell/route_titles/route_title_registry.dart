@@ -32,12 +32,10 @@ typedef RouteTitleBuilder =
 /// Keep this in sync with the breadcrumb registry — a test asserts the two share
 /// the same set of keys (minus the pre-context routes added only here).
 final Map<String, RouteTitleBuilder> routeTitleRegistry = {
-  // ─── Pre-context routes (no workspace prefix) ──────────────────────────────
   splashRoute: (_, _, _) => null,
   onboardingRoute: (_, _, _) => null,
   workspaceListRoute: (_, _, l10n) => l10n.workspaces,
 
-  // ─── Workspace shell ────────────────────────────────────────────────────────
   inboxRoute(workspaceIdParam): (_, _, l10n) => l10n.inboxTitle,
   pullRequestsRoute(workspaceIdParam): (_, _, l10n) => l10n.pullRequests,
   '${pullRequestsRoute(workspaceIdParam)}/:owner/:repo/:prNumber':

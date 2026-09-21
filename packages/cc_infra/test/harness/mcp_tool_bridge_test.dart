@@ -255,12 +255,10 @@ void main() {
       expect(tool.lastArgs?.containsKey('workspace_id'), isFalse);
     });
 
-    // -------------------------------------------------------------------------
     // Image ingress. This bridge is where a tool result's images enter the
     // transcript, and nothing downstream inspects them again: the loop's budget
     // caps the COUNT, and token accounting charges a FLAT ~1200 per image, so
     // size and media type are invisible to every later check.
-    // -------------------------------------------------------------------------
     group('image ingress', () {
       const ctx = HarnessToolContext(workingDirectory: '.');
 

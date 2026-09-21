@@ -176,12 +176,10 @@ class RigSpec {
   /// row with no slot resolves to. That default is what keeps "the human's
   /// tab and the agent's tool calls drive ONE machine" true — an agent never
   /// ends up on a machine a person opened to compare against.
-  ///
   /// A non-null slot is a deliberate SECOND machine of the same surface and
   /// engine, opened from the UI to run two of something side by side. It is
   /// part of the reuse key, so two slots are two sessions; everything else
   /// about them (image, envelope, egress) is identical.
-  ///
   /// Never a path or a command-line argument — a matching key only — but
   /// validated to `[A-Za-z0-9_-]{1,64}` at construction anyway, because it
   /// arrives from a client and outlives the call in the persisted spec.
@@ -355,7 +353,6 @@ class RigSpec {
   /// 2 GB / 2 vCPU the shell fights the encoder for cores and the whole rig
   /// reads as "laggy".
   /// Per-surface memory defaults, refined per browser engine.
-  ///
   /// Chromium's headless-shell is the lean case. Firefox and WebKit are not:
   /// Firefox runs a full browser (no headless-shell equivalent) and WebKit
   /// runs MiniBrowser on top of an Xvfb server, so both carry a real desktop

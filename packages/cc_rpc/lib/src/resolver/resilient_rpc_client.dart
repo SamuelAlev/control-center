@@ -6,27 +6,10 @@ import 'package:cc_rpc/src/client/remote_rpc_client.dart';
 import 'package:cc_rpc/src/client/server_build.dart';
 import 'package:cc_rpc/src/resolver/connection_supervisor.dart';
 
-/// A [RemoteRpcClient]-compatible facade over a [ServerConnectionSupervisor]:
-/// one stable client object for the app's whole life, across any number of
-/// path failovers (PRD 15 §8 reconnect-and-resume).
-///
-/// * [call]s wait briefly for a live connection, then delegate. A request
-///   that was already in flight when the path died fails with
-///   [RemoteRpcClientClosedException] — it is **never** replayed (the server
-///   may have executed it; callers own retry semantics until universal
-///   idempotency lands with PRD 19).
-/// * [subscribe] streams survive failover: each reconnect re-issues
-///   `sub/subscribe` on the fresh session and the first emission is the
-///   reconciliation snapshot, exactly the protocol's documented semantics.
-///   Consumers keep one stream and simply see a new snapshot. What it does NOT
-///   re-issue is a subscription the server *rejected* on a live session (a
-///   `sub/subscribe` error or a `sub/error` push): that error is forwarded and
-///   the stream ends, because retrying it only re-triggers the same rejection at
-///   round-trip speed.
-/// * [notifications] merges every successive session's pushes.
-///
-/// The richer connection state (path, latency, relayed/insecure) is on
-/// [supervisor]`.status` — that is what the connection pill renders.
+/// Stable [RemoteRpcClient] over [ServerConnectionSupervisor] across path
+/// failovers. In-flight [call]s are never replayed on death. [subscribe]
+/// re-issues on reconnect (rejected subs end the stream). [notifications]
+/// merges sessions. Richer state is on [supervisor].status.
 class ResilientRpcClient implements RemoteRpcClient {
   /// Wraps [supervisor]; call [ServerConnectionSupervisor.start] first (the
   /// boot flow owns first-connect errors), then construct this.

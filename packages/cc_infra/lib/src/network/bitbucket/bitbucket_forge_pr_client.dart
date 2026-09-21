@@ -24,30 +24,14 @@ import 'package:cc_infra/src/network/bitbucket/models/bitbucket_pull_request.dar
 import 'package:cc_infra/src/network/bitbucket/models/bitbucket_user.dart';
 import 'package:dio/dio.dart';
 
-/// The Bitbucket Cloud adapter for [ForgePrClient].
+/// Bitbucket Cloud adapter for [ForgePrClient].
 ///
-/// Bitbucket is the thinnest of the three forges, and this class is where that
-/// stops being the rest of the app's problem. Where Bitbucket has the concept,
-/// it is mapped; where it does not, the method throws [ForgeUnsupportedError]
-/// naming the capability rather than returning an empty result that would read
-/// as "none" instead of "this forge cannot tell you".
-///
-/// The structural gaps, all mirrored by a false flag in the Bitbucket row of
-/// `kForgeCapabilities`:
-///
-/// * **No batched review.** There is no pending/draft state, so a multi-comment
-///   review posts comment by comment and the author sees them arrive
-///   individually. A review body accompanying a verdict becomes a separate
-///   comment posted just before the verdict.
-/// * **No review resource.** A verdict is a mutable flag on a participation
-///   row, so reviews have no id, no body and no history.
-/// * **No commit-sha anchoring on comments.** An inline comment is pinned to
-///   the pull request's current diff, not to a revision of it.
-/// * **No assignees, no teams, no viewed state, no reactions, no stacks, no
-///   CI job detail, no attachment upload, no draft pull requests.**
-///
-/// [owner] is the Bitbucket **workspace slug** — the first path segment of a
-/// repository URL, the same position GitHub's owner occupies.
+/// Maps what Bitbucket has; throws [ForgeUnsupportedError] where it does not
+/// (never empty-as-"none"). Gaps (see `kForgeCapabilities`): no batched
+/// review / pending draft; no review resource (verdict is a participation
+/// flag); no commit-sha-anchored comments; no assignees, teams, viewed state,
+/// reactions, stacks, CI job detail, attachment upload, or draft PRs.
+/// [owner] is the Bitbucket workspace slug.
 class BitbucketForgePrClient implements ForgePrClient {
   /// Creates a [BitbucketForgePrClient] for `owner/repo` over [_client].
   BitbucketForgePrClient({
@@ -571,25 +555,12 @@ class BitbucketForgePrClient implements ForgePrClient {
   Future<String> getDefaultBranch({Object? cancelToken}) =>
       _client.getDefaultBranch(owner, repo, cancelToken: _token(cancelToken));
 
-  /// Compares [base] with [head] — what a pull request between them would
-  /// contain.
+  /// Compares [base] with [head] as what a PR between them would contain.
   ///
-  /// Bitbucket has no compare endpoint, so this is assembled from three reads:
-  /// the diffstat of `head..base` for the files, the same range's unified diff
-  /// for their patches, and a `commits/{head}?exclude={base}` range read for
-  /// the commits. The patches are sliced exactly as [listFiles] does, so the
-  /// compose screen previews a diff identical to the one the pull request will
-  /// show once it exists.
-  ///
-  /// The comparison is ONE-DIRECTIONAL, which is all Bitbucket offers: it
-  /// answers "what does head have that base lacks" and never the reverse.
-  ///
-  /// `totalCommits` is Bitbucket's own count when it reports one and otherwise
-  /// the number of commits actually received — which the page cap can truncate
-  /// on a very large range.
-  ///
-  /// Returns null when any of the reads fails, so the caller can tell "nothing
-  /// to compare" from "could not check". A cancellation still propagates.
+  /// No Bitbucket compare endpoint — assembled from diffstat, unified diff
+  /// patches (same slice as [listFiles]), and `commits/{head}?exclude={base}`.
+  /// One-directional only. `totalCommits` uses Bitbucket's count when present.
+  /// Null if any read fails; cancellation still propagates.
   @override
   Future<ForgeBranchComparison?> compareBranches({
     required String base,

@@ -10,23 +10,15 @@ import 'package:cc_domain/features/messaging/domain/entities/space.dart';
 import 'package:cc_domain/features/messaging/domain/ports/messaging_port.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 
-/// A [MessagingPort] backed by the RPC client — the thin-client write path for
-/// the messaging composer (send-and-dispatch, retry, refine, open a DM, create
-/// a group, …).
+/// A [MessagingPort] backed by the RPC client — the thin-client write path for the
+/// messaging composer (send-and-dispatch, retry, refine, open a DM, create a group, …).
 ///
-/// Every action runs SERVER-SIDE: this port forwards to the host's `dispatch.*`
-/// ops (the space-lifecycle + agent-dispatch `MessagingService` running on a
-/// host that links the dispatch engine — the desktop in-process host). The
-/// streaming agent reply needs no surface here: the server-side
-/// `AgentStreamProcessor` persists transcript segments to the message rows and
-/// the UI is already subscribed to `messaging.watchMessages`, so the reply
-/// streams in automatically. Against a HEADLESS server (which omits the
-/// `dispatch.*` ops) the calls fail loudly — the web composer then surfaces an
-/// honest "agent dispatch runs on the server host" state.
-///
-/// Every space-addressed action names its `workspace_id` on the wire: a
-/// workspace id selects the database file server-side and a space id resolves
-/// only inside its own workspace.
+/// Every action runs SERVER-SIDE: this port forwards to the host's `dispatch.*` ops (the
+/// space-lifecycle + agent-dispatch `MessagingService` running on a host that links the
+/// dispatch engine — the desktop in-process host).
+/// The streaming agent reply needs no surface here: the server-side `AgentStreamProcessor`
+/// persists transcript segments to the message rows and the UI is already subscribed to
+/// `messaging.watchMessages`, so the reply streams in automatically.
 class RpcMessagingPort implements MessagingPort {
   /// Creates an [RpcMessagingPort] over [client].
   RpcMessagingPort(RemoteRpcClient client)

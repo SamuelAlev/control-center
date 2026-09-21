@@ -169,33 +169,12 @@ import 'package:drift/drift.dart';
 
 part 'workspace_database.g.dart';
 
-/// ONE workspace's database (`<dataDir>/workspaces/<id>.db`).
+/// One workspace's DB (`<dataDir>/<workspaceId>/workspace.db`).
 ///
-/// The second half of Control Center's persistence and where nearly everything
-/// lives: agents, spaces, tickets, memory, pipelines, meetings, the code
-/// graph, reviews, repos. There is one instance per workspace, handed out by
-/// `WorkspaceDatabaseManager`.
-///
-/// **This class is the workspace-isolation boundary.** Isolation used to be a
-/// convention — every query had to remember `WHERE workspace_id = ?`, policed
-/// by a ratchet test that could only pattern-match SQL. Now it is structural: a
-/// [WorkspaceDatabase] physically contains one workspace's rows and does not
-/// declare `users`, `workspaces`, or any other workspace's data, so a
-/// cross-workspace read is not a bug you can write — it does not compile.
-///
-/// Two consequences worth knowing:
-///
-///  * The `workspaceId` columns are still there and still written. They are
-///    redundant *within* a file, but they keep the sync-feed triggers, the FTS
-///    indexes and every existing row shape unchanged and they make a file
-///    self-describing if it is ever inspected on its own.
-///  * Answering a question about *several* workspaces means opening several
-///    databases. That fan-out is deliberately confined to
-///    `CrossWorkspaceQueries`, so the cross-workspace surface stays enumerable
-///    in one file instead of diffuse behind doc comments.
-///
-/// Boot does not open these files. Each one opens lazily on first touch and
-/// pays its own `quick_check`, FTS/trigger install and `vector_init` then.
+/// Isolation boundary: this class does not declare global/other-workspace
+/// tables, so cross-workspace reads do not compile. `workspaceId` columns are
+/// still written (sync/FTS/self-describing). Multi-workspace reads go through
+/// `CrossWorkspaceQueries` only. Opens lazily on first touch.
 @DriftDatabase(
   tables: [
     ReposTable,
@@ -461,23 +440,9 @@ class WorkspaceDatabase extends _$WorkspaceDatabase {
   Future<void> backupTo(String path) =>
       customStatement('VACUUM INTO ?', [path]);
 
-  /// Schema evolution for the per-workspace half.
-  ///
-  /// The current schema IS the baseline: `onCreate` builds everything current
-  /// at version 1 and this list is empty. It has been squashed twice — first
-  /// when the Space · Conversation · Thread cutover renamed every messaging
-  /// table out from under the pre-cutover chain, and again when the tables
-  /// dropped their redundant `_table` suffix, which renamed 46 of them. Both
-  /// times the chain described tables the product no longer has, and replaying
-  /// it would have meant carrying a mapper for data nothing reads.
-  ///
-  /// A file written before a squash is NOT carried forward: nothing renames
-  /// its tables, so the first query against it fails with `no such table`.
-  /// Such a file is replaced, the same way the pre-split single-file
-  /// `control_center.db` simply stopped being opened.
-  ///
-  /// Append a [MigrationStep] here (and bump [currentSchemaVersion]) for every
-  /// schema change from now on.
+  /// Workspace schema migrations. Baseline is squashed at v1 (`onCreate`); this
+  /// list starts empty. Pre-squash files are not upgraded — replace them.
+  /// Append a [MigrationStep] and bump [currentSchemaVersion] for new changes.
   List<MigrationStep> get _migrationSteps => <MigrationStep>[
     // v1 → v2: skill sources — the GitHub repositories registered as skill
     // catalogs (the skills.sh registry replacement). Purely additive; a fresh
@@ -809,14 +774,13 @@ class WorkspaceDatabase extends _$WorkspaceDatabase {
       }
       // Corruption check on open — `quick_check`, NOT `integrity_check`.
       //
-      // `integrity_check` verifies every b-tree page in the file, so its cost
-      // scales with the whole database: on a 2.6GB graph-heavy DB it took 21s
-      // warm (worse cold). `quick_check` catches the corruption that actually
-      // happens (bad page structure, broken indexes) while skipping the
-      // exhaustive cross-page work — 2.8s on that same file. Splitting the
-      // database moved this off the boot path entirely: it is now paid per
-      // workspace, on first touch of that workspace, against a file holding one
-      // workspace's history instead of every workspace's.
+      // `integrity_check` verifies every b-tree page in the file, so its cost scales with the
+      // whole database: on a 2.6GB graph-heavy DB it took 21s warm (worse cold).
+      // `quick_check` catches the corruption that actually happens (bad page structure, broken
+      // indexes) while skipping the exhaustive cross-page work — 2.8s on that same file.
+      // Splitting the database moved this off the boot path entirely: it is now paid per
+      // workspace, on first touch of that workspace, against a file holding one workspace's
+      // history instead of every workspace's.
       if (skipIntegrityCheck) {
         return;
       }
@@ -842,25 +806,9 @@ class WorkspaceDatabase extends _$WorkspaceDatabase {
     },
   );
 
-  /// Installs the deterministic-sync change-feed triggers (PRD 16 §6).
-  ///
-  /// Every adopted table (`tickets`; the messaging tables; `space_notes`;
-  /// `message_reactions`) gets `AFTER INSERT/UPDATE/DELETE` triggers that
-  /// allocate the monotonic seq and append a `sync_changes` row INSIDE the
-  /// writing transaction — delta id and data are atomic by construction and
-  /// every write path (services, reconcilers, sync engines) is covered without
-  /// instrumenting a single DAO method.
-  ///
-  /// The trigger SQL is deliberately unchanged by the database split, including
-  /// the `workspace_id` columns and the `sync_sequences` upsert: `sync_changes`
-  /// is a wire format that delta clients already speak and per-workspace
-  /// sequencing was always the semantics. In this file `sync_sequences` simply
-  /// holds a single row.
-  ///
-  /// Messaging child tables resolve their workspace through `spaces`; on a
-  /// space-delete CASCADE the parent row is already gone, so child deletions
-  /// are deliberately not recorded — the space's own delete change is and
-  /// delta clients cascade child removal locally.
+  /// Deterministic-sync change-feed triggers: AFTER INSERT/UPDATE/DELETE on
+  /// adopted tables allocate seq and append `sync_changes` in the same txn.
+  /// Messaging child deletes on space CASCADE are omitted (space delete covers).
   Future<void> _createSyncTriggers() async {
     // (table, store, workspaceExpr(NEW/OLD), pkColumn, ctxExpr)
     const specs = [
@@ -1087,25 +1035,8 @@ class WorkspaceDatabase extends _$WorkspaceDatabase {
     );
   }
 
-  /// Composite indexes for the hottest filter+sort read paths, which the
-  /// single-column `@TableIndex`es don't fully cover:
-  ///  * space-message history: `WHERE space_id = ? ORDER BY created_at DESC`
-  ///  * message history by CONVERSATION, which is what every page/window query
-  ///    actually filters on (`conversation_id != space_id` — the space
-  ///    composite cannot serve it, so each page did an index lookup then a
-  ///    filesort)
-  ///  * agent run logs by agent: `WHERE workspace_id = ? AND agent_id = ?
-  ///    ORDER BY started_at DESC`
-  ///  * agent run logs by conversation (the composer's stop/queue affordance,
-  ///    live during every conversation) — previously a full scan
-  ///  * agent run logs sorted by `started_at` with NO filter: the bounded
-  ///    dashboard watch re-runs on every run-log write, and none of the six
-  ///    single-column indexes can serve an unfiltered `ORDER BY started_at
-  ///    DESC LIMIT n`, so it filesorted the whole table each time
-  ///  * pull requests by workspace ordered by creation: webhook mirror bursts
-  ///    update PR rows, and each update re-ran this list
-  /// A composite serves both the filter and the sort from one index, avoiding a
-  /// filesort over a growing table. `IF NOT EXISTS` keeps it idempotent.
+  /// Composite indexes for hot filter+sort paths single-column indexes miss
+  /// (space/conversation message history, agent run logs, PRs). `IF NOT EXISTS`.
   Future<void> _createHotPathIndexes() async {
     await customStatement(
       'CREATE INDEX IF NOT EXISTS idx_conversation_messages_space_created '
@@ -1166,23 +1097,9 @@ class WorkspaceDatabase extends _$WorkspaceDatabase {
     );
   }
 
-  /// Creates the chat-bridge link indexes: the four declared on the tables,
-  /// plus the partial-unique one that keeps a bot-DM bridge single-valued.
-  ///
-  /// The DM index cannot be a `@TableIndex`: the tables'
-  /// `(workspace_id, provider, external_channel_id, external_thread_id)` unique
-  /// index does not cover it, because SQLite treats NULLs as distinct, so a
-  /// conversation-level link (null `external_thread_id` — a DM with the bot)
-  /// could be inserted twice and the bridge would then stream one turn into two
-  /// CC spaces. Partial indexes carry a `WHERE`, so it has to be spelled out.
-  ///
-  /// The other four are declared `@TableIndex`es and are repeated here because
-  /// `createTable` issues only `CREATE TABLE` — a migration that creates the
-  /// tables has to create their indexes itself. They are spelled out rather
-  /// than passed to `m.createIndex`, which generates a bare `CREATE INDEX` and
-  /// therefore throws if the index is already there: with `IF NOT EXISTS` this
-  /// is a no-op both from `onCreate` (where `createAll()` already built them)
-  /// and on any re-run, so one helper serves both paths.
+  /// Chat-bridge indexes, including a partial-unique DM index (SQLite NULLs are
+  /// distinct in UNIQUE, so conversation-level links need `WHERE`). Other
+  /// indexes repeated with `IF NOT EXISTS` for migration `createTable` paths.
   Future<void> _createChatIndexes() async {
     await customStatement(
       'CREATE UNIQUE INDEX IF NOT EXISTS '

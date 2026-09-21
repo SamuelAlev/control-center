@@ -11,63 +11,24 @@ import 'package:path/path.dart' as p;
 
 /// [RepoIsolationPort] backed by the bundled rift CoW library.
 ///
-/// **The source repo is never written to.** That is the invariant this class
-/// exists to hold, and wherever rift ships, copy-on-write is the SOLE backend:
-/// the CoW copy is created first and every git command after it — fetch,
-/// branch, checkout, clean, the pre-teardown WIP rescue — runs INSIDE that
-/// copy. The CoW path does not even read the source with git: the default
-/// branch is resolved from the copy, which carries the same refs.
+/// Source repo is never written to (except rift's untracked `.rift` marker).
+/// CoW is the sole backend wherever rift ships; all git runs inside the copy.
+/// A CoW failure propagates — never falls back to `git worktree add` on the
+/// source (that pollutes the checkout with branches / `.git/worktrees` /
+/// FETCH_HEAD). Fix: data dir on the same CoW volume as the repo.
 ///
-/// The one thing that does land in the source is rift's own `.rift` marker,
-/// naming the source's registry entry. That marker is what makes a CoW copy
-/// possible at all, and it is a single untracked dotfile — not a branch, not
-/// history, not `.git` state.
-///
-/// **A CoW failure is a failure, not a fallback.** `git worktree add` on the
-/// source writes the new branch, a `.git/worktrees/<name>` registration and
-/// FETCH_HEAD into the user's checkout, and the label a teardown rescue writes
-/// lands there too, because a linked worktree shares the source's ref
-/// namespace. Doing that behind the operator's back is worse than not
-/// provisioning at all, so `cow_unavailable` (a filesystem that cannot
-/// reflink, or a data dir on a different volume from the repo) and every
-/// operational rift error now PROPAGATE. The fix is a data dir on the same CoW
-/// volume — not a slower backend that quietly pollutes a checkout.
-///
-/// `git worktree` therefore survives in exactly two places, each writing to the
-/// source only where there is no alternative:
-///   * [_worktreeFallback], reachable only on a platform that ships no rift and
-///     never will (`missingRiftIsExpected`, i.e. Windows — no MSVC CoW
-///     backend). There it is the BACKEND, not a degradation.
-///   * [destroy], for a persisted `gitWorktree` row — including rows minted by
-///     the fallback this class used to have. That teardown REMOVES source-repo
-///     state, so it stays on every platform.
-///
-/// Everything rift can report about the SOURCE is repaired in place rather than
-/// failed on. In particular a `.rift` marker this registry does not recognise
-/// (left by another registry file, or surviving a data-dir reset) is cleared
-/// and re-adopted: the marker lives in the user's repo and never expires, so
-/// giving up on it would lock that repo out of CoW for good.
-///
-/// A missing `librift_ffi` on a platform that ships it is a BROKEN INSTALL and
-/// propagates as `RiftException(code: 'unavailable')`; `cc_server` refuses to
-/// boot on it in the first place (see its native preflight).
-///
-/// Token handling for fetch mirrors `PrCloneManager`: the auth URL is only ever
-/// a transient positional argument with credential helpers disabled, never
-/// written to `.git/config`.
+/// `git worktree` survives only as [_worktreeFallback] on Windows
+/// (`missingRiftIsExpected`; no MSVC CoW) and as [destroy] for persisted
+/// `gitWorktree` rows (teardown removes source state). Unrecognised `.rift`
+/// markers are cleared and re-adopted in place. Missing `librift_ffi` where
+/// it ships is `RiftException(code: 'unavailable')`. Fetch auth URL is a
+/// transient arg only — never written to `.git/config`.
 class RiftRepoIsolationAdapter implements RepoIsolationPort {
   /// Creates a [RiftRepoIsolationAdapter].
   ///
-  /// [missingRiftIsExpected] defaults to `Platform.isWindows`, the one platform
-  /// that deliberately ships no rift (`scripts/release/windows_natives.sh`
-  /// documents why: no MSVC CoW backend). Injectable so both branches are
-  /// testable from any host.
-  ///
-  /// [_wipRescueDir] is where the pre-teardown WIP capture is written — a
-  /// directory OUTSIDE any checkout, normally under the server data dir. When
-  /// it is null the capture is skipped entirely: see
-  /// [_rescueUncommittedWork] for why there is no improvised fallback
-  /// location.
+  /// [missingRiftIsExpected] defaults to `Platform.isWindows` (no rift).
+  /// [_wipRescueDir] is the pre-teardown WIP capture dir; null skips capture
+  /// (no improvised fallback — see [_rescueUncommittedWork]).
   RiftRepoIsolationAdapter({
     required this._rift,
     required this._git,
@@ -297,23 +258,10 @@ class RiftRepoIsolationAdapter implements RepoIsolationPort {
     }
   }
 
-  /// Whether [path] is the ROOT of its own checkout (a repo or a linked
-  /// worktree), rather than a plain directory that merely SITS inside one.
-  ///
-  /// This is the difference between operating on an isolated copy and
-  /// operating on the user's repo. **Git discovers its repository by walking
-  /// UP from the working directory**, so `status` / `add -A` / `commit` /
-  /// `clean -ffdx` / `checkout -B` issued in a directory that is not itself a
-  /// checkout silently answer for whatever ENCLOSES it — and the server's data
-  /// dir is routinely inside a repo (`<repo>/apps/cc_server/data/…`). A
-  /// half-provisioned directory, or a copy whose `.git` a partial teardown
-  /// removed, is therefore indistinguishable from the operator's own checkout
-  /// unless something asks. That is how a teardown put eight
-  /// `chore: rescued uncommitted work before worktree GC` commits, each
-  /// carrying the whole working tree, onto a user's own branch.
-  ///
-  /// A negative answer is never a reason to guess: every caller either skips
-  /// (the best-effort ones) or throws.
+  /// True when [path] is the root of its own checkout, not a directory that
+  /// merely sits inside one. Git walks UP for the repo, so status/add/commit/
+  /// clean in a non-checkout under the data dir silently hits the enclosing
+  /// user repo. Negative answer: skip or throw — never guess.
   Future<bool> _isCheckoutRoot(String path) async {
     if (!Directory(path).existsSync()) {
       return false;
@@ -643,17 +591,9 @@ class RiftRepoIsolationAdapter implements RepoIsolationPort {
     return fetch.isSuccess;
   }
 
-  /// The plain `git worktree` backend — reachable ONLY on a platform that
-  /// ships no rift at all (Windows: no MSVC CoW backend), where it is the
-  /// backend rather than a degradation.
-  ///
-  /// It is also the only provisioning code in this class that writes into the
-  /// source repo: the fetch lands in the source's FETCH_HEAD, `worktree add`
-  /// registers itself under the source's `.git/worktrees/`, and the branch it
-  /// creates lives in the source's shared ref namespace (which is also why a
-  /// teardown rescue label ends up there). That is precisely why a non-CoW
-  /// filesystem and an operational rift error no longer reach it — see the
-  /// class doc.
+  /// Plain `git worktree` backend — Windows only (`missingRiftIsExpected`).
+  /// Only provisioning path that writes the source (FETCH_HEAD, `.git/worktrees`,
+  /// shared refs). Non-CoW / operational rift errors must not reach here.
   Future<RepoIsolationResult> _worktreeFallback({
     required String sourcePath,
     required String destParentDir,
@@ -769,15 +709,9 @@ class RiftRepoIsolationAdapter implements RepoIsolationPort {
     throw StateError('git worktree add failed for $destPath');
   }
 
-  /// Reads a repo's default branch without mutating it.
-  ///
-  /// On the CoW path [workdir] is the COPY, not the user's checkout: it holds
-  /// the same `refs/remotes/origin/*`, so the answer is identical and the
-  /// source is never even read. Only the Windows worktree backend passes the
-  /// real source, which it is already writing to anyway.
-  ///
-  /// Never uses the currently checked-out branch: a repo sitting on `feat/foo`
-  /// must still provision off `main` / `master`.
+  /// Default branch without mutating the repo. On CoW, [workdir] is the copy
+  /// (same `origin/*` refs). Never uses the checked-out branch — a repo on
+  /// `feat/foo` must still provision off `main`/`master`.
   Future<String> _resolveDefaultBranch(
     String workdir, {
     CancellationToken? cancel,
@@ -889,46 +823,15 @@ class RiftRepoIsolationAdapter implements RepoIsolationPort {
     }
   }
 
-  /// Best-effort rescue of uncommitted work in the worktree at [path] before it
-  /// is GC'd (FINDINGS §11.2), as a READ-ONLY capture written outside every
-  /// checkout.
+  /// Read-only capture of uncommitted work at [path] before GC — no `add`,
+  /// `commit`, or `branch`. Mutating rescue wrote into the operator's repo
+  /// whenever the worktree shared its store (linked worktree) or a non-checkout
+  /// resolved upward into the data dir's enclosing repo.
   ///
-  /// **Nothing here mutates a git repository — there is no `add`, no `commit`,
-  /// no `branch`.** This used to stage the worktree, commit it with an injected
-  /// identity and label the result `rescue/…`. Every one of those three writes
-  /// lands in the OPERATOR'S repo whenever the worktree shares its object and
-  /// ref store, and two routine cases do:
-  ///   * a linked `git worktree` shares the source's store BY DEFINITION, so
-  ///     the commit and the `rescue/*` label were always the user's repo — the
-  ///     old doc called that "a guaranteed rescue" and it is really a write
-  ///     into a checkout nobody asked us to write to;
-  ///   * a directory that is not a checkout of its own resolves to whatever
-  ///     ENCLOSES it, and the server data dir routinely sits inside a repo
-  ///     (`<repo>/apps/cc_server/data/…`) — which is how a run of
-  ///     `chore: rescued uncommitted work before worktree GC` commits, each
-  ///     carrying the whole working tree, landed on a user's own branch.
-  ///
-  /// Guarding the commit could not fix that. A guard is a claim about the
-  /// path, and the path is precisely what was wrong; every guard added was
-  /// followed by another commit through a route the guard did not model. So
-  /// the commit is gone instead of guarded, and the mutating verbs are no
-  /// longer reachable from the teardown path at all.
-  ///
-  /// What replaces it preserves the same work with no side effect on any repo:
-  /// `git diff --binary HEAD` for tracked edits, plus a copy of the untracked
-  /// files (`.gitignore` honoured, bounded by [_rescueByteBudget]), written
-  /// under [_wipRescueDir] with a `RESTORE.txt` naming the worktree and branch
-  /// it came from. Recovery is `git apply changes.patch` and copying
-  /// `untracked/` back — an operator action, in a repo of their choosing.
-  ///
-  /// The identity and checkout-root probes stay even though nothing here
-  /// writes: reading the SOURCE would capture the operator's own tree into a
-  /// bogus rescue folder on every teardown, which is noise that looks exactly
-  /// like the bug it replaced.
-  ///
-  /// ALWAYS returns without throwing: a rescue failure must never block the
-  /// destroy (that would re-introduce the worktree/disk leak fixed in §1) and
-  /// the worst case is exactly the prior behaviour — the WIP is lost.
+  /// Writes `git diff --binary HEAD` plus bounded untracked files under
+  /// [_wipRescueDir] with `RESTORE.txt`. Identity/checkout-root probes stay so
+  /// a non-checkout never captures the operator tree. Never throws: rescue
+  /// failure must not block destroy.
   Future<void> _rescueUncommittedWork(
     String path,
     String sourcePath,

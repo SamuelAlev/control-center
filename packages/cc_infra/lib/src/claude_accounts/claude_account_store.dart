@@ -12,21 +12,11 @@ import 'package:path/path.dart' as p;
 /// The host operator's home, the default source of managed-settings consent.
 String? _hostClaudeHome() => Platform.environment['HOME'];
 
-/// Owns the Claude Code account directories under `<dataDir>/claude-accounts/`.
+/// Owns Claude Code account dirs under `<dataDir>/claude-accounts/` plus
+/// sidecar `accounts.json` (dir IS the account — one place to delete).
 ///
-/// Each account is one directory handed to the CLI as `CLAUDE_CONFIG_DIR`, plus
-/// a row in a sidecar `accounts.json` next to them. The registry lives beside
-/// the directories rather than in the settings database on purpose: the
-/// directory IS the account, so deleting one and forgetting its row must not be
-/// possible from two different places.
-///
-/// ## What this class does NOT do
-///
-/// It never performs a login. The operator runs `claude auth login` in a
-/// Control Center terminal with `CLAUDE_CONFIG_DIR` set, and the CLI writes its
-/// own credential. Control Center minting Claude Code tokens itself would mean
-/// authenticating against Claude Code's OAuth client from another app, which is
-/// exactly what the harness's Anthropic provider no longer does either.
+/// Never performs login: operator runs `claude auth login` with
+/// `CLAUDE_CONFIG_DIR` set. Does not mint Claude Code tokens from another app.
 class ClaudeAccountStore {
   /// Creates a store rooted at [dataDir].
   ///
@@ -134,7 +124,6 @@ class ClaudeAccountStore {
   /// Absolute `CLAUDE_CONFIG_DIR` for [accountId].
   String configDirFor(String accountId) => p.join(_root, accountId);
 
-  // ── Registry ───────────────────────────────────────────────────────────
 
   /// Every registered account, in creation order, WITHOUT probing the CLI.
   ///
@@ -258,30 +247,16 @@ class ClaudeAccountStore {
     return account;
   }
 
-  /// Prepares [accountId]'s config dir for a run in [workingDirectory].
+  /// Prepares [accountId]'s config dir for a headless run in [workingDirectory].
   ///
-  /// Claude Code gates two things behind INTERACTIVE dialogs, and a dispatched
-  /// run has no terminal to answer either in. Both are per config dir, and the
-  /// server gives every account its own — so the operator accepting them once
-  /// in their own `~/.claude` does nothing for the runs this server spawns.
-  ///
-  ///  * **Workspace trust.** Until the directory is trusted, Claude Code
-  ///    *ignores* the project's `permissions.allow` entries and says so on
-  ///    stderr. Nothing fails; the agent just silently runs with fewer
-  ///    permissions than it was configured with, which reads as an agent
-  ///    mysteriously refusing to do its job.
-  ///  * **Managed-settings consent.** Settings pushed by an organisation that
-  ///    could run code or observe prompts need approval, recorded in
-  ///    `remote-settings-consent.json`. Unapproved, the CLI prompts and a
-  ///    headless run dies with exit 1 and no output.
-  ///
-  /// The consent file is COPIED from the operator's own `~/.claude`, never
-  /// synthesised: it propagates a decision a human already made on this
-  /// machine, for those exact settings (the record carries their hash). With no
-  /// such file there is nothing to propagate and nothing is approved — this
-  /// must not become a way to auto-accept a dialog nobody ever saw.
-  ///
-  /// Best-effort: a failure here degrades a run, it does not stop one.
+  /// Claude Code gates both behind interactive dialogs (per config dir; the
+  /// operator's `~/.claude` acceptance does not apply to server account dirs):
+  /// - Workspace trust: until trusted, project `permissions.allow` is ignored
+  ///   (silent under-permission, not a hard fail).
+  /// - Managed-settings consent (`remote-settings-consent.json`): unapproved →
+  ///   headless exit 1. Copied from the operator's `~/.claude` only — never
+  ///   synthesised (propagates a human decision + settings hash).
+  /// Best-effort: failure degrades the run, does not stop it.
   Future<void> prepareForRun({
     required String accountId,
     required String workingDirectory,
@@ -467,7 +442,6 @@ class ClaudeAccountStore {
     await _writeRegistry(remaining);
   }
 
-  // ── Availability ───────────────────────────────────────────────────────
 
   /// What [AccountSelector] needs to know about every registered account.
   ///
@@ -626,21 +600,8 @@ class ClaudeAccountStore {
   }
 
   /// When the credential in [accountId]'s directory stops being accepted, or
-  /// null when there is none / it carries no expiry.
-  ///
-  /// The one thing `claude auth status` will not tell us. It reports the
-  /// credential's SHAPE — so a directory whose access token died at 03:54 still
-  /// answers `loggedIn: true` at noon, and the only symptom is that the usage
-  /// endpoint 401s every ten minutes and every run on the account fails to
-  /// authenticate. The envelope carries `expiresAt` and reading it costs a file
-  /// we already open for [_isNewer], so the roster can say "sign in again"
-  /// instead of showing a healthy row.
-  ///
-  /// Reading it is deliberately NOT refreshing it: the CLI renews its own token
-  /// when it runs against the directory (and [syncCredentialFromKeychain]
-  /// mirrors the newer copy in), while Control Center minting a Claude Code
-  /// token from another app is the thing the harness's Anthropic provider
-  /// stopped doing. So this reports, and `claude auth login` repairs.
+  /// null if none / no expiry. Reads envelope `expiresAt` (`claude auth status`
+  /// only reports shape). Does not refresh — CLI renews on run; report only.
   DateTime? credentialExpiry(String accountId) {
     try {
       final file = File(p.join(configDirFor(accountId), '.credentials.json'));
@@ -658,24 +619,10 @@ class ClaudeAccountStore {
     }
   }
 
-  /// Whether [accountId]'s credential is past its expiry AND carries no refresh
-  /// token to renew itself with — i.e. only a human can repair it.
-  ///
-  /// The distinction is the whole point and getting it wrong is expensive in
-  /// the other direction. An access token lives hours; the CLI renews it from
-  /// the refresh token the moment it runs against the directory, so an account
-  /// nobody used overnight ALWAYS presents an expired access token and works
-  /// perfectly on the next run. Excluding those would take the whole pool out
-  /// of rotation every morning and refuse every dispatch — a worse failure than
-  /// the one this expiry check exists to catch.
-  ///
-  /// What it does catch is the credential that cannot come back: a snapshot
-  /// with no refresh token (the seeded `tracksDefaultLogin` case before it
-  /// followed the default item), which 401s every run and every usage probe
-  /// until someone signs in.
-  /// It also catches the refresh token that has itself run out — Claude Code
-  /// stores its expiry beside the access token's (weeks rather than hours), and
-  /// past that instant there is nothing left to renew from either.
+  /// True when [accountId]'s credential is past expiry AND cannot refresh —
+  /// only a human can repair. Expired access with a live refresh still works
+  /// (CLI renews on next run); excluding those would empty the pool overnight.
+  /// Also true when the refresh token itself has expired.
   bool credentialBeyondRepair(String accountId, DateTime at) {
     final expiry = credentialExpiry(accountId);
     if (expiry == null || expiry.isAfter(at)) {
@@ -725,7 +672,6 @@ class ClaudeAccountStore {
   /// reported reset time.
   static const Duration defaultCooldown = Duration(minutes: 30);
 
-  // ── Resolution ─────────────────────────────────────────────────────────
 
   /// The accounts a dispatch may use, in the order it should try them.
   ///
@@ -923,26 +869,13 @@ class ClaudeAccountStore {
     return plan.active?.configDir;
   }
 
-  // ── Keychain → file bridge ─────────────────────────────────────────────
 
-  /// Mirrors [accountId]'s keychain credential into the account directory's
-  /// `.credentials.json`, which is the only form a SANDBOXED run can read.
+  /// Mirrors [accountId]'s keychain credential into `.credentials.json` (the
+  /// only form a sandboxed run can read — macOS sandbox denies Keychains).
   ///
-  /// This is the load-bearing half of the whole feature on macOS. `claude auth
-  /// login` writes to the keychain (see [keychainServiceFor]) and the sandbox
-  /// denies `~/Library/Keychains`, so without this an account reads as signed
-  /// in everywhere the server looks and signed out in every run.
-  ///
-  /// **Never clobbers a newer credential.** A run that outlives its access
-  /// token refreshes in-sandbox and can only write the file; overwriting that
-  /// with the staler keychain copy would hand the CLI a refresh token the
-  /// provider may already have rotated away — turning a working account into a
-  /// dead one. So the copy only happens when the file is missing, unreadable,
-  /// or older by `expiresAt`.
-  ///
-  /// Returns whether the directory ends up holding a usable credential. Never
-  /// throws: a locked or absent keychain simply means "no", and the caller
-  /// reports a signed-out account.
+  /// Never clobbers a newer file credential (in-sandbox refresh can write a
+  /// fresher `expiresAt`). Copy only when missing/unreadable/older. Returns
+  /// whether the dir holds a usable credential; never throws.
   Future<bool> syncCredentialFromKeychain(String accountId) async {
     final dir = configDirFor(accountId);
     final file = File(p.join(dir, '.credentials.json'));
@@ -1016,7 +949,6 @@ class ClaudeAccountStore {
     }
   }
 
-  // ── CLI interrogation ──────────────────────────────────────────────────
 
   /// Runs `claude auth status --json` against [account]'s directory.
   Future<ClaudeAccount> _withStatus(ClaudeAccount account) async {
@@ -1075,7 +1007,6 @@ class ClaudeAccountStore {
     environment: {'CLAUDE_CONFIG_DIR': configDirFor(accountId)},
   );
 
-  // ── Bootstrap ──────────────────────────────────────────────────────────
 
   /// Seeds a first account from the macOS Keychain, once, when none exist.
   ///
@@ -1214,7 +1145,6 @@ class ClaudeAccountStore {
     return null;
   }
 
-  // ── Internals ──────────────────────────────────────────────────────────
 
   Future<void> _writeRegistry(List<ClaudeAccount> accounts) async {
     Directory(_root).createSync(recursive: true);

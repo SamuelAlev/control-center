@@ -1,21 +1,7 @@
-/// The single wiring point for cc_markdown plugin sets, parse options and
-/// builder registries across the app's two functional registers.
-///
-/// The registers differ FUNCTIONALLY, not visually (the stylesheet is the one
-/// `appMarkdownStyle` for all surfaces):
-///  * chat — AI block plugins (thinking/artifact/tool_call) ON, footnotes OFF
-///    (LLM output doesn't use them; matches the old chat path);
-///  * GitHub — footnotes ON (PR bodies use them), no AI plugins; `@user`
-///    mention chips live on the default `'link'` builder. PR/commit
-///    reference chips are layered per call site because they need repo
-///    context.
-///
-/// Both registers draw ```` ```mermaid ```` fences through [AppMermaidBuilder]
-/// (diagrams show up in LLM answers and in PR bodies alike).
-///
-/// All values here are process-global finals ON PURPOSE: plugin-set identity
-/// participates in the parse-cache key and registry identity gates the
-/// streaming widget's block memo.
+/// The single wiring point for cc_markdown plugin sets, parse options and builder
+/// registries across the app's two functional registers.
+/// All values here are process-global finals ON PURPOSE: plugin-set identity participates
+/// in the parse-cache key and registry identity gates the streaming widget's block memo.
 library;
 
 import 'package:cc_markdown/cc_markdown.dart';

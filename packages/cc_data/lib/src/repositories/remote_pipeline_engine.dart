@@ -1,24 +1,15 @@
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 
-/// Drives the host's pipeline EXECUTOR (the `PipelineEngine`) over the RPC
-/// client — the thin-client run-control path (start / cancel / retry a run,
-/// kill a step).
+/// Drives the host's pipeline EXECUTOR (the `PipelineEngine`) over the RPC client — the
+/// thin-client run-control path (start / cancel / retry a run, kill a step).
 ///
-/// Forwards every method to the matching `pipeline.*` op the host catalog
-/// registers (wired only by a host that constructs the engine — the desktop
-/// in-process host; a pure-Dart headless server omits the ops). The run
-/// executes SERVER-SIDE; live run/step state streams back via the existing
-/// `pipeline_run.watch*` subscriptions, so this wrapper has no streaming
-/// surface of its own. Against a HEADLESS server (which omits the `pipeline.*`
-/// ops) the calls fail loudly — the web client then surfaces an honest
-/// "pipelines run on the server host" state.
-///
-/// Every op names its `workspace_id`. There is no server-held "current
-/// workspace" to fall back on: the host is stateless and its handlers read the
-/// workspace out of the args, so an op that omitted it would depend on the
-/// client's ambient session id and silently target whichever workspace the route
-/// happened to be on.
+/// Forwards every method to the matching `pipeline.*` op the host catalog registers (wired
+/// only by a host that constructs the engine — the desktop in-process host; a pure-Dart
+/// headless server omits the ops).
+/// The run executes SERVER-SIDE; live run/step state streams back via the existing
+/// `pipeline_run.watch*` subscriptions, so this wrapper has no streaming surface of its
+/// own.
 class RemotePipelineEngine {
   /// Creates a [RemotePipelineEngine] over [_client].
   RemotePipelineEngine(this._client);

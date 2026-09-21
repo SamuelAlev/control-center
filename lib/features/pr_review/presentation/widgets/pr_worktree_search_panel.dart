@@ -10,7 +10,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// The PR diff sidebar's "search in files" mode: a **content** search
+/// The PR diff sidebar's "search in files" mode: a content search
 /// (`git grep`, tracked + untracked) across the PR's isolated CoW worktree
 /// (server-side), grouped per file, with case/regex/whole-word toggles and
 /// include/exclude folder filters. Filename filtering lives in the file tree's

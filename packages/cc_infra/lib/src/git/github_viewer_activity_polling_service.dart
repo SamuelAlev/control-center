@@ -15,87 +15,19 @@ import 'package:cc_infra/src/network/models/github_review_comment.dart';
 import 'package:cc_infra/src/network/models/github_viewer_activity.dart';
 import 'package:meta/meta.dart';
 
-/// Polls the server owner's own GitHub pull-request activity and turns it into
-/// live updates:
+/// Polls the server owner's GitHub PR activity into [PrReviewRequested],
+/// [PrMentioned], [ExternalPrMerged], and a [PrChangeSignal] that re-fires on
+/// every `updatedAt` bump (key `repo#number|updatedAt`) and nudges the open-PR
+/// poller.
 ///
-///  - a review pending on the viewer publishes [PrReviewRequested] (→ OS/bell
-///    notification on every connected client, one per linking workspace);
-///  - an @-mention publishes [PrMentioned], once per PR;
-///  - a merged PR the viewer was involved with publishes [ExternalPrMerged],
-///    once per PR;
-///  - every PR that moved publishes a [PrChangeSignal] and nudges the open-PR
-///    poller, so the affected PR's detail streams and the list refresh within
-///    seconds of the activity instead of at the next sweep. This is the one
-///    lane that intentionally re-fires on every `updatedAt` bump, so it keys on
-///    `repo#number|updatedAt`.
-///
-/// ## Why this is a search and not the notifications inbox
-///
-/// This lane used to read `GET /notifications`. **No GitHub App token can ever
-/// read that endpoint** — not an installation token and not a user-to-server
-/// one — because no App permission grants it; GitHub answers "Resource not
-/// accessible by integration", forever. Signing in to Control Center mints a
-/// GitHub App user token, so the inbox lane was permanently dead for every
-/// install that had not additionally pasted a classic PAT carrying
-/// `notifications` or `repo`. It failed as a warning every five minutes while
-/// three notification types silently never fired.
-///
-/// `search` is reachable by every credential kind, so one code path now serves
-/// an App token, an OAuth token and a PAT alike. There is deliberately **no
-/// fallback to the inbox** when a PAT happens to be present: two lanes that can
-/// disagree is worse than one that always works, and the disagreement would
-/// only ever be visible to whoever configured the rarer credential.
-///
-/// ## What the search buys beyond reachability
-///
-/// Each lane is a server-side predicate, so the sweep is *cheaper* than the
-/// inbox poll it replaced rather than merely equivalent:
-///
-///  - **Team review requests come for free and are no longer best-effort.**
-///    `review-requested:@me` includes reviews requested of a team the viewer
-///    belongs to (GitHub: "if the requested person is on a team that is
-///    requested for review, then review requests for that team will also appear
-///    in the search results"). In practice that is most of them. The old path
-///    reproduced this by hand — resolve the viewer's login, list their org
-///    teams, fetch each PR's `reviewRequests` and compare — which needed a
-///    `read:org`-scoped credential and degraded to a cruder once-per-thread
-///    rule whenever that lookup failed.
-///  - **Membership *is* the pending bit.** GitHub drops a reviewer from
-///    `review-requested:` results the moment they submit their review, so the
-///    per-PR review-state probe is gone.
-///  - **`is:merged` is the merge verification**, so the per-PR merge-state probe
-///    is gone too.
-///
-/// The pending-review lane is therefore a **set**, not a stream of events, and
-/// the transition table falls out of a set diff against the persisted set:
-///
-/// | in persisted set | in search result | result |
-/// |---|---|---|
-/// | no  | yes | notify (new/re-requested, or a draft became ready) |
-/// | yes | yes | silent (still pending; a commit bump is not news) |
-/// | yes | no  | silent (viewer reviewed, or the request was withdrawn) |
-///
-/// `draft:false` is what makes "draft became ready" a genuine transition: a
-/// draft is simply absent from the set, so marking it ready is a no→yes edge.
-/// This matters because GitHub itself withholds review-request notifications on
-/// drafts, and CODEOWNERS auto-requests fire on every push to one.
-///
-/// ## Cost discipline
-///
-/// One HTTP request per sweep — four aliased searches, one rate-limit charge —
-/// regardless of how many repos are linked. The searches are global and the
-/// results are filtered against the repo→workspace index, which is the same
-/// shape the inbox had. There is no `If-Modified-Since` equivalent for search,
-/// so an idle sweep costs one request where the inbox could answer 304; against
-/// that, the inbox path spent an extra round-trip *per interesting thread*
-/// verifying what search now answers inline.
-///
-/// The first successful fetch is a **baseline**: with no persisted state,
-/// everything currently outstanding is recorded without acting, so a first run
-/// does not replay an operator's entire backlog as notifications. With a
-/// persisted store the baseline is not suppressed at all — the persisted set
-/// and the `updated:>` watermark together *are* the memory, so anything that
-/// arrived while the server was down is caught up and delivered exactly once.
+/// Uses `search`, not the notifications inbox: App tokens cannot read
+/// `GET /notifications` (no permission grants it), and there is no PAT
+/// fallback — one lane that always works beats two that can disagree.
+/// Team requests come from `review-requested:@me` (includes the viewer's
+/// teams). Pending reviews use set-diff semantics against the persisted set.
+/// `draft:false` makes "draft became ready" a no→yes edge. One HTTP request
+/// per sweep (four aliased searches). First fetch with no persisted state is
+/// a silent baseline; with a store, catch-up delivers once.
 class GitHubViewerActivityPollingService {
   /// Creates a [GitHubViewerActivityPollingService].
   GitHubViewerActivityPollingService({
@@ -171,32 +103,16 @@ class GitHubViewerActivityPollingService {
   /// Bound on each dedupe lane's memory.
   static const _seenCap = 512;
 
-  /// The persisted-state format. Bumped from the inbox era: those entries were
-  /// keyed by GitHub notification **thread id**, which has no meaning here, so a
-  /// v1 store is discarded rather than misread as a populated dedupe set.
-  ///
-  /// v3 adds the comment lanes. A v2 store is likewise discarded rather than
-  /// loaded partially: it holds no comment keys and no unresolved-thread set,
-  /// so loading it would look like "every comment already seen" for the PR
-  /// lanes while the comment lanes baseline — two different memories of the
-  /// same sweep. Discarding costs one silent pass.
+  /// Persisted-state format. v1 (inbox thread ids) and v2 (no comment lanes)
+  /// are discarded rather than misread; discarding costs one silent pass.
   static const _storeVersion = 3;
 
-  /// Hard cap on PRs whose comments are fetched per sweep.
-  ///
-  /// Ten, not the bot poller's 25: this runs on the operator's PERSONAL rate
-  /// limit and the candidate set is already narrowed to PRs that involve them
-  /// and actually moved. A PR beyond the cap is picked up by the rotating
-  /// cursor on a later sweep, and the coarse `mentions:@me` lane covers the
-  /// mention in the meantime.
+  /// Cap on PRs whose comments are fetched per sweep (personal rate limit;
+  /// overflow rotates next sweep; `mentions:@me` covers the gap).
   static const _maxCommentSweeps = 10;
 
-  /// How far back the sweep looks beyond its own watermark.
-  ///
-  /// GitHub's search index lags writes by seconds to a minute, so a window that
-  /// abuts the previous sweep exactly drops whatever was still being indexed at
-  /// the cut. Over-fetching costs nothing — every lane is deduped — while a
-  /// miss is silent and permanent.
+  /// Overlap past the watermark: GitHub's search index lags writes, so an
+  /// exactly-abutting window silently drops events. Over-fetch is free (deduped).
   static const _searchLagOverlap = Duration(minutes: 5);
 
   /// Hard cap on the `updated:>` window, however stale the watermark is.
@@ -533,19 +449,12 @@ class GitHubViewerActivityPollingService {
     }
   }
 
-  /// The comment lane: per-comment mentions, replies in the viewer's threads
-  /// and thread resolutions.
+  /// Per-comment mentions, thread replies, and resolutions.
   ///
-  /// Returns the `pr.key`s on which a mention was resolved down to a comment,
-  /// so the caller can suppress the coarser PR-level mention for exactly those.
-  ///
-  /// Deliberately NOT hosted in the bot's conversation poller, which looks like
-  /// the right home because it already reads every comment: that service runs
-  /// on GitHub **App installation** tokens over a target set of "PRs mentioning
-  /// the bot ∪ labelled ∪ having a review space", so it structurally cannot see
-  /// a human mentioning the operator on a repo the app is not installed on.
-  /// This service already holds the operator's own credential, the watermark,
-  /// the bounded dedupe lanes and the repo→workspace routing.
+  /// Returns `pr.key`s whose mention was resolved to a comment (suppress the
+  /// coarser PR-level mention). Not on the bot conversation poller: that uses
+  /// App installation tokens over bot-scoped PRs and cannot see operator
+  /// mentions on repos without the app; this holds the operator credential.
   Future<Set<String>> _handleComments(
     GitHubViewerActivity activity,
     Future<List<String>> Function(String) route,

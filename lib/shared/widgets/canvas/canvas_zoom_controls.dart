@@ -7,22 +7,9 @@ import 'package:flutter/widgets.dart';
 /// canvases put the same control in the same corner.
 const double kCanvasControlInset = AppSpacing.lg;
 
-/// The floating zoom control shared by the app's node canvases — the plan
-/// studio DAG, the memory knowledge graph and the agent org chart.
-///
-/// ## Why this exists
-///
-/// Every canvas was navigable by gesture ALONE: drag to pan, pinch or
-/// ⌘-scroll to zoom. That is a discoverability floor, not a design — a
-/// trackpad pinch is invisible until someone tries it, a mouse has no pinch at
-/// all, and a canvas that has drifted to 4× with its content off-screen offers
-/// no way back except more of the same gesture. So each canvas now carries a
-/// visible stack: in, out, and a reset that puts the content back on screen.
-///
-/// It is deliberately three buttons and no zoom percentage. The number is a
-/// readout nobody acts on; what a reader wants is "closer", "further" and
-/// "put it back", and a percentage between the buttons would push the reset
-/// out of thumb reach on the phone remote.
+/// The floating zoom control shared by the app's node canvases — the plan studio DAG, the
+/// memory knowledge graph and the agent org chart.
+/// Every canvas was navigable by gesture ALONE: drag to pan, pinch or ⌘-scroll to zoom.
 class CanvasZoomControls extends StatelessWidget {
   /// Creates a [CanvasZoomControls].
   const CanvasZoomControls({

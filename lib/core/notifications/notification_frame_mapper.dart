@@ -486,22 +486,13 @@ AppNotification _prMerged(Map<String, dynamic> p, AppLocalizations l10n) {
   );
 }
 
-/// PRD 16 §7 routing — a shared space must ping the RESPONSIBLE
-/// principal(s), not everyone in it:
-///
-///  1. Explicitly `@mentioned` (human or agent mention roster, PRD 16 §15)
-///     → always notify, whoever authored the message.
-///  2. Otherwise, the pre-multiplayer behaviour: only an agent's completed
-///     turn notifies (a human's own un-mentioned message never pings
-///     anyone — the forwarder does not even push those frames) — UNLESS
-///     the frame names the human who requested that run
-///     (`requested_by_user_id`) and it names someone OTHER than me, in
-///     which case it is THEIR run finishing, not mine, so it is suppressed.
-///
-/// A frame from a server that predates this routing (or before identity
-/// finishes loading) carries neither `mentions` nor a resolvable
-/// `currentUserId` — both checks degrade to "notify", never silently
-/// dropping a real notification because identity is unknown.
+/// PRD 16 §7 routing — a shared space must ping the RESPONSIBLE principal(s), not everyone
+/// in it:
+/// Otherwise, the pre-multiplayer behaviour: only an agent's completed
+/// turn notifies (a human's own un-mentioned message never pings anyone — the forwarder
+/// does not even push those frames) — UNLESS the frame names the human who requested that
+/// run (`requested_by_user_id`) and it names someone OTHER than me, in which case it is
+/// THEIR run finishing, not mine, so it is suppressed.
 AppNotification? _messageReceived(Map<String, dynamic> p, String? me) {
   final workspaceId = p['workspace_id'] as String?;
   final spaceId = p['space_id'] as String?;

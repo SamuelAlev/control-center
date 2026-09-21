@@ -1,20 +1,6 @@
-/// Per-model metadata overrides for one provider's model — the settings UI's
-/// "edit model" payload.
-///
-/// **Why this exists.** Model metadata (context window, output ceiling,
-/// modalities) normally comes from the provider's live endpoint, enriched by
-/// the models.dev catalog. Both are sometimes wrong or missing: a proxy
-/// fronting several deployments reports one window for all of them, a
-/// brand-new model has no catalog entry yet, and a custom endpoint may not
-/// implement `/models` at all. An override lets the operator state the truth
-/// once; it wins over live and catalog data everywhere the model is resolved
-/// (the settings list, the picker and dispatch's compaction window).
-///
-/// Every field is nullable and null means "inherit from the endpoint/catalog".
-/// [manual] marks a model the user registered by hand — one the endpoint did
-/// not report (or could not, because it has no list endpoint). A manual model
-/// with no metadata fields set still exists as a list entry, so [isEmpty]
-/// treats `manual` as content.
+/// Per-model metadata overrides (settings "edit model"). Wins over live
+/// endpoint and models.dev. Null fields inherit. [manual] is a hand-registered
+/// model; [isEmpty] treats `manual` as content.
 class ProviderModelOverride {
   /// Creates a [ProviderModelOverride].
   const ProviderModelOverride({

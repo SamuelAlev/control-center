@@ -5,35 +5,17 @@ library;
 
 import 'package:cc_infra/src/chat/chat_provider_adapter.dart';
 
-/// Maps a [ChatTaskCard] onto Slack's Thinking Steps payloads.
+/// Maps a [ChatTaskCard] onto Slack Thinking Steps payloads.
 ///
-/// Slack renders the same work two ways and the bridge needs both: streaming
-/// **chunks** (`plan_update` + `task_update`) while a reply is live and a
-/// **block** on a message posted in one go (`plan` wrapping `task_card`s, or a
-/// lone `task_card` for a one-shot like a filed ticket).
-///
-/// **The two shapes are not the same payload.** The block takes `task_id` and
-/// rich-text `details`/`output`; the chunk takes `id` and *plain strings*,
-/// capped at 256 characters for the whole chunk.
-///
-/// Same-id `details` and `output` **concatenate with no separator**. Title and
-/// status replace. Hermes's working draft (and Slack's own streaming guide)
-/// therefore:
-///
-///  * opens the stream with `task_display_mode: plan` — all tasks in one
-///    grouped card, not `dense` (which collapses consecutive tools) or
-///    `timeline` (which lays each task out as its own card)
-///  * sends a `plan_update` for the request title, then one `task_update` per
-///    row (`id` + `title` + `status`)
-///  * sends a row's `details` **once** (the thought on `Thinking…`); later
-///    updates of that id omit it
-///  * streams the answer as its **own** append: a `markdown_text` chunk,
-///    never on the same call as `plan_update` / `task_update` (Slack's plan
-///    view ignores that mix) and never with top-level `markdown_text`
-///    (`cannot_provide_both_markdown_text_and_chunks`)
-///  * keeps `View in Control Center` as a trailing row added when the turn
-///    finishes, so the chip is last — Slack appends new task ids in
-///    first-seen order and a chip sent on the setup row stays there
+/// Two shapes: streaming chunks (`plan_update`/`task_update`) vs one-shot
+/// blocks (`plan` + `task_card`, or a lone `task_card`). Block uses `task_id`
+/// + rich-text; chunk uses `id` + plain strings (≤256 chars per chunk).
+/// Same-id `details`/`output` concatenate with no separator; title/status replace.
+/// Stream opens with `task_display_mode: plan` (not `dense`/`timeline`).
+/// Send `details` once per row id; later updates omit it.
+/// Answer is its own `markdown_text` chunk — never mixed with plan/task updates
+/// and never with top-level `markdown_text`.
+/// Deep-link row is appended when the turn finishes (first-seen id order).
 abstract final class SlackTaskCard {
   /// How Slack should display task updates on a stream that carries cards.
   ///

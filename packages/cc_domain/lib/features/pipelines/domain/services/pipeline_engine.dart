@@ -162,10 +162,8 @@ class PipelineEngine implements PipelineEnginePort {
 
   /// Interrupted step rows a crash-resume is holding until their sources
   /// finish, as `runId -> {stepId: stepRunId}`.
-  ///
   /// A resume obeys the graph: a row is re-fired only once its sources are
   /// satisfied, and `_evaluateDownstreamLocked` does it ON THAT ROW.
-  ///
   /// Re-firing every open row at once instead treats a crash as a reason to
   /// ignore the edges. A run interrupted with two steps open then starts both
   /// in the same instant and the downstream one reads state its own upstream
@@ -174,7 +172,6 @@ class PipelineEngine implements PipelineEnginePort {
   /// `{{pipeline_space_id}}` to nothing, falls back to a hidden conversation and,
   /// naming no repo scope, checks out every repo in the workspace to do it.
   /// Once per restart.
-  ///
   /// The row is held rather than dropped and re-created because it carries the
   /// `spaceId` of the room the interrupted attempt already opened — reusing it
   /// is what keeps the resume from provisioning a second checkout.
@@ -746,17 +743,14 @@ class PipelineEngine implements PipelineEnginePort {
   /// Stops and closes out every step row of [pipelineRunId] that is still open
   /// (pending / running / suspended). Call this immediately after flipping a run
   /// terminal.
-  ///
   /// Once the run is terminal, an open step row is orphaned: [resumeStep],
   /// [resumeAll] and `_evaluateDownstreamLocked` all bail on a terminal run, so
   /// nothing will ever finish it. Left behind it reads "Running" forever, its
   /// live-duration timer ticks without bound (inflating the waterfall's idle
   /// gap) and its kill callback leaks in [StepProcessRegistry].
-  ///
   /// Parallel branches are the common case: a fan-out is N sibling step rows
   /// listening on the same source, so stopping (or failing) one of them takes
   /// the run terminal out from under all the others.
-  ///
   /// [workspaceId] is the workspace owning [pipelineRunId]; a step-run id is not
   /// routable to a workspace on its own, so every row write is scoped by it.
   Future<void> _cancelOpenSteps(
@@ -1130,14 +1124,11 @@ class PipelineEngine implements PipelineEnginePort {
   /// cleanup callback (bash → SIGTERM the process; promptAgent → cancel
   /// task + kill agent PID), marks the step run row as failed and fails
   /// the parent pipeline run so the Retry button shows up.
-  ///
   /// Failing the run closes out the step's still-open siblings (see
   /// [_cancelOpenSteps]) — a parallel branch cannot keep running once the run
   /// it belongs to is terminal.
-  ///
   /// [workspaceId] is the workspace owning [stepRunId]; a step-run id is not
   /// routable to a workspace on its own, so a foreign id resolves to nothing.
-  ///
   /// An already-terminal run does NOT short-circuit this: the row still has to
   /// be closed and its work still has to be stopped, otherwise Stop looks like
   /// a no-op on exactly the rows that need it (a branch left open by an earlier
@@ -1176,27 +1167,12 @@ class PipelineEngine implements PipelineEnginePort {
     );
   }
 
-  /// Re-runs a pipeline run that has stopped, from where it stopped. Completed
-  /// step runs (and their outputs) are preserved; every other row is re-opened
-  /// in place and its body re-fired — the same mechanism [resumeAll] uses after
-  /// a crash.
+  /// Re-runs a stopped pipeline from where it stopped (same as [resumeAll]).
   ///
-  /// Both terminal outcomes an operator can act on are accepted: `failed`, and
-  /// `cancelled` for a run they stopped themselves. Refusing the second meant
-  /// pressing Stop was irreversible — the only way back was a fresh run that
-  /// redid the work the cancelled one had already finished.
-  ///
-  /// A re-run takes a `maxParallelRuns` slot like a start does and QUEUES when
-  /// the template is full. An operator asking for it explicitly is not a reason
-  /// to exempt it: "retry all" on a morning's worth of failures is exactly when
-  /// the cap earns its keep, and a cap a button can exceed bounds nothing.
-  /// Queued, the run keeps its place in the list and [_admitNext] resumes it
-  /// from its own progress when a slot frees.
-  ///
-  /// Rows are re-opened, never deleted and re-created. A step run carries the
-  /// `spaceId` of the room its agents already work in, so a fresh row would
-  /// provision a second checkout for work already under way. Re-opening also
-  /// re-stamps `startedAt`, so the step reports the attempt being watched.
+  /// Preserves completed steps; re-opens others in place. Accepts `failed` and
+  /// `cancelled`. Takes a `maxParallelRuns` slot (queues when full). Rows are
+  /// re-opened, never re-created (keeps `spaceId` / checkout); re-stamps
+  /// `startedAt`.
   @override
   Future<void> retry(String workspaceId, String pipelineRunId) async {
     final run = await repository.getRun(pipelineRunId);

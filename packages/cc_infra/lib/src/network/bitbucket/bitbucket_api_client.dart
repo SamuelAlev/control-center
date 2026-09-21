@@ -15,21 +15,8 @@ import 'package:dio/dio.dart';
 
 /// Client for the Bitbucket Cloud REST API 2.0.
 ///
-/// Wire vocabulary only: every method returns a `Bitbucket*` model or a raw
-/// string, never a domain entity. `BitbucketPrMapper`'s `…FromBitbucket`
-/// functions do the anti-corruption translation and
-/// `BitbucketForgePrClient` composes the two.
-///
-/// **The injected [Dio] owns the base URL and the credentials.** Authentication
-/// (an app password's Basic header, or an OAuth bearer) is an interceptor the
-/// caller installs; this client never constructs one and never names a host.
-/// Every path here is RELATIVE — `/repositories/{workspace}/{repo}/…` — so
-/// pointing the client at a different endpoint (a proxy, a test server) is a
-/// matter of changing `BaseOptions.baseUrl` alone.
-///
-/// [DioException]s propagate untouched; callers that treat a specific status
-/// as a value rather than a failure (a 404 on a pull request, a 401 on the
-/// viewer) handle it themselves.
+/// Wire vocabulary only (`Bitbucket*` models). Injected [Dio] owns base URL and
+/// credentials; paths are relative. [DioException]s propagate untouched.
 class BitbucketApiClient {
   /// Creates a [BitbucketApiClient] over [dio], which must already carry the
   /// Bitbucket API base URL and an auth interceptor.

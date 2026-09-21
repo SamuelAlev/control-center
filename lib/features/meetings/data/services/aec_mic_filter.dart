@@ -6,35 +6,13 @@ import 'package:cc_domain/features/meetings/domain/services/mic_echo_canceller.d
 import 'package:cc_natives/cc_natives.dart';
 import 'package:control_center/features/meetings/data/services/aec_delay_estimator.dart';
 
-/// Wires the meeting recorder's two capture streams through signal-level
-/// acoustic echo cancellation: the system loopback ("them") is fed to the AEC
-/// far-end reference and the microphone ("me") is cleaned of the remote's
-/// speaker bleed before it reaches transcription. This kills the duplicate "me"
-/// windows at the audio level — independent of how Whisper transcribes the
-/// bleed, which is where the text-based `MeetingEchoFilter` could not help.
+/// AEC3 on meeting capture: loopback = far-end, mic cleaned before transcribe.
 ///
-/// **Per-session auto-calibration.** The mic and the loopback are two
-/// independent OS captures with different, drifting clocks and an unknown
-/// delivery offset that depends entirely on the user's audio devices — so AEC3
-/// alone can't lock onto the echo. [AecDelayEstimator] measures the real offset
-/// live by cross-correlating the two energy envelopes on the shared clock, then
-/// this filter (a) buffers the mic so the loopback reference reliably *leads*
-/// the capture and (b) feeds AEC3 a real `set_stream_delay_ms`, refined as the
-/// clocks drift. Nothing is hardcoded to one machine: it measures, per session,
-/// on whatever hardware is present. (Active only when a `clockNow` is supplied.)
-///
-/// **Decoupled / eager.** Both raw streams are consumed eagerly (their
-/// subscriptions are never paused) so AEC3 always sees both spaces in real
-/// time — even while a downstream transcribe pauses to decode a window. The
-/// cleaned mic and the "them" passthrough are re-emitted through controllers, so
-/// transcribe's backpressure only buffers those controllers, not the capture.
-///
-/// **Graceful passthrough.** When the `processor` is `null` (native AEC library
-/// absent, or in-person mode with no loopback), [cleanMic] / [referenceTap]
-/// return their inputs unchanged and the text `MeetingEchoFilter` remains the
-/// echo defense — zero behavior change. The filter also **fails safe**: until
-/// the delay is measured with confidence, the mic is passed straight through
-/// AEC3 with no buffering, never worse than the no-AEC baseline.
+/// [AecDelayEstimator] calibrates per-session delay (`clockNow` required);
+/// buffer mic so reference leads; set `set_stream_delay_ms`. Consume both raw
+/// streams eagerly (never pause) — backpressure hits controllers only. Null
+/// `processor` → passthrough ([MeetingEchoFilter] remains). Until delay is
+/// confident, pass mic through AEC3 unbuffered.
 class AecMicFilter implements MicEchoCanceller {
   /// Creates a filter. A `null` [processor] makes every method an identity
   /// passthrough (no AEC). [clockNow] (shared-clock elapsed ms, the same one

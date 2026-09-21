@@ -2,22 +2,11 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
-/// cc_remote's first tests.
+/// cc_remote must stay Material-free and free of unused MaterialIcons.
 ///
-/// The phone client is a Flutter web PWA — the most bandwidth-sensitive tier
-/// in the product — and it is Material-free by construction: a
-/// `WidgetsApp.router`, `package:flutter/widgets.dart` only, every glyph from
-/// cc_ui's vendored Phosphor. Nothing checked either half, and both are one
-/// import away from being lost:
-///
-/// * `uses-material-design: true` was set with zero Material icons in the app.
-///   That bundles `MaterialIcons-Regular.otf` (~1.6 MB), and Flutter web
-///   downloads every `FontManifest.json` entry at engine boot — so it was a
-///   cold-load tax paid for a font nothing rendered. Verified after the fix:
-///   the built manifest lists Manrope, Fira Code and Phosphor, and nothing
-///   else.
-/// * The first `import 'package:flutter/material.dart'` would silently
-///   re-introduce a Material text theme, ink splashes and a second icon font.
+/// `uses-material-design: true` without Material icons bundled
+/// `MaterialIcons-Regular.otf` (~1.6 MB) on every web cold load. A
+/// `material.dart` import would reintroduce Material theme, ink, and that font.
 void main() {
   test('the app does not ask for the Material icon font', () {
     final pubspec = _appFile('pubspec.yaml').readAsStringSync();

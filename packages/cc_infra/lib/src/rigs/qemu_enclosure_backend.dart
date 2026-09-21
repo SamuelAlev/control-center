@@ -681,19 +681,9 @@ class QemuEnclosureBackend {
       await socksProxy.close();
     }
 
-    // ── One rollback for the whole launch tail ──────────────────────────────
-    //
-    // Everything from here on can throw, and several steps had no handler at
-    // all: `buildRigSocketPath` throws a StateError when no candidate root
-    // fits `sun_path`, `_which(...)!` null-asserts, and `Process.start` throws
-    // on a binary that vanished between the probe and the launch. Each of
-    // those left the 0700 runtime directory behind — with the MINTED PRIVATE
-    // KEY and the seed image in it — plus two listening proxies, and because
-    // the directory was already `_claim`ed the orphan sweep deliberately skips
-    // it. It survived until the next server restart.
-    //
-    // So the tail is one guarded region with one rollback, rather than a
-    // handler per step that the next step forgets to add.
+    // One rollback for the launch tail: `buildRigSocketPath`, `_which(...)!`,
+    // and `Process.start` can throw after `_claim`, leaving the 0700 runtime
+    // dir (minted private key + seed) and proxies that the orphan sweep skips.
     String? socketDir;
     Process? process;
     QmpClient? qmp;
@@ -1596,20 +1586,11 @@ class QemuEnclosureBackend {
 
   /// Whether [commandLine] is a QEMU serving [rigId].
   ///
-  /// This decides whether a recorded pid gets SIGTERM→SIGKILL, so it has to be
-  /// wrong in the safe direction. Two exact checks, not two substring searches:
-  ///
-  ///  * argv[0]'s BASENAME must start with `qemu-system` (the emulator
-  ///    binaries; `qemu-img` is deliberately excluded), and
-  ///  * `ccrig-<rigId>` must appear as a WHOLE argv token, which only the
-  ///    `-name` flag this backend passes produces.
-  ///
-  /// A substring pair (`contains('qemu') && contains(rigId)`) matched far more
-  /// than QEMU: `qemu-img info <dataDir>/rigs/run/<uuid>/overlay.qcow2`,
-  /// `tail -f …/qemu-stderr-<uuid>` and `grep <uuid> …` all contain both, and
-  /// an operator inspecting an orphaned overlay after a crash is exactly the
-  /// person running the first of those. With pid reuse in the mix that is a
-  /// SIGKILL aimed at somebody's shell.
+  /// Decides SIGTERM→SIGKILL eligibility — wrong in the safe direction.
+  /// argv[0] basename must start with `qemu-system` (not `qemu-img`), and
+  /// `ccrig-<rigId>` must be a whole argv token (from `-name`). Substring
+  /// `contains('qemu') && contains(rigId)` matched `qemu-img info …`,
+  /// `tail …/qemu-stderr-…`, and greps — with pid reuse, a SIGKILL at a shell.
   static bool commandLineMatchesRig(String commandLine, String rigId) {
     if (rigId.isEmpty) {
       return false;
@@ -1628,20 +1609,10 @@ class QemuEnclosureBackend {
 
   /// Writes this server's ownership marker into [directory].
   ///
-  /// **[required] on the first write, best-effort on the pid update.** The
-  /// marker is the ONLY thing that tells another server's orphan sweep that
-  /// this directory belongs to a live machine: an unmarked directory is swept
-  /// as debris, with no `qemuPid` to verify first, so a running rig whose
-  /// marker write failed once loses its overlay and its control socket
-  /// mid-session — to a sibling server that did exactly what it was told.
-  ///
-  /// So the claim that happens BEFORE the hypervisor starts must succeed or
-  /// the launch fails. That trades a rig that will not boot for a rig that
-  /// gets deleted underneath someone, on a filesystem where we have just
-  /// written a multi-gigabyte overlay and cannot write a 200-byte JSON file
-  /// beside it. Re-claiming to record the pid stays best-effort: the marker
-  /// already exists by then, so the worst case is a sweep that cannot kill an
-  /// orphan rather than one that deletes a live rig.
+  /// Required on the first write (before the hypervisor starts): unmarked
+  /// directories are swept as debris with no pid check, so a failed claim loses
+  /// a live overlay mid-session. Pid re-claim stays best-effort — marker
+  /// already exists; worst case is a sweep that cannot kill an orphan.
   Future<void> _claim(
     String directory, {
     required String rigId,

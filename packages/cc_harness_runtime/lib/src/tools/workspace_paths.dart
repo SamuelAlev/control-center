@@ -2,28 +2,13 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
-/// Resolves [relative] against [workspaceRoot] and returns the absolute path
-/// only when it stays inside the workspace; otherwise null.
+/// Resolves [relative] against [workspaceRoot]; returns absolute path only if
+/// inside the workspace (union of [workspaceRoot] and [sharedRoots]), else null.
+/// Absolute inputs accepted only when already inside a root.
 ///
-/// The workspace is the union of [workspaceRoot] and [sharedRoots] — extra
-/// directories that are part of the agent's workspace but live outside its
-/// cwd on disk (the per-conversation shared `repos/` worktrees dir, which the
-/// overlay cwd only reaches through a `repos → ../../repos` symlink). Callers
-/// may hand in either the symlinked or the real form of such a path.
-///
-/// Absolute inputs are accepted only when already inside one of the roots, so
-/// the filesystem tools (read/write/edit/search/find) cannot reach
-/// `/etc/passwd`, `~/.ssh`, or any path outside the agent's workspace.
-///
-/// Containment is checked on the CANONICAL path, not just the lexical one: the
-/// deepest existing ancestor is resolved through symlinks and the remainder
-/// re-joined onto it. That is what makes the docstring's promise true. The
-/// previous version only canonicalized when the FINAL component was itself a
-/// link, so an intermediate one escaped: `ln -s /etc ws/esc` (which the agent's
-/// own bash can create, and the link file is legitimately inside the
-/// workspace) made `read(path: "esc/passwd")` pass every check — lexically
-/// inside the root, final component a regular file — while the OS resolved it
-/// to `/etc/passwd`.
+/// Containment uses the canonical path: resolve the deepest existing ancestor
+/// through symlinks, then re-join the remainder. Lexical-only checks miss
+/// intermediate symlinks that escape the root.
 String? resolveInsideWorkspace(
   String workspaceRoot,
   String relative, {

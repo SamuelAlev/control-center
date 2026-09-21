@@ -25,23 +25,12 @@ const Set<String> kBridgeableImageMediaTypes = {
 /// the provider rejects the whole request.
 const int kMaxBridgedImageBase64Chars = 5 * 1024 * 1024;
 
-/// Adapts a Control Center [McpTool] into a [HarnessTool] so the built-in agent
-/// loop can call CC's orchestration tools (orchestration, recall_facts,
-/// create_ticket, send_message, list_prs, …) natively, alongside the built-in
-/// filesystem tools.
+/// Adapts a CC [McpTool] into a [HarnessTool] for the built-in agent loop.
 ///
-/// Workspace scoping: when the tool's schema declares `workspace_id`,
-/// `agent_id`, or `conversation_id` and the model omitted it, the bridge injects
-/// the value from the [HarnessToolContext], so the loop never escapes its
-/// workspace and the model is not burdened with repeating ids it already
-/// operates under (e.g. `todo_write` gets its conversation for free).
-///
-/// Because those arguments are injected, they are also HIDDEN from the schema
-/// the model sees ([hiddenScopeParams]) — advertising a parameter whose value
-/// the bridge overrides anyway costs context on every request and invites the
-/// model to guess an id it must not choose. The MCP tool's own schema is
-/// untouched: external MCP clients still see the full contract, and
-/// [_withScope] still reads the ORIGINAL schema to decide what to inject.
+/// Injects omitted `workspace_id` / `agent_id` / `conversation_id` from
+/// [HarnessToolContext] and hides those params from the model schema
+/// ([hiddenScopeParams]); MCP schema for external clients stays full;
+/// [_withScope] still reads the original schema for injection.
 class McpToolBridge extends HarnessTool {
   /// Creates an [McpToolBridge] wrapping [mcpTool].
   ///

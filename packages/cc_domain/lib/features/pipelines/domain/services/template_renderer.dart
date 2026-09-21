@@ -3,17 +3,14 @@ import 'dart:convert';
 /// Renders `{{key}}` placeholders in prompt/script templates against pipeline
 /// state and trigger payload and reports which placeholders could not be
 /// resolved.
-///
 /// This is the single source of truth for `{{...}}` substitution — the engine
 /// snapshot, the prompt-agent body and the bash-script body all delegate here
 /// instead of re-implementing the regex (which previously silently turned a
 /// missing key into an empty string in three places).
-///
 /// Supported placeholder forms:
 /// - `{{key}}`            — bare key, resolved from state then trigger payload
 /// - `{{$state.key}}`     — explicit state lookup
 /// - `{{$trigger.key}}`   — explicit trigger-payload lookup
-///
 /// Unresolved placeholders render as empty string but are also returned in
 /// [RenderResult.unresolved] so callers can fail loudly or warn.
 class TemplateRenderer {

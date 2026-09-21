@@ -1,19 +1,8 @@
-/// A tree-sitter-backed [BlockResolver] for the hashline edit subsystem.
+/// Tree-sitter [BlockResolver] for hashline edits: parse by path extension,
+/// capture definition bodies, return the smallest span containing the anchor.
 ///
-/// The hashline core (`package:cc_domain/.../edit/`) declares the
-/// [BlockResolver] seam but never depends on a parser. This adapter binds that
-/// seam to `cc_natives`' tree-sitter runtime: it parses the file text with the
-/// grammar inferred from the path extension, runs a small per-language "block"
-/// query that captures the spans of definition bodies (functions, classes,
-/// methods) and returns the smallest captured span that contains the anchor
-/// line.
-///
-/// Semantic misses (unknown language, no block query for the language, parse
-/// error, no containing block) resolve to `null` — the caller (`Patcher` via
-/// `FileEditService`) handles `null` gracefully. Missing NATIVES are different:
-/// the tree-sitter runtime/grammars ship inside the host bundle, so an
-/// unloadable library throws [TreeSitterUnavailable] (a broken install must
-/// fail the edit loudly, not degrade to blind span guesses).
+/// Semantic misses → null (caller handles). Missing natives throw
+/// [TreeSitterUnavailable] (fail loud — no blind span guesses).
 library;
 
 import 'package:cc_domain/features/dispatch/domain/edit/hashline.dart';

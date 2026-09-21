@@ -13,40 +13,21 @@ import 'package:cc_domain/features/pipelines/domain/services/template_renderer.d
 import 'package:cc_domain/features/pipelines/domain/templates/builtin_template_seeds.dart'
     show kPipelineSpaceStateKey;
 
-/// Shared execution primitive for the "message step" bodies (promptAgent,
-/// teamDispatch, forEach, human.gate). Conversation-first: instead of creating
-/// an agent-assigned ticket, it posts the rendered prompt (+ the output-contract
-/// footer) into a conversation, dispatches each agent into it (stamping the
-/// contract onto the created run) and suspends the step until those runs
-/// finish. The [PipelineStepResumeListener] advances the step once every run is
-/// terminal; the engine harvests each run's `outputJson`.
-///
-/// **Which conversation.** [spaceId] — a step config's `extras['spaceId']`,
-/// which every node a generated orchestration/plan pipeline emits carries — runs
-/// the step in THAT existing room. This is what makes approving a plan continue
-/// the conversation it was authored in: the seed prompt, the agent's streaming
-/// turn and the operator's Stop button all land in the room they are already
-/// watching. It supports `{{key}}` placeholders, so a step can name a room an
-/// EARLIER step in the same run created (the PR-review template's reviewers all
-/// land in the space its first step ensured). Without it (ad-hoc nodes) the step
-/// spins up its own **hidden** conversation as before — invisible by design,
-/// since no operator authored it.
-///
-/// **Which stream.** [conversationTitle] — a step config's
-/// `extras['conversationTitle']` — opens a NAMED conversation inside the
-/// resolved room instead of writing into its standing stream. A fan-out of
-/// reviewers uses this so each one keeps a readable thread while all of them
-/// share the space's single checkout: creating a space per reviewer instead
-/// would clone every repo once per reviewer and bury each thread in a room
-/// nobody is in.
-///
-/// **Repo scope is not this step's business.** A room's checkout is decided
-/// when the room is opened, by `messaging.createSpace` (or by whoever created
-/// the operator's room). This step joins a room that already exists, so a
-/// fan-out of ten agents shares one checkout rather than provisioning ten.
-///
-/// Returns a [StepResult.suspendUntilTasksComplete] carrying the dispatched
-/// run ids (the new "tasks"), or [StepResult.failed] on a misconfiguration.
+/// Shared execution primitive for message-step bodies (promptAgent,
+/// teamDispatch, forEach, human.gate). Posts the rendered prompt (+ output-
+/// contract footer) into a conversation, dispatches each agent (stamping the
+/// contract on the run), and suspends until those runs finish.
+/// [PipelineStepResumeListener] advances when every run is terminal; the
+/// engine harvests each run's `outputJson`.
+/// [spaceId] (`extras['spaceId']`, may be `{{key}}`) runs in that existing
+/// room — how plan approval continues the authored conversation. Without it,
+/// ad-hoc nodes spin up a hidden conversation.
+/// [conversationTitle] (`extras['conversationTitle']`) opens a named stream
+/// inside the room instead of the standing one (fan-out reviewers share one
+/// checkout with readable threads).
+/// Repo scope is decided when the room opens, not here.
+/// Returns [StepResult.suspendUntilTasksComplete] with run ids, or
+/// [StepResult.failed] on misconfiguration.
 Future<StepResult> dispatchConversationStep({
   required PipelineContext ctx,
   required MessagingPort messagingPort,
@@ -73,17 +54,9 @@ Future<StepResult> dispatchConversationStep({
     return StepResult.ok(mutatedState: mutatedState);
   }
 
-  // ── Kill hook, registered BEFORE any work starts ──────────────────────────
-  //
-  // Registered first so a stop lands wherever the step happens to be: waiting
-  // for the room's checkout, or mid-dispatch. Registering it after
-  // `dispatchAgent` returns leaves that whole window uncovered, and a stop
-  // there finds nothing to kill while the agent starts anyway.
-  //
-  // It stops AGENTS only. The room belongs to whoever opened it — a
-  // `messaging.createSpace` node, or the operator — and each of those cancels
-  // its own provisioning. A step ending is no reason to interrupt a checkout
-  // its siblings are still working in.
+  // Kill hook first so a stop covers checkout-wait and mid-dispatch.
+  // Stops agents only — the room's provisioning is cancelled by whoever
+  // opened it; ending a step must not interrupt siblings' checkout.
   var stopped = false;
   stepProcessRegistry.register(ctx.stepRunId, () async {
     stopped = true;
@@ -100,22 +73,10 @@ Future<StepResult> dispatchConversationStep({
     }
   });
 
-  // 1. Resolve the conversation this step works in. A room is REQUIRED and is
-  //    never created here — the step joins one that already exists, in this
-  //    order:
-  //
-  //      * the room this step run already worked in (a retry or a crash-resume
-  //        re-fires the body on the row it owns, and that row carries the id);
-  //      * the room the node names (`extras['spaceId']`), literal or
-  //        `{{placeholder}}` — how a generated plan step continues the
-  //        conversation it was authored in;
-  //      * the run's own room, opened by a `messaging.createSpace` node.
-  //
-  //    Creating one here instead would make the room — and therefore a repo
-  //    checkout — a side effect of dispatching an agent. Parallel steps each
-  //    reach this point before any of them has published a room, so a fan-out
-  //    would open one apiece and check out the workspace once per branch. The
-  //    room is a decision the template makes ONCE, in a node an author can see.
+  // Resolve room (required; never created here), in order: prior step-run
+  // space → configured `extras['spaceId']` (literal/`{{placeholder}}`) →
+  // run room from `messaging.createSpace`. Creating here would make checkout
+  // a side effect of dispatch and fan-out would open one room per branch.
   final nodeRoom = resolveConfiguredSpaceId(spaceId, ctx);
   final priorSpaceId = await priorStepRunSpaceId(runRepository, ctx);
   final runRoom = _runRoomOf(ctx);

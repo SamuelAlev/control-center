@@ -1,26 +1,9 @@
 #!/usr/bin/env bash
 #
-# Fetches + extracts the PINNED code-server (coder/code-server) standalone
-# archive (Node bundled; no source build) for the host platform into
-# build/code-server/<platform>/ — the managed install dir CodeServerService
-# resolves before PATH.
+# Fetches/verifies the pinned code-server release into the staging layout the
+# desktop/server packages expect.
+# Usage: scripts/release/fetch_code_server.sh
 #
-# The version is pinned in packages/cc_infra/lib/src/ide/code_server_service.dart
-# (codeServerVersion) and grepped here. Renovate tracks that const; this script
-# follows it.
-#
-# code-server ships NO native Windows host, so this script is a no-op (with a
-# warning) on Windows — the Windows-local story is WSL/remote-only (see the
-# plan's Risks).
-#
-# Output layout — this is what cc_server_package.sh reads when it stages the
-# archive into the bundle's data layout so a bundled server is offline-first:
-#   build/code-server/<platform>/bin/code-server           (the binary)
-#   build/code-server/<platform>/lib/...                   (Node + VS Code bits)
-#
-# Usage:
-#   scripts/release/fetch_code_server.sh            # host platform
-#   scripts/release/fetch_code_server.sh <version>  # override the pin (testing)
 set -euo pipefail
 
 REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"

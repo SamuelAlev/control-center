@@ -28,63 +28,28 @@ class DispatchHandle {
 abstract interface class AgentDispatchPort {
   /// Starts a generic agent process.
   ///
-  /// [environment] is an optional env var map injected into the process /
-  /// sandbox at launch. Used by the credential broker to scope tokens to
-  /// just this run.
-  ///
-  /// [runLogId] is the database id of the [AgentRunLog] row for this
-  /// invocation. Dispatchers that discover the PID asynchronously (sandboxed
-  /// runs) use it to update the log with the PID once it is known.
-  ///
-  /// [ticketId] is the ticket this dispatch is handling, if any. Propagated
-  /// into the [AgentRunLog] and the [WakeContext] so the agent knows why it
-  /// was woken.
-  ///
-  /// [wakeContext] is the context injected into the agent's prompt so it
-  /// knows why it was dispatched. Also serialized to environment variables
-  /// for the CLI process.
-  ///
-  /// [silenceTimeoutMinutes] is the agent's per-agent silence-timeout
-  /// override. When null the dispatcher falls back to the per-mode default.
-  ///
-  /// [agentConfigDir] is the agent's global config dir (AGENTS.md + `.agents`
-  /// source). When provided, the dispatcher mounts it read-only alongside the
-  /// writable [workingDirectory] (the per-agent overlay cwd) so the overlay's
-  /// symlinks resolve and the agent cannot tamper with its own config/skills at
-  /// runtime. Null falls back to mounting [workingDirectory] only.
-  ///
-  /// [agentName] is the agent's display name, used to stamp an honest per-run
-  /// git author identity (`<name> (agent)`) into the process environment.
-  /// Null falls back to the agent id.
-  ///
-  /// [requestedByUserId] is the human on whose behalf the run executes; it
-  /// drives the commit co-author trailer and per-user credential selection.
-  /// Null attributes the run to the server owner.
-  ///
-  /// [userText] is the user's message verbatim, before context layering.
-  /// [prompt] arrives wrapped as `<context>…</context>\n\n<text>`, so a
-  /// leading-slash test against it never matches — pass [userText] so built-in
-  /// slash commands (`/plan`, `/goal`, `/loop`, `/skill:<name>`) are
-  /// recognized.
-  /// Null falls back to [prompt] (correct for callers that do no layering).
-  ///
-  /// [costCapCents] overrides the default per-run priced cost cap (dispatch
-  /// adapters that can price usage mid-run stop the run once its spend
-  /// crosses the cap). The goal supervisor threads the goal's remaining
-  /// budget so a segment cannot overshoot an explicit `/goal --budget`.
-  /// Null keeps the dispatcher's default cap; adapters that cannot price
+  /// [environment] scopes credential-broker tokens to this run.
+  /// [runLogId] is the [AgentRunLog] id; sandboxed runs write the PID once known.
+  /// [ticketId] is stamped on the log and [WakeContext] when set.
+  /// [wakeContext] is why the agent was woken, also copied into the CLI env.
+  /// [silenceTimeoutMinutes] overrides the per-mode default; null keeps it.
+  /// [agentConfigDir] is mounted read-only beside writable [workingDirectory]
+  /// so overlay symlinks resolve and the agent cannot edit its own config;
+  /// null mounts [workingDirectory] only.
+  /// [agentName] stamps the git author as `<name> (agent)`; null uses the agent id.
+  /// [requestedByUserId] sets the co-author trailer and credential lane; null
+  /// attributes the run to the server owner.
+  /// [userText] is the verbatim message for slash detection (`/plan`, `/goal`,
+  /// `/loop`, `/skill:<name>`). [prompt] arrives wrapped in `<context>`, so a
+  /// leading-slash test against it never matches; null [userText] falls back
+  /// to [prompt].
+  /// [costCapCents] is the priced spend cap (a goal run passes its remaining
+  /// budget). Null keeps the dispatcher default; adapters that cannot price
   /// usage ignore it.
-  ///
-  /// [claudeConfigDir] selects which Claude Code account the run signs in as,
-  /// by naming the directory the CLI reads its credential from. Adapters that
-  /// do not drive Claude Code ignore it. Null means "whatever the CLI would
-  /// find itself", which is only correct where Control Center manages no
-  /// accounts — on macOS the sandbox denies the keychain the CLI would
-  /// otherwise use, so a null here reads to the operator as being logged out.
-  ///
-  /// Returns a [DispatchHandle] containing the event stream and a unique
-  /// `dispatchId` that can be used with `stopDispatch` to cancel only this
-  /// specific dispatch without affecting other concurrent dispatches.
+  /// [claudeConfigDir] names the Claude credential directory; other adapters
+  /// ignore it. Null lets the CLI find its own account, which on macOS reads
+  /// as logged out because the sandbox denies the keychain.
+  /// Returns a [DispatchHandle] whose `dispatchId` stops only this dispatch.
   DispatchHandle start({
     required String cliName,
     required String prompt,

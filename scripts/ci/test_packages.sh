@@ -1,23 +1,8 @@
 #!/usr/bin/env bash
-# Run every workspace package's test suite under ONE runner kind.
 #
-# Usage: scripts/ci/test_packages.sh <dart|flutter>
+# CI: run package test suites with capped concurrency.
+# Usage: scripts/ci/test_packages.sh
 #
-# Packages are DISCOVERED, not listed, so a new package that ships tests cannot
-# be silently left out of CI. A `flutter_test` dev_dependency is what decides
-# the runner — it is exactly the question being asked ("do these tests need the
-# Flutter harness?"). Everything else runs under plain `dart test`, which skips
-# flutter_tester entirely and is far faster. Comments are stripped before
-# matching: cc_natives is pure Dart but mentions `sdk: flutter` in a prose
-# comment.
-#
-# Every package runs even after one fails, so a single break does not hide the
-# rest; the script still exits non-zero at the end.
-#
-# This lives in a script rather than inline in ci.yml because two jobs run it:
-# the Linux matrix on every push and PR, and the macOS/Windows matrix on the
-# default branch. A copy-pasted second version of the discovery loop is a
-# guarantee that the two axes eventually disagree about what CI covers.
 set -uo pipefail
 
 kind="${1:?usage: test_packages.sh <dart|flutter>}"

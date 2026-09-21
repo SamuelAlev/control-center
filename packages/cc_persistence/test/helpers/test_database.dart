@@ -7,22 +7,10 @@ import 'package:sqlite3/sqlite3.dart' as sqlite3;
 
 /// Builds an in-memory [WorkspaceDatabase] for tests — one workspace's data.
 ///
-/// Most tests want this one: it is where agents, spaces, tickets, memory,
-/// pipelines, repos and the code graph live. [workspaceId] is the id the file
-/// claims and the value to pass to any DAO or repository method that still
-/// takes one.
-///
-/// Mirrors the headless server's `openWorkspaceDatabase`, except this helper
-/// itself does not register `sqlite_vector`. `beforeOpen`'s vector-index setup
-/// degrades gracefully without it. A sibling test that calls
-/// `openGlobalDatabase` may still have registered the extension as a
-/// process-global SQLite auto-extension, in which case vector functions are
-/// present on this connection too. Points SQLite's temp directory at the system
-/// temp dir for scratch files.
-///
-/// Always construct test databases through these helpers rather than calling
-/// `WorkspaceDatabase.forTesting(NativeDatabase.memory())` directly, so the
-/// native setup stays in one place.
+/// Most tests want this one: it is where agents, spaces, tickets, memory, pipelines, repos
+/// and the code graph live.
+/// [workspaceId] is the id the file claims and the value to pass to any DAO or repository
+/// method that still takes one.
 WorkspaceDatabase createTestDatabase({String workspaceId = 'test-workspace'}) {
   sqlite3.sqlite3.tempDirectory = Directory.systemTemp.path;
   return WorkspaceDatabase.forTesting(

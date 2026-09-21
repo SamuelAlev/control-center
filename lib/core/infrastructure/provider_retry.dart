@@ -2,28 +2,13 @@ import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// The app-wide Riverpod retry policy, passed to the root
-/// `ProviderContainer`/`ProviderScope`.
+/// App-wide Riverpod retry policy for the root `ProviderContainer`.
 ///
-/// Riverpod 3 retries a failed provider by default with exponential backoff
-/// starting at 200ms ([ProviderContainer.defaultRetry]). For a provider backed
-/// by an RPC subscription that default is a footgun: a subscription **stream
-/// error re-runs the provider, which opens a fresh `sub/subscribe`** — so an
-/// UNRECOVERABLE error (a GitHub rate limit, an auth failure) becomes a tight
-/// resubscribe loop that hammers the server and, transitively, GitHub (the
-/// original "cc_server spamming subscriptions" storm). A blind retry can never
-/// fix such an error; only a state change — a new token, the rate-limit window
-/// resetting, a reconnect — can and each of those already re-runs the provider
-/// on its own.
-///
-/// The policy:
-///  * **never** retries an unrecoverable RPC error ([_unrecoverableRpcCodes]);
-///  * retries a genuinely transient RPC error (a bare internal error) a few
-///    times with a **≥1s floor** — never the 200ms default — so a brief server
-///    hiccup rides out without a storm;
-///  * never retries an unrecoverable [NetworkException] (a rate limit / auth
-///    error that reaches a provider directly rather than through the RPC layer);
-///  * defers to [ProviderContainer.defaultRetry] for every other error.
+/// Default 200ms backoff is a footgun for RPC subscriptions: a stream error
+/// re-opens `sub/subscribe`, so unrecoverable errors (rate limit, auth) storm
+/// the server. Never retry [_unrecoverableRpcCodes] or unrecoverable
+/// [NetworkException]; transient RPC errors retry a few times with a ≥1s
+/// floor; otherwise [ProviderContainer.defaultRetry].
 Duration? appProviderRetry(int retryCount, Object error) {
   if (error is RemoteRpcException) {
     if (_unrecoverableRpcCodes.contains(error.code)) {

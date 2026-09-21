@@ -219,7 +219,6 @@ class _RigInputSurfaceState extends ConsumerState<RigInputSurface> {
   (int, int)? _iosGestureStart;
   DateTime? _iosGestureStartedAt;
 
-  // ── The clipboard and file bridge ───────────────────────────────────────
 
   /// Built from the ambient proxy scope, which is where the signed URLs for
   /// the server's rig lanes come from. Null before the connection exists.
@@ -435,7 +434,6 @@ class _RigInputSurfaceState extends ConsumerState<RigInputSurface> {
     );
   }
 
-  // ── Sending ─────────────────────────────────────────────────────────────
 
   /// Enqueues a non-text action, flushing buffered keystrokes ahead of it.
   ///
@@ -449,7 +447,6 @@ class _RigInputSurfaceState extends ConsumerState<RigInputSurface> {
   void _enqueueRaw(Map<String, dynamic> action, {bool coalesce = false}) =>
       _actions.add(action, coalesce: coalesce);
 
-  // ── Coordinate mapping ──────────────────────────────────────────────────
 
   /// Maps a canvas-local point through the same contained frame as the image.
   (int, int)? _toGuest(Offset local, Size canvas) {
@@ -470,7 +467,6 @@ class _RigInputSurfaceState extends ConsumerState<RigInputSurface> {
 
   bool get _isIos => widget.rig.surfaceKind == RigSurface.ios;
 
-  // ── Pointer ─────────────────────────────────────────────────────────────
 
   void _onPointerDown(PointerDownEvent event, Size canvas) {
     _focus.requestFocus();
@@ -697,7 +693,6 @@ class _RigInputSurfaceState extends ConsumerState<RigInputSurface> {
     }
   }
 
-  // ── Keyboard ────────────────────────────────────────────────────────────
 
   KeyEventResult _onKey(FocusNode node, KeyEvent event) {
     if (event is KeyUpEvent) {
@@ -843,7 +838,6 @@ class _RigInputSurfaceState extends ConsumerState<RigInputSurface> {
     return KeyEventResult.handled;
   }
 
-  // ── Files across the canvas edge ────────────────────────────────────────
 
   /// Wraps [child] so files can be dragged INTO the machine and out of it.
   ///
@@ -854,24 +848,11 @@ class _RigInputSurfaceState extends ConsumerState<RigInputSurface> {
     if (_isIos) {
       return child;
     }
-    // ── OUT ──────────────────────────────────────────────────────────────
-    //
-    // Nothing tells a host that a drag STARTED inside a guest: there is no
-    // event for it, and the frame stream is pixels. What there IS, while an X
-    // application drags something, is that application OWNING the
+    // What there IS, while an X application drags something, is that application OWNING the
     // `XdndSelection` — so the drag payload can be asked for, and only then.
-    //
-    // Hence the shape: the OS's own drag gesture over this canvas asks the
-    // guest what it is dragging, and returns null (no drag starts, nothing
-    // visible happens) when the answer is "nothing", which is the answer
-    // almost every time. The provider polls for a moment because the guest is
-    // necessarily BEHIND: the press and the first moves have to reach it and
-    // its application has to decide a drag began, all of which happens after
-    // this host has already recognised one.
-    //
-    // The `Listener` underneath is not in the gesture arena, so guest input
-    // keeps flowing while this waits — a drag inside the guest that is not
-    // going anywhere near the edge behaves exactly as it did before.
+    // Hence the shape: the OS's own drag gesture over this canvas asks the guest what it is
+    // dragging, and returns null (no drag starts, nothing visible happens) when the answer is
+    // "nothing", which is the answer almost every time.
     final draggable = DragItemWidget(
       allowedOperations: () => const [DropOperation.copy],
       dragItemProvider: _dragOutItem,
@@ -884,7 +865,6 @@ class _RigInputSurfaceState extends ConsumerState<RigInputSurface> {
       ),
     );
 
-    // ── IN ───────────────────────────────────────────────────────────────
     return DropRegion(
       formats: Formats.standardFormats,
       hitTestBehavior: HitTestBehavior.opaque,

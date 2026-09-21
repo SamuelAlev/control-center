@@ -31,26 +31,9 @@ const Set<String> _dragThroughCursorKinds = {
 };
 
 /// Semantic roles that mean "this pixel does something when you press it".
-///
-/// The cursor alone is not enough: a **disabled** control paints
-/// [SystemMouseCursors.basic], which is indistinguishable from inert chrome, so
-/// the title bar's greyed-out back button used to move the window on the
-/// slightest wobble of a click. A control keeps its semantic role while
-/// disabled, so the role is what the guard asks about — a button is a button
-/// whether or not it currently accepts the press.
-/// Whether [target] subscribed to the press itself.
-///
-/// The cursor and the semantic role between them catch every control that
-/// *announces* itself. A bare `GestureDetector` or `Listener` announces
-/// nothing: no `MouseRegion`, and for a raw `Listener` no semantics either.
-/// That is not a hypothetical shape here — a popover/menu target is
-/// deliberately built that way (the target stays inert as a control so the
-/// popover owns the toggle), and the presence rail, the notification bell and
-/// the usage pill in the title bar are all popovers. Under the old guard the
-/// window happily dragged out from under them on the slightest wobble.
-///
-/// Subscribing to pointer-down, or announcing a tap/long-press/drag gesture,
-/// is a claim on the press whatever the pixel looks like.
+/// The cursor alone is not enough: a disabled control paints
+/// [SystemMouseCursors.basic], which is indistinguishable from inert chrome, so the title
+/// bar's greyed-out back button used to move the window on the slightest wobble of a click.
 bool _handlesPress(RenderObject target) {
   if (target is RenderPointerListener) {
     return target.onPointerDown != null ||
@@ -76,39 +59,14 @@ bool _declaresPressableRole(SemanticsProperties p) =>
     p.onTap != null ||
     p.onLongPress != null;
 
-/// Lets the user move the native OS window by pressing anywhere on [child] and
-/// dragging — used by the custom title bar, the sidebar's traffic-light strip,
-/// and the floating HUD windows.
+/// Drag [child] to move the native window ([startWindowDrag]; no-op on web).
 ///
-/// Replaces `window_manager`'s `DragToMoveArea`. On pan start it kicks off the
-/// platform's window-move loop on the focused window via the [startWindowDrag]
-/// seam (nativeapi on desktop, a no-op on web). Like the old widget it sits
-/// *inside* any pointer
-/// [Listener]-based gestures (e.g. the meeting toolbar's hold-to-stop), which
-/// keep receiving events because a raw [Listener] does not compete in the
-/// gesture arena — the pan only wins once it crosses the slop threshold.
-///
-/// **Pressable children are excluded automatically.** Before the recognizer
-/// joins the arena it hit-tests the press point (through the child subtree, not
-/// through this widget's own gesture plumbing) and asks three questions of the
-/// path. Does anything on it resolve a cursor outside
-/// [_dragThroughCursorKinds] the way `MouseTracker` would (a button, a
-/// breadcrumb link, a text field, a resize handle)? Does anything declare a
-/// pressable *semantic role* ([_declaresPressableRole]) — which is what catches
-/// a control that is merely disabled? And does anything simply subscribe to the
-/// press ([_handlesPress]) — which is what catches a bare `GestureDetector` or
-/// `Listener`, the shape every popover/menu target in this app takes, since
-/// those announce neither a cursor nor a role? Any one of the three rejects the
-/// pointer outright, so the child's own tap still wins even if the press
-/// wanders past the drag slop. Children therefore need no manual opt-out
-/// wrapper and the same guard covers [enableDoubleClickMaximize] so
-/// double-clicking a button never zooms the window.
-///
-/// **Only a press-and-drag moves the window.** Trackpad pan/zoom pointers are
-/// refused wholesale ([_WindowMoveGestureRecognizer.isPointerPanZoomAllowed]):
-/// they arrive from two-finger scrolling, never from a click, and they bypass
-/// `isPointerAllowed` entirely — so without that refusal a scroll anywhere over
-/// the title bar dragged the whole window, pressable child or not.
+/// Sits under raw [Listener]s (they stay in the arena until pan slop). Before
+/// joining, hit-test rejects pressable paths: non-drag cursor, pressable
+/// semantic role ([_declaresPressableRole]), or press handler ([_handlesPress])
+/// — same guard for [enableDoubleClickMaximize]. Refuse trackpad pan/zoom
+/// ([_WindowMoveGestureRecognizer.isPointerPanZoomAllowed]); those bypass
+/// `isPointerAllowed` and would drag on two-finger scroll.
 class WindowDragArea extends StatefulWidget {
   /// Creates a [WindowDragArea] wrapping [child].
   const WindowDragArea({
@@ -127,29 +85,14 @@ class WindowDragArea extends StatefulWidget {
   /// HUD windows (focus pill, meeting toolbar, mini player) stay unaffected.
   final bool enableDoubleClickMaximize;
 
-  /// Whether this area repositions the window itself as the pointer moves,
-  /// instead of relying on the platform's own drag loop.
-  ///
-  /// The primary window is `isMovable = false` (see `styleWindowOnShow`),
-  /// because that is the only switch that stops macOS starting its own drag
-  /// from the titlebar strip our title bar draws into — and it disables
-  /// `performWindowDragWithEvent:` along with it. So the title bar moves the
-  /// window itself. The floating HUDs have no titlebar to be dragged from and
-  /// stay system-movable, which is the smoother path (it participates in space
-  /// switching and snapping), so they leave this off.
-  ///
-  /// The move targets an absolute position, never an accumulation: each update
-  /// reads the OS cursor's CURRENT screen position — not the pointer event's
-  /// window-local position — and places the window so the grabbed pixel lands
-  /// under it. Event positions are measured against the window's own origin, a
-  /// frame this very code keeps moving; events still in flight when a move
-  /// lands therefore report stale coordinates, and correcting from a stale
-  /// event re-applied displacement the window had already absorbed while the
-  /// next fresh event pulled it back — an oscillation whose amplitude grew
-  /// with drag speed, i.e. the window shook. A target derived from cursor
-  /// state is idempotent and monotone with the pointer, and when the system
-  /// IS moving the window the grabbed pixel is already under the cursor, so
-  /// the target equals the current position and nothing double-moves.
+  /// Whether this area repositions the window itself as the pointer moves, instead of relying
+  /// on the platform's own drag loop.
+  /// The primary window is `isMovable = false` (see `styleWindowOnShow`), because that is the
+  /// only switch that stops macOS starting its own drag from the titlebar strip our title bar
+  /// draws into — and it disables `performWindowDragWithEvent:` along with it.
+  /// The move targets an absolute position, never an accumulation: each update reads the OS
+  /// cursor's CURRENT screen position — not the pointer event's window-local position — and
+  /// places the window so the grabbed pixel lands under it.
   final bool moveWindowManually;
 
   /// Test seam standing in for the native window-move loop, which cannot run

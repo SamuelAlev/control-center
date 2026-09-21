@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 
 /// Centralised font helpers — Manrope for UI, Fira Code for code.
 ///
-/// The two defaults are **bundled as host assets by the `cc_ui` package** and
+/// The two defaults are bundled as host assets by the `cc_ui` package and
 /// resolved by their `packages/cc_ui/<family>` name — the main app bundles no
 /// fonts of its own (single-copy setup). So the default text NEVER touches the
 /// network — important for the CSP-strict web + cc_remote clients. A fetch
@@ -71,7 +71,6 @@ class AppFonts {
           FontFeature.tabularFigures(),
         ];
 
-  // ── Default static helpers ──
 
   /// UI / body text in Manrope.
   ///
@@ -120,7 +119,6 @@ class AppFonts {
   static TextTheme uiTextTheme(TextTheme base) =>
       base.apply(fontFamily: uiFamily);
 
-  // ── Dynamic helpers for user-selected fonts ──
 
   /// UI text style using the given font family (downloadable or system).
   static TextStyle uiDynamic(String family, {TextStyle? textStyle}) =>

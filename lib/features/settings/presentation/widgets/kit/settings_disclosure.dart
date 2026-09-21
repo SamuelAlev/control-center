@@ -3,24 +3,8 @@ import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/widgets.dart';
 
 /// A collapsible region whose header says what is inside it.
-///
-/// This is the load-bearing piece of the settings redesign. A settings page
-/// gets long for one of two reasons: it has many things (providers, runners,
-/// servers) or each thing has many knobs (sampling parameters, capability
-/// matrices, environment variables). Rendering all of it at once is what turned
-/// three pages into walls. Hiding it behind a bare chevron is the other failure:
-/// the reader cannot tell whether opening it is worth the click, and cannot see
-/// that a value inside was changed.
-///
-/// So the header carries three things:
-///
-/// - the **title**, naming what is inside;
-/// - a **summary**, a short right-aligned fact about the contents ("4 variables",
-///   "not configured", "gpt-4o, o3, o3-mini") so the collapsed state still
-///   reports;
-/// - a **modified badge**, shown when the values inside are not the defaults.
-///   Without it, collapsing would hide the fact that this install is running an
-///   override, which is the one thing a collapsed section must never do.
+/// Without it, collapsing would hide the fact that this install is running an override,
+/// which is the one thing a collapsed section must never do.
 class SettingsDisclosure extends StatefulWidget {
   /// Creates a [SettingsDisclosure].
   const SettingsDisclosure({

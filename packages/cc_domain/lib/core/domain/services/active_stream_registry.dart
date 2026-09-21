@@ -7,27 +7,12 @@ import 'package:cc_domain/core/domain/value_objects/transcript_update.dart';
 /// the update belongs to, plus the update itself.
 typedef SpaceTurnUpdate = ({String messageId, TranscriptUpdate update});
 
-/// Registry of in-flight agent turns.
+/// Registry of in-flight agent turns (keyed by message id).
 ///
-/// For each active turn (keyed by message id) it maintains:
-///   * a broadcast [Stream] of [TranscriptUpdate]s so UI cells can rebuild
-///     individually as segments open / receive deltas / close and
-///   * a live [snapshot] of the current segment list so a cell that mounts
-///     mid-run (or is recycled by the list and rebuilt) can seed itself with
-///     everything streamed so far, then keep applying updates — no lost prefix.
-///
-/// It also maintains a per-space index + broadcast so the server's live turn
-/// relay (`messaging.watchSpaceTurns`) can seed a late subscriber with every
-/// active turn in a space and then forward updates as they happen. The same
-/// class runs on the thin client, which [seed]s it from relay frames.
-///
-/// Delta text is accumulated in per-segment [StringBuffer]s and materialized
-/// into segments lazily on read ([snapshot] / [segmentAt]), so a long
-/// streaming segment costs O(delta) per delta instead of O(accumulated text)
-/// (the old `text + delta` concat was quadratic over a turn).
-///
-/// [register] opens a turn; [apply] broadcasts an update and folds it into the
-/// snapshot; [unregister] closes the stream and drops the snapshot.
+/// Per turn: broadcast [TranscriptUpdate] stream + live [snapshot] for mid-run
+/// mounts. Per-space index for `messaging.watchSpaceTurns` / client [seed].
+/// Deltas accumulate in [StringBuffer]s (O(delta), not quadratic concat).
+/// [register] / [apply] / [unregister] manage lifecycle.
 class ActiveStreamRegistry {
   final Map<String, StreamController<TranscriptUpdate>> _streams = {};
   final Map<String, List<TranscriptSegment>> _snapshots = {};

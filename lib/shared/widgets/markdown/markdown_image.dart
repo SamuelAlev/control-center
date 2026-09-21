@@ -111,24 +111,13 @@ class MarkdownImageBox {
 }
 
 /// Resolves the layout box for an embedded raster.
-///
-/// The invariant this exists to hold: **the box always matches the image's
-/// aspect ratio**. Every renderer here paints with [BoxFit.contain] over a
-/// placeholder that stays behind the frame for the widget's whole life, so any
-/// slack between box and image shows up as coloured bands — the letterboxing a
-/// PR screenshot was rendering with.
-///
-/// [hint] carries the author's `width`/`height` attributes, which state the
-/// image's NATURAL size (GitHub's uploader writes the pair verbatim). So a
-/// `height` attribute is never used as the box height on its own: once the
-/// width is clamped to [cappedWidth], the height has to come down with it.
-/// [maxHeight] is likewise applied by scaling BOTH axes, never by clamping the
-/// height alone — that would pillarbox instead of letterbox, same defect.
-///
-/// Public because it is the ONE box every media state resolves through — the
-/// loaded raster, the reserved placeholder behind it, the failure card and the
-/// inline video player. Two renderers computing "the box" separately is how a
-/// loading state and a loaded state come to disagree by 400px.
+/// The invariant this exists to hold: the box always matches the image's aspect ratio.
+/// [hint] carries the author's `width`/`height` attributes, which state the image's NATURAL
+/// size (GitHub's uploader writes the pair verbatim).
+/// So a `height` attribute is never used as the box height on its own: once the width is
+/// clamped to [cappedWidth], the height has to come down with it.
+/// [maxHeight] is likewise applied by scaling BOTH axes, never by clamping the height alone
+/// — that would pillarbox instead of letterbox, same defect.
 MarkdownImageBox resolveMarkdownImageBox({
   required ImageDimensionHint hint,
   required Size? intrinsic,
@@ -172,28 +161,13 @@ double _nonSubscribingDevicePixelRatio(BuildContext context) =>
         .devicePixelRatio ??
     1.0;
 
-/// The ONE embedded-image renderer every markdown surface draws through — PR
-/// bodies and review comments, agent transcripts, ticket descriptions, meeting
-/// notes and artifacts alike — with the product-wide expand-to-fullscreen
-/// affordance on anything large enough to be content.
-///
-/// It used to live inside `github_markdown_body.dart` as a private widget,
-/// which meant the GitHub register got media-proxied, aspect-correct,
-/// SVG-aware images and every other register got a bare `Image.network` from
-/// the engine's fallback path. Same content, two behaviours, and only one of
-/// them was the one anybody had thought about.
-///
-/// Fetches the bytes once on init, then dispatches to an SVG or raster
-/// renderer based on the response's `Content-Type` (with a `<svg` / `<?xml`
-/// byte-sniff fallback for servers that return `application/octet-stream` or
-/// similar). Doing one authoritative fetch lets us:
-///   * Honour an SVG's intrinsic `width`/`height`/`viewBox` so badges and
-///     other small SVGs render at their natural size instead of being
-///     stretched to the full content width.
-///   * Drop the previous URL-host whitelist for SVG detection — the response
-///     is the source of truth.
-///   * Hand the lightbox the FULL-resolution bytes while the inline rendition
-///     decodes capped to its column.
+/// The ONE embedded-image renderer every markdown surface draws through — PR bodies and
+/// review comments, agent transcripts, ticket descriptions, meeting notes and artifacts
+/// alike — with the product-wide expand-to-fullscreen affordance on anything large enough
+/// to be content.
+/// It used to live inside `github_markdown_body.dart` as a private widget, which meant the
+/// GitHub register got media-proxied, aspect-correct, SVG-aware images and every other
+/// register got a bare `Image.network` from the engine's fallback path.
 class MarkdownImage extends StatefulWidget {
   /// Creates a [MarkdownImage].
   const MarkdownImage({
@@ -1171,23 +1145,14 @@ class _FetchResult {
   final String contentType;
 }
 
-/// Fetches [url] cross-platform via `package:http`, whose BrowserClient backs
-/// the web build — the previous `dart:io` `HttpClient` only threw there (DDC /
-/// dart2js stubs), so every PR-body image fell back to the attachment card even
-/// though its URL was correctly rewritten to the media proxy.
-///
-/// **This request is anonymous.** The client holds no forge credential any
-/// more, so a PRIVATE asset is readable only through the media proxy, which
-/// attaches the server-side credential for the hosts that need one. Redirects
-/// are still followed manually because the no-proxy fallback path takes the
-/// cross-host hop to S3 itself. Returns the body bytes together with the
-/// response's `Content-Type` so the caller can decide whether to decode as SVG
-/// or raster.
-///
-/// [onDimensions] fires at most once, as soon as enough of the stream has
-/// arrived to read the pixel size out of the format's header — well before the
-/// body finishes. It never fires for bytes no header parser recognises (SVG,
-/// AVIF/HEIF).
+/// Fetches [url] cross-platform via `package:http`, whose BrowserClient backs the web build
+/// — the previous `dart:io` `HttpClient` only threw there (DDC / dart2js stubs), so every
+/// PR-body image fell back to the attachment card even though its URL was correctly
+/// rewritten to the media proxy.
+/// more, so a PRIVATE asset is readable only through the media proxy, which attaches the
+/// server-side credential for the hosts that need one.
+/// Redirects are still followed manually because the no-proxy fallback path takes the
+/// cross-host hop to S3 itself.
 Future<_FetchResult> _fetchImageBytes({
   required String url,
   void Function(Size size)? onDimensions,

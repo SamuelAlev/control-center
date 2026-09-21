@@ -231,8 +231,6 @@ typedef RemoteRpcCatalog = ({RepoOpRegistry ops, WatchQueryRegistry watch});
 /// not a scoping boundary (workspace-isolation invariant). Newsfeed is global
 /// (`workspaceScoped: false`), a declared exemption.
 RemoteRpcCatalog buildRemoteRpcCatalog({
-  // ---- Identity & membership (multi-user access; the `identity.*` /
-  // `users.*` / `members.*` / `invites.*` / `prefs.*` / `activity.*` ops) ----
   // Users are global; membership + roles + invites + per-repo grants +
   // the audit trail are workspace-scoped. Optional as a group: when null the
   // identity ops are absent (bare test catalogs); production always wires
@@ -263,7 +261,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   String? serverOwnerUserId,
   required TicketRepository ticketRepository,
   required ProjectRepository projectRepository,
-  // ---- Ticket sync health (§188) ----
   // Read-only visibility into the multi-vendor sync configs + the append-only
   // attempt log, so the client can show per-vendor last-sync + error streak.
   // Optional: when null the `ticket_sync_config.watchForWorkspace` /
@@ -297,21 +294,9 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   // `ask_user` tool is simply not offered.
   AgentQuestionService? agentQuestions,
   required WorkspaceRepository workspaceRepository,
-  // ---- Workspace logo, over the RPC channel ----
-  // Reads the workspace's persisted logo file and hands back its bytes.
-  //
-  // There is already an HTTP lane for this (`/workspace/logo`), and it is the
-  // better one when it is reachable: it streams, the browser caches it, and
-  // the bytes never touch a JSON frame. But it is NOT always reachable. A
-  // client whose only route to the server is the broker relay has no HTTP
-  // origin at all (`RelayPath.probeUri` is null — the relay carries JSON-RPC
-  // frames, not byte ranges), and that is the normal case for the phone PWA:
-  // served over HTTPS, it cannot open a plaintext `ws://` LAN socket, so it
-  // lands on the relay and every signed media URL becomes unbuildable.
-  //
-  // So the logo — one small, identity-carrying image per workspace — also
-  // rides the channel that always exists. Optional: when null the
-  // `workspace.logo` op is absent and clients fall back to the initial mark.
+  // Workspace logo bytes over RPC. Prefer `/workspace/logo` when reachable;
+  // relay-only clients (`RelayPath.probeUri` null) have no HTTP origin, so the
+  // logo also rides this channel. Null → op absent; clients use the initial mark.
   Future<List<int>?> Function({required String workspaceId})?
   workspaceLogoBytes,
   required NewsfeedRepository newsfeedRepository,
@@ -333,7 +318,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   required AgentWorkingMemoryRepository agentWorkingMemoryRepository,
   required MemoryFactRepository memoryFactRepository,
   required MemoryPolicyRepository memoryPolicyRepository,
-  // ---- Provider governance (PRD 05; the `provider_policy.*` ops) ----
   // Per-workspace allow/deny statements the model catalog's finalize consults
   // to drop denied providers. Optional: when null the ops are absent
   // (default-deny) and the governance UI degrades to read-only catalog browsing.
@@ -396,7 +380,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   required IsolatedRepoRepository isolatedRepoRepository,
   required VoiceProfileRepository voiceProfileRepository,
   required MeetingRepository meetingRepository,
-  // ---- Meeting recording ingest (host runs the transcription stack) ----
   // Drives live, RPC-streamed meeting recording: a thin (web) client captures
   // mic + system audio in the browser and pushes 16 kHz PCM16 over
   // `meeting.startRecording` / `meeting.ingestAudio` / `meeting.stopRecording`;
@@ -416,7 +399,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   required PipelineTriggerRepository pipelineTriggerRepository,
   required TeamRepository teamRepository,
   required OrchestrationRepository orchestrationRepository,
-  // ---- Governance (PRD 09; workspace-scoped at the repos/service) ----
   // The thin client READS this surface only: the goal hierarchy, board
   // approvals + their comment threads and computed agent presence (availability
   // × workload). Writes (create/decide approvals, set goal progress, heartbeat)
@@ -439,7 +421,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   // lives server-side).
   required AgentGoalRunRepository agentGoalRunRepository,
   required GoalSupervisor goalSupervisor,
-  // ---- Pairing management (the `pairing.*` ops) ----
   // Mint / list / rename / revoke paired devices so a first-party client (web
   // or desktop) can pair a phone that then dials THIS server directly. The PSK
   // is written to [pairedDeviceSecretsPort] (file on the headless server, OS
@@ -468,7 +449,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   // host's `RemoteRelayHost` watches the device table, so minting an `active`
   // device is enough to admit it to the room — no callback needed here.
   String relaySignalingUrl = '',
-  // ---- Connectivity (PRD 15; the `connection.*` ops) ----
   // Builds the server's live ConnectionDescriptor (every reachable path +
   // the pinned identity fingerprint). When null, `connection.describe` is
   // absent and `pairing.mint`/invites omit the descriptor (bare test
@@ -480,12 +460,10 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   // this catalog during bootstrap; resolved per request. Optional: when null
   // those ops are absent (bare test catalogs).
   NetworkRuntime? Function()? networkRuntime,
-  // ---- Presence (PRD 16; the ephemeral awareness lane) ----
   // The in-memory hub behind `presence.update` / `presence.watch`. Presence
   // is NEVER persisted — no repository, no table, no DAO. Optional: when
   // null the presence ops are absent (bare test catalogs).
   PresenceHub? presenceHub,
-  // ---- Deterministic sync (PRD 16 §6; the delta lane) ----
   // The authoritative delta feed behind `sync.watch` / `sync.pull`, plus the
   // DAOs backing the per-column LWW ticket patch and the space extras
   // (Notes doc, autonomy dial, reactions). Optional as a group: when null
@@ -496,10 +474,8 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   // autonomy). Each resolves `workspaceDbs.of(ctx.workspaceId!)`, so the bound
   // workspace picks the database file before any SQL runs.
   WorkspaceDatabaseManager? workspaceDbs,
-  // ---- Take-over / hand-back + checker role (PRD 16 §8/§13) ----
   // Optional as a group: absent in bare test catalogs.
   TakeoverService? takeoverService,
-  // ---- Calendar (workspace-scoped at the repo) ----
   // The thin client READS this surface (synced events + connected accounts) and
   // drives the GUI connect over [calendarConnect] (below). The sync reconciler,
   // token refresh and alert sweep all run host-side against the host-resident
@@ -522,19 +498,9 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   // drive the host's sync). Null leaves those ops as no-ops.
   CalendarRefreshFn? calendarRefresh,
   CalendarEnsureRangeFn? calendarEnsureRange,
-  // ---- PR lifecycle (the local PR-draft → published → created record;
-  // workspace-scoped at the `PullRequests` table) ----
-  // The thin client BOTH reads (the compose-PR draft list + a draft by id) AND
-  // writes (create / update / publish-to-GitHub / delete a draft) this surface
-  // over RPC. Every op sources `ctx.workspaceId!`; the id-keyed ops validate the
-  // row belongs to the bound workspace before mutating. Publishing runs against
-  // the HOST-resident GitHub token (the desktop in-process host holds one; a
-  // headless server's token-less client surfaces the GitHub failure, matching the
-  // existing PR-review server-token follow-up).
-  //
-  // Resolved per ACTING USER: publishing opens a pull request on the forge, and
-  // a PR a person clicked "publish" on must carry their name there rather than
-  // the server app's. The draft rows behind it are the same either way.
+  // PR draft CRUD over RPC. Every op uses `ctx.workspaceId!`; id-keyed ops
+  // validate workspace ownership. Resolved per acting user so publish carries
+  // their forge identity (not the app's).
   required PrLifecycleRepository Function(String? actingUserId)
   prLifecycleRepositoryFor,
   // The audit trail for one entity (the `activity_log` table; workspace-scoped).
@@ -543,20 +509,9 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   // Wired on hosts that own the Drift `activity_log` DAO (the desktop in-process
   // host + the headless cc_server).
   ActivityLogReader? activityLogReader,
-  // ---- PR review (per-(workspace, owner, repo); host binds the workspace) ----
-  // The registry builds a (stateful, cache-backed) PrReviewRepository for a
-  // given repo, picking the factory by that repo's forge; the catalog caches
-  // one instance per (workspace, forge, owner, repo) so the SWR disk cache it
-  // owns survives across calls. Optional: when null the pr_review.* ops/watches
-  // surface an empty repository. A registry that simply has no factory for one
-  // forge does the same for that forge's repos only.
-  //
-  // Resolved per ACTING USER, because the registry is what decides whose
-  // credential the outbound calls carry. Every `pr_review.*` mutation rides one
-  // of its clients, so a single shared registry authored every approval and
-  // every comment as whatever identity the server itself holds — an operator
-  // approving from here showed up on GitHub as the app. The cache below is
-  // keyed by user for the same reason.
+  // Builds a cached `PrReviewRepository` per (workspace, forge, owner, repo).
+  // Null → empty `pr_review.*` surface. Resolved per acting user — shared
+  // registry would attribute every mutation to the server identity.
   ForgeProviderRegistry Function(String? actingUserId, {String? workspaceId})?
   forgeProviderRegistryFor,
   PrPreviewFetcher? fetchPrPreview,
@@ -626,8 +581,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   GifTrendingFetcher? gifTrending,
   // The workspace-scoped cache backing the SWR PR/commit reference previews.
   // Optional: when null, previews skip caching and hit the fetcher directly.
-  // ---- Server-host capabilities (device-local to the server that hosts this
-  // catalog) ----
   // Inspecting + registering a repo runs `git` on the SERVER's filesystem, so
   // the op is declared only when the host wires a [GitRepoInspectorPort]
   // (desktop in-process host / headless cc_server). When null, `repos.addFromPath`
@@ -902,20 +855,11 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   // injects the bound workspace, so a client can never reach another workspace's
   // directories (the workspace-isolation invariant).
   WorkspaceFilesystemPort? workspaceFilesystem,
-  // Runs the space-lifecycle + agent-dispatch service (the `MessagingService`,
-  // exposed as a [MessagingPort]) on the SERVER so a thin/web client's composer
-  // can send-and-dispatch, retry, refine, open a DM, create a group, etc. with
-  // the work executing server-side. The dispatch path needs the sandbox engine,
-  // so only a host that links it wires
-  // this (the desktop in-process host). A pure-Dart headless server leaves it
-  // null → the `dispatch.*` ops are simply absent and the web client surfaces an
-  // honest "agent dispatch runs on the server host" state. The streaming agent
-  // reply needs NO new infra: the server-side `AgentStreamProcessor` persists
-  // transcript segments onto the message rows and the client is already
-  // subscribed to `messaging.watchMessages` (which watches those rows), so the
-  // reply streams in automatically — no new WatchQuery here. Every `dispatch.*`
-  // op is workspace-scoped: it sources `ctx.workspaceId!` (never a client arg)
-  // and asserts space ownership before delegating (isolation invariant).
+  // Server-side [MessagingPort] (`MessagingService`) for space lifecycle +
+  // agent dispatch. Needs the sandbox engine — null on a headless host without
+  // it (`dispatch.*` absent). Replies stream via existing
+  // `messaging.watchMessages` (segments on message rows). Every `dispatch.*` op
+  // uses `ctx.workspaceId!` and asserts space ownership.
   MessagingPort? messagingDispatch,
   // Runs the pipeline EXECUTOR (the `PipelineEngine`) on the SERVER so a
   // thin/web client can start / cancel / retry a pipeline run and kill a single
@@ -943,7 +887,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   // workspace (defense in depth).
   OrchestrationActionFn? approveOrchestration,
   OrchestrationActionFn? cancelOrchestration,
-  // ---- Plan Studio (PRD 17) ----
   // The plan surface: revision history + operator edits (`orchestration.
   // saveRevision` / `revisions`), partial approval (`approve` with
   // `approved_node_keys`, `approveNodes`), plan-mode documents (`plan.*`),
@@ -955,7 +898,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   PlanDocumentRepository? planDocumentRepository,
   PlaybookRepository? playbookRepository,
   SaveOrchestrationRevisionUseCase? saveOrchestrationRevision,
-  // ---- Work products / artifacts ----
   // The `workProduct.*` ops: agent-published block artifacts + every other
   // versioned deliverable. Optional (absent → the client's artifact surface is
   // empty rather than half-wired). Workspace-scoped through the repository,
@@ -1003,7 +945,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     String? userId,
   })?
   runPlaybook,
-  // ---- Review Studio (PRD 18) ----
   // The review-studio read surface (semantic cohorts, API-contract diffs, UI
   // visual diffs, per-axis results) + two mutate gates (per-change contract
   // decision, visual "approve intended change"), all workspace-scoped via the
@@ -1089,7 +1030,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   // handler sources `ctx.workspaceId!` and asserts space ownership; the host
   // closure resolves the working directory from the bound workspace.
   ReviewDispatchFn? reviewDispatch,
-  // ---- Remote agent-action approvals (the `confirmation.*` surface) ----
   // The phone (cc_remote) approves/declines destructive agent commands. The
   // host-side [PendingConfirmationRegistry] bridges the agent's blocking
   // `ConfirmationPort.requestApproval` to remote clients: a destructive tool
@@ -1100,7 +1040,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   // CROSS-WORKSPACE BY DESIGN: approvals are host-global (a phone spans
   // workspaces); the `space_id` field routes them to the right space.
   PendingConfirmationRegistry? pendingConfirmationRegistry,
-  // ---- Runs parked on a credential (the `credential_gate.*` surface) ----
   // A dispatch that cannot authenticate registers here instead of failing, and
   // stays parked until the credential works, a client cancels it, or the host's
   // deadline passes. `credential_gate.watchBlocked` streams the parked set;
@@ -1111,7 +1050,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   // workspaces); each entry carries the workspace it belongs to and the watch
   // is filtered to the subscriber's own.
   PendingCredentialBlockRegistry? credentialBlockRegistry,
-  // ---- Live turn relay (`messaging.watchSpaceTurns`) ----
   // The dispatch stack's in-flight turn registry. When wired, a thin client
   // subscribes per open space and receives a seed snapshot of every active
   // turn plus coalesced per-segment updates — genuinely live streaming,
@@ -1125,7 +1063,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   // and crash recovery. Null leaves the read op absent (default-deny) and makes
   // the watch op seed empty for anything not currently streaming.
   RunTranscriptRepository? runTranscriptRepository,
-  // ---- Server-computed messaging aggregates ----
   // A SQL read-model projection (on DaoMessagingRepository, not the shared
   // repository interface): per-space activity signals so the sidebar doesn't
   // hold one full message-list subscription PER SPACE ROW. Null leaves the op
@@ -1142,19 +1079,16 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     String conversationId,
   )?
   watchConversationTokens,
-  // ---- Space repo-selection teardown (`messaging.setSpaceRepos`) ----
   // The provisioner tears down the worktree folder a repo loses when it
   // leaves a space's selection. Null (a bare test host) leaves the folder
   // behind — the selection write still lands, so a later sweep is the only
   // reconciliation, and the op's contract is documented on that basis.
   RepoWorkspaceProvisionerPort? provisioner,
-  // ---- Conversations (parallel streams inside a space; PR-workbench) ----
   // The conversation repository backs the `conversation.*` mutate ops and the
   // `conversation.watchForSpace` subscription. Null leaves those ops absent.
   ConversationRepository? conversationRepository,
   Stream<List<Conversation>> Function(String workspaceId, String spaceId)?
   watchConversationsForSpace,
-  // ---- PR workbench: ensure a PR's backing space (chat/terminal/files) ----
   Future<Map<String, dynamic>> Function({
     required String workspaceId,
     required String repoFullName,
@@ -1164,7 +1098,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     String title,
   })?
   ensurePrSpace,
-  // ---- Database backup / workspace export-import ----
   // Backs `server.backupNow` (a whole-install snapshot directory: global.db
   // plus one file per workspace and a manifest) and the per-workspace
   // `workspace.export` / `workspace.import` pair, which exist because one
@@ -1172,13 +1105,11 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   // table-by-table dump. All three are `fullClient`-only so a companion phone
   // can never trigger them. Null leaves the ops absent (default-deny).
   DatabaseBackupPort? databaseBackup,
-  // ---- Fleet ops & reactive queries (PRD 20) ----
   // Built in the runtime (which owns the scheduler + fleet repository) and
   // spliced into the closed registries here, so this hub stays agnostic of the
   // fleet wiring. Empty on a host with no fleet surface.
   List<RepoOp> extraOps = const [],
   List<WatchQuery> extraWatchQueries = const [],
-  // ---- The demo's one outbound marketing read (`demo.repoStars`) ----
   // The project's own GitHub star count, fetched and cached SERVER-side (the
   // client never dials GitHub — all external network I/O belongs to the
   // server). Wired only by the demo composition, so on a production server
@@ -1296,24 +1227,16 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     return conversation.id;
   }
 
-  /// One run's recorded activity for REPLAY, from whichever store holds it.
+  /// One run's recorded activity for replay, from whichever store holds it.
   ///
-  /// Two kinds of run persist their timeline in two different places and a
-  /// replay that knows only one of them reads as "nothing recorded":
+  /// * Subagent runs: `RunTranscriptRecorder` → `run_transcripts` by child run id
+  ///   (no message of their own).
+  /// * Top-level runs: turn is a space message (`messageId == runLog.id`);
+  ///   segments in `metadata['segments']` — nothing in `run_transcripts`.
   ///
-  ///   * a SUBAGENT run has no message of its own, so `RunTranscriptRecorder`
-  ///     flushes it to `run_transcripts` keyed by the child run id;
-  ///   * a TOP-LEVEL run's turn IS a space message — `MessagingService`
-  ///     posts the `agent_turn` placeholder under `messageId == runLog.id` and
-  ///     the stream processor folds its segments into that row's
-  ///     `metadata['segments']`. Nothing is written to `run_transcripts`.
-  ///
-  /// While either kind streams, `ActiveStreamRegistry` covers both (it too is
-  /// keyed by that shared id), which is why a live activity tab works and only
-  /// replay after a restart went blank.
-  ///
-  /// Returns the `run_transcripts` row when there is one — its `complete` flag
-  /// drives crash normalization — else the message-backed segments with no row.
+  /// Live: `ActiveStreamRegistry` covers both (shared id). Returns the
+  /// `run_transcripts` row when present (`complete` drives crash normalization),
+  /// else message-backed segments.
   Future<({List<TranscriptSegment> segments, RunTranscript? row})>
   loadRunReplay(String workspaceId, String runId) async {
     final row = await runTranscriptRepository?.getForRun(workspaceId, runId);
@@ -1535,8 +1458,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     await loadOwnedPipelineRun(workspaceId, stepRun.pipelineRunId);
   }
 
-  // ---- PR review repository cache (per (workspace, owner, repo)) ----
-  //
   // CachedPrReviewRepository is STATEFUL: it owns an SWR disk cache and emits
   // change-detected snapshots, so a fresh instance per call would defeat the
   // cache. Cache one instance per (workspace, owner, repo). The repo must be
@@ -1885,19 +1806,9 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       userId: userId,
       repoId: match.id,
     );
-    // Keyed by forge as well as coordinate: `acme/web` can exist on two forges
-    // inside one workspace, and they are different repositories.
-    //
-    // And keyed by the ACTING USER, because the cached instance holds the
-    // authenticated client its writes go out on. Sharing one instance across
-    // members would hand the first caller's identity to everyone who reviewed
-    // that repo afterwards — every approval and every comment attributed to
-    // whoever happened to open the PR first. Reads are cached in the workspace
-    // database underneath, so the duplication is one client per member, not one
-    // cache per member.
-    // `asApp` is part of the key: the two resolve to clients authenticated as
-    // different identities, and sharing one would attribute an agent's review
-    // to the operator (or the reverse) depending on who called first.
+    // Cache key: forge + coordinate + acting user + `asApp`. Same owner/repo
+    // on two forges are different repos; the cached instance holds the
+    // authenticated write client (sharing would mis-attribute).
     final identity = asApp ? '\u0000app' : userId;
     final key =
         '$workspaceId|${match.forge.wire}|'
@@ -2063,7 +1974,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   // ops actually enforced, and the closure only runs long after assignment.
   late final RepoOpRegistry ops;
   ops = RepoOpRegistry([
-    // ---- Server maintenance: on-demand database backup (fullClient-only) ----
     // Writes a consistent snapshot of every database (VACUUM INTO per file) and
     // returns the snapshot DIRECTORY's path. NOT workspace-scoped — it captures
     // the whole install — and fullClient-only so a companion phone can never
@@ -2140,7 +2050,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           return {'ok': true, 'workspace_id': id};
         },
       ),
-    // ---- Connectivity (PRD 15) ----
     // `connection.ping` is the resolver's health probe on the LIVE session
     // (any path, incl. the relay, where an out-of-band /healthz GET can't
     // reach). Unscoped and capability-free: every authenticated session may
@@ -2165,7 +2074,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           'descriptor': (await descriptorService.describe()).toJson(),
         },
       ),
-    // ---- Sharing & network state (PRD 15 §5) ----
     // `connectivity.status` shows the share/tunnel/mDNS/relay state (incl.
     // relay bytes this month — TURN-style relaying costs the operator real
     // bandwidth). `connectivity.setTunnel` is the EXPLICIT public-exposure
@@ -2211,7 +2119,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         },
       ),
     ],
-    // ---- Deterministic sync (PRD 16 §6) ----
     // `sync.pull` is the gap-fill for the `sync.watch` delta stream: a
     // client whose frame contiguity broke pulls `(from_seq, now]`; a
     // `snapshot_required` answer (range pruned) drops that store back to
@@ -2313,7 +2220,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           return {'ticket': updated == null ? null : ticketToWire(updated)};
         },
       ),
-    // ---- Space notes + reactions (PRD 16 §11/§15) ----
     if (workspaceDbs != null) ...[
       // The shared handoff doc: authoritative LWW in server receipt order
       // (no expected version — the whole doc is one column; soft-claims on
@@ -2377,7 +2283,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         },
       ),
     ],
-    // ---- Presence lane (PRD 16 §1) ----
     // `presence.update` applies the calling USER's own ephemeral presence —
     // identity comes from the session (never client args), the payload is a
     // compact awareness delta and nothing is persisted or audited (a
@@ -2413,7 +2318,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           return const {'ok': true};
         },
       ),
-    // ---- Take-over / hand-back (PRD 16 §8) ----
     if (takeoverService != null) ...[
       RepoOp(
         name: 'takeover.begin',
@@ -2474,7 +2378,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         },
       ),
     ],
-    // ---- Per-space agent autonomy dial (PRD 16 §12) ----
     if (workspaceDbs != null)
       RepoOp(
         name: 'autonomy.setForSpace',
@@ -2509,7 +2412,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           return {'ok': true};
         },
       ),
-    // ---- Checker role (PRD 16 §13) ----
     if (workspaceDbs != null) ...[
       RepoOp(
         name: 'checker.setForSpace',
@@ -2569,7 +2471,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         },
       ),
     ],
-    // ---- Pairing management (fullClient-only) ----
     // Mint / list / rename / revoke paired devices so a first-party client can
     // pair MORE clients to this server — additional web/remote/desktop clients
     // (each a fullClient) AND companion phones — that then dial THIS server
@@ -2744,8 +2645,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       },
     ),
 
-    // ---- Identity & membership (multi-user access) ----
-    //
     // Users are global identities; membership (role), invites, per-repo
     // grants and the audit trail are workspace-scoped. Reads are open to any
     // member (the role floor for reads is viewer); member/invite/grant
@@ -3216,8 +3115,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       ),
     ],
 
-    // ---- Approval routing (per-workspace; N humans must not collide on
-    // approval gates) ----
     if (approvalRouting != null) ...[
       RepoOp(
         name: 'approval_routing.getPolicy',
@@ -3248,7 +3145,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       ),
     ],
 
-    // ---- Tickets (workspace-scoped at the repository) ----
     RepoOp(
       name: 'tickets.list',
       kind: RepoOpKind.read,
@@ -3279,20 +3175,10 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         return {'ticket': ticketToWire(ticket)};
       },
     ),
-    // The two scoped list reads. `tickets.list` pulls the whole workspace and
-    // the client used to filter it in Dart — a 2,000-ticket workspace shipped
-    // 2,000 wire rows to answer "what is this agent working on?". Both are
-    // indexed DAO queries that already existed on the repository port; only
-    // the op was missing.
-    //
-    // The caller-supplied id is a FILTER, never an authorization key. Both
-    // queries run against `ctx.workspaceId`'s own database file with
-    // `workspace_id = ?` on top, and the dispatcher already proved membership
-    // of that workspace — so an agent or parent id belonging to another
-    // workspace selects nothing here, and every row that can come back is one
-    // `tickets.list` would already have returned to this caller. There is no
-    // existence oracle either: a foreign id and an id with no tickets both
-    // answer with an empty list.
+    // Scoped ticket list reads (indexed DAO; not client-side filter of
+    // `tickets.list`). Caller-supplied id is a FILTER, never auth — queries use
+    // `ctx.workspaceId`'s DB + `workspace_id = ?`; foreign ids return empty
+    // (no existence oracle).
     RepoOp(
       name: 'tickets.listForAgent',
       kind: RepoOpKind.read,
@@ -3498,7 +3384,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       },
     ),
 
-    // ---- Projects (workspace-scoped at the repository) ----
     RepoOp(
       name: 'project.insert',
       kind: RepoOpKind.mutate,
@@ -3586,7 +3471,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       },
     ),
 
-    // ---- Agents (workspace-scoped at the repository) ----
     RepoOp(
       name: 'agents.get',
       kind: RepoOpKind.read,
@@ -3724,7 +3608,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         },
       ),
 
-    // ---- Repos (global — declared workspace exemption) ----
     RepoOp(
       name: 'repos.get',
       kind: RepoOpKind.read,
@@ -3804,7 +3687,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         return {'ok': true};
       },
     ),
-    // ---- Per-repo lifecycle scripts (setup / archive) ----
     // Declared only when the host wires a [RepoScriptRepository]. The bodies
     // are SERVER-EXECUTED shell, which is why they never ride `repos.upsert`:
     // reads are member-level, but WRITING them is admin-gated and declared
@@ -3940,8 +3822,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           return {'editors': editors.map(ideEditorToWire).toList()};
         },
       ),
-    // ---- Server-host adapter / model / gh-CLI probing (host-global) ----
-    //
     // These probe the agent-runner CLIs installed on the SERVER's machine (for
     // Settings → Adapters + the auth status display). They are device-local to
     // the host, not workspace data, so every op is `workspaceScoped: false`.
@@ -4124,8 +4004,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           return {'ok': true};
         },
       ),
-    // ---- Ticketing credentials (the same model, one lane over) ----
-    //
     // The ticketing vendor is authenticated per user for the same reason the
     // forge is: a ticket the app files on someone's behalf should carry their
     // name, not a shared robot's.
@@ -4202,8 +4080,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         },
       ),
     ],
-    // ---- Provider sign-in (OAuth) ----
-    //
     // `oauth.providers` is what the account rows branch on: a provider whose
     // app is configured offers "sign in", one without it offers "paste a
     // token". The redirect URI rides along because the operator has to
@@ -4290,8 +4166,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         },
       ),
     ],
-    // ---- The server's own app identity (operator only) ----
-    //
     // These configure how the SERVER authenticates as itself, which is a
     // server-wide decision — hence `requireServerAdmin`, matching `sso.*` and
     // `models.*`. Secrets are write-only: what comes back is presence flags.
@@ -4392,8 +4266,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           return sandboxDetectionResultToWire(result);
         },
       ),
-    // ---- Server-host process detection (CROSS-WORKSPACE BY DESIGN) ----
-    //
     // The dashboard's "active agent processes" matrix reads the SERVER's OS
     // process table and can stop a process by pid. The process table is
     // host-global and the detection spans every workspace's agents (the
@@ -4476,8 +4348,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           return {'path': path};
         },
       ),
-    // ---- Generic workspace-scoped cache (IDE editor-layout persistence) ----
-    //
     // The messaging IDE layout is persisted per conversation in the SERVER-owned
     // `cache` table, so a layout saved on one client (desktop) is restored on
     // another (web). Both ops are workspace-scoped (the `workspaceId` filter is
@@ -4513,8 +4383,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         },
       ),
     ],
-    // ---- Repo data ops (workspace-scoped — IDE Explorer / Source Control) ----
-    //
     // The messaging IDE view reads repo working-tree state from the SERVER (it
     // owns the checkouts). Each op is workspace-scoped + validates repo
     // ownership inside its fetcher, so a session cannot reach into another
@@ -4794,8 +4662,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           return {'hits': hits, 'has_more': hits.length == limit};
         },
       ),
-    // ---- Conversation worktree mutate ops (workspace + space scoped) ----
-    //
     // Backing the IDE's "untitled" draft save (⌘S) and the Source Control
     // "Revert" action. Both resolve the worktree via the isolation registry
     // (the workspace→space→repo boundary), so a foreign space is simply not
@@ -4968,8 +4834,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         },
       ),
 
-    // ---- MCP server control (HOST-GLOBAL — declared workspace exemption) ----
-    //
     // The MCP HTTP server is a single process-wide listener the SERVER hosts;
     // it is not workspace data, so these ops are `workspaceScoped: false`. They
     // exist only when the host wired an [McpServerControl] (the guard promotes
@@ -5037,8 +4901,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       ),
     ],
 
-    // ---- External MCP client control (HOST-GLOBAL — declared workspace exemption) ----
-    //
     // The external MCP servers the host connects to (and the standing approval
     // posture that gates their tools) are a process-wide concern, NOT workspace
     // data, so these ops are `workspaceScoped: false`. They exist only when the
@@ -5115,8 +4977,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       ),
     ],
 
-    // ---- On-device model control (HOST-GLOBAL — declared workspace exemption) ----
-    //
     // Each model (embedding / diarization / voice) is a single device-local
     // asset the SERVER hosts, NOT workspace data, so these ops are
     // `workspaceScoped: false`. They exist only when the host wired the matching
@@ -5150,8 +5010,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     if (voiceModel is SelectableModelControl)
       ...voiceSelectionOps(control: voiceModel, guard: requireServerAdmin),
 
-    // ---- Interactive terminal (server-hosted PTY; WORKSPACE-SCOPED) ----
-    //
     // A `flutter_pty` shell runs inside the agent sandbox on the SERVER's
     // machine; the thin client drives it over these ops + the `terminal.output`
     // subscription. The PTY can only exist on a host that links flutter_pty, so
@@ -5255,8 +5113,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         ),
       ].map(fullClientOnly),
 
-    // ---- Enclosures / rigs (WORKSPACE-SCOPED) ----
-    //
     // A rig is a disposable VM an agent or a human drives. These ops exist only
     // when the host wired a [RigPort]: a server with no hypervisor leaves it
     // null, the ops are absent and the client renders an honest "enclosed VMs
@@ -5703,8 +5559,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         ),
       ].map(fullClientOnly),
 
-    // ---- Enclosure ports (WORKSPACE-SCOPED) ----
-    //
     // What is listening inside a Terminal (VM), and every address each port
     // answers on: host loopback (`localhost:<port>`), an optional LAN port
     // (`<server-ip>:<random>`), and a dev domain in the Browser (VM). Present
@@ -5831,16 +5685,12 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         ),
       ].map(fullClientOnly),
 
-    // ---- Host-shell / session ports (WORKSPACE-SCOPED) ----
-    //
     // Same snapshots and mutations as `rig.*Port*`. The literals live in
     // `catalog/terminal_port_ops.dart` so this file's RepoOp freeze does not
     // grow. Present only when [rigPorts] is wired (demo omits them).
     if (rigPorts != null)
       ...buildTerminalPortOps(rigPorts: rigPorts).map(fullClientOnly),
 
-    // ---- Code-server (VS Code in the browser) over RPC (WORKSPACE-SCOPED) ---
-    //
     // code-server runs on the SERVER host — loopback-bound, opening the
     // conversation's isolated CoW worktree — and the client reaches it through
     // the authenticated `/proxy/vscode/<sid>/` reverse proxy. `open` mints a
@@ -5924,21 +5774,10 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         ),
       ].map(fullClientOnly),
 
-    // ---- Workspace filesystem (server on-disk layout; WORKSPACE-SCOPED) ----
-    //
-    // The agents / skills / conversation directory tree lives on the SERVER's
-    // filesystem; a thin/web client resolves its server-side paths (opaque
-    // tokens) and writes through these ops. The tree can only exist on a host
-    // with a real filesystem, so the ops exist only when the host wired a
-    // [WorkspaceFilesystemPort] (the guard promotes `fs` non-null into the
-    // closures). Every op is workspace-scoped: the dispatcher injects the bound
-    // workspace and the handler reads `ctx.workspaceId!`, so a client can never
-    // reach another workspace's directories. The two opaque-path ops
-    // (`fs.ensureDir` / `fs.writeString`) take a server path rather than a
-    // workspaceId, but stay workspace-scoped so an UNBOUND session cannot reach
-    // them (defense in depth). Path methods return `{path}`; the slug listers
-    // return `{slugs}`; `fs.readSkillFile` returns `{content}` (null when
-    // absent); void mutations return `{ok: true}`.
+    // Server filesystem tree (agents/skills/conversations) via
+    // [WorkspaceFilesystemPort]; absent when unwired. Workspace-scoped
+    // (`ctx.workspaceId!`); opaque-path ops (`fs.ensureDir` / `fs.writeString`)
+    // stay workspace-scoped so unbound sessions cannot reach them.
     if (fs != null)
       ...[
         RepoOp(
@@ -6268,7 +6107,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         ),
       ].map(fullClientOnly),
 
-    // ---- Messaging (spaces workspace-scoped; messages ownership-checked) ----
     RepoOp(
       name: 'messaging.listSpaces',
       kind: RepoOpKind.read,
@@ -6294,23 +6132,12 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         return {'messages': messages.map(messageToWire).toList()};
       },
     ),
-    // The server-side cursor page. Its absence is why `getMessagePage` used to
-    // pull the WHOLE conversation and slice 80 rows client-side: a 2,000-message
-    // thread shipped every message, with `includeSegments: true` (transcript
-    // payloads — the heaviest wire shape), to render one screenful.
+    // Server-side cursor page (replaces shipping the whole conversation
+    // client-side). `messageToWireLite` drops segments (history bubbles;
+    // transcript opened per message). `hasMore` from keyset (+1 row), not COUNT.
     //
-    // Two deliberate choices. `messageToWireLite` drops segments, because a
-    // history page renders bubbles and the transcript is opened per message;
-    // the live `messaging.getMessages` keeps the full shape. And `hasMore`
-    // comes from the repository's keyset query, which reads one row past the
-    // limit rather than counting the conversation.
-    //
-    // `assertSpaceOwned` gates the SPACE, and `conversation_id` is now
-    // bound to it in SQL (`messaging_dao.getMessagePageRows`). Before that the
-    // page query filtered on the caller-supplied conversation id ALONE, so
-    // owning any one space would have read every conversation in the
-    // workspace file — a gap that only became reachable when this op made the
-    // page remotely callable.
+    // `assertSpaceOwned` gates the space; `conversation_id` is SQL-bound to it
+    // (`getMessagePageRows`) so owning one space cannot read another's threads.
     RepoOp(
       name: 'messaging.getMessagePage',
       kind: RepoOpKind.read,
@@ -6403,7 +6230,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         return {'message_id': messageId};
       },
     ),
-    // ---- PR workbench: ensure the PR's backing space ----
     if (ensurePrSpace != null)
       RepoOp(
         name: 'pr.ensureSpace',
@@ -6423,7 +6249,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           return result;
         },
       ),
-    // ---- Conversations (parallel streams / "parentheses" in a space) ----
     if (conversationRepository != null) ...[
       RepoOp(
         name: 'conversation.ensure',
@@ -6710,8 +6535,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       },
     ),
 
-    // ---- Image upload (composer paste / drop) ----
-    //
     // The human's half of the image lane. An agent's screenshots are stored by
     // the dispatch path; a person's pasted image arrives here, gets written to
     // the SAME per-workspace blob directory, and the composer keeps only the
@@ -6761,8 +6584,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         },
       ),
 
-    // ---- Messaging space lifecycle (DB-backed; ALWAYS available) ----
-    //
     // Opening a DM, creating a group, deleting/clearing a space and removing
     // a participant are pure persistence — they need no dispatch engine — so
     // they are served on EVERY host (including a pure-Dart headless server),
@@ -6909,23 +6730,11 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           spaceId: spaceId,
           keepRepoIds: repoIds?.toSet(),
         );
-        // Writing the selection is only half of it: a repo ADDED to a space
-        // has no worktree until something materializes one. Without this the
-        // folder simply never appeared — no CoW copy, no branch, no setup
-        // script — until the next agent dispatch happened to provision it
-        // inline, so the file tree and the terminal showed a repo that was
-        // not there. Re-provision on the same path creation uses (idempotent:
-        // surviving worktrees are reused and their setup scripts do not
-        // re-run), so the space reports `provisioning` → `ready` and message
-        // dispatch parks behind it exactly as it does for a new space.
-        //
-        // Unawaited, like the `SpaceCreated` listener: a clone is minutes of
-        // work and the caller is a dialog's Save button. `provision` writes
-        // its own terminal status (including `failed`, which carries the
-        // retry affordance), so nothing here has to unwind it. It is kicked
-        // BEFORE this op answers, so its `provisioning` write is already in
-        // flight when the dialog closes — the composer parks rather than
-        // letting a send through against a half-checked-out space.
+        // Materialize worktrees for repos added to a space (idempotent reuse).
+        // Without this the folder never appears until a later dispatch.
+        // Unawaited like `SpaceCreated`: clone is slow; `provision` writes its
+        // own terminal status. Kicked before answering so `provisioning` is
+        // in flight when the dialog closes.
         if (retrySpaceProvisioning != null &&
             spaceReposChanged(before, repoIds)) {
           unawaited(
@@ -7131,20 +6940,9 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         },
       ),
 
-    // ---- Messaging dispatch (agent-run execution; SERVER-SIDE, conditional) ----
-    //
-    // Sending-and-dispatching, retrying, refining a plan, etc. actually EXECUTE
-    // an agent run on the host (sandbox), so they exist
-    // only when the host wired a [MessagingPort] dispatch engine (the guard
-    // promotes `dispatch` non-null into the closures). A pure-Dart headless
-    // server leaves it null → these ops are absent and the web composer shows
-    // "agent dispatch runs on the server host". The agent reply streams back via
-    // the existing `messaging.watch*` subscriptions (the server-side
-    // `AgentStreamProcessor` persists segments to the message rows) — no new
-    // WatchQuery is needed here. Every op is workspace-scoped: it sources
-    // `ctx.workspaceId!` (never a client arg) and asserts space ownership
-    // before delegating (isolation invariant); the service enforces isolation
-    // too (defense in depth).
+    // Dispatch ops need a wired [MessagingPort] (null → ops absent). Replies
+    // stream via `messaging.watch*`. Every op uses `ctx.workspaceId!` and
+    // asserts space ownership.
     if (dispatch != null) ...[
       RepoOp(
         name: 'dispatch.sendUserMessage',
@@ -7380,7 +7178,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           return {'delivered': delivered};
         },
       ),
-      // ---- The durable steering queue (the strip below the chat trail) ----
       // Unlike `dispatch.steer` (fire-and-forget, in-process delivery only),
       // these ops persist steering messages as conversation rows: every client
       // sees the same queue over `messaging.watchMessages`, injected rows move
@@ -7594,8 +7391,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       ),
     ],
 
-    // ---- Review-fix agent dispatch (server-hosted dispatch stack) ----
-    //
     // Sends selected PR-review findings to an agent that fixes them, posting
     // into the space. The agent process spawns on the SERVER; the working
     // directory is resolved host-side from the bound workspace (NOT a client
@@ -7625,9 +7420,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         },
       ),
 
-    // ---- Newsfeed (per-user — global tables, declared workspace
-    // exemption; every op scopes by the session's user, never a client
-    // arg) ----
     RepoOp(
       name: 'newsfeed.listArticles',
       kind: RepoOpKind.read,
@@ -7639,7 +7431,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         return {'articles': articles.map(articleToWire).toList()};
       },
     ),
-    // ---- Demo: the project's own GitHub stars (`demo.repoStars`) ----
     // The other real-external-data lane besides the newsfeed: the SERVER
     // fetches public repo metadata and caches it, the visitor reads the one
     // number their tour's "Star on GitHub" button shows next to its label.
@@ -7801,9 +7592,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       },
     ),
 
-    // ---- Space read-cursors (spaces workspace-scoped; cursor keyed by
-    // space_id + the session's user, so one member opening a space never
-    // clears another member's unread indicator) ----
     RepoOp(
       name: 'space_read.markSpaceRead',
       kind: RepoOpKind.mutate,
@@ -7825,7 +7613,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       },
     ),
 
-    // ---- Memory domains (workspace-scoped at the repository) ----
     RepoOp(
       name: 'memory_domain.getByWorkspace',
       kind: RepoOpKind.read,
@@ -7868,7 +7655,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       },
     ),
 
-    // ---- Memory access grants (workspace-scoped at the repository) ----
     RepoOp(
       name: 'memory_access_grant.getByWorkspace',
       kind: RepoOpKind.read,
@@ -7920,7 +7706,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         return {'ok': true};
       },
     ),
-    // ---- Agent working memory (workspace-scoped at the repository) ----
     RepoOp(
       name: 'agent_working_memory.getByAgent',
       kind: RepoOpKind.read,
@@ -7955,7 +7740,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       },
     ),
 
-    // ---- Memory facts (workspace-scoped at the repository) ----
     RepoOp(
       name: 'memory_fact.getByWorkspace',
       kind: RepoOpKind.read,
@@ -8055,7 +7839,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       },
     ),
 
-    // ---- Memory policies (workspace-scoped at the repository) ----
     RepoOp(
       name: 'memory_policy.getByWorkspace',
       kind: RepoOpKind.read,
@@ -8129,7 +7912,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       },
     ),
 
-    // ---- Provider governance policy (PRD 05; workspace-scoped) ----
     // Allow/deny statements the model catalog's finalize consults to drop
     // denied providers. Declared only when the host wired a policy repository.
     if (providerPolicy != null)
@@ -8181,7 +7963,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         },
       ),
 
-    // ---- Workspace settings store ----
     // The workspace-scoped mirror of `prefs.*`: an opaque key/value space for
     // configuration two members of a workspace must agree on (branch naming,
     // agent/model defaults, default sandbox capabilities, data-sharing policy).
@@ -8221,7 +8002,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         },
       ),
 
-    // ---- Install-wide settings store ----
     // The scope above a workspace: what any process on this HOST may do
     // (sandbox posture, per-adapter launch argv/env). Not workspace-scoped
     // because one host serves every workspace — a per-workspace waiver of a
@@ -8261,7 +8041,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         },
       ),
 
-    // ---- Action guardrails policy store (PRD 24 §4) ----
     // The agent-permissions matrix reads/writes rules here; the resolver runs
     // client-side against the watched set. upsert/delete are security config →
     // admin floor. All rows are forced into the session workspace.
@@ -8313,7 +8092,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         },
       ),
 
-    // ---- Policy templates + portability ----
     // A starting posture and a way to move one between workspaces. Without
     // these a workspace starts at the built-in defaults and an operator
     // re-derives the same thirteen decisions by hand, per workspace — which
@@ -8384,7 +8162,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       ),
     ],
 
-    // ---- Custom (subtractive) workspace roles ----
     // A custom role names a base preset and a set of DENIED permissions
     // removed from it, so it can never grant more than its base — which is
     // what keeps every hand-rolled `role.isAdmin` check in this catalog a
@@ -8540,7 +8317,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       ),
     ],
 
-    // ---- The authorization audit spine ----
     // Hash-chained, append-only, allow AND deny. `audit.verifyChain` is the
     // claim an operator hands an auditor: an intact result means no row was
     // edited, deleted or reordered since it was written.
@@ -8601,7 +8377,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       ),
     ],
 
-    // ---- Managed (install-wide) policy: the operator's clamp ----
     // Server-owner only, and unscoped: these rules apply to EVERY workspace.
     // They can only tighten — `PolicyResolver` merges them most-restrictive
     // with the workspace chain — so an admin cannot use their own workspace
@@ -8691,7 +8466,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       ),
     ],
 
-    // ---- Sandbox exec grants ----
     // Which worktrees the operator has allowed agents to run programs from.
     // Read is member-level (seeing what you granted is not privileged);
     // revoking is security config, so it takes the same admin floor as the
@@ -8738,7 +8512,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         },
       ),
 
-    // ---- Skill sources: GitHub repositories as skill catalogs ----
     // (the skills.sh registry replacement). Everything here is
     // workspace-scoped — the sources, the lock, the scan cache and the skills
     // dir are per-workspace — and every install routes through the mandatory
@@ -9108,7 +8881,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         },
       ),
 
-    // ---- Skills antivirus on installed skills (PRD 23 §2/§6) ----
     // Status + on-demand re-scan of what is ALREADY on disk and the gated
     // local-save path for the settings editor (same fail-closed gate as
     // create_skill). All workspace-scoped: the lock, the scan cache and the
@@ -9285,7 +9057,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         },
       ),
 
-    // ---- Harness providers & credentials (PRD 13) ----
     // Host-global (not workspace-scoped): LLM provider credentials live on the
     // server host, shared across workspaces. Every client manages API keys,
     // browser OAuth logins, custom providers and the live model list over
@@ -9886,7 +9657,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         },
       ),
 
-    // ---- Usage / cost summary (PRD 05; workspace-scoped aggregation) ----
     // Aggregates the workspace's recent run-cost history into a spend summary
     // for the usage dashboard ("$X spent this week, resets in Ym").
     RepoOp(
@@ -9931,7 +9701,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       },
     ),
 
-    // ---- Review spaces (workspace-scoped at the repository) ----
     RepoOp(
       name: 'review_space.create',
       kind: RepoOpKind.mutate,
@@ -9978,7 +9747,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         return {'ok': true};
       },
     ),
-    // ---- Agent run logs (workspace-scoped at the repository) ----
     RepoOp(
       name: 'agent_run_log.get',
       kind: RepoOpKind.read,
@@ -10160,7 +9928,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       },
     ),
 
-    // ---- Teams (workspace-scoped; members ownership-checked via their team) ----
     RepoOp(
       name: 'team.insertTeam',
       kind: RepoOpKind.mutate,
@@ -10317,7 +10084,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       },
     ),
 
-    // ---- Isolated repos (CoW worktrees; workspace-scoped at the repository) ----
     RepoOp(
       name: 'isolated_repo.forUnitRepo',
       kind: RepoOpKind.read,
@@ -10416,7 +10182,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         return {'ok': true};
       },
     ),
-    // ---- Voice profiles (workspace-scoped at the repository) ----
     RepoOp(
       name: 'voice_profile.getByWorkspace',
       kind: RepoOpKind.read,
@@ -10524,8 +10289,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       meetingRecording: meetingRecording,
       dictationService: dictationService,
     ),
-    // ---- Calendar (workspace-scoped) ----
-    //
     // READ surface only. Every read sources `ctx.workspaceId!` (the bound
     // session, never a client arg) as the leading `workspaceId` — the impl
     // scopes every query by it, so a foreign-workspace row simply yields
@@ -10642,20 +10405,11 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         return {'ok': true};
       },
     ),
-    // ---- Calendar GUI connect (device-code OAuth, host-owned tokens) ----
-    //
-    // A thin (web/desktop) client connects a Google account by supplying a
-    // client id + secret, OR asks for the server's own app with `use_builtin`
-    // (`connectInfo` says whether that is on offer); the HOST runs the
-    // device-code flow, stores the refresh token server-side and syncs.
-    // `beginConnect` returns a code + URL + an opaque handle; the client polls
-    // `pollConnect` until approved. A built-in connect stores a marker rather
-    // than the server's pair, so no response and no on-disk credential ever
-    // carries the built-in secret. Every op
-    // sources `ctx.workspaceId!` (the bound session) — the handle is bound to
-    // the workspace that began it and `disconnect`'s account id embeds its
-    // workspace, so a foreign-workspace handle/account is rejected. Declared
-    // only when [calendarConnect] is wired (a host with the Google stack).
+    // Google calendar connect: client supplies id+secret or `use_builtin`;
+    // host runs device-code flow and stores the refresh token. Built-in
+    // connect stores a marker (never the server secret). Ops use
+    // `ctx.workspaceId!`; handles/accounts are workspace-bound. Only when
+    // [calendarConnect] is wired.
     if (calendarConnect != null) ...[
       RepoOp(
         // Says only WHETHER this server has a Google app of its own, so the
@@ -10720,8 +10474,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         },
       ),
     ],
-    // ---- PR lifecycle (workspace-scoped at the `PullRequests` table) ----
-    //
     // The thin client BOTH reads and writes this surface. Every op sources
     // `ctx.workspaceId!` (the bound session, never a client arg). `createDraft`
     // stamps that workspace on the new row. The id-keyed ops (`getById` /
@@ -10824,7 +10576,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         return {'ok': true};
       },
     ),
-    // ---- Open PR list (the PR-list screen's data; workspace-scoped) ----
     // Fetched SERVER-SIDE on the gh-authenticated client: the thin client holds
     // no GitHub token, so it reads the workspace's open PRs (grouped per linked
     // repo, checks already overlaid) over this op instead of hitting GitHub
@@ -10878,22 +10629,10 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           return {'ok': true};
         },
       ),
-    // The open pull request(s) opened FROM a conversation — matched by head
-    // branch, one entry per worktree the space owns.
-    //
-    // A conversation works on `conv/<id>` in its own CoW worktree; pushing that
-    // branch and opening a PR writes nothing that ties the two together (the
-    // `review_spaces` association runs the other way — see `pr.ensureSpace`,
-    // which mints a workbench space FOR a PR). So the branch IS the join, and
-    // it holds however the PR was opened: the compose screen, `gh`, the GitHub
-    // web UI, or an agent in the space's own terminal.
-    //
-    // Deliberately server-side even though the client already streams the
-    // open-PR snapshot over `pr.watchOpenForWorkspace`: that snapshot is one of
-    // the largest client allocations and is autoDisposed on purpose, whereas a
-    // space surface stays open for as long as someone is working. This answers
-    // from the poller's persisted snapshot, so the client holds one PR instead
-    // of the whole list and no forge call is made.
+    // Open PR(s) from this conversation — matched by head branch, one entry
+    // per space worktree. Branch is the join (`review_spaces` runs the other
+    // way via `pr.ensureSpace`). Server-side so the client holds one PR from
+    // the poller snapshot instead of the whole `pr.watchOpenForWorkspace` list.
     if (openPrPoller != null)
       RepoOp(
         name: 'pr.forSpaceBranches',
@@ -11177,8 +10916,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         };
       },
     ),
-    // ---- GitHub read surfaces (compose PR / peek / # search / repo perm /
-    // profile / PR-list + profile pagination) ----
     // Run SERVER-SIDE on the host's gh client; the thin client holds no token.
     // Every owner/repo arg is validated against the bound workspace's linked
     // repos before the fetch (workspace isolation). Null `githubRead` (no gh
@@ -11567,8 +11304,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         return {'providers': await fetch(accounts)};
       },
     ),
-    // ---- Claude Code accounts (server-scoped) ----
-    //
     // One `CLAUDE_CONFIG_DIR` per login, under `<dataDir>/claude-accounts/`.
     // Not workspace-scoped: the directories are host state, like the adapter
     // launch overrides, and one host serves every workspace.
@@ -11692,8 +11427,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         },
       ),
     ],
-    // ---- Account pools (workspace-scoped) ----
-    //
     // Which credentials a workspace (or one of its agents) may spend, in what
     // order, and whether to drain them one at a time or spread runs across
     // them. ONE pair of ops for both lanes — the Claude Code adapter's account
@@ -11768,7 +11501,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       ),
     ],
 
-    // ---- GIF picker (Klipy, server-side; global, not workspace data) ----
     // The composer's GIF picker. Run on the host's Klipy app key (the thin
     // client holds none and the browser can't reach Klipy cross-origin). Null
     // fetchers (no app key) → empty results.
@@ -11826,7 +11558,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         };
       },
     ),
-    // ---- Ticket links (workspace-scoped at the repository) ----
     RepoOp(
       name: 'ticket_link.insert',
       kind: RepoOpKind.mutate,
@@ -11891,10 +11622,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         return {'links': links.map(ticketLinkToWire).toList()};
       },
     ),
-    // ---- Pipeline runs (runs are workspace-scoped; step runs are owned
-    // through their parent run, so ID-only step ops validate ownership by
-    // loading the parent run and checking its workspaceId) ----
-    //
     // The PipelineRun DAO exposes ID-only lookups (getRun/watchRun) and step
     // ops keyed only by run/step id — an ID is NOT a scoping boundary, so each
     // op below fetches the owning run and asserts run.workspaceId ==
@@ -12163,8 +11890,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         return {'step_run': pipelineStepRunToWire(stepRun)};
       },
     ),
-    // ---- Pipeline EXECUTOR actions (`pipeline.*`) — server-side run control ----
-    //
     // These are NOT the data-layer `pipeline_run.*` ops above (which read/write
     // run rows); they drive the live `PipelineEngine` (start/cancel/retry a run,
     // kill a step). The engine runs only on a host that constructs it (the
@@ -12244,8 +11969,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         },
       ),
     ],
-    // ---- Orchestration EXECUTOR actions (`orchestration.*`) — server-side ----
-    //
     // Approving/cancelling an orchestration hires agents + starts/cancels
     // pipelines via the concrete engine, so it runs on the host that owns the
     // engine (the desktop in-process host); absent on a headless server. Both
@@ -12294,7 +12017,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           return {'ok': true};
         },
       ),
-    // ---- Plan Studio (PRD 17) ----
     // Widens an executing partial approval: newly approved nodes' suspended
     // gates resume. The use case enforces dependency-closure.
     if (approveNodes != null)
@@ -12402,7 +12124,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           );
         },
       ),
-    // ---- Plan-mode documents (PRD 17 §8) ----
     if (plansRepo != null) ...[
       RepoOp(
         name: 'plan.getById',
@@ -12458,8 +12179,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         },
       ),
     ],
-    // ---- Work products / artifacts ----
-    //
     // Read-only: artifacts are written by the agent-facing MCP tools
     // (`publish_artifact` / `revise_artifact`), never by a client, so there is
     // deliberately no `workProduct.save` op here. Every read goes through the
@@ -12573,7 +12292,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           );
         },
       ),
-    // ---- Playbooks (PRD 17 §10) ----
     if (playbooksRepo != null) ...[
       RepoOp(
         name: 'playbook.getById',
@@ -12665,7 +12383,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           );
         },
       ),
-    // ---- Review Studio (PRD 18) ----
     // Reads are workspace-scoped via the synthetic PR key; compute + blast
     // radius run on a host that owns the code graph + git + PR fetch.
     if (reviewCohortRepository != null)
@@ -12932,7 +12649,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           );
         },
       ),
-    // ---- Pipeline templates (workspace-scoped at the repository) ----
     RepoOp(
       name: 'pipeline_template.forWorkspace',
       kind: RepoOpKind.read,
@@ -12996,7 +12712,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         return {'deleted': deleted};
       },
     ),
-    // ---- Pipeline triggers (workspace-scoped at the repository) ----
     RepoOp(
       name: 'pipeline_trigger.insert',
       kind: RepoOpKind.mutate,
@@ -13154,7 +12869,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         return {'ok': true};
       },
     ),
-    // ---- Orchestrations (workspace-scoped at the repository) ----
     RepoOp(
       name: 'orchestration.insert',
       kind: RepoOpKind.mutate,
@@ -13261,11 +12975,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       },
     ),
 
-    // ---- Workspaces (the workspace entity itself is the unit of isolation, so
-    // its CRUD + the workspace-switcher list legitimately span workspaces; the
-    // repo-LINK ops below are keyed by an explicit workspace id and the entity
-    // carries no nested workspace-scoped data) ----
-    //
     // A workspace's logo as bytes, for a client with no HTTP route to this
     // server (see [workspaceLogoBytes] for why that is the phone's normal
     // case). Workspace-scoped — unlike the registry CRUD below — so the
@@ -13508,7 +13217,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       userRepository: userRepository,
       reviewFindingStatus: reviewFindingStatus,
     ),
-    // ---- Remote agent-action approvals (confirmation.*) ----
     // Approvals are host-global (a phone spans workspaces), so the op is
     // `workspaceScoped: false` — but the request carries the workspace it was
     // raised in and the responder MUST be a member (member role or above) of
@@ -13687,7 +13395,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           return {'ok': ok};
         },
       ),
-    // ---- Governance (PRD 09; read-only over RPC) ----
     // The goal hierarchy + board approvals are workspace-scoped at the repo,
     // so an id-keyed read that resolves a row from a foreign workspace returns
     // null (treated as not-found) — no cross-workspace leak.
@@ -13751,7 +13458,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         };
       },
     ),
-    // ---- Per-conversation todo lists ----
     // Workspace-scoped (the bound workspace is `ctx.workspaceId!`); each op
     // additionally requires the `conversation_id` it operates on, and proves
     // the conversation belongs to that workspace before it touches a row. The
@@ -13904,7 +13610,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         return {'ok': true};
       },
     ),
-    // ---- Notification feed read state ----
     // Every op below writes the CALLER's own row (`ctx.userId`, never a client
     // arg) with the server clock, so read state follows the user across
     // devices. `minRole: guest` matches the read floor — acknowledging your
@@ -13978,31 +13683,17 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       resumeGoal: goalSupervisor.resumeGoal,
       cancelGoal: goalSupervisor.cancelGoal,
     ),
-    // ---- Fleet scaling & remote execution (PRD 20) ----
     // Built in the runtime (where the scheduler + repository live) and spliced
     // in here so this hub file stays agnostic of the fleet wiring.
     ...extraOps,
-    // v17: action_policy.* (PRD 24 agent-permissions surface).
-    // v18: skills.registry* (PRD 23 registry browse/preview/install).
-    // v19: dictation.* (PRD 25 voice dictation over RPC).
-    // v20: workspace_settings.* (workspace-scoped settings store).
-    // v21: server_settings.* (install-wide settings store).
-    // v22: notifications.* (durable per-workspace notification feed +
-    //      per-user read marks; the bell moved out of device-local prefs).
-    // v23: skills.installedList / skills.scanInstalled / skills.saveLocal —
-    //      the antivirus over already-installed skills — and fs.writeSkillFile
-    //      routed through the same scan gate.
-    // v24: skills.analyze + scanInstalled as recorded skill_analysis pipeline
-    //      runs (manual / SkillUpdated / on-disk-change triggered).
-    // v26: notifications.clear (previously called by the client against an op
-    //      that was never registered) + the per-item notifications.setItemRead
-    //      / .dismissItem and their notifications.watchItemStates stream.
-    // v27: skills.sources* / skills.source* — the skills.sh registry was
-    //      replaced by operator-registered GitHub repositories (add/remove/
-    //      list sources, browse a source's skill grid, README + scan preview
-    //      detail, multi-file install) — plus skills.uninstall /
-    //      skills.checkUpdates / skills.updateSkill so the whole lifecycle
-    //      lives on the server.
+    // Wire catalog bumps (non-obvious rules only):
+    // v22 notifications.* — durable feed; bell left device-local prefs.
+    // v23 installed skills scan + fs.writeSkillFile through the same scan gate.
+    // v24 skills.analyze / scanInstalled as skill_analysis pipeline runs.
+    // v26 notifications.clear (was client-called but never registered) +
+    //     per-item read/dismiss + watchItemStates.
+    // v27 skills.sources* — operator GitHub repos replace skills.sh; full
+    //     lifecycle (uninstall/checkUpdates/updateSkill) on the server.
   ], catalogVersion: 27);
 
   // Membership-scoped cross-workspace streams. The solo-era `*.watchAll`
@@ -14115,7 +13806,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
               },
             ),
       ),
-    // ---- Deterministic sync (PRD 16 §6) ----
     if (syncFeed != null)
       WatchQuery(
         name: 'sync.watch',
@@ -14175,7 +13865,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         },
       ),
     ],
-    // ---- Presence lane (PRD 16 §1) ----
     // The workspace roster: humans + agents as co-equal principals. The
     // `tier` arg picks the consumer's coalescing budget (`summary` = phone).
     // Workspace-scoped: membership is enforced before the stream opens, so
@@ -14192,7 +13881,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
               .map((roster) => {'participants': roster});
         },
       ),
-    // ---- Identity & membership (live counterparts of the identity ops) ----
     if (identityUsers != null &&
         identityMembers != null &&
         identityInvites != null &&
@@ -14294,8 +13982,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
             ),
       ),
     ],
-    // ---- On-device model download progress (HOST-GLOBAL) ----
-    //
     // Streams each model's lifecycle as the SERVER downloads + unpacks it, so a
     // thin client animates a live progress bar via `models.watch*` while the
     // server does the work. Registered only when the host wired the matching
@@ -14995,7 +14681,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           .watchByWorkspace(ctx.workspaceId!)
           .map((list) => {'profiles': list.map(voiceProfileToWire).toList()}),
     ),
-    // ---- Meetings (workspace-scoped at the repository) ----
     WatchQuery(
       name: 'meeting.watchByWorkspace',
       handler: (ctx) => meetingRepository
@@ -15093,8 +14778,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           .watchDecisionCounts(ctx.workspaceId!)
           .map((counts) => {'counts': counts}),
     ),
-    // ---- Calendar (workspace-scoped) ----
-    //
     // Every watch sources `ctx.workspaceId!` (the bound session, never a client
     // arg) as the leading `workspaceId`; the impl scopes every query by it, so a
     // foreign-workspace row never streams through. The range watch reads ISO-8601
@@ -15153,8 +14836,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
             );
       },
     ),
-    // ---- PR lifecycle (workspace-scoped) ----
-    //
     // The compose-PR draft list for the bound workspace. Sources
     // `ctx.workspaceId!` (the bound session, never a client arg); the impl scopes
     // the query by it, so a foreign-workspace row never streams through.
@@ -15164,8 +14845,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           .watchByWorkspace(ctx.workspaceId!)
           .map((list) => {'prs': list.map(prGenerationToWire).toList()}),
     ),
-    // ---- Activity log (workspace-scoped audit trail for one entity) ----
-    //
     // Present only when the host wired an [ActivityLogReader] (the desktop
     // in-process host + the headless cc_server own the Drift `activity_log` DAO);
     // a host without one leaves it absent (default-deny) and the client's
@@ -15277,7 +14956,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
             (o) => {'orchestration': o == null ? null : orchestrationToWire(o)},
           ),
     ),
-    // ---- Plan Studio (PRD 17): live plan documents / revisions / playbooks --
     if (revisionsRepo != null)
       WatchQuery(
         name: 'orchestration.watchRevisions',
@@ -15306,7 +14984,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
             .map((d) => {'plan': d == null ? null : planDocumentToWire(d)}),
       ),
     ],
-    // ---- Work products / artifacts (live) ----
     if (workProductsRepo != null) ...[
       // One artifact, live: the artifact bubble carries ids only and watches
       // the row, so a `revise_artifact` re-renders the existing card instead of
@@ -15330,22 +15007,13 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
               );
         },
       ),
-      // Every artifact published into one conversation, newest first — or,
-      // when the caller names no conversation, into the WHOLE space.
+      // Artifacts in one conversation (newest first), or the whole space when
+      // no conversation is named. Association via `artifact` messages'
+      // `metadata['workProductId']` (no schema column). Re-reads rows only when
+      // the id list changes.
       //
-      // The association lives in the conversation's `artifact` messages
-      // (`metadata['workProductId']`), NOT in a column: `work_products` is
-      // reused as-is, with no schema migration. So this streams the
-      // conversation's messages, projects the artifact ids, and only re-reads
-      // the rows when that id list actually changes — a chatty space must not
-      // turn into a query per message.
-      //
-      // The unscoped read is space-wide on purpose: a review space has no
-      // standing conversation — each reviewer and the consolidator run in
-      // their own named stream — so resolving "the space's artifact stream"
-      // to a minted standing conversation both grew a row the space should
-      // never have and hid the review's own report from the tab that renders
-      // it.
+      // Unscoped = space-wide on purpose: review spaces have no standing
+      // conversation; minting one hid the review report from its tab.
       WatchQuery(
         name: 'workProduct.watchForSpace',
         handler: (ctx) async* {
@@ -15410,7 +15078,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
             .map((list) => {'playbooks': list.map(playbookToWire).toList()}),
       ),
 
-    // ---- Review Studio (PRD 18): live cohorts / contract / visual / axes ----
     // Each watch validates the workspace owns (owner, repo) before streaming
     // (isolation), then keys by the synthetic PR node key.
     if (reviewCohortRepository != null)
@@ -15560,7 +15227,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         },
       ),
 
-    // ---- Live open-PR list (workspace-scoped) ----
     // The push counterpart of `pr.listOpenForWorkspace`: streams the poller's
     // snapshot (same wire shape) and re-emits whenever a sweep lands a change.
     // Subscribing registers watcher interest, which switches the workspace to
@@ -15578,7 +15244,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       },
     ),
 
-    // ---- Repo access (workspace-scoped, lite) ----
     // The repos the poller has parked as inaccessible (a 404/403 that held
     // through the failure threshold — typically a GitHub App not installed on
     // the repo's org), with a reason and since-when. A lite feed for the
@@ -15598,7 +15263,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       },
     ),
 
-    // ---- Needs-my-review count (workspace-scoped, lite) ----
     // The count of open PRs requesting the SERVER user's review, derived from
     // the poller's snapshot stream. A deliberate lite feed for the sidebar's
     // always-on inbox badge: the client subscribes to a single int instead
@@ -15650,8 +15314,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       },
     ),
 
-    // ---- PR review (per-(workspace, owner, repo); host binds the workspace) --
-    // Each watch carries `owner`/`repo` (+ prNumber/path/sha) in its args; the
+      // Each watch carries `owner`/`repo` (+ prNumber/path/sha) in its args; the
     // repository is resolved from the bound workspace's LINKED repo, so a watch
     // over an (owner, repo) the workspace doesn't own errors before streaming.
     WatchQuery(
@@ -15900,8 +15563,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
             );
       },
     ),
-    // ---- Interactive terminal output (server-hosted PTY; WORKSPACE-SCOPED) ----
-    //
     // Streams a session's raw PTY output, base64-framed per emission, to the
     // thin client. Present only when the host wired a [TerminalSessionPort]
     // (guard promotes `terminals` non-null); a headless server leaves it absent
@@ -15939,8 +15600,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         },
       ),
     ],
-    // ---- Enclosures (rigs): live session list ----
-    //
     // Status, display size and who holds control, pushed on every change. The
     // FRAMES do not come through here — video over a JSON-RPC subscription
     // would put base64 in the same lane as every other message. They ride the
@@ -15956,8 +15615,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
               },
             ),
       ),
-    // ---- Enclosure ports: live forwarded-port list ----
-    //
     // The panel's data. One stream per rig, pushed on every port that opens,
     // closes or is forwarded — the discovery poll is server-side, so the
     // client never polls the guest.
@@ -15997,7 +15654,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           );
         },
       ),
-    // ---- Remote agent-action approvals (confirmation.*) ----
     // CROSS-WORKSPACE BY DESIGN: approvals are host-global; the `space_id`
     // field in the snapshot routes each to the right thread. Absent when the
     // host wired no [PendingConfirmationRegistry] (headless cc_server).
@@ -16062,7 +15718,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           );
         },
       ),
-    // ---- Governance (PRD 09; read-only) ----
     WatchQuery(
       name: 'goals.watchForWorkspace',
       handler: (ctx) => goalRepository
@@ -16132,7 +15787,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     // backing the client's goal-run list with pause / resume / cancel via
     // the `agentGoalRuns.*` ops.
     agentGoalRunsWatchQuery(agentGoalRunRepository: agentGoalRunRepository),
-    // ---- Fleet reactive queries (PRD 20 §7) ----
     ...extraWatchQueries,
   ]);
 

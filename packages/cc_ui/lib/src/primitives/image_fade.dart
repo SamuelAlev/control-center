@@ -7,22 +7,10 @@ import 'package:flutter/widgets.dart';
 typedef ImageFadeErrorBuilder =
     Widget Function(BuildContext context, Object error);
 
-/// Displays [placeholder] while [image] loads, then cross-fades the decoded
-/// image in over it. Changing [image] cross-fades the new one over the last
-/// frame of the old one; setting it to null fades back to [placeholder].
-///
-/// This does NOT size itself unless [width]/[height] are given — the caller
-/// reserves the box. See `CcImageFade`, the themed wrapper most app code should
-/// use instead of this primitive.
-///
-/// ## Animated images
-///
-/// An animated image (GIF, APNG, animated WebP) delivers a new frame to its
-/// image stream every few tens of milliseconds. Only the FIRST frame starts the
-/// cross-fade; every frame after it merely repaints. Restarting the fade per
-/// frame is what renders animated images washed out — a 30ms frame interval
-/// against a 300ms fade never lets opacity climb past ~10%, so the animation
-/// plays but the colours sit at a fraction of their real intensity.
+/// Cross-fade [image] over [placeholder] (and between images). Does not size
+/// itself unless [width]/[height] set — prefer themed `CcImageFade`. Animated
+/// images: only the first frame starts the fade; restarting per frame washes
+/// colours out.
 class ImageFade extends StatefulWidget {
   /// Creates an [ImageFade].
   const ImageFade({

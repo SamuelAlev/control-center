@@ -28,28 +28,14 @@ import 'package:cc_infra/src/network/gitlab/models/gitlab_tree_entry.dart';
 import 'package:cc_infra/src/network/gitlab/models/gitlab_user.dart';
 import 'package:dio/dio.dart';
 
-/// GitLab's implementation of the forge PR port, in merge-request terms.
+/// GitLab [ForgePrClient] over merge requests.
 ///
-/// Everything vendor-shaped stops here: [GitLabApiClient] speaks REST v4,
-/// `gitlab_pr_mapper.dart` translates, and callers above see nothing but
-/// domain entities. The three places GitLab genuinely differs from GitHub —
-/// and where this adapter therefore does real work rather than a rename — are:
-///
-/// - **Reviews do not exist as objects.** A verdict is either an approval
-///   (`/approvals`) or a reviewer sitting in `requested_changes`
-///   (`/reviewers`), so [listReviews] synthesizes submissions from those two
-///   and deliberately invents nothing for comment-only feedback.
-/// - **Diffs arrive unframed.** GitLab returns hunks plus paths as separate
-///   fields; [getPullRequestDiff] rebuilds the `diff --git`/`---`/`+++`
-///   headers a unified-diff parser needs.
-/// - **Draft state is the title.** A `Draft: ` prefix *is* the flag, which is
-///   why [updatePullRequest] re-applies it rather than letting a title edit
-///   silently mark a merge request ready.
-///
-/// Four capabilities are false for GitLab (`viewedStateSync`,
-/// `suggestedReviewers`, `stacks`, `notifications`); their methods throw
-/// [ForgeUnsupportedError] rather than returning an empty result, because
-/// "none" and "this forge cannot tell you" are different answers.
+/// Real work vs rename: reviews are not objects (synthesize from approvals +
+/// `requested_changes`; invent nothing for comment-only); diffs arrive
+/// unframed ([getPullRequestDiff] rebuilds unified-diff headers); draft is a
+/// `Draft: ` title prefix ([updatePullRequest] must re-apply it). False caps
+/// (`viewedStateSync`, `suggestedReviewers`, `stacks`, `notifications`) throw
+/// [ForgeUnsupportedError], not empty.
 class GitLabForgePrClient implements ForgePrClient {
   /// Creates a [GitLabForgePrClient] for `owner/repo` on the instance [_client]
   /// is pointed at.
@@ -903,20 +889,10 @@ class GitLabForgePrClient implements ForgePrClient {
 
   /// Submits a verdict on merge request [prNumber].
   ///
-  /// Pending draft notes are published first in one batch — that is what the
-  /// `pendingReviewBatching` capability names — so a reviewer's queued inline
-  /// comments land together with the verdict rather than trickling out.
-  ///
-  /// The verdicts then map as GitLab allows:
-  /// - **approve** posts the body as a note (when there is one) and calls
-  ///   `/approve`.
-  /// - **requestChanges** posts the body as a note and withdraws any existing
-  ///   approval. GitLab's REST API has no "request changes" verb — the
-  ///   reviewer state is only settable through its own UI and GraphQL — so the
-  ///   note carries the verdict and the unapprove makes it binding. A verdict
-  ///   with no body still posts a short note, so the merge request records
-  ///   that changes were asked for.
-  /// - **comment** posts the body as a note and casts no verdict.
+  /// Publishes pending draft notes first (`pendingReviewBatching`). Mapping:
+  /// approve → note (if body) + `/approve`; requestChanges → note + unapprove
+  /// (REST has no request-changes verb; empty body still posts a short note);
+  /// comment → note only.
   @override
   Future<void> submitReview({
     required int prNumber,

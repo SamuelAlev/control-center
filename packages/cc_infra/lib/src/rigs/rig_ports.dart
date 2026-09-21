@@ -5,42 +5,17 @@
 
 // Port visibility and forwarding for enclosed (smolvm) rigs.
 //
-// The problem this file solves, end to end: a dev server started inside the
-// Terminal (VM) — `pnpm dev` listening on guest port 3000 — must be
+// A guest `pnpm dev` on :3000 must appear in the ports panel, be reachable as
+// host `localhost:3000` (and optionally LAN), and as `localhost:3000` /
+// `myapp.test` from the enclosed browser.
 //
-//  * VISIBLE: the ports panel in the space/PR shows "3000 (node)" moments
-//    after the process binds it;
-//  * REACHABLE FROM THE HOST: `localhost:3000` on the server machine (and,
-//    when explicitly exposed, `<server-ip>:<random port>` on the LAN);
-//  * REACHABLE FROM THE BROWSER (VM): `localhost:3000` — and `myapp.test` —
-//    typed into the enclosed browser lands on the terminal VM's server.
-//
-// None of that comes for free from smolvm. Its `-p` forwards are fixed at
-// machine-create time (`machine update` requires a stopped machine), and —
-// measured on smolvm 1.8.1 — a guest under ANY egress filter
-// (`--outbound-localhost-only`, `--allow-cidr 127.0.0.0/8`) CANNOT dial the
-// host's loopback, and `--mount-socket` never reaches the host service. So
-// every lane here is built from the two primitives that do work:
-//
-//  * HOST → GUEST: one `-p` forward per machine to a fixed in-guest MUX port.
-//    The mux is socat forking a tiny dialer script per connection: the host
-//    writes the target port as a decimal line, the dialer verifies something
-//    in the guest is LISTENING on it (loop prevention — see below) and splices
-//    to `127.0.0.1:<port>`. One pre-created forward serves every future port.
-//
-//  * GUEST → HOST: a REVERSE TUNNEL over `machine exec -i` stdio. A browser
-//    page-load often opens many TCP connections against one
-//    guest port; those ride ONE multiplexed exec (`cc-revtun` in
-//    reverse_mux.dart) rather than one exec per connection. Chromium/Firefox
-//    resolve `localhost` to `::1` first; the mux binds both `127.0.0.1` and
-//    `[::1]`. The git credential broker stays on a single one-shot socat
-//    (helpers dial `127.0.0.1`); a filtered NIC still cannot reach host
-//    loopback on its own, which is why this lane exists at all.
-//
-// The listener check in the mux dialer is not cosmetic: without it, a host
-// bridge on `127.0.0.1:3000` whose guest server just died would dial the
-// guest's 3000, TSI could carry that BACK to host loopback 3000 — the bridge
-// itself — and one stray connection becomes a connect loop.
+// smolvm `-p` forwards are fixed at create time; a guest under any egress
+// filter cannot dial host loopback (`--mount-socket` never reaches the host).
+// Host→guest: one `-p` to a fixed mux; the dialer checks the guest is
+// LISTENING before splicing — without that, a dead guest server loops connect
+// back through the host bridge. Guest→host: one multiplexed reverse tunnel
+// over `machine exec -i` (`cc-revtun`); binds `127.0.0.1` and `[::1]` because
+// Chromium/Firefox prefer `::1`. Credential broker stays one-shot socat.
 
 import 'dart:async';
 import 'dart:convert';

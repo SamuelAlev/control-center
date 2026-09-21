@@ -9,10 +9,10 @@ class AecDelayEstimate {
   /// How far the far-end (loopback) LEADS the near-end (mic) on the shared
   /// submission timeline, in milliseconds.
   ///
-  /// - **Positive** → the loopback reference arrives before the mic echo it
+  /// - Positive → the loopback reference arrives before the mic echo it
   ///   should cancel (good for AEC3; this is the lead we can feed straight to
   ///   `set_stream_delay_ms`).
-  /// - **Negative** → the mic echo arrives before its reference (the Core Audio
+  /// - Negative → the mic echo arrives before its reference (the Core Audio
   ///   process tap is delivering late). AEC3 cannot use a negative delay, so the
   ///   mic must be buffered by `|lagMs|` + margin to restore a positive lead.
   final int lagMs;
@@ -22,24 +22,13 @@ class AecDelayEstimate {
   final double confidence;
 }
 
-/// Estimates the time offset between the system-loopback ("far") and the
-/// microphone ("near") capture streams by cross-correlating their short-time
-/// energy envelopes on a single shared clock.
-///
-/// This is the heart of the AEC's **per-session, per-hardware auto-calibration**:
-/// the mic and loopback are two independent OS captures with different,
-/// drifting clocks and an unknown delivery offset that depends entirely on the
-/// user's audio devices. Rather than hardcode a delay (which would be correct
-/// for exactly one machine), we measure the real offset live from the audio
-/// itself — the remote's speech bleeds into the mic a fixed delay after it plays
-/// out the loopback and that delay is exactly the lag where the two energy
-/// envelopes correlate. The result feeds AEC3's `set_stream_delay_ms` and sizes
-/// the mic delay buffer so the reference reliably leads the capture.
-///
-/// Envelope (not raw-sample) correlation is deliberate: the acoustic echo is an
-/// attenuated, distorted, room-colored copy of the loopback, so the *waveforms*
-/// correlate poorly, but their *loudness over time* aligns tightly. Pearson
-/// correlation makes it level- and gain-invariant.
+/// Estimates the time offset between the system-loopback ("far") and the microphone
+/// ("near") capture streams by cross-correlating their short-time energy envelopes on a
+/// single shared clock.
+/// Envelope (not raw-sample) correlation is deliberate: the acoustic echo is an attenuated,
+/// distorted, room-colored copy of the loopback, so the *waveforms* correlate poorly, but
+/// their *loudness over time* aligns tightly.
+/// Pearson correlation makes it level- and gain-invariant.
 class AecDelayEstimator {
   /// Creates an estimator. Defaults: 10 ms envelope bins, a 2.5 s analysis
   /// window, ±800 ms search range and a near-silence floor of [minNearStd].

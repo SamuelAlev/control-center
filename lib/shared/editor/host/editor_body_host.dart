@@ -4,32 +4,11 @@ import 'package:control_center/shared/editor/editor_tab.dart';
 import 'package:control_center/shared/editor/host/webview_lru.dart';
 import 'package:flutter/widgets.dart';
 
-/// Keep-alive / lazy-build machinery shared by every editor host (the messaging
-/// IDE and the PR workbench).
+/// Shared editor-host keep-alive / lazy-build over [IndexedStack] leaves.
 ///
-/// The editor engine renders leaf bodies inside an [IndexedStack], which builds
-/// *every* child — offscreen tabs included. Left unmanaged that spawns terminals
-/// and heavyweight webviews the moment a layout mounts. This host fixes that
-/// without the engine knowing about tab kinds:
-///
-/// - **Keep-alive**: each tab body lives under a stable [GlobalKey] (tabs are
-///   compared by identity, [EditorTab] has no `==`), so moving a tab between
-///   panes reparents the live element instead of rebuilding it.
-/// - **Lazy build**: a body is only built once its tab has been *visible* at
-///   least once; never-seen tabs render nothing until first revealed.
-/// - **Offscreen reuse**: once a tab is hidden, its content widget is reused
-///   until visibility changes again. A tab switch therefore rebuilds the
-///   incoming and outgoing bodies, not every tab the operator has visited.
-/// - **TickerMode**: hidden tabs stop burning frames (spinners, cursors,
-///   implicit animations) while their element is kept alive.
-/// - **Webview LRU**: only the [WebviewLru.maxHidden] most-recently-visible
-///   hidden webview tabs (code-server / browser) keep their heavyweight platform
-///   view mounted; the rest are suspended and rebuilt fresh on reveal.
-///
-/// Feature-specific per-tab resources (terminal sessions, etc.) stay in the
-/// host state; call [reconcile] with the layout's live tabs each time the tree
-/// changes so this host prunes its own bookkeeping, then prune yours against
-/// the same set.
+/// Stable [GlobalKey] per tab (identity; [EditorTab] has no `==`). Build only
+/// after first visible; reuse hidden bodies; [TickerMode] off when hidden;
+/// webview LRU ([WebviewLru.maxHidden]). Call [reconcile] on layout changes.
 class EditorBodyHost {
   /// Creates a body host. [_isWebviewKind] identifies the heavyweight webview
   /// kinds subject to LRU suspension; [maxHiddenWebviews] is how many hidden

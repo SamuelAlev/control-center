@@ -3,23 +3,10 @@ import 'dart:io';
 import 'package:cc_harness/tools.dart';
 import 'package:path/path.dart' as p;
 
-/// Fuzzy-searches the WHOLE agent workspace — [workspaceRoot] plus every entry
-/// in [sharedRoots] — and returns hits whose paths stay addressable from
-/// [workspaceRoot].
-///
-/// Searching [workspaceRoot] alone is not enough. On a per-agent overlay cwd the
-/// conversation's repo worktrees live in a shared root (`<convRoot>/repos`)
-/// outside it, reached only through the provisioner's `repos → ../../repos`
-/// symlink — and the production engine (cc_natives' Rust `fff`) does NOT descend
-/// symlinks, so an overlay-only search silently returns nothing for every repo
-/// file. Each root is therefore searched directly, in its real form.
-///
-/// A hit from a shared root is re-labelled with the symlink that reaches it
-/// (`repos/<…>`) when [workspaceRoot] has one, so the agent can pass the result
-/// straight back to `read`/`edit`; without a link it falls back to the absolute
-/// path, which those tools also accept (any path inside a shared root is in the
-/// workspace). Results are merged by descending score, ties broken by the order
-/// the engine returned them and de-duplicated by display path.
+/// Fuzzy-search [workspaceRoot] plus each [sharedRoots] entry (fff does not
+/// follow symlinks — overlay-only search misses `repos/`). Relabel shared hits
+/// via the workspace symlink when present; else absolute. Merge by score,
+/// dedupe by display path.
 Future<List<FileSearchMatch>> searchWorkspaceFiles(
   FileSearchPort fileSearch,
   String query, {

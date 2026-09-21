@@ -1,32 +1,8 @@
 #!/usr/bin/env bash
 #
-# Builds the tree-sitter runtime (libtree-sitter) and the per-language grammar
-# libs the code indexer uses, then installs them where GrammarManager resolves
-# them: the grammars/ dir beside control_center.db (see GrammarManager.resolve
-# — that dir is searched first).
+# Builds tree-sitter runtime + grammar dylibs (REQUIRED). CMake/clang.
+# Usage: scripts/natives/build_tree_sitter.sh [DEST_DIR]
 #
-# REQUIRED, runtime AND every grammar: cc_server's boot preflight resolves each
-# one by name and refuses to start on a miss and the indexer throws rather than
-# skipping a language — the extension->language registry (code_languages.dart)
-# and the grammar set built here are the SAME list, so an unresolvable language
-# is always a broken install, never finite coverage. A release bundles the libs
-# (macOS Contents/Frameworks/, Linux bundle/lib/, Windows beside the .exe) — see
-# scripts/release/*. The Windows runtime DLL needs cmake for symbol export; this
-# script targets macOS/Linux (see scripts/release/windows_natives.sh).
-#
-# The grammar lib filename + entrypoint must match the indexer's languageId
-# (lib/core/infrastructure/code_index/code_languages.dart):
-#   libtree-sitter-<languageId>.<ext>  exports  tree_sitter_<languageId>
-# (the packages/cc_natives path is code_index/code_languages.dart)
-#
-# Source/refs (override the matching *_REF env to iterate or bump; pins live in
-# scripts/lib/native_pins.env): TREE_SITTER_REF and TS_<LANG>_REF.
-#
-# Requirements: git, a C compiler (cc/clang/gcc); a C++ compiler (c++) only when
-# a grammar ships a C++ scanner (scanner.cc).
-#
-# Usage:
-#   scripts/natives/build_tree_sitter.sh [DEST_DIR]   # DEST defaults to <app-support>/grammars
 set -euo pipefail
 
 REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"

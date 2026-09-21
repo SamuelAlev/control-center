@@ -1,35 +1,9 @@
 #!/usr/bin/env bash
 #
-# Packages the built Windows app into a distributable installer + portable zip:
-#   1. bundles the staged native DLLs (and the tree-sitter .scm queries) beside
-#      the executable,
-#   2. embeds the cc_server thin-client backend with its own native set,
-#   3. verifies both native sets,
-#   4. builds the Inno Setup installer and Authenticode-signs it when a cert is
-#      present and
-#   5. writes the portable zip + SHA-256 sidecars.
+# Packages the Windows desktop app (Inno + portable zip) with embedded
+# cc_server and staged natives. Verifies REQUIRED natives before archive.
+# Usage: scripts/release/windows_package.sh <version>
 #
-# This is the Windows half of the macos_package.sh / linux_package.sh pair. It
-# used to be ~80 lines inlined in release.yml, which meant Windows was the one
-# platform whose packaging could not be run or reviewed outside GitHub Actions —
-# and RELEASING.md restated it in prose as a fourth copy for exactly that reason.
-#
-# Expects `flutter build windows --release` to have run and the natives to be
-# staged in build/natives (scripts/release/windows_natives.sh, or the verify
-# gate fails).
-#
-# Environment:
-#   VERSION           release version, e.g. 1.0.0 (required; or pass as $1)
-#   NATIVES           staged natives dir (default: build/natives)
-#   SKIP_INSTALLER    1 → skip Inno Setup (lets a box without ISCC still exercise
-#                     staging + verify + zip, which is the reviewable 80%)
-#   SKIP_ZIP          1 → skip the portable zip
-#   WINDOWS_CERT      base64 Authenticode .pfx (absent ⇒ unsigned, as today)
-#   WINDOWS_CERT_PWD  password for that .pfx
-#
-# Usage:
-#   VERSION=1.0.0 scripts/release/windows_package.sh
-#   SKIP_INSTALLER=1 VERSION=1.0.0 scripts/release/windows_package.sh
 set -euo pipefail
 
 REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"

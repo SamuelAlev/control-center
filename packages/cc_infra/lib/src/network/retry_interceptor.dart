@@ -7,24 +7,13 @@ import 'package:dio/dio.dart';
 /// Full-jitter source for retry backoff.
 final Random _jitter = Random();
 
-/// A Dio interceptor that (1) retries transient failures with exponential
-/// backoff and (2) acts as a **rate-limit circuit breaker** for GitHub.
+/// Retries transient failures with exponential backoff and acts as a GitHub
+/// rate-limit circuit breaker.
 ///
-/// GitHub signals its PRIMARY rate limit with an HTTP `403` (not `429`) carrying
-/// `x-ratelimit-remaining: 0` and an `x-ratelimit-reset` epoch; its SECONDARY
-/// (abuse) limit is a `403` with a `retry-after`. Once either is seen, the
-/// breaker records the reset instant and **fails every further request FAST —
-/// without a network call — until that instant**. This is what stops a
-/// resubscribe storm (e.g. Riverpod re-running a `watchDiff` provider on error)
-/// from hammering GitHub and deepening the limit: the first rejected call
-/// teaches the breaker the window; the rest short-circuit locally and the
-/// window then elapses on its own so the API recovers.
-///
-/// The breaker state is per-[Dio] instance — i.e. per GitHub client. The
-/// primary limit is really per-token, so a limit hit by one GitHub client is
-/// not (yet) shared with a sibling client on a different [Dio]; each learns the
-/// window independently on its own first `403`. That is enough to stop the
-/// reported storm, which loops a single client (the PR-review diff path).
+/// GitHub primary limit is HTTP 403 with `x-ratelimit-remaining: 0` (not 429);
+/// secondary is 403 + `retry-after`. Once seen, further requests fail fast
+/// until reset — stops a resubscribe storm from deepening the limit. Breaker
+/// is per-[Dio] (per client), not shared across tokens.
 class RetryInterceptor extends Interceptor {
   /// Creates a [RetryInterceptor] with the given [Dio] instance.
   RetryInterceptor({
@@ -51,30 +40,11 @@ class RetryInterceptor extends Interceptor {
   /// The base delay between retries, doubled on each attempt.
   final Duration baseDelay;
 
-  /// The longest `retry-after` hint this interceptor is willing to WAIT OUT.
-  /// A longer hint abandons the retry and surfaces the error immediately.
-  ///
-  /// The hint used to be honoured literally, and that is unbounded by
-  /// construction: `https://api.anthropic.com/api/oauth/usage` answers a stale
-  /// token with `429 retry-after: 3600`, so one request slept an hour — three
-  /// times over, since each retry got the same hint. Nothing upstream could
-  /// see it: the sleep happens BETWEEN requests, so per-request `sendTimeout` /
-  /// `receiveTimeout` do not apply, and the error is not forwarded until the
-  /// retries are exhausted, so nothing is even logged. A caller under a
-  /// wall-clock budget (every `repo/call` handler has a 60s one) simply never
-  /// answers.
-  ///
-  /// Clamping the sleep instead of abandoning the retry does not fix it: a
-  /// server that says "come back in an hour" says it again in ten seconds, so
-  /// the request pays the full budget and still fails. Past this ceiling the
-  /// hint is not a delay to absorb, it is information for the caller — "you are
-  /// rate-limited until T" — and it is worth more delivered now.
-  ///
-  /// Ten seconds keeps the worst case (three hints at the ceiling) at 30s of
-  /// waiting, inside a 60s handler budget with room for the requests
-  /// themselves, while still honouring the ordinary 1–10s hints exactly.
-  /// `ProviderHttp.parseRetryAfter` applies the same reasoning on the
-  /// non-dio path, with its own ceiling.
+  /// Longest `retry-after` this interceptor will wait; longer abandons and
+  /// surfaces the error. Honouring unbounded hints (e.g. 3600s × retries) hid
+  /// the failure from timeouts and from 60s `repo/call` budgets. Clamping sleep
+  /// still burns the budget; past this ceiling the hint is for the caller.
+  /// Ten seconds keeps 3×ceiling under 30s inside a 60s handler.
   final Duration maxRetryAfter;
 
   /// The instant the current rate-limit window ends, or `null` when the circuit

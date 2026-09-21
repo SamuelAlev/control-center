@@ -444,20 +444,12 @@ class RemoteRigRepository {
 
   /// Opens a rig.
   ///
-  /// [engine] names which browser a browser rig should run and is ignored on
-  /// the other surfaces. Omitted rather than defaulted here so an older
-  /// server — which has no `engine` argument and only ever ran Chromium —
-  /// keeps working unchanged. [homeTheme] (`'light'`/`'dark'`) is the calling
-  /// app's brightness: a browser rig's home page is written into the guest at
-  /// boot, so the scheme must travel with the open. An older server simply
-  /// ignores it and keeps writing its default page.
-  ///
-  /// [slotId] names WHICH machine of this surface + engine in the conversation.
-  /// Omitted is the conversation's default one — the machine an agent's
-  /// `*_use` calls reach. Passing a slot opens a SECOND machine alongside it;
-  /// an older server ignores the argument, so such a client gets the default
-  /// machine rather than a second one, which is a duplicated view rather than
-  /// a wrong one.
+  /// [engine] names which browser a browser rig should run and is ignored on the other
+  /// surfaces.
+  /// Omitted rather than defaulted here so an older server — which has no `engine` argument
+  /// and only ever ran Chromium — keeps working unchanged.
+  /// [homeTheme] (`'light'`/`'dark'`) is the calling app's brightness: a browser rig's home
+  /// page is written into the guest at boot, so the scheme must travel with the open.
   Future<RigView> open({
     required String workspaceId,
     required String surface,

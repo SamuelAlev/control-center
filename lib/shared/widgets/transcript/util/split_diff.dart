@@ -28,7 +28,7 @@ class SplitDiffCell {
     this.changed = const <IntralineRange>[],
   });
 
-  /// 0-based index of this line **within its own side's text**, so the caller
+  /// 0-based index of this line within its own side's text, so the caller
   /// can look up precomputed per-line syntax spans for that side.
   final int lineIndex;
 

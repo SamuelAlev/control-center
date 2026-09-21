@@ -52,24 +52,11 @@ PrUser prUserFromBitbucket(BitbucketUser? user) {
 
 /// Maps a Bitbucket pull request onto the domain entity.
 ///
-/// Approximations, all forced by what Bitbucket does not publish:
-///
-/// * `id` and `number` are both the per-repo Bitbucket id; the globally unique
-///   handle is the synthesized [bitbucketPrExternalId].
-/// * `isDraft` is always false — Bitbucket Cloud has no draft pull requests.
-/// * `mergedAt` falls back to `updated_on` for a `MERGED` pull request, since
-///   Bitbucket publishes no merge timestamp. It is therefore the time of the
-///   last change to a merged pull request, which is the merge itself unless
-///   something touched it afterwards.
-/// * `assignees` is always empty — Bitbucket has no assignee separate from the
-///   reviewer roster.
-/// * `reviewDecision` is rolled up from the participants: any outstanding
-///   "changes requested" wins, else any approval, else none. Bitbucket exposes
-///   no "review required" signal on the pull request, so a repository whose
-///   merge checks demand a review still reads as `none` until someone votes.
-/// * `additions`/`deletions`/`changedFiles`/`commitsCount`/`checksStatus`/
-///   `mergeableState` are left at their defaults: none of them are on this
-///   payload and each has its own endpoint.
+/// Approximations: `id`/`number` are the per-repo Bitbucket id (global handle
+/// is [bitbucketPrExternalId]); `isDraft` always false; `mergedAt` falls back
+/// to `updated_on` when MERGED; `assignees` always empty; `reviewDecision`
+/// rolled up from participants (no "review required" signal); size/checks
+/// fields stay defaults (other endpoints).
 PullRequest pullRequestFromBitbucket(
   BitbucketPullRequest pr, {
   required String owner,
@@ -381,26 +368,13 @@ CommitStatus commitStatusFromBitbucket(BitbucketCommitStatus status) {
   );
 }
 
-/// Derives review-request timeline events from a pull request's activity feed.
+/// Derives review-request timeline events from a PR activity feed.
 ///
-/// Bitbucket records no discrete "review requested" event. What it records is
-/// an `update` entry carrying the reviewer roster as it stood afterwards, so
-/// the events are recovered by replaying the feed oldest-first and diffing
-/// consecutive rosters: a reviewer who appears was requested, one who
-/// disappears had the request withdrawn. The roster on the first update is
-/// treated as requested at that moment, which is what opening a pull request
-/// with reviewers attached means.
-///
-/// This is therefore an approximation in two ways. Updates that did not report
-/// a roster are skipped (Bitbucket omits the field rather than repeating it),
-/// so a change made across such a gap is attributed to the next update that
-/// does report one. And the actor is the update's author, which is the person
-/// who edited the pull request — on Bitbucket that is the only attribution
-/// available.
-///
-/// Approval, changes-requested and comment entries produce nothing: the domain
-/// models only the two review-request kinds, and those signals ride the review
-/// and comment streams instead.
+/// Bitbucket has no discrete "review requested" event — replay updates
+/// oldest-first and diff consecutive reviewer rosters. First roster = requested
+/// at that moment. Gaps without a roster attribute the change to the next
+/// reporting update; actor is the update author. Approval/changes/comment
+/// entries produce nothing (those ride review/comment streams).
 List<PrTimelineEvent> prTimelineEventsFromBitbucket(
   List<BitbucketActivityEntry> activity,
 ) {
@@ -467,24 +441,13 @@ List<PrTimelineEvent> prTimelineEventsFromBitbucket(
   return events;
 }
 
-/// Splits a unified diff into per-file patches, keyed by the file's path.
+/// Splits a unified diff into per-file patches keyed by post-image path.
 ///
-/// This exists because Bitbucket's diffstat — unlike GitHub's files endpoint —
-/// carries no hunks, so the only way to hand the diff viewer real patch text is
-/// to fetch the whole unified diff once and cut it up. Each value is the
-/// hunks-only slice, starting at the first `@@` line, matching what GitHub's
-/// `patch` field contains; a segment with no hunks (a binary file, a
-/// content-free rename) maps to an empty string.
-///
-/// Files are keyed by their post-image path (`+++ b/…`), falling back to a
-/// `rename to` line, then the pre-image path for a deletion, then the `b/` half
-/// of the `diff --git` header for a segment that carries none of those. That is
-/// the same key `BitbucketDiffstatEntry.path` produces, which is what lets the
-/// two responses be joined.
-///
-/// Paths that git had to quote (embedded tabs, newlines, non-UTF-8 bytes) are
-/// left as git wrote them and simply will not match a diffstat entry, so such a
-/// file renders without a patch rather than under a wrong name.
+/// Bitbucket's diffstat has no hunks — fetch the unified diff once and cut it.
+/// Values are hunks-only (from first `@@`), matching GitHub's `patch`. Key
+/// order: `+++ b/…`, else `rename to`, else pre-image (deletion), else
+/// `diff --git` `b/` half — same as `BitbucketDiffstatEntry.path`. Quoted git
+/// paths are left as written and simply miss the join.
 Map<String, String> patchesByPathFromUnifiedDiff(String diff) {
   final patches = <String, String>{};
   if (diff.isEmpty) {

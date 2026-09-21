@@ -210,9 +210,7 @@ void main() {
   });
 }
 
-// ---------------------------------------------------------------------------
 // Fakes
-// ---------------------------------------------------------------------------
 
 /// A [HarnessProviderFactory] that returns a single canned provider.
 class _FakeFactory extends HarnessProviderFactory {

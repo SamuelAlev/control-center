@@ -131,22 +131,9 @@ void main() {
     });
 
     test('every delivery surface serves the entry files no-cache', () {
-      // `/deploy.json` is the ENTIRE web + PWA update mechanism: the clients
-      // poll it and compare its gitSha against the running build
-      // (lib/core/update/deployed_version.dart,
-      // apps/cc_remote/lib/update/remote_update.dart). If any one surface lets
-      // it be cached, that origin's users poll a frozen manifest and the
-      // refresh banner either never appears or never clears — silently, on one
-      // origin only, which is the hardest shape of bug to notice.
-      //
-      // The other four entries are the same class of problem for the bundle
-      // itself: Flutter's main.dart.js is not content-hashed, so a cached
-      // index.html / bootstrap / service worker pins an old build after a
-      // deploy.
-      //
-      // Five independently-maintained lists say this, in four syntaxes. They
-      // agree today; nothing made them, which is why this exists. (The gallery
-      // is deliberately absent — it ships no updater and no deploy.json.)
+      // `/deploy.json` and unhashed Flutter bootstrap assets must be no-store
+      // across every web surface's header list (cached manifest/index pins a
+      // stale build). Gallery intentionally omitted (no updater).
       const routes = [
         '/index.html',
         '/flutter_bootstrap.js',

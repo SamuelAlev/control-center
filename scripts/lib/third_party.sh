@@ -1,41 +1,9 @@
 #!/usr/bin/env bash
 #
-# THE third-party component table — everything redistributed inside a shipped
-# artifact, and the license each one travels under.
+# Source it. Third-party redistributed components + licenses for
+# gen_third_party_licenses.sh; pinned against natives.sh by test. Compiled-in/
+# bundled only (not Dart pub packages). LAME is LGPL via source availability.
 #
-# Source it; never execute it. Read by scripts/release/gen_third_party_licenses.sh, which
-# turns it into the THIRD-PARTY-LICENSES.txt every package carries, and pinned
-# against scripts/lib/natives.sh by test/tooling/third_party_licenses_test.dart
-# so a native cannot be added to the build without an attribution entry.
-#
-# This covers COMPILED-IN and BUNDLED components only. Dart/Flutter package
-# dependencies of the desktop app are covered by the engine-generated `NOTICES`
-# file Flutter already places in the app bundle; `cc_server`'s pub dependencies
-# are permissive-only and listed in its own pubspec.
-#
-# FORMAT — `name|version|spdx|homepage|license_file|linkage|roles`
-#   version      a literal, or `@VAR` resolved from scripts/lib/native_pins.env,
-#                or `@codeServerVersion` read from the Dart pin.
-#   license_file relative to third_party/licenses/
-#   linkage      static | dynamic | bundled  (what the artifact actually ships)
-#   roles        comma-separated: desktop, server — which ARTIFACT carries it.
-#                `desktop` is the app bundle (DMG / AppImage / installer) and
-#                `server` is the standalone cc_server archive. They are not the
-#                same split as scripts/lib/natives.sh's build roles: every
-#                desktop package EMBEDS a cc_server and stages the server
-#                natives inside it (see the two verify_natives.sh calls in each
-#                packager), so a server-role native such as lame_ffi or
-#                cc_inference ships in BOTH artifacts. code-server is the one
-#                component vendored only into the standalone archive.
-#
-# LGPL NOTE: libmp3lame is the one copyleft component. It is linked STATICALLY
-# into liblame_ffi, so LGPL-2.1 section 6 applies: the distribution has to let a
-# recipient relink the work against a modified libmp3lame. That is satisfied
-# here by source availability rather than by shipping object files — the shim
-# source, the exact upstream version and its checksum, and the build script are
-# all public in this repository. gen_third_party_licenses.sh states this in the
-# generated file; if that ever stops being true, link libmp3lame dynamically
-# instead, which discharges section 6 on its own.
 
 CC_THIRD_PARTY=(
   "rift|@RIFT_REF|MIT|https://github.com/anomalyco/rift|rift-MIT.txt|static|desktop,server"

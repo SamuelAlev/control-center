@@ -2,26 +2,12 @@ import 'package:cc_domain/core/domain/entities/github_user.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
 import 'package:cc_infra/src/network/github_content_client.dart';
 
-/// Process-lifetime cache of the authenticated GitHub viewer's login and
-/// org → team slugs. Shared by the notifications poller (pending-team gate)
-/// and `github.currentUser` (inbox classification) so `GET /user/teams` is
-/// not fetched twice.
+/// Process-lifetime cache of the GitHub viewer's login and org→team slugs.
+/// Shared so `GET /user/teams` is not fetched twice.
 ///
-/// **Only successes are cached for the process lifetime.** A failure (or an
-/// answer with no user, e.g. the host has no token yet) is held for
-/// [retryAfter] and then retried. This used to be a permanent latch: the first
-/// failing lookup set an `unavailable` flag and memoized the failed future
-/// forever, so a single GitHub 503 during a service incident left
-/// `github.currentUser` answering null — successfully, with nothing for a
-/// client to retry — until the server process was restarted. Every inbox
-/// section is classified relative to that login
-/// (`ClassifyPrInboxUseCase` returns an all-empty inbox for an empty login),
-/// so one transient error silently emptied the operator's inbox for the rest
-/// of the day and told them they were all caught up.
-///
-/// The cool-down is what keeps the retry from becoming a hot loop against a
-/// service that is already struggling: callers arriving inside the window get
-/// the null answer without a request.
+/// Only successes cache for the process life. Failures (or no user) cool down
+/// for [retryAfter] then retry — a permanent latch left inbox empty after one
+/// 503 until restart. Callers inside the window get null without a request.
 class ViewerGitHubIdentityCache {
   /// Creates a [ViewerGitHubIdentityCache] over the GitHub content client.
   ///

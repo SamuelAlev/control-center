@@ -86,7 +86,7 @@ class _CachedLine {
   final List<DiffToken>? tokens;
 }
 
-/// An **aliased** fill for an axis-aligned row background.
+/// An aliased fill for an axis-aligned row background.
 ///
 /// Row backgrounds tile: each row's rect ends exactly where the next begins.
 /// `kDiffLineHeight` is fractional (18.75), so at a 2x device pixel ratio every
@@ -479,7 +479,6 @@ class UnifiedRowPainter {
       canvas.restore();
     }
 
-    // ── 3. Hunk header text — pinned (does not scroll horizontally) ─────────
     if (isHunkHeader) {
       final hp = _gutterPainter(
         raw.hunkHeaders[line] ?? '',
@@ -492,7 +491,6 @@ class UnifiedRowPainter {
       return; // hunk headers have no gutter/line numbers
     }
 
-    // ── 4. Pinned gutter — painted last so it overlays the scrolled code ────
     canvas
       ..drawRect(Rect.fromLTWH(0, y, gutterWidth, blockHeight), _gutterBgPaint)
       ..drawLine(

@@ -329,7 +329,6 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor {
   /// Whether there is an active selection (for the view's copy shortcut).
   bool get hasSelection => _selAnchor != null && _selFocus != null;
 
-  // ── Geometry exposure for the host review overlay ───────────────────────
 
   /// Monospace advance of the active base style (display column → pixels).
   double get monoAdvanceWidth => _monoAdvance;

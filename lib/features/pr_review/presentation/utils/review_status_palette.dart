@@ -6,7 +6,7 @@ import 'package:flutter/widgets.dart';
 /// reviewer-state dots.
 ///
 /// These mirror GitHub's learned status color language and are a sanctioned
-/// **domain palette** (see DESIGN.md, "Diff viewer") — a deliberate exception
+/// domain palette (see DESIGN.md, "Diff viewer") — a deliberate exception
 /// to the One Signal Rule because developers read CI and review state in a
 /// fixed color vocabulary. They live here, in one place, rather than as hex
 /// literals copied across widgets, so the green/red/blue never drift apart.

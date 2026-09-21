@@ -2,26 +2,12 @@ import 'dart:convert';
 
 import 'package:cc_domain/core/domain/value_objects/connection_descriptor.dart';
 
-/// The compact JSON payload encoded into the pairing QR's URL fragment.
+/// Compact JSON in the pairing QR fragment:
+/// `https://<pwa-host>/#<base64url(payload)>` (host never sees the fragment).
 ///
-/// Deep-link shape: `https://<pwa-host>/#<base64url(payload)>`. Because the
-/// payload rides in the **fragment**, the PWA's HTTPS host (Cloudflare Pages)
-/// never sees it — the browser keeps fragments client-side. The PWA reads
-/// `location.hash`, decodes this, persists a `PairingRecord` to IndexedDB,
-/// then `history.replaceState`-strips the fragment so the PSK leaves the URL.
-///
-/// Version 2 (PRD 15): the payload carries the server's full
-/// [ConnectionDescriptor] — every known path (loopback/LAN/tailnet/wss/relay)
-/// plus the identity fingerprint — instead of a single transport address. The
-/// client's `ReachabilityResolver` picks the best reachable path at connect
-/// time and the embedded fingerprint seeds the TOFU pin.
-///
-/// Fields are single-letter keys to keep the QR compact:
-///  - `v` payload version (2)
-///  - `d` the connection descriptor's compact JSON map
-///  - `i` the minted device id
-///  - `k` PSK (32-byte base64url)
-///  - `x` expiry (epoch milliseconds; the QR is short-lived, ~5 min)
+/// v2 carries full [ConnectionDescriptor] + identity fingerprint for
+/// `ReachabilityResolver` / TOFU. Keys: `v` version, `d` descriptor, `i`
+/// device id, `k` PSK (32-byte base64url), `x` expiry (~5 min).
 class PairingPayload {
   /// Creates a [PairingPayload].
   PairingPayload({

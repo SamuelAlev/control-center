@@ -144,9 +144,9 @@ class _MeetingTranscriptTabState extends ConsumerState<MeetingTranscriptTab> {
   ///
   /// The dialog's "apply to all blocks" toggle (default off) decides the scope:
   ///
-  ///  * **off** — rename just this one transcript line via a per-segment
+  /// * off — rename just this one transcript line via a per-segment
   ///    override, leaving the speaker's other lines untouched.
-  ///  * **on** — rename the whole speaker (every line), clear any per-block
+  /// * on — rename the whole speaker (every line), clear any per-block
   ///    overrides that would shadow the new name and run the cross-meeting
   ///    voice-profile bookkeeping (un-enroll the old name, offer to save the
   ///    new) — that voiceprint belongs to the speaker cluster, not one line.

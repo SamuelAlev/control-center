@@ -4,34 +4,18 @@ import 'package:cc_domain/features/mcp/domain/value_objects/mode_tool_policy.dar
 import 'package:cc_harness/loop.dart';
 import 'package:cc_harness/tools.dart';
 
-/// Everything a conversation [Mode] guarantees, declared **once**.
+/// Everything a conversation [Mode] guarantees, declared once.
 ///
-/// ## Why this exists
+/// Mode rules used to live independently in the mode prompt, harness tool
+/// registry, guard preset, MCP allow-lists, and sandbox policy — they drifted
+/// (plan mode instructed plan-file writes after those tools were removed;
+/// orchestrate denied `vendorSyncWrite`, its only output verb's effect class).
+/// Every consumer projects from this table; capability sentences in the prompt
+/// are generated from the materialized tool list (`buildCapabilityPreamble`).
 ///
-/// "What may an agent do and what must it produce, in mode M" used to be
-/// asserted independently in five places: the mode prompt, the harness tool
-/// registry, the guard preset, the MCP allow-lists and the sandbox policy. They
-/// drifted and the drift was invisible until an agent hit it:
-///
-///  * plan mode's prompt instructed the agent to write plan files, while the
-///    write tools had been removed and the sandbox carve-out deleted — so the
-///    instructed deliverable was impossible and the run ended reporting success;
-///  * orchestrate mode's guard preset denied `vendorSyncWrite`, which is the
-///    effect class its *only* output verb declares — so the mode could not
-///    produce its own deliverable either.
-///
-/// Both are the same bug: a fact with more than one writable home. Every
-/// consumer now projects from this table instead of holding a copy and the
-/// prompt's capability sentences are *generated* from the materialized tool list
-/// (see `buildCapabilityPreamble`) so a prompt cannot name a tool the run does
-/// not have.
-///
-/// ## Layering
-///
-/// This is a `cc_domain` concept. The kernel keeps only [ToolSurfaceSpec] and
-/// [CompletionContract] — name-based data with no product semantics — so
-/// `cc_harness` never learns what a [Mode] is (PRD 26's boundary law). Dispatch
-/// materializes the projections at the composition boundary.
+/// Domain only: the kernel keeps [ToolSurfaceSpec] and [CompletionContract]
+/// with no product semantics, so `cc_harness` never learns what a [Mode] is.
+/// Dispatch materializes projections at the composition boundary.
 class ModeCapabilityProfile {
   /// Creates a capability profile.
   const ModeCapabilityProfile({

@@ -28,38 +28,13 @@ abstract interface class McpHostServer {
   set mcpHandler(McpRequestHandler? handler);
 }
 
-/// Runs and controls the headless server's MCP surface and adapts it to the
-/// platform-neutral [McpServerControl] the RPC catalog exposes (`mcp.*` ops).
+/// Host-global MCP surface ([McpServerControl] / `mcp.*`): one [McpRequestHandler] over the
+/// same [McpToolDispatcher] as RPC, mounted on the main listener (`POST /mcp`, `GET /sse`).
 ///
-/// The MCP surface is a single process-wide concern (NOT workspace data), so
-/// this is a host-global singleton. It owns ONE [McpRequestHandler] over the
-/// SAME [McpToolDispatcher] the RPC server uses — one tool registry, two
-/// transports — and mounts it on the main cc_server listener (the single-port
-/// topology: `POST /mcp` + `GET /sse` share the server port, default 9030).
-///
-/// Two cases still bind a loopback companion [McpHttpServer] on
-/// [loopbackPort] (the historic MCP default):
-///  * the main listener serves TLS in-process — local agent CLIs cannot
-///    validate the host cert against 127.0.0.1, so dispatch keeps a plaintext
-///    loopback endpoint;
-///  * no main listener is attached (unit tests, minimal embeddings) — the
-///    pre-unification standalone topology.
-///
-/// Config (enabled / token) is persisted to `mcp_config.json` under the
-/// server's data dir so it survives restarts; a legacy `port` key from the
-/// standalone-listener era is ignored on load. `status()` reflects the live
-/// mount/listener state rather than a cached flag. Token changes apply to the
-/// live handler directly — no restart, so the "restart to apply" semantics
-/// are gone for good.
-///
-/// The surface is **on by default**: with no persisted preference (fresh
-/// install) [startIfEnabled] mounts it, so an external client that points at
-/// `/mcp` works without a settings trip. That widens nothing — a tokenless
-/// surface is refused for off-host callers by the listener's fail-closed
-/// guard and loopback already got the surface unconditionally via
-/// [ensureRunningForDispatch]. Turning it off is [setEnabled] (the settings
-/// toggle), the ONLY thing that writes the flag: [start]/[stop] are session
-/// controls, so neither they nor shutdown rewrite the user's choice.
+/// Loopback companion on [loopbackPort] when the main listener is TLS (CLI can't trust 127.0.0.1)
+/// or absent (tests). Config in `mcp_config.json` (legacy `port` ignored); token changes apply live.
+/// On by default ([startIfEnabled]); off-host callers still need a token. Only [setEnabled] persists
+/// the enabled flag — [start]/[stop] are session controls.
 class ServerMcpControl implements McpServerControl {
   /// Creates a control bound to [_dispatcher], persisting config under [dataDir].
   ///
@@ -253,23 +228,10 @@ class ServerMcpControl implements McpServerControl {
   /// The runtime wires this to [McpToolRegistry.onToolsChanged].
   void notifyToolsChanged() => _handler?.notifyToolsListChanged();
 
-  /// Writes (and returns the path to) an MCP client config that points a
-  /// server-spawned agent CLI (`claude`, ACP) at this loopback MCP endpoint.
-  /// Call after the surface is running ([ensureRunningForDispatch]).
-  ///
-  /// The config carries three kinds of headers:
-  /// * `Authorization` — the configured bearer token, when set.
-  /// * `X-CC-Workspace-Id` / `X-CC-Agent-Id` / `X-CC-Conversation-Id` /
-  ///   `X-CC-Space-Id` — the dispatch identity scope. The request handler
-  ///   forces `workspace_id` and fills empty `agent_id`/`conversation_id`/
-  ///   `space_id` args from these, so a dispatched agent can never name a
-  ///   foreign workspace and never has to thread its own UUIDs. The space
-  ///   travels separately from the conversation because a conversation owns
-  ///   its own uuid — one cannot stand in for the other, and guardrail
-  ///   resolution keys on the space.
-  /// * `X-CC-Toolset-Rev` — the registry's catalogue fingerprint. Clients that
-  ///   key their tool-list cache on a config hash see a new hash whenever the
-  ///   toolset changes, which busts a stale cache that once hid new tools.
+  /// MCP client config for a spawned agent CLI (call after [ensureRunningForDispatch]).
+  /// Headers: optional `Authorization`; `X-CC-Workspace-Id`/`Agent-Id`/`Conversation-Id`/`Space-Id`
+  /// (handler forces workspace, fills empty scope args — space ≠ conversation for guardrails);
+  /// `X-CC-Toolset-Rev` busts client tool-list caches when the catalogue changes.
   Future<String> writeAgentMcpConfig(
     File target, {
     String? workspaceId,

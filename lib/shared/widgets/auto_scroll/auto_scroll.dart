@@ -7,24 +7,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 /// Browser-style middle-click auto-scroll for a single axis.
-///
-/// Vendored and trimmed from `auto_scrolling: ^0.4.0`. The upstream package
-/// calls `setState(...)` from pointer callbacks and an `initState` post-frame
-/// callback without `mounted` guards — when a large PR's diff subtree
-/// re-mounts files while the user is mid-interaction, a [PointerUpEvent]
-/// reaches a disposed `_AutoScrollMouseListenerState` and `setState` throws.
-/// The crash then cascades through the layout pipeline (broken
-/// `LayoutBuilder` intrinsics, `!_debugDuringDeviceUpdate` mouse-tracker
-/// assertions, `RenderBox was not laid out` spam) and the app stops
-/// rendering. Every call here checks `mounted` before mutating state.
-///
-/// The cursor/multi-axis features from the upstream package are not used in
-/// this codebase and have been dropped. The browser-style click anchor
-/// (chevron rosette painted at the click position) is built in. While
-/// scroll is engaged we attach a global pointer route + a hardware-keyboard
-/// handler so that any pointer-down anywhere on the app *or* an `Esc` press
-/// disengages, even when those happen outside this widget's subtree —
-/// matching browser behaviour.
+/// The upstream package calls `setState(...)` from pointer callbacks and an `initState`
+/// post-frame callback without `mounted` guards — when a large PR's diff subtree re-mounts
+/// files while the user is mid-interaction, a [PointerUpEvent] reaches a disposed
+/// `_AutoScrollMouseListenerState` and `setState` throws.
+/// The crash then cascades through the layout pipeline (broken `LayoutBuilder` intrinsics,
+/// `!_debugDuringDeviceUpdate` mouse-tracker assertions, `RenderBox was not laid out` spam)
+/// and the app stops rendering.
 class AutoScroll extends StatefulWidget {
   /// Creates an [AutoScroll] widget.
   const AutoScroll({

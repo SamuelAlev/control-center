@@ -10,32 +10,16 @@ import 'package:cc_ui/src/tokens/app_spacing.dart';
 import 'package:cc_ui/src/tokens/design_system_tokens.dart';
 import 'package:flutter/widgets.dart';
 
-/// A navigation row for [CcSidebar].
+/// Navigation row for [CcSidebar]: [icon] + [label], always
+/// [kCcSidebarItemExtent] (32px) tall.
 ///
-/// Renders an [icon] and [label] as a flat row, always
-/// [kCcSidebarItemExtent] (32px) tall. At rest the fill is transparent
-/// so the sidebar background shows through; hovering washes it with `t.hover`.
-/// The [selected] row reads as the current destination through a SOLID
-/// `bgBrandSolid` fill (the accessible brand orange — `accentOn` clears 4.5:1
-/// on it in both brightnesses, unlike the raw `accent` signal) carrying
-/// `accentOn` ink at bold weight. Unselected rows use `textSecondary`.
+/// Selected: solid `bgBrandSolid` + `accentOn` bold (not raw `accent` — contrast).
+/// Animate selected fill via opacity, not Color.lerp from translucent hover
+/// (lerp flashes dark brown at mid-t). [badge] must invert when [selected];
+/// callers thread [selected] into the badge.
 ///
-/// That brand fill fades in via opacity. Color.lerp from a translucent ink
-/// wash (`hover` / `hoverStrong`, the fg RGB at 5–8% alpha) into
-/// `bgBrandSolid` bottoms out at a dark brown at t≈0.5 — the flash on click.
-///
-/// Anything the caller hands to [badge] rides that fill, so an accent-tinted
-/// badge would disappear into it: a badge must invert on the selected row
-/// (`accentOn` pill, `bgBrandSolid` content). Callers already know [selected],
-/// so they thread it into their own badge widget rather than the row guessing
-/// at an arbitrary child's colors.
-///
-/// In [collapsed] (icon-only rail) mode the label is hidden and the item
-/// renders as a fixed 32×32 square ([kCcSidebarItemExtent]) centered in the
-/// rail — a design-system invariant. Any [badge] keeps its full content
-/// (count included) straddling the square's top-right corner — never degraded
-/// to a bare dot. The collapsed state is sourced from the nearest
-/// [CcSidebarScope] when present, falling back to the local [collapsed] flag.
+/// [collapsed]: 32×32 centered square; badge keeps full content (not a dot).
+/// Collapsed state from nearest [CcSidebarScope], else local [collapsed].
 class CcSidebarItem extends StatelessWidget implements CcFluidHoverTarget {
   /// Creates a [CcSidebarItem].
   const CcSidebarItem({
@@ -249,23 +233,10 @@ class CcSidebarItem extends StatelessWidget implements CcFluidHoverTarget {
                 ),
               ),
               Padding(
-                // The 10px left inset aligns the icon's left edge with the
-                // group header's text (8px sidebar inset + 10px padding =
-                // the header's 8 + 10). It also puts the icon's center at
-                // x=27 from the sidebar edge — the exact spot the rail's
-                // centered 32px square puts it (rail width 54, content
-                // center 27) — so toggling the sidebar moves nothing
-                // (27 − 8 sidebar inset − 9 half-icon = 10).
-                //
-                // The 1px accent border is paint-only (foregroundDecoration
-                // never insets the child), so the padding itself is the
-                // visual 10px inset: the icon's leading edge lands exactly
-                // where CcSidebarGroup's header padding (10) starts the
-                // section title. While the width animates the trailing
-                // inset drops to 0: the row keeps its expanded geometry
-                // (labels fading) down to the rail's 38px content width
-                // without the fixed icon + gap + padding overflowing it
-                // (18 + 8 + 10 = 36 ≤ 38).
+                // 10px left inset: align icon with group-header text and keep
+                // icon center at x=27 (matches collapsed 54px rail). Accent
+                // border is paint-only (no inset). Trailing inset → 0 while
+                // width animates so expanded geometry fits 38px rail content.
                 padding: collapsed
                     ? EdgeInsets.zero
                     : EdgeInsetsDirectional.only(

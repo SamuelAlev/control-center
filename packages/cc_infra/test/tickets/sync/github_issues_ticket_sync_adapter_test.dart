@@ -340,7 +340,6 @@ void main() {
   });
 }
 
-// --- Dio fake ---------------------------------------------------------------
 
 class RecordingAdapter implements HttpClientAdapter {
   final List<RequestOptions> requests = [];

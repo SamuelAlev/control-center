@@ -1,27 +1,14 @@
 import 'package:cc_domain/cc_domain.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 
-/// A human sentence for an audit-trail [entry] — the machine op
-/// (`agents.upsert`) stays on the action chip; this is the prose read of it,
-/// e.g. `Updated agent · ceo`.
-///
-/// Resolution order:
-/// 1. A full-action special case (`members.setRole` → "Changed a member's
-///    role") for compounds whose verb×domain expansion reads wrong.
-/// 2. The generic `verb × domain` expansion: the verb is the FIRST camelCase
-///    (or snake_case) segment of the action's verb part, mapped to a localized
-///    past-tense template; the domain (the segment before the dot) maps to a
-///    localized noun ({target}). Both tables cover every auditable op the
-///    server records, so known actions always produce a real sentence.
-/// 3. A newer server's unknown verb humanizes the raw verb part
-///    (`workerHeartbeat` → "Worker heartbeat") — never an empty line, never
-///    the dotted machine op (that stays on the chip).
-///
-/// A present `targetId` or `details` snapshot (setting key/value, the
-/// command that was sent, the space a rig lived in) is appended after a
-/// middle dot, so "Added repository" becomes "Added repository ·
-/// /Users/sam/control-center" and "Changed workspace settings" becomes
-/// "Changed workspace settings · theme=dark".
+/// A human sentence for an audit-trail [entry] — the machine op (`agents.upsert`) stays on
+/// the action chip; this is the prose read of it, e.g.
+/// `Updated agent · ceo`.
+/// (`workerHeartbeat` → "Worker heartbeat") — never an empty line, never the dotted machine
+/// op (that stays on the chip).
+/// A present `targetId` or `details` snapshot (setting key/value, the command that was
+/// sent, the space a rig lived in) is appended after a middle dot, so "Added repository"
+/// becomes "Added repository · /Users/sam/control-center" and "Changed workspace settings"
 String describeActivity(AppLocalizations l10n, UserActivityDto entry) {
   final action = entry.action;
   final dot = action.indexOf('.');

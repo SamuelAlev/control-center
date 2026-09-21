@@ -3,27 +3,13 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 
-/// Captures the device's real **application support** directory once at boot —
-/// the single root for everything the app persists — and keeps
-/// `path_provider`'s own answer pointed at a `fonts/` subfolder.
-///
-/// Our own code never calls `getApplicationSupportDirectory()`. It reads
-/// [AppSupportPathProvider.realAppSupportDir], captured **before** the override
-/// is installed and everything else derives from it (see `CcPaths`).
-///
-/// WHY THE REDIRECT STAYS, even though nothing downloads fonts to disk any
-/// more: it was introduced to keep `package:google_fonts` from scattering `.ttf`
-/// files across the data root and font bytes are now cached server-side
-/// instead. But the override is not font-specific — it moves the path for
-/// *every* plugin that resolves app support and on Windows and Linux that
-/// includes `shared_preferences`. Its file has been living under
-/// `<root>/fonts/` for as long as this override has existed, so removing the
-/// redirect would silently strip a user's theme, font and workspace
-/// preferences. The subfolder name is legacy; the compatibility is not.
-///
-/// Installation must happen exactly once, very early in `main()` — before any
-/// code asks `path_provider` for the application support directory. See
-/// [AppSupportPathProvider.install].
+/// Captures the device's real application support directory once at boot — the single
+/// root for everything the app persists — and keeps `path_provider`'s own answer pointed at
+/// a `fonts/` subfolder.
+/// Our own code never calls `getApplicationSupportDirectory()`.
+/// Its file has been living under `<root>/fonts/` for as long as this override has existed,
+/// so removing the redirect would silently strip a user's theme, font and workspace
+/// preferences.
 class AppSupportPathProvider extends PathProviderPlatform {
   AppSupportPathProvider._({
     required this.delegate,
@@ -40,7 +26,7 @@ class AppSupportPathProvider extends PathProviderPlatform {
   static Directory? _realAppSupportDir;
 
   /// The real Application Support directory — i.e. what
-  /// `getApplicationSupportDirectory()` would have returned **without** this
+  /// `getApplicationSupportDirectory()` would have returned without this
   /// override. Use this as the single root for all app data (database,
   /// workspaces, voice models, …).
   ///
@@ -107,7 +93,6 @@ class AppSupportPathProvider extends PathProviderPlatform {
     _realAppSupportDir = dir;
   }
 
-  // ─── Overrides ────────────────────────────────────────────────────────────
 
   @override
   Future<String?> getApplicationSupportPath() async {
@@ -118,7 +103,6 @@ class AppSupportPathProvider extends PathProviderPlatform {
     return dir.path;
   }
 
-  // ─── Delegated methods ────────────────────────────────────────────────────
 
   @override
   Future<String?> getTemporaryPath() => delegate.getTemporaryPath();

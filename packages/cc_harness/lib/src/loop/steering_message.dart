@@ -1,24 +1,10 @@
-/// Steering and injection channels for an agent loop.
+/// Steering and injection channels for an agent loop. Framing differs, not
+/// timing — [SteeringChannel.steering] and [SteeringChannel.aside] both drain
+/// at the turn boundary before the provider call (never mid-turn / after tools).
 ///
-/// An agent loop consults three queues, and the difference between the first
-/// two is HOW A MESSAGE IS FRAMED to the model, not when it arrives:
-///
-/// - [SteeringChannel.steering] — injected as a **user** turn at the top of
-///   the next turn, and announced to the host with a `LoopNotice`. This is a
-///   person talking to the run.
-/// - [SteeringChannel.aside] — injected as a **system** turn at the same
-///   point, silently. Background-job completions and peer-agent messages
-///   arrive here: context the model should have, not an instruction it was
-///   given.
-/// - [SteeringChannel.followUp] — consumed only when the agent would
-///   otherwise stop, so it can extend a run rather than steer one.
-///
-/// Neither of the first two aborts in-flight work: both are drained at the
-/// turn boundary, before the provider call. The docs used to say the aside
-/// lane was "polled after each tool batch", which described a mid-turn poll
-/// the loop has never done — a host integrator choosing between the lanes for
-/// their timing was choosing on a difference that does not exist. Choose on
-/// the framing.
+/// - [SteeringChannel.steering]: user turn + `LoopNotice` (human → run).
+/// - [SteeringChannel.aside]: system turn, silent (background/peer context).
+/// - [SteeringChannel.followUp]: only when the agent would otherwise stop.
 enum SteeringChannel {
   /// Interrupting channel: injected as a user turn at the next turn boundary
   /// and announced with a `LoopNotice`.

@@ -177,7 +177,6 @@ void main() {
   });
 }
 
-// -- fakes -------------------------------------------------------------------
 
 class _Spawn {
   _Spawn(this.executable, this.arguments, this.process);

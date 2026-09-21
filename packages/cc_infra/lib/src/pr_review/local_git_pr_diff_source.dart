@@ -305,7 +305,6 @@ class LocalGitPrDiffSource implements PrDiffSource {
     ]);
   }
 
-  // ── Helpers ────────────────────────────────────────────────────────────────
 
   PrCloneManager _buildManager(PrSourceRequest req) {
     return PrCloneManager(

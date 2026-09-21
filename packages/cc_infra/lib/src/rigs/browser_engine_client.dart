@@ -1,23 +1,12 @@
 // The protocol-neutral contract behind a browser rig, plus everything three
 // engines can share.
 //
-// `BrowserRigDriver` used to hold a `CdpClient` by type, so "a browser rig"
-// and "Chromium" were the same statement. They are not: Firefox answers
-// WebDriver BiDi (its remote agent dropped CDP outright) and WebKit answers
-// classic W3C WebDriver, and a page that renders in one and breaks in another
-// is the whole reason someone opens a second rig. The driver now speaks to
-// [BrowserEngineClient]; `CdpClient` is one implementation of it.
-//
-// Two things live here so the three engines cannot drift apart:
-//
-//  * The IN-PAGE scripts. Selection, clipboard, element geometry, the DOM and
-//    accessibility digests are all JavaScript in the end — CDP has native
-//    domains for some of them, the other two engines have `script.evaluate`
-//    and `/execute/sync`. One copy of each script means one behaviour and one
-//    place to fix a bug in it.
-//  * The W3C INPUT vocabulary. BiDi's `input.performActions` and classic
-//    WebDriver's `POST /actions` take a byte-identical payload, so pointer,
-//    key and wheel input is built once here and posted by whichever subclass.
+// `BrowserRigDriver` speaks [BrowserEngineClient]; Chromium is CDP, Firefox
+// is BiDi, WebKit is classic WebDriver — a second rig exists so pages that
+// break in one can be tried in another.
+// Shared here so the three cannot drift: the in-page scripts (selection,
+// clipboard, geometry, digests) and the W3C action vocabulary (BiDi and
+// classic take a byte-identical payload).
 library;
 
 import 'dart:async';
@@ -323,12 +312,9 @@ abstract interface class BrowserEngineClient {
   Future<void> close();
 }
 
-// ── Shared in-page scripts ───────────────────────────────────────────────────
-//
-// Each one evaluates to a JSON STRING, never to a structured value: CDP,
-// BiDi and classic WebDriver each serialise objects differently (remote object
-// handles, `RemoteValue` unions, JSON wire values), and stringifying in the
-// page means one parse on this side for all three.
+// Shared in-page scripts. Each evaluates to a JSON STRING (never a structured
+// value): CDP/BiDi/classic serialize objects differently; stringifying in-page
+// means one parse for all three.
 
 /// Reads the current selection. `{"text": "..."}`.
 const String kBrowserReadSelectionScript = '''
@@ -575,7 +561,6 @@ String browserJsString(String value) => jsonEncode(value)
     .replaceAll('\u2028', r'\u2028')
     .replaceAll('\u2029', r'\u2029');
 
-// ── The W3C action vocabulary ────────────────────────────────────────────────
 
 /// Builds W3C `actions` source objects — the payload shape BiDi's
 /// `input.performActions` and classic WebDriver's `POST /actions` share
@@ -731,7 +716,6 @@ const Map<String, String> _w3cModifiers = {
   'cmd': '\u{E03D}',
 };
 
-// ── The scripted base ────────────────────────────────────────────────────────
 
 /// Everything an engine gets for free once it can evaluate a script and post
 /// W3C actions.

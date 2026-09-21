@@ -44,31 +44,13 @@ const EdgeInsets _composerMargin = EdgeInsets.symmetric(
   vertical: 8,
 );
 
-/// A keyboard-first chat composer with multi-source `@` mentions, file
-/// attachments and (scaffolded) voice dictation.
-///
-/// Usage:
-/// ```dart
-/// Composer(
-///   hint: 'Message #general… (@ to mention, / for commands)',
-///   sources: [
-///     AgentMentionSource(agents),
-///     SpaceMentionSource(spaces),
-///     FileMentionSource(search: (q) => searchWorkspaceFilesOverRpc(q)),
-///     ScratchpadMentionSource(scratchpad: pad, workspaceId: id),
-///     SlashCommandSource(commands),
-///   ],
-///   onSubmit: (submission) async {
-///     await sendUseCase.execute(content: submission.text, ...);
-///   },
-/// )
-/// ```
-///
-/// The composer keeps the text field focused while the mention popup is
-/// open — arrow keys/Enter/Tab/Esc are intercepted by [MentionPopup] via
-/// [HardwareKeyboard]; typing and left/right cursor keys reach the field
-/// normally. This is what made the previous inline-listview implementation
-/// feel broken.
+/// A keyboard-first chat composer with multi-source `@` mentions, file attachments and
+/// (scaffolded) voice dictation.
+/// Usage: Composer( hint: 'Message #general… (@ to mention, / for commands)', sources: [
+/// AgentMentionSource(agents), SpaceMentionSource(spaces), FileMentionSource(search: (q) =>
+/// searchWorkspaceFilesOverRpc(q)), ScratchpadMentionSource(scratchpad: pad, workspaceId:
+/// id), SlashCommandSource(commands), ], onSubmit: (submission) async { await
+/// sendUseCase.execute(content: submission.text, ...); }, )
 class Composer extends ConsumerStatefulWidget {
   /// Creates a new [Composer].
   const Composer({

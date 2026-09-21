@@ -9,21 +9,11 @@ import 'package:cc_domain/features/settings/domain/model_control.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 
 /// Live model-status stream the settings cards watch.
-///
-/// Seeds from [ModelControl.status] (a request/response — no subscribe race)
-/// then forwards [ModelControl.watch] for download progress. A server without
-/// the ops (`opUnknown`) degrades to `null` so the card can render the
+/// A server without the ops (`opUnknown`) degrades to `null` so the card can render the
 /// "managed on the server host" placeholder instead of spinning forever.
-///
-/// The seed is load-bearing: `models.watch*` can emit its only snapshot in
-/// the same burst as the `sub/subscribe` ack, and a client that has not yet
-/// registered the subscription id drops that emission. `status` does not
-/// have that race, so the card always leaves loading.
-///
-/// Implemented with a [StreamController] rather than `async*` + `yield*`:
-/// `yield*` of a stream that has not yet emitted can hold the preceding
-/// `yield` until that first inner event, which is exactly the hang this
-/// helper exists to prevent.
+/// The seed is load-bearing: `models.watch*` can emit its only snapshot in the same burst
+/// as the `sub/subscribe` ack, and a client that has not yet registered the subscription id
+/// drops that emission.
 Stream<ModelStatusSnapshot?> modelStatusStream(ModelControl control) {
   late final StreamController<ModelStatusSnapshot?> controller;
   StreamSubscription<ModelStatusSnapshot>? sub;

@@ -39,27 +39,10 @@ enum InboxEmptyCaveat {
 }
 
 /// Decides which caveat (if any) applies to an empty inbox.
-///
-/// An unresolved identity outranks everything else, even though an outage or a
-/// suspended install is usually what caused it. "GitHub might be down" / "the
-/// install is suspended" are true but leave the operator staring at an inbox
-/// with no idea why it is empty; "we don't know who you are on GitHub" is the
-/// specific fact, and it is the one that says this list is empty *by
-/// construction* rather than possibly-incomplete. When identity and a
-/// degraded GitHub both hold, the degradation still shows up as the likely
-/// cause and the status page stays one click away.
-///
-/// A suspended installation outranks a degraded GitHub: we already know why
-/// polling stopped, and githubstatus.com is the wrong next step.
-///
-/// What counts as degraded is [isGitHubDegraded]'s call, shared with the banner
-/// so the two surfaces cannot disagree.
-///
-/// [viewerLogins] is the per-forge login map, tested exactly as
-/// `ClassifyPrInboxUseCase` tests it — every login empty (which an empty map
-/// satisfies) is precisely when it returns an all-empty inbox. Deriving the
-/// caveat from the same input is what keeps this screen from explaining a
-/// condition the classifier isn't actually in.
+/// "GitHub might be down" / "the install is suspended" are true but leave the operator
+/// staring at an inbox with no idea why it is empty; "we don't know who you are on GitHub"
+/// is the specific fact, and it is the one that says this list is empty *by construction*
+/// rather than possibly-incomplete.
 InboxEmptyCaveat? resolveInboxEmptyCaveat({
   required GitHubStatusIndicator? indicator,
   required Map<ForgeHost, String> viewerLogins,

@@ -77,7 +77,6 @@ final Map<String, BreadcrumbBuilder> breadcrumbRegistry = {
   workspaceListRoute: _manageWorkspacesCrumbs,
 };
 
-// ─── Inbox ──────────────────────────────────────────────────────────────────
 
 List<CcBreadcrumbItem> _inboxCrumbs(
   WidgetRef ref,
@@ -160,7 +159,6 @@ List<CcBreadcrumbItem> _newsfeedArticleCrumbs(
   );
 }
 
-// ─── Meetings ─────────────────────────────────────────────────────────────────
 
 List<CcBreadcrumbItem> _meetingsCrumbs(
   WidgetRef ref,
@@ -216,7 +214,6 @@ List<CcBreadcrumbItem> _meetingDetailCrumbs(
   );
 }
 
-// ─── Calendar ─────────────────────────────────────────────────────────────────
 
 List<CcBreadcrumbItem> _calendarCrumbs(
   WidgetRef ref,
@@ -261,7 +258,6 @@ List<CcBreadcrumbItem> _calendarEventDetailCrumbs(
   );
 }
 
-// ─── Top-level: memory / API keys / workspaces list ───────────────────────────
 
 List<CcBreadcrumbItem> _memoryCrumbs(
   WidgetRef ref,
@@ -287,7 +283,6 @@ List<CcBreadcrumbItem> _manageWorkspacesCrumbs(
   AppLocalizations l10n,
 ) => [CcBreadcrumbItem(current: true, child: Text(l10n.manageWorkspaces))];
 
-// ─── Ticketing / Projects ─────────────────────────────────────────────────────
 
 List<CcBreadcrumbItem> _ticketsCrumbs(
   WidgetRef ref,
@@ -352,7 +347,6 @@ List<CcBreadcrumbItem> _projectOverviewCrumbs(
   ];
 }
 
-// ─── Pipelines ────────────────────────────────────────────────────────────────
 
 List<CcBreadcrumbItem> _pipelinesCrumbs(
   WidgetRef ref,
@@ -445,7 +439,6 @@ List<CcBreadcrumbItem> _pipelineRunDetailCrumbs(
   ];
 }
 
-// ─── Pull requests ────────────────────────────────────────────────────────────
 
 List<CcBreadcrumbItem> _pullRequestsListCrumbs(
   WidgetRef ref,
@@ -560,7 +553,6 @@ List<CcBreadcrumbItem> _pullRequestDetailCrumbs(
   );
 }
 
-// ─── Settings subtree ─────────────────────────────────────────────────────────
 
 CcBreadcrumbItem _settingsRoot(
   BuildContext context,
@@ -644,7 +636,6 @@ List<CcBreadcrumbItem> _pipelineTemplateEditorCrumbs(
   );
 }
 
-// ─── User profile ─────────────────────────────────────────────────────────────
 
 List<CcBreadcrumbItem> _userProfileCrumbs(
   WidgetRef ref,

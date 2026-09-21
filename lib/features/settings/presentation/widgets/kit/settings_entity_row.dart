@@ -2,32 +2,11 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/widgets.dart';
 
-/// One repeating thing in a settings list: a model provider, a detected runner,
-/// an MCP server, a rig image.
+/// Collapsed settings list row (provider, runner, MCP server, rig image).
 ///
-/// These lists are where settings pages go wrong at scale. The old shape
-/// rendered every item fully expanded — API-key field, sampling panel, capability
-/// matrix, environment editor — so eighteen providers meant eighteen forms
-/// stacked vertically and the reader could not answer "which of these am I
-/// actually using?" without scrolling past all of them.
-///
-/// The fix is a fixed collapsed anatomy that answers exactly that question:
-///
-/// ```
-/// [◆]  Anthropic          Connected            [•]  2 models   ▸
-///      sam@example.com                              allow
-/// ```
-///
-/// - a **status marker** (tinted glyph, never colour alone — the [statusLabel]
-///   is required whenever a [tone] is given);
-/// - the **name**, and directly under it the one line that identifies THIS
-///   install of it (the account, the version, the path);
-/// - **meta** — small facts that decide whether to open it;
-/// - **trailing** — the one control you might use without opening it (an
-///   allow switch, a connect button);
-/// - a **chevron**, only when there is detail to see.
-///
-/// Everything else lives in [detail] and is not built until the row is opened.
+/// Anatomy: status marker ([statusLabel] required with [tone]), name + identity
+/// line, meta, optional trailing control, chevron if [detail] exists. Detail
+/// builds only when opened.
 class SettingsEntityRow extends StatelessWidget {
   /// Creates a [SettingsEntityRow].
   const SettingsEntityRow({

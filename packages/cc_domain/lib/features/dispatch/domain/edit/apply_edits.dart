@@ -14,10 +14,6 @@ library;
 import 'package:cc_domain/features/dispatch/domain/edit/block_resolver.dart';
 import 'package:cc_domain/features/dispatch/domain/edit/edit.dart';
 
-// ===========================================================================
-// Warning constants
-// ===========================================================================
-
 /// Warning: an `insertAfter` block edit anchored on a structural closer line
 /// was lowered to a plain after-anchor insert (the closer ends a block, so
 /// inserting after it is exactly what the plain form does).
@@ -48,10 +44,6 @@ const String afterInsertLandingSuspectWarning =
 /// A line that is nothing but closing delimiters: `}`, `)`, `];`, `})`, `},`,
 /// or a bare `end`. Used by both repair passes and block lowering.
 final RegExp structuralCloserPattern = RegExp(r'^\s*(?:[)\]}]+[;,]?|end)\s*$');
-
-// ===========================================================================
-// applyEdits
-// ===========================================================================
 
 /// The result of [applyEdits].
 class ApplyResult {
@@ -281,10 +273,6 @@ int? _insertAtEnd(List<String> fileLines, List<String> lines) {
   return insertIndex + 1;
 }
 
-// ===========================================================================
-// Repair pass 1: replacement boundaries
-// ===========================================================================
-
 /// The result of a repair pass: the possibly-rewritten edits and any warnings.
 class RepairResult {
   /// Creates a [RepairResult].
@@ -411,10 +399,6 @@ _ReplacementGroup? _findReplacementGroup(List<Edit> edits, int start) {
   );
 }
 
-// ===========================================================================
-// Repair pass 2: after-insert landings
-// ===========================================================================
-
 /// Flag after-anchor inserts that look mis-anchored, leaving them as authored.
 ///
 /// Conservative version: when an after-anchor insert lands on a line that is a
@@ -453,10 +437,6 @@ RepairResult repairAfterInsertLandings(
   );
 }
 
-// ===========================================================================
-// resolveBlockEdits
-// ===========================================================================
-
 /// The result of [resolveBlockEdits]: the concrete edits and any warnings.
 class ResolveBlockResult {
   /// Creates a [ResolveBlockResult].
@@ -471,23 +451,12 @@ class ResolveBlockResult {
 
 /// Expand every [BlockEdit] in [edits] against [text] using [resolver].
 ///
-/// Fast path: returns [edits] unchanged when there is no [BlockEdit]. For each
-/// [BlockEdit], the resolver is asked for the block's span (against [path] for
-/// language inference):
-///
-/// - **Unresolved** (null resolver, or the resolver returns null): an
-///   `insertAfter` block lowers to a plain after-anchor insert per payload at
-///   the anchor line — emitting [insertAfterBlockCloserLoweredWarning] if the
-///   anchor line is a structural closer, else
-///   [insertAfterBlockUnresolvedLoweredWarning]. A replace/delete block cannot
-///   be lowered safely, so it throws [BlockResolutionException].
-/// - **Single-line span** (`startLine == endLine`): treated as a bare
-///   statement, not a multi-line construct. `insertAfter` lowers to an
-///   after-anchor insert at that line; replace/delete throws
-///   [BlockResolutionException].
-/// - **Multi-line span**: `insertAfter` becomes after-anchor inserts at
-///   `endLine`; replace/delete becomes before-anchor replacement inserts at
-///   `startLine` (one per payload) plus a delete for every line in the span.
+/// No [BlockEdit] → return [edits]. Unresolved/`insertAfter`: lower to
+/// after-anchor inserts (closer → [insertAfterBlockCloserLoweredWarning], else
+/// [insertAfterBlockUnresolvedLoweredWarning]); replace/delete throws
+/// [BlockResolutionException]. Single-line span: same as insertAfter lower;
+/// replace/delete throws. Multi-line: insertAfter at `endLine`; replace/delete
+/// = inserts at `startLine` + delete each line in the span.
 ResolveBlockResult resolveBlockEdits(
   List<Edit> edits,
   String text,

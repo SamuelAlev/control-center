@@ -1,23 +1,10 @@
-// Boots one real rig through the SAME code path the server uses and reports
-// what happened. The unit suite pins every policy decision against fakes;
-// this is the one place the launch argv, the images, the readiness probes and
-// the egress policy meet an actual hypervisor.
+// Boots one real rig on the server path (unit suite uses fakes).
 //
-//   cd packages/cc_infra
-//   fvm dart run tool/rig_smoke.dart "<dataDir>"            # exec (terminal)
-//   fvm dart run tool/rig_smoke.dart "<dataDir>" browser    # Chromium
-//   fvm dart run tool/rig_smoke.dart "<dataDir>" firefox    # Firefox (BiDi)
-//   fvm dart run tool/rig_smoke.dart "<dataDir>" webkit     # WebKit (WebDriver)
-//   fvm dart run tool/rig_smoke.dart "<dataDir>" computer   # desktop image
+//   fvm dart run tool/rig_smoke.dart "<dataDir>" [exec|browser|firefox|webkit|computer]
 //   fvm dart run tool/rig_smoke.dart "<dataDir>" ios <App.app> <bundle-id>
 //
-// Exec (a smolvm microVM): exits 0 only when the machine booted, answered
-// `machine exec`, reached an allowlisted host and was refused a
-// non-allowlisted one. Browser (smolvm): boots the engine's image, waits for
-// its automation endpoint and drives real verbs over the SAME client the
-// server attaches — three protocols, one contract, and the engines that
-// install their own browser prove that too. Computer (QEMU): boots the
-// interactive image, waits for its guest agent and captures frames.
+// Exec: boot + machine exec + allowlist pass/fail. Browser: engine image +
+// automation verbs. Computer: QEMU image + guest agent + frames.
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';

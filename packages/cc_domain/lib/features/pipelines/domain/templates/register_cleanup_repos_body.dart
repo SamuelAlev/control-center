@@ -5,28 +5,12 @@ import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_templa
 import 'package:cc_domain/features/pipelines/domain/services/pipeline_body_registry.dart';
 import 'package:cc_domain/features/pipelines/domain/templates/builtin_template_seeds.dart';
 
-/// Registers the `repos.cleanup` body — removes stale isolated copy-on-write
-/// worktrees, picking its mode from the trigger payload:
-///
-///  * `ticketId` present (ticket done/cancelled) → releases that ticket's
-///    worktrees, scoped to the run's workspace
-///    ([RepoWorkspaceProvisionerPort.releaseTicketInWorkspace]).
-///  * `repoFullName` + `prNumber` present (PR merged/closed) → releases the
-///    ephemeral PR-editor worktree ([PrWorktreePort.release]).
-///  * `spaceId` present (a space was deleted) → tears down that SPACE's
-///    worktrees AND its folder — the per-agent overlays and their
-///    token-bearing `.mcp.json`
-///    ([RepoWorkspaceProvisionerPort.releaseSpace]).
-///  * none of them (a manual run or the scheduled sweep) → sweeps the
-///    workspace: worktrees whose directory vanished, worktrees whose space is
-///    gone, orphan space folders and the obsolete pre-rename
-///    `conversations/` tree ([RepoWorkspaceProvisionerPort.sweepStale]).
-///
-/// All teardown ports are idempotent and no-op-safe, so this overlaps
-/// harmlessly with the always-on `WorktreeGcListener` while adding an
-/// auditable pipeline run and the manual / periodic sweep the listener does
-/// not provide. Honors the context's `dryRun` flag and never reaches across
-/// workspaces.
+/// Registers `repos.cleanup` — removes stale CoW worktrees by trigger:
+/// `ticketId` → [RepoWorkspaceProvisionerPort.releaseTicketInWorkspace];
+/// `repoFullName`+`prNumber` → [PrWorktreePort.release];
+/// `spaceId` → [RepoWorkspaceProvisionerPort.releaseSpace] (worktrees + folder);
+/// else → [RepoWorkspaceProvisionerPort.sweepStale]. Idempotent; overlaps
+/// `WorktreeGcListener` harmlessly. Honors `dryRun`; never cross-workspace.
 void registerCleanupReposBody(
   PipelineBodyRegistry registry, {
   required PipelineTemplateRepository templateRepository,

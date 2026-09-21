@@ -4,29 +4,9 @@ import 'package:cc_domain/core/domain/repositories/workspace_repository.dart';
 import 'package:cc_domain/features/skills/domain/ports/skill_bundle_port.dart';
 import 'package:cc_server_core/src/skill_quarantine_guard.dart';
 
-/// ONE boot-time re-verification pass over installed skills (PRD 23 §6).
+/// One boot-time re-verification of installed skills (PRD 23 §6).
 ///
-/// Continuous re-verification is EVENT-DRIVEN — no periodic sweep: every
-/// gated write (marketplace install/update, editor save) publishes
-/// `SkillUpdated`, and the skills-dir watcher publishes it for out-of-band
-/// edits, so a changed skill is re-scanned within seconds, not at the next
-/// tick. See `SkillWatchService` and the `skill_analysis` pipeline trigger.
-///
-/// The one case events cannot see is a RULES UPGRADE: when a newer server
-/// ships a higher `kSkillRulesVersion`, every installed skill's recorded
-/// verdict predates the tightened rules and deserves one re-examination —
-/// content that used to pass may now be quarantined. That happens exactly at
-/// server startup after an upgrade, so this pass runs ONCE there (a no-op in
-/// steady state: nothing is rules-stale, nothing drifted) and enforces any
-/// quarantine it f andby detaching the skill from its agents.
-///
-/// CROSS-WORKSPACE BY DESIGN: the pass enumerates every workspace (a startup
-/// reconciler, like the orphan-run reaper). Each per-workspace re-scan and
-/// lock rewrite is scoped to one `workspaceId` via [SkillBundlePort] — no
-/// cross-workspace data is read or mixed.
-///
-/// Best-effort: any single workspace's failure is reported via the `onError`
-/// callback and never thrown into the caller.
+/// Re-scans on disk; updates quarantine state before agents run. Idempotent per boot.
 class SkillReVerifyService {
   /// Creates a [SkillReVerifyService].
   SkillReVerifyService({

@@ -15,7 +15,6 @@ const String themeModeKey = 'theme_mode';
 /// 'onFocusChange'); seeded into code-server's `files.autoSave` on every open.
 const String editorAutoSaveKey = 'editor_auto_save';
 
-// ── Font family preferences ──
 
 /// Storage key for the app font family.
 const String appFontFamilyKey = 'app_font_family';
@@ -141,7 +140,6 @@ const String editorLayoutCacheKind = 'editor_layout_v1';
 /// PR layouts never collide with messaging's space-keyed entries.
 const String prEditorLayoutCacheKind = 'pr_editor_layout_v1';
 
-// ── Google Calendar OAuth ──
 //
 // Nothing here: OAuth lives entirely on the HOST (device-code grant). The
 // client drives the connect dialog over RPC and never holds a Google token, so

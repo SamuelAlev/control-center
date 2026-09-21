@@ -22,7 +22,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// through — notification chimes, the soundscape, meeting playback and a
 /// rig's audio lane alike.
 ///
-/// Both choices are **device-scoped**: they name this machine's hardware
+/// Both choices are device-scoped: they name this machine's hardware
 /// (device ids and labels do not exist on another computer), so they stay in
 /// local storage despite living on a You page — the You group is where the
 /// audio settings are filed, not a claim that the selections roam.

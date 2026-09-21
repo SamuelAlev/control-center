@@ -773,13 +773,11 @@ void main() {
     },
   );
 
-  // ---------------------------------------------------------------------------
   // Tool-output budgets. Both are applied by the LOOP, at the point where a
   // result becomes a transcript message, rather than by each tool: a tool that
   // dumps a DOM should not have to know the transcript's economics, and a
   // bridged MCP tool could not know them at all. The per-tool table was
   // documented (and tested as a pure function) long before anything called it.
-  // ---------------------------------------------------------------------------
   group('tool output budgets', () {
     test('over-long tool text is truncated in the TRANSCRIPT', () async {
       // 60k > the 50k default character cap.

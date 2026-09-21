@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// One preference key that follows the signed-in user across devices.
 ///
-/// Deliberately carries **no codec**. Every local settings notifier in this app
+/// Deliberately carries no codec. Every local settings notifier in this app
 /// already reads `AppPreferences` inside its `build()`, so a pulled value is
 /// applied by writing the raw string into the local store and invalidating the
 /// owning provider — the notifier re-reads and decodes it exactly as it would a

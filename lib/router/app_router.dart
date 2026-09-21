@@ -422,7 +422,6 @@ final routerProvider = Provider<GoRouter>((ref) {
             pageBuilder: (context, state) =>
                 buildPage(state, _absorb(const ApiKeysScreen())),
           ),
-          // ── Settings ──────────────────────────────────────────────
           //
           // Paths are namespaced by SCOPE (`you/`, `workspace/`, `server/`) so
           // the blast radius of a change is legible in the URL and the route

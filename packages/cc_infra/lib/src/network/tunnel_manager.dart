@@ -129,38 +129,19 @@ class TunnelAddress {
   String toString() => 'TunnelAddress($publicUrl)';
 }
 
-/// Supervised manager for a "Share this server" tunnel binary (PRD 15 §5).
+/// Supervises a "Share this server" tunnel binary.
 ///
-/// Spawns and babysits one tunnel child process (`cloudflared` / `ngrok`),
-/// parsing its output for the public URL and restarting it with jittered
-/// exponential backoff ([baseBackoff]‥[maxBackoff]) on unexpected exit — each
-/// restart re-parses the (possibly rotated) URL. `tailscale` is different: no
-/// child is spawned; the node's MagicDNS name is polled via
-/// `tailscale status --json` every [tailscalePollInterval].
-///
-/// Supply-chain pin: when [expectedSha256] is set, the binary file is hashed
-/// and compared (case-insensitively) BEFORE every spawn; a mismatch refuses to
-/// spawn with a loud [TunnelState.error]. Auto-update is never enabled —
-/// cloudflared always gets `--no-autoupdate` and any update-related
-/// [extraArgs] are dropped.
-///
-/// Terminal failures (binary not found, checksum mismatch) leave the manager
-/// in [TunnelState.error] without retrying; call [stop] then [start] to try
-/// again. [start] and [stop] are idempotent.
-///
-/// Modeled on `CodeServerService` (spawn + readiness parse + SIGTERM → 3s →
-/// SIGKILL) and `resolveBinaryPath` (PATH/prefix probing).
+/// Spawns `cloudflared`/`ngrok`, parses the public URL, restarts with jittered
+/// backoff ([baseBackoff]‥[maxBackoff]). `tailscale` polls MagicDNS via
+/// `tailscale status --json` ([tailscalePollInterval]) — no child. When
+/// [expectedSha256] is set, hash before every spawn; mismatch →
+/// [TunnelState.error]. Always `--no-autoupdate`; strip update [extraArgs].
+/// Terminal failures stay in error without retry; [start]/[stop] idempotent.
 class TunnelManager {
-  /// Creates a manager for [provider] exposing local port [localPort].
+  /// Creates a manager for [provider] on [localPort].
   ///
-  /// [binaryPath] pins an explicit binary; when empty the provider's binary
-  /// name is looked up via [resolveBinaryPath]. [expectedSha256] (64 hex
-  /// chars) enables the pre-spawn checksum pin. [extraArgs] are appended to
-  /// the provider's base arguments (update-related flags are stripped).
-  /// [onAddress] fires with the public address when the tunnel comes up and
-  /// with null when it goes down. [log] receives diagnostics (falls back to
-  /// [CcInfraLog] when null). [baseBackoff]/[maxBackoff]/[urlWaitTimeout]/
-  /// [tailscalePollInterval] are injectable so tests run fast.
+  /// Empty [binaryPath] → [resolveBinaryPath]. [expectedSha256] enables the
+  /// checksum pin. [onAddress] fires with the URL or null when down.
   TunnelManager({
     required this.provider,
     required this.localPort,

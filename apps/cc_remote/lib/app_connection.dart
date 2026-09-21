@@ -127,23 +127,14 @@ class NotPairedException implements Exception {
 /// falls back to the first available workspace.
 const String kActiveWorkspaceIdPref = 'active_workspace_id';
 
-/// Owns the full phone→server connection lifecycle and exposes it as a single
-/// [RemoteUiState] stream plus one stable [RemoteRpcClient].
+/// Phone→server connection lifecycle as a [RemoteUiState] stream plus one
+/// stable [RemoteRpcClient].
 ///
-/// The heavy lifting lives in cc_rpc (PRD 15): a [ServerConnectionSupervisor]
-/// probes every path in the stored [ConnectionDescriptor] (LAN / tailnet /
-/// wss / broker relay), connects the best reachable one, authenticates with
-/// the device PSK, verifies the server's identity against the TOFU-pinned
-/// fingerprint, health-pings and auto-reconnects with backoff. A
-/// [ResilientRpcClient] wraps it as ONE stable client whose `subscribe()`
-/// streams survive reconnects — [clientStream] therefore emits exactly once
-/// per pairing session and feature providers never need to re-bind.
-///
-/// This class adds only the phone-session concerns: the pairing store (and the
-/// VULN-004 confirm gate for fragment-delivered offers), the initial-connect
-/// retry loop (the supervisor's `start` throws on first failure), persisting
-/// descriptor refreshes + the pinned fingerprint, mapping supervisor status to
-/// [RemoteUiState] and the persisted active-workspace selection.
+/// Supervisor (cc_rpc) probes paths, authenticates with device PSK, TOFU-
+/// verifies fingerprint, reconnects; [ResilientRpcClient] keeps subscriptions
+/// across reconnects ([clientStream] emits once per pairing). This adds
+/// pairing store, VULN-004 confirm gate, initial-connect retry, descriptor/
+/// fingerprint persistence, and active-workspace selection.
 class RemoteSession {
   /// Creates a [RemoteSession].
   RemoteSession();

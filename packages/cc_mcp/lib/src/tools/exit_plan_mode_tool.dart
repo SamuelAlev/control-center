@@ -15,23 +15,11 @@ const String _planExitLinkType = 'conversation';
 
 /// The hard approval gate for leaving plan mode (PRD 09).
 ///
-/// In plan mode the conversation-mode guard blocks every mutating/execution
-/// tool, so an agent can plan but cannot act. To begin executing, the agent
-/// calls `exit_plan_mode`, which is the ONLY sanctioned exit:
-///
-///  1. First call (no prior request) → opens a durable `plan_exit` [Approval]
-///     linked to the conversation and returns `pending`. The conversation stays
-///     in plan mode; the agent must NOT execute.
-///  2. While pending → returns `pending` again (idempotent; no duplicate gate).
-///  3. After a human approves (via `decide_approval` or the approvals UI) → the
-///     next call flips the conversation out of plan mode (`plan → chat`) and
-///     returns `approved`; the agent may now execute.
-///  4. After a rejection / revision request → the agent may call again to open a
-///     fresh request for the revised plan.
-///
-/// The conversation + workspace are resolved server-side from the agent's
-/// active run (the same resolution the mode guard uses), so an agent cannot
-/// exit a conversation it is not actually working in.
+/// In plan mode the conversation-mode guard blocks every mutating/execution tool, so an
+/// agent can plan but cannot act.
+/// To begin executing, the agent calls `exit_plan_mode`, which is the ONLY sanctioned exit:
+/// The conversation stays in plan mode; the agent must NOT execute.
+/// While pending → returns `pending` again (idempotent; no duplicate gate).
 class ExitPlanModeTool extends McpTool {
   /// Creates an [ExitPlanModeTool].
   ExitPlanModeTool({

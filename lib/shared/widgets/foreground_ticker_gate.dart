@@ -1,34 +1,11 @@
 import 'package:flutter/widgets.dart';
 
-/// Mutes every ticker in the primary window while the app is not foregrounded.
+/// [TickerMode] off in the primary window when not [AppLifecycleState.resumed].
 ///
-/// On macOS the engine keeps rasterizing frames that were scheduled while the
-/// window cannot present them (app hidden, window covered or minimized): the
-/// surfaces accumulate natively — the Dart heap stays flat while the process
-/// balloons. Repeating animations (activity bars, status pulses, spinners, the
-/// shader background) schedule such frames at 30–60fps even when nobody can
-/// see them, which is what grew the idle process to tens of GB in minutes.
-/// Muting all tickers through [TickerMode] the moment the app leaves
-/// [AppLifecycleState.resumed] stops every animation-driven frame until the
-/// user returns; on resume the animations simply continue.
-///
-/// Scope this gate to the PRIMARY window only: the always-on-top HUD windows
-/// (focus pill, meeting toolbar, mini player) are designed to stay visible
-/// while the operator works inside another app — their frames present normally
-/// and their tickers must keep running while the app is `inactive`.
-///
-/// This generalises the policy `ShaderBackground`, `EditorBodyHost` and
-/// `MeetingToolbarController` already apply individually: motion nobody can
-/// see must not burn frames.
-///
-/// **`inactive` is the state this actually buys you.** Below it (`hidden`,
-/// `paused`, `detached`) the scheduler disables frames outright, so no ticker
-/// can produce one whatever this gate says — and the `setState` below stays
-/// pending until frames return, because a rebuild needs a frame. `inactive` is
-/// different: another app merely took focus, frames stay ENABLED and every
-/// repeating animation keeps rendering into a window the user may not be able to
-/// see. That is the gap this closes. The deeper states are still handled here so
-/// the gate's state is correct when frames resume.
+/// macOS keeps rasterizing scheduled frames while covered — native surfaces
+/// balloon. Primary only: HUD windows stay visible under `inactive` and must
+/// keep ticking. The real gap is `inactive` (frames still enabled); deeper
+/// states already disable frames — still tracked so resume state is correct.
 class ForegroundTickerGate extends StatefulWidget {
   /// Creates a [ForegroundTickerGate].
   const ForegroundTickerGate({super.key, required this.child});

@@ -3,24 +3,12 @@ import 'dart:developer' as developer;
 import 'package:control_center/core/constants/app_log_level.dart';
 import 'package:flutter/foundation.dart';
 
-/// Static, app-wide logger. Level is set once at startup from the persisted
-/// `AppLogPreferences` (passed into [init] by the composition root) and can be
-/// changed at runtime via [init].
-///
-/// Web-safe: this logger holds only an in-memory level and depends on no
-/// storage/native code, so the shared domain services that log through it
-/// compile in the web build. The desktop loads the persisted level and calls
-/// [init]; the web build keeps the default.
-///
-/// Use the shorthand methods when the call site knows the severity:
-///
-/// ```dart
-/// AppLog.e('Tag', 'message', error, stackTrace); // error
-/// AppLog.w('Tag', 'message');                     // warning
-/// AppLog.i('Tag', 'message');                     // info
-/// AppLog.d('Tag', 'message');                     // debug
-/// AppLog.v('Tag', 'message');                     // verbose
-/// ```
+/// Static, app-wide logger.
+/// Level is set once at startup from the persisted `AppLogPreferences` (passed into [init]
+/// by the composition root) and can be changed at runtime via [init].
+/// Web-safe: this logger holds only an in-memory level and depends on no storage/native
+/// code, so the shared domain services that log through it compile in the web build.
+/// The desktop loads the persisted level and calls [init]; the web build keeps the default.
 class AppLog {
   AppLog._();
 

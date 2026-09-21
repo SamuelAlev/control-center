@@ -9,41 +9,20 @@ import 'package:cc_domain/features/pipelines/domain/services/template_renderer.d
 import 'package:cc_domain/features/pipelines/domain/templates/builtin_template_seeds.dart';
 import 'package:path/path.dart' as p;
 
-/// Registers the `pipeline.condition` router body.
+/// Registers the `pipeline.condition` router body for `StepKind.router` nodes.
 ///
-/// Used by `StepKind.router` nodes. It reads its `config.extras`, evaluates a
-/// condition and returns a `StepResult.route(key)` — the engine then fires
-/// only the downstream edge whose `routeKey` matches and marks the unselected
-/// branches skipped.
-///
-/// Three authoring shapes are supported (in `config.extras`), in priority
-/// order:
-///
-/// - **predicate** (`extras['predicate']`): a boolean predicate *tree* that
-///   routes `"true"` / `"false"`. This is what the "If file exists", "All of
-///   (AND)" and "Any of (OR)" palette nodes emit. A predicate node is a map
-///   with a `type`:
-///   - `{ "type": "fileExists", "paths": ["Cargo.toml", "Cargo.lock"],
-///        "baseKey": "repo_local_path", "negate": false, "recursive": false }`
-///     — true when *any* listed path exists on disk (so a multi-path leaf is an
-///     OR over files). `negate: true` flips it to "none exist" (file missing).
-///     Relative paths resolve against `state[baseKey]` (default `repoLocalPath`,
-///     the clone dir) or, when that is empty, the per-run workspace directory.
-///     `recursive: true` also searches sub-directories for a matching basename
-///     (skipping `.git`, `node_modules`, `build`, `.dart_tool`).
-///   - `{ "type": "comparison", "left": "{{score}}", "op": "gt", "right": 80 }`
-///     — operators: `equals`, `notEquals`, `contains`, `exists`, `notExists`,
-///     `gt`, `lt`. Reads pipeline state, not the filesystem.
-///   - `{ "type": "and"|"or", "of": [ <predicate>, ... ] }` — boolean groups.
-///   - `{ "type": "not", "of": <predicate> }` — negation.
-///
-/// - **switch** (`extras['switchKey']`): `{ "switchKey": "pr_class",
-///   "cases": ["docs","security","standard"], "default": "standard" }` — routes
-///   to the first case the value (case-insensitively) contains, else `default`.
-///   Tolerant of chatty upstream agent output.
-///
-/// - **comparison** (legacy top-level `extras['left'/'op'/'right']`): equivalent
-///   to a `comparison` predicate, kept for templates authored before the tree.
+/// Reads `config.extras`, evaluates a condition, returns `StepResult.route(key)`;
+/// the engine fires only the matching `routeKey` edge and skips the rest.
+/// Shape priority in `extras`:
+/// - **predicate**: tree routing `"true"`/`"false"`. Node types: `fileExists`
+///   (any listed path; `negate` → none exist; relative paths via `state[baseKey]`
+///   or the run dir; `recursive` searches basenames, skipping `.git`/
+///   `node_modules`/`build`/`.dart_tool`), `comparison` (state ops: `equals`,
+///   `notEquals`, `contains`, `exists`, `notExists`, `gt`, `lt`), `and`/`or`/`not`.
+/// - **switch** (`switchKey` + `cases` + `default`): first case the value
+///   contains (case-insensitive), else `default`.
+/// - **comparison** (legacy top-level `left`/`op`/`right`): same as a
+///   `comparison` predicate.
 void registerConditionBody(
   PipelineBodyRegistry registry, {
   required PipelineTemplateRepository templateRepository,
@@ -60,7 +39,6 @@ void registerConditionBody(
     }
     final extras = config.extras;
 
-    // ── Predicate-tree mode (file existence, boolean groups, comparison) ──
     final predicate = extras['predicate'];
     if (predicate is Map) {
       final evalCtx = _PredicateContext(
@@ -83,7 +61,6 @@ void registerConditionBody(
       return StepResult.route(key, mutatedState: {'${ctx.stepId}_route': key});
     }
 
-    // ── Switch mode ──────────────────────────────────────────────────────
     final switchKey = extras['switchKey'];
     if (switchKey is String && switchKey.isNotEmpty) {
       final raw =
@@ -108,7 +85,6 @@ void registerConditionBody(
       );
     }
 
-    // ── Legacy top-level comparison mode ─────────────────────────────────
     final leftRef = extras['left'] as String? ?? '';
     final left = _resolveLeft(
       leftRef,

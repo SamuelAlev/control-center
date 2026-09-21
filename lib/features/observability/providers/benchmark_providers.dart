@@ -4,7 +4,6 @@ import 'package:control_center/features/observability/providers/observability_pr
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-// ── Benchmark / eval providers (PRD 06, feature #13) ─────────────────────────
 //
 // CC's own agent run history IS the eval set: every completed/errored run is a
 // scored trial (reward 1.0 = completed, 0.0 = failed), with real cost, tokens

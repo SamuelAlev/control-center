@@ -4,26 +4,13 @@ import 'dart:io';
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_server_core/cc_server_core.dart';
 
-/// Entrypoint for the Control Center headless server — a pure-Dart binary
-/// (no Flutter engine). Build a native executable with `dart build cli` from
-/// this package dir; the bundle ships `libsqlite3` alongside it.
+/// Entrypoint for the Control Center headless server (pure Dart, no Flutter).
+/// Build with `dart build cli`; bundle ships `libsqlite3`.
 ///
-/// Subcommands:
-///  * `pair` — provision a device + PSK so a thin client can connect, print the
-///    pairing key (and, with `--client-url`, a scannable QR), then exit. Runs
-///    against a fresh `--data-dir` or one a server is already serving; a
-///    running server picks the new device up on its own, no restart.
-///  * `calendar connect --workspace <id>` — connect a Google account to a
-///    workspace via the device-code flow (prints a code + URL to approve on
-///    another device), store its refresh token server-side, then exit.
-///  * `update` — check for / stage / apply a newer standalone `cc_server`
-///    release (never silent; see [ServerUpdateRunner]). `--apply` replaces the
-///    install, everything else only downloads + verifies.
-///  * (default) — run the server until SIGINT/SIGTERM, then shut down cleanly.
-///
-/// Config via flags/env (see [CcServerConfig]): `--data-dir`, `--port`,
-/// `--bind`. `pair` also accepts `--device`, `--label`, `--host` and
-/// `--client-url`.
+/// Subcommands: `pair` (device + PSK, optional QR); `calendar connect
+/// --workspace <id>` (Google device-code flow); `update` (stage/apply
+/// standalone release; never silent); default runs until SIGINT/SIGTERM.
+/// Config: `--data-dir`, `--port`, `--bind` (see [CcServerConfig]).
 Future<void> main(List<String> args) async {
   // `--version` / `-v` / `version`: print the CI-stamped build identity and
   // exit. Same values /healthz and the RPC handshake advertise.

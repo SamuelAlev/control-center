@@ -6,7 +6,6 @@ import 'package:control_center/features/observability/providers/observability_pr
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-// ── Goal Mode providers (PRD 06, feature #6) ─────────────────────────────────
 //
 // A goal carries an objective + an optional token budget. Its token consumption
 // is tracked CLIENT-SIDE by summing `goalTokenDelta` (input + output +

@@ -1,19 +1,5 @@
-/// The mermaid diagram model: what a mermaid source MEANS, with nothing about
-/// how it looks or where it sits.
-///
-/// Pure Dart by construction (no `dart:ui`, no Flutter) so the grammar can be
-/// parsed and unit-tested without a Flutter binding and so a future offload of
-/// mermaid parsing to a Web Worker stays possible.
-///
-/// Four diagram families cover the mermaid dialects the app actually receives:
-///
-///  * [CcMermaidGraph] — the box-and-arrow family. `flowchart`/`graph`,
-///    `stateDiagram`, `classDiagram` and `erDiagram` all LOWER into it: they
-///    differ in node shapes, node content (a label vs. compartments) and edge
-///    end markers, not in topology, so one layered layout serves all four.
-///  * [CcMermaidSequence] — lifelines and messages (a time axis, not a graph).
-///  * [CcMermaidPie] — one circle of weighted slices.
-///  * [CcMermaidTimeline] — a chronological axis of grouped events.
+/// Pure-Dart mermaid meaning model (no Flutter): [CcMermaidGraph] (flowchart/
+/// state/class/ER), [CcMermaidSequence], [CcMermaidPie], [CcMermaidTimeline].
 library;
 
 /// Which mermaid dialect produced a [CcMermaidGraph]. Drives shape defaults,

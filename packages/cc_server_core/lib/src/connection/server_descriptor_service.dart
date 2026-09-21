@@ -4,25 +4,9 @@ import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_server_core/src/cc_server_config.dart';
 import 'package:cc_server_core/src/identity/server_identity_store.dart';
 
-/// Assembles this server's live [ConnectionDescriptor] — every way a client
-/// can currently reach it (PRD 15 §1) — and keeps it current as tunnels come
-/// and go.
+/// Assembles this server's live [ConnectionDescriptor] (direct URL, relay, pairing hints).
 ///
-/// Path sources:
-///  * **loopback** — always (the thick desktop / same-machine case).
-///  * **LAN** — every non-loopback IPv4 interface address, when the server
-///    is bound beyond loopback.
-///  * **wss** — the configured `--public-url` when it names a non-loopback
-///    host (VPS or reverse proxy).
-///  * **tunnel** — registered dynamically by the tunnel manager
-///    ([setTunnelPath]); tailscale registers a [TailnetPath], cloudflared /
-///    ngrok register a [WssPath].
-///  * **relay** — the signaling broker + this server's relay room, always
-///    (the guaranteed NAT-traversal fallback).
-///
-/// The descriptor also names the **bulk HTTPS base** (media proxy, model
-/// downloads) so relayed clients can route bulk transfers around the control
-/// plane when any HTTP path is reachable (PRD 15 §11).
+/// Reflects bind/TLS/public-url/signaling; used by pairing QR and the connection picker.
 class ServerDescriptorService {
   /// Creates a descriptor service for [identity] under [config].
   ServerDescriptorService({

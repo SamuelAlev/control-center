@@ -57,27 +57,11 @@ const String kPostJobSectionTitle = 'Post job';
 const String _runStepPrefix = 'Run ';
 
 /// Slices a processed job log into ordered sections.
-///
-/// Modern runner dialect (any top-level `##[group]Run …` marker): a
-/// `##[group]Run …` opens a STEP section. The runner titles it by COMMAND,
-/// never by the YAML step name, so name matching cannot identify `uses:` or
-/// `run:` steps — callers must correlate sections to steps by ORDER (see
-/// [mapStepsToSections]). The body keeps the raw `##[group]Run … ##[endgroup]`
-/// wrapper plus everything up to the next step — nested info groups
-/// (`Getting Git version info`), `##[start-action]` composite children and
-/// their own nested `Run …` invocations, bare output lines — so the display
-/// layer ([parseLogLines]) renders GitHub's `▼ Run …` fold. A composite
-/// step's `Prepare all required actions` block is logged BEFORE its opener
-/// but belongs to the step (GitHub shows it as the step's first rows), so it
-/// is moved in. The first `Post job cleanup.` line opens a shared
-/// [kPostJobSectionTitle] section; the preamble (everything before the first
-/// marker, incl. the `GITHUB_TOKEN Permissions` group) is `Set up job`.
-/// There is no tail section: trailing lines belong to the last section.
-///
-/// Legacy dialect (no `##[group]Run …` marker anywhere): every top-level
-/// `##[group]X` or `##[start-action display=X;…]` is its own section,
-/// matched to steps by name via [sectionForStep]; anything after the last
-/// section is the `Complete job` tail.
+/// The runner titles it by COMMAND, never by the YAML step name, so name matching cannot
+/// identify `uses:` or `run:` steps — callers must correlate sections to steps by ORDER
+/// (see [mapStepsToSections]).
+/// A composite step's `Prepare all required actions` block is logged BEFORE its opener but
+/// belongs to the step (GitHub shows it as the step's first rows), so it is moved in.
 List<JobLogSection> sliceJobLog(String processed) {
   final hasRunSections = processed
       .split('\n')

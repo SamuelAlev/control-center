@@ -366,7 +366,6 @@ class _AgentRegistryScreenState extends ConsumerState<AgentRegistryScreen> {
   }
 }
 
-// ─── Contributed view pane ──────────────────────────────────────────────────
 
 /// Chrome for an [AgentRegistryView] shown in the detail area — a titled header
 /// with the view's own icon and label, plus a back button on narrow layouts.
@@ -435,7 +434,6 @@ class _ContributedViewPane extends StatelessWidget {
   }
 }
 
-// ─── Empty state ───────────────────────────────────────────────────────────
 
 class _EmptyState extends StatelessWidget {
   const _EmptyState({required this.onCreate});
@@ -488,7 +486,6 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
-// ─── Right detail pane ─────────────────────────────────────────────────────
 
 /// The detail surface: the configuration tabs — the settings form and the
 /// execution logs, which are the agent's own, followed by whatever other

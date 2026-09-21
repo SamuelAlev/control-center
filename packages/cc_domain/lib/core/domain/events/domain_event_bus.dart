@@ -8,22 +8,9 @@ abstract class DomainEvent {
 
 /// Domain event bus.
 ///
-/// Dispatch is **type-keyed**: one broadcast lane per subscribed type `T`, and
-/// a per-concrete-event-type route cache saying which lanes want it. Publishing
-/// is a map lookup plus an `add` to the handful of lanes that actually match.
-///
-/// It used to be one broadcast controller with a `.where((e) => e is T)` per
-/// CALL of [on]. That made every publish O(total subscriptions): the app holds
-/// ~95 of them and each remote session's event forwarder adds ~20 more, so a
-/// single event ran ~95 type tests and hopped ~95 filtered streams to reach the
-/// one or two listeners that wanted it. Ten `on<AgentRunCompleted>()` callers
-/// were ten independent filtered subscriptions; they are now ten listeners on
-/// one lane.
-///
-/// The public contract is unchanged — [on] still returns a broadcast
-/// `Stream<T>` that each caller listens to and cancels independently, and
-/// subtype subscriptions still work ([on] of an abstract event type, or of
-/// `DomainEvent` itself, receives every subtype).
+/// Type-keyed lanes + route cache: publish is a map lookup to matching lanes
+/// (not O(subscriptions) filtered streams). [on] still returns an independent
+/// broadcast `Stream<T>`; subtype subscriptions still receive all subtypes.
 class DomainEventBus {
   /// Lanes keyed by the subscribed type `T` (never by the event's runtime
   /// type — a lane for an abstract supertype has to receive its subtypes).

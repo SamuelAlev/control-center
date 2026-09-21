@@ -28,36 +28,16 @@ const double _kOptionRowHeight = 48;
 /// the half-visible last row signals there is more below.
 const int _kScrollsFromOption = 6;
 
-/// A flat multi-select dropdown — like [CcSelect] but with per-row checkboxes
-/// and a [Set] of selected values.
+/// Flat multi-select like [CcSelect], with per-row checkboxes and a [Set] of
+/// values. Trigger summarises via [countLabel] (✕ clears all) + [hintText], or
+/// [showChips] for dismissible chips. Toggles call [onChanged] without closing.
+/// On reopen, selected options rise (alphanumeric); order is frozen while open.
 ///
-/// The trigger renders the same input-styled box as [CcSelect]; instead of a
-/// single label it summarises the selection — a small count tag (`"3 selected"`,
-/// built by [countLabel]) carrying a ✕ that clears the whole selection without
-/// opening the panel (hovering the ✕ shows a "Clear all" tooltip), followed by
-/// the persistent [hintText]. With [showChips] set, each selected label
-/// renders as its own dismissible chip instead. The panel lists every option
-/// as a [CcTappable] row carrying a [CcCheckbox]; toggling a row mutates the
-/// set and calls [onChanged] **without closing** the panel, so several values
-/// can be toggled in one open session. When the panel reopens, the selected
-/// options rise to the top of the list (in alphanumeric order); the order
-/// stays frozen while the panel is open so rows never jump under the pointer.
-///
-/// With [filterable] set, hovering the field shows a text cursor and the open
-/// field takes typed input that narrows the list — options matching the query
-/// stay, the rest are temporarily removed — and a ✕ beside the typed text
-/// clears just the filter (never the selection). The menu still stays open
-/// while options are toggled; it closes on Escape, on clicking outside, or on
-/// tabbing away.
-///
-/// Keyboard: the panel traps focus (`closedLoop`); `↑`/`↓` move a highlight,
-/// `Space` toggles the highlighted row and `Esc` closes. While the filter
-/// field holds focus, `Space` types a space and `Enter` toggles the
-/// highlighted row instead. Provide [selectAllLabel] to pin a parent
-/// select-all checkbox at the top of the panel — name it after the noun
-/// ("All", "All roles"), never an action verb, since its own checkbox state
-/// already says what a tap does. Without it, a "Clear all" row appears while
-/// any value is selected.
+/// [filterable]: typed query narrows the list; filter ✕ clears query only.
+/// Closes on Esc, outside click, or tab away. Focus trapped (`closedLoop`);
+/// arrows highlight, Space toggles (Enter when filter focused). [selectAllLabel]
+/// pins a noun-named select-all row; otherwise "Clear all" while any value is
+/// selected.
 class CcMultiSelect<T> extends StatefulWidget {
   /// Creates a [CcMultiSelect].
   const CcMultiSelect({

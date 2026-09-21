@@ -6,20 +6,13 @@ import 'package:ffi/ffi.dart';
 
 /// Raw `dart:ffi` binding for the bundled rift shared library.
 ///
-/// The library exposes a tiny C ABI (see `crates/ffi/src/lib.rs` in the rift
-/// project): a JSON-in / JSON-out call plus a free for the returned string.
-///
-/// ```c
-/// char* rift_ffi_call(const char* request_json);  // heap-allocated response
-/// void  rift_ffi_free(char* response);            // frees it
-/// ```
-///
-/// [tryLoad] returning `null` is a PROBE RESULT, not a licence to degrade —
-/// the dylib is required. `RiftClient` converts it into a
-/// `RiftException(code: 'unavailable')` (see `RiftException.isUnavailable`),
-/// which callers must propagate: `cc_server` refuses to boot without the dylib
-/// on macOS/Linux. Windows is the one documented exception — no MSVC CoW
-/// backend exists, so `git worktree` is the backend there.
+/// The library exposes a tiny C ABI (see `crates/ffi/src/lib.rs` in the rift project): a
+/// JSON-in / JSON-out call plus a free for the returned string.
+/// [tryLoad] returning `null` is a PROBE RESULT, not a licence to degrade — the dylib is
+/// required.
+/// `RiftClient` converts it into a `RiftException(code: 'unavailable')` (see
+/// `RiftException.isUnavailable`), which callers must propagate: `cc_server` refuses to
+/// boot without the dylib on macOS/Linux.
 class RiftFfiBindings {
   RiftFfiBindings._(this._call, this._free);
 

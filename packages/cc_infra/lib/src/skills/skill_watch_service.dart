@@ -16,27 +16,13 @@ import 'package:cc_natives/cc_natives.dart'
         WatcherUnavailable;
 import 'package:path/path.dart' as p;
 
-/// Watches every workspace's `skills/` directory and publishes
-/// [SkillUpdated] (origin `watch`) when skill content changes on disk outside
-/// the gated write paths — an external editor, a hand-copied directory, an
-/// agent file write. Those events drive the seeded `skill_analysis` pipeline
-/// trigger, so an out-of-band edit gets the same antivirus re-scan a gated
-/// write does.
+/// Watches each workspace `skills/` dir and publishes [SkillUpdated] (origin
+/// `watch`) for out-of-band edits so `skill_analysis` re-scans like gated writes.
 ///
-/// Modeled on `CodeGraphWatchService` at a fraction of its size:
-/// stream-driven root discovery (`WorkspaceRepository.watchAll`) plus a slow
-/// reconcile sweep that re-arms anything missed. One native watcher per
-/// workspace skills dir — arming is O(1), the trees are tiny and independent
-/// watcher instances share only the process-wide pump. The lock file is
-/// deliberately IGNORED: the antivirus itself rewrites `skills-lock.json`
-/// (quarantine verdicts) and reacting to our own bookkeeping would
-/// feedback-loop.
-///
-/// Failure discipline mirrors the code-graph service: a per-root `StateError`
-/// (the directory vanished mid-arm, watch limits) is logged and retried by the
-/// next reconcile; [WatcherUnavailable] (a broken native install) is logged
-/// loud by the reconcile catch — `cc_server`'s native preflight normally makes
-/// it unreachable. One workspace's failure never takes the service down.
+/// Stream discovery + slow reconcile (like [CodeGraphWatchService]). Ignores
+/// `skills-lock.json` (antivirus rewrites it — avoid feedback). Per-root
+/// failures retry on reconcile; [WatcherUnavailable] logged loud; one workspace
+/// failure never takes the service down.
 class SkillWatchService {
   /// Creates the service. [watcherFactory] is a test hook (production uses the
   /// required native `cc_watcher`).

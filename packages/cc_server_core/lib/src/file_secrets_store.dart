@@ -5,28 +5,10 @@ import 'package:cc_host/cc_host.dart';
 import 'package:cc_server_core/src/paired_device_secrets_port.dart';
 import 'package:path/path.dart' as p;
 
-/// The server's ONE secrets file, and the file-backed [PairedDeviceSecretsPort].
+/// The server's one secrets file and file-backed [PairedDeviceSecretsPort].
 ///
-/// Despite the port's name this is not a device-PSK store: it is a flat
-/// `key → secret` map that every server-side secret shares, namespaced by its
-/// owner so nothing can collide with a device id.
-///
-///  * `<deviceId>` — paired-device PSKs (the original, and once only, tenant).
-///  * `provider_app_*` — the server's own GitHub/Linear app identity
-///    (`ProviderAppSettings`), the GitHub App private key among them.
-///  * `workspace_provider_app_github_<workspaceId>_*` — a workspace's own
-///    GitHub App (private key, client id, client secret).
-///  * `workspace_forge_github_<workspaceId>` — a workspace background PAT.
-///  * `user_forge_*` / `user_ticket_*` — per-user provider credentials
-///    (`UserCredentialsStore`). Overlay GitHub tokens append `_<workspaceId>`.
-///  * `google_*` — Google Calendar OAuth credentials
-///    (`FileGoogleCredentialsStore`).
-///  * `oidc_client_secret` / `scim_token` — SSO (`SsoSettingsService`).
-///
-/// One file rather than one per tenant is deliberate: one on-disk map, one
-/// in-memory cache, one trust boundary. That boundary is the HOST FILESYSTEM,
-/// not cryptography — the JSON is plaintext, written `0600` where the platform
-/// supports it, sitting beside the SQLite database on a single-tenant box.
+/// 0600 JSON map; in-memory cache invalidated when mtime/length change (cross-process writes).
+/// Never logs or returns secret values over RPC.
 class FileSecretsStore implements PairedDeviceSecretsPort {
   /// Creates a store rooted at [dataDir]; secrets live in `secrets.json`.
   FileSecretsStore({required String dataDir})

@@ -1,49 +1,10 @@
 #!/usr/bin/env bash
 #
-# Builds liblame_ffi — a thin C ABI (packages/cc_natives/native/lame_ffi.cc) over
-# libmp3lame (LAME) — and installs it where LameFfiBindings looks for it (the
-# app-support root next to control_center.db, plus an optional explicit DEST for
-# CI staging / bundle embedding). Mirrors scripts/natives/build_aec.sh.
+# Builds liblame_ffi over libmp3lame (REQUIRED; Mp3Encoder throws if missing).
+# Prefer system static libmp3lame, else download LAME 3.100 and static-link.
+# LAME_PREFIX / LAME_FORCE_SOURCE=1 override. Windows: windows_natives.sh.
+# Usage: scripts/natives/build_lame.sh [DEST_DIR]
 #
-# Mp3Encoder wraps this to turn interleaved PCM16 into a frame-aligned MP3 byte
-# stream (encode chunk -> append bytes -> flush at end).
-#
-# REQUIRED on every platform: cc_server's boot preflight refuses to start without
-# liblame_ffi and Mp3Encoder.create THROWS LameUnavailable rather than letting
-# the soundscape routes quietly 404 a feature the host is supposed to have.
-#
-# libmp3lame source: LAME 3.100 (the last upstream release), LGPL-2.1. It is NOT
-# vendored. Two ways to obtain it, tried in order:
-#   (a) a system libmp3lame (Homebrew `lame`, apt `libmp3lame-dev`) — its static
-#       archive is preferred so liblame_ffi stays self-contained; if only a
-#       shared lib is present we link that and warn it is not self-contained;
-#   (b) otherwise download the LAME 3.100 tarball and
-#       `./configure --disable-shared --enable-static --with-pic --disable-frontend && make
-#       && make install` into a temp prefix, then statically link libmp3lame.a.
-# Override detection with LAME_PREFIX=<dir> (its <dir>/include/lame/lame.h and
-# <dir>/lib/libmp3lame.{a,dylib,so} are used) or force source build with
-# LAME_FORCE_SOURCE=1. The core MP3 patents expired in 2017, so distributing an
-# MP3 encoder is unencumbered.
-#
-# Cross-platform: builds on macOS (arm64/x86_64) and Linux (x86_64/arm64) here.
-# Windows is NOT handled in this script — mirroring build_aec.sh, it defers the
-# Windows build to scripts/release/windows_natives.sh, whose lame branch compiles
-# this same shim with cl.exe against a STATIC libmp3lame (vcpkg's `mp3lame` port,
-# or LAME_PREFIX) and /EXPORTs the five cc_lame_* symbols into lame_ffi.dll. Any
-# non-Darwin/Linux OS here is a hard error — every native is required, so there
-# is nothing for build_natives.sh to be best-effort about.
-#
-# Source/ref (override to iterate or bump):
-#   LAME_VERSION default 3.100
-#   LAME_URL     default the SourceForge 3.100 tarball
-#   LAME_SHA256  default the published 3.100 checksum (override if it drifts)
-#
-# Requirements: a C++ compiler (c++). Source build additionally needs curl, tar
-# and make.
-#
-# Usage:
-#   scripts/natives/build_lame.sh [DEST_DIR]
-#   LAME_FORCE_SOURCE=1 scripts/natives/build_lame.sh ./build/natives
 set -euo pipefail
 
 REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"

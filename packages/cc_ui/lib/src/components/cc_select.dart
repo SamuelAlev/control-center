@@ -56,22 +56,11 @@ class CcSelectOption<T> {
   int get hashCode => Object.hash(value, label);
 }
 
-/// A flat single-select dropdown — the cc_ui replacement for Material's
-/// `DropdownButton`.
-///
-/// The trigger is an input-styled bordered box (panel fill, hairline border,
-/// 2px radius) showing the selected option's label or [hintText], with a
-/// trailing chevron that rotates a half-turn while open. Tapping toggles a
-/// floating panel (golden float, width-matched to the trigger) of [CcTappable]
-/// rows; the selected row shows a trailing check. Arrow keys move a highlighted
-/// index, Enter selects it, Escape closes (mapped by [CcOverlayAnchor]).
-///
-/// Content guidance: always give the field a visible [label] — never lean on
-/// [hintText] as the only description and never put information the user
-/// still needs after selecting into [hintText] (it disappears once a value is
-/// chosen; use [helperText] for persistent guidance). For a choice between
-/// only two mutually exclusive values, prefer [CcRadioGroup] so both options
-/// stay visible.
+/// Flat single-select (Material `DropdownButton` replacement). Trigger shows
+/// selection or [hintText]; panel of [CcTappable] rows with check on selected.
+/// Arrows/Enter/Esc via [CcOverlayAnchor]. Always provide [label]; use
+/// [helperText] for persistent guidance (not [hintText]). Prefer [CcRadioGroup]
+/// for two mutually exclusive values.
 class CcSelect<T> extends StatefulWidget {
   /// Creates a [CcSelect].
   const CcSelect({

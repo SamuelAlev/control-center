@@ -4,29 +4,9 @@ import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:uuid/uuid.dart';
 
-/// First-boot identity bootstrap: no central auth, no cloud account, ever.
+/// First-boot identity: creates the install owner locally (no cloud account).
 ///
-/// Idempotent — runs at every server start, before the RPC surface accepts
-/// connections:
-///
-/// 1. **First user is admin.** With zero users, mints the owner from the OS
-///    account name, so a solo install never sees a login screen. Their name
-///    and email are edited in Settings, not configured at boot.
-/// 2. **Ownership backfill.** Every workspace missing `ownerUserId` gets the
-///    owner, plus an `owner`-role membership row.
-/// 3. **Device binding.** Paired devices missing `userId` are bound to the
-///    owner (they were paired before identity existed).
-/// 4. **Sentinel adoption.** Rows that attribute a human action to the literal
-///    `'user'` placeholder — or to an id no user owns — are re-attributed to the
-///    owner: space participants, human space messages, ticket assignees /
-///    collaborators and approval actors.
-///
-/// Identity spans both halves of the split database, which is what makes this
-/// class worth reading: `users` and `paired_devices` are global (one human is one
-/// user across every workspace and a paired device outlives any workspace),
-/// while memberships and every attributed row live inside a workspace's own
-/// file. Step 4 therefore reads the user set from `global.db` once and then
-/// visits each workspace database in turn.
+/// Idempotent; subsequent boots reuse the stored owner. Pairing/devices come later.
 class IdentityBootstrap {
   /// Creates an [IdentityBootstrap] over the global database [_global] and the
   /// per-workspace databases [_workspaces].

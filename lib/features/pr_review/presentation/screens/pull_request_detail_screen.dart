@@ -303,7 +303,6 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
     }
   }
 
-  // ── URL tab sync (`?tab=`) ────────────────────────────────────────────────
 
   /// Two-way sync between the focused workbench tab and the URL's `?tab=`
   /// param: a tab switch publishes lightweight browser history, while

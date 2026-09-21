@@ -4,25 +4,10 @@ import 'package:cc_domain/core/domain/repositories/isolated_repo_repository.dart
 import 'package:cc_domain/core/domain/repositories/repo_repository.dart';
 import 'package:cc_domain/features/mcp/domain/ports/mcp_tool_port.dart';
 
-/// List repos tool.
-///
-/// For agent callers the dispatcher injects the call scope and `local_path`
-/// then points at the SPACE's isolated working copy — the CoW worktree under
-/// the space's shared `repos/` dir — never the original registered checkout.
-/// Originals are deliberately not exposed to agents: all changes happen in a
-/// worktree and a repo without a working copy reports `local_path: null`
-/// instead of falling back to the original path.
-///
-/// The worktree is resolved by `space_id`, not `conversation_id`.
-/// `isolated_repos` is keyed by `space_id` and every conversation in a space
-/// shares one copy, so looking it up by conversation matched nothing: this tool
-/// reported `local_path: null` for every repo of a space that HAD a checkout.
-/// A PR-review lead agent read that as "no working copy is attached to this
-/// review" and consolidated the specialists without ever opening the diff.
-///
-/// `conversation_id` is still accepted, and still means "this is an agent
-/// caller, never expose the original checkout" — that guarantee must not
-/// depend on which id the caller happened to be scoped by.
+/// Lists repos; agent callers get the space's isolated worktree path, never the
+/// original checkout (`local_path: null` if none). Resolve by `space_id`
+/// (`isolated_repos` is space-keyed). `conversation_id` still means agent
+/// caller — never expose the original path.
 class ListReposTool extends McpTool {
   /// Creates a new [ListReposTool].
   ListReposTool({

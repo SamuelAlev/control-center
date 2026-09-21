@@ -22,23 +22,9 @@ class RecordedSkillAnalysis {
   final String? runId;
 }
 
-/// Runs the skills antivirus over installed skills and (optionally) records
-/// the pass as a `skill_analysis` pipeline run (PRD 23 §2/§6).
+/// Runs the skills scanner over installed skills and optionally records results.
 ///
-/// Implements the [SkillAnalysisPort] the pipeline body drives, so engine
-/// runs (manual run-picker starts, `SkillUpdated` event triggers) and the
-/// settings UI's synchronous scan ops execute the SAME work. Recording is a
-/// separate decision the caller makes:
-///
-/// * the engine path never records here — the engine writes its own run rows
-///   around the body;
-/// * the UI path calls [runRecorded], which writes projection rows via
-///   [SkillAnalysisRunReporter].
-///
-/// The template's `isEnabled` switch governs ALL recording: when disabled (or
-/// the template absent), [runRecorded] still scans and returns results but
-/// writes nothing — the antivirus itself is never disabled by the pipeline
-/// toggle, only its run history.
+/// Fail-closed: quarantine/warn verdicts gate what agents may load.
 class SkillAnalysisService implements SkillAnalysisPort {
   /// Creates a [SkillAnalysisService].
   SkillAnalysisService({

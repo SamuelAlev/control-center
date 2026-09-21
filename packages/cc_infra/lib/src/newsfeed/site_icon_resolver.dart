@@ -13,22 +13,10 @@ bool isSvgIconUrl(String url) {
   return uri.path.toLowerCase().endsWith('.svg');
 }
 
-/// Best-effort resolver for a website's favicon from its HTML
-/// (`<link rel="icon">` and friends).
-///
-/// Used when a feed advertises no space image of its own (e.g.
-/// lea.verou.me/feed.xml): the site's homepage is fetched once and the best
-/// icon candidate is picked from its `<link>` tags. Everything here is
-/// fail-silent — a network error, a non-HTML page, or a page without icon
-/// links all return null and the caller keeps its existing fallback
-/// (origin `/favicon.ico`). No third-party favicon service is contacted: the
-/// feature blocks trackers and the site's origin is already contacted to
-/// fetch its feed, so this adds no new party.
-///
-/// SVG candidates are SKIPPED: the client renders icons through Flutter's
-/// raster pipeline (and the media proxy's ICO→PNG transcoder), which cannot
-/// decode SVG, so an SVG favicon paints as nothing — worse than no stored
-/// icon, which falls back to the origin's `/favicon.ico`.
+/// Best-effort favicon from homepage HTML `<link rel="icon">` when a feed has
+/// no image. Fail-silent → null (caller keeps `/favicon.ico`). No third-party
+/// favicon service. Skips SVG (Flutter/media proxy cannot decode — worse than
+/// no stored icon).
 class SiteIconResolver {
   /// Creates a new [SiteIconResolver].
   SiteIconResolver(this._dio);

@@ -127,37 +127,19 @@ class CodeIndexResult {
 /// (e.g. the `index_code` pipeline body) depend on the interface, not the
 /// data-layer implementation. Implemented by `DefaultCodeIndexer`.
 abstract class CodeIndexer {
-  /// Walks [repoPath], detects each file's language by extension, extracts
-  /// symbols/edges for changed files (per language), ingests them into the
-  /// code graph, prunes deleted files and resolves cross-file references.
-  /// Degrades gracefully (returns a skipped result) when no language's
-  /// tree-sitter natives are installed.
-  ///
-  /// The resulting graph is scoped to [workspaceId]: the same [repoId] indexed
-  /// in two workspaces (distinct worktrees) yields two isolated graphs.
-  ///
-  /// [checkoutId] selects the checkout partition within the workspace's graph:
-  /// null (the default, what `index_code` uses) writes the linked checkout's
-  /// partition; an `isolated_repos` row id writes that conversation/PR
-  /// worktree's own partition, so reviewing a PR never clobbers the linked
-  /// checkout's symbols.
-  ///
-  /// [force] bypasses the checkpoint short-circuit: a caller that KNOWS a file
-  /// changed (a watcher event) must not let a fingerprint collision skip the
-  /// run. The boot/arm path leaves it false — that is exactly the path the
-  /// checkpoint exists to make cheap.
-  ///
-  /// [changedPaths] turns the run into a TARGETED one: the implementation stats
-  /// and hashes exactly these repo-relative paths, reads only their stored
-  /// state and prunes only among them, instead of rediscovering the whole
-  /// checkout. It is what makes "reindex on save" cheap — the full pass costs a
-  /// `git ls-files` plus a stat of every file, measured at 5-9s on a 19k-file
-  /// checkout, to conclude that ONE file moved.
-  ///
-  /// The set must be COMPLETE: everything that changed since the last run, or
-  /// the paths it omits stay silently stale. A caller that cannot promise that
-  /// (a watcher rescan hint, a burst past its tracking cap) passes null and
-  /// takes the full pass. Null and empty both mean "full pass".
+  /// Walks [repoPath], extracts symbols/edges for changed files, ingests into
+  /// the code graph, prunes deleted files, and resolves cross-file references.
+  /// Returns skipped when no language's tree-sitter natives are installed.
+  /// Graph is scoped to [workspaceId] (same [repoId] in two workspaces → two
+  /// graphs).
+  /// [checkoutId] null → linked checkout partition (`index_code` default);
+  /// an `isolated_repos` id → that worktree's partition (PR review must not
+  /// clobber the linked checkout).
+  /// [force] bypasses the checkpoint short-circuit (watcher events that know
+  /// a file changed); boot/arm leaves it false.
+  /// [changedPaths] non-null → targeted pass (stat/hash/prune only those
+  /// repo-relative paths). Must be complete since last run or omitted paths
+  /// stay stale; null or empty → full pass.
   Future<CodeIndexResult> indexRepo({
     required String workspaceId,
     required String repoId,

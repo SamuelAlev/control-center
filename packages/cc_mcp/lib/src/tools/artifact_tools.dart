@@ -57,24 +57,12 @@ Map<String, dynamic> _blocksSchema() => {
   },
 };
 
-/// Publishes a typed block document into the conversation the agent is working
-/// in, stored as a WorkProduct + its first revision.
+/// Publishes a typed block document into the conversation the agent is working in, stored
+/// as a WorkProduct + its first revision.
 ///
-/// The conversation + workspace are resolved server-side from the agent's active
-/// run (the same resolution `submit_plan` / `exit_plan_mode` use), so an
-/// artifact can only land in the room the agent is actually working in and can
-/// never be aimed at another workspace.
-///
-/// Validation is deliberately LOOSE (see [ArtifactDocumentCodec]): a
-/// slightly-off block is dropped with a precise error path echoed back in the
-/// result and the valid blocks still publish. Refusing the whole document
-/// would cost the agent a full turn to re-derive content it already computed —
-/// and in practice means the operator sees nothing at all.
-///
-/// Available in EVERY conversation mode. Publishing an artifact is a knowledge
-/// write (like `propose_fact`), not a worktree mutation: it writes one local row
-/// and posts one message, touches no filesystem, spawns no process and reaches
-/// no external system — hence no `ActionClass` and no approval prompt.
+/// The conversation + workspace are resolved server-side from the agent's active run (the
+/// same resolution `submit_plan` / `exit_plan_mode` use), so an artifact can only land in
+/// the room the agent is actually working in and can never be aimed at another workspace.
 class PublishArtifactTool extends McpTool {
   /// Creates a [PublishArtifactTool].
   PublishArtifactTool({
@@ -226,13 +214,10 @@ class PublishArtifactTool extends McpTool {
 
 /// Replaces an artifact's content with a new revision (full replacement).
 ///
-/// Per-block edit operations are deliberately deferred: a revision is the v1
-/// increment model, which keeps history honest (every published state is
-/// recoverable via `restoreRevision`) and keeps the tool contract small enough
-/// for a weak model to hit on the first try.
-///
-/// Posts NO second space message — the artifact bubble watches the
-/// work-product row, so the existing card re-renders with the new revision.
+/// Per-block edit operations are deliberately deferred: a revision is the v1 increment
+/// model, which keeps history honest (every published state is recoverable via
+/// `restoreRevision`) and keeps the tool contract small enough for a weak model to hit on
+/// the first try.
 class ReviseArtifactTool extends McpTool {
   /// Creates a [ReviseArtifactTool].
   ReviseArtifactTool({

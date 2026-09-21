@@ -82,25 +82,10 @@ class VibeWorker {
   bool get isRunning => status == VibeWorkerStatus.running;
 }
 
-/// The director's roster of background workers.
-///
-/// **What vibe mode actually changes.** Not the machinery — spawning subagents
-/// is something the `task` tool already does. What changes is the INTERACTION
-/// SHAPE: the session stops doing the work and starts directing it. Its own
-/// toolset drops to `read` plus these five verbs, so the only way it can affect
-/// the repo is through a worker, and the only way it can know what happened is
-/// by reading the files a worker touched. That is the point — a director that
-/// can grep and edit will do the work itself under pressure, and a director
-/// that takes a worker's word for it is a summarizer, not a reviewer.
-///
-/// **Workers start blank.** A worker never sees the director's conversation;
-/// the brief is its entire context. That is what keeps a worker's context small
-/// and is the whole reason the pattern scales — twenty workers each holding the
-/// director's history would cost twenty times the director's context.
-///
-/// **A worker never outlives the mode.** Exiting kills every one of them.
-/// A background agent still editing files after the conversation that started
-/// it has moved on is the failure this must not have.
+/// Director roster for vibe-mode background workers. Director toolset is `read`
+/// plus these verbs — repo changes only via workers; verify by reading files.
+/// Workers get only the brief (not the director history). Exiting the mode
+/// kills every worker.
 class VibeRoster {
   /// Creates a [VibeRoster].
   VibeRoster({this.maxWorkers = 8});

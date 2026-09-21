@@ -7,7 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Work-aware roster for one workspace, derived from durable agents + run logs.
 ///
-/// Dispatch writes the in-process `AgentRegistry` **inside `cc_server`**. A
+/// Dispatch writes the in-process `AgentRegistry` inside `cc_server`. A
 /// client that watched `AgentRegistryImpl.global()` in the Flutter isolate
 /// always saw an empty map. The live tab reads the same RPC streams the rest
 /// of the app already uses (`agents.watchForWorkspace` + recent run logs).

@@ -33,21 +33,13 @@ class PipelineRunRepositoryImpl implements PipelineRunRepository {
 
   /// Resolved `runId -> workspaceId` routes, most-recently-used last.
   ///
-  /// A run's workspace never changes: [insertRun] writes the route and
-  /// [deleteRun] drops it, and nothing in between re-points a run at a
-  /// different workspace. So a resolved route is a fact, not a snapshot, and
-  /// re-asking `global.db` for it is pure overhead.
-  ///
-  /// It is not a micro-optimisation. Every id-only read — [getRun],
-  /// [stepRunsForPipeline], [insertStepRun], [updateRunState], [incrementCost]
-  /// — pays this lookup, and the engine performs six to ten of them per step
-  /// against a server that holds ONE shared database connection. Under a
-  /// multi-repo fan-out those queries queue ahead of every RPC the clients are
-  /// waiting on.
-  ///
-  /// Only positive resolutions are cached. A miss must stay uncached: the route
-  /// is written just after the run row, so a reader that raced the insert would
-  /// otherwise remember "this run does not exist" for the life of the process.
+  /// A run's workspace never changes: [insertRun] writes the route and [deleteRun] drops it,
+  /// and nothing in between re-points a run at a different workspace.
+  /// So a resolved route is a fact, not a snapshot, and re-asking `global.db` for it is pure
+  /// overhead.
+  /// Every id-only read — [getRun], [stepRunsForPipeline], [insertStepRun], [updateRunState],
+  /// [incrementCost] — pays this lookup, and the engine performs six to ten of them per step
+  /// against a server that holds ONE shared database connection.
   final Map<String, String> _routeCache = {};
 
   /// Cap on [_routeCache]. Bounded because a long-lived server indexing repos

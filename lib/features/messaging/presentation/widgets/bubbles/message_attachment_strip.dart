@@ -17,7 +17,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// What a person attached to their message, under its text — still openable
 /// after the message is gone from the composer.
 ///
-/// **Why this exists.** A pasted or dropped screenshot has always reached the
+/// Why this exists. A pasted or dropped screenshot has always reached the
 /// agent — the composer uploads it and the dispatch path puts it on the user
 /// turn — but the transcript never showed it, and a dropped FILE left no trace
 /// at all beyond a bare path expanded into the sentence. So the conversation

@@ -167,19 +167,16 @@ List<DiarizedSpan> decodeDiarizedSpans(String json) {
 
 /// Re-separates and labels transcript [segments] using diarization [spans] on
 /// the diarized [channel], returning a cleaner, time-ordered transcript:
-///
 ///  * each window on [channel] is tagged with the speaker (`Person N`) that
 ///    dominates it by time overlap and
 ///  * adjacent fragments sharing the same speaker (and within [mergeGapMs] of
 ///    one another) are merged into one coherent turn, so the transcript reads
 ///    as distinct speaker turns instead of choppy 1.5–5 s windows.
-///
 /// Segments on the other channel pass through with their `(speaker, label)`
 /// unchanged, but are still merged into turns the same way. Windows are NOT
 /// split mid-text at a speaker change: Whisper windows carry no word-level
 /// timestamps, so a sub-window cut point can't be placed reliably — the
 /// dominant speaker is used instead.
-///
 /// Pure (no I/O) so it is directly unit-testable; `meeting.updateTranscript`
 /// persists the result via `replaceSegments`.
 List<MeetingSegment> separateTranscriptBySpeaker({

@@ -16,23 +16,14 @@ const double _kOverdraw = 1;
 /// behind the header's own opaque box, so nothing of it is ever visible.
 const double _kUnderlap = 1;
 
-/// Wraps the box of a PINNED sliver header so that no fraction of a device
-/// pixel of the content scrolling beneath it can show above its top edge.
-///
-/// A pinned header is positioned in LOGICAL pixels and nothing guarantees that
-/// position lands on a device pixel boundary — one fractional height anywhere
-/// above the scroll view offsets every descendant by a fraction of a pixel.
-/// The viewport's clip is [Clip.hardEdge], so it snaps to whole device pixels,
-/// while the header's own background is antialiased and does not: the topmost
-/// device pixel row is then admitted by the clip and only partly covered by the
-/// header. What shows through the remainder is the row scrolling underneath —
-/// a dashed line of glyph tips riding above the header's top border.
-///
-/// The guard paints a strip of the page canvas across that boundary, outside
-/// the header's own box. Where the header is pinned to the top of the viewport
-/// the overdraw is clipped away and only ever fills the offending partial
-/// pixel; anywhere else in the list the header is preceded by canvas anyway
-/// (the gap between cards), so it paints canvas over canvas and is invisible.
+/// Wraps the box of a PINNED sliver header so that no fraction of a device pixel of the
+/// content scrolling beneath it can show above its top edge.
+/// The viewport's clip is [Clip.hardEdge], so it snaps to whole device pixels, while the
+/// header's own background is antialiased and does not: the topmost device pixel row is
+/// then admitted by the clip and only partly covered by the header.
+/// Where the header is pinned to the top of the viewport the overdraw is clipped away and
+/// only ever fills the offending partial pixel; anywhere else in the list the header is
+/// preceded by canvas anyway (the gap between cards), so it paints canvas over canvas and
 class PinnedHeaderBleedGuard extends StatelessWidget {
   /// Creates a [PinnedHeaderBleedGuard] around [child], the header's own box.
   const PinnedHeaderBleedGuard({super.key, required this.child});

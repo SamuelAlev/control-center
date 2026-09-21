@@ -7,27 +7,13 @@ import 'package:cc_infra/src/messaging/active_stream_registry.dart';
 import 'package:cc_infra/src/messaging/space_turn_relay.dart'
     show kTurnRelayCoalesceWindow;
 
-/// The server half of one run's activity relay
-/// (`agent_run_log.watchRunTranscript`).
+/// Server half of `agent_run_log.watchRunTranscript` for one run.
 ///
-/// Emits wire frames for a single run from [registry]:
-///   * first a `seed` frame — `{'kind': 'seed', 'segments': [...],
-///     'live': bool}`. Always emitted, even when empty, so the client knows the
-///     subscription is established. `live` is false when the run already
-///     finished and [persisted] supplied the segments, which is how ONE op
-///     serves both live streaming and replay;
-///   * then `updates` frames (`{'kind': 'updates', 'updates': [...]}`),
-///     coalesced over [coalesce] with consecutive deltas for the same segment
-///     index merged into one.
-///
-/// Run-scoped, so no id rides each frame — the subscription already names the
-/// run. Subscribing and snapshotting happen in one synchronous block, so no
-/// update can fall between the seed and the relayed stream.
-///
-/// Also watches [ActiveStreamRegistry.registrations]: a subscription opened in
-/// the window before the run registers (the tab can be clicked the instant the
-/// row appears) adopts the run and re-seeds when it goes live, instead of
-/// silently receiving nothing.
+/// Emits a `seed` frame first (always, even empty; `live: false` when finished
+/// + [persisted] — one op for live and replay), then coalesced `updates` over
+/// [coalesce] (merge consecutive deltas for the same index). Run id is the
+/// subscription; seed+subscribe are one sync block (no gap). Adopts late
+/// [ActiveStreamRegistry] registrations and re-seeds when the run goes live.
 Stream<Map<String, dynamic>> watchRunTranscriptFrames(
   ActiveStreamRegistry registry,
   String runId, {

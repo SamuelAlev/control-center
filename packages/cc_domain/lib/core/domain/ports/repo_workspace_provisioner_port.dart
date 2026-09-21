@@ -1,72 +1,25 @@
 import 'package:cc_harness/cancellation.dart';
 
-/// Provisions a per-SPACE working root with isolated copy-on-write worktrees of
-/// the workspace's repos and tears them down on unit completion.
+/// Provisions a per-space working root with isolated CoW worktrees and tears
+/// them down on unit completion.
 ///
-/// Layout produced (a per-agent cwd sharing the SPACE's `repos/`):
-/// ```
-/// <workspace>/<workspaceId>/spaces/<spaceId>/   # spaceRoot
-///   repos/<repo>/        # shared isolated CoW worktree on its own branch
-///   agents/<agentSlug>/  # THIS agent's cwd (returned)
-///     AGENTS.md          # symlink to the dispatched agent's instructions
-///     .agents            # symlink to the agent's global skills dir
-///     repos              # symlink -> ../../repos (the shared worktrees)
-/// ```
-///
-/// **The SPACE owns the clone.** Every conversation in a space works in the
-/// same `repos/` checkout, so forking a conversation or opening a second one
-/// costs nothing on disk and neither of them can see a different tree. A
-/// conversation id is never a key here — it names no worktree.
-///
-/// The cwd's `.mcp.json` is NOT provisioned here — cc_server derives it from
-/// `mcp_config.json` at dispatch time. Implementations live in the data layer
-/// (filesystem + rift). This port lets the domain `TicketDispatcher` and the
-/// messaging dispatch path provision without importing infrastructure. All
-/// methods are no-op-safe and never throw to the caller for provisioning
-/// failures — they degrade to the fallback dir.
+/// Layout: `spaces/<spaceId>/repos/<repo>/` (shared CoW worktrees) and
+/// `agents/<agentSlug>/` (returned cwd: AGENTS.md + `.agents` + `repos`
+/// symlinks). Every conversation in a space shares `repos/`; a conversation
+/// id is never a worktree key. `.mcp.json` is not provisioned here —
+/// cc_server derives it at dispatch. No-op-safe: provisioning failures
+/// degrade to the fallback dir rather than throwing.
 abstract interface class RepoWorkspaceProvisionerPort {
-  /// Ensures the space's working root exists with an isolated worktree per
-  /// linked repo (reusing existing ones), builds the per-agent overlay at
-  /// `agents/<agentSlug>/` (AGENTS.md + .agents + repos symlinks) and returns
-  /// that overlay dir as the agent's working directory. Returns [fallbackDir]
-  /// when the workspace has no linked repo or provisioning fails.
+  /// Ensures space root + isolated worktrees + per-agent overlay at
+  /// `agents/<agentSlug>/`; returns that cwd or [fallbackDir] on failure.
   ///
-  /// [agentSlug] is the dispatched agent's slugified name — the per-agent cwd is
-  /// keyed by it so two agents in the same space get distinct overlays that
-  /// share `repos/`. [agentConfigDir] is the agent's global dir (the symlink
-  /// target source for AGENTS.md + .agents).
-  ///
-  /// Branch naming: when [ticketKey] or [ticketTitle] is provided the
-  /// configured branch template is rendered; otherwise a default
-  /// `conv/<short-space>` branch is used. Always fetches the latest base from
-  /// GitHub (when a remote + token are available) before branching.
-  /// When [prHeadRef] is set (e.g. `refs/pull/42/head`), the repo whose
-  /// `owner/name` equals [prHeadRepoFullName] is checked out at that ref on a
-  /// [prBranch] (default `pr/<number>`) instead of the default base branch — so
-  /// a PR-review space's worktree IS the PR's proposed tree (checked out
-  /// clean/pristine). Other repos provision normally.
-  ///
-  /// When [repoAllowlist] is non-null, only the workspace repos whose id is in
-  /// the set are provisioned (a PR space passes just the PR's repo; a space
-  /// created with an explicit repo selection passes those). Null → every linked
-  /// repo, preserving pre-selection behaviour.
-  ///
-  /// [onRepoProvision] fires right before a repo worktree is actually
-  /// materialized (reused worktrees don't fire), with the repo's display name
-  /// and whether it is being checked out at a PR head — so callers can surface
-  /// live provisioning progress. Must not throw.
-  ///
-  /// [onRepoSetupScript] fires right before a FRESHLY materialized worktree's
-  /// configured setup script runs (never for reused worktrees, and only when
-  /// the repo actually has a setup script) — so callers can surface "running
-  /// the setup script for X" progress. Must not throw.
-  ///
-  /// [cancel] stops the run: the in-flight git command is killed and no further
-  /// repo is materialized. The call still returns [fallbackDir] rather than
-  /// throwing (same contract as any other failure) — read
-  /// [isSpaceProvisioningCancelled] to tell a cancellation from a failure. The
-  /// caller-supplied token is combined with the space's own registered token,
-  /// so [cancelSpaceProvisioning] interrupts this call too.
+  /// [agentSlug] keys the overlay; [agentConfigDir] targets AGENTS.md+`.agents`.
+  /// Branch from [ticketKey]/[ticketTitle] else `conv/<short-space>`; fetches
+  /// latest base when remote+token available. [prHeadRef] checks out that ref
+  /// on [prBranch] for [prHeadRepoFullName], pristine. [repoAllowlist] null →
+  /// all linked repos. [onRepoProvision]/[onRepoSetupScript] fire on fresh
+  /// materialize only; must not throw. [cancel] kills git and stops; still
+  /// returns [fallbackDir] — use [isSpaceProvisioningCancelled].
   Future<String> ensureSpaceWorkspace({
     required String workspaceId,
     required String spaceId,
@@ -134,17 +87,12 @@ abstract interface class RepoWorkspaceProvisionerPort {
 
   /// CROSS-WORKSPACE teardown by space id.
   ///
-  /// NOTHING ROUTES HERE AUTOMATICALLY any more. It existed because
-  /// `SpaceDeleted` carried an optional workspace and the GC listener fell
-  /// back to scanning every workspace file when one was missing — a
-  /// cross-workspace scan as the failure mode of an omitted argument. The
-  /// event now requires its workspace, so this survives only as an explicit
-  /// repair tool for a space whose workspace context is genuinely lost
-  /// (a half-finished import, a registry that lost a row). If nothing calls
-  /// it by the next sweep of this file, delete it — and note that the cost
-  /// went up when `CrossWorkspaceQueries` moved to
-  /// `WorkspaceDatabaseManager.useTransiently`: a scan now OPENS AND CLOSES
-  /// every workspace file to answer one space delete.
+  /// Not routed automatically. Survives only as an explicit repair tool when
+  /// a space's workspace context is genuinely lost (half-finished import,
+  /// missing registry row). `SpaceDeleted` now requires its workspace, so the
+  /// old scan-on-missing-workspace path is gone. A scan now opens and closes
+  /// every workspace file via `CrossWorkspaceQueries` /
+  /// `WorkspaceDatabaseManager.useTransiently` — delete if unused.
   Future<void> releaseSpaceAnyWorkspace({required String spaceId});
 
   /// Teardown by ticket id (ticket lifecycle events don't carry a workspaceId).
@@ -161,23 +109,13 @@ abstract interface class RepoWorkspaceProvisionerPort {
     required String ticketId,
   });
 
-  /// Sweeps stale isolated worktrees in [workspaceId] and returns the number
-  /// reaped. Safe to call repeatedly; healthy, in-use worktrees are untouched.
+  /// Sweeps stale isolated worktrees in [workspaceId]; returns count reaped.
+  /// Safe to call repeatedly; healthy in-use worktrees are untouched.
   ///
-  /// Three kinds of staleness, all destroyed (which also prunes the rift trash)
-  /// and removed from the registry:
-  ///
-  /// * the worktree's on-disk copy has VANISHED — the original signal;
-  /// * its SPACE no longer exists. Deleting a space fires
-  ///   `SpaceDeleted` → `releaseSpace`, but an event missed while the
-  ///   server was down (or a row deleted straight from the database) leaves a
-  ///   fully-intact worktree that nothing else will ever reclaim — along with
-  ///   the code-graph partition hanging off it;
-  /// * an orphan SPACE FOLDER whose space is gone: the per-agent
-  ///   overlays and their token-bearing `.mcp.json` files, which linger even
-  ///   after the worktree rows are reaped.
-  ///
-  /// Fails safe: when space existence cannot be determined the worktree is
-  /// treated as live, so an unavailable lookup never destroys real work.
+  /// Reaped when: the on-disk copy has vanished; the SPACE no longer exists
+  /// (missed `SpaceDeleted` / direct DB delete — also drops the hanging
+  /// code-graph partition); or an orphan space folder remains after worktree
+  /// rows were reaped (overlays + token-bearing `.mcp.json`). Fails safe:
+  /// if space existence cannot be determined, the worktree is treated as live.
   Future<int> sweepStale({required String workspaceId});
 }

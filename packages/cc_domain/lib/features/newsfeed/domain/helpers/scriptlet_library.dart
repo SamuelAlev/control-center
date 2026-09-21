@@ -1,34 +1,19 @@
 import 'dart:convert';
 
-/// Generates the JavaScript body for a uBO-style scriptlet by name +
-/// args. Returns null if [name] isn't in our library — caller drops the
-/// rule silently.
-///
-/// These are **clean-room re-implementations** of uBlock Origin's
-/// scriptlets, not copies. uBO's `scriptlets.js` is GPL-3 and we don't
-/// want to inherit that license into this codebase; we mirror the
-/// behavior contract (same rule names + same arg conventions so existing
-/// filter rules work) but the implementation is ours.
-///
-/// Each generated script is wrapped in an IIFE with `try/catch` so a
-/// failure inside one scriptlet cannot break either the host page or
-/// other scriptlets running on the same page.
-///
-/// Supported scriptlets (with common aliases):
-/// - `prevent-addEventListener` / `aeld` / `prevent-addeventlistener`
-/// - `set-constant` / `set`
-/// - `abort-on-property-read` / `aopr`
-/// - `no-setInterval-if` / `nostif` / `setInterval-defuser` /
-///   `prevent-setInterval`
-/// - `no-setTimeout-if` / `nosttf` / `setTimeout-defuser` /
-///   `prevent-setTimeout`
-/// - `abort-current-script` / `acs` / `acis`
-/// - `remove-node-text` / `rmnt`
-/// - `set-attr` / `sa`
-/// - `trusted-click-element` / `click-element`
-/// - `cookie-remover` / `remove-cookie`
-/// - `set-local-storage-item` / `set-localStorage-item` /
-///   `set-localstorage-item`
+/// Generates the JavaScript body for a uBO-style scriptlet by name + args.
+/// Returns null if [name] is unknown — caller drops the rule silently.
+/// Clean-room re-implementations of uBlock Origin scriptlets (uBO's
+/// `scriptlets.js` is GPL-3). Same rule names and arg conventions so existing
+/// filter rules work; implementation is ours. Each script is an IIFE with
+/// try/catch so one failure cannot break the host page or sibling scriptlets.
+/// Supported (with aliases): `prevent-addEventListener`/`aeld`,
+/// `set-constant`/`set`, `abort-on-property-read`/`aopr`,
+/// `no-setInterval-if`/`nostif`/`setInterval-defuser`/`prevent-setInterval`,
+/// `no-setTimeout-if`/`nosttf`/`setTimeout-defuser`/`prevent-setTimeout`,
+/// `abort-current-script`/`acs`/`acis`, `remove-node-text`/`rmnt`,
+/// `set-attr`/`sa`, `trusted-click-element`/`click-element`,
+/// `cookie-remover`/`remove-cookie`,
+/// `set-local-storage-item`/`set-localStorage-item`/`set-localstorage-item`.
 String? generateScriptletJs(String name, List<String> args) {
   switch (name) {
     case 'prevent-addEventListener':
@@ -408,23 +393,9 @@ String _noTimerIf(List<String> args, {required bool isInterval}) {
 }catch(e){}})();''';
 }
 
-/// `trusted-click-element(selector, text?, delay?)` — programmatically
-/// clicks every element matching `selector` as soon as it appears AND
-/// is visible. Waits `delay` ms (default 0) after DOM ready before the
-/// first attempt, then keeps a MutationObserver running for the full
-/// page lifetime so banners that:
-/// - are injected long after DOMContentLoaded (TechCrunch / Didomi
-///   often defer banner mount by several seconds),
-/// - are pre-rendered hidden and revealed later via a CSS class flip
-///   (matched by the `attributes: true` observer option),
-/// - re-appear after a first click is rejected (CMPs that detect
-///   `isTrusted: false` and re-show themselves),
-/// all still get dismissed.
-///
-/// Click attempts are throttled to once per 500 ms so a stubborn page
-/// can't pin the CPU. Only elements with a non-zero bounding box are
-/// clicked — CMP buttons usually live in the DOM long before they're
-/// shown and clicking them while hidden does nothing useful.
+/// `trusted-click-element(selector, text?, delay?)` — clicks matching
+/// visible elements; waits `delay` ms then observes for late/hidden/re-shown
+/// CMP banners. Throttled to 500 ms; skips zero-size boxes.
 String _trustedClickElement(List<String> args) {
   if (args.isEmpty) {
     return '(function(){})();';

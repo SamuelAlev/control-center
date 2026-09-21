@@ -531,24 +531,12 @@ class AgentLoopConfig {
 /// loop until a stop condition.
 abstract interface class AgentLoop {
   /// Runs the loop for [userMessage] against [provider] with [tools].
+  /// [history] is caller-owned and appended in place. Stream ends with one
+  /// [LoopDone] (or [LoopError] then [LoopDone]).
   ///
-  /// [history] is owned by the caller and appended to in place as the loop
-  /// runs (the user turn, each assistant turn and tool-result turns). The
-  /// returned stream emits granular [AgentLoopEvent]s and finishes with exactly
-  /// one [LoopDone] (or a [LoopError] followed by [LoopDone]).
-  ///
-  /// [userImages] are attached to the user turn — a screenshot the human
-  /// pasted into the composer. Kept separate from [userMessage] rather than
-  /// folded into it because the text is what every other surface (the run log,
-  /// the title generator, the repetition guard) reads, and none of them wants
-  /// a base64 blob in the middle of it.
-  ///
-  /// [deferredTools] are callable but their schemas are withheld from the
-  /// request until first use — see `ToolResidencySpec`. They are activated
-  /// (appended to the schemas sent, permanently for the run) when the model
-  /// calls one by name or when a tool result asks for them
-  /// ([HarnessToolResult.activateTools]). Activation only ever APPENDS, so the
-  /// resident prefix the provider cached stays byte-identical.
+  /// [userImages] attach to the user turn but stay separate from [userMessage]
+  /// text. [deferredTools] schemas withhold until first use / activateTools;
+  /// activation only APPENDS (cache-prefix safe).
   Stream<AgentLoopEvent> run({
     required List<HarnessMessage> history,
     required String userMessage,

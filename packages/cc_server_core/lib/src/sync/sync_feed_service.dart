@@ -14,27 +14,9 @@ typedef SyncRowLoader =
       String? ctx,
     );
 
-/// The authoritative delta feed (PRD 16 §6): evolves subscriptions from
-/// full-snapshot to **delta packets ordered by the per-workspace monotonic
-/// sync id**.
+/// Authoritative delta feed (PRD 16 §6): clients subscribe from a `syncSeq` and receive ordered changes.
 ///
-/// The SQLite triggers (see `WorkspaceDatabase._createSyncTriggers`) append every
-/// adopted-store mutation to `sync_changes` atomically; this service tails
-/// that feed and emits wire frames:
-///
-///  * `{v, kind:'seed', store, seq}` — the subscription's starting point;
-///    the client fetches its snapshot separately and trusts deltas from
-///    `seq` on.
-///  * `{v, kind:'delta', store, from, seq, changes:[{tbl, pk, op, ctx?,
-///    row?}]}` — everything in `(from, seq]` touching this store. `from`
-///    always equals the previous frame's `seq`, so a client that sees
-///    `from != lastSeq` detected a GAP and issues a ranged [pull]; a failed
-///    pull drops that store to snapshot mode (the §6 kill-switch path).
-///
-/// Ordering never trusts a clock: the seq is allocated in the writing
-/// transaction, in server receipt order. Frames carry [wireVersion]; a
-/// client seeing an unknown version falls back to snapshot mode instead of
-/// misapplying.
+/// Server receipt order is LWW; never trusts client clocks. Workspace-scoped.
 class SyncFeedService {
   /// Creates the feed over the per-workspace databases in [workspaces], with
   /// per-table row [_loaders].

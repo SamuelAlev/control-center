@@ -18,22 +18,11 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Embedded code-server (VS Code in the browser) editor tab: the full VS Code
-/// UI on the conversation's isolated CoW worktree, reached through the
-/// authenticated `/proxy/vscode/<sid>/` reverse proxy on the connected server.
-///
-/// Same three-backend structure as [BrowserPane] but WITHOUT the navigation
-/// toolbar — code-server owns its own chrome:
-///   * **macOS / Windows** (`flutter_inappwebview` has a native backend) load
-///     the proxied URL in a real [InAppWebView]. Cookies persist for the
-///     session so code-server's auth cookie survives tab flicker.
-///   * **Web** embeds the same-origin proxied URL directly in an `<iframe>`.
-///   * **Linux** (no native webview) degrades to an "open editor in browser"
-///     card → the loopback direct URL via [openExternalUrl].
-///
-/// The session is resolved via [codeServerSessionProvider]; a spinner shows
-/// while installing and a guidance card shows when code-server is unavailable
-/// on the connected server.
+/// Embedded code-server (VS Code in the browser) editor tab: the full VS Code UI on the
+/// conversation's isolated CoW worktree, reached through the authenticated
+/// `/proxy/vscode/<sid>/` reverse proxy on the connected server.
+/// macOS / Windows (`flutter_inappwebview` has a native backend) load
+/// Web embeds the same-origin proxied URL directly in an `<iframe>`.
 class CodeServerPane extends ConsumerStatefulWidget {
   /// Creates a [CodeServerPane].
   const CodeServerPane({

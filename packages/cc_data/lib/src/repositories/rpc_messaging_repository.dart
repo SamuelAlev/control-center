@@ -360,17 +360,15 @@ class RpcMessagingRepository
     if (dto == null) {
       return null;
     }
-    // The ONLY `_messageFromDto` call site with no `fallbackSpaceId`, so it
-    // is the only one where the mapper's `?? ''` fallback can produce an empty
-    // spaceId — and `Message` now REFUSES that in release, where it
-    // used to be a stripped assert. A message that cannot be placed in a
-    // space is, for every caller of this method, not found; manufacturing
-    // one and letting the domain throw would surface an out-of-window
-    // permalink lookup as a crash instead of a miss.
+    // The ONLY `_messageFromDto` call site with no `fallbackSpaceId`, so it is the only one
+    // where the mapper's `??
     //
-    // Unreachable on today's wire (`messageToWire` always emits `space_id`),
-    // which is exactly why it is worth stating: without this the client's
-    // crash-freedom rests on a server invariant it cannot see.
+    // A message that cannot be placed in a space is, for every caller of this method, not
+    // found; manufacturing one and letting the domain throw would surface an out-of-window
+    // permalink lookup as a crash instead of a miss.
+    // Unreachable on today's wire (`messageToWire` always emits `space_id`), which is exactly
+    // why it is worth stating: without this the client's crash-freedom rests on a server
+    // invariant it cannot see.
     if ((dto.spaceId ?? '').isEmpty) {
       return null;
     }

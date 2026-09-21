@@ -12,24 +12,10 @@ import 'package:control_center/shared/widgets/composer/composer.dart'
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// The steering queue strip: the still-queued steering cards of one
-/// conversation, rendered between the chat trail and the composer.
-///
-/// A card here is a persisted conversation row waiting for a run to inject
-/// it (or, for external-CLI transports, waiting for run end to convert into a
-/// normal message). Reordering drags with the grip handle; "Steer" jumps a
-/// card to the front so the next turn boundary injects it first; edit and
-/// delete act on the row server-side, so every device agrees.
-///
-/// The strip is drawn AS the top of the composer, not as a card floating above
-/// it: it keeps the composer's own horizontal inset, no card carries a bottom
-/// border, and the composer drops its top margin (`Composer.attachedTop`, set
-/// by `SpaceInputBar` from this same queue) so the last card lands on its top
-/// border. A queued card is the text the composer is about to send — a gap
-/// between them read as an unrelated banner.
-///
-/// Renders nothing when the queue is empty — the strip is not chrome, it is
-/// content.
+/// The steering queue strip: the still-queued steering cards of one conversation, rendered
+/// between the chat trail and the composer.
+/// A card here is a persisted conversation row waiting for a run to inject it (or, for
+/// external-CLI transports, waiting for run end to convert into a normal message).
 class SteeringQueueList extends ConsumerStatefulWidget {
   /// Creates the strip for one conversation.
   const SteeringQueueList({

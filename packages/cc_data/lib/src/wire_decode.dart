@@ -1,22 +1,7 @@
-/// Decoding helpers for the wire→entity boundary.
+/// Wire→entity decode helpers.
 ///
-/// Domain entities validate their own invariants in their constructors, and as
-/// of the assert→throw conversion they do so IN RELEASE — which is the point,
-/// but it moves a failure that used to be silent onto a code path that cannot
-/// afford it. Every `*FromWire` in this package runs inside
-/// `stream.map((data) => rows.map(decode).toList())`, and a throw inside that
-/// `map` errors the WHOLE STREAM: one malformed row would blank an entire
-/// conversation, meeting list or todo list rather than dropping one item.
-///
-/// The mappers also manufacture required fields with `?? ''` — a habit from
-/// when the constructors only asserted. That is not reachable on today's wire
-/// (the server's `*ToWire` emits these unconditionally), but "not reachable
-/// today" means the client's crash-freedom rests on a server invariant it
-/// cannot see, across a version skew it does not control.
-///
-/// So: decode row by row, drop what will not decode, and say so once. A list
-/// short by one row is a visible, survivable degradation; an errored stream is
-/// a blank screen with no explanation.
+/// Decode row-by-row and drop failures: a throw inside `stream.map` errors the
+/// whole stream (blank list). Prefer a short list over a dead subscription.
 library;
 
 import 'dart:developer' as developer;

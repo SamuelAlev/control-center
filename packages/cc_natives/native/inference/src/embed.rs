@@ -549,16 +549,11 @@ pub unsafe extern "C" fn cc_embedder_create(
 
 /// Runs the encoder over one tokenized sequence.
 ///
-/// Writes `seq_len * hidden` floats of `last_hidden_state` into `out_hidden`
-/// (row-major, one row per token) and reports `hidden` through
-/// `out_hidden_size`. Returns 0 on success, -1 on failure.
-///
-/// Pooling is the CALLER's job — this returns per-token vectors, exactly as the
-/// runtime produced them.
-///
-/// # Safety
-/// The three id arrays must each hold at least `seq_len` `int64`s; `out_hidden`
-/// must hold at least `out_capacity` floats; `handle` must be live.
+/// Writes `seq_len * hidden` floats of `last_hidden_state` into `out_hidden` (row-major,
+/// one row per token) and reports `hidden` through `out_hidden_size`.
+/// Returns 0 on success, -1 on failure.
+/// The three id arrays must each hold at least `seq_len` `int64`s; `out_hidden` must hold
+/// at least `out_capacity` floats; `handle` must be live.
 #[no_mangle]
 pub unsafe extern "C" fn cc_embedder_run(
     handle: *mut CcEmbedder,

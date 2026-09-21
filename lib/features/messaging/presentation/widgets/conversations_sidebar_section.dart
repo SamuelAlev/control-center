@@ -562,7 +562,6 @@ class _EmptyHint extends StatelessWidget {
   }
 }
 
-// ── Dialogs ────────────────────────────────────────────────────────────────
 
 class _SpaceSpec {
   const _SpaceSpec({

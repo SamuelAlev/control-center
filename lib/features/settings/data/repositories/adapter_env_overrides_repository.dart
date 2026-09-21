@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:control_center/core/providers/storage_providers.dart';
 
 /// Persists per-adapter environment-variable overrides (e.g. `OPENAI_API_KEY`)
-/// in the platform **secure** store (keychain), never SharedPreferences —
+/// in the platform secure store (keychain), never SharedPreferences —
 /// AGENTS.md forbids secrets there. Stored as one JSON blob per adapter under
 /// key `adapter_env_<adapterId>`.
 class AdapterEnvOverridesRepository {

@@ -719,7 +719,6 @@ class _SkillsBodyState extends ConsumerState<_SkillsBody> {
   }
 }
 
-// ─── Rail content ──────────────────────────────────────────────────────────
 
 class _SkillRailContent extends StatelessWidget {
   const _SkillRailContent({
@@ -913,7 +912,6 @@ class _SkillEmptyContent extends StatelessWidget {
   }
 }
 
-// ─── Editor ────────────────────────────────────────────────────────────────
 
 class _SkillEditorContent extends ConsumerWidget {
   const _SkillEditorContent({

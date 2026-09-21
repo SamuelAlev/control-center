@@ -44,25 +44,9 @@ const Size _mainWindowMinVisible = Size(100, 32);
 const Size _hudMinVisible = Size(40, 20);
 
 /// The frame the main window should open with.
-///
-/// [saved] is last session's frame (null on a first launch), [workAreas] are
-/// the current displays' usable areas (menu bar and Dock excluded) and
-/// [primaryWorkArea] is the fallback display. All rects share one global
-/// top-left coordinate space, so displays left of or above the primary one
-/// have negative coordinates — that is normal and the maths handles it.
-///
-/// Resolution order:
-///  1. Saved frame is still entirely on screen → restored verbatim. This is
-///     the ordinary "nothing changed since last time" case, and it is also
-///     what lets a window the operator deliberately spread across two
-///     displays come back spread across them.
-///  2. Saved frame still overlaps a live display → clamp it fully inside that
-///     display (size first, then position), so an arrangement that merely
-///     shrank keeps the window roughly where the operator left it.
-///  3. Otherwise (first launch, or the saved display is gone) → the saved size
-///     if there was one, else [defaultSize], clamped to [primaryWorkArea] and
-///     centred there. Keeping the size honours "I like a big window" even when
-///     the display it was sized for is unplugged.
+/// [saved] is last session's frame (null on a first launch), [workAreas] are the current
+/// displays' usable areas (menu bar and Dock excluded) and [primaryWorkArea] is the
+/// fallback display.
 Rect resolveMainWindowBounds({
   required Rect? saved,
   required List<Rect> workAreas,

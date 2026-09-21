@@ -39,38 +39,20 @@ typedef OneShotLauncher =
       Map<String, String>? environment,
     });
 
-/// Runs **one tool-less prompt** on any adapter and returns its text.
+/// Runs one tool-less prompt on any adapter and returns its text.
 ///
-/// This is deliberately NOT `DispatchSession`. A dispatch is an agent run: it
-/// resolves an agent, provisions a worktree, opens a run log, enters the OS
-/// sandbox, wires MCP and accounts for cost. None of that has any meaning for
-/// a single 128-token completion that names a conversation, and paying for it
-/// per first message would put worktree provisioning on the chat send path.
-///
-/// So this runner spawns the adapter directly, hands it the prompt on stdin,
-/// reads its answer and kills it. Nothing it runs can touch the filesystem: no
-/// MCP config is passed, no tools are declared and the process is given a
-/// throwaway working directory.
-///
-/// Three transports, three mechanisms — the differences are stated rather than
-/// smoothed over, because they are not equivalent:
-///
-///  * [AdapterTransport.harness] — no process at all. Builds an
-///    [LlmProviderPort] from the qualified `provider/model` id and streams one
-///    completion. The only transport with a token budget we control
-///    (`maxTokens`) and the only one whose credential we resolve.
-///  * [AdapterTransport.claudeCli] — `claude -p --output-format text`. The
-///    system prompt is folded into the piped prompt rather than passed as a
-///    flag, so the invocation stays on the three flags this repo already
-///    drives Claude Code with.
-///  * [AdapterTransport.acp] — the full `initialize` → `session/new` →
-///    `session/prompt` handshake over stdio via [AcpClient], collecting the
-///    turn's [TextEvent]s.
-///
-/// Returns **null** when the adapter cannot run at all (unknown id, CLI not
-/// installed, no credential for the harness provider). That is a quiet skip,
-/// not an error: the caller keeps whatever it had. A failure *during* the run
-/// throws, so a caller that wants fail-open has to say so.
+/// Not a [DispatchSession]: no worktree, run log, sandbox, MCP, or cost
+/// accounting — those would put provisioning on the chat send path for a
+/// tiny naming completion. Spawns the adapter (or calls the harness), pipes
+/// the prompt, reads the answer; no MCP, no tools, throwaway cwd.
+/// - [AdapterTransport.harness]: in-process [LlmProviderPort]; only transport
+///   with `maxTokens` and credential resolution we control.
+/// - [AdapterTransport.claudeCli]: `claude -p --output-format text`; system
+///   prompt folded into stdin (no extra flags).
+/// - [AdapterTransport.acp]: full ACP handshake via [AcpClient], collect
+///   [TextEvent]s.
+/// Returns null on cannot-run (unknown id / missing CLI / no credential) —
+/// quiet skip. Failures mid-run throw.
 class AdapterOneShotRunner {
   /// Creates an [AdapterOneShotRunner].
   AdapterOneShotRunner({
@@ -145,7 +127,6 @@ class AdapterOneShotRunner {
     };
   }
 
-  // -- harness -----------------------------------------------------------
 
   Future<String?> _runHarness({
     required String? modelId,
@@ -199,7 +180,6 @@ class AdapterOneShotRunner {
     return buf.toString();
   }
 
-  // -- piped CLIs (claude -p, structured CLI) ------------------------------
 
   Future<String?> _runPipedCli({
     required Adapter adapter,
@@ -238,7 +218,6 @@ class AdapterOneShotRunner {
     }
   }
 
-  // -- ACP -----------------------------------------------------------------
 
   Future<String?> _runAcp({
     required Adapter adapter,

@@ -1,34 +1,14 @@
 // TLS for rig dev domains: a server-local CA and one shared leaf certificate,
-// so `https://myapp.test` inside the Browser (VM) carries a padlock instead
-// of an interstitial.
+// so `https://myapp.test` inside the Browser (VM) carries a padlock.
 //
-// The shape, and why it is this shape:
-//
-//  * ONE leaf keypair for every dev domain, with wildcard SANs
-//    (`*.test`, `*.localhost`). Dart's `SecureServerSocket` binds one
-//    `SecurityContext` per listener — there is no per-SNI certificate
-//    selection — so per-domain leaves would need a rebind on every domain
-//    change. A single wildcard leaf never needs rotating when a domain is
-//    added.
-//
-//  * Trust reaches the enclosed browser as an SPKI FINGERPRINT, not a trust-
-//    store install. The headless browser image has no certutil/NSS tooling
-//    and no egress to fetch any, so installing a root there is not a real
-//    option. Chromium's `--ignore-certificate-errors-spki-list` treats any
-//    certificate whose public key matches the listed SHA-256 as valid — and
-//    because the fingerprint pins OUR key specifically, it is not the blunt
-//    `--ignore-certificate-errors` hammer: TLS to anything else still
-//    validates normally.
-//
-//  * The CA and leaf keys are minted on the HOST, stored 0600 under the data
-//    dir, and never enter any guest. The only thing that crosses the boundary
-//    is the fingerprint of a PUBLIC key.
-//
-// Everything is minted by shelling out to the host's `openssl` — the same
-// discipline as `ssh-keygen`/`qemu-img` (`runHostTool`), and the invocations
-// are config-file based so they work on LibreSSL (macOS) and OpenSSL (Linux)
-// alike. A host with no openssl simply has no HTTPS lane: the dev domains
-// keep working over plain HTTP and the panel says nothing untrue.
+// One leaf with wildcard SANs (`*.test`, `*.localhost`): Dart's
+// `SecureServerSocket` has no per-SNI selection, so per-domain leaves would
+// rebind on every domain change. Trust is an SPKI fingerprint via Chromium's
+// `--ignore-certificate-errors-spki-list` — not a trust-store install (no
+// certutil in the image) and not blunt `--ignore-certificate-errors`. CA and
+// leaf keys stay on the host (0600); only the public-key fingerprint crosses.
+// Minted via host `openssl` (config-file, LibreSSL/OpenSSL); without it,
+// HTTPS is off and plain HTTP stays.
 
 import 'dart:convert';
 import 'dart:io';

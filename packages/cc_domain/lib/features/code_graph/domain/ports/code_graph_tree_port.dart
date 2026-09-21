@@ -23,27 +23,11 @@ class CodeGraphPathAudit {
   final Set<String> goneFromIndexedTree;
 }
 
-/// Resolves the on-disk trees behind the code graph and reports which indexed
-/// paths still exist in them.
+/// Resolves on-disk trees behind the code graph and which indexed paths exist.
 ///
-/// The code graph is keyed `(workspaceId, repoId, checkoutId)` — one partition
-/// per checkout (the linked checkout plus one per space/PR worktree) — so it
-/// drifts as soon as that checkout changes and without this port the code-graph
-/// tools answer confidently with paths that exist nowhere; see the
-/// `search_code` → `read` loop this fixes.
-///
-/// The scope is the SPACE, not the conversation. A worktree is registered in
-/// `isolated_repos` against a `space_id` and lives at
-/// `<dataDir>/<workspaceId>/spaces/<spaceId>/repos/<name>`, so every
-/// conversation in a space reads one shared copy. Passing a conversation id
-/// here names no worktree at all: the lookup misses, the port resolves to the
-/// linked checkout and an agent reviewing a PR branch is silently answered from
-/// the base checkout instead.
-///
-/// Implemented server-side (`cc_server_core`) over the repo + isolated-worktree
-/// registries; the MCP tools take it as a typed constructor parameter and fail
-/// OPEN when it is absent or throws, so a host without it behaves exactly as
-/// before rather than returning nothing.
+/// Graph is keyed `(workspaceId, repoId, checkoutId)`. Scope is the SPACE
+/// (`isolated_repos.space_id`) — a conversation id resolves to the linked
+/// checkout and silently answers PR review from base. Fail-open when absent.
 abstract interface class CodeGraphTreePort {
   /// The checkout partition a code-graph call should search: the space's
   /// isolated worktree `isolated_repos` row id when [spaceId] is set and the

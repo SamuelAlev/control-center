@@ -37,24 +37,11 @@ class AccountPoolCandidate {
   final String? unavailableReason;
 }
 
-/// Edits which credentials a scope may spend, in what order, and how to choose
-/// between them.
-///
-/// ## One editor, two lanes
-///
-/// The Claude Code adapter's account directories and a harness provider's
-/// stored keys are configured identically — an ordered list plus a strategy —
-/// so they share this widget rather than each growing a bespoke surface that
-/// drifts. What differs is underneath: the harness swaps credential mid-stream,
-/// the CLI re-runs the turn. Neither difference is visible here, and neither
-/// should be: the operator is expressing intent, not a mechanism.
-///
-/// ## Ordering is the interface
-///
-/// The list is explicitly ordered because both non-trivial strategies read it:
-/// `serial` drains top-down, `roundRobin` cycles top-down. So the editor moves
-/// rows rather than sorting them for you — a list that reordered itself would
-/// make "drain this one first" unsayable.
+/// Edits which credentials a scope may spend, in what order, and how to choose between
+/// them.
+/// The Claude Code adapter's account directories and a harness provider's stored keys are
+/// configured identically — an ordered list plus a strategy — so they share this widget
+/// rather than each growing a bespoke surface that drifts.
 class AccountPoolEditor extends ConsumerWidget {
   /// Creates an [AccountPoolEditor].
   const AccountPoolEditor({

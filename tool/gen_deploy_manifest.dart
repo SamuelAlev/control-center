@@ -1,26 +1,8 @@
 // -*- mode: dart -*-
-// Writes the `deploy.json` manifest a hosted web client polls to notice that
-// the origin has moved on and offer a consent-driven refresh.
-//
-// It derives every field from the ALREADY-STAMPED
-// packages/cc_domain/lib/src/build_info.dart, which is the whole point: the
-// manifest and the `BuildInfo` compiled into the bundle are then the same
-// identity by construction. This replaced three separate inline heredocs (in
-// release.yml, deploy-webapp.yml and deploy-remote.yml) that had drifted into
-// two different semantics — the release wrote the TAG version while the deploy
-// workflows grepped a pubspec, so the same PWA reported a different version
-// depending on whether it came from GHCR or Cloudflare. One of them even read
-// apps/cc_remote/pubspec.yaml while its own gen_build_info.dart read the root.
-//
-// `deploy.json`, NOT `version.json`: `flutter build web` writes its own
-// build/web/version.json (app_name / build_number, no git sha) and would
-// overwrite this.
-//
-// The clients compare the GIT SHA (lib/core/update/deployed_version.dart,
-// apps/cc_remote/lib/update/remote_update.dart) — `version` is displayed, not
-// compared.
-//
-// Usage (repo root, AFTER gen_build_info.dart and the web build):
+// Writes `deploy.json` from stamped `build_info.dart` so manifest and bundle
+// share one identity. Named `deploy.json` (not `version.json` — flutter build
+// web overwrites that). Clients compare git SHA; `version` is display-only.
+// Usage (after gen_build_info + web build):
 //   dart run tool/gen_deploy_manifest.dart build/web
 import 'dart:convert';
 import 'dart:io';

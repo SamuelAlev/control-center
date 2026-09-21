@@ -573,22 +573,12 @@ class DispatchSession implements SteeringSessionView {
   /// tooling in the run can stamp it onto commit messages.
   static const String coAuthorTrailerEnvKey = 'CC_GIT_COAUTHOR_TRAILER';
 
-  /// Resolves the per-run identity surface (best-effort — a failure never
-  /// blocks dispatch):
+  /// Resolves per-run git identity (best-effort; failure never blocks dispatch).
   ///
-  /// - `GIT_AUTHOR_*` / `GIT_COMMITTER_*` name the AGENT (display name plus an
-  ///   " (agent)" suffix; a stable synthetic address keyed by agent id), so
-  ///   `git log` attributes machine commits honestly.
-  /// - [coAuthorTrailerEnvKey] carries the requesting human's
-  ///   `Co-Authored-By:` line (owner fallback when no requester is known).
-  ///
-  /// The requesting human's credit stops at the trailer: the run's GitHub
-  /// CREDENTIAL is the broker's (App installation token or environment
-  /// fallback), never the member's own — an agent must act on the forge as
-  /// the app, not as the person who asked.
-  ///
-  /// Keys the caller env already sets are left alone — an explicit caller
-  /// identity always wins.
+  /// `GIT_AUTHOR_*` / `GIT_COMMITTER_*` name the agent (display + " (agent)",
+  /// synthetic address by agent id). [coAuthorTrailerEnvKey] carries the
+  /// requesting human's `Co-Authored-By:` (owner fallback). Forge credential
+  /// stays the broker/app — never the member's PAT. Caller-set env keys win.
   Future<void> _prepareRunIdentity() async {
     final env = <String, String>{};
 
@@ -659,34 +649,8 @@ class DispatchSession implements SteeringSessionView {
     return env;
   }
 
-  /// Builds the per-dispatch bind-mount set — the cross-agent isolation
-  /// boundary.
-  ///
-  /// Normal per-agent overlay dispatch mounts FOUR paths:
-  /// - [agentDirHostPath] (the overlay cwd) — **rw**: own scratch + derived
-  ///   `.mcp.json`.
-  /// - [agentConfigDir] (the agent's global config dir) — **ro**: AGENTS.md +
-  ///   `.agents` symlink targets (writes blocked).
-  /// - `<convRoot>/repos` — **rw**: the shared conversation worktrees (the
-  ///   overlay's `repos → ../../repos` symlink resolves through this). Only
-  ///   mounted when it exists on disk.
-  /// - `<convRoot>/attachments` — **ro**: what the humans in this conversation
-  ///   attached to their messages, materialized from the blob store so the
-  ///   paths in the prompt resolve. Read-only because these are the human's
-  ///   inputs, not the agent's scratch — a CLI adapter is held to that by the
-  ///   mount; the in-process harness reaches it through [_workspaceSharedRoots]
-  ///   instead, which has no read-only mode, so there the restraint is
-  ///   convention. Only mounted when it exists.
-  ///
-  /// Fallback / oneshot (no overlay — the cwd IS the agent dir, or no config
-  /// dir was threaded): a single writable cwd mount (unchanged behaviour).
-  /// Sibling agent folders are never mounted, so an agent cannot reach another
-  /// agent's config/skills.
-  /// The worktree roots this session could be granted exec on: its WRITABLE
-  /// bind mounts, which is exactly the tree the `$HOME` exec block closes and
-  /// the tree a repo installs its tooling into. Read-only mounts are excluded —
-  /// nothing writes a binary into one, so opening it would widen the sandbox
-  /// without fixing anything.
+  /// Writable bind-mount host paths this session could grant exec on (RO mounts
+  /// excluded — opening them would widen the sandbox with no binary to run).
   List<String> _execGrantCandidateRoots() => [
     for (final m in _bindMounts())
       if (!m.readOnly && m.hostPath.isNotEmpty) m.hostPath,
@@ -717,6 +681,12 @@ class DispatchSession implements SteeringSessionView {
     }
   }
 
+  /// Per-dispatch bind mounts (cross-agent isolation).
+  ///
+  /// Overlay: cwd **rw**; agent config **ro**; `<convRoot>/repos` **rw** when
+  /// present; space `attachments/` **ro** when present (harness uses
+  /// [_workspaceSharedRoots] with no RO mode — convention only). Fallback/
+  /// oneshot: single writable cwd. Sibling agent dirs never mounted.
   List<SandboxBindMount> _bindMounts() {
     final cwd = agentDirHostPath;
     final configDir = agentConfigDir;

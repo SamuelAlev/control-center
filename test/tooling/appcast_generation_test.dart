@@ -3,27 +3,9 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
-/// Runs `scripts/release/gen_appcast.sh` against fixture artifacts and a
-/// throwaway key pair, then asserts the shape of the feeds it writes.
-///
-/// This exists because two defects shipped in the appcast that no Dart test
-/// could see: the enclosure signature was emitted as `sparkle:ed25519` (a name
-/// Sparkle does not parse, so every macOS update would have failed
-/// verification) and the items carried no `sparkle:version` (so neither
-/// updater could evaluate them at all). Both are one grep away once the script
-/// is actually executed.
-///
-/// The script resolves the repo root from its own location and checks the
-/// signing keys against the public halves committed there (`SUPublicEDKey`,
-/// `dsa_pub.pem`). The real repo ships real keys, which a throwaway pair can
-/// never match — so the test copies the script into a scaffold repo root that
-/// carries the throwaway keys' OWN public halves. The gate then passes for the
-/// reason it exists (derived == shipped) without touching the checkout.
-///
-/// The script signs with python3 + `cryptography`; so does this test. When
-/// that is not installed there is nothing meaningful to assert, so the suite
-/// skips with the reason rather than failing — CI installs it explicitly
-/// (see the "Install appcast signing dependencies" step in release.yml).
+/// Runs `gen_appcast.sh` against fixtures + throwaway keys; asserts feed shape
+/// (`sparkle:edSignature`, `sparkle:version`). Scaffolds a fake repo root so
+/// key public-halves match. Skips if python3/cryptography missing.
 String? _skipReason() {
   try {
     final probe = Process.runSync('python3', ['-c', 'import cryptography']);

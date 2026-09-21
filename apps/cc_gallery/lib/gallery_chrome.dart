@@ -2,50 +2,14 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-/// Styling for **Widgetbook's own chrome** — the navigation sidebar, search
-/// field, settings/addons panel and workspace toolbar — derived from the cc_ui
-/// design tokens.
+/// Widgetbook chrome styling via Material `ThemeData` mapped from cc_ui tokens.
 ///
-/// Widgetbook renders its chrome inside an internal `MaterialApp` and exposes
-/// only `lightTheme` / `darkTheme` (`ThemeData`) as styling hooks — the public
-/// `Widgetbook` constructor has no navigation override and its tree tiles,
-/// cards and ripples are `@internal` Material widgets that cannot be swapped for
-/// `Cc*` widgets. So rather than restyling the chrome with the design system
-/// directly, we map cc_ui tokens onto the Material `ColorScheme` / `ThemeData`
-/// slots the chrome actually reads (verified against widgetbook 3.24.0
-/// `desktop_layout.dart` / `navigation_*.dart`):
-///
-///  - outer workspace background → `colorScheme.surface`
-///  - nav + addons panels (Material `Card`) → `cardTheme.color`
-///  - selected tree-tile fill → `colorScheme.secondaryContainer` (= `accentSoft`)
-///  - nav-row hover / pressed wash → `hoverColor` / `highlightColor`
-///  - all chrome ripples removed → `splashFactory` (cc_ui has none — CcTappable
-///    washes hover→pressed and never inks)
-///  - tile text → Manrope `textTheme` (`onSurface`); tree glyphs → `iconTheme`
-///    (`textSecondary`, matching a resting `CcSidebarItem`)
-///  - search-field fill + hint → `inputDecorationTheme.fillColor` / `hintStyle`
-///
-/// How close this gets to a real [CcSidebar]: the warm surface, the
-/// hover/pressed washes and the no-ripple feel all match. The selected tile
-/// deliberately keeps the OLD `accentSoft` tint rather than the item's solid
-/// `bgBrandSolid` fill: widgetbook's tree tile paints only its fill on
-/// selection and keeps its resting label/icon color, so a solid brand fill
-/// would leave dark text on burnt orange — illegible. The remaining
-/// `CcSidebarItem` signatures are baked into the `@internal`
-/// `NavigationTreeTile` and cannot be reached by `ThemeData`:
-///
-///  - it is a 24px-tall pill (`BorderRadius.circular(24)`); `CcSidebarItem` is a
-///    2px-radius (`AppRadii.brSm`) row with taller padding.
-///  - the selected row paints **only** its fill — no 1px `accent` border and the
-///    label/icon keep their resting color rather than turning `accentOn`.
-///  - folders/categories are plain tree rows; there is no mono uppercase group
-///    eyebrow like [CcSidebarGroup].
-///  - the search field hardcodes a transparent pill border, so its accent focus
-///    ring and 2px corners are unreachable (only its fill/hint are themable).
-///
-/// True fidelity would require not using widgetbook's built-in navigation, which
-/// it does not expose for override. The 2px resize separators are likewise
-/// hardcoded (`Colors.white24`) and out of reach.
+/// Widgetbook only exposes `lightTheme`/`darkTheme`; its tree tiles are
+/// `@internal` Material and cannot become `Cc*` widgets. Selected tile uses
+/// `accentSoft` (not `bgBrandSolid`): the tile keeps resting label/icon color,
+/// so a solid brand fill would be illegible. Pill radius, accent border,
+/// group eyebrows, search focus ring, and resize separators are unreachable
+/// through `ThemeData`.
 ThemeData galleryChromeTheme(Brightness brightness) {
   final t = brightness == Brightness.dark
       ? DesignSystemTokens.dark()

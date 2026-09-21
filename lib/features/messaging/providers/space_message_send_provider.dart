@@ -57,26 +57,13 @@ class SpaceMessageSendNotifier extends Notifier<void> {
   }
 
   /// Uploads every attachment to the host and records what came back.
-  ///
-  /// **Everything travels, not just pictures.** The device and the server are
-  /// routinely not the same machine — a paired laptop, a phone, a VPS behind
-  /// the relay — so a host path is meaningless on the far side. The bytes go
-  /// up; the message keeps a content-addressed reference. That reference is
-  /// also what every LATER reader resolves from: a preview opened tomorrow, or
-  /// by another member, has no access to the sender's disk.
-  ///
-  /// The message row keeps the reference and never the bytes: an inline base64
-  /// screenshot would sit in `conversation_messages` forever, in a column the
-  /// FTS index reads, for content no search can match.
-  ///
-  /// A file too large to carry (past [_maxUploadBytes], which the store would
-  /// refuse anyway) is still RECORDED, by path. It is the honest degradation:
-  /// the reference stays clickable on the machine that sent it and says so
-  /// nowhere else, which beats dropping it silently.
-  ///
-  /// Best-effort per attachment: one that fails to upload is dropped with the
-  /// rest of the message still sent. Losing an attachment is bad; losing the
-  /// question the person typed alongside it is worse.
+  /// routinely not the same machine — a paired laptop, a phone, a VPS behind the relay — so a
+  /// host path is meaningless on the far side.
+  /// The message row keeps the reference and never the bytes: an inline base64 screenshot
+  /// would sit in `conversation_messages` forever, in a column the FTS index reads, for
+  /// content no search can match.
+  /// A file too large to carry (past [_maxUploadBytes], which the store would refuse anyway)
+  /// is still RECORDED, by path.
   Future<List<Map<String, dynamic>>> _storeAttachments(
     String workspaceId,
     List<ComposerAttachment> attachments,
@@ -190,33 +177,12 @@ class SpaceMessageSendNotifier extends Notifier<void> {
     return readLocalBytes(path, maxBytes: _maxUploadBytes);
   }
 
-  /// Uploads one picture to the host, over whichever lane this connection has.
+  /// Upload one picture: HTTP `POST /blob` if a bulk base exists, else RPC.
   ///
-  /// **Two lanes, and the choice is forced by the transport, not by taste.**
-  ///
-  /// *HTTP (`POST /blob`)* whenever the connection has a bulk base — loopback,
-  /// LAN, Tailnet, a reachable VPS. It has to be HTTP there, because those
-  /// connections carry RPC over `WsRemoteTransport`, which caps a single
-  /// inbound frame at 256 KB and CLOSES the connection past it. A base64
-  /// screenshot on that socket never arrived: it dropped the link, the call
-  /// failed, the metadata came back empty, and the message went out carrying
-  /// only the filenames its text had expanded to. HTTP also spares the 33%
-  /// base64 tax and a multi-megabyte JSON parse on the server's main isolate.
-  ///
-  /// *RPC (`blob.put`)* when there is no bulk base at all. That is the
-  /// BROKERED RELAY case — a server behind NAT, reached through the signalling
-  /// broker — where there is no HTTP origin to POST to. It is safe there for
-  /// the same reason it was unsafe above: the relay is not a WebSocket. It runs
-  /// `ChunkedRelaySession`, which splits a frame into 16 KB sealed pieces with
-  /// credit-based backpressure and reassembles up to 128 MB, so a large frame
-  /// is exactly what it is built to carry.
-  ///
-  /// The fallback is deliberately gated on "no bulk lane" rather than "HTTP
-  /// failed": retrying over RPC on a WebSocket connection would push the very
-  /// frame that closes the socket.
-  ///
-  /// Returns null (and says why in the log) rather than throwing: one picture
-  /// that will not upload must not take the question the person typed with it.
+  /// WebSocket RPC (`WsRemoteTransport`) caps frames at 256 KB and closes past
+  /// that — never fall back to RPC after HTTP failure on that transport. Relay
+  /// has no HTTP origin and uses `ChunkedRelaySession` (safe for large frames).
+  /// Returns null on failure (logged); do not fail the whole send.
   Future<({String ref, int bytes})?> _upload({
     required String workspaceId,
     required List<int> bytes,

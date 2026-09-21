@@ -14,30 +14,14 @@ import 'package:control_center/shared/widgets/section_card.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// The agent reporting hierarchy, drawn as an actual top-down org chart: each
-/// manager sits above its direct reports, joined to them by a connector that
-/// drops from the card, runs along a bus and drops again into each report.
-///
-/// ## Why it looks like this
-///
-/// It used to be a flat list of full-width rows with a left indent per level.
-/// Indentation is how a file tree says "contained by"; it is not how an
-/// organisation says "reports to", and at four peers under one manager the
-/// four rows read as a list that happens to start further right — the one
-/// relationship the chart exists to show was the thing you had to infer.
-///
-/// So the layout is computed rather than nested: every card is
-/// [_nodeWidth] wide, a subtree is as wide as its widest generation, and the
-/// connectors are painted from those measurements. That fixed width is what
-/// makes the geometry knowable without a layout pass, and what lets a
-/// generation stay aligned instead of drifting with the length of a title.
-///
-/// It is a CANVAS, not a scroll view — the same [InteractiveViewer] over a
-/// dot grid the plan studio DAG and the memory knowledge graph use. A pair of
-/// nested scroll views could reach every corner of the chart but only one
-/// corner at a time, and they swallowed the trackpad pan-zoom the canvases get
-/// for free, so the one gesture that could have shown a whole org at once did
-/// nothing here.
+/// The agent reporting hierarchy, drawn as an actual top-down org chart: each manager sits
+/// above its direct reports, joined to them by a connector that drops from the card, runs
+/// along a bus and drops again into each report.
+/// So the layout is computed rather than nested: every card is [_nodeWidth] wide, a subtree
+/// is as wide as its widest generation, and the connectors are painted from those
+/// measurements.
+/// That fixed width is what makes the geometry knowable without a layout pass, and what
+/// lets a generation stay aligned instead of drifting with the length of a title.
 class OrgChartView extends ConsumerStatefulWidget {
   /// Creates an [OrgChartView] for [workspaceId].
   const OrgChartView({super.key, required this.workspaceId});

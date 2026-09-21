@@ -26,23 +26,12 @@ class LameUnavailable implements NativeLibraryUnavailable {
       'the natives staged)';
 }
 
-/// Raw `dart:ffi` binding for the bundled MP3 encoder library (`liblame_ffi`),
-/// a thin C ABI over libmp3lame (LAME).
+/// Raw `dart:ffi` binding for the bundled MP3 encoder library (`liblame_ffi`), a thin C ABI
+/// over libmp3lame (LAME).
 ///
 /// The library exposes a tiny C ABI (see `packages/cc_natives/native/lame_ffi.cc`):
-///
-/// ```c
-/// void* cc_lame_create(int sample_rate, int channels, int bitrate_kbps);   // opaque handle / NULL
-/// int   cc_lame_encode(void* h, const short* pcm_interleaved, int frames,
-///                      unsigned char* out, int out_cap);                    // bytes written / < 0 error
-/// int   cc_lame_flush(void* h, unsigned char* out, int out_cap);           // bytes written / < 0 error
-/// void  cc_lame_destroy(void* h);
-/// const char* cc_lame_version(void);                                        // static, do not free
-/// ```
-///
-/// [tryLoad] returning `null` is a PROBE RESULT, not a licence to degrade — the
-/// dylib is required. `Mp3Encoder.create` converts it into a thrown
-/// [LameUnavailable].
+/// [tryLoad] returning `null` is a PROBE RESULT, not a licence to degrade — the dylib is
+/// required.
 class LameFfiBindings {
   LameFfiBindings._(
     this._create,

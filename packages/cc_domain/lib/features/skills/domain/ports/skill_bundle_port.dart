@@ -88,12 +88,10 @@ abstract interface class SkillBundlePort {
   /// and recording the pin in the lock. [path] is the repo-relative path to
   /// the skill's `SKILL.md`; a 40-hex commit SHA [ref] is a stable pin (null =
   /// the latest commit touching the skill).
-  ///
   /// The mandatory scan gate (PRD 23 §2) runs over the fetched bytes BEFORE any
   /// disk write; a `quarantine` verdict (or a scanner failure) aborts the
   /// install with a `SkillScanBlockedException`. [allowQuarantineOverride]
   /// permits an explicit, recorded operator override of a quarantine verdict.
-  ///
   /// The skill's capability manifest is additionally resolved against the
   /// PRD 24 action policy (in [spaceId]/[agentId] scope) before the write: a
   /// skill demanding a capability the workspace policy denies is blocked

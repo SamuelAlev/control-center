@@ -7,22 +7,12 @@ import 'package:cc_domain/features/meetings/domain/services/speech_transcriber.d
 import 'package:cc_domain/features/meetings/domain/services/transcribed_window.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
 
-/// Drives rolling-window transcription over a continuous 16 kHz mono PCM16
-/// stream (one audio channel — e.g. the microphone, or the system output).
+/// Rolling-window transcription over continuous 16 kHz mono PCM16.
 ///
-/// A window is cut when either (a) trailing silence exceeds [silenceFlushMs]
-/// and the window already holds at least [minWindowMs] of audio, or (b) the
-/// window reaches [maxWindowMs]. Each cut window is decoded via
-/// [SpeechTranscriber.transcribeChunk] and emitted with offsets measured from
-/// the first sample.
-///
-/// Windows that never rose above [silenceRmsThreshold] are skipped without a
-/// decode at all — Whisper renders silence as hallucinated non-speech tokens
-/// ("(buzzer)") and the decode is wasted CPU, which matters because a quiet
-/// channel (e.g. the mic when the user is listening) would otherwise fire a
-/// decode roughly every [minWindowMs]. The decode itself runs off the UI thread
-/// inside [SpeechTranscriber] (a worker isolate), so a slow window only delays
-/// later windows on the same channel — captured audio is buffered, never lost.
+/// Cut on trailing silence ≥ [silenceFlushMs] (window ≥ [minWindowMs]) or at
+/// [maxWindowMs]. Skip windows below [silenceRmsThreshold] (Whisper hallucinates
+/// on silence; quiet channels would decode every [minWindowMs]). Decode is
+/// off-thread in [SpeechTranscriber]; audio buffers, never drops.
 class MeetingTranscriptionService implements MeetingTranscriptionPort {
   /// Creates a [MeetingTranscriptionService].
   ///

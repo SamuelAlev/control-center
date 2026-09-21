@@ -197,7 +197,6 @@ class _ControlCenterLayoutState extends ConsumerState<ControlCenterLayout> {
     );
   }
 
-  // ── Settings contextual sub-sidebar ───────────────────────────────────
   //
   // Rendered from `kSettingsNav`, the single source of truth for the settings
   // information architecture. Groups are SCOPES — You / Workspace / Server —

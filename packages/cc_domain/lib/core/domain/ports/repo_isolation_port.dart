@@ -26,41 +26,14 @@ abstract interface class RepoIsolationPort {
   /// throws, except on a platform with no CoW backend at all.
   bool get isCowAvailable;
 
-  /// Creates an isolated worktree of [sourcePath] inside [destParentDir] under
-  /// directory [name], then checks out [branch].
+  /// Creates an isolated worktree of [sourcePath] under [name], checks out
+  /// [branch].
   ///
-  /// Sequence (rift path): ensure the source is rift-registered → CoW create →
-  /// fetch the latest default branch into FETCH_HEAD (never
-  /// `refs/remotes/origin/*`) → `git checkout -B [branch]` at that commit.
-  /// [baseRef] names the default branch; when empty it is auto-detected
-  /// read-only from `origin/HEAD`, then `origin/main` / `origin/master` —
-  /// never the source's currently checked-out branch. The fetch URL is
-  /// [authUrl] (token passed transiently, never written to git config) or,
-  /// if that is empty, the copy's `origin` remote URL.
-  ///
-  /// When [headRef] is non-null (e.g. `refs/pull/42/head`), that ref is fetched
-  /// from [authUrl] and checked out as [branch] instead — landing the worktree
-  /// on those exact commits rather than a fresh branch off the base. Used by
-  /// the "open PR in editor" flow; [authUrl] is then required.
-  ///
-  /// `cow_unavailable`, `unsafe_git`, a missing native and every other rift
-  /// failure THROW. There is no `git worktree` rescue on a platform that ships
-  /// CoW: that backend mutates the source repo, and a provision that quietly
-  /// pollutes the operator's checkout is worse than one that fails.
-  ///
-  /// When [pristine] is true, the working tree is scrubbed to exactly the
-  /// checked-out ref after checkout (`git clean -ffdx`) — the CoW copy inherits
-  /// every inode of the source working dir (untracked/ignored/dirty files) and
-  /// `git checkout` only resets *tracked* files, so without this a PR-review
-  /// worktree would carry the source checkout's local cruft (`.bak`, private
-  /// config, stale build output). Reserved for review surfaces that must show the
-  /// ref's tree verbatim; agent/ticket worktrees keep [pristine] false so their
-  /// dependencies and untracked scratch survive.
-  ///
-  /// [cancel] aborts the provision: the in-flight git command is killed and a
-  /// [CancelledException] is thrown, rather than a fetch running to completion
-  /// for a caller that already stopped. Whatever landed on disk before the
-  /// abort is the caller's to reap.
+  /// Rift: register → CoW → fetch base into FETCH_HEAD → `checkout -B`. Empty
+  /// [baseRef] from `origin/HEAD` then main/master — never source HEAD.
+  /// [authUrl] or copy's origin; [headRef] fetches that ref as [branch].
+  /// Rift failures throw (no worktree rescue on CoW). [pristine] → clean -ffdx.
+  /// [cancel] → [CancelledException]; disk leftover is caller's to reap.
   Future<RepoIsolationResult> provision({
     required String sourcePath,
     required String destParentDir,

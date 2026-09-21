@@ -157,31 +157,13 @@ abstract interface class MessagingPort {
     Map<String, String>? repoBranches,
   });
 
-  /// Creates a conversation (a message stream) inside an EXISTING space and
-  /// returns its id.
+  /// Creates a conversation inside an existing space; returns its id.
   ///
-  /// The space owns the worktree, the participants and the provisioning; its
-  /// conversations are flat equals sharing all of that. This is what lets
-  /// several agents work the same checkout in parallel while each keeps its own
-  /// readable thread — a fan-out that creates a space per worker instead pays
-  /// for one clone of every repo per worker and hides each thread in a room
-  /// nobody is in.
-  ///
-  /// [createdByPrincipalId] records WHOSE stream this is. For a fan-out that
-  /// opens one conversation per agent, that is the agent — which is what makes
-  /// a later human reply in it wake THAT agent rather than whichever one the
-  /// space's roster happens to list first.
-  ///
-  /// [reuseExisting] returns the space's existing ACTIVE conversation with the
-  /// same [title] instead of opening a second one. It is off by default —
-  /// a human who names two conversations the same way meant two — and on for
-  /// machine callers whose work can be re-run: a pipeline step re-fired by a
-  /// retry or a crash-resume otherwise leaves the room holding two "QA review"
-  /// threads with no way to tell which one is live.
-  ///
-  /// Returns null when the space does not exist in [workspaceId] (so a caller
-  /// can fall back to the space's standing conversation rather than writing a
-  /// row against a missing space).
+  /// Conversations in a space are flat equals sharing worktree/roster.
+  /// [createdByPrincipalId] is whose stream (fan-out: the agent — so a reply
+  /// wakes that agent). [reuseExisting] returns the active conversation with
+  /// the same [title] (off for humans; on for re-runnable machine callers).
+  /// Returns null if the space is missing in [workspaceId].
   Future<String?> createConversation({
     required String workspaceId,
     required String spaceId,
@@ -230,14 +212,12 @@ abstract interface class MessagingPort {
   /// [expectedOutputSchema] / [outputContractMode], when set, are stamped onto
   /// the created [AgentRunLog] so the `submit_output` path can enforce the
   /// pipeline output contract.
-  ///
   /// [requestedByUserId] is the human on whose behalf this run executes. It
   /// flows down to the run's environment so the agent's git commits carry an
   /// honest co-author trailer and, when that member stored their own GitHub
   /// token, the run uses it instead of the owner's. Programmatic callers
   /// (pipelines, retries, plan refinement) pass null — the run then attributes
   /// to the server owner.
-  ///
   /// Returns the run-log id of the dispatched run (the `submit_output` /
   /// resume key), or null when the agent could not be resolved.
   Future<String?> dispatchAgent({
@@ -263,25 +243,12 @@ abstract interface class MessagingPort {
     required String feedback,
   });
 
-  /// Re-dispatches the agent of a failed turn. [failedMessageId] is the
-  /// errored agent message (carries `runId`); the implementation re-dispatches
-  /// the same agent in the same space and stamps the failed message so the
-  /// retry affordance hides.
+  /// Re-dispatches the agent of a failed turn ([failedMessageId] carries
+  /// `runId`); stamps the failed message so retry hides.
   ///
-  /// [workspaceId] must be the space's own workspace: the retry carries the
-  /// same context as the turn it replaces and a retried run whose run log
-  /// carried a different (or no) workspace would be invisible to every
-  /// workspace-scoped surface — the composer's stop affordance, the run tree,
-  /// presence — and rejected by the ownership check on
-  /// `stopRun`/`pauseRun`/`steer`, i.e. an unstoppable run.
-  /// [modelOverride] re-runs the turn on a DIFFERENT model.
-  ///
-  /// The case it exists for: a turn that failed because the model produced
-  /// something the loop could not use (truncated output, a malformed tool
-  /// call, a refusal) will usually fail the same way again on a retry. Handing
-  /// the same prompt to a different model is the move that actually changes
-  /// the outcome, and without this the only way to make it is to reconfigure
-  /// the agent and retype the request.
+  /// [workspaceId] must be the space's workspace (else the run is invisible /
+  /// unstoppable). [modelOverride] re-runs on a different model (same-model
+  /// retry often fails the same way).
   Future<void> retryAgentTurn({
     required String workspaceId,
     required String spaceId,

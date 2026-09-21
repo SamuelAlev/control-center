@@ -438,49 +438,13 @@ const String kPipelineConversationStateKey = 'pipeline_conversation_id';
 /// The id of the space node every agent-bearing built-in opens with.
 const String _spaceStepId = 'space';
 
-/// The entry node that opens the run's ONE conversation — and, with it, the
-/// checkout its steps work in.
+/// Entry node that opens the run's one space (+ checkout).
 ///
-/// It replaces the template's former entry step (which is rewired to fire from
-/// it). [repoIds] is the exact checkout scope — `const []` means the room checks
-/// out nothing, which is right for the steps that only reshape text (release
-/// notes, a PR digest, a meeting summary) and used to drag every workspace repo
-/// onto disk to do it. [agentIds] is the roster the room opens with: only the
-/// agents that run on EVERY path, since a branch's agent joins when it is
-/// actually dispatched.
-///
-/// [pr] resolves the pull request's own room instead of creating one, so the
-/// worktree is a copy-on-write copy of the linked checkout fetched and checked
-/// out at the PR head — the same room a human opening that PR gets.
-///
-/// [awaitReady] holds the step until that checkout exists and publishes its path
-/// as `repoLocalPath`. Set it wherever a NON-agent step downstream addresses the
-/// tree by path (a bash script, a `fileExists` router); an agent step needs no
-/// wait, because dispatch already gates on the room being ready. This pairing —
-/// CoW copy, scrub, fetch, switch — costs seconds and no network transfer,
-/// where a clone re-downloads the full repository on every single run.
-/// [after] names the steps the room waits on, for the one template whose room
-/// is NOT the entry node (`index_code` opens it only once there is an indexed
-/// graph to analyse). Left empty the node is the template's entry step, which
-/// is what every other built-in wants.
-///
-/// [conversationTitle] opens the room's FIRST stream under that name, and
-/// publishes its id as [kPipelineConversationStateKey]. Pass it when the
-/// template has exactly one agent step, naming the same title that step uses:
-/// the room is then born holding the stream its work lands in, so the standing
-/// conversation every read path resolves IS that one. Left null the room opens
-/// empty and each agent step opens its own — which is right for a fan-out, and
-/// leaves a window in which anything that opens the room (the sidebar, the
-/// step-detail panel) mints an untitled standing stream beside the named ones.
-///
-/// [spaceName] is what the ROOM is called, and it is deliberately separate from
-/// [label], which names the NODE on the canvas. Left null the body falls back to
-/// the label — which is how a room ended up called "Create space for X": a
-/// perfectly good instruction to read on a canvas, and a title nobody would
-/// choose for a conversation in the sidebar. Every node that actually creates a
-/// room states it. A `pr: true` node deliberately does NOT: it resolves the pull
-/// request's own room, which is already named by whoever opened it, so a name
-/// here would be config that never renders.
+/// [repoIds] exact scope (`[]` = none). [agentIds] always-on roster.
+/// [pr] → PR room at head. [awaitReady] → `repoLocalPath`. [after] for
+/// `index_code` only. [conversationTitle] → first stream /
+/// [kPipelineConversationStateKey]. [spaceName] names the room (not [label]);
+/// omit on `pr: true`.
 PipelineStepDefinition _spaceStep({
   required String label,
   required List<String> agentIds,
@@ -1021,9 +985,7 @@ PipelineDefinition _prReviewSeed({
   );
 }
 
-// ---------------------------------------------------------------------------
 // Tier 0 — External PR welcome bot
-// ---------------------------------------------------------------------------
 
 /// Triggered by [ExternalPrDetected]. Greets the external contributor with
 /// a boilerplate welcome comment and a link to contributing docs.
@@ -1077,9 +1039,7 @@ PipelineDefinition _externalPrWelcomeSeed({required String workspaceId}) {
   );
 }
 
-// ---------------------------------------------------------------------------
 // Tier 0 / Tier 1 — Stale repository cleanup
-// ---------------------------------------------------------------------------
 
 /// Removes stale isolated worktrees via the deterministic `repos.cleanup`
 /// body. The body picks its mode from the trigger payload: a `ticketId` (ticket
@@ -1136,9 +1096,7 @@ PipelineDefinition _repoCleanupSeed({required String workspaceId}) {
   );
 }
 
-// ---------------------------------------------------------------------------
 // Tier 0 — Cross-reviewer second opinion (manual run)
-// ---------------------------------------------------------------------------
 
 /// Manual-run pipeline. Same fan-out/join pattern as PR review but with
 /// a different specialist mix: security, performance, accessibility.
@@ -1326,9 +1284,7 @@ PipelineDefinition _crossReviewSeed({
   );
 }
 
-// ---------------------------------------------------------------------------
 // Tier 1 — Ticket → draft PR (the core "turn a work item into code" flow)
-// ---------------------------------------------------------------------------
 
 /// Clones the repo on a fresh branch, has a coder agent implement the ticket,
 /// opens a draft PR, runs a self-review in parallel and posts the review as a
@@ -1520,9 +1476,7 @@ PipelineDefinition _ticketToPrSeed({
   );
 }
 
-// ---------------------------------------------------------------------------
 // Tier 1 — PR triage (router): classify, then route to a tailored reviewer
-// ---------------------------------------------------------------------------
 
 /// Classifies an incoming PR and routes to a tailored review depending on the
 /// class, saving agent tokens on trivial PRs. Demonstrates the router.
@@ -1724,9 +1678,7 @@ PipelineDefinition _prTriageSeed({
   );
 }
 
-// ---------------------------------------------------------------------------
 // Tier 1 — Pre-merge approval gate (human-in-the-loop + router)
-// ---------------------------------------------------------------------------
 
 /// Reviews a PR, then pauses for a lead/CEO approval before merging. Approve
 /// via the `approve_step` MCP tool, reject via `reject_step`.
@@ -1881,9 +1833,7 @@ PipelineDefinition _preMergeGateSeed({
   );
 }
 
-// ---------------------------------------------------------------------------
 // Tier 2 — Release notes compiler (on PrMerged)
-// ---------------------------------------------------------------------------
 
 /// Collects the merged commit range and drafts a categorized changelog entry.
 PipelineDefinition _releaseNotesSeed({
@@ -1972,31 +1922,17 @@ PipelineDefinition _releaseNotesSeed({
 }
 
 // Meeting summarization — augment-my-notes
-// ---------------------------------------------------------------------------
 
-/// Augments a meeting's live notes from its transcript, then persists the
-/// result DETERMINISTICALLY: the agent step returns ONE structured payload
-/// (`{summary, enhancedNotes, actionItems[], decisions[]}`) and three in-app
-/// persist steps write each part to its own table. Nothing is scraped out of
-/// the notes markdown, so the summary stays clean and action items / decisions
-/// are reliable structured rows.
-///
-/// Started programmatically by the meeting recorder — once when a recording
-/// stops (the `MeetingRecordingStopped` event trigger) and again from the
-/// detail screen's "Re-run summary" (the manual trigger, e.g. after the user
-/// edits their personal notes). The transcript + user notes are passed in the
-/// run's trigger payload and interpolated into the prompt as `{{...}}`.
-///
-/// Flow: `summarize` (agent → `meetingOutcome`) fans out to THREE parallel
-/// persist steps — `save_notes` (`meeting.saveNotes`), `add_action_items`
-/// (`meeting.addActionItems`), `add_decisions` (`meeting.addDecisions`) — which
-/// join at the terminal (its single trigger lists all three sources, so the run
-/// completes only once all three finish). None of them flips the meeting to
-/// `done`; the `MeetingSummaryReconciler` does that once the run terminates
-/// (success OR failure), so a single persist failure can't strand a half-written
-/// meeting that's already marked done. The agent calls NO meeting MCP tools —
-/// it returns its structured result via the `submit_output` tool (there is no
-/// ticket); the engine harvests it into `meetingOutcome`.
+/// Augments a meeting's notes from its transcript, then persists
+/// deterministically: agent returns one structured payload
+/// (`{summary, enhancedNotes, actionItems[], decisions[]}`); three persist
+/// steps write each part. Triggered on `MeetingRecordingStopped` and manual
+/// re-run; transcript + notes arrive in the trigger payload as `{{...}}`.
+/// Flow: `summarize` → parallel `save_notes` / `add_action_items` /
+/// `add_decisions` → join. None marks the meeting `done` —
+/// `MeetingSummaryReconciler` does on run terminal (success or failure).
+/// Agent uses `submit_output` only (no meeting MCP tools); engine harvests
+/// `meetingOutcome`.
 PipelineDefinition _meetingSummarySeed({
   required String workspaceId,
   required BuiltInAgentIds agentIds,
@@ -2265,9 +2201,7 @@ PipelineDefinition _meetingSummarySeed({
   );
 }
 
-// ---------------------------------------------------------------------------
 // Tier 2 — Dependency / CVE audit (static fan-out)
-// ---------------------------------------------------------------------------
 
 /// Clones the repo, then — per ecosystem — checks whether its manifest exists
 /// before dispatching an auditor agent. A `fileExists` router gates each
@@ -2499,9 +2433,7 @@ PipelineDefinition _depAuditSeed({
   );
 }
 
-// ---------------------------------------------------------------------------
 // Tier 1 — PR digest to a messaging space (scheduled / on-merge)
-// ---------------------------------------------------------------------------
 
 /// Gathers open + recently-merged PRs and posts a stand-up digest to a space.
 /// Provide repoFullName + spaceId (the latter via trigger payload / state).

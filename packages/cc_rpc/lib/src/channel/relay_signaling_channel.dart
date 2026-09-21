@@ -175,23 +175,12 @@ class RelaySignalingChannel {
     });
   }
 
-  /// Requests short-lived TURN credentials from the broker. Returns null when
-  /// the broker has no TURN configured.
+  /// Requests short-lived TURN credentials from the broker.
   ///
-  /// ARCHITECTURE NOTE — this is a broker WebSocket relay, not a WebRTC+TURN
-  /// data channel.
-  ///
-  /// The current relay path tunnels sealed E2E frames through the signaling
-  /// server (a dumb broker), NOT a WebRTC+TURN data channel as originally
-  /// specified in PRD 15 §3. The broker never sees plaintext or the PSK —
-  /// `RelayFrameCrypto` seals every frame end-to-end between the two peers, so
-  /// the dumb-relay guarantee holds regardless of the transport underneath.
-  ///
-  /// The TURN credentials minted here (HMAC-SHA1) are provisioned for *future*
-  /// WebRTC adoption; no `RTCPeerConnection` / `iceServers` consumer exists
-  /// yet. This is a deliberate architectural decision, not a bug: the broker
-  /// relay already delivers the E2E-sealing guarantee and WebRTC+TURN remains
-  /// a future option for native E2E + TURN's relay-can't-see-payload property.
+  /// ARCHITECTURE NOTE — this is a broker WebSocket relay, not a WebRTC+TURN data channel.
+  /// The broker never sees plaintext or the PSK — `RelayFrameCrypto` seals every frame
+  /// end-to-end between the two peers, so the dumb-relay guarantee holds regardless of the
+  /// transport underneath.
   Future<RelayTurnCredentials?> requestTurnCredentials({
     Duration timeout = const Duration(seconds: 10),
   }) async {

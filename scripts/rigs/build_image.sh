@@ -1,23 +1,10 @@
 #!/usr/bin/env bash
 #
-# Builds the rig desktop base image from the stock Ubuntu cloud image.
+# Builds the rig desktop qcow2 from the Ubuntu cloud image (Computer surface
+# only). Customisation runs inside a throwaway VM. Seed volume label must be
+# exactly `cidata`. Firmware via `qemu -L help` (not dirname of a symlink).
+# Usage: scripts/rigs/build_image.sh cc-desktop-linux
 #
-# The desktop (Computer) surface is the ONLY one that boots a qcow2 we build:
-# it needs an X11 session and the small capture agent the host talks to, which
-# a stock cloud image has no way to provide. The terminal (exec) and browser
-# surfaces are smolvm microVMs booting digest-pinned OCI images the runtime
-# pulls itself (`kSmolvmExecImage` / `kSmolvmBrowserImage`), and mobile runs on
-# Google's emulator — none of them has an image to build here.
-#
-# This runs the customisation INSIDE a throwaway VM rather than with
-# libguestfs/chroot: the guest is a different architecture and distro release
-# from whatever you are running, and "install packages into someone else's
-# rootfs from outside" is the part that breaks on every host it meets.
-#
-#   scripts/rigs/build_image.sh cc-desktop-linux
-#
-# Then: Settings → Server → Enclosures → Import, and give it the path printed
-# at the end.
 
 set -euo pipefail
 
@@ -137,32 +124,10 @@ procps python-is-python3 python3 python3-pip python3-venv rsync \
 shellcheck socat sqlite3 strace sudo swig tar time tree tzdata \
 unzip wget xz-utils zip zlib1g-dev zstd"
 
-# A real desktop someone debugs apps on: XFCE (panel, Thunar, terminal) plus
-# three windowed browsers — Chromium, Firefox, WebKit — matching the Browser
-# (VM) engines so a Computer tab can try the same page in each. Ubuntu's
-# chromium-browser and firefox packages are snap stubs on 24.04; snap-confine
-# execve-fails with EIO inside the systemd User= xinit session, and XFCE
-# reports "Failed to execute default Web Browser. Input/output error." So
-# Chromium is Google's Chrome for Testing zip and Firefox is Mozilla's
-# official tarball, both checksum-pinned into /opt. WebKit is Epiphany
-# (GNOME Web) over WebKitGTK, a real .deb. XFCE and not GNOME because
-# gnome-shell HARD-REQUIRES working GL (gnome-session-check-accelerated fails
-# the whole session into the "Oh no!" screen) and QEMU-without-virgl has no
-# GL to give it — GNOME becomes possible with the roadmap's vendored-virgl
-# GPU tier, not before. openbox + feh stay as the fallback session.
-# dbus-user-session + linger give the cc user a manager for PulseAudio
-# scopes. libnss3 is TLS for the /opt browsers; libgbm1 and the GTK bits are
-# what Chrome for Testing needs besides its bundled libs. PulseAudio
-# provides the virtual devices; pulseaudio-utils provides `pacat`, which
-# feeds the viewer microphone into the input device. No hypervisor audio
-# hardware or host audio stack is involved.
-# xclip is load-bearing, not a convenience: it is the only thing in this list
-# that can OWN an X selection, which is what putting something on the guest's
-# clipboard requires (X has no clipboard daemon — the selection belongs to a
-# live client until another one claims it). It is also how the host reads a
-# drag in flight, by asking for XdndSelection while the source holds it.
-# fonts-noto-color-emoji is what stops browsers from rendering tofu for
-# emoji; the CLI toolset does not need it, the desktop does.
+# Desktop guest packages: XFCE + three browsers (Chrome for Testing / Firefox
+# tarball / Epiphany — Ubuntu snap stubs fail under User=xinit). No GNOME
+# (needs GL). xclip owns X selections (clipboard/DnD). fonts-noto-color-emoji
+# for browsers; PulseAudio + pacat for virtual mic.
 EXTRA_PACKAGES="xserver-xorg xinit x11-xserver-utils x11-utils xdotool xclip scrot ffmpeg feh openbox xfce4 xfce4-terminal network-manager dbus-user-session pulseaudio pulseaudio-utils libnss3 libnspr4 libdbus-glib-1-2 libxt6 libpci3 fonts-liberation fonts-noto-color-emoji libgbm1 libatk-bridge2.0-0 libxcomposite1 libxdamage1 libxrandr2 libxss1 libxtst6 libcups2t64 libasound2t64 epiphany-browser"
 
 # Pinned guest browsers. Bump a version and BOTH of its hashes together.

@@ -1,57 +1,10 @@
 #!/usr/bin/env bash
-# Generates the Sparkle / WinSparkle appcasts for a release: appcast.xml
-# (macOS, DMG enclosure, EdDSA) and appcast-windows.xml (Windows, Inno
-# setup.exe enclosure, DSA/SHA1 — WinSparkle 0.8.x predates its EdDSA
-# support).
-#
-# Separate files per OS on purpose: Sparkle and WinSparkle both "just take the
-# newest item", so one combined feed would let a Windows install try to apply
-# a DMG. The app picks its feed URL by platform (see
-# lib/core/update/desktop_updater.dart):
-#   macOS   → https://github.com/<repo>/releases/latest/download/appcast.xml
-#   Windows → https://github.com/<repo>/releases/latest/download/appcast-windows.xml
-# Both URLs redirect to the newest PUBLISHED release, so drafts stay invisible
-# to the updater until a human publishes them.
-#
-# Enclosures (the unit each updater knows how to APPLY):
-#   macOS   the notarized .dmg — Sparkle mounts it and swaps the .app.
-#   Windows the Inno .exe installer — WinSparkle *launches* the enclosure as
-#           an installer; it cannot unpack a zip. The portable zip stays a
-#           plain download asset, never a feed enclosure.
-#
-# Signature schemes (fail-closed: the script refuses to emit an unsigned
-# appcast — an unsigned feed is one every client rejects anyway):
-#   macOS   sparkle:edSignature   detached Ed25519 over the DMG bytes, base64.
-#                               Key: SPARKLE_ED25519_KEY (base64 private key
-#                               from Sparkle's generate_keys / `dart run
-#                               auto_updater:generate_keys` on macOS; the 32-,
-#                               64- and 96-byte export forms are all accepted).
-#   Windows sparkle:dsaSignature  DSA-SHA1 over the installer bytes, DER,
-#                               base64. Key: SPARKLE_DSA_PRIVATE_KEY (the
-#                               dsa_priv.pem from generate_keys, PEM contents).
-# Neither key is the Apple Developer ID certificate — Sparkle/WinSparkle
-# verify updates with their own public keys baked into the app bundle
-# (macos/Runner/Info.plist SUPublicEDKey, windows/runner/Runner.rc DSAPub).
-#
-# Every item carries BOTH version elements, because that is what the updaters
-# compare against the installed build. An item without them is unevaluable and
-# is silently ignored.
-#
-# The two platforms deliberately put DIFFERENT things in sparkle:version, because
-# they compare against different fields of the installed app — do not "fix" this
-# into one value:
-#   macOS    CFBundleVersion, which CI stamps from --build-number, so the item
-#            carries $BUILD_NUMBER.
-#   Windows  the .rc FileVersion, which Flutter sets from FLUTTER_VERSION — the
-#            build NAME (see windows/runner/Runner.rc) — so the item carries
-#            $VERSION.
-# sparkle:shortVersionString is the human "1.2.3" on both.
-#
-# Usage (from the release job, with the build artifacts under artifacts/):
-#   gen_appcast.sh <version> <tag> <build-number>
-# Env: SPARKLE_ED25519_KEY + SPARKLE_DSA_PRIVATE_KEY (required),
-#      GH_REPO (default SamuelAlev/control-center),
-#      ARTIFACTS_DIR (default artifacts), OUT_DIR (default .)
+# Generates Sparkle appcast.xml (macOS DMG, EdDSA) and appcast-windows.xml
+# (Inno exe, DSA-SHA1). Separate feeds — a combined one would cross-apply.
+# Fail-closed unsigned. sparkle:version is CFBundleVersion/build-number on
+# macOS and FLUTTER_VERSION on Windows (do not unify). Items need both version
+# elements. Keys: SPARKLE_ED25519_KEY, SPARKLE_DSA_PRIVATE_KEY.
+# Usage: gen_appcast.sh <version> <tag> <build-number>
 set -euo pipefail
 
 REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"

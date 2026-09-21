@@ -1,20 +1,7 @@
-/// The cc_markdown typed AST.
-///
-/// A Dart 3 sealed hierarchy with two roots — [CcInlineNode] and [CcBlockNode]
-/// — so blocks and inlines can be switched exhaustively and independently. The
-/// ONLY open leaves are [CcCustomInline] / [CcCustomBlock], which parser
-/// plugins subclass; an exhaustive switch over the sealed tree ends with a
-/// custom arm that dispatches to the builder registry.
-///
-/// Every node is immutable, const-constructible and value-equal (deep list
-/// equality with an `identical` fast path). Value equality is the memoization
-/// lever: the streaming widget reuses the identical widget instance for a
-/// sealed block whose nodes compare equal across frames and tests assert ASTs
-/// directly.
-///
-/// Nodes deliberately carry NO source offsets — offsets live on the streaming
-/// layer's `CcSealedBlock`. Offsets in `==` would defeat memoization and
-/// selection copies rendered text, not source.
+/// Sealed AST: [CcInlineNode] / [CcBlockNode]; open leaves
+/// [CcCustomInline]/[CcCustomBlock] for plugins. Immutable, const, value-equal
+/// (streaming memoization). No source offsets on nodes (those live on
+/// `CcSealedBlock`).
 library;
 
 /// Deep list equality with an identity fast path.
@@ -69,10 +56,6 @@ abstract class CcCustomBlock extends CcBlockNode {
   /// Creates a [CcCustomBlock].
   const CcCustomBlock();
 }
-
-// ---------------------------------------------------------------------------
-// Inline nodes
-// ---------------------------------------------------------------------------
 
 /// Plain text run.
 final class CcText extends CcInlineNode {
@@ -318,10 +301,6 @@ final class CcInlineHtml extends CcInlineNode {
   @override
   int get hashCode => Object.hash(nodeType, raw);
 }
-
-// ---------------------------------------------------------------------------
-// Block nodes
-// ---------------------------------------------------------------------------
 
 /// A paragraph.
 final class CcParagraph extends CcBlockNode {

@@ -21,23 +21,13 @@ const String _openaiStatusPageUrl = 'https://status.openai.com/';
 /// Public status.moonshot.cn landing page opened by the provider block link.
 const String _kimiStatusPageUrl = 'https://status.moonshot.cn/';
 
-/// Global-sidebar entry for external service status, pinned in the footer
-/// above the newsfeed. Unlike the nav items around it, the entry is ALWAYS
-/// mounted and opens no route: tapping it opens a flyout to the RIGHT of the
-/// sidebar (the sidebar hugs the window's left edge, so right is the only side
-/// with room) covering the external services the operator depends on (GitHub,
-/// Claude, Codex, Kimi): each provider's status word, active incidents,
+/// Global-sidebar entry for external service status, pinned in the footer above the
+/// newsfeed.
+/// Unlike the nav items around it, the entry is ALWAYS mounted and opens no route: tapping
+/// it opens a flyout to the RIGHT of the sidebar (the sidebar hugs the window's left edge,
+/// so right is the only side with room) covering the external services the operator depends
+/// on (GitHub, Claude, Codex, Kimi): each provider's status word, active incidents,
 /// degraded components and a link to its status page.
-///
-/// The row reports the worst indicator across all providers through its
-/// badge — the same headline pattern as the subscription usage pill. A status
-/// dot is always present (green when healthy, muted before the first snapshot
-/// lands, so a healthy boot never flashes "Unknown"). The word lives on the
-/// dot as a semantic label so screen readers still hear the state.
-///
-/// Implements [CcFluidHoverTarget] so the footer [CcSidebarGroup] treats this
-/// as a peer of Newsfeed / Observability / Settings rather than a nested
-/// surface: hovering the row washes it, and neighbouring rows stay idle.
 class ServiceStatusSidebarEntry extends ConsumerStatefulWidget
     implements CcFluidHoverTarget {
   /// Creates a [ServiceStatusSidebarEntry].

@@ -39,26 +39,9 @@ enum ModelLogLevel {
 String modelDescription(String displayName, int approxBytes) =>
     '$displayName, ~${(approxBytes / (1024 * 1024)).round()} MB';
 
-/// A server-side [ModelControl] that drives one on-disk model manager directly
-/// (no Riverpod), so a headless `cc_server` can HOST the download + unarchive a
-/// thin client triggers over the `models.*` RPC ops.
+/// Server-side [ModelControl] over one on-disk model manager (download/select/delete).
 ///
-/// This is the server counterpart to lib's `Desktop*ModelControl` adapters: the
-/// desktop projects an in-process Riverpod controller's state onto the same
-/// [ModelControl] surface, whereas this owns the lifecycle state itself.
-///
-/// Key behaviour the thin-client download experience depends on:
-/// * [install] is NON-BLOCKING — it flips the state to `downloading` and kicks
-///   the transfer off in the background, returning immediately. The
-///   `models.install*` op therefore returns a `downloading` snapshot in
-///   milliseconds instead of holding the RPC call open for the whole multi-
-///   hundred-MB transfer (which would time out).
-/// * [watch] streams a fresh snapshot on every progress tick + status
-///   transition, so the client animates a live progress bar via the
-///   `models.watch*` subscription while the SERVER does the work.
-///
-/// The three managers differ only in their `resolve()` return type, so this is
-/// parameterized by closures rather than coupled to a concrete manager.
+/// Progress and readiness are pushed to clients; missing models stay FTS-only until ready.
 class ManagedModelControl implements ModelControl {
   /// Creates a control backed by a model manager.
   ///

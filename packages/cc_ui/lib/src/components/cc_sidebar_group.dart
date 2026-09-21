@@ -11,26 +11,11 @@ import 'package:cc_ui/src/tokens/app_radii.dart';
 import 'package:cc_ui/src/tokens/app_spacing.dart';
 import 'package:flutter/widgets.dart';
 
-/// A labelled section of [CcSidebar] items.
-///
-/// Renders an optional mono uppercase eyebrow [label] (via [CcTypography.label]
-/// + [CcFonts.code], colored `textTertiary`) above its [children]. When
-/// [collapsible] the label becomes a tappable header with a rotating chevron
-/// that expands/collapses the children through an [AnimatedSize]
-/// ([CcMotion.moderate], reduced-motion aware).
-///
-/// Expanded and collapsed rows sit flush (no gutter between them) so the
-/// pointer stays a click cursor while travelling the list. A 4px [SizedBox]
-/// between rows is not a [CcTappable], and the cursor would snap back to
-/// the default arrow in every gap.
-///
-/// Hover follows [CcFluidHoverTarget]: [CcSidebarItem]s wash on nearest-target
-/// hover. A child that is not a target (a nested accordion, a popover-wrapped
-/// row) is a boundary — hovering it does not highlight a neighbour, and the
-/// nested interactive row keeps its own wash.
-///
-/// In the enclosing [CcSidebar]'s collapsed rail mode the label is hidden (the
-/// group reduces to its icon-only items).
+/// Labelled [CcSidebar] section: optional mono eyebrow [label] above [children].
+/// [collapsible]: tappable header + [AnimatedSize] ([CcMotion.moderate]).
+/// Rows sit flush (no gutter — gaps would drop the click cursor). Hover via
+/// [CcFluidHoverTarget]; non-target children are boundaries. Collapsed rail
+/// hides the label.
 class CcSidebarGroup extends StatefulWidget {
   /// Creates a [CcSidebarGroup].
   const CcSidebarGroup({

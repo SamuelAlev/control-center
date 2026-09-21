@@ -1,26 +1,8 @@
-/// The `workspace_settings` keys naming the runner that titles conversations.
+/// `workspace_settings` keys for the conversation-title runner (adapter+model).
 ///
-/// The runner is an **adapter + model pair**, the same shape every other
-/// runner choice in the app uses (`Agent.adapterId` / `Agent.modelId`, the
-/// default-runner rows in Settings → Adapters). There is no third "provider"
-/// axis: for the built-in `cc-harness` adapter the provider is folded into the
-/// model id (`anthropic/claude-haiku-4-5`), and an external CLI adapter
-/// (`claude-code`) owns its own auth and advertises plain model names.
-///
-/// Both unset/empty means automatic conversation titling is OFF: there is
-/// deliberately no fallback runner, so no generation happens until an admin
-/// explicitly picks one in Settings.
-///
-/// **Workspace-scoped, not per-user.** A conversation title is a property of
-/// the conversation every member of the workspace reads, not of whoever
-/// happened to send its first message — a per-user preference meant the same
-/// space got titled or not depending on who typed first, and named the model
-/// (and therefore the credential) a teammate never chose. Both keys ride the
-/// same admin-gated `workspace_settings` lane as `kReviewLevelSettingKey`.
-///
-/// Shared kernel on purpose: the client's settings card writes them through
-/// `workspace_settings.set` and the server's `ConversationTitleService` reads
-/// those same rows, so the strings must be defined exactly once.
+/// Same shape as other runners; no separate provider axis. Both unset → titling
+/// off (no fallback). Workspace-scoped (not per-user) on the admin-gated
+/// `workspace_settings` lane. Defined once for client write + server read.
 library;
 
 /// The adapter that runs the titling prompt (an `Adapter.id`, e.g.

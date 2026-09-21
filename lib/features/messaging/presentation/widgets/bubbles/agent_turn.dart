@@ -360,7 +360,7 @@ class _TurnBody extends ConsumerWidget {
 /// metadata is appended only when known. Replaces the per-prose-block timestamp
 /// the old bubble body printed, so the continuous flow has exactly one.
 ///
-/// Only the **time run** is an [AppTimestamp] target. The line is one visual
+/// Only the time run is an [AppTimestamp] target. The line is one visual
 /// unit, but wrapping the whole composed string would make the duration, cost,
 /// and token counts show a click cursor, pop the timestamp hover card and copy
 /// an ISO instant on tap — none of which they describe. The metadata run is

@@ -67,22 +67,14 @@ class MediaProxyConfig {
   /// only be driven by this authenticated client (see [RemoteControlCrypto]).
   final String psk;
 
-  /// Rewrites [rawUrl] to a same-pairing `/proxy/media` URL. Returns [rawUrl]
-  /// unchanged when it is empty or not an absolute `http(s)` URL (e.g. `data:`,
-  /// `blob:`, asset, or relative URLs, which the client loads directly).
-  ///
-  /// When [maxWidth] is set, a `w` query param asks the proxy to downscale the
-  /// image it serves to at most that many device pixels (it preserves aspect and
-  /// never upscales). It is only meaningful for raster images — the proxy
-  /// ignores it for ranged or non-image bodies (audio/video/documents). `w` is
-  /// deliberately OUTSIDE the signature: the signed `u` still pins the exact
-  /// upstream URL the proxy fetches, so `w` can only shrink the proxy's own
-  /// already-authorised output — it cannot redirect the fetch or be used to scan
-  /// (no SSRF surface). Each distinct `(url, w)` is a separate cache key,
-  /// mirroring GitHub's per-`s` avatar caching — which is why [maxWidth] is
-  /// bucketed UP to the shared media-width ladder (`bucketMediaWidth`) here:
-  /// nearby display sizes then share one server cache entry and one
-  /// `ImageCache` entry instead of minting one per size.
+  /// Rewrites [rawUrl] to a same-pairing `/proxy/media` URL.
+  /// Returns [rawUrl] unchanged when it is empty or not an absolute `http(s)` URL (e.g.
+  /// When [maxWidth] is set, a `w` query param asks the proxy to downscale the image it
+  /// serves to at most that many device pixels (it preserves aspect and never upscales).
+  /// It is only meaningful for raster images — the proxy ignores it for ranged or non-image
+  /// bodies (audio/video/documents).
+  /// `w` is deliberately OUTSIDE the signature: the signed `u` still pins the exact upstream
+  /// URL the proxy fetches, so `w` can only shrink the proxy's own already-authorised output
   String resolve(String rawUrl, {int? maxWidth}) {
     if (rawUrl.isEmpty) {
       return rawUrl;
@@ -211,7 +203,7 @@ class MediaProxyConfig {
 
   /// Builds the `POST /blob` URL the composer uploads an attached picture to.
   ///
-  /// **Why the bytes go over HTTP and not the RPC socket.** `WsRemoteTransport`
+  /// Why the bytes go over HTTP and not the RPC socket. `WsRemoteTransport`
   /// caps a single inbound frame at 256 KB and CLOSES the connection past it —
   /// so a base64 screenshot sent as a `blob.put` argument never arrived; it
   /// dropped the socket instead, and the message went out with its pictures

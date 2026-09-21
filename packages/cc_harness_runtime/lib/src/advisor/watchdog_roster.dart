@@ -52,22 +52,8 @@ class WatchdogRoster {
   bool get isEmpty => advisors.isEmpty && shared.isEmpty;
 }
 
-/// Reads `WATCHDOG.yml` — the advisor roster.
-///
-/// **Why a roster and not one advisor.** A single reviewer has one prompt and
-/// one model, so it is either broad and shallow or narrow and blind. The
-/// review questions people actually care about are different in kind — "does
-/// this couple modules that should not touch", "does this leak a credential",
-/// "does this actually pass its own tests" — and each wants a different
-/// prompt, and often a different model. One advisor asked all three produces a
-/// note about whichever it noticed first.
-///
-/// Where `WATCHDOG.md` says what to look for, this says WHO looks.
-///
-/// Parsed with a small hand-rolled reader rather than a YAML dependency: the
-/// shape is a list of flat maps plus one block scalar, and the failure mode
-/// that matters is "one bad file must not kill the session", which a tolerant
-/// reader gives directly. A malformed entry is skipped, never guessed at.
+/// Reads `WATCHDOG.yml` (who looks; `WATCHDOG.md` says what). Hand-rolled
+/// tolerant parser — malformed entries skipped, never kill the session.
 class WatchdogRosterLoader {
   /// Creates a [WatchdogRosterLoader].
   const WatchdogRosterLoader({this.maxAdvisors = 6, this.maxBytes = 32 * 1024});

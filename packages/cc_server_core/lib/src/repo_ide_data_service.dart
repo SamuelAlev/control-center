@@ -95,22 +95,10 @@ class WorktreeRevertResult {
   final List<String> skipped;
 }
 
-/// Server-side data source for the messaging IDE's repo views — the Explorer
-/// file tree, the Source Control working-tree diffs and the file viewer —
-/// served over the `repos.*` and `conversation.changes` RPC ops.
+/// Server-side data for the messaging IDE (Explorer, Source Control, file viewer) over `repos.*` /
+/// `conversation.changes`. Clients are thin; the server owns checkouts and CoW worktrees.
 ///
-/// Every client tier is thin: neither the desktop (thin + bundled `cc_server`)
-/// nor the web/remote client owns the checkouts or a `git` binary, so all of
-/// this runs on the SERVER, which owns both the linked-repo working trees and
-/// the per-conversation copy-on-write worktrees. Wiring these four fetchers is
-/// what makes the IDE identical across desktop and web.
-///
-/// Workspace isolation: every method is scoped to `workspaceId`. The
-/// workspace→repo link ([WorkspaceRepository.isRepoLinkedToWorkspace] / the
-/// linked-repo list) and the workspace-scoped worktree registry
-/// ([IsolatedRepoRepository.forSpace]) are the isolation boundary — a repo (or
-/// worktree) that does not belong to the caller's workspace is simply not found,
-/// so a session cannot read another workspace's repos.
+/// Every method requires `workspaceId`; unlinked repos/worktrees are not found (no cross-workspace leak).
 class RepoIdeDataService {
   /// Creates a [RepoIdeDataService].
   ///
@@ -198,26 +186,11 @@ class RepoIdeDataService {
   /// unbounded bytes into a conversation worktree.
   static const _writeMaxBytes = 4 * 1024 * 1024;
 
-  /// Working-tree diff (vs HEAD, incl. untracked) for a single repo, backing
-  /// the Source Control panel's per-repo section.
+  /// Working-tree diff vs HEAD (incl. untracked) for Source Control.
   ///
-  /// When [spaceId] is given (the PR workbench + the IDE Source Control panel
-  /// are both per-conversation), the diff runs STRICTLY against the
-  /// conversation's ISOLATED CoW worktree for [repoId] — the tree the
-  /// conversation's agents/code-server/quick-editor edit — resolved through the
-  /// worktree registry (the isolation boundary). It does NOT fall back to the
-  /// original linked checkout when that worktree is missing: a fallback there
-  /// would surface the ORIGINAL repo's working-tree changes, which the
-  /// conversation's writes never touch, so the diff would silently disagree
-  /// with what a commit would stage (the write ops resolve the same worktree
-  /// and no-op when it's absent). An unresolved worktree (provisioning still in
-  /// flight / failed) therefore returns empty — the client gates on the
-  /// space's provisioning status and shows a "preparing"/"failed" state.
-  ///
-  /// Only when [spaceId] is null (the IDE panel's documented no-conversation
-  /// case) does it diff the linked checkout directly. Returns empty when the
-  /// repo is not linked to [workspaceId] (a foreign repo is simply not found —
-  /// no cross-workspace leak) or its checkout no longer exists on disk.
+  /// With [spaceId]: only the conversation's CoW worktree — never fall back to the linked checkout
+  /// (that would disagree with what commit stages). Missing worktree → empty. Without [spaceId]: linked checkout.
+  /// Unlinked repo → empty.
   Future<List<PrFile>> repoChanges(
     String workspaceId,
     String repoId, {
@@ -442,33 +415,10 @@ class RepoIdeDataService {
     ];
   }
 
-  /// One level of a repo's directory tree, backing the Explorer's lazy
-  /// collapsible tree. Returns the direct children of `workspaceId`/`repoId`'s
-  /// checkout at [path] ('' = the repo root) — the conversation's isolated CoW
-  /// worktree when [spaceId] is given, so the tree shows the files agents and
-  /// code-server are actually writing rather than the untouched linked
-  /// checkout — sorted by repo-relative path and
-  /// CURSOR-paginated: entries strictly after [cursor] (also a repo-relative
-  /// path) up to [limit] of them, plus whether another page may follow. The
-  /// client keeps pulling pages until `has_more` is false, so a directory of
-  /// any size is fully enumerable without one giant response.
+  /// One directory level for the Explorer (lazy tree), cursor-paginated (`has_more`, snake_case — not `hasMore`).
   ///
-  /// Ignore parity with the fuzzy index: children matched by the repo's own
-  /// ignore rules are hidden (one batched `git check-ignore` per request), so
-  /// the tree shows the same files `searchFiles` ranks. `.git` is always
-  /// hidden. Workspace isolation mirrors every other read: a repo not linked
-  /// to [workspaceId] is simply not found (empty page).
-  ///
-  /// Returns raw wire maps (`{entries, has_more}` with `relativePath` +
-  /// `isDirectory` per entry) — the client owns display concerns (sorting
-  /// dirs-first, icons).
-  ///
-  /// The pagination flag is `has_more`, snake, like every other paged op on
-  /// this transport (`messaging.page`, `repos.searchFiles`, …). It shipped as
-  /// `hasMore` and nothing converts keys, so the decoder's `data['has_more']`
-  /// read resolved to null → false on every response: the Explorer's
-  /// auto-drain never fired against a real server and any directory past one
-  /// page was silently cut short, with no "loading more" row to show for it.
+  /// Uses the conversation CoW worktree when [spaceId] is set. Hides ignore-matched children and `.git`.
+  /// Unlinked repo → empty page. Client owns dirs-first sorting/icons.
   Future<Map<String, dynamic>> listDirectory(
     String workspaceId,
     String repoId, {
@@ -1253,24 +1203,9 @@ class RepoIdeDataService {
     }
   }
 
-  /// Stages, commits and (optionally) pushes changes in the conversation's
-  /// isolated worktree for [repoId]. [paths] scopes the stage (empty ⇒ all
-  /// changes). When [push] is true the local branch is pushed to
-  /// `refs/heads/[pushBranch]` on `origin` using the GitHub token via
-  /// `GIT_CONFIG_PARAMETERS` (never argv, so invisible to `ps`). The push is
-  /// authenticated as [actingUserId] — the human who clicked — through the
-  /// per-actor credential lane, so GitHub attributes it to them, not to the
-  /// server's App. The commit is authored by [authorName]/[authorEmail] when
-  /// supplied (the acting human), else Control Center. Returns a result map;
-  /// `pushed` is false with a verbatim `error` when the push is rejected
-  /// (e.g. non-fast-forward).
-  ///
-  /// [amend] rewrites the previous commit (`git commit --amend`) instead of
-  /// creating a new one — keeping its message when [message] is empty and
-  /// lease-force-pushing when [push] is also set (history was rewritten).
-  /// [sync] integrates the remote branch (fetch + rebase) before pushing so a
-  /// diverged branch still fast-forwards; a rebase conflict aborts and returns
-  /// the git error verbatim.
+  /// Stage/commit/(optional) push in the conversation worktree. Token via `GIT_CONFIG_PARAMETERS` (not argv).
+  /// Push authenticates as [actingUserId]; commit authored by [authorName]/[authorEmail] or Control Center.
+  /// [amend] rewrites HEAD; [sync] fetch+rebase before push (conflict returns git error).
   Future<Map<String, dynamic>?> commitAndPush({
     required String workspaceId,
     required String spaceId,
@@ -1436,26 +1371,8 @@ class RepoIdeDataService {
     return {'committed': true, 'pushed': true, 'headSha': headSha};
   }
 
-  /// Publishes the conversation worktree's branch to `origin` — a push and
-  /// nothing else.
-  ///
-  /// A conversation worktree is created with a local
-  /// `git checkout -b conv/<id>` (or the ticket branch template) and is never
-  /// given an upstream, so its commits exist only inside the copy-on-write copy.
-  /// GitHub cannot open a pull request from a ref it has never seen and the
-  /// compose screen's branch pickers read `refs/heads/*` off the remote — so
-  /// until the branch is published, "create pull request" from a chat is a dead
-  /// end.
-  ///
-  /// Deliberately push-only: it never stages, commits, amends, or rebases, so it
-  /// cannot rewrite local history or sweep up work the user has not committed.
-  /// Uncommitted changes simply are not published — the client reports how many
-  /// were left behind rather than quietly committing them. The token travels via
-  /// `GIT_CONFIG_PARAMETERS`, never argv.
-  ///
-  /// Returns null when the space owns no worktree for [repoId]. Otherwise a map
-  /// with `branch`, `headSha`, `pushed`, `uncommitted` (count of dirty paths),
-  /// and a verbatim `error` when the push was rejected.
+  /// Push-only publish of the conversation worktree branch to `origin` (needed before forge PR creation).
+  /// Never stages/commits/amends/rebases; token via `GIT_CONFIG_PARAMETERS`. Null if no worktree.
   Future<Map<String, dynamic>?> publishBranch({
     required String workspaceId,
     required String spaceId,

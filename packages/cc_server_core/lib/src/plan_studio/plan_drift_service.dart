@@ -8,22 +8,9 @@ import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
 import 'package:cc_persistence/database/daos/cache_dao.dart';
 import 'package:cc_persistence/database/workspace_database_manager.dart';
 
-/// Plan-drift detection (PRD 17 §6): compares a finished plan node's actual
-/// execution against its declared scope and records divergence markers.
+/// Plan-drift detection (PRD 17 §6): cost above estimate high bound, or files outside declared refs.
 ///
-/// Two honest signals, both derived from data the plan itself declared:
-///  - **Cost band**: actual run cost above the node's estimate high bound
-///    (only when the estimate had history — a "no history yet" node cannot
-///    "overrun" a band it never had).
-///  - **Blast radius**: files touched in the node's worktree outside the
-///    node's `file` provenance refs (only when the node declared any — the
-///    detector never infers scope from prose).
-///
-/// Markers land in the Caches table (kind [cacheKind], key = orchestration
-/// id, value `{nodeKey: {reasons[], at, held}}`) — the Studio canvas renders
-/// them as divergence badges. Under the plan's `stopAndAsk` policy the
-/// detector also HOLDS the step (via the resume listener's drift gate): the
-/// operator resumes with `orchestration.continueNode` or cancels.
+/// Markers in Caches; under `stopAndAsk` holds the step until continue/cancel.
 class PlanDriftService {
   /// Creates the service.
   PlanDriftService({

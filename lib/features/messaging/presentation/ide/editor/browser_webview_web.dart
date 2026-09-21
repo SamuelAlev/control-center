@@ -5,22 +5,11 @@ import 'package:flutter/widgets.dart';
 import 'package:web/web.dart' as web;
 
 /// Web "simple web browser" surface: embeds [src] directly in an `<iframe>`.
-///
-/// There is no proxy — the iframe loads the URL as-is, so it renders pages that
-/// permit framing (localhost dev servers and many sites). Pages that send
-/// `X-Frame-Options` / CSP `frame-ancestors` (Google, YouTube, GitHub, …) refuse
-/// to render; that is the inherent limit of a plain web iframe and is expected
-/// here. The frame is credentialless so it remains embeddable under the
-/// cross-origin-isolated SkWasm host page; it therefore carries no third-party
-/// cookies or storage. Code-server authorization is a capability in the URL,
-/// not a cookie. The full stateful in-app browser lives on desktop (native
-/// webview).
-///
-/// Bumping [reloadToken] reloads the current page.
-///
-/// This file is web-only: it is reached through a `dart.library.js_interop`
-/// conditional import (the io build gets the stub), so the `dart:ui_web` /
-/// `package:web` imports never reach the desktop VM build.
+/// Pages that send `X-Frame-Options` / CSP `frame-ancestors` (Google, YouTube, GitHub, …)
+/// refuse to render; that is the inherent limit of a plain web iframe and is expected here.
+/// This file is web-only: it is reached through a `dart.library.js_interop` conditional
+/// import (the io build gets the stub), so the `dart:ui_web` / `package:web` imports never
+/// reach the desktop VM build.
 class BrowserWebView extends StatefulWidget {
   /// Creates a [BrowserWebView].
   const BrowserWebView({

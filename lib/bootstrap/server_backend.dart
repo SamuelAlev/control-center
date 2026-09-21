@@ -63,23 +63,10 @@ class ServerBackend {
   }
 }
 
-/// Resolves how the desktop reaches its `cc_server`, returning a connected
-/// [ServerBackend].
-///
-/// The desktop opens no database — it must connect to a server that owns the
-/// data. This reads the persisted server list ([ServerConnectionStore]):
-///   * **local** → spawns and connects a local `cc_server`
-///     ([startThinClientBackend]) with automatic respawn.
-///   * **remote** → resolves the active [ServerEntry]'s descriptor through
-///     the [ReachabilityResolver] (best reachable + secure path wins) with
-///     the keychain-stored pairing key and the TOFU-pinned fingerprint.
-///   * **first run / unconfigured / failed connect** → shows the pre-app
-///     setup screen so the user chooses (local, invite code, or manual URL).
-///
-/// [forceServerId] connects to a specific paired server (the in-app server
-/// switch); it also flips the persisted mode/active-server so the next boot
-/// lands there too. Runs before the `ProviderContainer` exists, so it takes
-/// the storage backends directly rather than reading them through Riverpod.
+/// Resolves how the desktop reaches its `cc_server`, returning a connected [ServerBackend].
+/// The desktop opens no database — it must connect to a server that owns the data.
+/// the [ReachabilityResolver] (best reachable + secure path wins) with the keychain-stored
+/// pairing key and the TOFU-pinned fingerprint.
 Future<ServerBackend> resolveServerBackend({
   required AppPreferences prefs,
   required SecureStore secureStore,
@@ -278,7 +265,6 @@ class _ServerSetupScreenState extends State<_ServerSetupScreen> {
   bool _busy = false;
   Object? _error;
 
-  // ── SSO entry (remote mode) ──
   // The unauthenticated /auth/providers probe adapts the form the moment
   // the URL names a server: one "Sign in with <label>" button per offered
   // SSO connection (SAML, OIDC, …), the browser round-trip hands the

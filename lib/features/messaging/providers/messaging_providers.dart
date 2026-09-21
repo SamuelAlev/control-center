@@ -130,41 +130,15 @@ final workspaceSpacesProvider = StreamProvider.family<List<Space>, String>((
       .watchSpacesByWorkspace(workspaceId);
 });
 
-/// The active workspace id, but only once [spaceId] is known to belong to it —
-/// null while it is not (or not yet) established.
+/// Active workspace id once [spaceId] is known to belong to it; else null.
 ///
-/// The gate every space-scoped subscription runs before it reaches the server,
-/// because the two halves of the `(workspace_id, space_id)` pair those
-/// subscriptions send move INDEPENDENTLY. A space-scoped provider is keyed on
-/// a space id alone and takes its workspace from the ambient
-/// [activeWorkspaceIdProvider], so on a workspace switch the id flips first and
-/// Riverpod recomputes every live space-scoped provider — still keyed on the
-/// PREVIOUS workspace's spaces — one frame BEFORE the rebuild that unmounts
-/// them. Each of those recomputes opens a subscription for a
-/// `(new workspace, old space)` pair the server must reject
-/// (`WorkspaceMismatchException` → "Space belongs to a different workspace"),
-/// once per surviving row per switch. The persistent shell is what makes this
-/// visible: a route-scoped surface is already torn down by then, but the
-/// sidebar renders a row per space and stays mounted across the switch, so one
-/// switch emits one rejected subscription per visible space.
-///
-/// Gating on the workspace's OWN space list closes that window: at the moment
-/// of the flip the new workspace's list is still loading, so nothing is known
-/// to belong to it and no subscription goes out; the rows unmount a frame
-/// later and the providers dispose. Nothing is lost by being conservative here
-/// — every caller renders "gated" exactly as it renders "still loading" — and
-/// the guard is reactive, so a space that legitimately arrives later
-/// subscribes the moment it lands in the list.
-///
-/// The space must match on BOTH its id and its own [Space.workspaceId], not
-/// merely on its presence in the list: the list is itself the answer to a
-/// workspace-scoped subscription, and if that subscription is ever mis-scoped,
-/// presence alone would wave a foreign space straight through. The entity
-/// carries its true workspace, so this check stays right regardless.
-///
-/// Callers MUST thread the returned id into the call rather than letting the
-/// RPC client inject its ambient active workspace (which flips on its own
-/// schedule), so the pair that was validated is exactly the pair on the wire.
+/// Space-scoped providers key on space id alone and take workspace from
+/// [activeWorkspaceIdProvider]. On a switch the workspace flips one frame
+/// before rows unmount, so ungated watches would open `(new workspace, old
+/// space)` and get `WorkspaceMismatchException`. Gate on the new workspace's
+/// space list (still loading → null) and require both id and
+/// [Space.workspaceId]. Callers must pass the returned id on the wire — do not
+/// let the RPC client inject ambient workspace.
 String? _workspaceOwningSpace(Ref ref, String spaceId) {
   final workspaceId = ref.watch(activeWorkspaceIdProvider);
   if (workspaceId == null) {
@@ -450,36 +424,11 @@ DateTime _runActivityAt(AgentRunLog run) {
   return at;
 }
 
-/// The agent whose context window the space header meters.
+/// Agent whose context window the space header meters.
 ///
-/// A space can hold several agents and the header has room for exactly one
-/// reading, so it follows the agent WHOSE TURN IT IS: a run in flight wins, and
-/// with nothing running it is whichever agent last produced output here. That
-/// is the same agent whose message is at the bottom of the trail, which is what
-/// makes the number readable — the alternative (the first participant) pinned
-/// the meter to one agent forever and reported the wrong window for every space
-/// where somebody else does the talking.
-///
-/// A single-agent space always answers with that agent, so nothing about the
-/// common case changes.
-///
-/// Ranking is by last activity, never by join order, and it is deliberately
-/// derived from the run log rather than remembered: an agent that worked hours
-/// ago ranks below one that worked a minute ago, whatever order the client saw
-/// the events in. [stateOrNull] only carries the answer across a rebuild where
-/// the run stream has nothing to say yet (it is still loading, or the workspace
-/// gate is closed), so the meter holds its subject instead of blinking to a
-/// different window.
-///
-/// Being in flight is only a TIE-BREAK, not a trump card. A streaming run
-/// stamps `lastOutputAt` as it goes, so a working agent already ranks first on
-/// recency; making "active" win outright would instead let one orphaned
-/// `running` row (a killed process, a run the reaper has not swept) pin the
-/// meter to that agent forever — which is the same "always the same agent"
-/// failure this ranking exists to fix.
-///
-/// A spawned subagent is not a participant, so its run never steals the meter —
-/// the parent agent's window is the one the human can act on.
+/// Rank by last activity from the run log (not join order). In-flight is a
+/// tie-break only — an orphaned `running` row must not pin forever.
+/// [stateOrNull] holds across loading/gate. Subagent runs never steal the meter.
 class SpaceMeteredAgentNotifier extends Notifier<String?> {
   /// Creates a [SpaceMeteredAgentNotifier] scoped to [spaceId].
   SpaceMeteredAgentNotifier(this.spaceId);

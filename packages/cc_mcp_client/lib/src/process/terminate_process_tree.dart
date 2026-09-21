@@ -1,27 +1,13 @@
 import 'dart:async';
 import 'dart:io';
 
-/// Stops [process] and, best-effort, its descendants: reap the child tree,
-/// SIGTERM, wait [grace], then SIGKILL.
+/// Stops [process] and, best-effort, its descendants: reap the child tree, SIGTERM, wait
+/// [grace], then SIGKILL.
 ///
-/// This ladder is the house pattern for every child this repo spawns, and it
-/// exists because the two shortcuts both fail in practice:
-///
-/// * A bare `process.kill()` is a SIGTERM to the DIRECT child only. Dart's
-///   `Process.start` has no process-group option and `Process.kill` cannot
-///   target a negative pid, so a wrapper that exits on SIGTERM (`npx` → `node`,
-///   `uvx` → `python`) leaves its grandchild running, holding the pipe and the
-///   port, answering to nobody.
-/// * No escalation means a child that traps or ignores SIGTERM survives
-///   `close()` entirely, and the caller believes it is gone.
-///
-/// On POSIX the descendants are reaped with `pkill -TERM -P <pid>` before the
-/// child itself is signalled (so the wrapper cannot exit and orphan them
-/// first). On Windows `Process.kill` already terminates the job object, which
-/// takes the tree with it.
-///
-/// Never throws: every step is best-effort, because "the process is already
-/// gone" is the ordinary case on a teardown path.
+/// This ladder is the house pattern for every child this repo spawns, and it exists because
+/// the two shortcuts both fail in practice:
+/// Never throws: every step is best-effort, because "the process is already gone" is the
+/// ordinary case on a teardown path.
 Future<void> terminateProcessTree(
   Process process, {
   Duration grace = const Duration(seconds: 3),

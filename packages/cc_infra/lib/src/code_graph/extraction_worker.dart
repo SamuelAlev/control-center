@@ -6,24 +6,10 @@ import 'package:cc_infra/src/code_graph/extraction_isolate.dart';
 import 'package:cc_natives/cc_natives.dart'
     show TreeSitterLoader, TreeSitterParser, TreeSitterUnavailable;
 
-/// A LONG-LIVED tree-sitter extraction worker: one isolate serving every file
-/// of an index run, instead of one throwaway `Isolate.run` per file.
-///
-/// The per-file isolate re-resolved the tree-sitter dylibs and recompiled the
-/// whole `.scm` query for every single file — the dominant per-file overhead
-/// on a big run. Here the loader/parser live inside the worker (FFI handles
-/// cannot cross isolates), the parser caches compiled queries per language,
-/// and only plain request/result objects travel over the [SendPort]. Follows
-/// the `SherpaOnnxTranscriber` worker shape.
-///
-/// Lifecycle is one worker per `indexRepo` run: `maxConcurrentRuns == 1`
-/// means at most one exists anyway, per-run scoping keeps loader/grammar
-/// state trivially correct and any native leak is bounded to one run. The
-/// spawn cost (~tens of ms) amortizes over hundreds of files.
-///
-/// A worker held by a wedged parse cannot process a graceful shutdown
-/// message, so the timeout path must [kill], not [dispose] — a fresh worker
-/// then serves the remaining files.
+/// Long-lived tree-sitter extraction worker: one isolate per `indexRepo` run
+/// (not per file). Loader/parser stay in-worker (FFI cannot cross isolates);
+/// queries cache per language. Timeout path [kill]s (wedged parse cannot
+/// dispose). Spawn cost amortizes over hundreds of files.
 class ExtractionWorker {
   ExtractionWorker._();
 

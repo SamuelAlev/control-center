@@ -1,16 +1,13 @@
 /// Port visibility + forwarding for enclosed rigs and host-shell terminals:
 /// what is listening inside a Terminal (VM) or this space's host-shell, and
 /// every address each port answers on.
-///
 /// A SEPARATE port from [RigPort](rig_port.dart) on purpose: driving a
 /// machine and plumbing its network are different capabilities, hosts wire
 /// them independently, and the `rig.*Port*` / `terminal.*Port*` RPC ops
 /// exist only when this one is present.
-///
 /// Wire-shaped (maps, not entities), following `RigPort.imageStatuses`: the
 /// client renders a panel, and the snapshot's concrete types live with the
 /// forwarding mechanism in `cc_infra` — which the domain must not reach for.
-///
 /// Every method takes a required `workspaceId`, and a rig or session in
 /// another workspace (or, for terminal ops, a session whose space is not
 /// the caller's) reads as absent (null / false), never as forbidden.

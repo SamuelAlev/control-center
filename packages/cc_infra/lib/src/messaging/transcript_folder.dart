@@ -231,27 +231,13 @@ class TranscriptFolder {
     _argEchoMatched = false;
   }
 
-  /// Drops an assistant text segment that turned out to be nothing but a
-  /// verbatim echo of the tool arguments that followed it.
+  /// Blanks an assistant text segment that is only a verbatim echo of following
+  /// tool args (some OpenAI-compat servers double-stream content + tool_calls;
+  /// MTPLX strips tags into prose above the tool row).
   ///
-  /// Some OpenAI-compatible servers stream one tool call twice: once as
-  /// `delta.content` and once as `delta.tool_calls`. MTPLX (local Qwen) does it
-  /// when its streaming tool parser misses the envelope and falls back to
-  /// re-parsing the raw text — the content path strips the `<tool_call>` /
-  /// `<function=…>` / `<parameter=…>` tags one by one and lets their inner text
-  /// through, so the transcript gets a prose bubble holding the bare command or
-  /// file path immediately above the rich tool row for the same call.
-  ///
-  /// The subtraction is cumulative because one text segment can precede several
-  /// calls: each call removes its own argument values from the residue and only
-  /// when nothing but whitespace is left — and at least one value actually
-  /// matched — is the segment blanked. Any real prose in the segment leaves a
-  /// non-empty residue and protects it.
-  ///
-  /// Blanking (rather than removing) keeps every segment index stable for the
-  /// live registry and thin-client relay; an empty closed text segment renders
-  /// as nothing and [currentText] already skips it, so the echo also leaves
-  /// the persisted message body, its embedding and notification previews.
+  /// Cumulative over calls in the segment; blanks only when residue is
+  /// whitespace and at least one value matched. Blanking (not removing) keeps
+  /// segment indexes stable for the live registry/relay.
   void _absorbToolArgEcho(Map<String, dynamic>? inputs) {
     final idx = _argEchoCandidateIndex;
     if (idx == null || inputs == null || inputs.isEmpty) {

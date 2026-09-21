@@ -1,31 +1,8 @@
 #!/usr/bin/env bash
 #
-# Builds libcc_watcher — the native recursive file watcher (FSEvents on macOS,
-# ReadDirectoryChangesW on Windows, ignore-aware inotify on Linux) — and
-# installs it where NativeDirectoryWatcher looks for it (the app-support root
-# next to control_center.db, plus an optional explicit DEST for CI staging /
-# bundle embedding).
+# Builds libcc_watcher (REQUIRED). First-party cargo crate over notify.
+# Usage: scripts/natives/build_watcher.sh [DEST_DIR]
 #
-# FIRST-PARTY SOURCE, in-repo (packages/cc_natives/native/watcher/), cargo-
-# built — unlike rift/fff there is no upstream clone; the crate wraps the
-# `notify` crate's per-OS backends behind the C ABI in cc_watcher.h.
-#
-# Why it exists: `package:watcher`'s DirectoryWatcher performs a full
-# recursive scan of the tree on construction and cannot skip node_modules/
-# build — arming a realistic worktree fleet froze the server isolate for a
-# measured 65 seconds. The native watches kernel-recursively (or installs its
-# Linux per-dir watches on its own thread) so arming is O(1) for the caller.
-#
-# REQUIRED native, no fallback: `NativeDirectoryWatcher.create` throws and
-# cc_server's boot preflight refuses to start without it. `package:watcher`
-# was deliberately NOT kept as a degraded path — its per-arm full-tree scan is
-# the 65s freeze this native exists to remove. build_natives.sh therefore aborts
-# on a failure here rather than warning past it.
-#
-# Requirements: a Rust toolchain (cargo).
-#
-# Usage:
-#   scripts/natives/build_watcher.sh [DEST_DIR]
 set -euo pipefail
 
 REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"

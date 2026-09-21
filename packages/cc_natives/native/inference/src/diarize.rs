@@ -105,12 +105,9 @@ pub unsafe extern "C" fn cc_diar_create(
 
 /// Diarizes a complete 16 kHz mono recording.
 ///
-/// On success writes a library-owned array into `out_segments` (+ its length
-/// into `out_count`) and returns 0; the caller frees it with
-/// `cc_diar_segments_destroy`. A recording with no detected speech is success
-/// with a count of 0 and a NULL array. Returns -1 on failure.
-///
-/// # Safety
+/// On success writes a library-owned array into `out_segments` (+ its length into
+/// `out_count`) and returns 0; the caller frees it with `cc_diar_segments_destroy`.
+/// A recording with no detected speech is success with a count of 0 and a NULL array.
 /// `samples` must hold at least `n` floats; the out pointers must be writable.
 #[no_mangle]
 pub unsafe extern "C" fn cc_diar_process(

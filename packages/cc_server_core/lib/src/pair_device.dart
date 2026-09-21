@@ -26,29 +26,10 @@ class PairResult {
   final String dataDir;
 }
 
-/// Provisions a paired device so a thin client (the web build) can authenticate
-/// against a headless `runCcServer` data dir.
+/// Provisions a paired device (PSK + `paired_devices` row) for thin-client auth.
 ///
-/// The standalone binary ships an **empty, unprovisioned** data dir: no
-/// `paired_devices` row, no PSK — so the server has nothing to authenticate
-/// against and the web client's "pairing key" prompt can never be satisfied.
-/// This generates a PSK, upserts an `active` paired-device row and writes the
-/// PSK to the [FileSecretsStore] beside the database. It deliberately does NOT
-/// create a workspace: the connecting client's onboarding names and creates
-/// the first one, so a fresh data dir must stay workspace-less until then (an
-/// auto-created "Local" workspace would silently skip that step). When the
-/// data dir already has workspaces, the device is bound to the first as its
-/// session seed.
-///
-/// Idempotent: re-running rotates the PSK for [deviceId].
-///
-/// Safe to run against a data dir a server is already serving: `global.db` is
-/// WAL with a busy timeout, so a second process can write it. Picking the write
-/// up needs no restart — `FileSecretsStore` re-reads `secrets.json` when it
-/// changed underneath it, and `PairedDeviceRegistryWatch` republishes the row
-/// so the relay's admission set and every client's device list see it (drift's
-/// own update notifications are in-process and cannot). Rotating an EXISTING
-/// device's PSK still cuts its live sessions, which is the point of a rotation.
+/// Does not create a workspace. Idempotent: re-run rotates the PSK. Safe against a live server
+/// (WAL + secrets/registry watch pick up the write).
 Future<PairResult> pairDevice({
   required CcServerConfig config,
   String deviceId = 'web-client',

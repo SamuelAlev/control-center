@@ -376,7 +376,6 @@ abstract final class KeybindingRegistry {
     ),
   ];
 
-  // ── User profile ─────────────────────────────────────────────────────────
 
   /// The browse-only PR queue on a `/users/<login>` profile page: move / open /
   /// search / refresh. No select or merge — profiles are read-only.
@@ -582,7 +581,6 @@ abstract final class KeybindingRegistry {
     ),
   ];
 
-  // ── Aggregates ─────────────────────────────────────────────────────────
 
   /// All keybindings aggregated from every category.
   static List<Keybinding> get all => [

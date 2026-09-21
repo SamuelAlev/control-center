@@ -19,34 +19,16 @@ import 'package:cc_natives/cc_natives.dart'
         WatcherUnavailable;
 import 'package:path/path.dart' as p;
 
-/// Keeps the code graph in sync with every checkout on disk, in both
-/// directions the `RepoAdded`-only trigger never covered:
+/// Keeps the code graph in sync with every on-disk checkout beyond `RepoAdded`:
 ///
-/// * **worktree checkouts** — a conversation/PR-review CoW worktree is checked
-///   out at a different revision than the linked checkout (the PR head), so
-///   the linked checkout's graph answers with symbols and paths that don't
-///   exist there. Each worktree gets its OWN graph partition (keyed by its
-///   `isolated_repos` row id), built when the worktree appears and kept
-///   current as files change;
-/// * **saves outside the pipeline** — the built-in code-server IDE, an
-///   external "Open in IDE" editor, an agent's file writes, or a `git
-///   checkout` (e.g. `worktree.syncToPrHead` pulling new PR commits) all
-///   mutate the tree without touching the indexer. A [DirectoryChangeWatcher]
-///   per checkout debounces those writes into one incremental [CodeIndexer]
-///   run (content-hash skip makes a no-change run cheap), covering the linked
-///   checkouts too, so editing `main` in any editor also stays fresh.
-///
-/// Checkout discovery is stream-driven off the two authoritative registries
-/// ([WorkspaceRepository.watchAll] → `watchReposForWorkspace` for linked
-/// checkouts, [IsolatedRepoRepository.watchForWorkspace] for worktrees), plus
-/// a slow reconcile sweep that re-arms anything missed (a worktree whose
-/// directory materialized after its registry row, or an event lost to a
-/// crash). No explicit teardown of graph rows is needed here: deleting an
-/// `isolated_repos` row FK-cascades its partition away.
-///
-/// One instance per host, started at boot and disposed on shutdown. All
-/// indexing failures are logged and swallowed — the next file event or sweep
-/// retries; a broken checkout must never take the service down.
+/// - Worktrees get their own partition (`isolated_repos` id) — linked checkout
+///   revision ≠ PR/conversation worktree.
+/// - [DirectoryChangeWatcher] per checkout debounces IDE/agent/`git checkout`
+///   saves into incremental [CodeIndexer] runs (hash-skip keeps no-ops cheap).
+/// Discovery: [WorkspaceRepository.watchAll] + [IsolatedRepoRepository.watchForWorkspace],
+/// plus a slow reconcile for lost events / late-materialized dirs. Deleting an
+/// `isolated_repos` row FK-cascades its partition. Failures log+swallow; retry
+/// on next event/sweep — never take the service down.
 class CodeGraphWatchService {
   /// Creates the service. [watcherFactory] is a test hook (production uses
   /// [_defaultWatcherFactory], the required native `cc_watcher`).
@@ -100,23 +82,11 @@ class CodeGraphWatchService {
   final Duration _linkedDebounce;
   final Duration _linkedMaxDebounce;
 
-  /// The coalescing pair [_scheduleIndex] schedules against.
+  /// Debounce/max window for [_scheduleIndex].
   ///
-  /// The longer linked window is for COALESCING a stream of saves. The arm-time
-  /// pass is not that — it is a one-shot with nothing to coalesce, and holding
-  /// it for the linked window would just leave a freshly-armed checkout's graph
-  /// stale for no benefit. So it takes the short window like everything else.
-  ///
-  /// The third case is what a window actually has to pay for: whether the run it
-  /// schedules is CHEAP. A window whose path set is still complete produces a
-  /// TARGETED run — it stats and hashes those paths and reads only their stored
-  /// rows. A window that lost its paths (a rescan hint, or a burst past
-  /// [_CheckoutWatch._maxTrackedPaths]) falls back to the full pass: a
-  /// `git ls-files` plus a stat of every file in the checkout and a read of the
-  /// partition's whole `code_files` table, measured at 5-9s on a 19k-file repo.
-  /// So an untargetable window takes the LONG pair whatever kind of checkout it
-  /// is — a `git checkout` across a branch in an agent's worktree used to fire
-  /// that full pass on the 2s tick.
+  /// Arm-time is a one-shot → short window. Untargetable windows (lost paths /
+  /// rescan) take the long pair — they fall back to a full pass. Linked
+  /// targetable saves use the long pair only for coalescing.
   ({Duration debounce, Duration max}) _windowFor(
     _CheckoutWatch watch, {
     required bool initial,
@@ -158,24 +128,11 @@ class CodeGraphWatchService {
   final int _maxConcurrentRuns;
   var _activeRuns = 0;
 
-  /// Whether a conversation is worth watching: it still exists AND is recently
-  /// active. Worktrees of everything else are neither watched nor indexed.
+  /// Whether a conversation is worth watching (exists + recently active).
   ///
-  /// `isolated_repos` accumulates. Measured on a real host: 117 rows, of which
-  /// only 15 belonged to a conversation active in the last week — 72 had never
-  /// exchanged a single message. Back when each row armed a `package:watcher`
-  /// `DirectoryWatcher` — whose constructor scans the whole tree and cannot
-  /// skip `node_modules`/`build` — arming the set froze the isolate for ~65s
-  /// at startup. The native watcher removed that cost, but the filter stays:
-  /// every armed checkout still holds OS watch resources and still gets an
-  /// initial index run and a dormant conversation needs neither.
-  ///
-  /// "Deleted" was the wrong test — only 16 were actually deleted. What matters
-  /// is whether anyone is working in the conversation: a dormant worktree is not
-  /// being edited, so watching it buys nothing. A conversation that wakes up is
-  /// picked up by the next reconcile (see [_watchableTtl]).
-  ///
-  /// Optional: without it every worktree is watched, as before.
+  /// Dormant/`isolated_repos` rows still cost OS watches + initial index;
+  /// deleted-only was the wrong filter. Waking conversations return via
+  /// reconcile ([_watchableTtl]). Null = watch every worktree.
   final Future<bool> Function(String workspaceId, String spaceId)?
   _shouldWatchSpace;
 
@@ -301,9 +258,7 @@ class CodeGraphWatchService {
   /// indexing is worth looking at.
   static const _slowRunThreshold = Duration(seconds: 5);
 
-  // -------------------------------------------------------------------------
   // Discovery
-  // -------------------------------------------------------------------------
 
   void _onWorkspaces(List<Workspace> workspaces) {
     final seen = <String>{};
@@ -366,9 +321,7 @@ class CodeGraphWatchService {
   static String _key(String workspaceId, String repoId, String? checkoutId) =>
       '$workspaceId|$repoId|${checkoutId ?? ''}';
 
-  // -------------------------------------------------------------------------
   // Reconcile
-  // -------------------------------------------------------------------------
 
   /// Diffs the desired checkout set against the armed watchers: arms new
   /// checkouts (with an initial index), re-arms moved ones, disarms removed
@@ -538,9 +491,7 @@ class CodeGraphWatchService {
     _scheduleIndex(key, initial: true);
   }
 
-  // -------------------------------------------------------------------------
   // Index scheduling (per-checkout serialized + coalesced)
-  // -------------------------------------------------------------------------
 
   /// Whether [watch] is a worktree whose base partition has not been indexed
   /// yet and is worth waiting for.

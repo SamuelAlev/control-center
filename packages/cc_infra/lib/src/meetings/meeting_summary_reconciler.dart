@@ -9,35 +9,14 @@ import 'package:cc_domain/features/meetings/domain/services/meeting_transcript_f
 import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_run_repository.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
 
-/// Keeps meetings from getting stuck in a non-terminal state.
+/// Drives meetings out of non-terminal `recording`/`processing` (crash, kill,
+/// stopped pipeline) and is the sole `processing → done` finalizer — summary
+/// persist steps never mark `done` themselves (avoids half-written + done).
 ///
-/// A meeting is non-terminal while `recording` (capture in progress) or
-/// `processing` (the `meeting_summary` pipeline is augmenting its notes). Both
-/// can be stranded by a crash, an app kill, or a stopped pipeline and the UI
-/// shows the same "transcribing & summarizing" tag for each — so a stranded
-/// meeting reads as "stuck forever". This reconciler drives every meeting to a
-/// terminal state.
-///
-/// It is also the meeting's single `processing → done` finalizer: none of the
-/// `meeting_summary` persist steps flip the meeting to `done` themselves (so a
-/// single parallel-step failure can't strand a half-written meeting that's
-/// already marked done). Instead, on the run's terminal event
-/// (PipelineRunCompleted, Failed, OR Cancelled) it checks the meeting and, if
-/// still `processing`, finalizes it to `done` — falling back to the raw
-/// transcript as the notes when the agent produced none, so the recording is
-/// never lost.
-///
-/// A startup sweep ([_reconcileStale]) catches meetings stranded by a previous
-/// session:
-/// - `recording`: no capture survives an app restart, so the recording was
-///   interrupted before `stop()` ran. Recovered exactly as a graceful stop
-///   would — summarize a real transcript, else finalize to `done`.
-/// - `processing`: finalized to `done` unless a summary run is still active (a
-///   live run finalizes it via its terminal event instead).
-///
-/// Pure Dart (logs through [CcInfraLog]): runs in the desktop in-process host
-/// and in the headless `cc_server`, which both own the meeting + pipeline-run
-/// DAOs directly.
+/// On pipeline terminal (completed/failed/cancelled), if still `processing`,
+/// finalize to `done`; fall back to raw transcript notes when the agent wrote
+/// none. Startup [_reconcileStale]: stranded `recording` recovers like stop();
+/// stranded `processing` → `done` unless a summary run is still live.
 class MeetingSummaryReconciler {
   /// Creates a [MeetingSummaryReconciler].
   MeetingSummaryReconciler({

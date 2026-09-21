@@ -79,26 +79,9 @@ import 'package:cc_server_core/src/demo/demo_world.dart';
 import 'package:cc_server_core/src/demo/fixtures/demo_fixtures.g.dart';
 import 'package:drift/drift.dart' as drift;
 
-/// Writes the demo's fictional world into a freshly created workspace.
+/// Seeds a fresh demo workspace with the fictional Helix world (agents, PRs, tickets, feed).
 ///
-/// Two entry points, because the databases split two ways:
-///  * [seedWorkspace] runs at POOL-FILL time against one workspace file;
-///  * [seedUser] runs at CLAIM time for the lanes keyed by user in the GLOBAL
-///    database (the newsfeed), which no workspace file can reach.
-///
-/// Everything is written through the same repositories and DAOs the product
-/// uses, with a required `workspaceId` on every call — the demo is not allowed
-/// its own back door into persistence.
-///
-/// Every timestamp is relative to seed time, so a demo is always "today" and
-/// every row sits inside the retention windows `DatabaseRetentionService`
-/// sweeps (caches 21d, run transcripts 30d, activity 90d) — the retention
-/// service is deliberately left RUNNING in demo mode, and seeding a row older
-/// than its window would have it vanish mid-session.
-///
-/// The world is **Helix**, an applied LLM / data-science lab: the cast builds
-/// eval harnesses, retrieval pipelines, a feature store and fine-tuning, and
-/// every ticket, PR, meeting and memory fact is about that domain.
+/// Idempotent enough for pool refill; never touches non-demo workspaces.
 class DemoSeeder {
   /// Creates a seeder over the server's repositories.
   DemoSeeder({

@@ -537,8 +537,8 @@ class _PipelineTemplateEditorScreenState
 
   /// Rewrites the hidden terminal so it waits on every live sink.
   ///
-  /// The downstream planner treats a terminal as reached when **all** of one
-  /// trigger's sources sit in completed∪skipped and **at least one** genuinely
+  /// The downstream planner treats a terminal as reached when all of one
+  /// trigger's sources sit in completed∪skipped and at least one genuinely
   /// completed. Skipped router branches therefore satisfy the source set
   /// without finishing the run by themselves; terminals are also exempt from
   /// dead-propagation, so a skipped incoming leaf cannot kill the terminal.

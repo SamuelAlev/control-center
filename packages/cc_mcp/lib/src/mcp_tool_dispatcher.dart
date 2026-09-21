@@ -242,20 +242,11 @@ class McpToolDispatcher implements RpcDispatcher {
 
   /// Caps what one tool call can hand back.
   ///
-  /// Nothing bounded a FIRST-PARTY tool's result: `tool_bridge.dart` caps
-  /// bridged EXTERNAL tools at 256 KB precisely because their output is not
-  /// ours, but a tool in this package could return a 100 MB string — a
-  /// `list_articles` with a large `limit`, a code-graph query over a monorepo
-  /// — and it went to the model verbatim, through the context window and the
-  /// phone's WebSocket alike.
-  ///
-  /// Truncated with a visible marker rather than refused, and that is the
-  /// opposite of the choice made for `git`'s stdout on purpose: the consumer
-  /// here is a MODEL that can narrow its query when told the result was cut,
-  /// not a parser that would silently misread a short answer.
-  ///
-  /// Image `data` is DROPPED whole rather than truncated — half a base64
-  /// payload is not a smaller image, it is a corrupt one.
+  /// Nothing bounded a FIRST-PARTY tool's result: `tool_bridge.dart` caps bridged EXTERNAL
+  /// tools at 256 KB precisely because their output is not ours, but a tool in this package
+  /// could return a 100 MB string — a `list_articles` with a large `limit`, a code-graph
+  /// query over a monorepo — and it went to the model verbatim, through the context window
+  /// and the phone's WebSocket alike.
   static CallResult _boundResult(String toolName, CallResult result) {
     var budget = _maxResultChars;
     var truncated = false;

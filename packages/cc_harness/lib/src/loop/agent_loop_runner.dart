@@ -513,19 +513,10 @@ class AgentLoopRunner implements AgentLoop {
         if (ruleRestart) {
           continue;
         }
-        // ---- 1b. Empty-stream guard. ----
-        // A stream that delivered NOTHING — no text, no thinking, no tool call,
-        // no error and no recognized stop reason — is a transport or
-        // server-side parser failure wearing the shape of a finished turn.
-        // Observed on an OpenAI-compatible local server whose tool-call parser
-        // buffers from `<tool_call>` to the closing tag and returns an empty
-        // body when generation is cut off before the closer arrives.
-        //
-        // Without this, the loop banked that as an assistant turn with no tool
-        // calls and reported the provider's failure as the model's answer —
-        // the single worst reading available. Synthesize a retryable error so
-        // the existing backoff handles it and an exhausted retry budget fails
-        // the run out loud.
+        // Empty-stream guard: no text/thinking/tools/error/stop reason means
+        // transport or buffering parser failure, not a finished turn. Synthesize
+        // a retryable error so backoff handles it (else the loop banks silence
+        // as the model's answer).
         if (lastError == null &&
             pending.isEmpty &&
             textBuffer.isEmpty &&
@@ -633,19 +624,10 @@ class AgentLoopRunner implements AgentLoop {
 
       // ---- 3. Stop when the model is done (no tool calls). ----
       if (pending.isEmpty) {
-        // ---- 3a'. Output-loss guard: billed for tokens we never received.
-        // A buffering tool-call parser (vLLM `qwen3_xml`, SGLang `qwen3_coder`
-        // and friends) swallows everything from `<tool_call>` until the closing
-        // tag. When generation is cut off at `max_tokens` the closer never
-        // arrives, the buffer is discarded and the turn reports thousands of
-        // output tokens while delivering almost nothing.
-        //
-        // Auto-continuing is worse than useless here: the retry re-rolls the
-        // SAME ceiling and loses the buffer again. That is how one run burned
-        // four turns × 8192 tokens to produce two newlines. Detect it by
-        // delivery ratio and stop, because the remedy (a larger ceiling, or a
-        // server whose parser does not drop its buffer) is not something more
-        // turns can reach.
+        // Output-loss guard: billed tokens with almost no delivered content
+        // (buffering tool-call parsers drop the buffer when max_tokens cuts
+        // mid-`<tool_call>`). Do not auto-continue — same ceiling loses again.
+        // Detect by delivery ratio and stop.
         final deliveredChars = textBuffer.length + thinkingBuffer.length;
         if (stopReason == LlmStopReason.maxTokens &&
             turnOutputTokens >= _minTokensForLossCheck &&
@@ -693,15 +675,9 @@ class AgentLoopRunner implements AgentLoop {
           yield const LoopNotice('Follow-up message injected; continuing.');
           continue;
         }
-        // ---- 3c. Completion contract: the model is about to stop. If the run
-        //      owes a deliverable and none was produced, nudge once (bounded)
-        //      before accepting the stop; if it still has not delivered, end
-        //      with `contractUnmet` so "researched and produced nothing" can
-        //      never be reported as success.
-        //
-        //      Ordered AFTER the follow-up drain deliberately: real user
-        //      steering outranks the reminder and `maxNudges` bounds the delay
-        //      so a follow-up is never starved.
+        // Completion contract: if a deliverable is owed and missing, nudge
+        // (bounded) then end `contractUnmet`. After follow-up drain so user
+        // steering outranks the reminder.
         if (ledger.isActive && !await ledger.resolveSatisfied()) {
           if (ledger.canNudge) {
             history.add(HarnessMessage.system(ledger.takeNudge()));
@@ -766,20 +742,9 @@ class AgentLoopRunner implements AgentLoop {
         continue;
       }
 
-      // ---- 4. Execute tool calls, append results. ----
-      // Read-only tools carry no side effects and no approval, so a run of them
-      // executes concurrently;
-      // write/exec/control tools stay strictly sequential ("exclusive"). Only
-      // batched when no hook INTERCEPTS TOOLS, since a per-tool veto or
-      // observation must run in the model's original order — a hook that only
-      // handles session start observes nothing per tool and so must not cost
-      // the run its batching. Result blocks are always appended in the model's
-      // original tool-call order so pairing is unambiguous.
-      // A deferred tool called by name loads its schema and then runs in the
-      // SAME step. The model saw the name in the prompt's tool index, so
-      // answering "unknown tool, go search for it" would be a round trip spent
-      // telling it something it already knew. From here on the schema rides
-      // every request, so follow-up calls are ordinary calls.
+      // Execute tools: parallel-safe batch when no hook intercepts tools;
+      // exclusive tools stay sequential. Results append in model call order.
+      // Deferred tools load schema and run in the same step.
       final activatedByCall = activateDeferred(pending.map((t) => t.name));
       if (activatedByCall.isNotEmpty) {
         yield LoopToolsActivated(
@@ -1213,16 +1178,10 @@ class AgentLoopRunner implements AgentLoop {
           tool.actionClasses.isNotEmpty) &&
       !tool.selfGuards;
 
-  /// Whether [tool] is safe to run concurrently with sibling calls in the same
-  /// turn: a known tool that declares itself [HarnessTool.parallelSafe], needs
-  /// no approval from the loop and is not one the loop handles itself
-  /// (checkpoint/rewind). Ordering among these is irrelevant.
-  ///
-  /// The [_requiresApproval] clause matters: the batch path calls the tool
-  /// directly, so anything that would otherwise be gated must not be batched.
-  /// That keeps a read-tiered-but-effectful bridged MCP tool (non-empty
-  /// [HarnessTool.actionClasses]) on the sequential path where its approval
-  /// still fires, instead of slipping through ungated.
+  /// Concurrent-safe with siblings: [HarnessTool.parallelSafe], no loop
+  /// approval, not loop-handled (checkpoint/rewind). Batch calls tools
+  /// directly, so anything [_requiresApproval] would gate stays sequential
+  /// (incl. effectful MCP with [HarnessTool.actionClasses]).
   bool _isParallelSafe(HarnessTool? tool) =>
       tool != null &&
       tool.parallelSafe &&
@@ -1249,20 +1208,9 @@ class AgentLoopRunner implements AgentLoop {
     );
   }
 
-  /// [result]'s text capped to the per-tool budget, with an explicit omission
-  /// marker where content was dropped.
-  ///
-  /// Applied HERE and not in each tool, for the same reason the image budget
-  /// is: a tool that dumps a DOM should not have to know the transcript's
-  /// economics, and a bridged MCP tool could not know them at all. The limits
-  /// table existed and was documented long before anything called it — a
-  /// single 400k-character output would blow the window in one turn, and the
-  /// only symptom was a compaction that fired immediately and lost the turn's
-  /// context.
-  ///
-  /// The full, untruncated text still reaches the UI through
-  /// [LoopToolCallResult]; only the model's copy is bounded. A human looking
-  /// at a run wants what actually happened.
+  /// Cap [result] text to the per-tool budget (omission marker). Applied here
+  /// so tools/MCP need not know transcript limits. Full text still reaches the
+  /// UI via [LoopToolCallResult]; only the model copy is bounded.
   String _budgetedContent(String toolName, HarnessToolResult result) {
     if (result.content.isEmpty) {
       return result.content;
@@ -1463,15 +1411,9 @@ class AgentLoopRunner implements AgentLoop {
 class _PendingTool {
   _PendingTool(this.id, this.name, this.args, {this.argsError});
 
-  /// Parses [argumentsJson] as a tool's argument map.
-  ///
-  /// A model can emit truncated or malformed JSON — mid-stream cutoff, a
-  /// stray token, a top-level array where an object was expected. Decoding
-  /// used to swallow that into `{}`, so the call still RAN and each argument
-  /// surfaced as its own "missing argument" error inside the tool. The model
-  /// then saw a plausible-looking tool failure and had no way to learn that
-  /// its JSON was the problem, so it re-emitted the same broken call.
-  /// [argsError] carries the real reason instead.
+  /// Parses [argumentsJson] as a tool argument map. Malformed/truncated JSON
+  /// must not become `{}` (that hides the parse failure as missing args);
+  /// [argsError] carries the real reason.
   factory _PendingTool.fromStream(
     String id,
     String name,

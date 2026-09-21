@@ -68,40 +68,19 @@ const String _thinkingNote = 'Thinking…';
 /// then fits that further into a 256-character chunk; this is the source text.
 const int _maxCardResultLength = 500;
 
-/// Bridges one Control Center workspace to one chat app, whatever the product.
+/// Bridges one workspace to one chat app (inbound mentions/DMs → CC messages;
+/// outbound agent turns → streaming replies when supported). Server-side
+/// outbound connections only — no public endpoint required.
 ///
-/// Inbound, it turns `@mention`s, thread replies and bot DMs into Control Center
-/// messages that wake an agent; outbound, it relays the agent's turn back as a
-/// **live streaming reply** where the provider supports one. Both directions run
-/// entirely server-side over outbound connections, which is what lets the whole
-/// feature work on a laptop with no public endpoint.
-///
-/// Everything product-specific lives behind [ChatProviderAdapter]: this class
-/// knows about markdown, conversations, threads and members and nothing about
-/// Slack envelopes, Discord gateway intents or `mrkdwn`. Five rules keep it
-/// honest:
-///
-///  * **Access is membership, not token possession.** A chat member must be
-///    linked to a Control Center user *and* be a member of this workspace with a
-///    writing role. Anything else is refused with an explanation — never silently
-///    attributed to the workspace owner.
-///  * **Every crossing is deduped.** Providers redeliver unacknowledged events,
-///    so the bridge keys on the event's own id.
-///  * **Provenance is stamped, so nothing echoes.** A message the bridge creates
-///    carries `metadata['chat']`; the outbound mirror skips those, which is what
-///    stops an inbound chat message from being posted straight back.
-///  * **Capabilities are honored, not assumed.** Streaming, ephemeral replies,
-///    thread status and titles are each attempted only when the adapter claims
-///    them and streaming that is refused at runtime degrades to whole replies
-///    for the rest of the connection's life.
-///  * **Copy comes from the descriptor.** Every instruction the bridge writes
-///    names the provider and the command the app actually uses, so a second
-///    provider reads correctly without a new string.
-///  * **A card reports state; the text is still the message.** Where the provider
-///    renders task cards, the turn also carries one that says what the agent is
-///    doing (the current line on the card: a clone step, a thought, a tool)
-///    and links back into Control Center. Tool *output* never crosses — the card
-///    is a summary and the transcript stays in the app.
+/// Product specifics live behind [ChatProviderAdapter].
+/// - Access: chat member must link to a CC user who is a writing member of this
+///   workspace; otherwise refuse with an explanation (never impersonate owner).
+/// - Dedup on the provider event id (redelivery is normal).
+/// - Bridge-created rows stamp `metadata['chat']`; outbound skips those (no echo).
+/// - Streaming/ephemeral/thread/title only when the adapter claims them;
+///   a refused stream degrades to whole replies for the connection's life.
+/// - Instruction copy comes from the descriptor (provider + real command names).
+/// - Task cards summarize state + deep-link; tool output never crosses.
 class ChatBridgeService {
   /// Creates a [ChatBridgeService] for [_connection]'s workspace.
   ChatBridgeService({
@@ -313,7 +292,6 @@ class ChatBridgeService {
     return true;
   }
 
-  // ── Inbound: chat → Control Center ──
 
   Future<void> _onMessage(ChatMessageEvent event) async {
     final conversationId = event.externalChannelId;
@@ -648,7 +626,6 @@ class ChatBridgeService {
     }
   }
 
-  // ── Commands ──
 
   Future<void> _onCommand(ChatCommandEvent event) async {
     final invoked = event.command.trim();
@@ -865,7 +842,6 @@ class ChatBridgeService {
     );
   }
 
-  // ── Outbound: Control Center → chat ──
 
   void _watchSpace(String ccSpaceId) {
     _spaceSubs.putIfAbsent(

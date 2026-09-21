@@ -69,27 +69,13 @@ Future<void> updateEditorTabRoute(Uri current, String? key) =>
       uri: Uri.parse(locationWithEditorTab(current, key)),
     );
 
-/// The two-way sync state machine between an [EditorLayoutController]'s
-/// focused tab and a `?tab=` query param, shared by the tabbed detail
-/// surfaces (space conversation, PR detail).
-///
-/// Direction 1 — layout → URL: the host calls [writeFromLayout] from its
-/// layout-change listener; when the focused key diverges from the last key
-/// this tracker wrote or applied, the write callback publishes lightweight
-/// platform route information.
-///
-/// Direction 2 — URL → layout: the host calls [apply] when the route's
-/// `?tab=` changes (back/forward, deep-link) and with `force: true` after a
-/// layout restore (the URL outranks the restored selection).
-///
-/// The per-surface differences are injected as callbacks: the focus action
-/// (the PR page opens a closed fixed tab), the default tab (Overview vs the
-/// first tab) and the route-information write action.
-///
-/// Reentrancy: focus mutations notify SYNCHRONOUSLY, so an [apply] would
-/// otherwise re-enter [writeFromLayout] mid-apply — before the tracker
-/// settles — and push a spurious history entry. The applying flag closes
-/// that hole.
+/// The two-way sync state machine between an [EditorLayoutController]'s focused tab and a
+/// `?tab=` query param, shared by the tabbed detail surfaces (space conversation, PR
+/// detail).
+/// Direction 1 — layout → URL: the host calls [writeFromLayout] from its layout-change
+/// listener; when the focused key diverges from the last key this tracker wrote or applied,
+/// the write callback publishes lightweight platform route information.
+/// The applying flag closes that hole.
 class EditorTabUrlTracker {
   /// Creates a tracker seeded with the route's current `?tab=` value.
   EditorTabUrlTracker({

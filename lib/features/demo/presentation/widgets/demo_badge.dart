@@ -7,7 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// A persistent "Demo" badge for the app shell header.
 ///
-/// Renders **nothing at all** against a real server, so it can be placed
+/// Renders nothing at all against a real server, so it can be placed
 /// unconditionally in the shell: the whole cost on a normal install is one
 /// boolean read.
 ///

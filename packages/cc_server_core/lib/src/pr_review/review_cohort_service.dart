@@ -8,25 +8,9 @@ import 'package:cc_domain/features/pr_review/domain/value_objects/cohort_insight
 import 'package:cc_domain/features/pr_review/domain/value_objects/review_cohort.dart';
 import 'package:cc_persistence/cc_persistence.dart';
 
-/// Computes a PR's semantic cohorts (PRD 18 §1) server-side and persists them.
+/// Computes and persists a PR's semantic cohorts (PRD 18 §1) server-side.
 ///
-/// Maps the PR's changed files → code-graph symbols → connected components
-/// (via the pure [CohortGrouper]), ranks cohorts by blast radius and stores
-/// them keyed by push-stable cohort key so summaries and review progress
-/// survive a rebase. Falls back to honest path grouping (`derivation: path`)
-/// when the repo isn't indexed — never fakes semantic confidence.
-///
-/// Alongside the grouping it computes each cohort's deterministic
-/// [CohortInsights]: the ordered reading path ([CohortLayerPlanner]), the
-/// symbols the diff actually touched ([ChangedSymbolMapper]) and the test files
-/// that cover them ([TestImpactMapper]). All three are cheap joins over data
-/// this method already has in hand, and doing them here means one pass over the
-/// code graph instead of three.
-///
-/// Depends on [CodeGraphDao] directly (not the domain `CodeGraphRepository`)
-/// because it needs the file-scoped symbol/edge queries and cohort computation
-/// is always server-side; the client never computes cohorts. The DAO is
-/// resolved per call from the workspace's own database file.
+/// Cohorts group changed files for the review UI; recomputed when the head changes.
 class ReviewCohortService {
   /// Creates a [ReviewCohortService] over the per-workspace databases.
   ReviewCohortService({

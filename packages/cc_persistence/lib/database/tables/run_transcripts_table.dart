@@ -3,20 +3,11 @@ import 'package:drift/drift.dart';
 
 /// Drift table for one agent run's own activity timeline.
 ///
-/// A run has at most ONE transcript — [runId] is the primary key, so a mid-run
-/// flush replaces the prior snapshot. The transcript belongs to exactly one
-/// workspace ([workspaceId], the isolation boundary); every read filters by
-/// both. Deleting the run log or the workspace cascades the transcript.
-///
-/// Deliberately its own table rather than a column on `agent_run_logs`:
-/// `agent_run_log.watchAll` / `watchRecent` / `watchByConversation`
-/// re-materialize and re-encode every row on every write, so a transcript
-/// column would put megabytes into each of those emissions — the payload
-/// regression `messageToWireLite` exists to prevent. Keeping it separate leaves
-/// the run-log list ops byte-identical.
-///
-/// Primary consumer is the subagent-activity tab, which reads a finished run's
-/// timeline here and a live one from the in-memory `ActiveStreamRegistry`.
+/// A run has at most ONE transcript — [runId] is the primary key, so a mid-run flush
+/// replaces the prior snapshot.
+/// The transcript belongs to exactly one workspace ([workspaceId], the isolation boundary);
+/// every read filters by both.
+/// Deleting the run log or the workspace cascades the transcript.
 @TableIndex(name: 'idx_run_transcripts_workspaceId', columns: {#workspaceId})
 class RunTranscriptsTable extends Table {
   /// The run this transcript belongs to — one transcript per run.

@@ -6,26 +6,13 @@ import 'package:cc_domain/core/domain/value_objects/wake_context.dart';
 import 'package:cc_domain/features/messaging/domain/ports/messaging_port.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 
-/// Drives the host's space-lifecycle + agent-dispatch service over the RPC
-/// client — the thin-client write path for the messaging composer.
+/// Drives the host's space-lifecycle + agent-dispatch service over the RPC client — the
+/// thin-client write path for the messaging composer.
 ///
-/// Two op families back this wrapper. Space LIFECYCLE (open DM, create group,
-/// delete/clear space, remove participant) is pure persistence, so it forwards
-/// to the always-available `messaging.*` ops and works on EVERY host — including
-/// a pure-Dart headless server. Agent DISPATCH (send-and-dispatch, retry, refine,
-/// …) actually executes an agent run, so it forwards to `dispatch.*` ops that
-/// only a host linking the dispatch engine registers (the desktop in-process
-/// host); against a headless server those calls fail loudly. The agent run
-/// executes SERVER-SIDE; the reply streams back via the existing
-/// `messaging.watch*` subscriptions (the server-side `AgentStreamProcessor`
-/// persists segments to the message rows), so this wrapper has no streaming
-/// surface of its own.
-///
-/// Every space-addressed op names its `workspace_id`: a workspace id selects
-/// the database file server-side and a space id resolves only inside its own
-/// workspace. [stopRun] also names it, because it finalizes a persisted run log.
-/// The purely in-memory controls ([pauseRun], [resumeRun], [steerRun]) act on a
-/// run the server already holds registered, so they carry only the run id.
+/// Two op families back this wrapper.
+/// Space LIFECYCLE (open DM, create group, delete/clear space, remove participant) is pure
+/// persistence, so it forwards to the always-available `messaging.*` ops and works on EVERY
+/// host — including a pure-Dart headless server.
 class RemoteMessagingDispatch {
   /// Creates a [RemoteMessagingDispatch] over [_client].
   RemoteMessagingDispatch(this._client);

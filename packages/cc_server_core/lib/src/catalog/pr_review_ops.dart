@@ -273,32 +273,14 @@ List<RepoOp> buildPrReviewOps({
         return {'ok': true};
       },
     ),
-    // Posts REVIEW FINDINGS to the pull request as inline comments, under the
-    // server's app identity.
+    // Posts review findings as inline PR comments under the server's app
+    // identity. Bodies read from stored `review_node` messages (not the
+    // client) so attribution is honest. `pr_review.postReviewComment` stays
+    // on the caller's account (human-typed body).
     //
-    // The bodies are read here from the stored `review_node` messages rather
-    // than taken from the client, and that is what makes the attribution
-    // honest: the server can see that this text was written by a reviewer
-    // agent, so signing it as the app is a fact rather than a claim a caller
-    // made about itself. `pr_review.postReviewComment` next door stays on the
-    // caller's account — that one carries a body the human typed.
-    //
-    // Findings with no file+line anchor are counted and reported, never
-    // silently dropped: GitHub has nowhere to hang them, and a "posted 9 of
-    // 12" that says so is the difference between a partial result and a bug.
-    //
-    // A finding anchored OUTSIDE the diff gets its own bucket for the same
-    // reason. A reviewer agent runs in the PR's worktree, so it can read — and
-    // legitimately have opinions about — the whole repository, but GitHub hangs
-    // an inline comment only on the diff and answers 422 `path could not be
-    // resolved` for anything else. That is not a failure the operator can
-    // retry, it is a finding about code this PR leaves alone, and counting it
-    // as `failed` sent them to the server log to find out which file.
-    //
-    // Classified from GitHub's own verdict rather than pre-filtered against a
-    // fetched diff: reading the PR's file list first would put a full (and for
-    // a big PR, cloning) files fetch in front of every post, to re-derive an
-    // answer the post itself already gives for free.
+    // Unanchored findings counted, never dropped. Anchors outside the diff
+    // get their own bucket (GitHub 422; not retryable as `failed`).
+    // Classified from GitHub's post verdict — no pre-fetch of the PR file list.
     RepoOp(
       name: 'pr_review.commentFindings',
       kind: RepoOpKind.mutate,
@@ -767,7 +749,6 @@ List<RepoOp> buildPrReviewOps({
         return {'ok': true};
       },
     ),
-    // ---- Pull request stacks (GitHub stacks REST API) ----
     RepoOp(
       name: 'pr_review.listStacks',
       kind: RepoOpKind.read,
@@ -987,7 +968,6 @@ List<RepoOp> buildPrReviewOps({
         return {'ok': true};
       },
     ),
-    // ---- PR / commit reference previews (SWR-cached server-side) ----
     // The host fetches via the GitHub client (the desktop holds the token) and
     // SWR-caches the lightweight preview against the workspace's cache. Returns
     // `null` when the ref can't be resolved (the chip falls back to a link).

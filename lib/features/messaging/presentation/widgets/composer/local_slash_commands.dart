@@ -1,7 +1,7 @@
 /// The composer commands handled entirely on the CLIENT, plus the two that ask
 /// the server one question about the conversation.
 ///
-/// **Why they live outside the composer widget.** None of them touches the
+/// Why they live outside the composer widget. None of them touches the
 /// composer's state — they need a workspace, a space, a conversation and
 /// somewhere to put a toast, and that is all. Keeping them inline made a file
 /// whose job is "render an input bar" also the place four unrelated features

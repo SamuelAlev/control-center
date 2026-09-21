@@ -26,26 +26,9 @@ typedef RelayOwnerJoin =
       String? peerId,
     });
 
-/// Makes cc_server the owner of ONE signaling room that every relayed client
-/// (desktop, web, phone — any platform) reaches it through when no direct
-/// path exists (PRD 15 §2/§4).
+/// Owns one signaling room that relayed clients join; forwards RPC frames to this server.
 ///
-/// The host:
-///  * joins `identity.relayRoom` as the room owner (`ownerToken` proves
-///    ownership to the broker across reconnects; a squatted room surfaces
-///    loudly as `owner conflict`),
-///  * publishes the **admission-hash set** derived from every active paired
-///    device's PSK and live-updates it as devices are minted/revoked (the
-///    broker evicts a revoked device's live connection immediately),
-///  * accepts per-client sessions: a joining client sends a cleartext
-///    `hello` naming its device id, the host builds a PSK-scoped
-///    [RelayRemoteTransport] for that peer, runs the standard mutual PSK
-///    handshake (+ identity signature) and serves its authenticated
-///    [RemoteRpcSession] — identical semantics to the direct-WSS path.
-///
-/// The device id in a hello is routing information, not authentication: a
-/// peer claiming a foreign device cannot open or seal frames under that
-/// device's PSK, so its handshake fails closed.
+/// Admission uses paired-device hashes; room dies with the host process.
 class RemoteRelayHost {
   /// Creates a [RemoteRelayHost].
   RemoteRelayHost({

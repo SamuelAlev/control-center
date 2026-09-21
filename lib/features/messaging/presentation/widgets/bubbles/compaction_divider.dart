@@ -9,7 +9,7 @@ import 'package:flutter/widgets.dart';
 /// Renders a compaction as a slim, expandable divider rather than a wall of
 /// summary text.
 ///
-/// **Why not just show the summary.** A compaction summary is long by
+/// Why not just show the summary. A compaction summary is long by
 /// construction — it stands in for dozens of turns — so rendering it inline
 /// drops a page of prose into the middle of the conversation at exactly the
 /// moment the reader is scrolling past it. What they actually need at that

@@ -4,7 +4,6 @@ import 'package:control_center/features/messaging/providers/messaging_providers.
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-// ── User-friction analytics providers (PRD 06, feature #5) ───────────────────
 //
 // Extracts frustration signals (yelling, profanity, anguish, negation,
 // repetition, blame) from the user's own messages across the workspace's

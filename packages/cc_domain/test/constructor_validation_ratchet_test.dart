@@ -4,30 +4,12 @@ import 'package:test/test.dart';
 
 /// Constructor validation must survive release mode.
 ///
-/// `assert` is a DEBUG-ONLY statement. Dart strips it from
-/// `flutter build --release` and from `dart build cli`, which is precisely the
-/// production `cc_server` binary — so every entity that validated with
-/// `assert(name.isNotEmpty, …)` had, in production, no validation at all. Two
-/// enforcement semantics coexisted in one package (`Agent` asserted;
-/// `chat_space_link.dart` threw `ArgumentError`), which is the shape of a
-/// rule nobody can follow because there is no rule.
-///
-/// The convention now: **a non-const constructor validates by throwing**, in
-/// its body. 154 asserts across 73 files were converted.
-///
-/// A `const` constructor is the one exception, and it is a language
-/// constraint rather than a preference: a const constructor cannot have a
-/// body, and dropping `const` to gain one would break every `const X(...)`
-/// call site — a worse trade than debug-only validation on a type whose
-/// values are usually compile-time literals anyway. Those keep their asserts,
-/// and this test pins that they are the ONLY ones that do.
-///
-/// Scope is every non-generated `lib/` in the workspace, not just this
-/// package: the first version of this check used a regex whose parameter-list
-/// pattern (`\([^;{]*?\)`) could not span a `{…}` named-parameter list, so it
-/// silently saw only positional constructors — i.e. almost none of them — and
-/// passed while eight offenders sat in other packages. It now scans with a
-/// brace-balanced walk and asserts a floor on what it found.
+/// `assert` is stripped from release/`dart build cli`, so production had no
+/// validation for assert-based entities. Convention: non-const constructors
+/// throw in the body. `const` constructors keep asserts (no body allowed;
+/// dropping `const` would break call sites) — this test pins they are the only
+/// assert validators. Scans every non-generated workspace `lib/` with a
+/// brace-balanced walk (regexes miss named-parameter lists).
 void main() {
   test('no non-const constructor validates with assert', () {
     final roots = _libRoots();

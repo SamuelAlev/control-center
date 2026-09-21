@@ -9,12 +9,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Navigates a conversation's branches.
 ///
-/// **What it is for.** Once a conversation is a tree, the path you are reading
+/// What it is for. Once a conversation is a tree, the path you are reading
 /// is one of several and nothing on screen says so. This is the only surface
 /// that shows the others — where the conversation forked, which path it is
 /// currently on, and how to get back to one you left.
 ///
-/// **It draws indentation, not a graph.** A conversation branches at a handful
+/// It draws indentation, not a graph. A conversation branches at a handful
 /// of points, in a list people already read top to bottom; a node-and-edge
 /// canvas would be a second navigation model to learn for something an indent
 /// already says. Depth is the fork depth, so a straight conversation renders as

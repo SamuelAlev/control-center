@@ -124,22 +124,14 @@ void styleWindowOnShow(Window window, AppPreferences prefs) {
     case primaryWindowTitle:
       window.titleBarStyle = TitleBarStyle.hidden;
       window.backgroundColor = _transparent;
-      // macOS drags the window ITSELF from the titlebar region — the strip our
-      // own title bar draws into, once the style above puts the content under
-      // a transparent titlebar. That is why pressing the sidebar toggle,
-      // back/forward, a breadcrumb or a popover trigger and moving a few
-      // pixels walked the whole window: AppKit starts that drag before Dart
-      // sees the event, so no `WindowDragArea` guard can refuse it, and it is
-      // not the view's `mouseDownCanMoveWindow` either (overriding that on
-      // FlutterView changed nothing).
-      //
-      // `setMovable:NO` is the switch that reaches it: it "will disable
-      // server-side dragging of the window via titlebar or background"
-      // (NSWindow.h). It takes the app's own deliberate drag with it —
-      // `performWindowDragWithEvent:` is server-side too — so the title bar
-      // moves the window itself (`WindowDragArea.moveWindowManually`). The
-      // window can still be resized and moved programmatically, which is what
-      // restoring geometry and double-click-to-zoom need.
+      // macOS drags the window ITSELF from the titlebar region — the strip our own title bar
+      // draws into, once the style above puts the content under a transparent titlebar.
+      // That is why pressing the sidebar toggle, back/forward, a breadcrumb or a popover trigger
+      // and moving a few pixels walked the whole window: AppKit starts that drag before Dart
+      // sees the event, so no `WindowDragArea` guard can refuse it, and it is not the view's
+      // `mouseDownCanMoveWindow` either (overriding that on FlutterView changed nothing).
+      // It takes the app's own deliberate drag with it — `performWindowDragWithEvent:` is
+      // server-side too — so the title bar moves the window itself
       window.isMovable = false;
       if (_geometryRestoredWindowIds.add(window.id)) {
         _restoreMainWindowGeometry(window, prefs);

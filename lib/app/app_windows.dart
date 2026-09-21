@@ -24,28 +24,14 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sentry_flutter/sentry_flutter.dart' show SentryWidget;
 
-/// Delegate that quits the whole application when its window is closed, instead
-/// of just destroying the window.
-///
-/// The primary window (and the pre-app setup window) *are* the app: closing
-/// either should terminate the process. With Flutter's native windowing the
-/// runner is headless — a single `FlutterEngine` with no `MainFlutterWindow` —
-/// so the default close behaviour (destroy the window, leave the engine
-/// running) leaves a live engine with zero windows. On macOS that engine keeps
-/// vsyncing against a surface that no longer exists, spamming
-/// "Reported frame time is older than the last one; clamping" forever and the
-/// spawned `cc_server` orphans because the app never exits (its
-/// `AppLifecycleListener.onExitRequested` teardown never fires).
-///
-/// Routing through [WidgetsBinding.exitApplication] (rather than destroying the
-/// window) goes via the platform's app-exit path, which invokes
-/// `onExitRequested` so the spawned server is stopped cleanly first. The
-/// app-initiated exit also sidesteps the runner's
-/// `applicationShouldTerminateAfterLastWindowClosed`, which is deliberately
-/// `false` in DEBUG to keep hot restart alive. This hook never fires during a
-/// hot restart: a restart tears the window down by unmounting the widget
-/// (`State.dispose` → `controller.destroy()`), not through a user close
-/// request, so hot restart keeps working.
+/// Delegate that quits the whole application when its window is closed, instead of just
+/// destroying the window.
+/// With Flutter's native windowing the runner is headless — a single `FlutterEngine` with
+/// no `MainFlutterWindow` — so the default close behaviour (destroy the window, leave the
+/// engine running) leaves a live engine with zero windows.
+/// On macOS that engine keeps vsyncing against a surface that no longer exists, spamming
+/// "Reported frame time is older than the last one; clamping" forever and the spawned
+/// `cc_server` orphans because the app never exits (its
 class _QuitOnCloseDelegate extends WindowControllerDelegate {
   @override
   void onWindowCloseRequested(WindowController controller) {

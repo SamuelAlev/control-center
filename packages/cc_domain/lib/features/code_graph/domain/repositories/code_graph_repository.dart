@@ -13,7 +13,6 @@ import 'package:cc_domain/features/code_graph/domain/entities/code_symbol.dart';
 /// isolated worktrees that can share the same `repoId` on different branches,
 /// so the graph is partitioned per workspace to prevent one workspace's code
 /// from leaking into another's queries.
-///
 /// Within a `(workspaceId, repoId)` pair the graph is further partitioned per
 /// CHECKOUT: `checkoutId` is null for the workspace's linked checkout (what
 /// `index_code` walks) and an `isolated_repos` row id for a conversation/PR
@@ -21,7 +20,6 @@ import 'package:cc_domain/features/code_graph/domain/entities/code_symbol.dart';
 /// checkout, so it gets its own partition; searching a conversation resolves
 /// its worktree's partition instead of serving the linked checkout's stale
 /// symbols. Deleting the `isolated_repos` row FK-cascades the partition away.
-///
 /// Search mirrors the memory fact repository: hybrid BM25 + vector (RRF) when
 /// a query embedding is supplied, FTS-only otherwise.
 abstract class CodeGraphRepository {

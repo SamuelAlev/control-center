@@ -1,21 +1,11 @@
 // Interactive terminal view — a thin client over RPC.
-//
-// `xterm` is pure Dart and renders fine on every target; the only thing that
-// used to differ between desktop and web was the PTY transport. The desktop
-// no longer spawns a local PTY (`flutter_pty`): it is a thin client like web,
-// so both targets share this single view. A `TerminalSessionController`
-// (terminal_session_controller.dart) spawns a sandboxed shell over the
-// `terminal.spawn` RPC op on the connected `cc_server`, streams its output
-// over the `terminal.output` subscription into the xterm `Terminal` and
-// forwards xterm input/resize back over `terminal.write`/`terminal.resize`.
-// Killing the server-side session is the controller owner's call — the
-// keep-alive registry (messaging IDE) disposes on tab close / shell exit /
-// LRU eviction, the [TerminalPanel] compat wrapper on unmount.
-//
-// When the connected server does NOT host these ops (a pure-Dart headless
-// server with no terminal support wired in), `terminal.spawn` fails with
-// `opUnknown`; the view then renders an honest "the terminal runs on the
-// server host" message rather than erroring.
+// `xterm` is pure Dart and renders fine on every target; the only thing that used to
+// differ between desktop and web was the PTY transport.
+// The desktop no longer spawns a local PTY (`flutter_pty`): it is a thin client like web,
+// so both targets share this single view.
+// A `TerminalSessionController` (terminal_session_controller.dart) spawns a sandboxed
+// shell over the `terminal.spawn` RPC op on the connected `cc_server`, streams its output
+// over the `terminal.output` subscription into the xterm `Terminal` and forwards xterm
 library;
 
 import 'dart:async';

@@ -3,32 +3,12 @@ import 'dart:async';
 import 'package:cc_persistence/database/workspace/workspace_database.dart';
 import 'package:cc_persistence/database/workspace_database_manager.dart';
 
-/// The ONE place workspace-scoped data is read across workspaces.
+/// The only sanctioned way to read workspace-scoped data across workspaces.
 ///
-/// Before the database was split, a cross-workspace query was an ordinary
-/// `SELECT` with no `WHERE workspace_id`, marked with a `CROSS-WORKSPACE BY
-/// DESIGN` doc comment and enforced by a ratchet test's allow-list. That worked,
-/// but the surface was diffuse: 87 marked sites spread across 40 DAOs and
-/// nothing stopped an 88th appearing.
-///
-/// Now crossing workspaces requires opening several database files and doing
-/// that requires this class. The surface is therefore *enumerable*: the callers
-/// of [fanOut] and [mergeStreams] are the complete list of everything in the
-/// product that legitimately spans workspaces. A routing ratchet test asserts
-/// nothing else imports it.
-///
-/// The legitimate callers fall into four groups:
-///
-///  * **Operator-facing all-workspace views** — the dashboard's all-agents and
-///    all-spaces lists, the workspace-health pulse.
-///  * **Startup reconcilers** — the orphan-run reaper, the stranded-ticket
-///    reconciler, pipeline resume, stranded space provisioning.
-///  * **Maintenance** — retention sweeps, the runtime-state GC, skill
-///    re-verification, backup.
-///  * **Event routing** — the trigger dispatcher, which fans out and then
-///    re-filters per event.
-///
-/// Everything else has a workspace id in hand and must use it.
+/// Callers of [fanOut]/[mergeStreams]/etc. are the enumerable cross-workspace
+/// surface (dashboards, startup reconcilers, retention/GC, event routing).
+/// Everything else must use a workspace id. Routing ratchet asserts no other
+/// import path.
 class CrossWorkspaceQueries {
   /// Creates a fan-out helper over `manager`.
   const CrossWorkspaceQueries(this._manager);
@@ -121,26 +101,11 @@ class CrossWorkspaceQueries {
     return ok;
   }
 
-  /// Merges one stream per workspace into a single stream of the concatenated
-  /// lists, re-emitting whenever ANY workspace emits.
+  /// Merges one stream per workspace; re-emits when any emits.
   ///
-  /// This is how the all-workspace live views work. Two properties matter:
-  ///
-  ///  * It emits only once every workspace has produced a first value, so
-  ///    subscribers never see a half-populated list that then grows — which
-  ///    would read as rows appearing out of nowhere.
-  ///  * The workspace set is captured at subscribe time. A workspace created
-  ///    later is not picked up until the subscriber re-subscribes; the
-  ///    workspace-registry stream is what changes and callers that care watch
-  ///    that too.
-  ///
-  /// [sort] is applied to the merged list — pass one whenever the per-workspace
-  /// streams were ordered, because concatenation does not preserve a global
-  /// order.
-  /// Unlike the one-shot fan-outs this does NOT close the files it opened: a
-  /// live merged view holds one drift subscription per workspace, and closing
-  /// the connection under a subscription kills it. The workspaces are open
-  /// because something is watching them, which is the definition of in use.
+  /// First emission waits for every workspace. Workspace set is subscribe-time
+  /// only. Does not close opened files (live drift watches). Optional [sort]
+  /// after concat.
   Stream<List<T>> mergeStreams<T>(
     Stream<List<T>> Function(WorkspaceDatabase db) watch, {
     int Function(T a, T b)? sort,

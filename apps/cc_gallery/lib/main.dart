@@ -38,23 +38,13 @@ void main() {
   runApp(const CcGalleryApp());
 }
 
-/// The preview Workbench's app builder — a Material-free [WidgetsApp].
+/// Preview Workbench app builder — Material-free [WidgetsApp].
 ///
-/// Replaces widgetbook's default `widgetsAppBuilder`, which builds a
-/// `WidgetsApp` with only `home:` set. The current Flutter SDK asserts that a
-/// `WidgetsApp` provides one of `builder` / `onGenerateRoute` /
-/// `pageRouteBuilder` (`packages/flutter/lib/src/widgets/app.dart`), so the
-/// stock builder throws for every use-case. We supply a `pageRouteBuilder` and
-/// keep the preview Material-free — cc_ui itself uses no Material.
-///
-/// We do, however, register the default Material/Cupertino localizations
-/// delegates. cc_ui draws no Material widgets, but Widgetbook addons that wrap
-/// the preview *do*: the [InspectorAddon]'s info panel uses an `ExpansionTile`
-/// and `AccessibilityTools` uses Material chrome, both of which assert on a
-/// `MaterialLocalizations` ancestor. Those addons render inside this builder
-/// (see `Workbench`), so without these delegates every inspected use-case
-/// throws `No MaterialLocalizations found`. `WidgetsApp` already appends
-/// `DefaultWidgetsLocalizations.delegate` itself.
+/// Stock widgetbook `widgetsAppBuilder` only sets `home:` and trips the SDK
+/// assert requiring `builder` / `onGenerateRoute` / `pageRouteBuilder`. We
+/// supply `pageRouteBuilder` and register Material/Cupertino localizations
+/// because Widgetbook addons ([InspectorAddon], AccessibilityTools) still
+/// assert on `MaterialLocalizations`.
 Widget ccAppBuilder(BuildContext context, Widget child) {
   return WidgetsApp(
     debugShowCheckedModeBanner: false,

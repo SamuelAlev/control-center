@@ -5,27 +5,12 @@ import 'package:cc_domain/core/domain/ports/embedding_port.dart';
 import 'package:cc_infra/src/embedding/embedding_model_manager.dart';
 import 'package:cc_natives/cc_natives.dart';
 
-/// On-device text embedder. Loads the ONNX session lazily on first use
-/// once the model has been installed on disk and unloads it again after
-/// [idleUnloadAfter] without an embed — the session (model weights + ORT
-/// arena) is the single largest in-process allocation on an idle server and
-/// reloading it on the next embed costs well under a second.
+/// On-device text embedder: lazy ONNX load, unload after [idleUnloadAfter]
+/// (weights are the largest idle allocation; reload is sub-second).
 ///
-/// Inference runs on a dedicated worker isolate ([TextEmbedderWorker]): the
-/// ONNX `session.run` is synchronous FFI and run on the server's main
-/// isolate a tight embed loop left the RPC server unable to answer a request
-/// for 40s while a repo indexed. Every consumer of this port (memory facts,
-/// message ingest, code graph, MCP search tools) rides the worker through
-/// this one seam. Unloading now also reclaims the whole ORT arena — the
-/// worker isolate dies with its session.
-///
-/// Keep this a SINGLETON per host (constructed once in `cc_server_runtime`):
-/// a second instance means a second worker + a second ONNX session.
-///
-/// Lives in cc_infra (Flutter-free) so BOTH the desktop app and the headless
-/// `cc_server` construct the SAME on-device embedder — it depends only on
-/// cc_domain (the port), cc_infra (the model manager) and cc_natives (the
-/// ONNX/FFI runtime), never on Flutter.
+/// Inference on [TextEmbedderWorker] — sync FFI `session.run` on the main
+/// isolate blocked RPCs for ~40s during index. One singleton per host (second
+/// instance = second worker + session). Flutter-free for desktop + `cc_server`.
 class EmbeddingService implements EmbeddingPort {
   /// Creates an [EmbeddingService]. The [_paths] are typically supplied
   /// by [EmbeddingModelManager.resolve] once the model is installed.

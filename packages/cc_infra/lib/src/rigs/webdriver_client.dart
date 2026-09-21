@@ -1,26 +1,12 @@
 // Drives an enclosed WebKit over classic W3C WebDriver.
 //
-// WebKitGTK speaks neither CDP nor BiDi. `WebKitWebDriver` — the driver
-// shipped with the engine — implements the classic WebDriver HTTP protocol,
-// so that is what this talks: a session id in the path, JSON in and
-// `{"value": …}` out, one request per command.
+// WebKitGTK speaks neither CDP nor BiDi; `WebKitWebDriver` is classic HTTP
+// (session id in the path, `{"value": …}` out).
 //
-// Classic WebDriver is older and thinner than the other two protocols, and
-// three gaps have to be closed here rather than papered over:
-//
-//  * **No events.** Nothing tells the host that the page navigated. A link a
-//    person clicked inside the guest would leave the address bar showing the
-//    previous URL forever, so this client POLLS the URL on a slow timer and
-//    publishes the change — the same lane Chromium and Firefox fill from real
-//    events.
-//  * **No console.** WebKit's driver has no log endpoint (the `/log` route
-//    was dropped from the standard). Console output is captured by hooking
-//    `console.*` in the page and read back on the same timer.
-//  * **No viewport command.** `POST /window/rect` sizes the WINDOW, and
-//    MiniBrowser's chrome eats the difference — asking for 800 measured a
-//    762 px viewport. Every coordinate an agent sends is viewport-relative,
-//    so the client measures the delta and re-sizes rather than letting clicks
-//    land tens of pixels off.
+// No events — polls URL so a guest click updates the address bar. No console
+// endpoint — hooks `console.*` in-page. No viewport command — `POST
+// /window/rect` sizes the window and MiniBrowser chrome eats the delta, so
+// the client measures and re-sizes or clicks land tens of pixels off.
 library;
 
 import 'dart:async';
@@ -203,7 +189,6 @@ class WebDriverClient extends ScriptedBrowserEngineClient
     );
   }
 
-  // ── Transport ───────────────────────────────────────────────────────────
 
   static Future<Object?> _request(
     HttpClient http,
@@ -273,7 +258,6 @@ class WebDriverClient extends ScriptedBrowserEngineClient
     );
   }
 
-  // ── The slow lane that stands in for events ─────────────────────────────
 
   static const Duration _permInterval = Duration(milliseconds: 400);
 
@@ -407,7 +391,6 @@ class WebDriverClient extends ScriptedBrowserEngineClient
     await _call('POST', '/actions', body: {'actions': sources});
   }
 
-  // ── Navigation ──────────────────────────────────────────────────────────
 
   @override
   Future<bool> navigate(
@@ -493,7 +476,6 @@ class WebDriverClient extends ScriptedBrowserEngineClient
     );
   }
 
-  // ── Capture and viewport ────────────────────────────────────────────────
 
   @override
   Future<String> captureScreenshot({
@@ -579,7 +561,6 @@ class WebDriverClient extends ScriptedBrowserEngineClient
     );
   }
 
-  // ── Files ───────────────────────────────────────────────────────────────
 
   @override
   Future<bool> setFileInputFiles({

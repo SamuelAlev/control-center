@@ -63,27 +63,9 @@ enum StagedEditRejection {
   stale,
 }
 
-/// Holds changes that were computed but not written, until something commits
-/// or discards them.
-///
-/// **Why staging is worth a mechanism of its own.** A wide mechanical edit — a
-/// codemod, a bulk rename, a structural rewrite across forty files — is the
-/// one shape of change nobody reviews line by line, either the model or the
-/// human. Applying it and reporting "done" means the first honest look at it
-/// is a `git diff` after the fact. Staging turns it into two steps with a real
-/// decision in between: the tool reports what it WOULD do and what it matched,
-/// and the change lands only when something commits it.
-///
-/// **All or nothing, and that is the point.** A multi-file rewrite that writes
-/// nineteen files and fails on the twentieth leaves a tree that compiles under
-/// neither the old shape nor the new one. The store hands back every file at
-/// once so the committer can write them as a unit and refuse the whole thing
-/// if any one of them moved.
-///
-/// **It is not an approval mechanism.** Whether a human is asked is
-/// `ConfirmationPort`'s and the guardrail policy's job; this only makes the
-/// question askable, by giving the change a name and a body while it is still
-/// hypothetical.
+/// Holds computed-but-unwritten changes until commit or discard. Multi-file
+/// commits are all-or-nothing. Not an approval mechanism — that is
+/// `ConfirmationPort` / guardrails; this only names the hypothetical change.
 class StagedEditStore {
   /// Creates a [StagedEditStore].
   StagedEditStore({this.capacity = 8});

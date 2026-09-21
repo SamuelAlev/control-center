@@ -92,7 +92,6 @@ class AcpClient {
     onDone?.call();
   }
 
-  // -- transport ---------------------------------------------------------------
 
   /// Feeds one decoded JSON-RPC line from the agent's stdout. Routes it as a
   /// response (completing a pending request) or a notification (emitting

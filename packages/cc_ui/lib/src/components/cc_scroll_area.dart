@@ -2,36 +2,14 @@ import 'package:cc_ui/src/foundation/cc_motion.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 
-/// A scroll container whose edges fade *only while there is content beyond
-/// them* — the scroll-affordance hint driven by real scroll state.
+/// Scroll container that fades an edge only while content remains beyond it.
+/// Prefer over static [CcFadeEdges] on scrollables (those dim content at rest).
 ///
-/// Wraps a scrollable [child] and listens to the scroll and metrics
-/// notifications it bubbles up. While content remains before the viewport the
-/// leading edge fades; while content remains after it the trailing edge does.
-/// At rest against an edge — or when the content fits entirely — that edge is
-/// fully opaque, so the hint can never claim "there is more this way" when
-/// there is not (the failure mode of a static [CcFadeEdges] over a scrollable,
-/// which dims the first row even when the list cannot scroll up).
-///
-/// The hint fades the content itself through an alpha-only mask
-/// ([BlendMode.dstIn]), so it needs no knowledge of the surface behind it,
-/// reads identically in light and dark themes, and can never intercept a
-/// pointer the way an overlaid gradient could. Edge transitions animate over
-/// [CcMotion.moderate] and keep a short fade under reduced motion.
-///
-/// Hints are driven by the nearest scrollable descendant (notification depth
-/// zero, matching [axis]); scrollables nested deeper are ignored. Content-size
-/// changes re-evaluate the hints too (via [ScrollMetricsNotification]), so a
-/// list that shrinks below one screenful while being filtered drops its
-/// trailing hint without a scroll. Reversed and RTL scrollables keep their
-/// hints on the correct sides ([ScrollMetrics.axisDirection] orients the
-/// gradient).
-///
-/// ```dart
-/// CcScrollArea(
-///   child: ListView(children: rows),
-/// )
-/// ```
+/// Alpha-only mask ([BlendMode.dstIn]) — theme-agnostic, never intercepts
+/// pointers. Animates with [CcMotion.moderate] (short fade under reduced motion).
+/// Driven by the nearest scrollable of matching [axis] (depth zero); nested
+/// deeper ignored. [ScrollMetricsNotification] re-evaluates on content-size
+/// change. [ScrollMetrics.axisDirection] orients reversed/RTL hints.
 class CcScrollArea extends StatefulWidget {
   /// Creates a [CcScrollArea].
   const CcScrollArea({

@@ -41,32 +41,15 @@ typedef SteeringSessionsFor = List<SteeringSessionView> Function(
   String conversationId,
 );
 
-/// The durable, conversation-scoped steering queue.
+/// Durable conversation-scoped steering queue (`MessageType.steering`,
+/// `metadata['steerState']`) shown in the strip until a run takes it.
 ///
-/// A steering message is a PERSISTED conversation row (`MessageType.steering`,
-/// `metadata['steerState']`) that renders in the queue strip below the chat
-/// trail until a run takes it:
-///
-/// - `enqueue` writes the row and pushes it into every live harness session's
-///   steering inbox (carrying the row id as `ref`); the loop injects it at
-///   its next turn boundary and the drain notification flips the row to
-///   `injected`, which moves it from the strip into the trail.
-/// - external-CLI transports have no mid-run input lane. Their rows simply
-///   stay queued — visible, editable, deletable — and convert to normal user
-///   messages when the last run ends. Nothing is ever silently swallowed
-///   (the pre-queue bug: a toast claimed delivery while the message sat in a
-///   queue nobody drained).
-/// - when the last run ends with rows still queued (any transport), they are
-///   converted to `text` messages in queue order and dispatched through the
-///   same responder resolution a typed message gets.
-///
-/// Ordering is user-owned: `reorder` stamps `metadata['steerOrder']`, and
-/// `deliver` ("steer now") jumps a row to the front of every live queue.
-///
-/// Lifecycle entry points are PUBLIC and wired by the runtime onto the
-/// dispatch stack's late-bound hooks: [handleHarnessStarted] onto the
-/// dispatch adapter's session-started signal, [handleRunEnded] onto the
-/// dispatch service's run-ended signal.
+/// `enqueue` persists + pushes into live harness inboxes (`ref` = row id);
+/// drain → `injected` (strip → trail). External CLIs have no mid-run lane —
+/// rows stay queued/editable until last run ends, then convert to `text` in
+/// order and dispatch like a typed message (never silently swallow).
+/// `reorder` stamps `steerOrder`; `deliver` jumps to the front of live queues.
+/// Wire [handleHarnessStarted] / [handleRunEnded] from the dispatch stack.
 class SteeringQueueService {
   /// Creates the service.
   SteeringQueueService({

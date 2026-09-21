@@ -6,23 +6,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// A compact keyboard shortcut chip that renders modifier keys in a
-/// platform-aware style (⌘ / ⌥ / ⇧ / ⌃ on macOS; Ctrl / Alt / Shift on
-/// Windows and Linux).
-///
-/// Use [Kbd.symbol] when you already have a pre-formatted label string:
-///
-/// ```dart
-/// Kbd.symbol(label: 'esc')
-/// Kbd.symbol(label: '⌘K')
-/// ```
-///
-/// Use [Kbd.key] when you want the widget to build the label from a
-/// [LogicalKeyboardKey] and modifier flags:
-///
-/// ```dart
+/// A compact keyboard shortcut chip that renders modifier keys in a platform-aware style (⌘
+/// / ⌥ / ⇧ / ⌃ on macOS; Ctrl / Alt / Shift on Windows and Linux).
+/// Use [Kbd.key] when you want the widget to build the label from a [LogicalKeyboardKey]
+/// and modifier flags:
 /// Kbd.key(key: LogicalKeyboardKey.keyK, meta: true)
-/// ```
 class Kbd extends ConsumerWidget {
   /// Creates a [Kbd] from a raw label string.
   const Kbd.symbol({

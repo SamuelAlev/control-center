@@ -1,24 +1,8 @@
 #!/usr/bin/env bash
 #
-# Builds libcc_saml — the SAML 2.0 service-provider crypto native — and
-# installs it where the Dart FFI bindings look for it (the app-support root,
-# plus an optional explicit DEST for CI staging / bundle embedding).
+# Builds libcc_saml (SAML SSO crypto; REQUIRED). First-party cargo crate.
+# Usage: scripts/natives/build_saml.sh [DEST_DIR]
 #
-# FIRST-PARTY SOURCE, in-repo (packages/cc_natives/native/saml/), cargo-
-# built. The crate is a thin, stateless C-ABI seam over the pinned pure-Rust
-# `saml` crate (quick-xml + RustCrypto): NO libxml2 / xmlsec1 / openssl C
-# toolchain, no bindgen, no libclang — a plain `cargo build` on every
-# platform including Windows MSVC.
-#
-# REQUIRED native, no fallback: SAML SSO login refuses to start and the boot
-# preflight names this library when it is missing. There is deliberately no
-# pure-Dart degraded path — hand-rolling XML-DSig/canonicalization is where
-# SAML signature-wrapping vulnerabilities live.
-#
-# Requirements: a Rust toolchain (cargo).
-#
-# Usage:
-#   scripts/natives/build_saml.sh [DEST_DIR]
 set -euo pipefail
 
 REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"

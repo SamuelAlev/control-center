@@ -37,31 +37,9 @@ List<Directory> _nativeSourceDirs() => [
     if (dir != null && Directory(dir).existsSync()) Directory(dir),
 ];
 
-/// Stages every native library `runCcServer`'s boot preflight REQUIRES into a
-/// test's temp `--data-dir`, so tests that boot the real server pass the
-/// preflight the same way a real deployment does (the data dir is a
-/// first-class resolver location).
+/// Stages every native library `runCcServer` preflight requires into a temp dir for tests.
 ///
-/// Mirrors the requirement matrix in `cc_server_runtime.dart` — fff, pty,
-/// cc_watcher, rift, tree-sitter + its grammars/queries, lame, aec,
-/// cc_inference (speech + embeddings) and cc_saml (SSO). Keep the two in
-/// step: a native added
-/// there without being added here fails every server-booting test with a
-/// preflight error rather than the behaviour under test.
-///
-/// Sources, in priority order per file: `$CC_NATIVE_LIB_DIR`, the repo's
-/// `build/natives/` staging dir (populated by
-/// `scripts/natives/build_natives.sh`) and the dev app-support install (where
-/// the `build_*.sh` scripts install by default, including its `grammars/`
-/// subdir). Every native here is first-party and built by those scripts; there
-/// is no pub-cache source.
-///
-/// Deliberately does NOT fail when a native can't be found anywhere: the boot
-/// preflight then fails the test with its actionable "run
-/// `scripts/natives/build_natives.sh`" message, which is the intended loud
-/// failure mode on a machine that never built the natives (same philosophy as
-/// `pty_test.dart`). CI runners do not build natives, so server-boot suites
-/// skip via [skipServerBootWithoutNatives] instead of failing the job.
+/// Copies from the repo's staged natives; skips platforms where a native is exempt.
 Future<void> stageServerNatives(String dataDir) async {
   final sources = _nativeSourceDirs();
 

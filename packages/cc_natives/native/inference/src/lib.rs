@@ -1,39 +1,14 @@
-//! cc_inference — Control Center's native inference leaf.
+//! cc_inference — native inference leaf (C ABI in `cc_inference.h`, FFI from
+//! `packages/cc_natives/lib/src/inference/`). Built by
+//! `scripts/natives/build_inference.sh`; missing dylib = broken install.
 //!
-//! FIRST-PARTY source (not vendored): the C ABI in `cc_inference.h` is consumed
-//! by `packages/cc_natives/lib/src/inference/` over `dart:ffi`. Built by
-//! `scripts/natives/build_inference.sh`; a missing dylib is a broken install —
-//! `cc_server`'s native preflight refuses to boot, there is no degraded mode.
+//! One crate statically links one ONNX Runtime for speech (sherpa-onnx) and
+//! embeddings. Built on `sherpa-onnx-sys` (raw C API). Numeric post-processing
+//! stays in Dart.
 //!
-//! ## One library, one runtime
-//!
-//! Both on-device ML workloads live here — speech (sherpa-onnx) and sentence
-//! embeddings (ONNX Runtime) — because they STATICALLY link a single ONNX
-//! Runtime between them. That is the point: one self-contained artifact, no
-//! loader-path search, no version skew between header and runtime and no way
-//! for two runtimes to collide by base name in one process.
-//!
-//! ## Layering
-//!
-//! Built on the raw C API (`sherpa-onnx-sys`) rather than the safe
-//! `sherpa-onnx` wrapper crate, so no wrapper defaults sit between this code
-//! and the engine — every config field it sets is visible here.
-//!
-//! Numeric post-processing (mean pooling, L2 normalization, PCM conversion,
-//! per-speaker chunking) stays in DART. This crate owns the model graph, not
-//! the arithmetic around it, which is what keeps embeddings comparable with
-//! what is already stored in sqlite_vector.
-//!
-//! ## Safety conventions (uniform across every module)
-//!
-//! * Every `extern "C"` body is wrapped in `catch_unwind`: a panic becomes a
-//!   NULL/-1 return plus [`cc_inference_last_error`], never an unwind across FFI.
-//! * Handles are opaque `Box::into_raw` pointers; each has a NULL-safe
-//!   `*_destroy`.
-//! * Strings returned to Dart are `CString::into_raw` and MUST come back
-//!   through [`cc_string_destroy`].
-//! * Errors are reported out-of-band via a thread-local, so a failing call can
-//!   return a plain NULL/-1 without an out-param.
+//! Safety: `catch_unwind` on every `extern "C"`; opaque `Box::into_raw`
+//! handles with NULL-safe `*_destroy`; strings via `CString::into_raw` /
+//! [`cc_string_destroy`]; errors via thread-local [`cc_inference_last_error`].
 
 mod asr;
 mod diarize;

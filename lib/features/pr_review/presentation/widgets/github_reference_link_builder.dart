@@ -5,25 +5,12 @@ import 'package:control_center/shared/utils/github_reference_parser.dart';
 import 'package:control_center/shared/widgets/github_user_mention_link_builder.dart';
 import 'package:flutter/widgets.dart';
 
-/// cc_markdown `'link'` node builder that swaps GitHub references out for
-/// inline preview chips.
-///
-/// Handles three kinds of references:
-///
-/// * **Pull requests** — same-repo `#123` (rewritten by the preprocessor to
-///   the app's `control-center://` deep-link scheme) and any full PR URL
-///   whose target repo is the host repo or one of [knownWorkspaceRepos].
-///   Renders a [PrReferenceChip].
-/// * **Commits** — any `https://github.com/<owner>/<repo>/commit/<sha>` URL
-///   (host repo or a workspace repo). Renders a [CommitReferenceChip].
-/// * **User / team mentions** — `@login` rewritten to `control-center://user/`
-///   (and `@org/team`). Delegates to [GitHubUserMentionLinkBuilder] so
-///   overlaying this builder via `withOverrides` does not drop mention chips.
-///
-/// [canBuild] claims ONLY those references; every other link falls through to
-/// the engine's default link rendering (which owns its own tap recognizer and
-/// routes through the ambient `onTapLink`). The chip is embedded as a
-/// `WidgetSpan` in the paragraph's single `Text.rich` by the engine.
+/// cc_markdown `'link'` node builder that swaps GitHub references out for inline preview
+/// chips.
+/// (host repo or a workspace repo).
+/// [canBuild] claims ONLY those references; every other link falls through to the engine's
+/// default link rendering (which owns its own tap recognizer and routes through the ambient
+/// `onTapLink`).
 class GitHubReferenceLinkBuilder extends CcNodeBuilder {
   /// Creates a [GitHubReferenceLinkBuilder].
   const GitHubReferenceLinkBuilder({

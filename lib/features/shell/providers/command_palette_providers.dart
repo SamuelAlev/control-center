@@ -17,7 +17,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-// ── Navigation command source ────────────────────────────────────────────────
 
 /// Static source providing global navigation shortcuts.
 class _NavigationCommandSource implements CommandSource {
@@ -104,7 +103,6 @@ final navigationCommandSourceProvider = Provider<CommandSource>(
   (_) => _NavigationCommandSource(),
 );
 
-// ── View command source ───────────────────────────────────────────────────────
 
 /// Static source providing view-related actions (theme toggle, settings).
 class _ViewCommandSource implements CommandSource {
@@ -187,7 +185,6 @@ final viewCommandSourceProvider = Provider<CommandSource>(
   (_) => _ViewCommandSource(),
 );
 
-// ── Aggregated sources ────────────────────────────────────────────────────────
 
 /// Collects all registered [CommandSource] providers.
 ///
@@ -206,7 +203,6 @@ final commandSourcesProvider = Provider<List<CommandSource>>((ref) {
   ];
 });
 
-// ── Agent / quick-action command source ──────────────────────────────────────
 
 class _AgentActionCommandSource implements CommandSource {
   @override
@@ -252,7 +248,6 @@ final agentActionCommandSourceProvider = Provider<CommandSource>(
 // opens pre-populated cost far more memory than the one-frame loading state it
 // saved; palette sources load on open.
 
-// ── Global command builder ────────────────────────────────────────────────────
 
 /// Build global commands by collecting items from all registered [CommandSource]s.
 List<CommandItem> buildGlobalCommands(BuildContext context, WidgetRef ref) {

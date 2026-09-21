@@ -68,27 +68,9 @@ class DemoVisitor {
   };
 }
 
-/// Persisted demo bookkeeping: which workspaces are warm, which are claimed.
+/// Demo bookkeeping: warm vs claimed workspaces, visitor leases, reaper.
 ///
-/// It lives in `<dataDir>/demo/state.json` rather than in the database because
-/// `workspace_meta` is fixed-column self-identification and explicitly not a
-/// settings table — adding a `demo_state` column would mean a product schema
-/// migration for demo housekeeping. A JSON file next to the data is enough,
-/// and boot reconciles it against the registry so a hard kill self-heals.
-///
-/// The file is written ATOMICALLY (temp file + rename) and is treated as a
-/// HINT, never as the source of truth for what exists: the reconcile pass at
-/// boot garbage-collects every registered workspace that neither the pool nor
-/// a visitor owns, so a truncated or corrupt state file degrades to "every
-/// visitor was reaped" instead of "every workspace leaks forever".
-/// A seeded, unclaimed workspace waiting in the warm pool.
-///
-/// It carries WHEN it was seeded because the demo world is anchored to that
-/// moment: the fixtures use relative markers (`@-3d`, `@-20h`) that the seeder
-/// resolves to absolute timestamps once, at seed time. A workspace that sat
-/// unclaimed for a day therefore hands its visitor a calendar week that ended
-/// yesterday and a meeting "20 hours ago" that is really 44 — the demo looks
-/// abandoned, which is the one thing it must never look.
+/// Persisted atomically; restart reconciles leases against reality.
 class DemoWarmWorkspace {
   /// Creates a pool entry.
   const DemoWarmWorkspace({required this.workspaceId, required this.seededAt});

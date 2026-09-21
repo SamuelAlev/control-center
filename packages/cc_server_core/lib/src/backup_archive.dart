@@ -3,24 +3,10 @@ import 'dart:io';
 import 'package:archive/archive_io.dart';
 import 'package:path/path.dart' as p;
 
-/// Packs a backup snapshot directory into a single zip for download.
+/// Packs a backup snapshot directory into one zip for download.
 ///
-/// A snapshot is a set of files — `manifest.json`, `global.db` and one
-/// `<workspaceId>/workspace.db` per workspace — and an HTTP response carries
-/// one body. Without this, "download the backup" would mean downloading its
-/// pieces one at a time and reassembling the layout by hand, which is the part
-/// a restore depends on being exactly right.
-///
-/// Zip rather than tar because the destination is a person's Downloads folder:
-/// macOS, Windows and every Linux desktop open a zip on double-click, and the
-/// entry paths are relative to the snapshot directory so unpacking reproduces
-/// the layout the data directory expects.
-///
-/// Written to a FILE rather than built in memory. A snapshot is the whole
-/// install; buffering one would put every workspace's database in the server's
-/// heap at once, which is the same mistake the embedding pass made before it
-/// moved off the main isolate. The caller owns the returned file and is
-/// expected to delete it once it has been streamed.
+/// Streams entries (no full heap buffer). Skips the manifest's missing files so an incomplete
+/// snapshot still downloads what exists. Caller owns the temp zip lifecycle.
 class BackupSnapshotArchiveBuilder {
   /// Creates a builder writing archives into [stagingDir].
   const BackupSnapshotArchiveBuilder({required this.stagingDir});

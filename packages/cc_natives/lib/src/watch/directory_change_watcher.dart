@@ -2,9 +2,8 @@
 ///
 /// Deliberately FFI-free (no `dart:ffi` import) so the contract can be faked
 /// in tests without loading a dylib. The only production implementation is
-/// the native `cc_watcher` (`NativeDirectoryWatcher`) — there is no
-/// `package:watcher` fallback, by design (see [DirectoryChangeWatcher]'s
-/// implementation for why).
+/// the native `cc_watcher` (`NativeDirectoryWatcher`). No `package:watcher`
+/// fallback: that watcher scans the whole tree and cannot skip ignored dirs.
 library;
 
 /// One coalesced batch of filesystem changes under a watched root.

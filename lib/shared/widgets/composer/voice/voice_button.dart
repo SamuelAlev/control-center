@@ -18,20 +18,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 const String dictationPushToTalkCommandId = 'dictation.pushToTalk';
 
 /// Composer mic button — server-backed streaming dictation (PRD 25 §2).
-///
-/// The client owns no ASR model: pressing the button starts a
-/// [DictationController] session that streams the mic to the host and receives
-/// finalized transcript windows, which are forwarded to the composer via
-/// [onPartial] (the composer applies them as an atomic pending-span
-/// replacement). The button is enabled ONLY when the connected server reports
-/// an installed voice model; otherwise it is disabled with a "set up a voice
-/// model" tooltip.
-///
-/// Push-to-talk honours the stored [dictationHoldToTalkProvider] preference:
-/// HOLD (press/hold the button or the shortcut to dictate, release to stop) or
-/// TOGGLE (press once to start, again to stop). The keyboard shortcut is the
-/// [dictationPushToTalkCommandId] chord; it is handled here (only while the
-/// owning composer is focused) rather than the central dispatcher so it can
+/// The button is enabled ONLY when the connected server reports an installed voice model;
+/// otherwise it is disabled with a "set up a voice model" tooltip.
+/// The keyboard shortcut is the [dictationPushToTalkCommandId] chord; it is handled here
+/// (only while the owning composer is focused) rather than the central dispatcher so it can
 /// observe key-up for hold mode and `preventDefault` the browser on web.
 class VoiceButton extends ConsumerStatefulWidget {
   /// Creates a [VoiceButton].
@@ -137,7 +127,6 @@ class _VoiceButtonState extends ConsumerState<VoiceButton>
     }
   }
 
-  // ── Pointer push-to-talk ──────────────────────────────────────────────────
 
   void _onPointerDown(PointerDownEvent _) {
     if (!_enabled) {
@@ -170,7 +159,6 @@ class _VoiceButtonState extends ConsumerState<VoiceButton>
     }
   }
 
-  // ── Keyboard push-to-talk ─────────────────────────────────────────────────
 
   bool _onHardwareKey(KeyEvent event) {
     if (!_enabled || !widget.composerFocused) {
@@ -242,7 +230,6 @@ class _VoiceButtonState extends ConsumerState<VoiceButton>
     return true;
   }
 
-  // ── Build ─────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {

@@ -58,23 +58,10 @@ class GitHubInstallation {
   };
 }
 
-/// The server's own GitHub identity, discovered rather than configured.
-///
-/// This is what answers work no human asked for: webhook fan-out, PR polling,
-/// ticket sync, private-asset fetches. It is deliberately NOT a person's PAT —
-/// background work authenticating as whoever happened to onboard first stops
-/// the moment they leave, and installation tokens carry their own rate limit
-/// instead of eating a human's.
-///
-/// It sits ON TOP of [GitHubAppTokenMinter] (which the sandbox broker already
-/// uses to mint repo-scoped tokens for agent runs) and adds the two things the
-/// server lane needs and a sandbox launch does not: discovering WHICH
-/// installations exist, so an owner can be resolved to one without the operator
-/// pasting an installation id, and caching the minted token for its lifetime.
-///
-/// Nothing here retries or throws upward: a failure resolves to null so the
-/// caller falls through to the next credential lane, which is what keeps a
-/// misconfigured app from taking the server's forge access down with it.
+/// The server's GitHub App identity for background work (webhooks, polling,
+/// sync). Not a person's PAT. Sits on [GitHubAppTokenMinter] plus installation
+/// discovery and token caching. Failures resolve to null so the next credential
+/// lane can run.
 class GitHubAppClient {
   /// Creates a [GitHubAppClient].
   ///

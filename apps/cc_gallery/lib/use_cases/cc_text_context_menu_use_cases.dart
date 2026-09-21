@@ -2,26 +2,12 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/widgets.dart';
 import 'package:widgetbook_annotation/widgetbook_annotation.dart' as widgetbook;
 
-/// Use-cases for [CcTextContextMenu] — the drawn right-click menu cc_ui fields
-/// fall back to when the host cannot present the operating system's own.
+/// Interactive use-cases for [CcTextContextMenu] (drawn OS-menu fallback).
 ///
-/// This entry is INTERACTIVE, the same way `CcMenu`'s is: the menu has no
-/// standalone constructor to preview, because it renders from a live
-/// `EditableTextState` (it reads the caret anchors and the actions currently
-/// available off the field). So the way to look at it is to right-click a real
-/// field, which is exactly how a user meets it.
-///
-/// The catalogue runner is one of the hosts that gets the fallback. Every
-/// cc_ui field routes right-click through `ccTextContextMenuBuilder`, which
-/// asks the host for its real menu first — on macOS that is a method channel
-/// the main app's runner implements and this app does not, so the request
-/// misses and the drawn menu is what appears here. On Windows and Linux it is
-/// what appears everywhere.
-///
-/// [CcTextContextMenuLabels] carries the entry titles (`Cut` / `Copy` /
-/// `Paste` / `Select all`, English by default). They are the FALLBACK menu's
-/// vocabulary only — a host presenting the real OS menu supplies its own,
-/// already localised.
+/// Menu needs a live `EditableTextState`; right-click a field to preview.
+/// Gallery has no macOS method-channel menu, so the drawn fallback appears.
+/// [CcTextContextMenuLabels] titles are fallback-only; a real OS menu brings
+/// its own localised vocabulary.
 
 const _path = '[Components]/Navigation & Overlays';
 

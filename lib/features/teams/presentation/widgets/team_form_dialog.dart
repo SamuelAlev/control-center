@@ -7,7 +7,7 @@ typedef TeamFormResult = ({String name, String? description});
 
 /// Shows the create/edit dialog for a team's name and description.
 ///
-/// When [initialName] is non-null the dialog is in **edit** mode (title and
+/// When [initialName] is non-null the dialog is in edit mode (title and
 /// confirm label change accordingly); otherwise it creates a new team. Returns
 /// `null` when dismissed, or the trimmed [TeamFormResult] on confirm.
 Future<TeamFormResult?> showTeamFormDialog(

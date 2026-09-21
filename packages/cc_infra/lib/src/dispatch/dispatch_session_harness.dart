@@ -310,7 +310,6 @@ extension _DispatchSessionHarness on DispatchSession {
     var tools = partition.resident;
     var deferredTools = partition.deferred;
 
-    // ---- Vibe mode: the session directs rather than does ----
     final vibeRoster = _vibeRoster;
     if (vibeRoster != null) {
       final vibeTools = buildVibeTools(
@@ -501,7 +500,6 @@ extension _DispatchSessionHarness on DispatchSession {
       spaceId: spaceId,
     );
 
-    // ---- Resume ----
     final resumed = await _loadResumeTranscript();
     final history = <HarnessMessage>[...?resumed?.messages];
     final bareUserText = userText;

@@ -261,12 +261,10 @@ void main() {
     });
   });
 
-  // ---------------------------------------------------------------------------
   // Value semantics. Every one of these had a real consequence: `Rig.==`
   // compared a SUBSET of fields and the watch stream is de-duplicated with
   // `distinctUntilChanged`, so a change to any omitted field never reached a
   // viewer at all.
-  // ---------------------------------------------------------------------------
   group('Rig equality', () {
     test('two identical rigs are equal', () {
       expect(rig(), rig());

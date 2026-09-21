@@ -237,26 +237,16 @@ part 'runtime/cc_server_instance.dart';
 part 'runtime/server_boot_logging.dart';
 part 'runtime/server_helpers.dart';
 
-/// Diagnostics route through [CcHostLog] (installed to stdout/stderr here).
-/// Device PSKs, the provider app identity, per-user credentials and the SSO
-/// secrets share one [FileSecretsStore] (`secrets.json`) under the data dir.
+/// Diagnostics via [CcHostLog]. Secrets (device PSKs, provider app identity,
+/// per-user credentials, SSO) share one [FileSecretsStore] under the data dir.
 ///
-/// [harnessCredentialStore] resolves LLM provider credentials for the built-in
-/// harness transport. Defaults to environment variables; a desktop host can
-/// pass a keychain-backed store so GUI users authenticate without exporting
-/// env vars.
-/// [demoBuilder] turns this boot into a public DEMO server: provider-free,
-/// execution-free and seeded with fictional data. It is a builder rather than a
-/// ready [DemoWiring] because the wiring needs runtime internals (databases,
-/// repositories, the event bus) that do not exist until the boot is underway.
-///
-/// Passing it is the ONLY way to enter demo mode — there is deliberately no
-/// `--demo` flag. Two reasons: the demo's fixtures compile into the binary, so
-/// a runtime branch here would ship them to every desktop install forever; and
-/// a public endpoint whose lockdown depends on an environment variable can be
-/// un-demoed by one deployment mistake. `apps/cc_demo_server` is a separate
-/// `dart build cli` target that passes this in; `apps/cc_server` never
-/// references the builder, so the whole demo subtree is tree-shaken out of it.
+/// [harnessCredentialStore]: LLM credentials for the harness (env by default;
+/// desktop may pass a keychain store).
+/// [demoBuilder]: public DEMO boot (provider-/execution-free, seeded). Builder
+/// not [DemoWiring] because it needs runtime internals created mid-boot.
+/// Demo has no `--demo` flag — fixtures would ship in every desktop binary, and
+/// env-gated lockdown can be un-demoed by mistake. Only `apps/cc_demo_server`
+/// passes this; `apps/cc_server` never references it (tree-shaken out).
 Future<CcServer> runCcServer({
   List<String> args = const [],
   ProviderCredentialStore? harnessCredentialStore,
@@ -382,7 +372,6 @@ Future<CcServer> runCcServer({
   final secrets = FileSecretsStore(dataDir: config.dataDir);
   final eventBus = DomainEventBus();
 
-  // ── Server identity (PRD 15 §9) ──
   // The Ed25519 keypair + relay room minted at first boot. Its fingerprint is
   // the server's identity across every path (loopback, LAN, tunnel, relay) —
   // clients pin it on first pair (TOFU) and the auth handshake proves it per
@@ -409,13 +398,11 @@ Future<CcServer> runCcServer({
   final networkRuntimeHolder = _Late<NetworkRuntime>();
   final takeoverHolder = _Late<TakeoverService>();
 
-  // ── Presence lane (PRD 16 §1) ──
   // The in-memory awareness hub: humans publish via `presence.update`,
   // agents are synthesized below, `presence.watch` fans the roster out per
   // workspace. NEVER persisted (the awareness rule).
   final presenceHub = PresenceHub()..start();
 
-  // ── Identity bootstrap (multi-user identity & access) ──
   // First boot with no users mints the owner (first-user-is-admin; headless
   // takes the OS account name as its handle), then the
   // idempotent backfill binds legacy workspaces / devices / sentinel rows to
@@ -625,8 +612,6 @@ Future<CcServer> runCcServer({
     eventBus: eventBus,
   );
 
-  // ── On-device embedding model (semantic search over memory facts, code
-  // symbols and conversation history) ──
   // The headless server hosts the embedding model exactly like the desktop: an
   // on-disk ONNX model managed by [EmbeddingModelManager]. The model is
   // FORCE-INSTALLED at boot (see the model warm-up next to the code-server
@@ -640,24 +625,15 @@ Future<CcServer> runCcServer({
   // openServerDatabase, so the KNN queries work once vectors exist on disk.
   final paths = CcPaths(config.dataDir);
   final embeddingModelManager = EmbeddingModelManager(paths: paths);
-  // Where THIS pure-Dart process loads the inference native from (no Flutter
-  // plugin bundles it here): an explicit `CC_NATIVE_LIB_DIR` override (the
-  // desktop hands it its Frameworks dir when it spawns us), else the data dir
-  // (a remote/headless deploy can drop the dylib beside its models), else this
-  // binary's own bundle layout (a self-contained server shipped with its libs).
+  // Inference native load path (no Flutter plugin here): `CC_NATIVE_LIB_DIR`
+  // (desktop Frameworks when spawned), else data dir, else this binary's bundle.
   //
-  // ONE path covers BOTH ML workloads — semantic embeddings AND the whole
-  // speech stack — because `libcc_inference` statically links sherpa-onnx
-  // together with a single ONNX Runtime. There is no sibling dylib to locate
-  // and no bare-leaf-name open to rescue with an absolute-path override, which
-  // is what the two previous loaders existed to do.
+  // One path for embeddings and speech — `libcc_inference` statically links
+  // sherpa-onnx + one ONNX Runtime; no sibling dylib.
   //
-  // Resolution is a FILE STAT, never a `DynamicLibrary.open`: probing by open
-  // is what used to hang every JIT host at boot (`dart run` / `dart test`
-  // wedged indefinitely opening the sherpa dylib, while AOT opened it in
-  // milliseconds). The real load happens lazily on the worker isolate that
-  // needs it, where a genuine failure surfaces as an actionable `init_error`.
-  // A null here refuses boot at the native preflight below.
+  // Resolve by FILE STAT, never `DynamicLibrary.open` (JIT hosts used to hang
+  // opening sherpa at boot). Real load is lazy on the worker isolate; null
+  // refuses boot at the native preflight below.
   final inferenceLibPath = resolveInferenceLibraryPath(
     appSupportRoot: config.dataDir,
   );
@@ -714,7 +690,6 @@ Future<CcServer> runCcServer({
   final messagingRepository = DaoMessagingRepository(workspaceDbs);
   final conversationRepository = DaoConversationRepository(workspaceDbs);
 
-  // ── ask_user: the agent's structured question to a human ──
   // ONE instance, shared by the two halves that have to meet: the dispatch
   // path (where `ask_user` calls `ask()` and the run blocks on a Completer)
   // and the RPC catalog (where `messaging.updateMessage` carries the client's
@@ -728,7 +703,6 @@ Future<CcServer> runCcServer({
     timeout: const Duration(minutes: 30),
   );
 
-  // ── Tool-result images ──
   // Content-addressed storage for the screenshots `browser_use` /
   // `computer_use` / `mobile_use` return. Lives under the WORKSPACE's own
   // directory (beside its database) so it is deleted with the workspace and
@@ -739,7 +713,6 @@ Future<CcServer> runCcServer({
     workspaceDir: (workspaceId) =>
         workspaceDirPath(config.dataDir, workspaceId),
   );
-  // ── Harness transcripts ──
   // The conversation's real history, so the next run continues it instead of
   // reading a `<context>` summary of it — and so a `checkpoint` label survives
   // a restart, which is the only way `rewind` means anything across one. Beside
@@ -750,7 +723,6 @@ Future<CcServer> runCcServer({
         workspaceDirPath(config.dataDir, workspaceId),
   );
 
-  // ── Language servers ──
   // ONE pool for the whole host, shared across runs: a language server's cost
   // is its indexing pass, so a per-run supervisor would re-index every project
   // on every dispatch. Servers start LAZILY — on the first request that needs
@@ -764,14 +736,12 @@ Future<CcServer> runCcServer({
   // that runs when a model runs a cell, long after boot.
   RigService? enclosureService;
 
-  // ── Debug adapters ──
   // Bounded like a rig, and for the same reason: an adapter owns a STOPPED
   // process holding whatever that process holds (a port, a lock, a database
   // connection), so it gets a hard TTL and is torn down on shutdown. An
   // orphaned adapter outlives the server and answers to nobody.
   final debugSupervisor = DebugSessionSupervisor();
 
-  // ── tree-sitter grammars ──
   // Built here rather than at the indexer's use site so a missing grammar is
   // caught at boot instead of on the first index run, and so the structural
   // tools (which are wired into the dispatch adapter a few hundred lines
@@ -788,7 +758,6 @@ Future<CcServer> runCcServer({
   // a hard 20s timeout and KILLS the child on expiry.
   final astParsers = AstParserProvider(resolve: grammarManager.resolve);
 
-  // ── Deterministic sync feed (PRD 16 §6) ──
   // Tails the trigger-written change feed and emits ordered delta packets;
   // rows load through the SAME wire mappers the snapshot watches use.
   final syncFeed = SyncFeedService(
@@ -883,7 +852,6 @@ Future<CcServer> runCcServer({
   final memoryPolicyRepository = DaoMemoryPolicyRepository(workspaceDbs);
   final providerPolicyRepository = DaoProviderPolicyRepository(workspaceDbs);
 
-  // ── Memory use cases (shared by MCP registry + RPC catalog) ──
   final resolveDomainUseCase = ResolveOrCreateDomainUseCase(
     domainRepository: memoryDomainRepository,
     grantRepository: memoryAccessGrantRepository,
@@ -1116,22 +1084,13 @@ Future<CcServer> runCcServer({
       ? null
       : KlipyApiClient(appKey: config.klipyAppKey);
 
-  // A THIRD family of factories, one per acting user.
+  // Per-actor forge Dio factories: UI-driven forge writes must be authored by
+  // that human. Process-wide `forgeDioFactory` prefers the app identity with no
+  // caller, so reviews landed as the app. Per-actor names the session user;
+  // their credential wins, app is fallback if they have not connected the forge.
   //
-  // Everything a human drives from the UI — approving a review, posting a
-  // comment, opening a pull request — must be authored on the forge by THAT
-  // human. `forgeDioFactory` cannot do it: with no caller its lookup resolves
-  // the server's app identity first, so every review Control Center submitted
-  // arrived on GitHub as the app rather than as the person who clicked. The
-  // per-actor factory names the caller, so their own credential wins (a GitHub
-  // App user-to-server token acts as them, bounded by the app's permissions)
-  // and the app is only the FALLBACK, for a member who has not connected that
-  // forge.
-  //
-  // One factory per user, memoized: the token itself is still read per request
-  // inside the interceptor, so signing in — or out — applies to the next call
-  // without rebuilding anything. Bounded by the number of users who have made a
-  // forge-touching call.
+  // Memoized per user; token still read per request in the interceptor so
+  // sign-in/out applies on the next call.
   final actorDioFactories = <String, ForgeDioFactory>{};
   ForgeDioFactory forgeDioFactoryForActor(
     String? userId, {
@@ -1157,23 +1116,13 @@ Future<CcServer> runCcServer({
     );
   }
 
-  // GitHub read surfaces whose ANSWER DEPENDS ON WHO IS ASKING — "who am I",
-  // "what teams am I in", "what wants my review", "what have I reviewed".
+  // GitHub reads whose answer depends on who is asking (login, teams,
+  // review-requested, reviewed-by). Cannot use one process-wide client: those
+  // need a user login, and `GET /user` 403s on installation tokens (empty login
+  // → silent empty results). Pinning to the server owner breaks multiplayer.
   //
-  // These cannot be served by one process-wide client. `review-requested:` and
-  // `reviewed-by:` need a login to put in the qualifier, and `GET /user` only
-  // answers a user token: an installation token gets a permanent 403, so a
-  // server-wide client resolves an EMPTY login and every one of these surfaces
-  // silently returns nothing. Pinning them to the server owner instead fixes
-  // the solo case and breaks the multiplayer one — the server would be
-  // asserting which human it belongs to, and a second member asking "who am I"
-  // would be told they are the first.
-  //
-  // So each is keyed by the ACTING PRINCIPAL (`RepoOpContext.userId`, the
-  // authenticated session's user — never a client-supplied id, which would be
-  // an impersonation hole). Memoized per user and bounded by the number of
-  // users who have made a GitHub-touching call; the token is still read per
-  // request inside the interceptor, so signing in applies to the next call.
+  // Keyed by acting principal (`RepoOpContext.userId` — never client-supplied).
+  // Memoized per user; token still read per request.
   final actorGitHubClients = <String, GitHubApiClient>{};
   GitHubApiClient githubClientForActor(String userId, {String? workspaceId}) =>
       actorGitHubClients.putIfAbsent(
@@ -1370,25 +1319,16 @@ Future<CcServer> runCcServer({
     log: (level, message, {Object? error}) =>
         CcHostLog.info('mcp-client[$level]: $message'),
   );
-  // Human-in-the-loop approvals for privileged agent actions (destructive
-  // shell commands, approval-gated MCP tools). The SERVER has no local GUI, so
-  // every request is published to connected clients over
-  // `confirmation.watchPending` and resolved by `confirmation.respond`. The
-  // The SAME instance backs the MCP dispatcher, the harness/dispatch path and
-  // the RPC catalog, so all pending approvals surface in one place. Without this
-  // the fail-closed paths deny every gated action outright.
+  // Human-in-the-loop approvals for privileged agent actions. Server has no
+  // GUI: requests go to clients via `confirmation.watchPending` /
+  // `confirmation.respond`. Same instance backs MCP, harness/dispatch and RPC
+  // catalog; without it fail-closed paths deny every gated action.
   //
-  // There IS a ceiling, deliberately generous. The registry's own default is
-  // "wait forever", which reads as "never silently auto-denied" — but on a
-  // headless host reached only by `RemoteConfirmationPort`, an approval nobody
-  // is connected to see parks a completer, a run slot and a sandbox handle for
-  // the process lifetime. An hour is far longer than any human decision loop
-  // and still bounded; the timeout path fails CLOSED (deny), matching the
-  // action guard's "prompt with no approver ⇒ deny" posture.
-  // Forward-declared: the dispatch deps below close over it for the credential
-  // gate's sign-in probe, while its own construction needs the usage cache that
-  // is built further down. `late final` rather than a reorder — the probe only
-  // runs while a run is parked, long after every one of these is assigned.
+  // Default registry waits forever — on a headless host that parks completers
+  // for process lifetime. One-hour ceiling; timeout fails CLOSED (deny),
+  // matching "prompt with no approver ⇒ deny".
+  // `late final`: dispatch deps close over it for the credential gate while
+  // construction needs the usage cache built further down.
   late final ClaudeAccountStore claudeAccountStore;
   final pendingConfirmationRegistry = PendingConfirmationRegistry(
     timeout: const Duration(hours: 1),
@@ -1564,19 +1504,12 @@ Future<CcServer> runCcServer({
   // these server-side paths + writes through them over the `fs.*` ops.
   final workspaceFilesystem = WorkspaceFilesystemService(paths);
 
-  // Content-addressed skill bundles (PRD 10): register the install/verify/pin
-  // tools now that the filesystem + GitHub client exist (the registry was built
-  // earlier from DB-only deps). `register` is safe post-construction.
-  // PRD 23: the mandatory, fail-closed supply-chain scan gate. Layers 1-2 run
-  // inline (pure, execution-free); results cache by content hash so identical
-  // bytes are never re-scanned. Layer 3 (the budgeted, inert LLM reviewer) is
-  // attached below once the harness provider deps exist — it can only TIGHTEN a
-  // passing static verdict and a provider outage fails open for Layer 3 only
-  // (Layers 1-2 stay the fail-closed gate). Injected into the bundle service +
-  // create_skill so no origin writes unscanned content.
-  // The shared scan cache/audit (per-workspace `skill_scan_results`): the
-  // adapter's cache-by-hash fast path AND the status lookups the settings UI's
-  // installed-skills verdicts read — one repository, two consumers.
+  // Content-addressed skill bundles: register install/verify/pin tools now that
+  // filesystem + GitHub exist. Fail-closed scan gate: Layers 1–2 inline (pure);
+  // cache by content hash. Layer 3 (LLM) attaches below — can only tighten a
+  // pass; provider outage fails open for L3 only. Injected into bundle service
+  // + create_skill so nothing writes unscanned. Shared `skill_scan_results`
+  // backs cache-by-hash and settings UI verdicts.
   final skillScanCache = DaoSkillScanRepository(workspaceDbs);
   final skillScanner = SkillScannerAdapter(
     scanner: const SkillScanner(),
@@ -1666,7 +1599,6 @@ Future<CcServer> runCcServer({
     )
     ..register(ListSkillsTool(filesystem: workspaceFilesystem));
 
-  // ── Live PR freshness plumbing ──
   // One shared change-signal bus: the pollers below (and PR mutations) publish
   // into it and every open `pr_review.watch*` stream re-validates on a signal
   // — that is what pushes GitHub-side changes to connected clients without a
@@ -1675,19 +1607,11 @@ Future<CcServer> runCcServer({
   // conditional requests is the universal baseline.
   final prChangeSignals = PrChangeSignals();
 
-  // The poller fans out per forge: GitHub keeps its batched GraphQL adapter
-  // (one round trip for N repos), and the others go through the generic
-  // per-repo client adapter. A workspace mixing forges therefore polls all of
-  // them into ONE snapshot, and a forge that is down or unauthenticated is
-  // isolated to its own repos.
-  // Every supported forge gets a delegate, for the same reason the registry
-  // does: membership must not freeze at boot. A forge is only ever called about
-  // repos that live on it, so an unconnected one with no repos costs nothing,
-  // and one with repos fails in isolation rather than emptying the inbox.
-  //
-  // GitHub adapter is per repo owner: a no-caller token is whichever
-  // installation answered first, and GitHub 404s every other owner's repos.
-  // Each client's credential covers that owner (then owner PAT, then env).
+  // Poller fans out per forge into one snapshot; a down/unauth forge is
+  // isolated to its own repos. Every supported forge gets a delegate so
+  // membership does not freeze at boot.
+  // GitHub adapter is per repo owner (installation token is owner-scoped;
+  // other owners 404).
   final ownerScopedGitHubDios = <String, Dio>{};
   Dio githubDioForOwner(String workspaceId, String owner) =>
       ownerScopedGitHubDios.putIfAbsent(
@@ -1742,7 +1666,6 @@ Future<CcServer> runCcServer({
     forUserId: ownerUserId,
   );
 
-  // ── Demo wiring ──
   // Assembled at ONE point, which is possible because everything it needs
   // (databases, the registry, identity, the event bus, blobs, the poller) is
   // already built above. Below, ~14 substitution sites read `demo?.x ?? realX`
@@ -1862,7 +1785,6 @@ Future<CcServer> runCcServer({
   );
 
   _bootMark('wiring agent executor + tool surface');
-  // ── Agent executor (pure-Dart) ──
   // The headless server runs agents itself now that the dispatch engine is
   // Flutter-free: `claude -p` (and the other CLIs) are spawned through the
   // sandboxed dispatch session and AgentStreamProcessor persists streamed
@@ -1880,23 +1802,15 @@ Future<CcServer> runCcServer({
     NoSandboxAdapter(),
     nativeSandbox,
   ]);
-  // …and EXECUTION now follows that detection instead of ignoring it. The
-  // probe is the gate because `SandboxManager.wrap` throws `UnsupportedError`
-  // on a host with no backend (Windows) and `LinuxSandbox` needs `bwrap` +
-  // `socat` present — so wiring the sandbox unconditionally would fail every
-  // bash call there rather than sandbox it. Probing is cheap: a const on
-  // macOS, two PATH lookups on Linux.
+  // Execution follows sandbox detection. `SandboxManager.wrap` throws on hosts
+  // with no backend (Windows); `LinuxSandbox` needs `bwrap` + `socat`. Probe is
+  // cheap (const on macOS, two PATH lookups on Linux).
   //
-  // Both seams have to be fed, because the transports do not share one:
-  //   * `sandbox` (the SandboxPort) wraps the claudeCli transport via
-  //     launch/exec — that is Claude Code only.
-  //   * `sandboxManager` wraps the ACP transport (Cursor) and the built-in
-  //     harness `bash` tool via `wrap()`.
-  // Passing only one leaves the other transport unsandboxed. Every wrapped
-  // path populates `SandboxSpec.protectedPaths` for itself (the ACP config
-  // builder and the harness command runner both call the resolver), so the
-  // deny-write rules over the operator's registered checkouts apply on all
-  // three — but only once a backend is actually attached here.
+  // Both seams required — transports do not share one:
+  //   * `sandbox` (SandboxPort): claudeCli via launch/exec
+  //   * `sandboxManager`: ACP (Cursor) + harness `bash` via `wrap()`
+  // Each path sets `SandboxSpec.protectedPaths` itself; deny-write over
+  // registered checkouts applies only once a backend is attached here.
   final sandboxProbe = await nativeSandbox.probe();
   final useNativeSandbox = config.sandboxEnabled && sandboxProbe.available;
   if (useNativeSandbox) {
@@ -2030,7 +1944,6 @@ Future<CcServer> runCcServer({
   }
 
   final agentDispatch = SandboxedAgentDispatchAdapter(
-    // ── The demo's execution boundary ──
     // Injecting the LOOP (not a fake dispatch port, and not just a scripted
     // provider) is what makes a public demo safe: the dispatch path builds its
     // REAL tool surface, so a scripted model emitting a `bash` call would
@@ -2255,20 +2168,13 @@ Future<CcServer> runCcServer({
     // for every backend that shares its object store.
     wipRescueDir: p.join(config.dataDir, 'wip_rescues'),
   );
-  // Per-conversation worktree + per-agent overlay provisioning. WITHOUT this
-  // the dispatch service falls back to the agent's global dir, so no
-  // `conversations/<spaceId>/agents/<slug>/` overlay is built and the derived
-  // `.mcp.json` lands in the wrong place. rift copy-on-write worktrees are
-  // ENABLED: the dylib is resolved from the same app-support locations
-  // (`CC_NATIVE_LIB_DIR` / data dir / bundle) the other natives use, and it is
-  // the SOLE backend: a CoW failure fails the provision rather than writing a
-  // `git worktree` into the operator's own checkout. The Drift
-  // `isolatedRepoRepository` is the shared, canonical worktree registry (rows
-  // keyed per conversation/PR).
-  // Per-repo lifecycle scripts (setup/archive): persisted as columns on the
-  // repos rows, executed by the server against a space's worktree at
-  // provision/teardown time. Runs are recorded in `repo_script_runs`, which
-  // the Settings scripts dialog reads back for its history + output tail.
+  // Per-conversation worktree + per-agent overlay provisioning. Without this
+  // dispatch falls back to the agent global dir (no overlay / misplaced
+  // `.mcp.json`). rift CoW is the sole backend (same native resolve paths as
+  // other libs); CoW failure fails the provision — never `git worktree` into
+  // the operator checkout. `isolatedRepoRepository` is the worktree registry.
+  // Per-repo setup/archive scripts run at provision/teardown; history in
+  // `repo_script_runs`.
   final repoScriptRepository = DaoRepoScriptRepository(workspaceDbs);
   final repoScriptService = RepoScriptService(
     scripts: repoScriptRepository,
@@ -2792,7 +2698,6 @@ Future<CcServer> runCcServer({
   // still trips the same ordered-pair window (PRD 22 §3).
   final peerRateLimiter = PairRateLimiter();
 
-  // ── Typed ticket WRITE tools ──
   // These replace the retired `ticket_cli` (CLI-args-in-JSON) surface with a
   // discoverable, schema-typed tool per verb. Registered post-construction
   // because they need the ticket workflow + link services and (for
@@ -2832,7 +2737,6 @@ Future<CcServer> runCcServer({
         messagingPort: messagingService,
       ),
     )
-    // ── Peer messaging & delegation (PRD 22) ──
     // Agent↔agent messaging (fire-and-forget + request/reply), guarded task
     // delegation and the todo read-back half. The two peer-messaging tools
     // share one `PairRateLimiter`. `consult_agent` existed but was never
@@ -3217,7 +3121,6 @@ Future<CcServer> runCcServer({
     hostShellPorts: demo != null ? null : rigService.ports,
   );
 
-  // ── Enclosure (rig) tools ──
   // Registered post-construction because they need the rig service, which
   // needs the sandbox manager and the data dir — none of which exist when the
   // DB-only `buildServerMcpRegistry` runs. Whether any of them can actually
@@ -3263,7 +3166,6 @@ Future<CcServer> runCcServer({
   }
 
   _bootMark('resolving speech models');
-  // ── Meeting transcription + diarization (server-side speech stack) ──
   // The headless server runs the SAME Flutter-free Whisper/sherpa stack the
   // desktop uses (cc_natives is pure Dart + FFI on a worker isolate). The
   // diarization service + model manager are always constructed — the
@@ -3294,7 +3196,6 @@ Future<CcServer> runCcServer({
   final diarizationService = MeetingDiarizationService(
     libPath: inferenceLibPath,
   );
-  // ── Agent PTY native (libccpty) ──
   // Backs the sandboxed terminal sessions (the `terminal.spawn` RPC body). Like rift/fff/tree-sitter, libccpty is a loose
   // runtime dylib — no Flutter ffiPlugin bundles it into this pure-Dart binary —
   // so point the PTY loader at the SAME data dir the other natives resolve from.
@@ -3311,7 +3212,6 @@ Future<CcServer> runCcServer({
       envVar: ptyLibraryEnvVar,
     ),
   );
-  // ── Native file watcher (libcc_watcher) ──
   // Backs the code-graph watch service's per-checkout watches. REQUIRED, like
   // the other natives: there is no `package:watcher` fallback, because its
   // per-arm full-tree scan (which cannot skip `node_modules`) is the 65s
@@ -3325,7 +3225,6 @@ Future<CcServer> runCcServer({
       envVar: watcherLibraryEnvVar,
     ),
   );
-  // ── SAML crypto native (libcc_saml) ──
   // Backs SSO SAML login: AuthnRequest building, IdP metadata parsing and
   // XML-DSig-verified Response consumption (pure-Rust `saml` crate behind a
   // stateless C-ABI seam). REQUIRED with no degraded mode — a hand-rolled
@@ -3342,21 +3241,10 @@ Future<CcServer> runCcServer({
   // Loading onnxruntime + probing every bundled dylib: the slowest purely
   // synchronous stretch of boot on a cold page cache.
   _bootMark('loading native libraries');
-  // ── Native-library preflight (fail-fast, no degraded mode) ──
-  // The natives ship INSIDE the server bundle (`apps/cc_server/hook/build.dart`
-  // emits them as DynamicLoadingBundled code assets into `<bundle>/lib/`, the
-  // same way libsqlite3 travels), so a miss here is a broken install — refuse
-  // to boot rather than run with keyword-only search, dead terminals, an empty
-  // code graph, or worktrees that silently stopped being copy-on-write. Only the
-  // on-device MODELS are downloaded at runtime; every LIBRARY is required.
-  //
-  // Declared as a table (see `native_preflight.dart`) rather than inline
-  // `Platform.isWindows` branches, because the same matrix is re-stated in
-  // `scripts/release/verify_natives.sh` and `cc_server_package.sh` — keeping it
-  // in one readable list is what makes those three auditable side by side.
-  //
-  // Built here (rather than at its use site further down) so a missing grammar
-  // is caught at boot instead of on the first index run.
+  // Natives ship in the server bundle; a miss refuses boot (no degraded mode).
+  // Only on-device MODELS download at runtime; every LIBRARY is required.
+  // Matrix lives in `native_preflight.dart` (same list as verify/package scripts).
+  // Built here so a missing grammar fails at boot, not on first index.
   final grammarsRoot = (await paths.grammarsRoot()).path;
   final missingNatives = await missingRequiredNatives(
     buildNativeRequirements(
@@ -3422,7 +3310,6 @@ Future<CcServer> runCcServer({
   }
 
   _bootMark('wiring on-device model controls');
-  // ── On-device model download (server-hosted) ──
   // The headless server HOSTS the three on-device models, so a connected
   // web/thin client triggers a download IN-APP and the SERVER performs the fetch
   // + unarchive under its data dir (`<dataDir>/models/`). Each control owns the
@@ -3486,8 +3373,6 @@ Future<CcServer> runCcServer({
     onLog: (level, m) => _modelLog(level, 'diarization model', m),
   );
 
-  // ── Code graph indexer (the `code.index` body of the `index_code` pipeline,
-  // fired by `RepoAdded`) ──
   // Built from the workspace-scoped code-graph repo + the tree-sitter grammar
   // manager (constructed above, so the preflight can resolve every grammar
   // before boot completes), mirroring the desktop `codeIndexerProvider`. Symbols
@@ -3506,23 +3391,13 @@ Future<CcServer> runCcServer({
   );
 
   _bootMark('wiring code graph + pipelines');
-  // ── Code graph watch service ──
-  // Keeps every checkout's graph partition current: builds a worktree's own
-  // partition the moment it is provisioned (so PR-review search sees the PR's
-  // tree, not the linked checkout's) and reindexes incrementally on any file
-  // save — the built-in code-server IDE, an external editor via "Open in
-  // IDE", agent writes, or a `worktree.syncToPrHead` pull — in worktrees AND
-  // linked checkouts alike. Stream-driven off the repo + worktree registries;
-  // failures are logged, never fatal.
-  // NOT started here — see after the READY BANNER at the end of boot.
-  // Indexing writes through the same single database connection every other
-  // query uses, so starting it mid-boot puts a queue of index writes in front
-  // of the rest of boot: the trivial `listing workspaces` query sat behind it
-  // for minutes and looked like a hang. It used to start right after the RPC
-  // bind, but that still left it competing with the tail of boot — and the
-  // desktop parses the ready banner with a 20s kill-timeout
-  // (cc_server_process.dart), so anything heavy between the bind and the
-  // banner risks the child being killed as "not ready".
+  // Code graph watch: keeps every checkout's partition current (worktree
+  // partition on provision so PR-review search sees the PR tree; incremental
+  // reindex on file save in worktrees and linked checkouts). Stream-driven;
+  // failures logged, never fatal.
+  // NOT started here — after the READY BANNER. Indexing shares the single DB
+  // connection; mid-boot start queues writes ahead of boot queries and can
+  // trip the desktop's 20s ready-banner kill-timeout.
   // workspaceId → (fetchedAt, spaceId → last message time).
   final spaceActivity = <String, MapEntry<DateTime, Map<String, DateTime>>>{};
   // Background reindexes are published as `index_code` runs, so the one
@@ -3592,7 +3467,6 @@ Future<CcServer> runCcServer({
     githubToken: () => forgeCredentials.tokenFor(ForgeHost.github),
   );
 
-  // ── Pipeline executor (pure-Dart) ──
   // The headless server owns the pipeline engine + its step bodies (the same
   // ones the desktop registers), driving the relocated dispatch stack. The
   // common/core + PR-review + meeting + code-index bodies are wired; the
@@ -3693,7 +3567,6 @@ Future<CcServer> runCcServer({
     enableBashScript: demo == null,
   );
 
-  // ── Orchestration approve/cancel ──
   // Approving hires agents, builds teams and starts the generated pipeline on
   // the engine above; cancelling tears it down. Both use-cases are pure-Dart
   // (ApproveOrchestrationUseCase was relocated to cc_infra).
@@ -3717,7 +3590,6 @@ Future<CcServer> runCcServer({
     ticketWorkflow: ticketWorkflow,
   );
 
-  // ── Plan Studio (PRD 17) ──
   // Revision history + operator edits, plan-mode documents, playbooks,
   // honest per-node estimates and plan-drift detection — all served over
   // `orchestration.*` / `plan.*` / `playbook.*` ops below.
@@ -3842,7 +3714,6 @@ Future<CcServer> runCcServer({
     );
 
   _bootMark('wiring review studio + collaboration');
-  // ── Review Studio (PRD 18) ──
   // Semantic cohorts (from the code graph), API-contract diffs, UI visual
   // diffs (golden harness — degraded gracefully without a Flutter SDK) and
   // per-axis results — all served over `review_studio.*` ops below. Compute
@@ -4423,7 +4294,6 @@ Future<CcServer> runCcServer({
         ),
   );
 
-  // ── Take-over / hand-back (PRD 16 §8) ──
   // Pauses runs at turn boundaries (or stops CLI runs), writes the durable
   // marker (a restart comes back paused) and gates dispatch while it stands.
   final takeoverService = TakeoverService(
@@ -4438,7 +4308,6 @@ Future<CcServer> runCcServer({
   );
   takeoverHolder.value = takeoverService;
 
-  // ── Plan drift (PRD 17 §6) ──
   // Compares each finished plan node against its declared scope (estimate
   // band + file provenance). Markers land in Caches for the Studio canvas;
   // under `stopAndAsk` the resume listener's drift gate HOLDS the step until
@@ -4451,7 +4320,6 @@ Future<CcServer> runCcServer({
     conversationChanges: repoIdeData.conversationChanges,
   );
 
-  // ── Checker role (PRD 16 §13) ──
   // A space's named checker agent reviews every other agent's completed
   // main run, in-thread.
   final checkerListener = CheckerDispatchListener(
@@ -4474,7 +4342,6 @@ Future<CcServer> runCcServer({
         },
   )..start();
 
-  // ── Enclosure notices to the driving agent ──
   // A take-over is enforced at the `RigService.act` chokepoint; without this
   // the agent only finds out through a refused click. Injects the notice on
   // the same steering lane take-over/hand-back uses.
@@ -4501,7 +4368,6 @@ Future<CcServer> runCcServer({
   // request time, by which point bootstrap has assigned it.
   TicketSyncEngine? ticketSyncEngineRef;
 
-  // ---- Fleet scaling & remote execution (PRD 20) + Agent evals (PRD 21) ----
   final fleet = buildFleetWiring(
     globalDb: globalDb,
     workspaceDbs: workspaceDbs,
@@ -4770,7 +4636,6 @@ Future<CcServer> runCcServer({
     };
   }
 
-  // ── GitHub PR conversations (bot identity inbound lane) ──
   // PR comments that @mention the server's GitHub App bot, replies inside its
   // review threads, and PRs carrying the review label become turns in the PR's
   // review space here, and the answering agent's completed turn is posted back
@@ -5150,7 +5015,6 @@ Future<CcServer> runCcServer({
     return res ?? {'ok': false, 'error': 'no worktree'};
   }
 
-  // ── Chat bridges (Slack today, one plugin per provider) ──
   // One provider-side app per WORKSPACE, dialed OUTBOUND (Slack: Socket Mode —
   // `apps.connections.open` + a WebSocket), so a server behind NAT with no tunnel
   // receives mentions, DMs and slash commands without any inbound endpoint.
@@ -5649,22 +5513,11 @@ Future<CcServer> runCcServer({
         (await githubIdentityForActor(actingUserId).user())?.toJson(),
     fetchViewerGitHubTeams: (actingUserId) async =>
         await githubIdentityForActor(actingUserId).teams() ?? const {},
-    // The dashboard's "review-requested:<viewer>" search.
-    //
-    // Both this and [fetchReviewedBy] used to be wired to null at boot unless
-    // `ghUsername` was non-empty — and `ghUsername` resolves with NO calling
-    // user, so it takes the app-identity lane, whose installation token gets a
-    // permanent 403 from `GET /user` and therefore resolves to ''. The result
-    // was that on any install with a GitHub App configured, BOTH fetchers were
-    // null for the life of the process: the dashboard's priority-review panel
-    // and the inbox's "Waiting for author" section were wired to a handler
-    // that returns an empty list unconditionally, and neither search ever ran
-    // once. Silent, because "no results" and "never asked" render identically.
-    //
-    // Unconditional now, and resolved PER CALL for the ACTING USER: an empty
-    // login yields an empty result for that call and the next one re-probes, so
-    // a sign-in lands without a restart. Same reasoning as
-    // `fetchCurrentGitHubUser` above.
+    // Dashboard `review-requested:<viewer>` search. Was null at boot unless
+    // `ghUsername` was set; that resolves with no calling user → app identity →
+    // `GET /user` 403 → '', so both fetchers stayed null for the process life
+    // (silent empty results). Now unconditional, resolved per call for the
+    // acting user; empty login → empty result, next call re-probes.
     fetchReviewRequested: (repos, actingUserId) async {
       final login =
           (await githubIdentityForActor(actingUserId).user())?.login ?? '';
@@ -6213,20 +6066,10 @@ Future<CcServer> runCcServer({
           required bool approveOnShip,
           required String userId,
         }) async {
-          // Published under the APP, not the person who pressed the button.
-          //
-          // The general rule is that a human-driven forge write is authored by
-          // that human — but the content here is not theirs. Every finding in
-          // it was written by a reviewer AGENT and stored as a review node; the
-          // operator is forwarding an agent's review, not writing one. Signing
-          // it with their account puts their name on judgements they did not
-          // make, and a PR author reading the thread cannot tell which of the
-          // two it was. Agent work rides the app identity, and this is agent
-          // work with a human release gate on it.
-          //
-          // `userId` still matters and is deliberately still required: it is
-          // what the role gate and the audit record are keyed on. Who pressed
-          // publish is recorded; who is credited on GitHub is the app.
+          // Published under the APP — findings are reviewer-agent work with a
+          // human release gate, not the operator's own prose.
+          // `userId` still required for the role gate and audit; GitHub credit
+          // is the app.
           final result = await reviewPublisherService.publish(
             workspaceId: workspaceId,
             spaceId: spaceId,
@@ -6288,24 +6131,13 @@ Future<CcServer> runCcServer({
     ];
   }
 
-  // The registry existence gate wired into the `repo/call` +
-  // `sub/subscribe` chokepoints: an id the registry doesn't know (a stale
-  // client-held active workspace, a typo, a probing peer) is refused BEFORE
-  // any workspace database is opened — opening CREATES the file, so an
-  // ungated id sprays empty ghost `workspace.db` directories on every call.
+  // Registry existence gate for `repo/call` + `sub/subscribe`: unknown ids
+  // refused BEFORE opening a workspace DB (open CREATES the file → ghost dbs).
   //
-  // POSITIVE results are memoized for a minute: this gate runs on every
-  // `repo/call` AND every `sub/subscribe`, so it was a registry SELECT in
-  // front of every request, serialized on the one shared connection.
-  //
-  // Negatives are deliberately NOT cached — a workspace created a moment later
-  // has to be reachable at once, and a miss costs one primary-key lookup. The
-  // positive TTL is what bounds the other direction: a DELETED workspace keeps
-  // passing this gate for at most `_workspaceExistsTtl`. That is safe because
-  // of what the gate is FOR — refusing ids that were never registered, so that
-  // opening one cannot spray a ghost `workspace.db`. A deleted workspace's file
-  // already exists, so nothing is materialized, and the authorization that
-  // actually protects its data (the role gate) is exact and uncached-by-TTL.
+  // Positives memoized one minute (gate runs on every call/subscribe).
+  // Negatives not cached — new workspaces must be reachable immediately.
+  // Positive TTL: a deleted workspace may pass for up to `_workspaceExistsTtl`;
+  // safe because its file already exists (no ghost) and the role gate is exact.
   const workspaceExistsTtl = Duration(minutes: 1);
   final knownWorkspaceIds = <String, DateTime>{};
   Future<bool> workspaceExists(String workspaceId) async {
@@ -6532,7 +6364,6 @@ Future<CcServer> runCcServer({
         ),
   );
 
-  // ── Multi-vendor ticket sync (PRD 11) ──
   // Control Center tickets are primary; enabled vendor connections mirror local
   // changes out (the coordinator pushes on ticket events) and pull vendor
   // changes back in (the webhook handler). Adapters authenticate from the server
@@ -6860,7 +6691,6 @@ Future<CcServer> runCcServer({
                   mediaType: stored.mediaType,
                 );
         },
-    // ---- Backup transfer (`/backup/*`) ----
     // The byte half of the backup surface. `workspace.export` returns a PATH
     // and `workspace.import` takes one, which is a complete answer only when
     // the server is the operator's own machine; these three carry the bytes
@@ -7041,7 +6871,6 @@ Future<CcServer> runCcServer({
         Uri.parse('$proxyScheme://127.0.0.1:${server.boundPort}');
   }
 
-  // ── Speech recognizer preflight + dylib diagnostic ──
   // Load the recognizer once (off the ready path, so it never delays boot)
   // when a voice model resolved, then UNLOAD it again. This surfaces — loudly,
   // in the server log the desktop pipes through — whether the inference native
@@ -7080,7 +6909,6 @@ Future<CcServer> runCcServer({
     );
   }
 
-  // ── code-server (embedded editor) warm-up ──
   // Eagerly download the pinned code-server standalone archive + the curated
   // language extensions, OFF the ready path so the embedded editor is warm by
   // the time a user opens a file — the first `codeServer.open` then only spawns
@@ -7106,38 +6934,18 @@ Future<CcServer> runCcServer({
         }),
   );
 
-  // ── On-device model warm-up (embedding + diarization + ASR) ──
-  // All three models are force-installed at boot, alongside the code-server
-  // warm-up: models are the only artifacts the server fetches at runtime (the
-  // native dylibs ship in the bundle), so a fresh deploy lights up semantic
-  // search, diarization AND speech without any client action. Runs through the
-  // same [ManagedModelControl]s the `models.*` RPC ops drive, so install is a
-  // no-op when already on disk, a concurrently connected client sees the boot
-  // download's live progress over `models.watch*` and a failed download
-  // surfaces as the control's `error` state (retried on next boot or via the
-  // client's install button) without blocking the ready path.
+  // On-device model warm-up (embedding + diarization + ASR) via the same
+  // [ManagedModelControl]s as `models.*` RPC: no-op if on disk; clients see
+  // live progress on `models.watch*`; failure → control `error` (retry next
+  // boot / install button) without blocking ready.
   //
-  // The ASR model is the SELECTED one, not a hardcoded id — the voice control
-  // is selectable and defaults to Parakeet TDT v3, so someone who picked
-  // Whisper gets the model they chose warmed rather than a second one they
-  // never asked for. It is by far the largest (~600 MB against ~90 and ~35),
-  // which is why it used to be opt-in; the tradeoff is deliberate now, because
-  // it is the ONE model whose absence disables whole RPC ops rather than
-  // degrading a feature (`meeting.*` / `dictation.*` are simply not served).
+  // ASR is the SELECTED model (not hardcoded) — largest (~600 MB); its absence
+  // disables `meeting.*` / `dictation.*` rather than degrading.
+  // Speech needs one restart: transcriber resolves its model early in boot;
+  // awaiting the download would blow the desktop's 20s ready-banner timeout.
   //
-  // Speech still needs ONE restart to light up, and that is not an oversight:
-  // the transcriber resolves its model near the top of boot, minutes before
-  // this download can finish, and awaiting a 600 MB fetch on the boot path
-  // would blow the desktop's 20s ready-banner timeout and get the process
-  // killed. Predownloading turns the old three-step dance (open settings,
-  // install, restart) into a single restart.
-  //
-  // demo: SKIPPED. These are ~700 MB of downloads from a public model host —
-  // by far the largest outbound transfer the server can make — and a demo
-  // needs none of them: meetings and dictation are denied at the op layer and
-  // the seeded memory facts are FTS-only by design (the documented degrade
-  // while no embedding model is installed). Leaving this unguarded would have
-  // made "a demo container makes no outbound request" plainly false.
+  // demo: SKIPPED — ~700 MB public downloads; meetings/dictation denied at the
+  // op layer and seeded memory is FTS-only by design.
   if (demo == null) {
     CcHostLog.info(
       'cc_server: ensuring on-device models (embedding + diarization + '
@@ -7148,7 +6956,6 @@ Future<CcServer> runCcServer({
     unawaited(voiceModelControl.install());
   }
 
-  // ── Client relay (broker rendezvous, PRD 15) ──
   // cc_server OWNS one N-way signaling room: it joins the broker as the room
   // owner, publishes the admission-hash set derived from every active paired
   // device and serves an authenticated RPC session per relayed client
@@ -7199,7 +7006,6 @@ Future<CcServer> runCcServer({
     onTimeout: 'remote pairing will connect in the background',
   );
 
-  // ── Network runtime (PRD 15 §5/§7) ──
   // mDNS LAN advertisement, the persisted share-this-server tunnel and
   // relay-usage accounting. Started after the RPC port bound (paths embed it)
   // and after the relay host exists (usage reads its counters).
@@ -7233,7 +7039,6 @@ Future<CcServer> runCcServer({
   );
   await agentPresenceSynthesizer.start();
 
-  // ── Server-side keep-alive reconcilers ──
   // The pipeline/orchestration lifecycle listeners that the desktop used to run
   // in-process now run here, so a thin client connected to this server keeps
   // pipelines resuming, scheduled triggers firing and orchestration runs mapping
@@ -7263,23 +7068,13 @@ Future<CcServer> runCcServer({
       ),
     ),
   );
-  // Built-in templates are seeded when a workspace is created, so a workspace
-  // created by an older version keeps that version's graph forever unless
-  // something reconciles it — a seed that gains a node, a repo scope or a
-  // reworded prompt would only ever reach brand-new workspaces. Reconcile every
-  // workspace at boot. Read-only in steady state and a template the user edited
-  // is skipped outright (the editor clears `isBuiltIn` on save), so this cannot
-  // overwrite their work or their enabled/trigger choices.
-  // CROSS-WORKSPACE BY DESIGN: a startup reconciler delivering a template
-  // seed, like the orphan-run reaper.
+  // Seed built-in pipeline templates into every workspace at boot so older
+  // workspaces pick up graph changes. Read-only in steady state; user-edited
+  // templates clear `isBuiltIn` and are skipped.
+  // CROSS-WORKSPACE BY DESIGN: startup reconciler delivering a template seed.
   //
-  // `resumeAll` below AWAITS this (see `templateReconcile`) rather than racing
-  // it. A seed that gains a node is also what UNBLOCKS the runs stuck on the
-  // old graph: `resumeAll` re-evaluates each in-flight run against the live
-  // template, so a run left non-terminal by a missing terminal node finishes
-  // on the next boot — but only if the reconcile landed first. Racing it made
-  // that a coin flip, and a lost toss means another boot with the same stuck
-  // rows (and their dedup keys still blocking new runs).
+  // `resumeAll` AWAITS this (`templateReconcile`): a seed that adds a terminal
+  // node unblocks stuck runs only if reconcile lands first.
   final templateReconcile = () async {
     try {
       final all = await workspaceRepository.watchAll().first;
@@ -7649,7 +7444,6 @@ Future<CcServer> runCcServer({
     .._eventListenerStops.add(teamRoutingService.dispose)
     .._chatConnector = chatConnector;
 
-  // ── External MCP server discovery + connect (PRD 01 phases 1.1–1.3) ──
   // Auto-discover MCP servers the user already configured for other tools
   // (Claude/Codex/Cursor/Gemini/VS Code/Windsurf/OpenCode + standalone
   // `.mcp.json`) and connect the enabled ones, bridging their tools into the
@@ -7671,7 +7465,6 @@ Future<CcServer> runCcServer({
     }
   }());
 
-  // ── Live GitHub PR freshness ──
   // The open-PR poller sweeps every workspace's linked repos: cheap conditional
   // (ETag) probes on a fast cadence for watched workspaces, a slow baseline for
   // the rest, full GraphQL fetch + snapshot diff only when something actually
@@ -7687,29 +7480,17 @@ Future<CcServer> runCcServer({
   ccServer._demo = demo;
   ccServer._prChangeSignals = prChangeSignals;
 
-  // The viewer-activity poll reads the owner's own pull-request activity
-  // (pending reviews incl. TEAM requests, mentions, merges) as four aliased
-  // GraphQL searches in ONE request per sweep. Review requests become
-  // `PrReviewRequested` events (→ client notifications); any PR activity on a
-  // linked repo triggers a targeted refresh of that PR's open streams.
+  // Viewer-activity poll: owner's PR activity (pending reviews incl. team,
+  // mentions, merges) as four aliased GraphQL searches per sweep →
+  // `PrReviewRequested` + targeted refresh of linked-repo open streams.
   //
-  // This replaced a `GET /notifications` poll. That endpoint is user-only and
-  // NO GitHub App token can read it — installation or user-to-server alike —
-  // while signing in here mints a GitHub App user token, so the lane 403'd
-  // ("Resource not accessible by integration") on every install that had not
-  // also pasted a classic PAT, and three notification types silently never
-  // fired. `search` is reachable by every credential kind. There is no fallback
-  // to the inbox when a PAT happens to be present: one lane that always works
-  // beats two that can disagree.
+  // Replaced `GET /notifications` (user-only; GitHub App tokens 403). `search`
+  // works for every credential kind; no inbox fallback.
   //
-  // Gated at every pass rather than at boot, and on the OWNER'S OWN credential
-  // rather than on whatever `ghToken` resolved to. Both halves matter: an app
-  // identity or a bare `GITHUB_TOKEN` makes `ghToken` non-empty without any
-  // human having signed in, so the old boot check started a poller with nobody
-  // to read activity FOR; and deciding once at boot meant a server that started
-  // empty never polled after onboarding finished, while one that started
-  // configured kept polling after a sign-out. A per-pass gate is self-healing
-  // in both directions and costs one cached credential read every 5 minutes.
+  // Gated per pass on the OWNER'S OWN credential (not bare `ghToken`): app
+  // identity / `GITHUB_TOKEN` made `ghToken` non-empty with nobody signed in,
+  // and a boot-time gate never started after late onboarding / never stopped
+  // after sign-out.
   final githubActivityPoller = GitHubViewerActivityPollingService(
     githubClient: GitHubApiClient(ownerForgeDioFactory.of(ForgeHost.github)),
     shouldPoll: () async {
@@ -7769,7 +7550,6 @@ Future<CcServer> runCcServer({
   // declared only now.
   ccServer._prConversationPoller = prConversationPoller;
 
-  // ── Ticket sync pull fallback ──
   // Vendor webhooks require this server to be publicly reachable, which it
   // often is not (no tunnel). A modest periodic pull keeps vendor-side ticket
   // changes flowing in  anddless; the sweep skips workspaces with no enabled
@@ -7798,7 +7578,6 @@ Future<CcServer> runCcServer({
           }
         });
 
-  // ── Server-side Google Calendar sync ──
   // The server syncs every workspace's connected calendar into its DB on a fixed
   // cadence (no-op until an account is connected via the GUI `calendar.*Connect`
   // ops or `cc_server calendar connect`); thin clients (web/desktop) just READ
@@ -7816,7 +7595,6 @@ Future<CcServer> runCcServer({
     weatherService.start();
   }
 
-  // ── Fleet lease reaping (PRD 20 §8) ──
   // A worker that vanishes mid-run has its lease reaped and the job retried per
   // its policy or surfaced as failed — never silently lost. Short cadence so a
   // dead worker's jobs recover quickly; the reap is cheap (indexed scan).
@@ -7832,7 +7610,6 @@ Future<CcServer> runCcServer({
     }
   });
 
-  // ── Newsfeed seed + periodic refresh ──
   // The newsfeed is PER-USER (global tables, not workspace-scoped) and
   // fetched SERVER-SIDE only — the thin clients (web / desktop) just read
   // the synced articles, they never fetch RSS themselves. So the server owns

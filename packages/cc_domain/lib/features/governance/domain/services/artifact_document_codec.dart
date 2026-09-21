@@ -111,7 +111,6 @@ typedef ArtifactDecodeResult = ({
 ///
 /// Two validation modes on purpose, because the two callers have opposite
 /// failure preferences:
-///
 ///  * [decodeStrict] — the typed RPC boundary. A malformed document is a
 ///    programming error; reject the whole thing with violations so it cannot be
 ///    persisted half-understood.
@@ -119,7 +118,6 @@ typedef ArtifactDecodeResult = ({
 ///    refusing the entire document costs the agent a whole turn to rediscover
 ///    what it already computed. Coerce what can be coerced, drop the individual
 ///    blocks that cannot and report per-block error paths in the tool result.
-///
 /// Both run the same structural parse ([ArtifactBlock.fromJson]) followed by
 /// the same semantic/renderability pass ([validateBlock]) — the modes differ
 /// only in what they do with the findings.

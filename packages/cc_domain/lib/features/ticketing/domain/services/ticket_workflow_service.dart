@@ -174,7 +174,6 @@ class TicketWorkflowService {
   /// Delegates a task to [assignedAgentId], enforcing the deterministic
   /// delegation guards at this single chokepoint (PRD 22 §3) before any child
   /// ticket is created.
-  ///
   /// Computes the child's [Ticket.delegationDepth] and
   /// [Ticket.delegationRootTicketId] from the parent (a root delegation is
   /// depth 1), walks the parent chain to build the ordered set of agents

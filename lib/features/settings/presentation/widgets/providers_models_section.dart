@@ -15,35 +15,12 @@ import 'package:control_center/shared/widgets/section_card.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Settings → Providers → "Providers and models" (PRD 05 + PRD 13).
+/// Settings → Providers → providers and models (master-detail).
 ///
-/// A master-detail surface in the Z.ai model-settings pattern: the rail on the
-/// left lists every provider the built-in harness can run — the built-in
-/// catalog plus user-added **custom providers** (any OpenAI- or Anthropic-
-/// compatible endpoint, with an optional API key) — with a live status dot
-/// each, and the pane on the right answers for the selected one: connection
-/// state, credentials / browser OAuth, plan quota, the workspace allow/deny
-/// toggle and the model list, where every model can be edited (context window,
-/// output ceiling, modalities) or hand-registered for endpoints that cannot
-/// enumerate their own.
-///
-/// Model lists always come live from each provider's own endpoint, merged with
-/// the stored per-model overrides; models.dev only enriches prices/context.
-///
-/// ## Why it looks like this
-///
-/// The previous version rendered every provider fully expanded: eighteen
-/// API-key rows, eighteen collapsed sampling panels, eighteen allow switches,
-/// in catalog order. Finding the two you had actually connected meant reading
-/// all eighteen, and the one number that decides whether anything works at all
-/// — how many are connected — was a sentence in 12px grey above the pile. The
-/// accordion then replaced it, but expanding one provider still pushed the rest
-/// of the page around, and the model list hid a level deep behind a disclosure.
-///
-/// So: the count comes first, the rail keeps every provider visible at once
-/// (connected sort to the top), and the detail pane owns one provider at a
-/// time — with the model list, the subject this surface exists for, always on
-/// screen.
+/// Rail: built-in + custom providers (status, connected first). Pane: one
+/// provider — credentials/OAuth, quota, allow/deny, models. Model lists from
+/// the provider endpoint merged with stored overrides; models.dev for
+/// prices/context only. Count first; model list always on screen.
 class ProvidersModelsSection extends ConsumerStatefulWidget {
   /// Creates a [ProvidersModelsSection].
   const ProvidersModelsSection({super.key});

@@ -9,9 +9,7 @@ class _NullDio implements Dio {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-// ===========================================================================
 // Fake Google Calendar API client
-// ===========================================================================
 class FakeGoogleCalendarApiClient extends GoogleCalendarApiClient {
   FakeGoogleCalendarApiClient() : super(_NullDio());
 
@@ -61,9 +59,7 @@ class FakeGoogleCalendarApiClient extends GoogleCalendarApiClient {
   }
 }
 
-// ===========================================================================
 // Fake CalendarRepository — in-memory, only the sync-relevant surface
-// ===========================================================================
 class FakeCalendarRepository implements CalendarRepository {
   final List<CalendarAccount> accounts = [];
 
@@ -159,9 +155,7 @@ class FakeCalendarRepository implements CalendarRepository {
       throw UnimplementedError('${invocation.memberName}');
 }
 
-// ===========================================================================
 // Helpers
-// ===========================================================================
 GoogleCalendarEvent _gEvent(
   String id, {
   String status = 'confirmed',

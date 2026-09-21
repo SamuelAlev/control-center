@@ -123,39 +123,21 @@ enum AdapterEnforcementCaveat {
   completionContractUnobservable,
 }
 
-/// What Control Center can actually *enforce* for a given [AdapterTransport] —
-/// as opposed to what a `Mode` claims to guarantee.
+/// What Control Center can enforce for a given [AdapterTransport] — as opposed
+/// to what a `Mode` claims.
 ///
-/// ## Why this exists
+/// `ModeCapabilityProfile` declares plan/review as read-only; that is only as
+/// strong as the transport. ACP has no permission protocol, Claude Code
+/// approximates via `--permission-mode`, only the harness fully enforces.
+/// Surfaced in Settings → Adapters and as a degraded badge on the mode
+/// selector.
 ///
-/// `ModeCapabilityProfile` declares that plan and review modes are read-only.
-/// That declaration is only as strong as the transport underneath it: ACP has
-/// no permission protocol at all, Claude Code approximates a mode via
-/// `--permission-mode`, and only the built-in harness fully enforces it.
-/// Nothing used to say so, so the UI presented "plan mode is read-only" as a
-/// uniform fact. This type is that missing declaration — an honesty matrix,
-/// surfaced to the operator in Settings → Adapters and as a degraded badge
-/// next to the mode selector.
+/// Static, not probed: these are properties of our integration (change when
+/// we write code), unlike [AdapterCapabilities] which describes the binary.
 ///
-/// ## Why it is static, not probed
-///
-/// These are properties of *our integration*, not of the vendor's binary. They
-/// change when we write code (add a permission handler, sandbox the in-process
-/// tools), never when the user upgrades their CLI. Probing would be a lie
-/// dressed as a measurement. Contrast [AdapterCapabilities], which genuinely is
-/// probed because it describes the binary.
-///
-/// ## The asymmetry worth internalizing
-///
-/// The harness and the CLI transports fail in *opposite* directions and both
-/// failures are real:
-///
-///  * the harness intercepts every call but its in-process file tools are
-///    outside the sandbox, so its tool surface is the only filesystem net;
-///  * a CLI runs inside the sandbox but Control Center never sees its native
-///    tool calls, so the sandbox is the only filesystem net.
-///
-/// Neither has both belts. Declaring which one is missing is the point.
+/// Asymmetry: the harness intercepts every call but in-process file tools are
+/// outside the sandbox; a CLI is sandboxed but CC never sees its native tool
+/// calls. Neither has both belts — declaring which is missing is the point.
 final class AdapterEnforcement {
   /// Creates an enforcement declaration.
   const AdapterEnforcement({
@@ -211,22 +193,14 @@ final class AdapterEnforcement {
   /// tool is one of ours.
   final bool nativeToolsInterceptable;
 
-  /// Whether tools that execute inside the Control Center process are covered by
-  /// a sandbox profile.
+  /// Whether tools that execute inside the CC process are sandbox-covered.
   ///
-  /// **False for the harness and this is the single most important entry in the
-  /// matrix.** `ReadTool`/`WriteTool`/`EditTool` are Dart running in the server
-  /// process; only `bash` is routed through `SandboxedHarnessCommandRunner`, so
-  /// the Seatbelt/bwrap profile (including its `readOnlyMounts`) constrains
-  /// spawned commands and nothing else. The tool surface and the action guard
-  /// are therefore the *only* filesystem boundary a harness run has.
-  ///
-  /// Vacuously true for the CLI transports: they own no in-process tools and
-  /// the process itself is spawned inside the sandbox.
-  ///
-  /// If someone flips this to true, `adapter_enforcement_test.dart` fails —
-  /// deliberately. It may only become true once the in-process file tools are
-  /// themselves confined.
+  /// False for the harness: only `bash` goes through
+  /// `SandboxedHarnessCommandRunner`; Read/Write/Edit are Dart in-process, so
+  /// the tool surface and action guard are the only filesystem boundary.
+  /// Vacuously true for CLI transports (no in-process tools; process is
+  /// spawned inside the sandbox). `adapter_enforcement_test.dart` fails if
+  /// flipped true before in-process file tools are confined.
   final bool inProcessToolsSandboxed;
 
   /// One honest sentence about how a conversation `Mode` reaches this transport.

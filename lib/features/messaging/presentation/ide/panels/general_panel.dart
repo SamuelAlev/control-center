@@ -152,27 +152,15 @@ String? focusedConversationId(
 /// The messaging IDE sidebar's collapsible section shell now lives in
 /// [CollapsibleSidebarSection] (shared with the PR-detail Overview sidebar).
 
-// ---------------------------------------------------------------------------
 // PULL REQUESTS
-// ---------------------------------------------------------------------------
 
 /// The pull requests this conversation is about, from either direction.
-///
 /// A PR reaches a conversation two ways and only one of them writes a row.
-/// [spacePrDetailProvider] resolves the [ReviewSpaceAssociation] for the space
-/// (prNumber + repoFullName) and fetches the [PullRequest] — that is the PR
-/// WORKBENCH direction, where the space was minted for a PR opened off the PR
-/// list. The other direction is a conversation that AUTHORED a pull request:
-/// it commits on `conv/<id>` in its own worktree, and pushing that branch and
-/// opening a PR records nothing, so this section stayed empty for the case the
-/// operator is most likely to look for it in. [spaceBranchPullRequestsProvider]
-/// covers it by matching the worktree branch to an open PR's head, which works
-/// however the PR was opened (compose screen, `gh`, the web UI, an agent).
-///
-/// The association wins on a tie: it is an explicit link, and one PR must not
-/// render twice when both directions resolve it. While the lookups are in
-/// flight, or when the conversation has no PR at all, the section renders
-/// nothing — the PULL REQUESTS label only appears once there is a card under it.
+/// [spaceBranchPullRequestsProvider] covers it by matching the worktree branch to an open
+/// PR's head, which works however the PR was opened (compose screen, `gh`, the web UI, an
+/// agent).
+/// The association wins on a tie: it is an explicit link, and one PR must not render twice
+/// when both directions resolve it.
 class _PullRequestsSection extends ConsumerWidget {
   const _PullRequestsSection({required this.spaceId});
 
@@ -295,9 +283,7 @@ class _ConversationPrCard extends ConsumerWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
 // TODOS
-// ---------------------------------------------------------------------------
 
 class _TodosSection extends ConsumerWidget {
   const _TodosSection({
@@ -686,9 +672,7 @@ class _TodoStatusGlyph extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
 // TERMINALS
-// ---------------------------------------------------------------------------
 
 class _TerminalsSection extends ConsumerWidget {
   const _TerminalsSection({

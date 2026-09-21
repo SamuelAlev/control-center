@@ -21,28 +21,13 @@ double _underlineThickness(double fontSize) =>
 double _underlineReserve(double fontSize) =>
     _underlineGap(fontSize) + _underlineThickness(fontSize);
 
-/// Link-styled text whose underline sits just BELOW the descent line, full
-/// width — Carbon-style — which the text engine cannot paint itself (no
-/// `text-underline-offset` on the pinned SDK; its underline hugs the baseline
-/// and strikes through descenders).
-///
-/// Drop-in for a plain [Text] link label: same layout, same wrapping, same
-/// overflow — only the underline is custom-painted. The engine decoration is
-/// stripped, so pass the link style WITHOUT [TextStyle.decoration] (any
-/// decoration that IS set is ignored); the underline colour defaults to the
-/// style's [TextStyle.decorationColor], then its [TextStyle.color].
-///
-/// Geometry: the line sits 10% of the font size below each line box and is
-/// 6% thick. A parallel [TextPainter] cannot supply the x-span — [Text]
-/// merges the ambient [DefaultTextStyle] (the UI family) while a painter
-/// given only this [style] measures in the platform default, so the stroke
-/// came up short of the visible letters. Boxes come from the laid-out
-/// [RenderParagraph] instead. Bottom padding holds the offset stroke inside
-/// the paint box; without it the line is clipped and reads truncated.
-///
-/// Rich-text surfaces (markdown) get the same treatment inside cc_markdown's
-/// renderer — this widget is for plain-[Text] link labels only. It is
-/// display-only; tap handling stays with the parent (as before).
+/// Link [Text] whose underline sits below the descent (Carbon-style; SDK has
+/// no `text-underline-offset`). Strip [TextStyle.decoration]; colour from
+/// decorationColor then color. Line: 10% of font size below each line box, 6%
+/// thick. Measure x-span from laid-out [RenderParagraph] (not a parallel
+/// [TextPainter] — ambient [DefaultTextStyle] vs platform default). Bottom
+/// padding keeps the stroke inside the paint box. Display-only; taps stay with
+/// the parent. Markdown uses cc_markdown's renderer instead.
 class CcLinkText extends StatefulWidget {
   /// Creates a [CcLinkText].
   const CcLinkText(

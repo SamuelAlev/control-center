@@ -2,25 +2,9 @@ import 'dart:io';
 
 import 'package:test/test.dart';
 
-/// Anti-growth ratchet for hardcoded, user-facing string literals in the UI
-/// (FINDINGS §14.2).
-///
-/// CLAUDE.md: "All user-facing strings MUST be internationalized … NEVER
-/// hardcode English text in widgets." This test greps `lib/` for the most
-/// common violation shape — a `Text`/`CcText`/`SelectableText` widget built
-/// straight from a string literal that looks like English prose (starts with a
-/// letter, ≥3 chars, no `$` interpolation) — and fails if the count grows past
-/// the recorded baseline.
-///
-/// The baseline tracks pre-existing debt (a few web/markdown surfaces). It is
-/// NOT zero — the finding assumed zero from a sample, but a full scan found
-/// these. Lowering the baseline means internationalizing those sites (§14.1).
-/// NEVER raise it: route the new string through `AppLocalizations` instead.
-///
-/// This is a deliberately narrow, line-based heuristic favouring zero false
-/// positives over exhaustiveness — it only catches the literal-in-`Text(`
-/// shape, not every untranslated string (labels passed to other widgets, enum
-/// display names, etc.). A precise gate would need analyzer-based AST parsing.
+/// Anti-growth ratchet for English string literals in `Text`/`CcText`/
+/// `SelectableText`. Baseline is pre-existing debt — never raise it; lower by
+/// routing through `AppLocalizations`. Narrow heuristic (literal-in-Text only).
 void main() {
   // Matches `Text('Word…')` / `CcText("Word…")` / `SelectableText('Word…')`
   // where the literal starts with a letter, is ≥3 chars and contains no `$`

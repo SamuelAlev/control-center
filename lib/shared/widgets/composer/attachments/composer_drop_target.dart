@@ -39,25 +39,14 @@ class ComposerDrop {
 /// anyway.
 const int kMaxDroppedImageBytes = 16 * 1024 * 1024;
 
-/// Accepts files and pictures dragged onto the composer from the OS, and says
-/// so before the user lets go.
-///
-/// **Two layers, and both are load-bearing.** The [DropRegion] accepts the drop;
-/// the [DropMonitor] wrapped around it reports EVERY drag anywhere over the
-/// application, with `isInside` saying whether it is over this composer. That is
-/// what lets the composer advertise itself as a target the moment a drag enters
-/// the window rather than only once the pointer is already on top of it — a
-/// target you have to find before it admits it exists is not discoverable.
-///
-/// **Why the read is selective.** The shared `snapshotFromReader` loads every
-/// dropped file's bytes, which is right for a rig (the bytes have to cross into
-/// a VM) and wrong here: a composer needs bytes only for a PICTURE, which it
-/// uploads, and a path for everything else, which the agent opens itself from
-/// the filesystem it already shares. Slurping indiscriminately would read a
-/// four-gigabyte video into memory to put a chip on a toolbar.
-///
-/// A dropped picture with no file behind it (dragged out of a browser) has only
-/// bytes, so that case still reads them — bounded by [kMaxDroppedImageBytes].
+/// Accepts files and pictures dragged onto the composer from the OS, and says so before the
+/// user lets go.
+/// That is what lets the composer advertise itself as a target the moment a drag enters the
+/// window rather than only once the pointer is already on top of it — a target you have to
+/// find before it admits it exists is not discoverable.
+/// dropped file's bytes, which is right for a rig (the bytes have to cross into a VM) and
+/// wrong here: a composer needs bytes only for a PICTURE, which it uploads, and a path for
+/// everything else, which the agent opens itself from the filesystem it already shares.
 class ComposerDropTarget extends StatefulWidget {
   /// Creates a [ComposerDropTarget].
   const ComposerDropTarget({
@@ -127,10 +116,8 @@ class _ComposerDropTargetState extends State<ComposerDropTarget> {
 
   void _disarm() => _setState(armed: false, inside: false);
 
-  // ---------------------------------------------------------------------------
   // Host lane (macOS): the OS reports a position, this widget decides whether
   // the position is its own.
-  // ---------------------------------------------------------------------------
 
   void _onHostDrag() {
     final event = HostFileDrop.instance.dragging.value;
@@ -178,9 +165,7 @@ class _ComposerDropTargetState extends State<ComposerDropTarget> {
     return box.paintBounds.contains(box.globalToLocal(position));
   }
 
-  // ---------------------------------------------------------------------------
   // Plugin lane (everything else).
-  // ---------------------------------------------------------------------------
 
   Future<void> _perform(PerformDropEvent event) async {
     _disarm();
@@ -255,12 +240,12 @@ class _ComposerDropTargetState extends State<ComposerDropTarget> {
 
 /// The composer's "you can drop here" state, in its two strengths.
 ///
-/// **Armed** (a drag is over the app, but not over the composer) draws a dashed
+/// Armed (a drag is over the app, but not over the composer) draws a dashed
 /// accent ring and a small caption, and deliberately does NOT wash the box: the
 /// draft underneath stays readable while the person is still deciding where to
 /// let go.
 ///
-/// **Over** (the drag is on the composer) fills the box, because at that point
+/// Over (the drag is on the composer) fills the box, because at that point
 /// the only thing worth saying is that letting go now will work.
 class _DropAffordance extends StatelessWidget {
   const _DropAffordance({

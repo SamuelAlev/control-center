@@ -2,22 +2,8 @@ import 'dart:io';
 
 import 'package:test/test.dart';
 
-/// Writing a space row and announcing it are ONE operation.
-///
-/// A space is born `provisioning`, and the checkout that clears that state is
-/// driven off `SpaceCreated` by the background provisioner. A creation that
-/// skips the event leaves a room parked behind its "preparing workspace" gate
-/// forever — the composer refuses to send, no worktree lands on disk, and
-/// nothing later notices, because the only signal provisioning was due is the
-/// event nobody published.
-///
-/// Four independent call sites had hand-rolled the pair (the in-process
-/// messaging service, the `messaging.createSpace` RPC op, the PR-review space
-/// resolver and the agent-DM tool), each with a comment saying it mirrored the
-/// others. That is not an invariant, it is a convention — and a fifth caller
-/// would not have failed a single test.
-///
-/// So there is exactly one announcer, `SpaceFactory`, and this pins it.
+/// Space row write + `SpaceCreated` are one operation (`SpaceFactory`);
+/// skipping the event leaves provisioning stuck forever.
 void main() {
   test('only SpaceFactory announces a created space', () {
     final projectRoot = Directory.current.path;

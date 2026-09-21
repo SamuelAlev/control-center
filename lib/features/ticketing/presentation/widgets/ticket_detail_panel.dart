@@ -9,7 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 /// The detail side panel for the selected ticket. Tickets are dumb
-/// issue-tracking artifacts now, so the panel renders the single **Issue**
+/// issue-tracking artifacts now, so the panel renders the single Issue
 /// view (editable title/description + properties). Agent work lives in
 /// conversations; the Activity / Changes / Terminal tabs were removed.
 class TicketDetailPanel extends ConsumerWidget {

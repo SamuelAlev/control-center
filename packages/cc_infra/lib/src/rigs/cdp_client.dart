@@ -1247,19 +1247,9 @@ class CdpClient with BrowserPermissionHost implements BrowserEngineClient {
     return true;
   }
 
-  // ── Clipboard and file drops ────────────────────────────────────────────
-  //
-  // These are the ONLY methods here that evaluate JavaScript, and the scripts
-  // are constants in this file — never anything a caller supplied. The rule
-  // above ("no caller-supplied JS") is about accountability: an action log
-  // full of opaque script bodies cannot be reviewed. A fixed script behind a
-  // named verb keeps the log meaningful, because the verb still says what
-  // happened.
-  //
-  // There is no way around the Clipboard API here. The browser surface is
-  // headless: no X server, no system clipboard, nothing for a `xclip`
-  // equivalent to talk to. What a page can reach IS the clipboard, so it is
-  // the page that has to be asked.
+  // Clipboard/file-drop methods alone evaluate JS here; scripts are file
+  // constants — never caller-supplied — so the action log stays a named verb.
+  // Headless: no system clipboard; the page Clipboard API is the only lane.
 
   /// Reads the page's clipboard, or reports why it could not.
   ///
@@ -1917,7 +1907,6 @@ class CdpClient with BrowserPermissionHost implements BrowserEngineClient {
     closePermissionHost();
   }
 
-  // ── Connection lifecycle ────────────────────────────────────────────────
 
   void _bind() {
     final generation = _generation;

@@ -325,7 +325,6 @@ class QmpClient {
     );
   }
 
-  // ── Lifecycle ───────────────────────────────────────────────────────────
 
   /// Pauses the guest's vCPUs. Frees CPU, NOT memory — a stopped guest still
   /// holds its RAM, which is why the reaper counts megabytes rather than VMs.
@@ -364,7 +363,6 @@ class QmpClient {
     return status['running'] as bool? ?? false;
   }
 
-  // ── Input injection ─────────────────────────────────────────────────────
 
   /// Moves the pointer to absolute guest coordinates.
   ///
@@ -704,7 +702,6 @@ class QmpClient {
     );
   }
 
-  // ── Connection lifecycle ────────────────────────────────────────────────
 
   /// Wires the current socket's stream and failure paths.
   ///

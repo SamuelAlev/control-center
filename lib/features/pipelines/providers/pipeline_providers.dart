@@ -94,21 +94,12 @@ const _badgeSettleDelay = Duration(milliseconds: 700);
 
 /// The number of runs currently `running` in the family's workspace, SETTLED by
 /// [_badgeSettleDelay] — the feed behind the sidebar's pipelines badge.
-///
-/// Event-triggered housekeeping pipelines finish faster than the eye can read:
-/// `pr_merged_cleanup` starts on every PR the open-PR poller sees flip to
-/// merged/closed and the overwhelming majority of its runs start and finish
-/// inside the same second. Counting `running` straight off the run stream turns
-/// each of those into a `1` badge that blinks on and off, which reads as a bug
-/// and points at nothing the operator can act on. Presence over decoration: a
-/// badge nobody can read is noise, so a run has to still be going after
-/// [_badgeSettleDelay] to earn one. The pipelines screen keeps the unsettled
-/// stream and still shows every run, however brief.
-///
-/// `distinct()` runs BEFORE the debounce on purpose: the run stream re-emits on
-/// every pipeline mutation (progress ticks, step transitions) and feeding those
-/// no-op repeats into the timer would keep resetting it, so a long, chatty run
-/// would never surface a badge at all.
+/// Counting `running` straight off the run stream turns each of those into a `1` badge that
+/// blinks on and off, which reads as a bug and points at nothing the operator can act on.
+/// `distinct()` runs BEFORE the debounce on purpose: the run stream re-emits on every
+/// pipeline mutation (progress ticks, step transitions) and feeding those no-op repeats
+/// into the timer would keep resetting it, so a long, chatty run would never surface a
+/// badge at all.
 final runningPipelineCountProvider = StreamProvider.family<int, String>((
   ref,
   workspaceId,

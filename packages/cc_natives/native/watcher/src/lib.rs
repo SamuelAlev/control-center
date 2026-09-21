@@ -1,21 +1,11 @@
-//! cc_watcher — Control Center's native recursive file watcher.
+//! cc_watcher — native recursive file watcher (C ABI in `cc_watcher.h`, FFI
+//! from `packages/cc_natives/lib/src/watch/`). Built by
+//! `scripts/natives/build_watcher.sh`; missing dylib = hard failure (no
+//! `package:watcher` fallback).
 //!
-//! FIRST-PARTY source (not vendored): the C ABI in `cc_watcher.h` is consumed
-//! by `packages/cc_natives/lib/src/watch/` over `dart:ffi`. Built by
-//! `scripts/natives/build_watcher.sh`; a missing dylib degrades the consumer
-//! to `package:watcher`, never breaks it.
-//!
-//! Per-OS backends (all via the `notify` crate):
-//!  * macOS — FSEvents, kernel-recursive: NO walk at any point; the ignore
-//!    rules are pure event filtering.
-//!  * Windows — ReadDirectoryChangesW, kernel-recursive: same, no walk.
-//!  * Linux — inotify is per-directory, so an ignore-aware breadth-first walk
-//!    installs watches on the library's OWN thread (`linux_tree.rs`) — never
-//!    the caller's; that is what lets `node_modules`/`build` be skipped
-//!    entirely instead of scanned.
-//!
-//! Every extern "C" body is wrapped in `catch_unwind`: a panic becomes a
-//! NULL/0 return plus `cc_watch_last_error`, never an unwind across FFI.
+//! Backends via `notify`: macOS FSEvents / Windows RDCW (kernel-recursive);
+//! Linux inotify with ignore-aware walk on the library's own thread.
+//! `catch_unwind` on every `extern "C"`.
 
 mod ignore;
 mod queue;

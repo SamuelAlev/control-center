@@ -89,23 +89,11 @@ class GitHubViewerPr {
       Object.hash(repoFullName, number, title, updatedAt, mergedByLogin);
 }
 
-/// One sweep of the viewer's GitHub pull-request activity, assembled from a
-/// single aliased `search` request.
+/// One sweep of viewer GitHub PR activity from a single aliased `search`.
 ///
-/// The four lanes answer the four things the old `GET /notifications` poll used
-/// a thread `reason` for — except that each lane is *already* the verified
-/// answer, because GitHub applied the predicate server-side:
-///
-///  * [reviewRequested] is the viewer's **currently pending** review set. GitHub
-///    drops a reviewer from `review-requested:` results the moment they submit a
-///    review, so membership is the pending bit — no per-PR review-state probe.
-///    It includes reviews requested of a **team the viewer belongs to**, which
-///    is most of them in practice, and needs no org-teams lookup to do it.
-///  * [mentioned] is PRs that @-mentioned the viewer in the window.
-///  * [merged] is PRs the viewer was involved with that are merged — `is:merged`
-///    is the verification, so no per-PR merge-state probe.
-///  * [updated] is open PRs the viewer is involved with that moved in the
-///    window. It drives cache-freshness signals only and never notifies.
+/// [reviewRequested] is the pending set (`review-requested:` membership,
+/// including the viewer's teams). [mentioned] / [merged] / [updated] cover
+/// @-mentions, merges (`is:merged`), and open PRs that moved (signals only).
 class GitHubViewerActivity {
   /// Creates a [GitHubViewerActivity].
   const GitHubViewerActivity({

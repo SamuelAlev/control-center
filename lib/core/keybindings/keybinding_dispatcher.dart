@@ -40,41 +40,18 @@ class KeybindingScopeHandle {
   }
 }
 
-/// The single source of truth for in-app keyboard shortcuts.
+/// In-app shortcuts via one [HardwareKeyboard] handler (not the focus tree).
 ///
-/// Instead of relying on the focus tree (Flutter's `Shortcuts`/`Actions` and
-/// autofocusing `Focus` nodes — which only honour the first autofocus node and
-/// drop key events when focus drifts), every shortcut flows through one
-/// [HardwareKeyboard] handler that observes the hardware keyboard regardless
-/// of widget focus — the same primitive on desktop and web, so both platforms
-/// share one dispatch path and one set of quirk fixes.
+/// A binding fires when its handler is registered and its VS Code-style `when`
+/// clause holds; `!textInputFocus` bindings deactivate in text fields. Most
+/// specific scope wins on shared first strokes. Unmatched keys fall through,
+/// except macOS desktop outside a text field ([_silenceUnmatchedKey]) to avoid
+/// AppKit's system alert.
 ///
-/// The handler consumes a key when it matches a *currently active* binding —
-/// a binding is active when its command has a registered handler **and** its
-/// VS Code-style `when` clause holds for the current context. When a text
-/// field gains focus, every binding guarded by `!textInputFocus` deactivates,
-/// so the key reaches the field instead of being swallowed. Every other key
-/// falls through untouched — typing, focus-tree shortcuts and (on web)
-/// browser accelerators behave normally — except on macOS desktop, where an
-/// unmatched key outside a text field is consumed without firing anything so
-/// AppKit doesn't ring the system alert on every keypress (see
-/// [_silenceUnmatchedKey]).
-///
-/// When several active bindings share the same first stroke (e.g. `⌘1` is both
-/// `nav.inbox` and `settings.appearance`), the most specific scope wins —
-/// reproducing VS Code's "more specific rule wins" semantics.
-///
-/// ## macOS reliability
-///
-/// The macOS engine frequently drops the KeyUp of a non-modifier key pressed
-/// while ⌘ is held (flutter/flutter#136419), leaving the trigger logically
-/// "pressed" so the next genuine press arrives misclassified as a
-/// [KeyRepeatEvent]. The previous `hotkey_manager`-based dispatch silently
-/// swallowed repeats, which made ⌘K/⌘F fire only every other press. This
-/// handler instead treats a "repeat" of a command-modified stroke on macOS as
-/// the fresh press it really is (macOS suppresses true auto-repeat while ⌘ is
-/// held) and additionally clears stuck hardware-keyboard state whenever the
-/// app window loses focus or a text field gains focus.
+/// macOS often drops KeyUp while ⌘ is held (flutter/flutter#136419), so the
+/// next press arrives as [KeyRepeatEvent] — treat ⌘-modified "repeats" as
+/// fresh presses, and clear stuck hardware state on focus loss / text-field
+/// focus.
 class KeybindingDispatcher with WidgetsBindingObserver {
   /// Creates a dispatcher over [bindings] (defaults to [KeybindingRegistry.all]).
   ///
@@ -136,7 +113,6 @@ class KeybindingDispatcher with WidgetsBindingObserver {
   /// True while a deferred focus re-evaluation is queued (see [_onFocusChanged]).
   bool _focusProbeScheduled = false;
 
-  // ── Context ─────────────────────────────────────────────────────────────
 
   /// Sets a context key and reconciles. Passing `null` removes the key.
   void setContext(String key, Object? value) {
@@ -258,7 +234,6 @@ class KeybindingDispatcher with WidgetsBindingObserver {
     setContext('textInputFocus', inEditable);
   }
 
-  // ── Scope registration ──────────────────────────────────────────────────
 
   /// Registers a set of command handlers and returns a handle to update or
   /// remove them. Multiple scopes may be active at once; their handlers are
@@ -314,7 +289,6 @@ class KeybindingDispatcher with WidgetsBindingObserver {
     _reconcile();
   }
 
-  // ── Reconciliation ──────────────────────────────────────────────────────
 
   void _reconcile() {
     if (_disposed) {
@@ -357,7 +331,6 @@ class KeybindingDispatcher with WidgetsBindingObserver {
   int _priority(Keybinding b) =>
       (b.scope == KeybindingRegistry.globalScope ? 0 : 1000) + b.scope.length;
 
-  // ── Stroke dispatch ─────────────────────────────────────────────────────
 
   /// The pure resolution logic, exposed for tests via [debugDispatchStroke].
   void _dispatchStroke(KeyStroke stroke) {
@@ -420,7 +393,6 @@ class KeybindingDispatcher with WidgetsBindingObserver {
     _pendingFirst = null;
   }
 
-  // ── HardwareKeyboard source ───────────────────────────────────────────────
 
   /// Logical keys that are themselves modifiers — a press of one alone never
   /// triggers a binding, so it is ignored as a trigger.
@@ -582,53 +554,18 @@ class KeybindingDispatcher with WidgetsBindingObserver {
     );
   }
 
-  /// While a text field holds focus, delivers the platform's undo/redo stroke
-  /// to that field's own [UndoHistory] by invoking the exact intents
-  /// `DefaultTextEditingShortcuts` would have dispatched for the same keys.
+  /// Bridges platform undo/redo to the focused field's [UndoHistory].
   ///
-  /// The framework's own delivery of these strokes rides the focus tree:
-  /// `DefaultTextEditingShortcuts` (installed by `WidgetsApp`) matches the key
-  /// and invokes `UndoTextIntent`/`RedoTextIntent` against
-  /// `primaryFocus.context`. Under the app's native-windowing runtime that
-  /// focus-tree dispatch never fires for keystrokes made while a text input
-  /// connection is live, which killed ⌘Z/⌘⇧Z in every input of the app
-  /// (typing and IME still worked — they ride the text-input channel, not the
-  /// key-event focus tree). Re-issuing the same `Actions.maybeInvoke` from the
-  /// hardware-keyboard path — the one key pipeline this app trusts — restores
-  /// the behaviour without reimplementing any undo logic: the stack,
-  /// throttling and `canUndo` semantics all stay the framework's.
+  /// Native-windowing: focus-tree `DefaultTextEditingShortcuts` never fires
+  /// while a text-input connection is live — re-invoke the same intents from
+  /// the hardware-keyboard path. Use `Actions.maybeFind` then invoke; do not
+  /// trust `maybeInvoke`'s return (void actions look like "not found" and
+  /// leave the event unhandled → AppKit alert).
   ///
-  /// Two hard-won details:
-  ///
-  /// - **Do not read `Actions.maybeInvoke`'s return value.** It returns the
-  ///   *action's* result, and `UndoHistory`'s undo/redo actions return void —
-  ///   so a successful undo is indistinguishable from "no action found" by
-  ///   return value. Find the action first (`Actions.maybeFind`), invoke it,
-  ///   and consume the hardware event whenever an action was found. Returning
-  ///   `false` after a successful undo left the event "unhandled" for the
-  ///   engine, which redispatched it into AppKit and rang the system alert
-  ///   ("boop") on every working ⌘Z.
-  ///
-  /// - **Terminal undo restores the focus-entry baseline.** `UndoHistory`
-  ///   records values on a 500ms throttled push whose pending argument is
-  ///   OVERWRITTEN by each new value, so when typing starts within 500ms of
-  ///   the previous push (a fresh composer: mount or the post-send `clear()`
-  ///   arms the timer, the first keystrokes overwrite its argument), the empty
-  ///   baseline is coalesced away and the stack's lowest entry is the first
-  ///   typed snapshot — ⌘Z could never remove the first inputted word. When an
-  ///   undo press reaches that floor without changing the value, the bridge
-  ///   restores the text the field had when it gained focus (captured in
-  ///   [_onFocusChanged]). The restore goes through the controller, so it
-  ///   becomes a normal stack entry and ⇧⌘Z can redo back into the typed text.
-  ///
-  ///   The restore arms a fresh throttled push, and `undo()` reacts to an
-  ///   active pending push by cancelling it and jumping to the stack's current
-  ///   value — so a *subsequent* ⌘Z would bounce the text back to the stack
-  ///   top, the next press would re-restore, and holding the key looped
-  ///   forever. [_undoFloorLatched] breaks that cycle: once the restore has
-  ///   fired, undo presses while the text still equals the baseline are
-  ///   consumed as no-ops BEFORE the framework's `undo()` runs. Typing again
-  ///   (text leaves the baseline) or redoing re-arms the terminal restore.
+  /// When undo hits the floor with no value change, restore the focus-entry
+  /// baseline from [_onFocusChanged] (throttled stack can coalesce away empty).
+  /// [_undoFloorLatched] then no-ops further undos at that baseline so a
+  /// pending push after restore cannot loop with `undo()`.
   bool _bridgeTextUndoRedo(KeyStroke stroke) {
     if (_context['textInputFocus'] != true) {
       return false; // `sys.undo` / `sys.redo` own the no-field case.
@@ -718,25 +655,13 @@ class KeybindingDispatcher with WidgetsBindingObserver {
     LogicalKeyboardKey.keyM,
   };
 
-  /// Whether an *unmatched* [stroke] should be consumed purely to keep macOS
-  /// quiet ("do nothing" instead of the system alert).
-  ///
-  /// AppKit rings the alert (`NSBeep` via `NSWindow.noResponderFor:`) for any
-  /// key-down that falls off the responder chain — which, in a Flutter app, is
-  /// every key the framework reports unhandled. Outside a text field that
-  /// means every ordinary keypress boops. Consuming the event suppresses the
-  /// redispatch and therefore the noise; it does NOT hide the event from
-  /// focus-tree `Shortcuts` or other [HardwareKeyboard] handlers, which run
-  /// regardless of this handler's result.
-  ///
+  /// Whether an *unmatched* [stroke] should be consumed purely to keep macOS quiet ("do
+  /// nothing" instead of the system alert).
+  /// AppKit rings the alert (`NSBeep` via `NSWindow.noResponderFor:`) for any key-down that
+  /// falls off the responder chain — which, in a Flutter app, is every key the framework
+  /// reports unhandled.
   /// Never consumes:
-  /// - off macOS desktop — other platforms don't beep and on web `true`
-  ///   would `preventDefault` genuine browser shortcuts;
-  /// - while a text field is focused — the native text-input plugin (typing,
-  ///   IME, press-and-hold accents) only receives events the framework leaves
-  ///   unhandled;
-  /// - the system menu equivalents in [_macSystemEquivalentTriggers] and
-  ///   ⌃⌘F (Enter Full Screen) — the menu bar acts on those after redispatch.
+  /// off macOS desktop — other platforms don't beep and on web `true`
   bool _silenceUnmatchedKey(KeyStroke stroke) {
     if (kIsWeb || _platform != TargetPlatform.macOS) {
       return false;
@@ -755,7 +680,6 @@ class KeybindingDispatcher with WidgetsBindingObserver {
     return true;
   }
 
-  // ── Lifecycle / testing ─────────────────────────────────────────────────
 
   /// When the app window loses focus (⌘Tab, another window, screen lock), any
   /// key held at that moment never gets its KeyUp delivered to Flutter, so

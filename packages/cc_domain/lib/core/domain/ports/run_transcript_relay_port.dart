@@ -1,25 +1,11 @@
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_update_codec.dart';
 
-/// Client-side port for one run's activity relay
-/// (`agent_run_log.watchRunTranscript`).
+/// Client port for `agent_run_log.watchRunTranscript`.
 ///
-/// A client subscribes once per open run-activity surface; the stream opens with
-/// a [RunTranscriptSeed] carrying the run's segments so far, then emits
-/// [RunTranscriptUpdates] batches while it streams. One op serves both live and
-/// replay: a finished run seeds from the persisted transcript with `live: false`
-/// and the stream then completes.
-///
-/// Deliberately NOT part of `AgentRunLogRepository`: that interface is consumed
-/// via `implements` in ~25 places, so widening it for a surface that only exists
-/// on RPC-backed clients (the server owns the live registry in-process) would
-/// touch every implementer and its test fakes.
-/// The connected server does not serve run activity at all.
-///
-/// Distinct from "this run recorded nothing": it means the ops are absent, which
-/// in practice is a server binary older than the feature. Worth its own type
-/// because the two need opposite messages — one says the run has no timeline,
-/// the other says the app is talking to a stale server and a restart fixes it.
+/// Seeds with [RunTranscriptSeed], then [RunTranscriptUpdates]; finished runs
+/// seed `live: false` and complete. Not on `AgentRunLogRepository` (RPC-only).
+/// Missing ops mean a stale server binary, not an empty transcript.
 class RunActivityUnsupportedException implements Exception {
   /// Creates a [RunActivityUnsupportedException].
   const RunActivityUnsupportedException();

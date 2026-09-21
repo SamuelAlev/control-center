@@ -9,28 +9,13 @@ import 'package:cc_ui/src/tokens/design_system_tokens.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
-/// A flat horizontal slider for a continuous or stepped value.
+/// Flat horizontal slider (widgets-only; safe in off-Material overlays). Rest:
+/// ink fill on tertiary track, panel thumb, mono value at start. Hover aims
+/// (ghost thumb) without committing; accent only while aiming/dragging.
 ///
-/// Quiet at rest: an ink-tinted fill on a tertiary track, a panel disc for
-/// the thumb (a live-dot, the pill exception), and the committed value in
-/// mono at the start edge. Hovering the track aims a **future** value — a
-/// ghost thumb plus a square chip — without committing; a click or drag
-/// writes that value. Accent arrives only while aiming or dragging, matching
-/// the primary-button "warm on intent" rule.
-///
-/// Purist replacement for Material's `Slider`: built on
-/// `package:flutter/widgets.dart` only, so it needs no `Material` ancestor and
-/// works inside off-Material overlays (`showCcDialog`, toasts, sub-windows)
-/// where Material's slider throws.
-///
-/// Pass [divisions] to snap to evenly spaced stops and, when there are few
-/// enough of them, to paint step dots. Pass [stepLabels] to name those stops
-/// (the names sit under the track; [divisions] is inferred when omitted).
-/// Drag, click-to-position, hover-aim, and the keyboard all work: arrow keys
-/// step by one division (or 1% of the range when continuous), Home/End jump
-/// to [min]/[max]. A null [onChanged] disables the control. The thumb is not
-/// animated — it tracks the pointer exactly, so there is nothing to suppress
-/// under reduced motion.
+/// [divisions] snaps (and may paint dots); [stepLabels] names stops. Arrows
+/// step one division (or 1% continuous); Home/End → [min]/[max]. Null
+/// [onChanged] disables. Thumb tracks pointer (no motion animation).
 class CcSlider extends StatefulWidget {
   /// Creates a [CcSlider].
   const CcSlider({

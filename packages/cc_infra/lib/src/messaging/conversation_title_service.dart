@@ -7,29 +7,12 @@ import 'package:cc_domain/features/messaging/domain/services/conversation_title_
 import 'package:cc_infra/src/dispatch/adapter_one_shot_runner.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
 
-/// Names conversations with ONE small, tool-less completion.
-///
-/// Fired (un-awaited) by `MessagingService.sendAndDispatch` once the first
-/// human message of a conversation has persisted. The runner is the
-/// WORKSPACE's choice — an **adapter + model pair** read from its admin-gated
-/// settings ([kConversationTitleAdapterSettingKey] +
-/// [kConversationTitleModelSettingKey]) — and **an unset adapter means OFF**:
-/// there is deliberately no auto-picked fallback, so no generation happens
-/// until an admin picks one in Settings. Workspace-scoped because the title it
-/// writes is read by every member: keying it on the sender meant one space got
-/// titled and the next did not depending on who typed first.
-///
-/// The pair, rather than a bare model id, because a model alone does not say
-/// what runs it: the built-in harness folds its provider into the model id
-/// while an external CLI adapter owns its own auth and model names, so
-/// `sonnet` is ambiguous without the adapter beside it.
-///
-/// Like `SkillLlmReviewRunner`, this is inert by construction (no tools, tight
-/// output budget, no caching, hard wall-clock timeout — see
-/// [AdapterOneShotRunner]) and fail-open: any error keeps the conversation's
-/// current title. It only ever renames a conversation whose title is still an
-/// auto-minted default — never a title a human typed or a previous generation
-/// wrote.
+/// Names conversations with one tool-less completion after the first human
+/// message. Workspace adapter+model settings
+/// ([kConversationTitleAdapterSettingKey] / [kConversationTitleModelSettingKey]);
+/// unset adapter = off (no fallback). Pair required: model alone is ambiguous
+/// across harness vs CLI. Fail-open via [AdapterOneShotRunner]; only renames
+/// auto-minted default titles.
 class ConversationTitleService {
   /// Creates a [ConversationTitleService].
   ConversationTitleService({

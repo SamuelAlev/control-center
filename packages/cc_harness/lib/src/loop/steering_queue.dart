@@ -1,24 +1,9 @@
 import 'package:cc_harness/src/loop/steering_message.dart';
 
-/// An in-memory, three-lane FIFO queue feeding an agent loop's injection
-/// channels.
-///
-/// Each [SteeringChannel] has its own independent lane:
-///
-/// - the steering lane carries messages injected as a **user** turn at the
-///   next turn boundary, with a `LoopNotice`;
-/// - the aside lane carries messages injected as a **system** turn at the
-///   same boundary, silently;
-/// - the follow-up lane carries messages consumed only when the agent would
-///   otherwise stop.
-///
-/// The first two differ in FRAMING, not timing — see [SteeringChannel] for
-/// why that correction matters.
-///
-/// The queue is purely synchronous and holds no streams. Producers
-/// [enqueue] (or use the `push*` helpers); the agent loop consumes a whole
-/// lane at once via the `drain*` methods, which return messages in FIFO order
-/// and clear only that lane.
+/// In-memory three-lane FIFO for agent-loop injection. Steering/aside differ in
+/// framing (user+notice vs system), not timing — see [SteeringChannel].
+/// Follow-up drains only when the agent would stop. Sync only; [enqueue]/`push*`
+/// produce, `drain*` consume one lane FIFO.
 class SteeringQueue {
   /// Creates an empty [SteeringQueue] with three empty lanes.
   SteeringQueue();

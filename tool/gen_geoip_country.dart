@@ -1,24 +1,6 @@
-// Regenerates packages/cc_infra/lib/src/geoip/geoip_country_data.dart — the
-// embedded IP→country table backing `GeoIpLookup` — from the five RIR
-// delegation stats files (freely redistributable registry statistics):
-//
-//   https://ftp.ripe.net/pub/stats/ripencc/delegated-ripencc-latest
-//   https://ftp.ripe.net/pub/stats/apnic/delegated-apnic-latest
-//   https://ftp.ripe.net/pub/stats/arin/delegated-arin-extended-latest
-//   https://ftp.ripe.net/pub/stats/afrinic/delegated-afrinic-latest
-//   https://ftp.ripe.net/pub/stats/lacnic/delegated-lacnic-latest
-//
-// Usage (from the repo root):
-//   fvm dart run tool/gen_geoip_country.dart
-//
-// Same discipline as tool/gen_embedded_queries.dart: run the generator,
-// commit the regenerated Dart file alongside. The table rides INSIDE the
-// server binary (a loose data file could not ride the `dart build cli`
-// bundle), so the lookup works with zero staged assets.
-//
-// The tool is all-or-nothing: every RIR must download (one retry) and yield
-// at least one allocated/assigned record, or the tool fails loudly and writes
-// NOTHING — a partial table must never ship silently.
+// Regenerates `geoip_country_data.dart` from RIR delegation stats
+// (ripe/apnic/arin/afrinic/lacnic).
+// Usage: dart run tool/gen_geoip_country.dart
 
 import 'dart:convert';
 import 'dart:io';

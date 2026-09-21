@@ -2,26 +2,10 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
-/// Architecture rail for the client/server package split (the "backend exodus").
-///
-/// Each server-side package answers to a hard dependency constraint and the
-/// north star is a Flutter-FREE `dart build cli` server binary. `cc_server`
-/// (apps/cc_server) links `cc_server_core → cc_host + cc_infra + cc_persistence
-/// + cc_domain + cc_rpc`, so a single `package:flutter` import anywhere in that
-/// graph would silently contaminate the binary. `cc_natives` USED to be the
-/// other contaminant (it was a Flutter plugin); it is now a pure-Dart `dart:ffi`
-/// leaf, so it is ALLOWED in the VM-only server packages (cc_infra /
-/// cc_server_core) and instead guarded here against ever re-acquiring Flutter or
-/// a back-edge to another cc_* package. Symmetrically, `cc_data` is the web-safe thin-client
-/// data layer: a `dart:io`/drift import there breaks `flutter build web`. These
-/// tests fail loudly the moment a batch puts the wrong dependency in the wrong
-/// package — the guard that lets the exodus "expand easily" instead of
-/// regressing the north star. Recommended by the architecture review
-/// (2026-06-19), extended after the same review flagged that the binary
-/// (apps/cc_server) and the web-safe layer (cc_data) were themselves unguarded.
-///
-/// Forbidden lists are URI prefixes that must NOT appear in any `import`/`export`
-/// directive in that package's source.
+/// Package-split purity: Flutter-free server graph; `cc_natives` may be used
+/// by VM-only packages but must not re-acquire Flutter or cc_* back-edges;
+/// `cc_data` must not import `dart:io`/drift. Forbidden lists are URI prefixes
+/// banned from import/export in that package's source.
 void main() {
   // Each package's forbidden import-URI prefixes.
   const rules = <String, List<String>>{

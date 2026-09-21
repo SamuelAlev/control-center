@@ -9,20 +9,12 @@ part 'pipeline_dao.g.dart';
 
 /// Insert order within one `started_at` second — the queue's real tiebreak.
 ///
-/// `started_at` is a drift `DateTime`, stored as a unix timestamp in SECONDS,
-/// so a burst of runs created together (adding six repos at once fires six
-/// `index_code` runs) all carry the SAME value and `ORDER BY started_at` alone
-/// cannot separate them. Ordering was still coming out FIFO, but only by
-/// accident: SQLite happened to answer the query from
-/// `idx_pipeline_runs_template_status`, whose entries carry an implicit trailing
-/// rowid. Naming the tiebreak makes the guarantee the queue's own rather than
-/// the query planner's.
-///
-/// `rowid` is sound as an ordering key here even though SQLite reuses freed
-/// values: an insert takes `max(rowid) + 1` over the rows that EXIST, so a new
-/// row always outranks every live row, whatever was deleted before it. It is
-/// stable too — nothing rewrites a run's rowid, and `started_at` is documented
-/// as never rewritten either, so a retry cannot reshuffle the queue.
+/// `started_at` is a drift `DateTime`, stored as a unix timestamp in SECONDS, so a burst of
+/// runs created together (adding six repos at once fires six `index_code` runs) all carry
+/// the SAME value and `ORDER BY started_at` alone cannot separate them.
+/// Ordering was still coming out FIFO, but only by accident: SQLite happened to answer the
+/// query from `idx_pipeline_runs_template_status`, whose entries carry an implicit trailing
+/// rowid.
 const _insertOrder = CustomExpression<int>('rowid');
 
 /// DAO for [PipelineRunsTable] and [PipelineStepRunsTable].
@@ -229,16 +221,14 @@ class PipelineDao extends DatabaseAccessor<WorkspaceDatabase>
     pipelineRunsTable,
   )..where((t) => t.id.equals(runId) & t.workspaceId.equals(workspaceId))).go();
 
-  /// Deletes FINISHED runs of [templateId] that started before [cutoff],
-  /// keeping the [keepAtLeast] most recent regardless of age. Step runs go with
-  /// them via the `ON DELETE CASCADE`. Returns the number of runs deleted.
+  /// Deletes FINISHED runs of [templateId] that started before [cutoff], keeping the
+  /// [keepAtLeast] most recent regardless of age.
   ///
-  /// Retention for a template that runs on its own, often: the code-graph
-  /// watcher publishes one run per reindex, so a day of editing is hundreds of
-  /// rows in a table nothing else prunes and the runs list streams in full. A
-  /// non-terminal run is never touched (it may still be live) and the
-  /// keep-floor means a quiet workspace still shows its recent history rather
-  /// than an empty list.
+  /// Retention for a template that runs on its own, often: the code-graph watcher publishes
+  /// one run per reindex, so a day of editing is hundreds of rows in a table nothing else
+  /// prunes and the runs list streams in full.
+  /// A non-terminal run is never touched (it may still be live) and the keep-floor means a
+  /// quiet workspace still shows its recent history rather than an empty list.
   Future<int> deleteFinishedRunsForTemplate({
     required String templateId,
     required DateTime cutoff,

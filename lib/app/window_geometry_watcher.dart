@@ -79,29 +79,14 @@ List<WindowGeometrySnapshot> captureWindowGeometry(WindowManager manager) {
   return snapshots;
 }
 
-/// Persists window geometry by polling for it, writing only once a window has
-/// stopped moving.
-///
-/// **Why polling and not window events.** nativeapi exposes
-/// `WindowMovedEvent` / `WindowResizedEvent` and friends, and this app used to
-/// persist from them — but on macOS they never arrive. In `cnativeapi`'s
-/// window-manager delegate every notification handler's body is commented out
-/// upstream (`window_manager_macos.mm`: `windowDidMove:`, `windowDidResize:`,
-/// … all have their `OnWindowEvent(...)` call disabled), so nothing is ever
-/// dispatched to Dart and the listener that looked like the save side of this
-/// feature had in fact never written a single byte. There is also no zoom or
-/// full-screen notification registered at all, in any version — those states
-/// have to be read, never inferred from an event.
-///
-/// **Why settle-then-write.** Writing on every observed change would mean a
-/// preference write per frame of a window drag. Persisting only a snapshot
-/// that is identical to the previous tick's costs one extra [interval] of
-/// latency and collapses a whole drag into a single write. It also removes a
-/// class of bug the event-driven version would have had: entering or leaving
-/// full screen sweeps the window through a sequence of intermediate frames,
-/// and any one of them written to disk becomes the size the app opens at
-/// forever after. An intermediate frame is never equal to the one before it,
-/// so it is never persisted.
+/// Persists window geometry by polling for it, writing only once a window has stopped
+/// moving.
+/// `WindowMovedEvent` / `WindowResizedEvent` and friends, and this app used to persist from
+/// them — but on macOS they never arrive.
+/// In `cnativeapi`'s window-manager delegate every notification handler's body is commented
+/// out upstream (`window_manager_macos.mm`: `windowDidMove:`, `windowDidResize:`, … all
+/// have their `OnWindowEvent(...)` call disabled), so nothing is ever dispatched to Dart
+/// and the listener that looked like the save side of this feature had in fact never
 class WindowGeometryWatcher {
   /// Watches the windows returned by [capture], handing settled snapshots to
   /// [persist]. Both are injected so the polling logic can be tested without a

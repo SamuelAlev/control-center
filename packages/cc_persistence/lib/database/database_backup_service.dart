@@ -7,32 +7,12 @@ import 'package:cc_persistence/database/workspace_database_manager.dart';
 import 'package:cc_persistence/src/server_database.dart';
 import 'package:sqlite3/sqlite3.dart' as sqlite;
 
-/// [DatabaseBackupPort] backed by SQLite `VACUUM INTO`.
+/// [DatabaseBackupPort] via SQLite `VACUUM INTO`.
 ///
-/// A snapshot is a timestamped DIRECTORY, because persistence is a set of files:
-///
-/// ```
-/// backups/2026-07-28T09-12-33-000Z/
-///   manifest.json
-///   global.db
-///   <workspaceId>/workspace.db   (one directory per workspace)
-/// ```
-///
-/// The layout mirrors the live data dir exactly, so restoring is copying the
-/// snapshot's contents back over it rather than translating a second format.
-///
-/// Every file is written with `VACUUM INTO`, which is safe on a live WAL
-/// database, so a backup never has to stop the server. A fresh directory is used
-/// every time so SQLite never has to overwrite an existing target.
-///
-/// The manifest is what makes the set restorable: it records the schema versions
-/// and per-file sizes, so a restore can tell a complete snapshot from one that
-/// died halfway. Rotation of old snapshots is a separate concern (a retention
-/// job / the caller); this service only produces them.
-///
-/// Splitting the database also made two things possible that a single file could
-/// not offer and they are the same `VACUUM INTO`: [exportWorkspace] hands out
-/// one workspace as one file and [importWorkspace] adopts such a file back.
+/// Snapshot is a timestamped directory mirroring the live data dir
+/// (`manifest.json`, `global.db`, `<workspaceId>/workspace.db`). Safe on live
+/// WAL; fresh dir each time. Manifest records schema versions/sizes.
+/// [exportWorkspace]/[importWorkspace] are single-file VACUUM INTO.
 class AppDatabaseBackupService implements DatabaseBackupPort {
   /// Creates a backup service writing into [backupsDir].
   ///

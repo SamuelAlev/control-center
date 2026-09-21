@@ -6,24 +6,9 @@ import 'package:cc_host/cc_host.dart';
 import 'package:cc_server_core/src/demo/demo_profile.dart';
 import 'package:test/test.dart';
 
-/// Layer 3 of the demo lockdown: the ratchet.
+/// Demo lockdown ratchet: every client-reachable op is denied, allowed, or explicitly inventoried.
 ///
-/// Layer 1 is structural absence (the runtime passes `null` for every
-/// execution port, so those ops are never built). Layer 2 is [DemoProfile]'s
-/// name allowlist. This is the test that keeps them honest as the catalog
-/// grows: an op added tomorrow that nobody classified fails HERE, by name,
-/// instead of quietly becoming reachable on a public endpoint.
-///
-/// It reads the catalog source rather than building a live registry: building
-/// one needs the whole server composition (databases, ports, natives), and the
-/// question being asked — "is every op name accounted for?" — is a source-level
-/// question. Same approach as `action_class_coverage_test.dart`.
-/// Every Dart source under `lib/src/` that could declare a `RepoOp`.
-///
-/// NOT just `remote_rpc_catalog.dart`: ops reach the registry from other files
-/// too, through the catalog's `extraOps` (soundscape, chat, evals…). Scanning
-/// the one big file left those entirely unclassified — `soundscape.setTune`
-/// was reachable-or-not by accident rather than by decision.
+/// Prevents a new mutating op from shipping reachable on the public demo by accident.
 List<File> _catalogSources() {
   for (final candidate in ['lib/src', 'packages/cc_server_core/lib/src']) {
     final dir = Directory(candidate);

@@ -5,22 +5,8 @@ import 'package:cc_server_core/cc_server_core.dart';
 import 'package:cc_server_core/src/builtin_credentials.dart';
 import 'package:test/test.dart';
 
-/// Third-party app credentials resolve **environment > baked into the build**,
-/// and that order — with no flag tier at all — is the whole contract.
-///
-/// There is deliberately no `--google-client-id` / `--klipy-app-key` flag: a
-/// secret on a command line is readable by every process on the host through
-/// `ps`. A self-hoster who points the server at their own Google Cloud project
-/// must beat the client Control Center ships with, or their consent screen,
-/// quota and verification status are silently bypassed. In the other direction
-/// an *empty* variable must not shadow the built-in: `KLIPY_APP_KEY=` in a
-/// compose file is a deployment slip, not a request to run without a GIF
-/// picker.
-///
-/// The built-in tier is empty in this repository on purpose (it is written by
-/// `scripts/release/builtin_credentials.sh` at release build time), so these
-/// assert against the constants rather than literals — that keeps them honest
-/// in a release checkout, where the values are real.
+/// Third-party credentials resolve environment > built-in; empty env does not wipe the built-in.
+/// No CLI flags for credentials (`ps` can read argv).
 void main() {
   test('nothing configured falls back to the baked-in credentials', () {
     // An explicit empty environment: `resolve` otherwise layers the working

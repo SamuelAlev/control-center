@@ -3,25 +3,9 @@ import 'package:cc_domain/features/ticketing/domain/entities/ticket_provider.dar
 import 'package:cc_server_core/src/file_secrets_store.dart';
 import 'package:cc_server_core/src/identity/provider_token.dart';
 
-/// Per-user provider credentials for the headless server.
+/// Per-user forge/ticketing credentials on the server (never on clients).
 ///
-/// Every credential a HUMAN owns lives here, keyed by their user id: the token
-/// they minted by signing in to a forge, the one they pasted, the ticketing
-/// key. Nothing is held on the client — a thin client that stored a token
-/// would put the same secret on every machine the operator signs in from, and
-/// a phone has no keychain we control.
-///
-/// Secrets live in the server's single [FileSecretsStore] (composition, not a
-/// second file): one on-disk map, one in-memory cache, the same 0600
-/// host-filesystem trust boundary as the device PSKs. Keys are namespaced
-/// (`user_forge_<forge>_<userId>`) so they can never collide with device ids.
-/// A GitHub overlay for one workspace appends `_<workspaceId>` so connecting
-/// on You in that workspace does not overwrite the global onboarding slot.
-///
-/// Tokens are write-only from the API's point of view: callers can store,
-/// delete and probe for presence, and the resolution paths read the raw value —
-/// but nothing here (or in the RPC surface above it) ever returns a stored
-/// token to a client or writes one to a log.
+/// Lives in [FileSecretsStore] under `user_forge_*` / workspace overlay keys. Write-only to clients.
 class UserCredentialsStore {
   /// Creates a store over the server's shared secrets file.
   UserCredentialsStore(this._secrets);

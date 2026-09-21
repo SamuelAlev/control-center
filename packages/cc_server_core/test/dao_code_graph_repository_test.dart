@@ -51,9 +51,7 @@ void main() {
     await db.close();
   });
 
-  // --------------------------------------------------------------------------
   // Helpers
-  // --------------------------------------------------------------------------
 
   CodeSymbol symbol({
     String name = 'myFunc',
@@ -112,9 +110,7 @@ void main() {
     edges: edges,
   );
 
-  // --------------------------------------------------------------------------
   // ingestFile — CRUD for symbols, edges and files
-  // --------------------------------------------------------------------------
 
   group('ingestFile', () {
     test('persists symbols', () async {
@@ -200,9 +196,7 @@ void main() {
     });
   });
 
-  // --------------------------------------------------------------------------
   // getById
-  // --------------------------------------------------------------------------
 
   group('getById', () {
     test('returns symbol when found', () async {
@@ -228,9 +222,7 @@ void main() {
     });
   });
 
-  // --------------------------------------------------------------------------
   // getByName
-  // --------------------------------------------------------------------------
 
   group('getByName', () {
     test('returns symbols matching exact name', () async {
@@ -314,9 +306,7 @@ void main() {
     });
   });
 
-  // --------------------------------------------------------------------------
   // symbolsForRepo
-  // --------------------------------------------------------------------------
 
   group('symbolsForRepo', () {
     test('returns all symbols for a repo', () async {
@@ -344,9 +334,7 @@ void main() {
     });
   });
 
-  // --------------------------------------------------------------------------
   // search (FTS)
-  // --------------------------------------------------------------------------
 
   group('search', () {
     test('finds symbols by name via FTS', () async {
@@ -398,9 +386,7 @@ void main() {
     });
   });
 
-  // --------------------------------------------------------------------------
   // callers / callees
-  // --------------------------------------------------------------------------
 
   group('callers', () {
     test('returns callers of a symbol', () async {
@@ -559,9 +545,7 @@ void main() {
     });
   });
 
-  // --------------------------------------------------------------------------
   // impactRadius
-  // --------------------------------------------------------------------------
 
   group('impactRadius', () {
     test('returns subgraph with edge when caller calls target', () async {
@@ -669,9 +653,7 @@ void main() {
     });
   });
 
-  // --------------------------------------------------------------------------
   // resolvePendingReferences
-  // --------------------------------------------------------------------------
 
   group('resolvePendingReferences', () {
     test('resolves edges by qualified name', () async {
@@ -720,9 +702,7 @@ void main() {
     });
   });
 
-  // --------------------------------------------------------------------------
   // pruneUnresolvedEdges
-  // --------------------------------------------------------------------------
 
   group('pruneUnresolvedEdges', () {
     test('deletes unresolved edges and keeps bound ones', () async {
@@ -824,9 +804,7 @@ void main() {
     });
   });
 
-  // --------------------------------------------------------------------------
   // fileHashes
-  // --------------------------------------------------------------------------
 
   group('fileHashes', () {
     test('returns path→hash map', () async {
@@ -857,9 +835,7 @@ void main() {
     });
   });
 
-  // --------------------------------------------------------------------------
   // deleteFiles
-  // --------------------------------------------------------------------------
 
   group('deleteFiles', () {
     test('removes symbols and edges for deleted files', () async {
@@ -925,9 +901,7 @@ void main() {
     });
   });
 
-  // --------------------------------------------------------------------------
   // watchByRepo
-  // --------------------------------------------------------------------------
 
   group('watchByRepo', () {
     test('emits current symbols on listen', () async {
@@ -949,9 +923,7 @@ void main() {
     });
   });
 
-  // --------------------------------------------------------------------------
   // Workspace + repo scoping integration
-  // --------------------------------------------------------------------------
 
   group('workspace+repo scoping', () {
     setUp(() async {
@@ -1099,9 +1071,7 @@ void main() {
     });
   });
 
-  // --------------------------------------------------------------------------
   // Edge cases
-  // --------------------------------------------------------------------------
 
   group('edge cases', () {
     test(
@@ -1146,9 +1116,7 @@ void main() {
     });
   });
 
-  // --------------------------------------------------------------------------
   // ingestFiles — the batched (one-transaction) ingest path
-  // --------------------------------------------------------------------------
 
   group('ingestFiles', () {
     CodeFileIngest fileIngest(String path, String qualifiedName, String hash) =>
@@ -1206,7 +1174,6 @@ void main() {
     });
   });
 
-  // --------------------------------------------------------------------------
   // ingestFiles — embedding reuse
   //
   // Inference is by far the most expensive part of an index and it used to be
@@ -1215,7 +1182,6 @@ void main() {
   // `app_localizations*.dart` files hold ~30k symbols and `flutter gen-l10n`
   // rewrites all of them for one new ARB key, which turned an incremental
   // reindex into a 52-second run.
-  // --------------------------------------------------------------------------
 
   group('ingestFiles embedding reuse', () {
     late _CountingEmbedder embedder;
@@ -1390,9 +1356,7 @@ void main() {
     });
   });
 
-  // --------------------------------------------------------------------------
   // deleteFiles — batched prune, IN-list chunking
-  // --------------------------------------------------------------------------
 
   group('deleteFiles chunking', () {
     test(
@@ -1425,9 +1389,7 @@ void main() {
     );
   });
 
-  // --------------------------------------------------------------------------
   // countUnresolvedEdges + the targeted resolve path
-  // --------------------------------------------------------------------------
 
   group('countUnresolvedEdges', () {
     test('counts only unresolved edges in the partition', () async {
@@ -1520,9 +1482,7 @@ void main() {
     });
   });
 
-  // --------------------------------------------------------------------------
   // Index checkpoints
-  // --------------------------------------------------------------------------
 
   group('checkpoints', () {
     CodeIndexCheckpoint cp({

@@ -87,9 +87,7 @@ class GitHubCommitReference extends GitHubReference {
   String toString() => 'GitHubCommitReference($owner/$repo@$shortSha)';
 }
 
-// ---------------------------------------------------------------------------
 // Full URL parsing
-// ---------------------------------------------------------------------------
 
 /// Matches `https://github.com/<owner>/<repo>/pull/<number>` (with optional
 /// trailing slash or query string).
@@ -165,13 +163,11 @@ GitHubReference? parseGitHubUrl(String url) {
   return null;
 }
 
-// ---------------------------------------------------------------------------
 // App deep-link scheme parsing (`control-center://pr/...`)
 //
 // The markdown preprocessor emits the same scheme the OS uses to launch
 // the app from external links, so a copy-paste of a rendered chip is a
 // real, working deep link.
-// ---------------------------------------------------------------------------
 
 /// Matches `control-center://pr/<owner>/<repo>/<number>`.
 final _appPrPattern = RegExp(

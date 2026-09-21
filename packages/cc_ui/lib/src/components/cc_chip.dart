@@ -8,27 +8,10 @@ import 'package:cc_ui/src/tokens/app_spacing.dart';
 import 'package:cc_ui/src/tokens/design_system_tokens.dart';
 import 'package:flutter/widgets.dart';
 
-/// A compact bordered chip — the cc_ui replacement for Material's `Chip` and
-/// the interactive tag of the design system.
-///
-/// Renders a [label] with an optional [leadingIcon] in a flat, hairline-bordered
-/// box. The callbacks map to the tag interaction variants — pick one per chip
-/// rather than stacking several behaviors on the same tag, which invites
-/// accidental clicks:
-///
-/// * **Dismissible** — [onDeleted] adds a trailing `x` that removes the tag
-///   (user-created labels, active filters).
-/// * **Selectable** — [onPressed] + [selected]: tapping anywhere toggles and the
-///   accent border/fill keeps the chosen state legible at a glance.
-/// * **Operational** — [onPressed] alone: tapping discloses related content in
-///   place (a popover of overflow tags, a detail view). Never use a chip as a
-///   link that navigates away from the current page — use a real link or
-///   button for that.
-///
-/// Set [disabled] to render a muted, non-interactive chip (a "disabled"
-/// tag state) — the body and any delete affordance both go inert. A long
-/// [label] never wraps; it truncates with an ellipsis and discloses the full
-/// text via tooltip.
+/// Compact bordered chip (Material `Chip` replacement). Pick one interaction:
+/// [onDeleted] (dismiss), [onPressed]+[selected] (toggle), or [onPressed] alone
+/// (in-place disclose — not navigation). [disabled] mutes body and delete.
+/// Long [label] truncates with tooltip.
 class CcChip extends StatelessWidget {
   /// Creates a [CcChip].
   const CcChip({

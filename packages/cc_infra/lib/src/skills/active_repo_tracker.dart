@@ -1,27 +1,9 @@
-/// Infers which repo an agent is currently working in, from the paths its tool
-/// calls touch.
+/// Infers the agent's active repo from tool-call paths under `<spaceRoot>/repos/`.
 ///
-/// A space checks out every linked repo side by side under `<spaceRoot>/repos/`
-/// while the agent's cwd is its own overlay one level over. Nothing in the
-/// domain records which of those the agent is actually in — `Space` has no repo
-/// field and `AgentRunLog` has no `repoId` — and asking the agent to declare it
-/// is a rule a prompt cannot enforce. So it is observed instead, from the
-/// stream of tool calls every adapter already emits for the transcript.
-///
-/// The rule is deliberately asymmetric:
-///
-/// * A **write** switches. Editing a file in a repo is the least ambiguous
-///   statement an agent can make about where it is working.
-/// * A **read** only seeds, and only while nothing is active yet. Agents read
-///   across repos constantly — chasing a symbol into a sibling service is
-///   normal — and letting that switch would thrash the skill set on every
-///   cross-repo glance.
-/// * A path outside `repos/` never clears the active repo. The overlay's own
-///   files, `/tmp`, and absolute paths elsewhere say nothing about it.
-///
-/// Pure string logic, no `dart:io` and no `package:path`: the layout this parses
-/// is one the provisioner generates with `/` separators, and keeping the file
-/// dependency-free makes it exhaustively testable without a filesystem.
+/// Domain has no active-repo field; observe the transcript stream instead.
+/// Write switches; read only seeds while nothing is active (cross-repo reads
+/// must not thrash skills). Paths outside `repos/` never clear the active repo.
+/// Pure strings (`/` layout from the provisioner); no `dart:io` / `path`.
 class ActiveRepoTracker {
   /// Creates an [ActiveRepoTracker] for the space whose worktrees live in
   /// [reposDir].

@@ -99,25 +99,13 @@ class _TreeRow {
   final bool showChevron;
 }
 
-/// Explorer panel: a lazy per-repo file tree with two search surfaces, swapped
-/// by the trailing toggle button (mirrors the PR diff sidebar's tree ⇄
-/// search-in-files pattern).
-///
-/// Filename mode — empty query → lazy per-repo tree (collapsible dirs, each
-/// directory's children fetched page-by-page from `repos.listDirectory` as it
-/// is expanded, so no single response scales with repo size); typed query →
-/// flat scored list paged from `repos.searchFiles` (fff runs server-side via
-/// [repoFileSearchProvider], loading more as the list nears its end). Content
-/// mode — `git grep` across the same roots ([repoContentSearchProvider]) with
-/// case/regex/whole-word toggles and include/exclude glob filters. Clicking a
-/// file opens it in the editor; clicking a dir toggles its expansion.
-///
-/// Every one of those reads is scoped to the conversation: the panel lists only
-/// the repos the space CLONED ([spaceWorktreesProvider]) and every tree, search
-/// and grep runs against that repo's ISOLATED CoW WORKTREE — the tree agents
-/// and code-server actually write to. Listing the shared linked checkout
-/// instead would show a file the conversation never touched, and hand the
-/// editor a path whose contents disagree with the diff beside it.
+/// Explorer panel: a lazy per-repo file tree with two search surfaces, swapped by the
+/// trailing toggle button (mirrors the PR diff sidebar's tree ⇄ search-in-files pattern).
+/// Every one of those reads is scoped to the conversation: the panel lists only the repos
+/// the space CLONED ([spaceWorktreesProvider]) and every tree, search and grep runs against
+/// that repo's ISOLATED CoW WORKTREE — the tree agents and code-server actually write to.
+/// Listing the shared linked checkout instead would show a file the conversation never
+/// touched, and hand the editor a path whose contents disagree with the diff beside it.
 class ExplorerPanel extends ConsumerStatefulWidget {
   /// Creates an [ExplorerPanel].
   const ExplorerPanel({

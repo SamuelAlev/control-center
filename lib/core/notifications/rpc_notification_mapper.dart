@@ -1,19 +1,11 @@
 // Maps the connected `cc_server`'s pushed `notifications/*` JSON-RPC frames to
-// [AppNotification]s — the thin-client replacement for the old
-// `NotificationEventMapper` (which subscribed to the local `DomainEventBus`,
-// a bus that only ever saw events the desktop's OWN in-process execution
-// raised — dead since the thin-client flip, since execution now happens
-// server-side).
-//
-// The server is stateless — every event it forwards carries its own
-// `workspace_id` (or none, for the genuinely cross-workspace external-PR
-// signal) — so this filters to the session's active workspace before
-// rendering, mirroring the workspace-scoped activity feed.
-//
-// The actual per-method frame → [AppNotification] building (including the
-// PRD 16 §7 principal routing rules) lives in `notification_frame_mapper.dart`
-// and is shared with the server-fed notification center, so the live toast and
-// the durable bell history always agree.
+// [AppNotification]s — the thin-client replacement for the old `NotificationEventMapper`
+// (which subscribed to the local `DomainEventBus`, a bus that only ever saw events the
+// desktop's OWN in-process execution raised — dead since the thin-client flip, since
+// execution now happens server-side).
+// The server is stateless — every event it forwards carries its own `workspace_id` (or
+// none, for the genuinely cross-workspace external-PR signal) — so this filters to the
+// session's active workspace before rendering, mirroring the workspace-scoped activity
 library;
 
 import 'dart:async';

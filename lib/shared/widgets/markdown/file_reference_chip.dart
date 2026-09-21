@@ -1,26 +1,6 @@
-// `@[file:<name>]` in a SENT message, rendered the way the composer rendered
-// it while the message was still being typed.
-//
-// **Why a parser plugin.** The token is ordinary text in the stored message —
-// that is the whole design of a reference (see `composer/file_reference.dart`)
-// — so by the time a transcript draws it, it is just characters in a
-// paragraph. Rewriting it to inline code before parsing was the previous
-// answer, and it cost the two things that make a reference a reference: the
-// accent that says "this is a file", and the click that opens it. An inline
-// plugin claims the characters at parse time instead, so the chip is a real
-// node with its own builder and the surrounding sentence still wraps around it.
-//
-// **Why the name, not the raw token.** The composer paints the whole
-// `@[file:…]` because the person is editing those characters and the caret has
-// to land between them. Nobody edits a sent message's text, and bracket syntax
-// in a transcript reads as markup that leaked. So the chip carries the name and
-// the accent carries the meaning.
-//
-// A reference whose attachment is not on the message resolves to nothing —
-// somebody typed the token by hand, or it predates the metadata. It renders as
-// plain words rather than as an accent chip, for the same reason the composer
-// leaves an unresolved reference unpainted: an affordance that opens nothing is
-// worse than no affordance.
+// `@[file:<name>]` in a SENT message, rendered the way the composer rendered it while the
+// message was still being typed.
+// Why a parser plugin. The token is ordinary text in the stored message —
 library;
 
 import 'dart:async';

@@ -18,7 +18,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Runs whichever local command [parsed] names, if any.
 ///
-/// Returns the content the send path should carry on with, or **null** when the
+/// Returns the content the send path should carry on with, or null when the
 /// submission was fully handled here and must not be sent. A submission that is
 /// not a command comes back as [rawContent], unchanged.
 ///

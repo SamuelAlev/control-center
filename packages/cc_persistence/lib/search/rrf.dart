@@ -1,13 +1,5 @@
-/// Reciprocal-rank fusion helper for hybrid search.
-///
-/// Merges multiple ranked result lists into a single ordering using the
-/// classic Cormack/Clarke/Buettcher 2009 formula:
-///
-///     score(item) = Σᵢ 1 / (k + rankᵢ(item))
-///
-/// The stub here was rebuilt from scratch after the original
-/// implementation was lost; behavior is correct but un-tuned. Callers
-/// can pass any object type — equality is used to merge across lists.
+/// Reciprocal-rank fusion: merges ranked lists with score `1/(k+rank)`
+/// (Cormack/Clarke/Buettcher 2009).
 List<T> reciprocalRankFusion<T>(
   List<List<T>> rankedLists, {
   int k = 60,

@@ -423,26 +423,10 @@ String? _extractAttr(String tag, String name) {
   return match?.group(1);
 }
 
-/// Converts GitHub shorthand references inside markdown text into proper
-/// markdown links with the app's deep-link scheme.
-///
-/// The preprocessor is conservative: it skips fenced code blocks, inline
-/// code, heading lines and hex colours so that references inside code
-/// examples or CSS values are left untouched.
-///
-/// Recognised patterns:
-///   * `#123`                 → `[#123](control-center://pr/<owner>/<repo>/123)`
-///   * `owner/repo#123`       → `[owner/repo#123](control-center://pr/owner/repo/123)`
-///   * `@login`               → `[@login](control-center://user/login)`
-///   * `@org/team`            → `[@org/team](control-center://team/org/team)`
-///
-/// Using the deep-link scheme means a copy-paste of the rendered link also
-/// opens the PR in the desktop app via the OS URL handler.
-///
-/// [owner] and [repo] describe the repository the markdown content belongs
-/// to, so that bare `#123` references can be resolved. When either is empty,
-/// issue/PR shorthand is left untouched; `@user` mentions are still rewritten
-/// (they don't need repo context).
+/// Converts GitHub shorthand references inside markdown text into proper markdown links
+/// with the app's deep-link scheme.
+/// When either is empty, issue/PR shorthand is left untouched; `@user` mentions are still
+/// rewritten (they don't need repo context).
 String preprocessGitHubReferences(
   String markdown, {
   required String owner,
@@ -486,9 +470,7 @@ String preprocessGitHubReferences(
   return result.join('\n');
 }
 
-// ---------------------------------------------------------------------------
 // Line-level processing
-// ---------------------------------------------------------------------------
 
 /// Replaces shorthand references in a single line, taking care not to
 /// touch text inside inline code spans (`...`) or existing markdown links.
@@ -628,9 +610,7 @@ List<(int, int)> _findMarkdownLinkRegions(String line) {
   return regions;
 }
 
-// ---------------------------------------------------------------------------
 // Inline code helpers
-// ---------------------------------------------------------------------------
 
 /// Returns a list of `(start, end)` character ranges that are inside inline
 /// code spans (single or double backtick delimiters).
@@ -663,9 +643,7 @@ List<(int, int)> _findInlineCodeRegions(String line) {
   return regions;
 }
 
-// ---------------------------------------------------------------------------
 // Video embeds (Loom, …)
-// ---------------------------------------------------------------------------
 
 /// Rewrites standalone third-party video links into inline markdown images so
 /// the renderer's `imageBuilder` can swap them for an embedded player.

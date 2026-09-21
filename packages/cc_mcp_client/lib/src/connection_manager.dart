@@ -21,23 +21,13 @@ typedef McpClientLogSink =
 /// the OAuth flow in response.
 typedef NeedsAuthCallback = void Function(McpServerConfig config);
 
-/// Manages the lifecycle of connections to a set of external MCP servers and
-/// exposes their tools — bridged into CC's local [BridgedMcpTool] surface —
-/// as a single live collection.
+/// Manages the lifecycle of connections to a set of external MCP servers and exposes their
+/// tools — bridged into CC's local [BridgedMcpTool] surface — as a single live collection.
 ///
-/// Responsibilities (PRD 01, phase 1.1):
-/// * **Concurrent connect on boot** — every enabled server is dialled in
-///   parallel; a slow/dead server never blocks the others.
-/// * **Per-server lifecycle** — `connecting → connected | failed | needs_auth`
-///   etc., surfaced via [statuses].
-/// * **Crash-storm circuit breaker** — more than [reconnectBurstLimit] reconnects
-///   inside [reconnectBurstWindow] trips the breaker; it stays open until a
-///   *manual* reconnect resets the window. Stops a crash-looping server from
-///   pinning a CPU.
-/// * **Hot-reload** — subscribes to `notifications/tools/list_changed` and
-///   re-lists, emitting on [toolsChanged].
-/// * **Clean shutdown** — closes every client, which SIGTERMs stdio child
-///   process trees so no zombies survive.
+/// Responsibilities (PRD 01, phase 1.1): * **Concurrent connect on boot** — every enabled
+/// server is dialled in parallel; a slow/dead server never blocks the others.
+/// * **Per-server lifecycle** — `connecting → connected | failed | needs_auth` etc.,
+/// surfaced via [statuses].
 class ConnectionManager {
   /// Creates a [ConnectionManager].
   ConnectionManager({

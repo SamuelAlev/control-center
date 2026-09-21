@@ -1,22 +1,8 @@
 #!/usr/bin/env bash
 #
-# The canonical local web build — what CI actually does, in the order it does it.
+# Builds the Flutter web client and stamps deploy.json.
+# Usage: scripts/build_web.sh
 #
-# It used to be one line (`flutter build web --release --wasm`) claiming to be
-# "the canonical local build command so local verification matches CI", while
-# deploy-webapp.yml additionally stamped the build identity, regenerated the Web
-# Workers, wrote deploy.json and enforced the asset budget. Three of four steps
-# were missing, so a local build could not reproduce a deploy — the exact drift
-# the claim was there to prevent.
-#
-# A Wasm build carries SkWasm for modern browsers and the generated CanvasKit
-# JavaScript fallback for browsers without WasmGC.
-#
-# Usage:
-#   scripts/build_web.sh                      # the root web client
-#   scripts/build_web.sh --target remote      # the phone PWA (apps/cc_remote)
-#   scripts/build_web.sh --target gallery     # the design-system gallery
-#   scripts/build_web.sh -- --dump-info       # extra args go to `flutter build`
 set -euo pipefail
 
 REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"

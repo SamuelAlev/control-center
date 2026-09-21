@@ -1,23 +1,8 @@
 import 'package:cc_harness/loop.dart';
 import 'package:cc_harness/messages.dart';
 
-/// Runs several advisors over the same turn and surfaces the most serious note.
-///
-/// **Why a panel rather than one reviewer with a longer prompt.** The review
-/// questions people actually care about are different in KIND — does this
-/// couple modules that should not touch, does it leak a credential, does it
-/// actually pass its own tests. One advisor asked all three answers about
-/// whichever it noticed first, and the other two questions silently go
-/// unasked. Separate advisors each have one job, and often want different
-/// models: the architecture reviewer is worth a strong model, the "did you run
-/// the tests" reviewer is not.
-///
-/// **Only one note per turn reaches the agent.** A panel that injects three
-/// notes per turn does not produce three times the course correction; it
-/// produces an agent that stops reading advisories. The most severe note wins,
-/// ties break on roster order (so the first-declared advisor is the senior
-/// one), and the rest are dropped for this turn — a real concern raised by two
-/// reviewers is still one concern.
+/// Runs several advisors on one turn; only the most severe note reaches the
+/// agent (ties: roster order). Separate advisors keep distinct jobs/models.
 class AdvisorPanel implements Advisor {
   /// Creates an [AdvisorPanel] over [members], in precedence order.
   AdvisorPanel(this.members);

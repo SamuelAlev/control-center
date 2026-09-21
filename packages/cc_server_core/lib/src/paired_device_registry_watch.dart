@@ -5,30 +5,10 @@ import 'package:cc_host/cc_host.dart';
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:drift/drift.dart';
 
-/// Republishes `paired_devices` rows written by ANOTHER process, so a running
-/// server picks up `cc_server pair` without being restarted.
+/// Republishes `paired_devices` rows written by another process (`cc_server pair`).
 ///
-/// Drift's `.watch()` streams are driven by in-process table-update
-/// notifications: they fire for writes made through THIS connection and are
-/// blind to a second process writing the same SQLite file. `cc_server pair` is
-/// exactly that second process, which left two consumers stale until the next
-/// boot:
-///
-///  * `RemoteRelayHost`, whose admission-hash set is rebuilt from
-///    `devicesDao.watchAll()` — an unpublished hash means the broker never
-///    admits the new device, so a remote client cannot even reach the auth
-///    handshake.
-///  * `pairing.watchOwn`, the device list every client renders — a device that
-///    exists on disk but is absent from the UI.
-///
-/// One poll covers both: read the registry, and when it differs from the last
-/// snapshot call `notifyUpdates` so every existing stream on the table re-runs
-/// its query. Nothing subscribes to this class directly — it feeds the
-/// notification lane those streams already use.
-///
-/// On-demand reads need none of this: `getById` / `getAll` go to disk, which is
-/// why direct WebSocket auth only ever needed the PSK cache fixed (see
-/// `FileSecretsStore`).
+/// Drift watches are in-process-only; polling + `notifyUpdates` refreshes relay admission and
+/// `pairing.watchOwn`. Direct reads already hit disk.
 class PairedDeviceRegistryWatch {
   /// Watches [_global]'s device registry, polling every [interval].
   PairedDeviceRegistryWatch({

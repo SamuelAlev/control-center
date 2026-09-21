@@ -32,9 +32,7 @@ final adapterArgsProvider = FutureProvider.family<String?, String>((
   return ref.read(adapterPreferencesProvider).getAdapterArgs(adapterId);
 });
 
-// ---------------------------------------------------------------------------
 // Default Chat Adapter + Model
-// ---------------------------------------------------------------------------
 
 /// Manages the persisted default chat adapter id.
 class DefaultChatAdapterNotifier extends Notifier<String?> {
@@ -76,9 +74,7 @@ final defaultChatModelProvider =
       DefaultChatModelNotifier.new,
     );
 
-// ---------------------------------------------------------------------------
 // Short Task Adapter + Model
-// ---------------------------------------------------------------------------
 
 /// Manages the persisted short-task adapter id.
 class ShortTaskAdapterNotifier extends Notifier<String?> {

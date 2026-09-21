@@ -39,24 +39,10 @@ final _testOverrides = [
   meetingDecisionCountsProvider.overrideWith((ref, _) => const Stream.empty()),
 ];
 
-/// Wraps a widget with ProviderScope, MaterialApp (including l10n delegates),
-/// and CcTheme for use in widget tests.
+/// ProviderScope + MaterialApp (l10n) + CcTheme for widget tests.
 ///
-/// [CcToastScope] sits inside `home`, below the navigator's own overlay, so a
-/// CcToast raised from the widget-under-test (screen context) resolves a host.
-/// This placement is rebuild-safe — unlike wrapping the navigator in an Overlay
-/// via `builder`, which strands re-pumped widget trees because
-/// `Overlay.initialEntries` is only consumed once. Tests whose toast is raised
-/// from a *dialog* context (which mounts into the root navigator overlay, a
-/// sibling of `home`) must use [testWrapWithToastOverlay] instead.
-///
-/// [locale] picks the l10n strings (default English). [textDirection] forces
-/// the ambient [Directionality] under `home` — pass [TextDirection.rtl] to
-/// exercise a widget's RTL mirroring without needing an RTL locale's strings.
-///
-/// [isDemo] pins [isDemoServerProvider]. Tests of demo-gated chrome pass true;
-/// everyone else gets false so a screen that watches the flag does not hit
-/// the live server-list provider.
+/// [CcToastScope] inside `home` (rebuild-safe). Dialog toasts need
+/// [testWrapWithToastOverlay]. [locale] / [textDirection] / [isDemo] optional.
 Widget testWrap(
   Widget child, {
   Locale locale = const Locale('en'),

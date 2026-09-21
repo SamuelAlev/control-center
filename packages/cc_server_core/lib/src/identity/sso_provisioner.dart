@@ -134,22 +134,8 @@ class SsoProvisioner {
   final DateTime Function() _now;
   static const _uuid = Uuid();
 
-  /// Finds the user by SSO subject (when the claims carry one), then email
-  /// (then handle), creating one when nothing matches. Publishes
-  /// `UserCreated` for new users and pins the provider's subject id onto
-  /// the account at first login.
-  ///
-  /// Account-takeover guard: when a matched account is ALREADY pinned to a
-  /// different subject OR a different issuer, the login is refused — subject
-  /// ids are only unique per issuer, so a SAML NameID / OIDC sub / SCIM
-  /// externalId that happens to collide across providers must never
-  /// cross-link accounts and a reused or changed email at the provider must
-  /// never take over a colleague's account. Match order:
-  /// subject (immutable) → email → handle.
-  ///
-  /// When [policy] disallows JIT (`allowJit == false`), an identity with no
-  /// existing account is refused — only pre-provisioned accounts (SCIM push,
-  /// invite, or a previously pinned login) may sign in.
+  /// Resolve/create user by SSO subject → email → handle; pin subject at first login.
+  /// Refuse if account already pinned to a different subject/issuer. No JIT when `allowJit` is false.
   Future<User> provisionUser(
     SsoClaims claims, {
     required SsoProvisioningPolicy policy,
@@ -307,23 +293,9 @@ class SsoProvisioner {
     return cleaned.isEmpty ? 'sso-user' : cleaned;
   }
 
-  /// Accepts a `web-popup` flow's declared connect-tab origin, or null when
-  /// it is unusable. The value arrives as an unauthenticated query parameter
-  /// and is held server-side in a pending-login map for the login TTL, so it
-  /// must be shape-checked and length-bounded before storage: an absolute
-  /// `http`/`https` URL with a host, at most 2048 chars.
-  ///
-  /// The stored value is the CANONICAL origin (`scheme://host[:port]`),
-  /// never the raw input: it crosses two different URL parsers (Dart's
-  /// `Uri` in the allow-list check, WHATWG URL in the browser when it
-  /// becomes a postMessage `targetOrigin`) and anything the two can read
-  /// differently — backslashes, userinfo, odd encodings — is a
-  /// parser-differential credential-leak waiting to happen. Canonicalizing
-  /// makes both parsers see the identical string. Userinfo is rejected
-  /// outright (it is never part of an origin) and paths/queries are
-  /// dropped. The handoff still re-checks the value against the origin
-  /// allow-list — this only stops junk (and multi-kilobyte strings) from
-  /// being pinned into memory.
+  /// Accept a web-popup connect-tab origin, or null if unusable.
+  /// Canonicalize to `scheme://host[:port]` (≤2048, http/https, no userinfo) before storing;
+  /// handoff still re-checks the origin allow-list.
   static String? sanitizeClientOrigin(String? raw) {
     if (raw == null) {
       return null;

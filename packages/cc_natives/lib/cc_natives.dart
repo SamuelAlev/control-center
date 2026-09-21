@@ -1,26 +1,12 @@
-/// Dart FFI surface for Control Center's runtime-loaded native libraries:
-/// rift (copy-on-write git worktrees), fff (fast file search), tree-sitter +
-/// its grammars (code indexing), cc_watcher (file watching), aec (acoustic echo
-/// cancellation), lame (MP3 encoding), pty (pseudo-terminal, for the
-/// Flutter-free agent executor in the cc_server binary), the inference
-/// runtimes (onnxruntime, sherpa-onnx) and cc_saml (SAML SSO crypto).
+/// Dart FFI surface for runtime-loaded natives: rift, fff, tree-sitter,
+/// cc_watcher, aec, lame, pty, cc_inference, cc_saml.
 ///
-/// Bindings, loaders and path resolution only — this package builds NO native
-/// code. The dylibs are produced by `scripts/natives/*.sh`, bundled into the
-/// host binary as `DynamicLoadingBundled` code assets (see
-/// `apps/cc_server/hook/build.dart`) and loaded at runtime via `dart:ffi`.
-///
-/// A missing native is a HARD failure — there is no degraded mode. Loaders
-/// throw a `NativeLibraryUnavailable` (rift signals it via
-/// `RiftException.isUnavailable`) and `cc_server` refuses to boot when its
-/// native preflight cannot resolve one. The only fallbacks that remain are
-/// environment-driven, never build-driven: a filesystem without copy-on-write
-/// support falls back to `git worktree` and semantic search degrades to
-/// FTS-only until the on-device embedding MODEL is downloaded.
-///
-/// The host app injects its logging sink and on-disk path resolvers (see
-/// `NativeLog` / `NativeDirResolver`) so this package stays a leaf with no
-/// `package:control_center` dependency.
+/// Bindings/loaders only — dylibs from `scripts/natives/*.sh`, bundled as
+/// `DynamicLoadingBundled` assets. Missing native = hard failure
+/// ([NativeLibraryUnavailable]); no degraded mode. Environment-only
+/// fallbacks: embedding model not downloaded → FTS-only; Windows still uses
+/// `git worktree` as the rift backend (CoW is sole elsewhere). Host injects
+/// [NativeLog] / [NativeDirResolver].
 library;
 
 export 'src/audio/aec/aec_ffi_bindings.dart';

@@ -1,25 +1,13 @@
 import 'package:flutter/widgets.dart';
 
 /// A single tab in an editor tab-group.
-///
-/// [kind] is an opaque, caller-defined string (e.g. messaging's `chat` /
-/// `terminal`, or the PR page's `overview` / `diff`). The editor engine never
-/// interprets it — the host's body builder switches on it to render a body and
-/// the host may use it plus [args] to look tabs up. Keeping it a string is what
-/// lets the split/drag-and-drop engine be reused across features without the
-/// engine knowing any feature's tab vocabulary.
-///
-/// [args] carries the kind-specific payload the host's body builder needs.
-/// [icon] is an optional leading glyph shown in the tab strip. [dedupKey], when
-/// non-null, makes the tab unique within a group: opening another tab with the
-/// same key refocuses (and replaces) the existing one instead of stacking.
-///
-/// **Identity matters.** [EditorTab] deliberately does NOT override `==`/
-/// `hashCode`: instances are compared by identity. The layout uses a tab's
-/// identity as the stable key for its live body (terminal PTY, webview, a
-/// scrolled diff), so the *same* instance must travel as it is reordered or
-/// moved between panes — that is what lets the body be reparented rather than
-/// rebuilt. Never copy a tab to move it; move the instance.
+/// The editor engine never interprets it — the host's body builder switches on it to render
+/// a body and the host may use it plus [args] to look tabs up.
+/// [dedupKey], when non-null, makes the tab unique within a group: opening another tab with
+/// the same key refocuses (and replaces) the existing one instead of stacking.
+/// The layout uses a tab's identity as the stable key for its live body (terminal PTY,
+/// webview, a scrolled diff), so the *same* instance must travel as it is reordered or
+/// moved between panes — that is what lets the body be reparented rather than rebuilt.
 @immutable
 class EditorTab {
   /// Creates an [EditorTab].
@@ -203,14 +191,14 @@ class EditorTabGroupController extends ChangeNotifier {
   }
 
   /// Removes and returns the tab at [index]. Selection on close:
-  ///   * closing the **active** tab falls back to the tab you were on before
+  /// * closing the active tab falls back to the tab you were on before
   ///     it ([_visitOrder]) — browser-style, so ⌘W walks back the way you came
   ///     instead of marching left through tabs you never opened. With no
   ///     surviving history (a fresh restore, or every earlier tab closed) it
   ///     selects the tab just before it, the VS Code fallback;
-  ///   * closing a tab **before** the active one keeps the active one selected
+  /// * closing a tab before the active one keeps the active one selected
   ///     (its index shifts down by one to compensate);
-  ///   * closing a tab **after** the active one leaves the selection unchanged.
+  /// * closing a tab after the active one leaves the selection unchanged.
   /// Returns null when [index] is out of range.
   EditorTab? removeAt(int index) {
     if (index < 0 || index >= _tabs.length) {

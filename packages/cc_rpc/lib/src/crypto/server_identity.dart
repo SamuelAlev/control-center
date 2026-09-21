@@ -3,22 +3,15 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart' show sha256;
 import 'package:cryptography/cryptography.dart';
 
-/// Ed25519 server-identity: the cryptographic root of TOFU fingerprint
-/// pinning (PRD 15 §9).
+/// Ed25519 server-identity: the cryptographic root of TOFU fingerprint pinning (PRD 15 §9).
 ///
-/// Every cc_server mints one Ed25519 keypair at first boot and keeps it for
-/// life. Its **fingerprint** — the SHA-256 hex of the raw public key — is the
-/// server's identity: it rides in every `ConnectionDescriptor`, invite link,
-/// and pairing QR and clients pin it on first pair. On every subsequent
-/// connect the server proves possession by signing the client's fresh auth
-/// nonce; a changed fingerprint is a hard refusal (re-pair via a new invite),
-/// never a "continue anyway?" dialog.
-///
-/// Being an app-layer identity (not TLS cert pinning), it survives
-/// TLS-terminating tunnels (cloudflared, ngrok) and works identically over
-/// loopback, LAN, WSS and the broker relay — closing the DNS-rebind residual
-/// (FINDINGS §1): rebinding a hostname to another host cannot forge the
-/// signature.
+/// Every cc_server mints one Ed25519 keypair at first boot and keeps it for life.
+/// Its **fingerprint** — the SHA-256 hex of the raw public key — is the server's identity:
+/// it rides in every `ConnectionDescriptor`, invite link, and pairing QR and clients pin it
+/// on first pair.
+/// On every subsequent connect the server proves possession by signing the client's fresh
+/// auth nonce; a changed fingerprint is a hard refusal (re-pair via a new invite), never a
+/// "continue anyway?" dialog.
 final class ServerIdentityCrypto {
   ServerIdentityCrypto._();
 

@@ -113,24 +113,10 @@ String formatPipelineRelative(
   };
 }
 
-/// Queue position of every `queued` run in [runs], keyed by run id, where 1 is
-/// the run that will be admitted next.
-///
-/// A capped template (`index_code` is capped at one) admits its queued runs
-/// oldest-first, but the list they are shown in is NEWEST-first — so the run
-/// about to start is the one at the BOTTOM of a queued block, which reads as
-/// last when it is next. That is what this labels.
-///
-/// Position is derived from [runs]' ORDER rather than from `startedAt` because
-/// that timestamp has one-second resolution: adding six repos at once stamps
-/// all six runs identically, and nothing here could separate them. The server
-/// orders them (`PipelineDao.watchForWorkspace`, newest first with an insert-
-/// order tiebreak), so reversing within a template's queued rows recovers the
-/// admission order exactly. Pass the UNFILTERED list — a status filter that
-/// hides part of a queue would otherwise renumber the rest.
-///
-/// The cap is per `(workspace, template)`, so queues are counted per template;
-/// runs of other templates never share a position.
+/// Queue position of every `queued` run in [runs], keyed by run id, where 1 is the run that
+/// will be admitted next.
+/// The cap is per `(workspace, template)`, so queues are counted per template; runs of
+/// other templates never share a position.
 Map<String, int> pipelineQueuePositions(List<PipelineRun> runs) {
   final queuedByTemplate = <String, List<String>>{};
   for (final run in runs) {

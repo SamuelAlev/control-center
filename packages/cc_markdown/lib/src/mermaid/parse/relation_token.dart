@@ -1,13 +1,6 @@
-/// Finding the relation token inside a class/ER statement.
-///
-/// Both dialects write `LEFT marker line marker RIGHT` (`Animal <|-- Duck`,
-/// `CUSTOMER ||--o{ ORDER`), which a single regex cannot split safely: a
-/// one-character marker like `o` (aggregation) is also an ordinary letter, so
-/// `Order o-- Item` must not parse as `Ord` + `er o--`. The scanner therefore
-/// anchors on the LINE run (`--` / `..`) and only accepts a one-character
-/// marker when a word boundary sits on its outer side. Two-character markers
-/// (`<|`, `|>`, `||`, `o{`, `}o`) are unambiguous — no identifier contains
-/// `|`, `{`, or `}` — so they are always accepted.
+/// Finds the relation token in class/ER statements. Anchor on the line run
+/// (`--`/`..`); accept a one-char marker only with an outer word boundary
+/// (else `Order o-- Item` mis-splits). Two-char markers always accepted.
 library;
 
 /// A relation token located inside a statement.

@@ -306,20 +306,9 @@ class ComputerRigDriver implements RigDriver {
     List<RigGuestFile> landed,
     RigDropRequest request,
   ) async {
-    // A desktop drop is where the honest answer and the obvious one differ.
-    //
-    // There is no way for a host to synthesize an XDND drag into an arbitrary
-    // X toolkit: the protocol makes the SOURCE window own the transfer, and
-    // the source here would have to be a real client inside the guest,
-    // holding the pointer, negotiating targets with whatever it is over. That
-    // is a guest-side drag daemon — precisely the privileged in-guest process
-    // this design refuses to have.
-    //
-    // So the files land in a folder and their URIs go on the clipboard, which
-    // is what a file manager's "paste" and a browser's file input both read.
-    // [RigDropResult.deliveredAsDrop] stays FALSE, and the caller says so:
-    // someone who dropped a CSV expecting an upload needs to know it is a
-    // file in a folder, not an upload that happened.
+    // No host-synthesized XDND into an arbitrary toolkit (needs an in-guest
+    // source holding the pointer). Files land in a folder; URIs go on the
+    // clipboard. [RigDropResult.deliveredAsDrop] stays false.
     final files = landed.length == 1
         ? '"${landed.single.name}"'
         : '${landed.length} files';
@@ -522,18 +511,8 @@ class MobileRigDriver implements RigDriver {
   @override
   RigStreamCodec get watchCodec => RigStreamCodec.mjpeg;
 
-  // ── No clipboard, and that is a property of Android ─────────────────────
-  //
-  // Since Android 10, the clipboard is readable only by the app that has
-  // focus. There is no ADB command, no shell service call and no permission
-  // that changes it — reading it needs an app installed in the guest that
-  // volunteers to relay it, which is a component this product does not ship
-  // into someone's device.
-  //
-  // So the mobile surface throws instead of answering. An empty clipboard is
-  // a claim ("nothing has been copied") and this cannot make that claim; the
-  // capability note in the UI says the same thing, so the affordance is
-  // hidden rather than offered and failing.
+  // Since Android 10 the clipboard is focus-app-only; no ADB path exists.
+  // Throws rather than returning empty (empty would claim "nothing copied").
 
   @override
   Future<RigClipboardData> readClipboard(RigClipboardSelection selection) =>

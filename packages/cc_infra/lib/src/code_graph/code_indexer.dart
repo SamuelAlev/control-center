@@ -13,37 +13,16 @@ import 'package:cc_infra/src/code_graph/extraction_worker.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
 import 'package:cc_natives/cc_natives.dart';
 
-/// Default [CodeIndexer]: enumerate source files, group them by language
-/// (detected from extension), then for each language whose tree-sitter natives
-/// are installed, skip unchanged files (content hash), parse + extract each
-/// changed file in a long-lived worker isolate and ingest into the
-/// [CodeGraphRepository] in batched transactions. Finally prune deleted files
-/// and resolve cross-file references repo-wide.
+/// Default [CodeIndexer]: walk by language, hash-skip unchanged files, extract
+/// in a long-lived isolate, batch-ingest into [CodeGraphRepository], prune
+/// deletes, resolve cross-file refs.
 ///
-/// A run handed `changedPaths` skips the enumeration entirely and works from
-/// that list: it hashes those paths (through the same filters the walk applies),
-/// reads only their stored rows and prunes only among them. That is the
-/// difference between "reindex on save" costing the size of the CHANGE and
-/// costing the size of the CHECKOUT — measured, 5-9s and ~19k stats per saved
-/// file before it existed.
-///
-/// Before any of that, the run is short-circuited by an INDEX CHECKPOINT:
-/// a cheap git-driven fingerprint of the checkout ([RepoStateProbe]) plus a
-/// fingerprint of the extraction toolchain ([codeIndexerFingerprint]) are
-/// compared against what the last successful run recorded — a full match
-/// returns [CodeIndexResult.unchanged] without reading a single file state
-/// row or walking the tree. This is what makes an unchanged checkout
-/// near-free at boot.
-///
-/// The tree-sitter natives are REQUIRED: they ship inside the host bundle, so
-/// [indexRepo] throws a [StateError] naming the offenders when ANY recognised
-/// language's grammar dylib or `.scm` query cannot be resolved — a broken
-/// install must fail loudly, not silently produce a code graph that happens to
-/// omit every Dart symbol. There is no per-language skip: the extension→language
-/// registry (`kLanguageByExtension`) and the set of grammars the build scripts
-/// produce are the same list, so an unresolvable language is always a broken
-/// tree, never finite coverage. Resolution happens up front, before any file is
-/// ingested, so a failed run leaves no half-written index.
+/// `changedPaths` skips the walk: hash/filter only those paths, read/prune only
+/// among them (reindex-on-save costs the change, not the checkout).
+/// Checkpoint first: [RepoStateProbe] + [codeIndexerFingerprint] vs last success
+/// → [CodeIndexResult.unchanged] with no walk/file-state reads.
+/// Tree-sitter natives are required: any unresolved grammar/query throws
+/// [StateError] before ingest (no silent partial graph, no per-language skip).
 class DefaultCodeIndexer implements CodeIndexer {
   /// Creates a [DefaultCodeIndexer].
   DefaultCodeIndexer({
@@ -177,7 +156,6 @@ class DefaultCodeIndexer implements CodeIndexer {
     void Function(CodeIndexProgress progress)? onProgress,
     bool Function()? isCancelled,
   }) async {
-    // ── Checkpoint short-circuit ─────────────────────────────────────────
     // Probe the checkout's git state (2 process spawns + a stat per dirty
     // path) and the extraction toolchain; when both match the checkpoint the
     // last successful run recorded, nothing observable changed and the whole
@@ -210,7 +188,6 @@ class DefaultCodeIndexer implements CodeIndexer {
       }
     }
 
-    // ── Discovery: targeted or full ──────────────────────────────────────
     // A watcher-driven run arrives KNOWING which paths changed, and everything
     // below is otherwise spent rediscovering that: a `git ls-files` plus a stat
     // of every file in the checkout, and a read of the partition's whole
@@ -318,13 +295,9 @@ class DefaultCodeIndexer implements CodeIndexer {
     var edges = 0;
     var failed = 0;
 
-    // ── Resolve every language's natives BEFORE any extraction ──
-    // Each language the walker recognises ships a grammar + a `.scm` query
-    // (`kLanguageByExtension` and the build script are the same list), so a
-    // language that fails to resolve is a BROKEN INSTALL, not a coverage gap.
-    // Resolving up front means such a run fails without having half-ingested a
-    // repo and no per-language "skipped" path can quietly produce an index that
-    // is missing every Dart symbol.
+    // Resolve every language's natives before any extraction.
+    // Each walker language ships a grammar + `.scm` query; failure is a broken
+    // install (fail before half-ingest — no silent per-language skip).
     final natives = <String, ({GrammarPaths grammar, String query})>{};
     final missingNatives = <String>[];
     for (final languageId in byLanguage.keys) {
@@ -557,22 +530,11 @@ class DefaultCodeIndexer implements CodeIndexer {
       );
     }
 
-    // ── Checkpoint write ─────────────────────────────────────────────────
-    // Only after a COMPLETE, CLEAN run: a cancelled run must re-run next
-    // time and a run with parse failures stays retryable (the old behavior:
-    // a timed-out file is retried on the next run, not frozen out until its
-    // content changes). `generation` bumps only when rows actually changed,
-    // so a no-op run of the base does not invalidate every worktree's delta.
-    //
-    // A TARGETED run writes it too, which is a deliberate call: the fingerprint
-    // was probed BEFORE the run and describes the whole tree, so recording it
-    // asserts that the handed path set explained every difference. That is what
-    // "the set must be COMPLETE" in [CodeIndexer.indexRepo] buys, and the
-    // watcher is the one component that can promise it — `cc_watcher` is
-    // kernel-recursive and reports `rescanNeeded` when it loses events, at which
-    // point the caller passes no paths and this becomes a full pass again. The
-    // alternative (never checkpoint a targeted run) would make the next
-    // arm-time pass re-walk the whole checkout for changes already indexed.
+    // Checkpoint only after a complete, clean run (cancelled/failed stay
+    // retryable). `generation` bumps only when rows changed. Targeted runs
+    // checkpoint too: fingerprint describes the whole tree and asserts the
+    // path set was complete (`cc_watcher` rescan → full pass). Skipping would
+    // force the next arm to re-walk already-indexed changes.
     final cancelled = isCancelled?.call() ?? false;
     if (stateFp != null && toolchainFp != null && !cancelled && failed == 0) {
       final own = checkpointView?.own;

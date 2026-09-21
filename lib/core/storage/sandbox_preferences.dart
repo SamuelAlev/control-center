@@ -23,7 +23,7 @@ class SandboxPreferences {
   /// Whether sandboxing is enabled at all. When false, the app falls back to
   /// the no-sandbox adapter regardless of the [backend] setting.
   ///
-  /// Defaults to **true** for fresh installs — security on by default.
+  /// Defaults to true for fresh installs — security on by default.
   bool get isEnabled => _prefs.getBool(_kEnabledKey) ?? true;
 
   /// Sets the master enable flag.

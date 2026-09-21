@@ -64,39 +64,13 @@ class PrConversationAppIdentity {
   final GitHubPrConversationGateway gateway;
 }
 
-/// Discovers, by polling, the GitHub PR conversations the server's bot is
-/// being invoked on, and hands each one to the bridge.
+/// Polls GitHub for bot-invoked PR conversations and hands them to the bridge.
 ///
-/// GitHub's only push channel for a GitHub App is a webhook, which needs an
-/// inbound URL this server deliberately does not require (it may run behind
-/// NAT with no tunnel). Everything a webhook would deliver is also readable,
-/// so this sweep IS the transport: one aliased search per installation finds
-/// PRs mentioning the bot or carrying the review label, comment lists are
-/// diffed by comment id, and review-thread replies are followed for PRs that
-/// already have a review space. The cost is latency (one sweep interval) and
-/// a bounded request budget, not reachability.
-///
-/// ## Exactly-once
-///
-/// Comment ids are unique across GitHub and are recorded (persisted, bounded,
-/// FIFO-evicted) the moment a comment is classified as eligible, BEFORE the
-/// bridge acts — a handler crash cannot double-fire it, and the worst case is
-/// a lost comment, the same at-most-once trade every lane here makes.
-///
-/// ## The baseline pass
-///
-/// With no persisted state, the first sweep records everything currently
-/// outstanding without acting: an operator who labeled twenty PRs before this
-/// server ever ran must not come back to twenty running reviews. With state,
-/// a restart catches up and delivers exactly what arrived while it was down.
-///
-/// ## The label lane is a set, not a stream
-///
-/// Search reports label PRESENCE, not label events, so a labeled PR triggers
-/// once — ever, per persisted key. Removing and re-adding the label does not
-/// re-fire (the sweep cannot see the removal); an @mention is the re-run path.
-/// This mirrors the pending-review lane of the viewer-activity sweep, where
-/// membership in the result set is itself the state.
+/// Replaces webhooks (no inbound URL required): search per installation, diff comments by id,
+/// follow review-thread replies for PRs with a review space.
+/// Eligible comment ids are persisted before bridging (at-most-once; crash loses, never double-fires).
+/// First sweep with empty state records without acting (baseline); later restarts catch up.
+/// Label search is presence, not events — one fire per key; re-run via @mention.
 class PrConversationPollingService {
   /// Creates a [PrConversationPollingService].
   PrConversationPollingService({

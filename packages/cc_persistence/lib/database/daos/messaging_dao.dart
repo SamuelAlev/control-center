@@ -119,25 +119,13 @@ class MessagingDao extends DatabaseAccessor<WorkspaceDatabase>
             .toList(growable: false),
       );
 
-  /// Watches the per-message character counts of a conversation's LIVE region
-  /// (not reverted, not compacted), oldest-first.
+  /// Watches the per-message character counts of a conversation's LIVE region (not reverted,
+  /// not compacted), oldest-first.
   ///
-  /// Three small integers per row instead of the row: the context meters need
-  /// a sum, and reading whole messages to produce one meant an unbounded
-  /// `SELECT` — content, metadata and every agent turn's transcript blob —
-  /// re-run and re-shipped on every write to the table.
-  ///
-  /// `transcript_chars` is extracted IN SQLITE. It lives inside the metadata
-  /// JSON alongside `segments`, which is the megabyte the projection exists to
-  /// leave behind; pulling the column into Dart to read one integer off it
-  /// would move the cost rather than remove it. A row without the field (an
-  /// older turn, or any non-turn message) reports 0 and the caller falls back
-  /// to its content length, exactly as the entity-level estimator does.
-  ///
-  /// Per-row rather than a single `SUM`: the estimate rounds UP per message,
-  /// so summing characters first and rounding once would drift from
-  /// `estimateMessages` by up to one token per message — and the meter is
-  /// supposed to agree with the compaction trigger.
+  /// Three small integers per row instead of the row: the context meters need a sum, and
+  /// reading whole messages to produce one meant an unbounded `SELECT` — content, metadata
+  /// and every agent turn's transcript blob — re-run and re-shipped on every write to the
+  /// table.
   Stream<List<({String messageType, int contentChars, int transcriptChars})>>
   watchConversationCharCounts(String conversationId) =>
       customSelect(
@@ -162,21 +150,14 @@ class MessagingDao extends DatabaseAccessor<WorkspaceDatabase>
             .toList(growable: false),
       );
 
-  /// Returns one page of a conversation's messages strictly older than the
-  /// cursor, newest-first, each paired with its stable `rowid`. `created_at` is
-  /// stored at second resolution, so `rowid` is the tie-breaker — the page
-  /// predicate is `created_at < t OR (created_at = t AND rowid < r)`. Callers
-  /// ask for `limit + 1` to detect whether older messages remain.
+  /// Returns one page of a conversation's messages strictly older than the cursor,
+  /// newest-first, each paired with its stable `rowid`.
   ///
-  /// Scoped by [spaceId] as well as [conversationId], and that is an
-  /// AUTHORIZATION predicate, not a filter. A conversation belongs to exactly
-  /// one space, so for a legitimate caller the extra equality changes
-  /// nothing — but the caller-supplied conversation id used to be the ONLY
-  /// predicate. Callers prove they own a SPACE; if the query does not also
-  /// bind to that space, owning any one space reads every conversation in
-  /// the workspace file. Cheap, too:
-  /// `idx_conversation_messages_conversation_created` still drives the scan
-  /// and this narrows it.
+  /// Scoped by [spaceId] as well as [conversationId], and that is an AUTHORIZATION predicate,
+  /// not a filter.
+  /// A conversation belongs to exactly one space, so for a legitimate caller the extra
+  /// equality changes nothing — but the caller-supplied conversation id used to be the ONLY
+  /// predicate.
   Future<List<({ConversationMessagesTableData data, int rowid})>>
   getMessagePageRows(
     String spaceId,
@@ -213,24 +194,13 @@ class MessagingDao extends DatabaseAccessor<WorkspaceDatabase>
         .get();
   }
 
-  /// Watches per-space activity signals for one workspace: newest message
-  /// time, newest agent-message time (the unread-dot signal) and the open
-  /// (unanswered) agent-question count (the needs-input signal). One aggregate
-  /// row per conversation, folded into a space by the repository — the
-  /// sidebar's replacement for a full message-list subscription per row, and
-  /// the source of "which conversation has unseen agent work".
+  /// Watches per-space activity signals for one workspace: newest message time, newest
+  /// agent-message time (the unread-dot signal) and the open (unanswered) agent-question
+  /// count (the needs-input signal).
   ///
-  /// EVERY conversation in the space counts, threads included: read marks are
-  /// space-scoped, so unread aggregates across the whole space. This used to
-  /// narrow both signals with `m.conversation_id = m.space_id` to exclude side
-  /// conversations. That predicate can no longer be true — a conversation owns
-  /// its own uuid — so it silently zeroed the agent-reply dot and the
-  /// open-question count for every space.
-  ///
-  /// Archived spaces are excluded: an archived space's row is gone from the
-  /// sidebar, so its unread/needs-input signals would have no visible home —
-  /// and a hidden room must not keep demanding attention. Restoring the
-  /// space brings its signals back (nothing was deleted).
+  /// Archived spaces are excluded: an archived space's row is gone from the sidebar, so its
+  /// unread/needs-input signals would have no visible home — and a hidden room must not keep
+  /// demanding attention.
   Stream<
     List<
       ({

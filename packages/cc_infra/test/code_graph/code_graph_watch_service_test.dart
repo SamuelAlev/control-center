@@ -27,26 +27,12 @@ import 'package:cc_natives/cc_natives.dart'
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
-/// The watch service is the piece that makes "reindex on save" real: it
-/// discovers checkouts from the repo + worktree registries, builds a
-/// worktree's own graph partition the moment the worktree appears and folds
-/// any on-disk change (IDE save, agent write, PR sync checkout) into one
-/// debounced incremental index run.
+/// Covers "reindex on save": registry discovery, worktree partitions, debounced
+/// incremental index on disk changes.
 ///
-/// Two layers of coverage, deliberately:
-///
-///  * the bulk of the tests inject a hand-driven watcher and emit change
-///    BATCHES directly. That makes the semantics timing-exact (a burst really
-///    is one window; a rescan-with-no-paths really is one run) instead of
-///    depending on filesystem-event latency and it needs no dylib;
-///  * one group at the bottom drives the REAL native `cc_watcher` over a real
-///    temp directory, so the production path — kernel events → native ignore
-///    filter → drain → the service's `affectsIndex` gate — is exercised
-///    end-to-end. It skips when the dylib is not built.
-///
-/// There is deliberately no `package:watcher` anywhere: it is not a fallback
-/// in production (its per-arm full-tree scan is the 65s freeze this all
-/// exists to remove), so it is not a test dependency either.
+/// Most tests inject a hand-driven watcher (timing-exact, no dylib). One group
+/// uses real native `cc_watcher` (skips if dylib missing). No `package:watcher`
+/// — not a production fallback (full-tree scan freeze).
 void main() {
   late Directory tempRoot;
   late _FakeIndexer indexer;
@@ -942,10 +928,8 @@ void main() {
     expect(attempts, greaterThanOrEqualTo(2));
   });
 
-  // ──────────────────────────────────────────────────────────────────────────
   // The production path, end to end: real files → the native cc_watcher →
   // the service's `affectsIndex` gate → one debounced index run.
-  // ──────────────────────────────────────────────────────────────────────────
   group('native cc_watcher integration', () {
     late bool available;
 

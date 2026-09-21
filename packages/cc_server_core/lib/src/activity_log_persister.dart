@@ -6,24 +6,10 @@ import 'package:cc_host/cc_host.dart';
 import 'package:cc_infra/cc_infra.dart';
 import 'package:cc_persistence/cc_persistence.dart';
 
-/// Persists [ActivityLogged] events into the `activity_log` table — the single
-/// write path for the audit trail.
+/// Persists [ActivityLogged] into `activity_log` — the audit trail for Settings → Activity.
 ///
-/// Two things about the shape here are deliberate.
-///
-/// **It holds the manager, not a DAO.** The first version took an
-/// `ActivityLogDao` in its constructor. A workspace-scoped DAO can only have
-/// been resolved from SOME workspace, so every audit row for every workspace
-/// would have landed in that one file — with a `workspace_id` column claiming
-/// otherwise, which is worse than losing the row, because
-/// `DaoActivityLogReader` reads the workspace's own file and would never show
-/// it. The event names its workspace; that name picks the database.
-///
-/// **An event with no workspace is DROPPED, loudly.** `ActivityLogged`
-/// carries a nullable `workspaceId` (server-wide actions have no workspace),
-/// and there is no such thing as a default database to fall back on. Writing
-/// it somewhere would be a silent cross-workspace write; dropping it with a
-/// warning is honest and leaves the audit trail's gaps visible.
+/// Listens on the domain bus; writes only rows with a workspace id (unscoped events stay toast-only).
+/// Failures are logged, never rethrown (audit must not take down the publisher).
 class ActivityLogPersister {
   /// Creates an [ActivityLogPersister] over the per-workspace databases [_dbs].
   ActivityLogPersister({

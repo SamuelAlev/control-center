@@ -4,21 +4,10 @@ import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/widgets.dart';
 
 /// The commit bar for a settings form that saves as a unit.
-///
-/// Most settings in this app apply on change, which is right for a switch. A
-/// few — an SSO connection, a provider's base URL — are a set of values that
-/// only make sense saved together, and those had their Save button parked at
-/// the bottom of a long scroll with nothing anywhere saying the form was dirty.
-/// You could edit four fields, navigate away, and lose all four without the
-/// interface ever mentioning it.
-///
-/// So by default the bar appears when, and only when, there is something to
-/// commit. It states that there is unsaved work, offers to discard it, and
-/// puts Save at the end of the row where the eye lands last. When the form is
-/// clean it is not a disabled button, it is nothing at all — a permanently
-/// greyed Save is noise that teaches the reader to ignore that corner of the
-/// card. [persistentSave] opts a surface out of that last part; see its doc
-/// for the one shape where it is right.
+/// A few — an SSO connection, a provider's base URL — are a set of values that only make
+/// sense saved together, and those had their Save button parked at the bottom of a long
+/// scroll with nothing anywhere saying the form was dirty.
+/// So by default the bar appears when, and only when, there is something to commit.
 class SettingsSaveBar extends StatelessWidget {
   /// Creates a [SettingsSaveBar].
   const SettingsSaveBar({

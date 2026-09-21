@@ -30,7 +30,7 @@ EditorTab contextExplorerTab({
 /// Opens the context explorer for ([spaceId], [agentId]) on a surface of its
 /// own.
 ///
-/// Inside the messaging IDE that is a new editor **tab** next to the
+/// Inside the messaging IDE that is a new editor tab next to the
 /// conversation the meter belongs to. On a surface with no host layout it
 /// falls back to a modal, since the explorer has no route of its own: the
 /// action must never dead-end on the button.

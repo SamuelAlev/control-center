@@ -1,26 +1,10 @@
 /// What a browser rig shows and may reach by default.
 ///
-/// A browser rig used to boot to `about:blank` with an empty egress
-/// allowlist — a bare white rectangle with no way to tell "working, showing
-/// nothing" from "broken". The fix was to point it at the product site
-/// (`https://usectrl.dev`), but that reintroduced the same white screen for a
-/// different reason: the site is behind a CDN (Cloudflare, IPv6) and smolvm's
-/// `--allow-host` pins the IPs resolved at VM start, so a rotated CDN IP is
-/// refused by the egress gate and the navigation silently fails — the rig
-/// reports "Ready", the stream connects, and the page is blank. Depending on
-/// an EXTERNAL site rendering behind a deny-by-default egress gate is
-/// inherently fragile.
-///
-/// So the boot page is now a SELF-CONTAINED local page served from inside the
-/// guest ([browserRigHomeHtml]). It always renders, needs zero egress, and
-/// gives an immediate "this is a working enclosed browser" signal. Navigating
-/// anywhere real is then an explicit action with an explicit allowlist.
-///
-/// In the DOMAIN (not `cc_infra`) because two independent callers open
-/// browser rigs — the `rig.open` RPC op and the `browser_use` MCP tool — and
-/// when the default lived infra-side only the RPC path applied it: an
-/// agent-opened browser rig booted with egress NOTHING and every navigation
-/// was refused while the tool's description promised browsing.
+/// Boot page is self-contained guest HTML ([browserRigHomeHtml]) — zero egress,
+/// always renders. External product-site boots failed silently when CDN IPs
+/// rotated under smolvm `--allow-host`. Real navigation is explicit + allowlisted.
+/// Lives in domain (not `cc_infra`) so both `rig.open` and `browser_use` share
+/// it — infra-only defaults left agent-opened rigs with empty egress.
 library;
 
 import 'package:cc_domain/features/rigs/domain/value_objects/browser_engine_marks.dart';

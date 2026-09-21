@@ -62,24 +62,14 @@ class ServerConnectionStatus {
   bool get relayed => path != null && !path!.isDirect;
 }
 
-/// Owns one server connection for the life of the app: resolve → connect →
-/// monitor health → fail over (PRD 15 §1/§8).
+/// Owns one server connection for the life of the app: resolve → connect → monitor health →
+/// fail over (PRD 15 §1/§8).
 ///
-/// Semantics per the PRD clarifications:
-///  * **Hysteresis** — the live path is held until it fails health checks
-///    ([maxMissedPings] consecutive misses) or the channel closes; a "better"
-///    path appearing mid-session never causes a switch. Upgrades happen on
-///    the next natural reconnect because every reconnect is a fresh full
-///    resolve.
-///  * **Reconnect-and-resume** — a path switch tears the RPC session down and
-///    emits a fresh [RemoteRpcClient] on [clients]; subscriptions re-register
-///    (`ResilientRpcClient` does this transparently).
-///  * **Descriptor refresh** — after each connect the server's current
-///    descriptor is fetched (`connection.describe`) and persisted via the
-///    `onDescriptorUpdated` callback, so rotated tunnel URLs propagate.
-///  * **TOFU** — the first verified fingerprint is pinned via the
-///    `onFingerprintPinned` callback; any later mismatch is terminal
-///    ([ServerConnectionPhase.identityMismatch]), never a retry loop.
+/// Semantics per the PRD clarifications: * **Hysteresis** — the live path is held until it
+/// fails health checks ([maxMissedPings] consecutive misses) or the channel closes; a
+/// "better" path appearing mid-session never causes a switch.
+/// Upgrades happen on the next natural reconnect because every reconnect is a fresh full
+/// resolve.
 class ServerConnectionSupervisor {
   /// Creates a supervisor. Call [start] to connect.
   ServerConnectionSupervisor({

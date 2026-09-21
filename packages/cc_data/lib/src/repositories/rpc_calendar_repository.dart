@@ -6,25 +6,11 @@ import 'package:cc_rpc/cc_rpc.dart';
 
 /// A [CalendarRepository] backed by the RPC client — the thin-client data path.
 ///
-/// Implements the domain interface over the host's `calendar.*` ops + the
-/// `calendar.watch*` subscriptions, mapping the [CalendarEventDto] /
-/// [CalendarAccountDto] wire shapes back to [CalendarEvent] / [CalendarAccount].
-/// The host is the single source of truth and owns all persistence; this client
-/// never touches a database.
-///
-/// Every read method takes a leading `workspaceId` (the workspace-isolation
-/// contract) which is not passed explicitly over the wire: `RemoteRpcClient`
-/// injects its `activeWorkspaceId` as `workspace_id` on any call that does not
-/// name one. That injection is CLIENT-side — the server holds no session
-/// workspace and its dispatcher refuses a scoped op with no `workspace_id`.
-///
-/// The WRITE surface — account connect/disconnect ([upsertAccount] /
-/// [deleteAccount]), the RSVP write ([upsertEvents]), the sync reconciler
-/// ([setLastSyncedAt] / [markNeedsReauth] / [deleteEventsMissingFrom] /
-/// [syncLinkedMeetingTitles]), the alert sweep ([getUpcomingEventsNeedingAlert]
-/// / [markAlerted]) and meeting linking ([linkMeetingToEvent] / [unlinkMeeting])
-/// — all depend on the host-resident OAuth tokens + Google API client, so they
-/// run host-side and throw [UnsupportedError] (never reached from a thin client).
+/// Implements the domain interface over the host's `calendar.*` ops + the `calendar.watch*`
+/// subscriptions, mapping the [CalendarEventDto] / [CalendarAccountDto] wire shapes back to
+/// [CalendarEvent] / [CalendarAccount].
+/// The host is the single source of truth and owns all persistence; this client never
+/// touches a database.
 class RpcCalendarRepository implements CalendarRepository {
   /// Creates an [RpcCalendarRepository] over [client].
   RpcCalendarRepository(RemoteRpcClient client)

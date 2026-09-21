@@ -8,24 +8,9 @@ import 'package:cc_domain/features/rigs/domain/repositories/rig_repository.dart'
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_status.dart';
 import 'package:cc_host/cc_host.dart';
 
-/// Tells the agent driving a rig when its machine changes underneath it.
+/// Notifies the driving agent when its rig changes (control, park, close).
 ///
-/// Take-over is enforced at the `RigService.act` chokepoint, never by asking
-/// nicely in a prompt — but enforcement alone leaves the agent to DISCOVER the
-/// take-over through a refused click, mid-plan, with no idea why. Same for a
-/// reap: a rig that vanishes turns every later action into an unexplained
-/// error. This listener closes that gap by injecting a plain-language notice
-/// into the running loop through the same steering lane the conversation-level
-/// take-over/hand-back already uses (`TakeoverService`), so the agent reads it
-/// at the next turn boundary and can narrate or wait instead of flailing.
-///
-/// It is a NOTICE, not a permission: nothing here grants or removes anything.
-/// The chokepoint remains the enforcement.
-///
-/// Steering only reaches the built-in harness. An external-CLI run has no
-/// mid-run injection space, so `steerRun` returns false and the agent keeps
-/// learning the hard way — which is why the refusal message at the chokepoint
-/// must stay self-explanatory regardless of this listener.
+/// Observation stays allowed during human take-over; mutating acts are refused elsewhere.
 class RigEventListener {
   /// Creates the listener. Call [start].
   RigEventListener({

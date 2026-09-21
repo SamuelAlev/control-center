@@ -3,31 +3,15 @@ import 'dart:math' as math;
 import 'package:cc_domain/features/soundscape/domain/synth/music/motif_scheduler.dart';
 import 'package:cc_domain/features/soundscape/domain/synth/seeded_prng.dart';
 
-/// The energy layer's beat kit: a dark bass pulse, a quiet high tick and a
-/// half-time backbeat on the tempo grid, over a bar-level walking bassline.
+/// Energy-layer beat kit: bass pulse, high tick, half-time backbeat, plus a
+/// bar-level walking bassline in the 50–90 Hz zone.
 ///
-/// Events are tagged by role through [MotifEvent.timbre]: `0` = bass thump,
-/// `1` = tick (the shaker/hat analogue — bright, quiet, perfectly regular on
-/// eighths, doubling to sixteenths near full fill), `2` = the backbeat thock
-/// on beat three (the half-time skeleton of the chill-DnB-style reference
-/// material). Regularity keeps the kit predictable — arousal without
-/// surprisal.
-///
-/// "Boost"-style focus audio is carried by a beat hierarchy over a stepped bassline in the 50–90 Hz zone that
-/// moves every bar or two. This scheduler emits that layer: one low
-/// pentatonic-safe note per gated beat, with a per-bar velocity pattern and a
-/// slow 4-bar root/low-neighbour progression. The `fill` parameter morphs the
-/// pattern from "downbeats only" toward "every beat plus a trailing eighth"
-/// — the density lever the tune pad's energy axis drives. The arousal levers
-/// here are exactly the evidence-backed ones (steady pulse clarity, tempo,
-/// accentuation), while staying salience-safe: low register, soft-enough
-/// attacks, no broadband content, rates far below the 30–150 Hz roughness
-/// band.
-///
-/// Determinism: the beat clock always runs and PRNG draws happen on a fixed
-/// schedule per beat, so the stream is a pure function of the seed and the
-/// sample clock; live `fill` changes only gate audibility. Advancing is
-/// boundary-exact and independent of block size.
+/// [MotifEvent.timbre]: `0` bass thump, `1` tick (regular eighths → sixteenths
+/// near full fill), `2` backbeat on beat three. One low pentatonic-safe note
+/// per gated beat; `fill` densifies from downbeats-only toward every beat plus
+/// a trailing eighth. Salience-safe (low register, soft attacks, below the
+/// 30–150 Hz roughness band). Deterministic: beat clock + fixed PRNG schedule;
+/// live `fill` only gates audibility; advance is boundary-exact.
 class PulseScheduler {
   /// Creates a pulse on [beatsPerMinute] at [sampleRate]. Notes voice one
   /// octave below the live harmony root passed to [advance], walking a 4-bar

@@ -7,8 +7,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// A single repo file from a conversation's isolated worktree — view **and
-/// edit**. Reads via `worktree.readFile`, saves the buffer with ⌘S/Ctrl-S via
+/// A single repo file from a conversation's isolated worktree — view and
+/// edit. Reads via `worktree.readFile`, saves the buffer with ⌘S/Ctrl-S via
 /// `worktree.writeFile`. Used by the messaging IDE and the PR workbench (whose
 /// worktree is the PR head), so quick fixes never leave the app.
 ///

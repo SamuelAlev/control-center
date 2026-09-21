@@ -989,22 +989,8 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
     super.didUpdateWidget(oldWidget);
     if (!identical(oldWidget.files, widget.files)) {
       // Two shapes of file-list change land here:
-      //
-      // 1. The empty→filled streaming fill (the local-git source emits each
-      //    file first with an empty patch for a fast tree render, then again
-      //    with the real patch). No code rows were laid out for an empty patch,
-      //    so nothing index-keyed is stale — invalidating just the repatched
-      //    files' syntax tokens is enough.
-      //
-      // 2. The file SET or ORDER changed, or a present patch was replaced by
-      //    different content (e.g. a user refresh after the base branch moved
-      //    surfaces a different changed-file set / different diffs). The caches
-      //    keyed by file index — the store's syntax tokens AND the render
-      //    sliver's laid-out paragraph cache — can now map to a different file
-      //    or stale line indices. Reusing them paints one file's text/colour
-      //    under another's header (and reads as "files in the wrong order").
-      //    Reset both wholesale; visible files re-tokenise and re-layout on the
-      //    next paint. See [_needsFullCacheReset].
+      // The caches keyed by file index — the store's syntax tokens AND the render sliver's
+      // laid-out paragraph cache — can now map to a different file or stale line indices.
       final fullReset = _needsFullCacheReset(oldWidget.files, widget.files);
       final repatched = _document.setFiles(widget.files);
       if (fullReset) {
@@ -1528,7 +1514,6 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
     return out;
   }
 
-  // ── Review overlay (floating toolbar, gutter pill, commenter avatars) ───
 
   RenderUnifiedDiffSliver? get _sliver {
     final ro = _sliverKey.currentContext?.findRenderObject();

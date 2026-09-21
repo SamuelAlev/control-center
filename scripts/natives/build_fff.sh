@@ -1,25 +1,8 @@
 #!/usr/bin/env bash
 #
-# Builds the fff (Fast File Finder) Rust library and its C ABI wrapper
-# (libfff_c), then installs it beside control_center.db so FffFileSearch loads
-# it at runtime (see FffFileSearch._openLib() — its first candidate is
-# <app-support root>/libfff_c.<ext>, same dir as the grammars/ folder).
+# Builds libfff_c (fast file finder; REQUIRED). Cargo, pinned upstream.
+# Usage: scripts/natives/build_fff.sh [DEST_DIR]
 #
-# Dev/dogfood tooling: the dylib is REQUIRED (FffFileSearch throws
-# FffUnavailable when it cannot load — no pure-Dart degrade). A release bundles
-# the dylib into the desktop bundle (macOS Contents/Frameworks/, Linux
-# bundle/lib/, Windows beside control_center.exe) and into the cc_server bundle
-# via apps/cc_server/hook/build.dart — see scripts/release/*_package.sh and,
-# for Windows, scripts/release/windows_natives.sh.
-#
-# Source/refs (override to iterate or bump; keep FFF_REF in sync with CI):
-#   FFF_REPO  default github.com/dmtrKovalenko/fff
-#   FFF_REF   default v0.11.0 (Renovate-managed)
-#
-# Requirements: git, a Rust toolchain (cargo).
-#
-# Usage:
-#   scripts/natives/build_fff.sh [DEST_DIR]   # DEST defaults to the app-support root
 set -euo pipefail
 
 REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"

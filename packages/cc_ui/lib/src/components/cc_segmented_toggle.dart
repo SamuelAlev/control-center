@@ -61,44 +61,18 @@ enum CcSegmentedToggleSize {
   md,
 }
 
-/// A connected segmented control — one bordered track holding adjoining
-/// segments, exactly one of which is selected.
+/// Connected segmented control: one bordered track, adjoining segments, exactly
+/// one selected. Prefer [CcSelect] when options no longer fit one row; [CcTabs]
+/// when the choice navigates rather than filters.
 ///
-/// The cc_ui replacement for Material's `SegmentedButton` / `ToggleButtons`.
-/// Use it for a small N-way mode switch whose options are all worth showing
-/// (Write / Preview, Diff / Preview, All / Done / Processing); reach for
-/// `CcSelect` once the list stops fitting on one row, and for `CcTabs` when the
-/// choice navigates rather than filters.
+/// Selected segment uses [CcButtonTokens.primary] (fill over the track hairline,
+/// not inset). Unselected: [DesignSystemTokens.textTertiary] + hover wash.
+/// Selection must stay filled-vs-empty (not color alone); `Semantics.selected`
+/// in a mutually exclusive group.
 ///
-/// **Anatomy.** A square (`AppRadii.brSm`) track fills with
-/// [DesignSystemTokens.surface] under a 1px [DesignSystemTokens.borderPrimary]
-/// hairline; the segments sit flush inside it, parted by hairline separators
-/// that fade out on both sides of the selection. The selected segment takes the
-/// primary-button treatment — ink [DesignSystemTokens.fg] in light, a
-/// brand-tinted dark ink in dark, labelled in [DesignSystemTokens.accentOn]
-/// (resolved through [CcButtonTokens.primary], so it cannot drift from the
-/// button) — per DESIGN.md: *"selected tabs/segments use a dark fill with white
-/// text, matching the primary-button logic"*. That fill paints *over* the
-/// track hairline (the hairline lives behind the segments, it does not inset
-/// them) so the selected edge is the fill color, not a lighter ring that
-/// frames the choice 2px taller than it is. Unselected segments are
-/// [DesignSystemTokens.textTertiary] on nothing, taking a
-/// [DesignSystemTokens.hover] wash on hover. Selection therefore survives
-/// grayscale and color-blind viewing as a filled-vs-empty cell, never as color
-/// alone, and is announced through `Semantics.selected` in a mutually exclusive
-/// group.
-///
-/// **Keyboard.** The track is one tab stop (roving tabindex, the WAI-ARIA radio
-/// group pattern): Tab lands on the *selected* segment, then `←`/`→` (and
-/// `↑`/`↓`, `Home`/`End`) move through the options, selecting each as it is
-/// focused. Wrapping is closed-loop.
-///
-/// **Icon-only.** [CcSegment.iconOnly] hides the label and keeps it as the
-/// tooltip and accessible name — the compact grid/list switch.
-///
-/// Passing a null [onChanged] disables the whole control: it mutes to the
-/// disabled tokens and drops out of the focus order, while the selected segment
-/// keeps a distinct fill so the current value still reads.
+/// One tab stop (roving tabindex): Tab → selected; arrows / Home / End move and
+/// select; closed-loop wrap. [CcSegment.iconOnly] hides the label (tooltip +
+/// a11y name). Null [onChanged] disables the control but keeps the selected fill.
 class CcSegmentedToggle<T> extends StatefulWidget {
   /// Creates a [CcSegmentedToggle].
   const CcSegmentedToggle({

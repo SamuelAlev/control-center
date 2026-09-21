@@ -61,26 +61,9 @@ class DemoPacing {
   final Duration toolMax;
 }
 
-/// An [AgentLoop] that replays a hand-authored [DemoRunScript] instead of
-/// calling a model.
+/// [AgentLoop] that replays a hand-authored [DemoRunScript] instead of calling a provider.
 ///
-/// This is the demo's execution boundary, and it is the reason a public demo
-/// can be safe. Replacing only the LLM *provider* would not be enough: a
-/// dispatched run builds its REAL tool surface (`materializeHarnessToolSurface`
-/// in `dispatch_session.dart`) and the stock [AgentLoopRunner] executes
-/// whatever the model asks for — a scripted model emitting a `bash` call would
-/// really run bash. Injecting the loop one level up means the `tools`,
-/// `deferredTools` and `provider` arguments are simply ignored: **zero** tools
-/// execute, while every persistence path around the loop (run logs, transcript
-/// segments, the live stream registry, cost accounting, `AgentRunCompleted`)
-/// stays exactly as it is on a real run.
-///
-/// Contract obligations this honours, per [AgentLoop]:
-///  * exactly one `LoopDone` terminates the stream, on every path including
-///    cancellation and an empty script;
-///  * `cancel` is observed between beats, so `dispatch.stopRun` works;
-///  * `history` is caller-owned and appended in place, so a follow-up turn in
-///    the same conversation carries the run that preceded it.
+/// Emits the same event shapes as a live run so the UI/transcript paths stay real.
 class ScriptedAgentLoop implements AgentLoop {
   /// Creates a scripted loop over [scripts].
   ///

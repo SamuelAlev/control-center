@@ -21,7 +21,7 @@ import 'package:isolate_manager/isolate_manager.dart';
 /// Parses the markdown [source] and returns the JSON-encoded primitive
 /// [CcDocument] (see `encodeCcDocument`).
 ///
-/// BOTH the parameter and the result are plain **strings**, never Maps: a Web
+/// BOTH the parameter and the result are plain strings, never Maps: a Web
 /// Worker (js_interop) cannot transfer a Dart Map — passing one makes the web
 /// converter throw (isolate_manager issue #31), which is exactly what silently
 /// broke the diff worker on web. The source is passed verbatim; the parsed

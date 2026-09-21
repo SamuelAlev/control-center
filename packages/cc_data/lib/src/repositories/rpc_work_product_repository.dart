@@ -3,23 +3,13 @@ import 'package:cc_domain/features/governance/domain/services/artifact_document_
 import 'package:cc_domain/features/governance/domain/value_objects/work_product_type.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 
-/// Reads work products — including agent-published artifacts — over the RPC
-/// client.
+/// Reads work products — including agent-published artifacts — over the RPC client.
 ///
-/// The client had no path to this subsystem at all: work products, revisions,
-/// and the `WorkProductService` were complete server-side and unreachable, so an
-/// artifact an agent published could not be rendered anywhere. This is that
-/// bridge.
-///
-/// Read-only by design. Artifacts are authored by the agent-facing MCP tools
-/// (`publish_artifact` / `revise_artifact`) and revised/restored through the
-/// server's `WorkProductService`, so there is no client write path to keep in
-/// sync — and no way for a client to forge one.
-///
-/// The client injects its active `workspace_id`, so it does not travel on the
-/// wire; the host injects the authoritative one and the repository scopes every
-/// read by it. Mirrors the `workProduct.*` ops + watch queries in the host
-/// catalog.
+/// The client had no path to this subsystem at all: work products, revisions, and the
+/// `WorkProductService` were complete server-side and unreachable, so an artifact an agent
+/// published could not be rendered anywhere.
+/// This is that bridge.
+/// Read-only by design.
 class RpcWorkProductRepository {
   /// Creates an [RpcWorkProductRepository] over [_client].
   RpcWorkProductRepository(this._client);

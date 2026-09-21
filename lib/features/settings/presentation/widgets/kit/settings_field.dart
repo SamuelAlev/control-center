@@ -34,24 +34,10 @@ const double kSettingsFieldLabelWidth = 232;
 /// a text field stops being able to show a URL.
 const double kSettingsFieldInlineBreakpoint = 560;
 
-/// One labelled control: label, optional description, the control itself and an
-/// optional hint or error beneath it.
-///
-/// Every settings input goes through this. Before it, a label was whatever the
-/// author reached for that day — 12px tertiary above a field here, a 14px
-/// semibold row title there, nothing at all in a third place — so two adjacent
-/// controls could not be compared at a glance. The anatomy is now fixed:
-///
-/// - **Label**: 13px semibold ink. It is the thing you are looking for.
-/// - **Description**: 12px muted. What the value does, or where to find it.
-/// - **Control**: whatever the caller passes; the field never wraps it in
-///   chrome of its own.
-/// - **Hint / error**: 12px muted, or 12px danger with an icon. Never both.
-///
-/// The control is passed in rather than described by props on purpose: a
-/// select, a text field, a button row and a segmented toggle all deserve the
-/// same label anatomy, and a `SettingsField` that knew about each of them would
-/// grow a switch statement every time a new control arrives.
+/// One labelled control: label, optional description, the control itself and an optional
+/// hint or error beneath it.
+/// Control: whatever the caller passes; the field never wraps it in
+/// Never both.
 class SettingsField extends StatelessWidget {
   /// Creates a [SettingsField].
   const SettingsField({

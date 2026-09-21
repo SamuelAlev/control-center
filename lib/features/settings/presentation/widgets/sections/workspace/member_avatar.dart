@@ -10,22 +10,14 @@ import 'package:control_center/shared/widgets/media_proxy_scope.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// A workspace member's avatar: the best available image for [user], falling
-/// back to initials derived from [name].
-///
-/// Resolution order — first hit wins and every layer is verified identity
-/// (a login is never guessed from the handle, which could belong to a
-/// stranger on GitHub):
-///
-/// 1. An explicit `avatarRef` http(s) URL set on the profile.
-/// 2. The GitHub login recovered from a `*@users.noreply.github.com` git
-///    author email — GitHub issues that address itself, so the login it
-///    embeds is verified.
-/// 3. For the CURRENT user when they hold the workspace's owner role: the
-///    host's authenticated GitHub user (`github.currentUser`). The server
-///    holds one gh token — the host owner's — and the owner-role backfill
-///    ties it to that user, so the avatar only lands on their row.
-/// 4. Initials.
+/// A workspace member's avatar: the best available image for [user], falling back to
+/// initials derived from [name].
+/// Resolution order — first hit wins and every layer is verified identity (a login is never
+/// guessed from the handle, which could belong to a stranger on GitHub):
+/// An explicit `avatarRef` http(s) URL set on the profile.
+/// For the CURRENT user when they hold the workspace's owner role: the
+/// The server holds one gh token — the host owner's — and the owner-role backfill ties it
+/// to that user, so the avatar only lands on their row.
 class MemberAvatar extends ConsumerWidget {
   /// Creates a [MemberAvatar].
   const MemberAvatar({

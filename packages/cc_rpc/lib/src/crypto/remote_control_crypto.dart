@@ -118,17 +118,13 @@ class RemoteControlCrypto {
   static String relayAdmissionHash(String token) =>
       sha256.convert(utf8.encode(token)).toString();
 
-  /// HMAC-SHA256 over a proxy [target] (a raw image URL) keyed by [psk],
-  /// base64url without padding.
+  /// HMAC-SHA256 over a proxy [target] (a raw image URL) keyed by [psk], base64url without
+  /// padding.
   ///
-  /// Authenticates media-proxy `GET`s, which cannot carry the WebSocket session
-  /// (a browser `<img>`/CanvasKit fetch can set no headers). The thin client
-  /// signs each image URL with the device PSK it already holds; the server
-  /// re-derives the signature from the same PSK before fetching. Only a holder
-  /// of an `active` device's PSK can mint a URL the server will proxy, so the
-  /// endpoint is not an open relay (it cannot be used to SSRF-scan from an
-  /// unauthenticated origin). The signature binds the EXACT URL, so a valid
-  /// signature for one image can't be replayed against a different target.
+  /// Authenticates media-proxy `GET`s, which cannot carry the WebSocket session (a browser
+  /// `<img>`/CanvasKit fetch can set no headers).
+  /// The thin client signs each image URL with the device PSK it already holds; the server
+  /// re-derives the signature from the same PSK before fetching.
   static String signProxyTarget(String target, String psk) {
     final digest = Hmac(sha256, utf8.encode(psk)).convert(utf8.encode(target));
     return base64UrlEncode(digest.bytes).replaceAll('=', '');

@@ -3,22 +3,13 @@ import 'dart:async';
 import 'package:control_center/core/storage/key_value_backend.dart';
 
 /// A [KeyValueBackend] decorator that announces every write.
-///
-/// This is the seam that lets per-user preferences sync without every settings
-/// notifier learning about the server. The alternative — one `ref.listen` per
-/// synced provider — scales with the number of keys and is easy to half-wire
-/// (a key that pulls but never pushes looks correct until you switch devices).
-/// Observing the *store* instead catches writes from anywhere: settings
-/// screens, onboarding, the command palette, a notifier nobody remembered.
-///
-/// [changes] emits the key of each mutation. `clear()` emits every key that was
-/// present, so a listener can reconcile without diffing.
-///
-/// `muted` suppresses emission while a remote value is being applied locally.
-/// Value comparison against the last-known server value is the primary
-/// loop-guard; this is the cheap second layer, because the write → stream →
-/// push path is implicit and a missed comparison would otherwise be an
-/// infinite RPC loop rather than one wasted write.
+/// The alternative — one `ref.listen` per synced provider — scales with the number of keys
+/// and is easy to half-wire (a key that pulls but never pushes looks correct until you
+/// switch devices).
+/// [changes] emits the key of each mutation.
+/// `clear()` emits every key that was present, so a listener can reconcile without diffing.
+/// Value comparison against the last-known server value is the primary loop-guard; this is
+/// the cheap second layer, because the write → stream → push path is implicit and a missed
 class ObservableKeyValueBackend implements KeyValueBackend {
   /// Wraps a backing store, announcing its writes on [changes].
   ObservableKeyValueBackend(this._inner);

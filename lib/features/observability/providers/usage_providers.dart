@@ -3,7 +3,6 @@ import 'package:cc_domain/features/observability/domain/usage_stats.dart';
 import 'package:control_center/features/observability/providers/observability_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-// ── Usage state + derivation (the observability "Usage" tab) ─────────────────
 //
 // Like the Insights surfaces, everything here derives CLIENT-SIDE from the
 // existing [workspaceRunLogsProvider] feed — no new persisted surface and no
@@ -65,7 +64,6 @@ class UsageTrendRangeNotifier extends Notifier<UsageTrendRange> {
   void setRange(UsageTrendRange range) => state = range;
 }
 
-// ── Pure helpers (unit-tested directly) ──────────────────────────────────────
 
 /// The inclusive first day of [range] relative to [now], floored to local
 /// midnight. A 7-day window covers today plus the six days before it, so the
@@ -81,7 +79,6 @@ List<AgentRunLog> runsSince(List<AgentRunLog> runs, DateTime start) => [
     if (!run.startedAt.isBefore(start)) run,
 ];
 
-// ── Derived providers ────────────────────────────────────────────────────────
 
 /// Runs inside the active trend window, over the whole workspace feed.
 final usageTrendRunsProvider = Provider.autoDispose<List<AgentRunLog>>((ref) {

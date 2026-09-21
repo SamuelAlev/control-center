@@ -3,29 +3,10 @@ import 'package:cc_ui/src/primitives/image_fade.dart';
 import 'package:cc_ui/src/theme/cc_theme.dart';
 import 'package:flutter/widgets.dart';
 
-/// A network/asset image that reserves its box and cross-fades in, instead of
-/// popping onto the surface the moment its bytes arrive.
-///
-/// This wraps [ImageFade], which paints a [placeholder] while
-/// the [image] resolves and then animates the loaded frame over it. The widget
-/// does NOT impose a size: the caller decides the box (an [AspectRatio], a
-/// fixed [SizedBox], an [Expanded] inside a bounded column, …) and this fills
-/// it. That is the whole point — deciding the box up front is what stops layout
-/// from jumping when an image lands.
-///
-/// ## Progressive loading (lightweight → full)
-///
-/// Pass a [preview] — a small, cheap [ImageProvider] (typically a
-/// proxy-rewritten URL asked for only a few device pixels). It becomes the
-/// placeholder the full-resolution [image] fades in over, so the box fills
-/// with a recognisable, if soft, image almost immediately and then sharpens as
-/// the real bytes arrive — instead of sitting on a flat colour and then
-/// snapping. See the app's `ProxiedImage`, which wires this up against the host
-/// media proxy's server-side downscale.
-///
-/// Keep placeholders simple: a solid surface colour or a shimmer. Avoid
-/// loading spinners — they read as "stuck". Keep [errorBuilder] subtle too: a
-/// muted surface, a small icon at most, never a technical message.
+/// Network/asset image that reserves its box and cross-fades in (wraps
+/// [ImageFade]). Caller sizes the box; this fills it. Optional [preview] is a
+/// cheap placeholder the full [image] fades over. Keep placeholders/errors
+/// subtle (surface/shimmer/icon) — no spinners or technical messages.
 class CcImageFade extends StatelessWidget {
   /// Creates a [CcImageFade].
   const CcImageFade({

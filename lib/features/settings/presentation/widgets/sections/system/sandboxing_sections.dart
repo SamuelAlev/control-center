@@ -10,27 +10,11 @@ import 'package:control_center/shared/widgets/section_card.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// The sandboxing configuration: whether agent work is isolated from the host,
-/// which backend does the isolating, and what an isolated agent is still
-/// allowed to reach.
-///
-/// ## Why it is one card
-///
-/// This was five cards — "Master toggle", "Backend", "Requirements", "Default
-/// capabilities", "Maintenance" — for what is one question with one answer. A
-/// card boundary says "different subject"; five of them said it four times when
-/// it was not true, and the master toggle that governs all of the rest sat in
-/// its own box with a single row in it.
-///
-/// It is now one card that opens with the resolved posture (on/off, the backend
-/// actually in force, the host it was detected on) and then reads top to bottom
-/// as one decision: isolate or not, with what, and with which holes punched
-/// through it.
-///
-/// The old "Maintenance → reset all sandboxes" row was removed rather than
-/// restyled: it showed a success toast and destroyed nothing, because no reset
-/// op exists behind it. A control that reports work it did not do is worse than
-/// no control.
+/// The sandboxing configuration: whether agent work is isolated from the host, which
+/// backend does the isolating, and what an isolated agent is still allowed to reach.
+/// It is now one card that opens with the resolved posture (on/off, the backend actually in
+/// force, the host it was detected on) and then reads top to bottom as one decision:
+/// isolate or not, with what, and with which holes punched through it.
 class SandboxingSections extends ConsumerWidget {
   /// Creates [SandboxingSections].
   const SandboxingSections({super.key});

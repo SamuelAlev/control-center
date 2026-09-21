@@ -19,21 +19,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 final Set<String> _autoOpenedPlanIds = <String>{};
 
 /// Renders a submitted plan's whole lifecycle as one compact row in the feed.
-///
-/// The message metadata carries only the plan id; the bubble watches the
-/// `PlanDocument` row, so `proposed → approved → rejected → superseded`
-/// re-renders live with zero feed churn (the same shape
-/// `OrchestrationProposalBubble` uses).
-///
-/// This is what makes a plan visible where it was authored. `submit_plan` used
-/// to persist silently, so the only way to find a plan was to navigate to Plan
-/// Studio and notice a new card — and the user's first signal that anything had
+/// The message metadata carries only the plan id; the bubble watches the `PlanDocument`
+/// row, so `proposed → approved → rejected → superseded` re-renders live with zero feed
+/// churn (the same shape `OrchestrationProposalBubble` uses).
+/// `submit_plan` used to persist silently, so the only way to find a plan was to navigate
+/// to Plan Studio and notice a new card — and the user's first signal that anything had
 /// gone wrong was having to ask "you didn't write the plan?".
-///
-/// The row is deliberately thin: the graph, the estimate and the node inspector
-/// live in Plan Studio, which opens as an editor **tab** beside the conversation
-/// (see [openPlanStudio]). A plan that lands while the operator is watching this
-/// conversation opens its tab on arrival — there is nothing to go hunt for.
 class PlanBubble extends ConsumerWidget {
   /// Creates a [PlanBubble].
   const PlanBubble({super.key, required this.message});

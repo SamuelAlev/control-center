@@ -1,22 +1,8 @@
-/// Recovery from a stale section hash.
+/// Recovery from a stale section hash ([tryRecover]).
 ///
-/// When a section's [Section.fileHash] no longer matches the live file, the
-/// edit cannot be applied at face value — the line numbers may point at
-/// different content than the model saw. [tryRecover] attempts two strategies,
-/// in order, against a cached snapshot of the file as it was when the hash was
-/// minted:
-///
-/// 1. **Three-way merge.** Apply the edits onto the snapshot, diff
-///    snapshot→applied and replay that diff onto the live content with strict
-///    (`fuzz = 0`) line matching. Recovers from external writes that did not
-///    touch the edited region.
-/// 2. **Session-chain replay.** When the snapshot and live content have the
-///    same line count and every anchor line is byte-identical between them, the
-///    edits are replayed directly onto the live content. Recovers an in-session
-///    edit chain where a prior edit advanced the hash without moving anchors.
-///
-/// Returns null when neither strategy applies — the caller then surfaces a hard
-/// mismatch and prompts a re-read.
+/// Against the hash-minted snapshot: (1) three-way merge with fuzz=0 onto live
+/// content; (2) session-chain replay when line count and anchors match.
+/// Returns null → hard mismatch / re-read.
 library;
 
 import 'package:cc_domain/features/dispatch/domain/edit/apply_edits.dart';
@@ -124,9 +110,7 @@ bool _anchorsIdentical(String previous, String current, List<int> anchorLines) {
   return true;
 }
 
-// ===========================================================================
 // Minimal line-level 3-way merge (fuzz = 0)
-// ===========================================================================
 
 /// Merge the change `base -> edited` onto `onto` with strict line matching.
 ///

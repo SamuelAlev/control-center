@@ -1,6 +1,5 @@
 /// Platform-neutral control surface for server-hosted interactive terminal
 /// sessions (a PTY running a shell inside the agent's sandbox).
-///
 /// On the desktop this is backed by an in-process implementation that owns
 /// `flutter_pty` + the sandbox manager (the same stack the desktop terminal
 /// panel used to drive directly); on the web / thin client the panel drives the
@@ -10,7 +9,6 @@
 /// headless server (which does not link `flutter_pty`) leaves the port null, the
 /// ops are absent and the web panel renders an honest "terminal runs on the
 /// server host" placeholder.
-///
 /// Sessions are WORKSPACE-SCOPED: `spawn` records the owning workspace and the
 /// host validates ownership on every `output`/`write`/`resize`/`kill` before
 /// touching a session, so one workspace can never read or drive another's

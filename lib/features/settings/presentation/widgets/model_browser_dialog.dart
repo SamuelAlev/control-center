@@ -232,7 +232,6 @@ class _ModelBrowserDialogState extends ConsumerState<ModelBrowserDialog> {
     );
   }
 
-  // ─── Rail ─────────────────────────────────────────────────────────────────
 
   Widget _rail(AppLocalizations l10n, List<ModelBrowserGroup> groups) {
     final q = _searchCtl.text;
@@ -299,7 +298,6 @@ class _ModelBrowserDialogState extends ConsumerState<ModelBrowserDialog> {
     );
   }
 
-  // ─── List ─────────────────────────────────────────────────────────────────
 
   Widget _list(AppLocalizations l10n, List<_Item> items, List<int> selectable) {
     return CcScrollArea(
@@ -453,7 +451,6 @@ class _ModelBrowserDialogState extends ConsumerState<ModelBrowserDialog> {
     );
   }
 
-  // ─── Footer ───────────────────────────────────────────────────────────────
 
   /// The highlighted row's full metadata — the detail that does not fit in a
   /// list line (exact prices, output ceiling, the effort vocabulary).
@@ -506,7 +503,6 @@ class _ModelBrowserDialogState extends ConsumerState<ModelBrowserDialog> {
     );
   }
 
-  // ─── Behavior ─────────────────────────────────────────────────────────────
 
   void _move(int delta, List<_Item> items, List<int> selectable) {
     if (selectable.isEmpty) {

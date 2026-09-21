@@ -3,23 +3,11 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:flutter/widgets.dart';
 
-/// The checkout scope of the node that OPENS a conversation: which of the
-/// workspace's repos the room checks out, and the branch each one's
-/// copy-on-write worktree is cut from.
-///
-/// A conversation IS the checkout, so this only appears on the space node — an
-/// agent node joins a room somebody else opened and a scope set there is read
-/// by nothing.
-///
-/// **The wire format is one string per repo**, `<repoId>` or
-/// `<repoId>@<branch>`, because the whole entry is `{{placeholder}}`-rendered
-/// at run time and either half may come from the trigger. This widget owns the
-/// split so the caller only ever sees `PipelineNodeConfig.repoIds`.
-///
-/// The branch is the BASE, not the working branch: the worktree still gets its
-/// own branch cut from it, so nothing an agent commits lands on the branch it
-/// was told to start from. Empty means the repo's own default branch, which is
-/// what every space did before pinning existed.
+/// The checkout scope of the node that OPENS a conversation: which of the workspace's repos
+/// the room checks out, and the branch each one's copy-on-write worktree is cut from.
+/// A conversation IS the checkout, so this only appears on the space node — an agent node
+/// joins a room somebody else opened and a scope set there is read by nothing.
+/// This widget owns the split so the caller only ever sees `PipelineNodeConfig.repoIds`.
 class NodeRepoScopeField extends StatefulWidget {
   /// Creates a [NodeRepoScopeField].
   const NodeRepoScopeField({

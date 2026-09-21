@@ -4,29 +4,14 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/widgets.dart';
 
-/// The honesty matrix for one adapter, rendered under its row in
-/// Settings → Adapters — collapsed to a single summary line by default.
-///
-/// A conversation mode advertises a guarantee ("plan mode is read-only"), but
-/// the guarantee is only as strong as the transport underneath it and the four
-/// transports differ enormously. This section is where the operator finds out
-/// which one they picked: five yes/no facts, the honest sentence about how a
-/// mode reaches this runner and the caveats that follow from the no's.
-///
-/// ## Why it collapses
-///
-/// Settings → Adapters lists every runner in the catalogue (eight today) and
-/// twelve lines of matrix per row turned a scannable list into a wall — the
-/// verdict was buried in prose the operator had to read to reach. Collapsing
-/// does not hide the disclosure, it *promotes* it: the header keeps the shield
-/// glyph, the verdict word and the caveat count on screen at all times, so
-/// "this runner does not enforce modes and there are four caveats" is now
-/// legible at a glance instead of after a paragraph. The detail is one tap away
-/// for the operator who wants the reasoning.
-///
-/// Never status-by-color-alone (the AAA-where-feasible bar): the header summary
-/// and each row carry a glyph *and* a word, so the answer survives greyscale, a
-/// colour deficiency and a screen reader.
+/// The honesty matrix for one adapter, rendered under its row in Settings → Adapters —
+/// collapsed to a single summary line by default.
+/// A conversation mode advertises a guarantee ("plan mode is read-only"), but the guarantee
+/// is only as strong as the transport underneath it and the four transports differ
+/// enormously.
+/// Never status-by-color-alone (the AAA-where-feasible bar): the header summary and each
+/// row carry a glyph *and* a word, so the answer survives greyscale, a colour deficiency
+/// and a screen reader.
 class AdapterEnforcementSection extends StatefulWidget {
   /// Creates an [AdapterEnforcementSection] for [transport].
   const AdapterEnforcementSection({

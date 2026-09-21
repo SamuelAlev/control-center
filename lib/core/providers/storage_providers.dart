@@ -8,7 +8,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 /// Typed key-value facade over the [KeyValueBackend] interface.
 ///
-/// The backend stores **String values only**, so the typed accessors encode
+/// The backend stores String values only, so the typed accessors encode
 /// bool/int/double/`List<String>` to text and decode on read. Getters return
 /// `null` when the key is absent (mirroring the nullable accessors the app's
 /// preference wrappers were written against); setters stay `Future`-shaped so

@@ -4,30 +4,11 @@ import 'dart:typed_data';
 import 'package:cc_natives/src/audio/lame/lame_ffi_bindings.dart';
 import 'package:ffi/ffi.dart';
 
-/// Stateful owner of one native libmp3lame (LAME) CBR MP3 encoder.
+/// Stateful libmp3lame CBR MP3 encoder (PCM16 in → frame-aligned MP3 out).
 ///
-/// Turns a stream of interleaved PCM16 into a frame-aligned MP3 byte stream:
-/// feed raw PCM chunks to [encode] (appending the returned bytes), then call
-/// [flush] once at the end to drain LAME's internal buffers. The encoder is
-/// configured for constant bitrate (VBR off) so the output stays frame-stable
-/// for incremental append.
-///
-/// **Main-isolate only.** The instance wraps a raw native [Pointer] handle (not
-/// sendable across isolates) plus reusable malloc scratch buffers and the LAME
-/// encoder is stateful, so every call for a given encoder must come from the
-/// isolate that created it — mirroring `AecProcessor`'s ownership model.
-///
-/// **No degraded mode.** [create] throws [LameUnavailable] when the native
-/// library is absent / incompatible (no dylib, wrong arch, missing symbols) —
-/// a broken install, not a reason to silently ship raw PCM. The dylib is
-/// intentionally NOT linked into the app — it is discovered at runtime, exactly
-/// like rift / fff / tree-sitter / aec — and `cc_server` refuses to boot when
-/// its native preflight cannot resolve it.
-///
-/// **Licensing.** The core MP3 patents expired in 2017, so distributing an MP3
-/// encoder is unencumbered. LAME itself is LGPL-2.1 and is loaded as a runtime
-/// dynamic library (never statically linked into first-party Dart), keeping the
-/// LGPL boundary at the dylib.
+/// Main-isolate only (native pointer + stateful LAME). [create] throws
+/// [LameUnavailable] when the dylib is missing — no degraded mode. Loaded at
+/// runtime (LGPL boundary); never statically linked.
 class Mp3Encoder {
   Mp3Encoder._(this._bindings, this._handle, this._channels)
     : _pcmCapacity = _initialFrames * _channels,

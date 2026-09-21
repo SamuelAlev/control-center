@@ -1,24 +1,9 @@
 import 'package:drift/drift.dart';
 
-/// Drift table definition for paired remote-control devices (phones).
+/// Paired remote-control device metadata (PSK never stored here — only [pskRef]).
 ///
-/// Stores **metadata only**: the device id, label, platform, the secure-store
-/// key reference for its PSK ([pskRef]), the pinned remote DTLS fingerprint
-/// ([remoteFingerprint]) and its [status]. The PSK itself is **never** stored
-/// here — it lives in the platform secure store keyed by [pskRef] (see
-/// `PairedDeviceSecretsRepository`), mirroring the calendar/MCP "secrets in
-/// keychain, metadata in Drift" precedent.
-///
-/// Devices are **global** (they span every workspace — the phone has a
-/// workspace switcher), so [workspaceId] is the workspace active at pairing
-/// time, used only to seed the session binding. It is deliberately *not* a
-/// cascade-delete foreign key: deleting a workspace must not revoke a paired
-/// device.
-///
-/// Every device belongs to exactly one user ([userId]): the credential proves
-/// "this is user X on device Y" and the session resolves its principal from
-/// this binding. This table doubles as the per-user device registry
-/// (list / rename / revoke).
+/// Global across workspaces: [workspaceId] is pairing-time only, not a cascade
+/// FK. Each device belongs to one [userId] (device registry + principal binding).
 class PairedDevicesTable extends Table {
   /// Unique device id (generated at pairing).
   TextColumn get id => text()();

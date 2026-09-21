@@ -8,7 +8,6 @@
 // model grading its own output scored near-randomly. What worked was a
 // mechanical filter over the team's own past rejections, and that is what this
 // is.
-//
 // Two deliberate differences from that prior art. It DEMOTES rather than
 // blocks, because our nitpick group means a suppressed finding is one click
 // away rather than gone — so a false suppression is cheap and the threshold

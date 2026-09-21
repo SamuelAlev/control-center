@@ -2,20 +2,11 @@ import 'package:drift/drift.dart';
 
 /// Drift table for directional dependencies between tickets.
 ///
-/// One row is one canonical, directional relationship `source --type--> target`
-/// with [type] in `{blocks, relates_to, duplicate_of}`. The UI derives the
-/// inverse views from a given ticket's perspective:
-///
-/// * `source blocks target`  → target is **blocked by** source.
-/// * `source relates_to target` → symmetric "related" on both ends.
-/// * `source duplicate_of target` → source is a **duplicate of** target;
-///   target is **duplicated by** source.
-///
-/// Parent / sub-issue relationships are NOT stored here — they live on
-/// `tickets.parent_ticket_id` (the existing delegation / breakdown tree).
-///
-/// Both endpoints cascade on ticket delete. A partial-unique index on
-/// `(source_ticket_id, target_ticket_id, type)` keeps links idempotent.
+/// One row is one canonical, directional relationship `source --type--> target` with [type]
+/// in `{blocks, relates_to, duplicate_of}`.
+/// The UI derives the inverse views from a given ticket's perspective:
+/// A partial-unique index on `(source_ticket_id, target_ticket_id, type)` keeps links
+/// idempotent.
 @TableIndex(name: 'idx_ticket_links_source', columns: {#sourceTicketId})
 @TableIndex(name: 'idx_ticket_links_target', columns: {#targetTicketId})
 @TableIndex(

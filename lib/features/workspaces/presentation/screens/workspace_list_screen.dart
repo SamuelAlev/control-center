@@ -108,7 +108,6 @@ class _WorkspaceListScreenState extends ConsumerState<WorkspaceListScreen> {
     super.dispose();
   }
 
-  // ── draft helpers ─────────────────────────────────────────────────────
 
   /// Loads [w] into the editor draft. Safe to call during build (it never
   /// triggers `setState`); the name field rebuilds via the field's `onChange`.
@@ -164,7 +163,6 @@ class _WorkspaceListScreenState extends ConsumerState<WorkspaceListScreen> {
     return list.first;
   }
 
-  // ── ordering ──────────────────────────────────────────────────────────
 
   /// The order to render: the optimistic local order from the last drag,
   /// reconciled against the server list.
@@ -220,7 +218,6 @@ class _WorkspaceListScreenState extends ConsumerState<WorkspaceListScreen> {
     _reorder(ordered, from, to);
   }
 
-  // ── actions ───────────────────────────────────────────────────────────
 
   Future<void> _selectWorkspace(Workspace w) async {
     if (w.id == _editingId) {
@@ -412,7 +409,6 @@ class _WorkspaceListScreenState extends ConsumerState<WorkspaceListScreen> {
     CcToastScope.of(context).show(message, variant: variant);
   }
 
-  // ── build ─────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -680,7 +676,6 @@ class _Canvas extends StatelessWidget {
   }
 }
 
-// ── left rail ────────────────────────────────────────────────────────────
 
 /// The left rail: every workspace, drag-to-reorder.
 ///
@@ -864,7 +859,6 @@ class _WorkspaceRow extends ConsumerWidget {
   }
 }
 
-// ── detail column ──────────────────────────────────────────────────────────
 
 class _DetailColumn extends StatelessWidget {
   const _DetailColumn({
@@ -1308,7 +1302,6 @@ class _SaveBar extends StatelessWidget {
   }
 }
 
-// ── shared bits ────────────────────────────────────────────────────────────
 
 /// Header row for a panel: title on the left, an optional mono [count] and/or
 /// [trailing] widget on the right, with a bottom hairline.

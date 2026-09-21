@@ -14,14 +14,14 @@ import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 /// (back / forward / reload / address bar / open-external).
 ///
 /// Two backends sit behind one toolbar:
-///   * **Desktop / mobile** (`flutter_inappwebview` has a native backend) use a
+/// * Desktop / mobile (`flutter_inappwebview` has a native backend) use a
 ///     real [InAppWebView], which loads any URL directly.
-///   * **Web** has no native webview, so it embeds pages in an `<iframe>` routed
+/// * Web has no native webview, so it embeds pages in an `<iframe>` routed
 ///     through the connected cc_server's `/proxy/page` endpoint, which strips the
 ///     frame-blocking headers (`X-Frame-Options` / CSP `frame-ancestors`) that
 ///     would otherwise stop the page rendering. Sites that allow framing load
 ///     inline; the rest still expose the address bar + "open in browser".
-///   * **Linux** (no backend, no connection) degrades to an "open in browser"
+/// * Linux (no backend, no connection) degrades to an "open in browser"
 ///     card via [openExternalUrl].
 class BrowserPane extends StatefulWidget {
   /// Creates a [BrowserPane].

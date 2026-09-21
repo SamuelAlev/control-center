@@ -1,27 +1,8 @@
 #!/usr/bin/env bash
 #
-# Shared helpers for the native-FFI build scripts:
-#   scripts/natives/build_rift.sh         librift_ffi   (CoW worktree engine)
-#   scripts/natives/build_fff.sh          libfff_c      (fast file finder)
-#   scripts/natives/build_tree_sitter.sh  libtree-sitter + grammars (code indexer)
+# Shared helpers for native build scripts (pins, clone, log, DEST layout).
+# Source it; platform detection aborts off macOS/Linux (Windows is separate).
 #
-# Source it; don't execute it:
-#   REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
-#   source "$REPO_ROOT/scripts/natives/lib/natives_common.sh"
-#
-# SOURCING THIS ASSERTS A MACOS-OR-LINUX HOST. That is the boundary between this
-# file and scripts/lib/common.sh, which it pulls in: native_detect_platform dies
-# on Windows, because the Windows natives are built by a different toolchain
-# entirely (scripts/release/windows_natives.sh, MSVC). Anything that must also
-# run under Git Bash belongs in common.sh, not here.
-#
-# It standardises the things the build scripts each used to do slightly
-# differently: a shallow clone of a pinned commit, resolving the install dir
-# next to control_center.db (robust against bundle-id drift) and ad-hoc
-# codesigning a dylib on macOS for the local Hardened Runtime.
-#
-# Defining functions only — no side effects at source time. Callers run
-# native_detect_platform before native_support_root / the $NATIVE_* globals.
 
 # log / warn / die / require_cmd / sha256_* / assert_exports / … all live in the
 # host-agnostic library. Sourced here so every build script gets them from one

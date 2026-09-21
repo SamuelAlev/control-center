@@ -1,24 +1,8 @@
 #!/usr/bin/env bash
 #
-# Runs the FULL release pipeline for one platform locally, in the order CI runs
-# it and reports which release artifacts came out.
+# Local dry-run of the release packaging path without publishing.
+# Usage: scripts/release/dry_run.sh
 #
-# This exists because the procedure used to live in RELEASING.md as prose and
-# the prose was wrong: it omitted a native staging step (so verify_natives.sh,
-# which the package scripts call internally, failed on missing onnxruntime and
-# sherpa) and gen_build_info.dart (so the artifact self-reported 0.0.1/dev).
-# A runnable script cannot drift from itself.
-#
-# Usage:
-#   scripts/release/dry_run.sh [--os macos|linux|windows] [--version X.Y.Z]
-#                              [--skip-natives] [--skip-sign]
-#
-#   --os             default: the host
-#   --version        default: 0.0.0-dry
-#   --skip-natives   reuse whatever is already staged in build/natives (the slow
-#                    part; safe once you have built them at least once)
-#   --skip-sign      macOS only — package without Developer ID + notarization.
-#                    Refused in CI: see the ALLOW_UNSIGNED guard below.
 set -euo pipefail
 
 REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"

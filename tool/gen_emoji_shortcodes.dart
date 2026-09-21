@@ -1,28 +1,7 @@
-// Regenerates packages/cc_markdown/lib/src/parser/emoji_shortcodes.dart — the
-// `:shortcode:` → emoji table the inline parser resolves against — from
-// gemoji, the database GitHub itself renders comment bodies with:
-//
-//   https://raw.githubusercontent.com/github/gemoji/master/db/emoji.json
-//
-// Usage (from the repo root):
-//   fvm dart run tool/gen_emoji_shortcodes.dart
-//
-// Same discipline as tool/gen_geoip_country.dart: run the generator, commit
-// the regenerated Dart file alongside. The table rides inside the parser
-// (cc_markdown is web-safe and has no asset loader), so it must be source.
-//
-// Two deliberate omissions, both invisible in the output:
-//   * GitHub's ~23 CUSTOM shortcodes (`:octocat:`, `:shipit:`, `:rage1:` …)
-//     are images, not characters — https://api.github.com/emojis serves them
-//     from a non-`/unicode/` path. There is nothing to substitute, so they
-//     stay literal text exactly as they do in any non-GitHub renderer.
-//   * Skin-tone and other modifier sequences have no gemoji alias, so they
-//     are unreachable by shortcode on GitHub too.
-//
-// The `emoji` field is read verbatim rather than derived from the emoji image
-// URL: the URL's codepoint list DROPS the U+FE0F variation selector
-// (`:one:` is served as `0031-20e3`), which renders the keycap as a bare "1"
-// on a font that needs the selector to switch to emoji presentation.
+// Regenerates emoji shortcode table from gemoji JSON for the markdown parser.
+// Omits GitHub custom image shortcodes and modifier sequences (no character).
+// Reads `emoji` field verbatim (URL codepoints drop U+FE0F).
+// Usage: fvm dart run tool/gen_emoji_shortcodes.dart
 
 import 'dart:collection';
 import 'dart:convert';

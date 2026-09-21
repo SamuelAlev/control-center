@@ -1,7 +1,7 @@
 /// The mention sources a messaging composer offers, and the `#` token an
 /// entity mention renders as.
 ///
-/// **Why this is not in `space_input_bar.dart`.** The space input bar and the
+/// Why this is not in `space_input_bar.dart`. The space input bar and the
 /// thread reply bar both build this list, and the whole point of assembling it
 /// in one place is that the two cannot drift — a source added for one and
 /// forgotten for the other is a mention that works in a space and silently does

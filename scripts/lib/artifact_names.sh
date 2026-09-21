@@ -1,31 +1,8 @@
 #!/usr/bin/env bash
 #
-# Usage:
-#   source scripts/lib/artifact_names.sh   # then release_asset_name <kind> <ver>
-#   bash   scripts/lib/artifact_names.sh 1.2.3   # print the complete set
+# Source it. Exact release asset filenames (not globs) for make_release /
+# packagers. Keep in sync with CI upload names.
 #
-# THE release artifact name table. Every other place that names a shipped file
-# derives from here or is pinned against it by
-# test/tooling/release_assets_test.dart:
-#
-#   scripts/release/make_release.sh      the collect/checksum/upload manifest
-#   scripts/release/macos_package.sh     the DMG it writes
-#   scripts/release/linux_package.sh     the AppImage + tarball it writes
-#   scripts/release/windows_package.sh   the installer + portable zip it writes
-#   scripts/release/cc_server_package.sh the standalone server archives
-#   scripts/release/gen_appcast.sh       the enclosures the updaters download
-#   .github/workflows/release.yml        the attest + upload globs
-#   RELEASING.md                         the "What gets built" table
-#
-# These names are a PUBLIC interface: `cc_server update` matches its download
-# against `cc_server-<ver>-<os>-<arch>.{tar.gz,zip}`, the Sparkle appcasts embed
-# the desktop names as signed enclosure URLs and SHA256SUMS.txt keys on them.
-# Renaming one is a breaking change for already-installed clients, not a
-# cosmetic edit.
-#
-# Use it either way:
-#   source scripts/lib/artifact_names.sh; release_asset_name dmg 1.2.3
-#   bash   scripts/lib/artifact_names.sh 1.2.3      # prints the complete set
 
 # Echoes one artifact's file name.
 release_asset_name() { # kind version

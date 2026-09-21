@@ -121,7 +121,6 @@ class _FakeRepo implements MessagingRepository {
     Uint8List embedding,
   ) async {}
 
-  // --- Unused by the compaction service ---
   @override
   dynamic noSuchMethod(Invocation invocation) =>
       throw UnimplementedError('${invocation.memberName}');

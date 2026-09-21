@@ -10,22 +10,9 @@ import 'package:cc_harness/tools.dart';
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:uuid/uuid.dart';
 
-/// The MANAGED (install-wide) action-policy tier: the operator's clamp over
-/// every workspace's guardrails.
+/// Install-wide managed action-policy tier: operator clamp over every workspace's policies.
 ///
-/// Two sources, in precedence order:
-///
-///  1. **A pinned file** named by `CC_SERVER_MANAGED_POLICY`. When present it
-///     is the WHOLE managed policy and the stored rows are ignored — so an
-///     operator can pin a posture that no admin UI can flip, which is the
-///     answer to procurement's "can I stop my developers from disabling the
-///     safety controls?". Same precedence shape as `server_settings`.
-///  2. **`managed_action_policies` rows** in `global.db`, edited by the server
-///     owner in Settings.
-///
-/// Managed rules never widen anything: `PolicyResolver.resolveAction` merges
-/// them most-restrictive with the workspace chain rather than putting them at
-/// the head of it.
+/// Most-restrictive wins against workspace/agent/space rules; stored in global DB.
 class ManagedPolicyService {
   /// Creates a [ManagedPolicyService].
   ManagedPolicyService({

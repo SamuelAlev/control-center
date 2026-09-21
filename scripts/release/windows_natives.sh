@@ -1,59 +1,12 @@
 #!/usr/bin/env bash
 #
-# Builds the bundled native FFI libraries for Windows into build/natives/:
-#   - fff (fast file finder)            -> fff_c.dll        (cargo)
-#   - cc_watcher (file watcher)         -> cc_watcher.dll   (cargo; first-party
-#                                          in-repo source under
-#                                          packages/cc_natives/native/watcher/)
-#   - pty (vendored flutter_pty)        -> ccpty.dll        (MSVC over the same
-#                                          umbrella .c build_pty.sh compiles;
-#                                          flutter_pty_win.c drives ConPTY).
-#                                          BOOT-REQUIRED, see below.
-#   - tree-sitter runtime               -> tree-sitter.dll  (its own CMake, so
-#                                          the ts_* API is exported)
-#   - tree-sitter grammars              -> tree-sitter-<lang>.dll (clang; each
-#                                          parser.c carries _WIN32 dllexport)
-#   - aec (WebRTC AEC3)                  -> aec_ffi.dll      (meson+ninja with
-#                                          MSVC; /WHOLEARCHIVE the APM lib and
-#                                          /EXPORT each C symbol)
-#   - lame (MP3 encoder)                -> lame_ffi.dll     (MSVC shim over a
-#                                          STATIC libmp3lame from vcpkg;
-#                                          /EXPORT each C symbol)
-#   - cc_inference (speech + embeddings)-> cc_inference.dll (cargo; first-party
-#                                          in-repo source under
-#                                          packages/cc_natives/native/inference/,
-#                                          statically linking sherpa-onnx and ONE
-#                                          onnxruntime). BOOT-REQUIRED.
-#   - cc_saml (SAML SSO crypto)         -> cc_saml.dll      (cargo; first-party
-#                                          in-repo source under
-#                                          packages/cc_natives/native/saml/,
-#                                          pure Rust). BOOT-REQUIRED.
+# Builds Windows native FFI libs into build/natives/ (fff, cc_watcher, ccpty,
+# tree-sitter + grammars, aec, lame, cc_inference, cc_saml). rift is the sole
+# intentional gap (git worktree backend). All listed libs are REQUIRED — first
+# failure aborts. Pins from scripts/lib/native_pins.env (env overrides). Needs
+# cargo, cmake, clang, MSVC, and vcpkg/LAME_PREFIX for LAME.
+# Usage: scripts/release/windows_natives.sh
 #
-# rift is the ONE intentional Windows gap: there is no MSVC copy-on-write
-# backend, so plain `git worktree` is the BACKEND here (not a degradation) and
-# the boot preflight exempts librift_ffi on Windows only. See
-# `RiftRepoIsolationAdapter.missingRiftIsExpected`.
-#
-# FAIL-HARD: every library above is REQUIRED. cc_server's boot preflight refuses
-# to start when one cannot be loaded and cc_server_package.sh refuses to produce
-# an archive without it, so a warning would only defer the same failure to a user.
-# The first failure aborts the run; see "How a block reports failure" below.
-# Runs under Git Bash on a Windows runner. The pinned commits come from the
-# pinned refs from scripts/lib/native_pins.env (Renovate-tracked in
-# .github/workflows/release.yml); override locally as needed.
-#
-# Shares git_clone_pinned + log with the macOS/Linux scripts via
-# scripts/natives/lib/natives_common.sh, but not its platform detection (that aborts off
-# macOS/Linux) — the Windows build mechanics (CMake export flags, _WIN32
-# dllexport) differ enough to stay inline here.
-#
-# Pins come from scripts/lib/native_pins.env; an env var still overrides one for
-# a bisect. Needs a Windows shell with cargo, cmake, clang and an MSVC dev
-# environment on PATH, plus vcpkg for LAME (or LAME_PREFIX pointing at your own).
-#
-# Usage:
-#   scripts/release/windows_natives.sh
-#   FFF_REF=<sha> scripts/release/windows_natives.sh   # override one pin
 set -euo pipefail
 
 REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -68,23 +21,8 @@ load_native_pins
 RUNNER_TEMP="${RUNNER_TEMP:-$(mktemp -d)}"
 mkdir -p build/natives
 
-# --- MSVC's link.exe must win over Git's ------------------------------------
-# Git for Windows ships its own `link.exe` — the coreutils hardlink tool — in
-# C:\Program Files\Git\usr\bin and Git Bash puts /usr/bin ahead of everything
-# vcvarsall (ilammy/msvc-dev-cmd) prepended. Both rustc and the bare `link`
-# calls below resolve the linker BY NAME, so every single link picked up
-# coreutils instead of the MSVC linker and the build died on the first crate:
-#
-#   error: linking with `link.exe` failed: exit code: 1
-#     = note: "C:\Program Files\Git\usr\bin\link.exe" "/NOLOGO" …
-#     = note: /usr/bin/link: extra operand '…build_script_build….rcgu.o'
-#   note: the Visual Studio build tools may need to be repaired…
-#
-# The trailing rustc note sends you off repairing a perfectly good MSVC install;
-# the actual fault is PATH order. cl.exe is unique to MSVC and link.exe sits
-# beside it, so resolving cl and prepending its directory fixes rustc, `cl` and
-# `link` at once — and the assertion below keeps a future PATH change from
-# quietly reintroducing the same 4-minute-to-fail build.
+# MSVC's link.exe must win over Git's coreutils `link.exe` (Git Bash puts
+# /usr/bin first). Prepend the real MSVC linker dir to PATH or rustc/link fail.
 command -v cl >/dev/null 2>&1 || {
   echo "ERROR: cl.exe (MSVC) not on PATH — set up an MSVC dev environment first (the release workflow uses ilammy/msvc-dev-cmd)" >&2
   exit 1
@@ -98,22 +36,9 @@ LINK_DIR="$(dirname "$(command -v link 2>/dev/null || echo /nonexistent/link)")"
 }
 log "MSVC toolchain: $MSVC_BIN"
 
-# --- How a block reports failure and why it is NOT `( … ) || { echo …; }` ---
-# bash ignores `set -e` inside any command whose status is being tested and that
-# includes a subshell on the left of `||` — *even if the subshell sets -e itself*
-# ("If a compound command … executes in a context where -e is being ignored, none
-# of the commands executed within … will be affected by the -e setting, even if
-# -e is set"). So the old guards ran every remaining command after the first
-# failure and reported whatever broke LAST: a tar that could not open its archive
-# surfaced three minutes later as a sherpa-onnx-sys panic about a missing
-# SHERPA_ONNX_LIB_DIR, which is a symptom of the tar failure and reads like a bad
-# pin.
-#
-# Each block is therefore a PLAIN subshell — errexit live, so it stops at the
-# command that actually failed with that command's own error last on stdout —
-# carrying an EXIT trap that adds the human-facing "this native is required"
-# line. The parent still aborts, because a failing plain subshell trips this
-# script's own `set -e`. Pinned by test/tooling/native_scripts_test.dart.
+# Each native block is a plain subshell with errexit (not `(…) || echo`) — bash
+# ignores set -e on the left of `||`, so failures reported the LAST error. EXIT
+# trap adds the "required" line; parent set -e still aborts.
 
 # --- fff -------------------------------------------------------------------
 (
@@ -187,23 +112,7 @@ log "MSVC toolchain: $MSVC_BIN"
     got="$(sha256_of "$cache/$archive")"
     [ "$got" = "${SHERPA_ONNX_LIB_SHA256_WIN_X64:?}" ] \
       || { echo "ERROR: sherpa-onnx archive sha256 mismatch: got $got" >&2; exit 1; }
-    # The archive is read from STDIN, not named with -f and that is load-bearing
-    # on Windows: GNU tar treats an -f argument containing a colon as a REMOTE
-    # archive (`host:path`, the rsh convention). $RUNNER_TEMP is `D:\a\_temp`, so
-    # `tar xjf D:\a\_temp/…` went looking for a machine called `D`:
-    #   tar (child): Cannot connect to D: resolve failed
-    #   tar: Child returned status 128
-    # bzip2 then got an empty stream and reported the archive as corrupt, which
-    # sent the diagnosis after a perfectly good download. On stdin there is no -f
-    # argument to misparse (`--force-local` also fixes it, but is GNU-only).
-    #
-    # The -C value needs the same care for a different reason: the same tar
-    # refuses the Windows-style directory outright — `tar xj -C D:\a\_temp/…`
-    # died with
-    #   tar: D\:\a\\_temp/sherpa-onnx: Cannot open: No such file or directory
-    # (bash's own mkdir/cd/redirects accept that spelling; MSYS tar does not),
-    # and bzip2 once again blamed the stream when tar's pipe closed. cygpath -u
-    # turns it into the /d/a/_temp/… form so tar only ever sees a POSIX path.
+# tree-sitter grammars: each parser.c carries _WIN32 dllexport; build with clang.
     tar xj -C "$(cygpath -u "$cache")" <"$cache/$archive" \
       || { echo "ERROR: failed to extract $archive" >&2; exit 1; }
     # The layout is part of the pin: sherpa-onnx-sys reads SHERPA_ONNX_LIB_DIR and
@@ -221,38 +130,10 @@ log "MSVC toolchain: $MSVC_BIN"
     && log "Built cc_inference.dll"
 )
 
-# --- pty (vendored flutter_pty; boot-REQUIRED) --------------------------------
-# The pseudo-terminal native behind the `terminal.*` RPC ops and the sandboxed
-# agent shells. Mirrors scripts/natives/build_pty.sh — the SAME vendored umbrella
-# source (packages/cc_natives/native/pty/flutter_pty.c, which #includes
-# flutter_pty_win.c + dart_api_dl.c under _WIN32) — with the MSVC toolchain.
-# There is no fallback: without ccpty.dll `Pty.isAvailable` is false and
-# cc_server's preflight refuses to boot, so this is not a "nice to have" on
-# Windows the way aec/lame are.
-#
-# Three Windows-only compile requirements:
-#
-#   * /DDART_SHARED_LIB — dart_api.h only decorates DART_EXPORT with
-#     __declspec(dllexport) under this define and the Dart side looks
-#     `Dart_InitializeApiDL` up FROM THIS DLL (pty_ffi_bindings.dart). Without
-#     it the DLL still builds and still exports the pty_* ABI (flutter_pty.h
-#     carries its own _WIN32 dllexport) — it just fails at runtime on that one
-#     symbol. This is what upstream flutter_pty's windows/CMakeLists.txt does.
-#   * /MT — the standalone cc_server zip ships no VC++ runtime, so link the CRT
-#     statically instead of depending on vcruntime140.dll being installed on the
-#     host. Safe here: no allocation crosses the FFI boundary (Dart frees only
-#     what Dart allocated and `pty_error` returns a static buffer).
-#   * /FIstdlib.h /FIstring.h + /we4013 — the vendored .c calls malloc/free/strlen
-#     having included only <stdio.h> and <Windows.h>, relying on the latter's
-#     transitive includes. An implicitly-declared malloc is assumed to return
-#     `int`, which SILENTLY TRUNCATES the pointer on x64, so force-include the
-#     two headers and promote C4013 (implicit declaration) to an error rather
-#     than bet a boot-required native on an SDK implementation detail.
-#
-# Deliberately does NOT define _WIN32_WINNT: ConPTY (CreatePseudoConsole) is
-# declared behind `NTDDI_VERSION >= NTDDI_WIN10_RS5` and defining _WIN32_WINNT
-# alone makes sdkddkver.h derive a LOWER NTDDI than the default (latest SDK),
-# which hides the API and breaks the build.
+# pty (vendored flutter_pty; BOOT-REQUIRED): same umbrella .c as build_pty.sh.
+# Require /DDART_SHARED_LIB (Dart_InitializeApiDL export), /MT (no VC++ runtime
+# in the zip), /FIstdlib.h /FIstring.h + /we4013 (implicit malloc truncates on
+# x64). Do NOT define _WIN32_WINNT alone — lowers NTDDI and hides ConPTY.
 (
   trap '[ $? -eq 0 ] || echo "ERROR: ccpty.dll not built — cc_server REFUSES TO BOOT without it on Windows (no terminal/PTY fallback exists)" >&2' EXIT
   PTY_SRC="$REPO_ROOT/packages/cc_natives/native/pty"
@@ -431,25 +312,8 @@ build_grammar ada        https://github.com/briot/tree-sitter-ada.git           
   [ -f build/natives/aec_ffi.dll ] && log "Built aec_ffi.dll"
 )
 
-# --- lame (MP3 encoder) ----------------------------------------------------
-# Mirrors scripts/natives/build_lame.sh with the MSVC toolchain: compile the
-# extern "C" shim (packages/cc_natives/native/lame_ffi.cc) and link it against a
-# STATIC libmp3lame so the DLL is self-contained (Mp3Encoder turns the meeting /
-# session PCM16 into MP3). The shim carries no __declspec, so each C entry point
-# is exported by passing /EXPORT to link.exe — same trick as aec above.
-#
-# libmp3lame provenance (LGPL-2.1, LAME 3.100 — MP3's core patents expired in
-# 2017, so shipping an encoder is unencumbered): vcpkg's `mp3lame` port, static
-# triplet. vcpkg is preinstalled on the GitHub Windows runners
-# (VCPKG_INSTALLATION_ROOT). Overrides, both mirroring build_lame.sh's contract:
-#   LAME_PREFIX=<dir>   use a prebuilt libmp3lame (<dir>/include/lame/lame.h +
-#                       <dir>/lib/*mp3lame*.lib) and skip vcpkg entirely
-#   LAME_TRIPLET=<t>    vcpkg triplet (default x64-windows-static)
-#
-# The static triplet builds against the static CRT, so the shim compiles /MT to
-# match — a /MD shim linked against a /MT archive is a CRT-mismatch link error.
-# Best-effort, like on macOS/Linux: Mp3Encoder.tryCreate returns null without
-# this DLL and callers keep the raw PCM.
+# lame (REQUIRED): MSVC shim over static libmp3lame (vcpkg / LAME_PREFIX);
+# /EXPORT each C symbol; /MT to match the static CRT triplet.
 (
   trap '[ $? -eq 0 ] || echo "ERROR: lame_ffi.dll not built — cc_server REFUSES TO BOOT without it (soundscape MP3 encoding has no fallback)" >&2' EXIT
   SHIM="$REPO_ROOT/packages/cc_natives/native/lame_ffi.cc"

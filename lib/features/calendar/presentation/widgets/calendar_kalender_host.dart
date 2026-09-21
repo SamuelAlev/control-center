@@ -541,24 +541,13 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
     );
   }
 
-  /// The week/day header: a band that grows with the all-day strip it actually
-  /// has, hanging over the timed grid rather than pushing it down.
-  ///
-  /// It reserves [_reservedHeaderHeight] — one strip row — from the layout and
-  /// paints the rest over the grid, so the hour the grid opens on never depends
-  /// on how busy the week's all-day strip is. Nothing is permanently hidden
-  /// under it: the cap keeps the overhang under an hour, and the gutter's fold
-  /// control returns the band to one row.
-  ///
-  /// The height is derived (see [_allDayRows]), never measured, so it is
-  /// settled on the frame the events arrive — no reflow behind the user. It
-  /// animates because the band genuinely changes size as you page through weeks
-  /// or fold it away, and a band that jumps between sizes reads as a glitch
-  /// where one that slides reads as the same band, resized.
-  ///
-  /// Top-aligned in a [_ClippedBand] rather than squeezed into one, so the
-  /// frames where kalender's own measurement disagrees with this height trim
-  /// empty space instead of overflowing.
+  /// The week/day header: a band that grows with the all-day strip it actually has, hanging
+  /// over the timed grid rather than pushing it down.
+  /// It reserves [_reservedHeaderHeight] — one strip row — from the layout and paints the
+  /// rest over the grid, so the hour the grid opens on never depends on how busy the week's
+  /// all-day strip is.
+  /// The height is derived (see [_allDayRows]), never measured, so it is settled on the frame
+  /// the events arrive — no reflow behind the user.
   Widget _allDayHeader(
     DesignSystemTokens t, {
     required double laneHeight,
@@ -1003,22 +992,10 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
   }
 }
 
-/// A band that takes [reservedHeight] from the layout and paints — and stays
-/// tappable — at whatever height its child turns out to be.
-///
-/// This is what makes the all-day strip hover over the timed grid instead of
-/// pushing it down. kalender lays its header and body out with a
-/// `CustomMultiChildLayout` that positions the body directly below the header's
-/// reported height and paints the header second, precisely so a header can cast
-/// a shadow on the body. Reporting the resting height while painting the full
-/// one turns "the grid starts under the strip" into "the strip hangs over the
-/// grid", and the grid's position stops depending on the week's all-day events.
-///
-/// [RenderBox.hitTest] refuses any position outside `size`, so the overhang
-/// would be invisible to the pointer — its tiles unclickable and, worse, the
-/// grid underneath clickable straight through an opaque band. The override
-/// below tests against the child's real bounds instead, and claims whatever the
-/// child does not, so nothing reaches the grid through the band.
+/// A band that takes [reservedHeight] from the layout and paints — and stays tappable — at
+/// whatever height its child turns out to be.
+/// This is what makes the all-day strip hover over the timed grid instead of pushing it
+/// down.
 class _FloatingBand extends SingleChildRenderObjectWidget {
   const _FloatingBand({required this.reservedHeight, required super.child});
 

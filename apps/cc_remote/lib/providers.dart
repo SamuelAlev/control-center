@@ -107,22 +107,12 @@ final mediaEndpointProvider = StreamProvider<RemoteMediaEndpoint?>((ref) {
   return controller.stream;
 });
 
-/// A workspace's logo bytes, fetched over the RPC channel (`workspace.logo`).
+/// Workspace logo bytes via RPC (`workspace.logo`).
 ///
-/// The signed `/workspace/logo` HTTP endpoint is the better lane when it is
-/// reachable — it streams and the browser caches it — but it is not always
-/// reachable, and on this tier it usually is not. Served over HTTPS, the PWA
-/// cannot open a plaintext `ws://` LAN socket (mixed content), so it connects
-/// through the broker relay; a [RemoteMediaEndpoint] needs an HTTP origin and
-/// a relay path has none. The result was a workspace mark that silently fell
-/// back to its initial on exactly the tier it was written for.
-///
-/// So the bytes ride the one transport that exists on every path. Kept alive
-/// for the session (not `autoDispose`) because it is a handful of KB per
-/// workspace and re-fetching it on every scroll of the switcher would put a
-/// base64 image back on the wire for nothing. Null when the workspace has no
-/// logo, the op is absent, or the fetch fails — every case renders the
-/// initial, which is the intended mark for a logo-less workspace.
+/// Signed HTTP `/workspace/logo` is preferred when reachable, but HTTPS PWAs
+/// cannot open plaintext LAN sockets (mixed content) and often use the broker
+/// relay (no HTTP origin). Kept alive for the session (small; avoid re-fetch).
+/// Null → render the initial.
 final workspaceLogoProvider = FutureProvider.family<Uint8List?, String>((
   ref,
   workspaceId,

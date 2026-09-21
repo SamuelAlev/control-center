@@ -45,7 +45,7 @@ const TerminalNotices kDefaultTerminalNotices = (
 /// Owns one xterm [Terminal] + one server-side PTY session for the lifetime
 /// of a terminal session, independent of any mounted view.
 ///
-/// **Hidden-tab policy: keep fed.** While the view sits in a hidden
+/// Hidden-tab policy: keep fed. While the view sits in a hidden
 /// IndexedStack tab it deliberately keeps its `terminal.output` subscription
 /// alive — the server does no replay, so dropping the stream would lose
 /// output; the xterm buffer is bounded (10k lines), so staying fed is cheap.

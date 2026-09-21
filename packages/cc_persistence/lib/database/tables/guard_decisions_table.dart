@@ -1,27 +1,10 @@
 import 'package:drift/drift.dart';
 
-/// The tamper-evident authorization audit spine (one row per guard verdict).
+/// Tamper-evident authorization audit (one row per guard verdict, allow and deny).
 ///
-/// Every decision the server makes about an ACTION — human `repo/call` role
-/// and grant gates, the agent action-guard verdicts at the harness / MCP /
-/// skill-install chokepoints — lands here, allow and deny alike. This is the
-/// table that answers the two questions an enterprise security review
-/// actually asks: "what was refused (and by which rule)?" and "which human
-/// authorized this agent action?" — neither of which `user_activity` (human
-/// successes only) or a stdout deny log can answer.
-///
-/// **Attribution chain** (arXiv 2501.09674's three verifiable claims): the
-/// acting principal ([actorType]/[actorId]), the human it acts on behalf of
-/// ([onBehalfOfUserId]) and the grant it acted under ([sourceScope]/[ruleId],
-/// plus [delegationChainId] when the authority arrived via delegation).
-///
-/// **Tamper evidence**: rows are hash-chained per workspace —
-/// `entryHash = sha256(prevHash ‖ canonicalJson(row minus hashes))` with
-/// [seq] allocated monotonically. Deleting or editing a row breaks every hash
-/// after it, so an export plus the chain head proves integrity. Consequently
-/// this table is NEVER age-pruned by `DatabaseRetentionService`; retention is
-/// export-then-truncate, and truncation writes a checkpoint row carrying the
-/// removed segment's terminal hash so the surviving chain still verifies.
+/// Attribution: actor, on-behalf-of user, rule/source scope, optional delegation
+/// chain. Hash-chained per workspace (`entryHash`/`prevHash`/`seq`); never
+/// age-pruned — retention is export-then-truncate with a checkpoint hash.
 @TableIndex(name: 'idx_guard_decisions_workspace', columns: {#workspaceId})
 @TableIndex(
   name: 'idx_guard_decisions_time',

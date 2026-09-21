@@ -121,7 +121,6 @@ class _PlanStudioScreenState extends ConsumerState<PlanStudioScreen> {
         )
       : child;
 
-  // ── Orchestration plan ──
 
   Widget _buildOrchestration(BuildContext context, Orchestration o) {
     final proposal = _draft ?? o.proposal;
@@ -273,7 +272,6 @@ class _PlanStudioScreenState extends ConsumerState<PlanStudioScreen> {
     );
   }
 
-  // ── Plan-mode document ──
 
   Widget _buildDocument(BuildContext context, PlanDocument doc) {
     final graph = doc.graph;
@@ -383,7 +381,6 @@ class _PlanStudioScreenState extends ConsumerState<PlanStudioScreen> {
     );
   }
 
-  // ── Edit helpers (orchestration draft) ──
 
   void _replaceNode(PlanNode node) {
     final draft = _draft;

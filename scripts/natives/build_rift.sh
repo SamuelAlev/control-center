@@ -1,33 +1,8 @@
 #!/usr/bin/env bash
 #
-# Builds the rift FFI shared library (librift_ffi) and installs it where
-# RiftFfiBindings looks for it (see core/storage/control_center_paths.dart ->
-# riftDylibCandidatePaths):
-#   1. the app-support root (next to control_center.db) — the single dev /
-#      runtime location and
-#   2. an optional explicit DEST ($1) — CI stages the lib there before embedding
-#      it into Runner.app/Contents/Frameworks/ (macOS) or bundle/lib/ (Linux).
+# Builds librift_ffi (CoW worktrees; REQUIRED off Windows). Cargo first-party.
+# Usage: scripts/natives/build_rift.sh [DEST_DIR]
 #
-# rift provides the copy-on-write worktree engine (APFS clonefile / reflink) we
-# use to isolate repos per conversation without touching the original.
-#
-# REQUIRED on macOS/Linux: cc_server's boot preflight refuses to start without
-# librift_ffi and RiftRepoIsolationAdapter throws rather than silently
-# provisioning a `git worktree`, so a missing dylib can never hide as a slower
-# working path. `git worktree` remains a legitimate BACKEND for two things that
-# are not install failures: a filesystem with no copy-on-write support
-# (`cow_unavailable`) and Windows — no MSVC CoW backend exists, so rift is
-# deliberately not built there (see scripts/release/windows_natives.sh).
-#
-# Source/refs (override to iterate or bump; keep RIFT_REF in sync with CI):
-#   RIFT_REPO  default github.com/anomalyco/rift
-#   RIFT_REF   default v0.0.11 (Renovate-managed; pin a SHA in CI)
-#
-# Requirements: git, a Rust toolchain (cargo).
-#
-# Usage:
-#   scripts/natives/build_rift.sh [DEST_DIR]
-#   RIFT_REF=<sha> scripts/natives/build_rift.sh ./build/natives
 set -euo pipefail
 
 REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"

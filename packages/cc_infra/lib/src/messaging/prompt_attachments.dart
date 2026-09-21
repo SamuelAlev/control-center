@@ -1,37 +1,15 @@
-// Turning what a human attached into something an agent can open.
+// Resolves message attachments to absolute paths an agent can open.
 //
-// **Why this exists.** An attachment crosses the wire as a
-// `blob:sha256:<hex>` reference: the composer uploads the bytes and the message
-// row keeps a 71-character pointer. That is right for storage and right for the
-// transcript, and it is useless to an agent — no adapter has ever heard of a
-// blob reference, and the sender's own path means nothing on a server that is
-// routinely a different machine. So a message that said "look at
-// ⟦shot.png⟧" reached the model as those words and nothing else, and the honest
-// answer came back: the screenshots are referenced but I need to locate them.
-//
-// The fix is to give the reference a body. Every uploaded attachment is written
-// once into the SPACE's own `attachments/` directory and each `@[file:<name>]`
-// token in the dispatched prompt is replaced, in place, by that file's absolute
-// path. In place matters: the position is the meaning — "compare ⟦before.png⟧
-// with ⟦after.png⟧" collapses into nonsense if the paths are appended as a list.
-//
-// **Why the space directory.** It is the one place every agent in the
-// conversation can read, it is deleted with the space, and it sits beside
-// `repos` — which the dispatch session already mounts, so adding this one is
-// the same shape rather than a new kind of hole. Agents get it READ-ONLY: these
-// are the human's inputs, not the agent's scratch.
-//
-// **Why content-addressed filenames.** The display name is unique within one
-// message and nowhere else; two conversations attaching `shot.png` a week apart
-// would otherwise fight over one path. Prefixing the content hash makes the
-// write idempotent — re-sending the same picture reuses the same file — and
-// makes a stale name impossible.
-//
-// **One exception, and it matters.** A non-picture whose sender path this host
-// CAN see resolves to that path instead of to a copy. The commonest reference
-// of all is a source file picked out of the composer's `@` menu on the machine
-// the server runs on, and pointing an agent at a snapshot of the file it was
-// asked to change is a bug that would look like the agent ignoring its edits.
+// Wire form is `blob:sha256:<hex>` — useless to adapters and meaningless across
+// machines. Each upload is written once under the space's `attachments/` and
+// each `@[file:<name>]` token is replaced in place by that absolute path
+// (position is meaning; do not append a path list).
+// Space dir: shared by agents in the conversation, deleted with the space,
+// mounted read-only beside `repos`.
+// Filenames are content-addressed so display-name collisions across messages
+// cannot clobber and re-sends are idempotent.
+// Exception: a non-picture whose sender path exists on this host resolves to
+// that path (not a copy) so agents edit the live file, not a stale snapshot.
 library;
 
 import 'dart:io';

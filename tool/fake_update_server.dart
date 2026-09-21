@@ -1,34 +1,12 @@
 // -*- mode: dart -*-
-// Local harness for the desktop in-app updater: serves a REAL, correctly
-// EdDSA-signed Sparkle appcast from 127.0.0.1 whose payload is a copy of the
-// locally built app with a bumped version — so the ENTIRE update flow runs
-// for real: menu item / About → check → Sparkle's prompt with release notes →
-// download → EdDSA verification → install → relaunch, with nothing published
-// and no repo files touched.
+// Local harness: loopback EdDSA-signed Sparkle appcast + ditto copy of the
+// built app with a bumped version — full update flow, nothing published.
 //
-// How it stays safe:
-//  * The signing keypair is a THROWAWAY dev key living in
-//    `.dart_tool/sparkle-dev/` (gitignored, regenerated at will). Its public
-//    half is patched into the BUILT app bundle's Info.plist (SUPublicEDKey)
-//    via PlistBuddy — a build artifact, never `macos/Runner/Info.plist` — so
-//    the committed placeholder (and thus release verification) is untouched.
-//  * The payload is a `ditto` copy of the built .app with its
-//    CFBundleShortVersionString bumped to the fake version, so after
-//    "installing", the relaunched app believes it is up to date and the fake
-//    loop terminates by itself.
-//  * Nothing binds off-loopback and nothing is cached.
-//
-// Usage (repo root):
-//   fvm dart run tool/fake_update_server.dart            # Debug app, port 8642
-//   fvm dart run tool/fake_update_server.dart --port 9000 --version 99.0.0
-//
-// Then, in another terminal, run the app with the feed pointed here:
-//   fvm flutter run -d macos \
-//     --dart-define=CC_APPCAST_URL=http://127.0.0.1:8642/appcast.xml
-// (use the printed URL) and click Control Center → Check for Updates….
-//
-// No Sparkle at all? `--dart-define=CC_FAKE_UPDATE=available` simulates the
-// outcome in Dart with no server, keys, or payload.
+// Throwaway key in `.dart_tool/sparkle-dev/`; public half patched into the
+// BUILT Info.plist only (never committed macos/Runner/Info.plist). Loopback
+// only. Usage: `fvm dart run tool/fake_update_server.dart` then
+// `fvm flutter run -d macos --dart-define=CC_APPCAST_URL=<printed url>`.
+// Or `--dart-define=CC_FAKE_UPDATE=available` with no Sparkle.
 import 'dart:convert';
 import 'dart:io';
 

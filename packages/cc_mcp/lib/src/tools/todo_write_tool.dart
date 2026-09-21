@@ -4,32 +4,11 @@ import 'package:cc_domain/features/todos/domain/entities/todo_item.dart';
 import 'package:cc_domain/features/todos/domain/repositories/todo_repository.dart';
 import 'package:cc_domain/features/todos/domain/value_objects/todo_status.dart';
 
-/// Records or updates the persisted task checklist for a conversation.
+/// Persists the conversation task checklist (harness + external MCP adapters).
 ///
-/// This is the single agent-facing todo surface: it is reached both by the
-/// built-in harness (bridged into the loop, with `conversation_id` injected
-/// from the run context) and by external adapters (Claude CLI / Pi) over MCP.
-/// The list is persisted per `(workspace_id, conversation_id)` — a conversation
-/// owns one stream and one task list, which is what the `todos.conversation_id`
-/// foreign key points at — and rendered in the app's General pane. The model
-/// always passes the FULL list (create + update in one shot), matching the
-/// historical ephemeral tool contract.
-///
-/// **Identity is preserved across calls.** A full-list write is reconciled
-/// against the stored list rather than blindly re-minting rows: an incoming
-/// item is matched to an existing one by `id` when supplied, else by identical
-/// `content` and keeps that row's id and `createdAt`. Without this, every
-/// write deleted and re-inserted the whole list — ids churned, `createdAt`
-/// reset, the ids handed out by `todo_read` went stale immediately and the
-/// General pane re-created every row on each call. Only genuinely new items get
-/// a fresh id.
-///
-/// The result payload also reports checklist *hygiene* back to the model (no
-/// item in_progress while work remains, several items in_progress at once,
-/// items silently dropped by a short re-send). The observed failure mode was an
-/// agent that only ever appended items and never transitioned them, which makes
-/// the list useless to the user; the write's own output is the cheapest place to
-/// correct that, since it is read on every call.
+/// Scoped to `(workspace_id, conversation_id)`; model always sends the full
+/// list. Reconciles by `id` (else identical `content`) to keep ids/`createdAt`;
+/// only new items get fresh ids. Result reports checklist hygiene hints.
 class TodoWriteTool extends McpTool {
   /// Creates a [TodoWriteTool].
   TodoWriteTool({

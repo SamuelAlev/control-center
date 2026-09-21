@@ -340,7 +340,7 @@ class PrDiffDocument {
   /// files that survive (matched by filename). New dependency lockfiles start
   /// collapsed; all other new files start expanded.
   ///
-  /// Returns the indices of surviving files whose **patch changed** — their
+  /// Returns the indices of surviving files whose patch changed — their
   /// stale structure was dropped so it re-parses from the new patch. Callers
   /// must invalidate any derived caches (e.g. syntax tokens) for these indices.
   /// This matters for the local-git source, which emits each file first with an
@@ -497,7 +497,6 @@ class PrDiffDocument {
     return lo;
   }
 
-  // ── Per-file accessors ────────────────────────────────────────────────
 
   /// Top offset of file [i] in the unified scroll space.
   double offsetOfFile(int i) => _fenwick.offsetOf(i);
@@ -640,7 +639,6 @@ class PrDiffDocument {
     return col;
   }
 
-  // ── Within-file layout (file-local Y, measured from the file's top) ───
 
   /// File-local Y of the top of code line [line] in file [i] (after the
   /// header and any comment blocks above it). Uses cumulative *visual* rows so
@@ -696,7 +694,6 @@ class PrDiffDocument {
     return lo;
   }
 
-  // ── Mutations ─────────────────────────────────────────────────────────
 
   /// Installs parsed [structure] for file [i], computes the display→raw row
   /// map (dropping `@@` hunk headers), optionally appends a "Show end of file"

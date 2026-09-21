@@ -63,26 +63,10 @@ class HarnessTranscript {
   };
 }
 
-/// Persists a run's history so a later run can continue it.
-///
-/// **What this buys, and why the loop cannot do it alone.** Every harness run
-/// starts from an empty list today and rebuilds continuity from a `<context>`
-/// blob in the prompt — a summary of the conversation rather than the
-/// conversation. Three things follow from that and all three are fixed by the
-/// same store:
-///
-///   * **Resume is a re-tell, not a resume.** The model never sees its own
-///     earlier reasoning or tool results, only a description of them.
-///   * **Rewind dies with the process.** A `checkpoint` is an index into the
-///     live list, so a restart loses every label the model set.
-///   * **Retry cannot tell "nothing to retry" from "nothing loaded".** After a
-///     restart the failed turn is gone from live state, so the only honest
-///     source for whether a partial turn happened is the persisted one.
-///
-/// **Save points are turn boundaries, never mid-turn.** A history captured
-/// between a tool_use and its tool_result is one no provider will accept, so a
-/// crash at that instant must restore the turn BEFORE, not a half-turn that
-/// cannot be replayed.
+/// Persists a run's history for real resume (not a `<context>` summary),
+/// durable checkpoints, and post-restart retry of partial turns. Save only at
+/// turn boundaries — never between tool_use and tool_result (providers reject
+/// that shape).
 abstract class HarnessTranscriptStore {
   /// Loads the transcript for [key], or null when there is none.
   Future<HarnessTranscript?> load(String key);

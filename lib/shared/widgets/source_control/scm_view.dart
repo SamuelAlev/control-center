@@ -1,6 +1,6 @@
 /// A VS Code-style Source Control surface, shared by the PR workbench and the
-/// messaging IDE panel so both read identically: collapsible **Staged changes**
-/// / **Changes** groups with per-group bulk actions and per-file rows that show
+/// messaging IDE panel so both read identically: collapsible Staged changes
+/// / Changes groups with per-group bulk actions and per-file rows that show
 /// a two-line `basename` + dimmed `dir`, reveal their actions on hover and put
 /// the single status letter (M/A/D/R) on the RIGHT — no checkboxes.
 ///

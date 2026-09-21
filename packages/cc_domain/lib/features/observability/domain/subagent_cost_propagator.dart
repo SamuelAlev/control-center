@@ -2,7 +2,6 @@ import 'dart:async';
 
 /// Serializes subagent-cost roll-ups onto a parent run so concurrent
 /// propagations to the **same** parent never lose a read-modify-write update.
-///
 /// When a subagent finishes, its cost rolls up to the parent run's
 /// `childCostCents` field. The roll-up is a read-modify-write: read the parent's
 /// current child cost, add the delta, write it back. If two subagents of the
@@ -11,7 +10,6 @@ import 'dart:async';
 /// lost. This propagator wraps each parent run in a per-key
 /// [Future]-chain lock so updates to one parent are applied strictly serially,
 /// while different parents proceed concurrently.
-///
 /// The store itself is injected via the [readChildCostCents] /
 /// [writeChildCostCents] hooks so this class stays pure-domain (no database
 /// dependency). Each acquire chains onto the previous tail [Future] for the key, swallows that

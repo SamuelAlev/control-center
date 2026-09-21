@@ -1,52 +1,11 @@
 #!/usr/bin/env bash
 #
-# Packages the STANDALONE, self-hostable cc_server — the pure-Dart backend the
-# web/phone thin clients dial — into a downloadable archive for one OS:
+# Packages standalone cc_server: ensure `dart build cli` bundle, stage/verify
+# REQUIRED natives into the OS-specific resolver path (macOS Frameworks, Linux
+# bin/lib, Windows beside exe), macOS Developer-ID sign + notarize, archive +
+# SHA-256. Credentials come from builtin_credentials.sh inject (not here).
+# Usage: scripts/release/cc_server_package.sh <version> [macos|linux|windows]
 #
-#   1. ensures the `dart build cli` bundle exists (builds it if absent). When
-#      build/natives is staged BEFORE the build, apps/cc_server/hook/build.dart
-#      bundles every runtime native into `<bundle>/lib/` as DynamicLoadingBundled
-#      code assets — the same way libsqlite3 travels,
-#   2. copies it to a friendly-named dist dir and (as an ordering safety net for
-#      a bundle built before the natives were staged) stages EVERY runtime native
-#      (rift / fff / tree-sitter / pty / aec + sherpa-onnx + onnxruntime) into the
-#      directory the resolver looks in for THIS OS, then VERIFIES the natives the
-#      server's boot preflight requires are present (the server refuses to boot
-#      without them — never ship an archive that cannot start),
-#   3. macOS only: Developer-ID signs every Mach-O inside-out + notarizes the zip
-#      (stapling a loose CLI isn't supported, so first run uses online Gatekeeper),
-#   4. archives (tar.gz on macOS/Linux, zip on Windows) + writes a SHA-256.
-#
-# This is the server counterpart to macos_package.sh / linux_package.sh, which
-# EMBED a copy of cc_server inside the desktop app. Those leave the original
-# `dart build cli` bundle untouched (they stage natives into their own copy), so
-# this script copies the clean bundle and stages into the copy too.
-#
-# Built-in app credentials (Google Calendar's device-code client, the Klipy GIF
-# key, the GitHub device-flow client id) are NOT handled here. They are baked
-# into the server's source constants by `builtin_credentials.sh inject` — one
-# release-job step ahead of every build, so that this script and the desktop
-# packagers cannot disagree about them. Run it yourself before a local release
-# build, or this archive ships without them.
-#
-# Where natives must land (matches packages/cc_natives/.../native_library.dart's
-# `bundledLibraryCandidates`, relative to the cc_server binary at
-# `<bundle>/bin/cc_server`):
-#   * macOS   — `<bundle>/Frameworks/`     (`@executable_path/../Frameworks`)
-#   * Linux   — `<bundle>/bin/lib/`        (`<exeDir>/lib`)
-#   * Windows — `<bundle>/bin/`            (beside the .exe)
-# sherpa-onnx-c-api finds its onnxruntime sibling via its own @loader_path/rpath,
-# so both MUST share that one directory.
-#
-# Environment (macOS signing/notarization — all optional; absent ⇒ unsigned):
-#   MACOS_CERTIFICATE / MACOS_CERTIFICATE_PWD   base64 Developer ID .p12 (CI)
-#   NOTARY_PROFILE                              stored notarytool profile (local)
-#   APPLE_ID / APPLE_TEAM_ID / APPLE_APP_PASSWORD   notarytool credentials (CI)
-#   NATIVES                                     staged-natives dir (default build/natives)
-#
-# Usage:
-#   scripts/release/cc_server_package.sh <version> [macos|linux|windows]
-#   (OS defaults to the host's `uname`.)
 set -euo pipefail
 
 REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -132,26 +91,9 @@ done
 # cannot boot.
 bash scripts/release/verify_natives.sh --dir "$DIST/lib" --dir "$STAGE" "$OS" server
 
-# Drop the second copy of every native (Linux). The bundle carries each one
-# TWICE: the build hook emits them as DynamicLoadingBundled code assets into
-# `<bundle>/lib/`, and the staging above copies them into `bin/lib/`. Both are
-# searched (`bundledLibraryCandidates` tries `<exeDir>/../lib` then
-# `<exeDir>/lib`), so the second copy is pure weight — 49 MB, measured on the
-# container built from this archive.
-#
-# The STAGED copy is the one kept: it is the directory `CC_NATIVE_LIB_DIR`
-# names, the one the `.scm` queries sit beside, and the fallback every
-# env-var-driven resolver (inference, pty, watcher, saml) lands on anyway.
-# Byte-identical is the condition, so the staging's original purpose survives:
-# it is a safety net for a bundle built BEFORE the natives were staged, and in
-# that case `lib/` holds nothing to match and nothing is removed. Nothing
-# resolves these by ASSET ID (no `@Native` in cc_natives does), which is what
-# makes `lib/` the removable copy rather than the load-bearing one — unlike
-# libsqlite3, which is bundled the same way but IS resolved by id, and stays.
-#
-# macOS and Windows keep both copies: there the staged dir is `Frameworks/` and
-# `bin/` respectively, and macOS additionally signs every Mach-O in place below,
-# so the two copies are not interchangeable the way they are here.
+# Linux: drop the duplicate natives in bundle lib/ (keep staged bin/lib/ —
+# CC_NATIVE_LIB_DIR, queries, env resolvers). Byte-identical only; macOS/Windows
+# keep both copies (Frameworks / bin; macOS signs in place).
 if [ "$OS" = linux ]; then
   freed=0
   for f in "$STAGE"/*."$LIBEXT"; do
@@ -239,22 +181,8 @@ SECRETS_DIR="$SCRATCH_DIR"
       codesign --force --options runtime --timestamp --entitlements "$ent" -s "$IDENTITY" "$@"
     }
 
-    # The archive carries THREE kinds of Mach-O and the notary service inspects
-    # every one of them:
-    #   * cc_server's natives (Frameworks/*.dylib) + the bundled libsqlite3 and
-    #     sqlite_vector (lib/*.dylib),
-    #   * the cc_server executable itself,
-    #   * and everything inside the vendored code-server staged above — a whole
-    #     Node runtime (bin/code-server/<platform>/lib/node), its compiled
-    #     addons (*.node) and its helper binaries (ripgrep, …).
-    #
-    # That third group is why v0.0.1 came back `status: Invalid`: this loop was
-    # a *.dylib glob, code-server is staged BEFORE it runs and several dozen
-    # unsigned Mach-Os went into the zip. So enumerate what is actually there
-    # rather than the two directories we happen to remember — a glob silently
-    # stops covering the archive the moment anything new is staged into it.
-    #
-    # Payloads (dylibs, addons) first, the cc_server binary last.
+    # Sign every Mach-O in the archive (natives, cc_server, vendored code-server
+    # Node/*.node/helpers) — not a *.dylib glob. Payloads first, cc_server last.
     CS_ENTITLEMENTS="$REPO_ROOT/scripts/release/entitlements/code_server.entitlements"
     test -f "$CS_ENTITLEMENTS" || die "missing $CS_ENTITLEMENTS — the vendored node cannot be signed without its hardened-runtime exceptions"
 

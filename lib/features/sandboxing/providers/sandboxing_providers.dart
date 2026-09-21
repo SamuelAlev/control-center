@@ -7,7 +7,6 @@ import 'package:control_center/di/providers.dart'
     show sandboxDetectorPortProvider;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-// ── Web-safe sandbox providers ───────────────────────────────────────────────
 //
 // These providers contain NO `dart:io` — they read user preferences (backed by
 // shared_preferences on desktop / localStorage on web) and the host-sourced

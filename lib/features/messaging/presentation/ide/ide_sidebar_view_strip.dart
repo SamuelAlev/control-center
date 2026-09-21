@@ -27,21 +27,11 @@ const double _glyphSize = 15;
 const Duration _nameDwell = Duration(milliseconds: 250);
 
 /// The icon rail that selects the messaging IDE sidebar's panel.
-///
-/// Replaces a labelled tab bar, which could not fit the panels into a 200px
-/// sidebar. Each pinned view gets a square, icon-only cell (named by tooltip
-/// and by its accessible label); the trailing caret opens a menu listing every
-/// view, whatever fits or not, with a pin toggle per row.
-///
-/// Three rules keep the rail honest:
-/// * The **active view always has a cell**, even when it is unpinned or would
-///   fall past the fold, so the selection underline always has something to sit
-///   on.
-/// * **Order is canonical** ([IdeSidebarView]'s declaration order). Pinning
-///   never reshuffles the rail, it only adds or removes a cell.
-/// * **Overflow is width-driven**, not a fixed cap: pinned views that do not
-///   fit the measured width move into the caret menu and come back when the
-///   sidebar is widened.
+/// Each pinned view gets a square, icon-only cell (named by tooltip and by its accessible
+/// label); the trailing caret opens a menu listing every view, whatever fits or not, with a
+/// pin toggle per row.
+/// never reshuffles the rail, it only adds or removes a cell.
+/// Overflow is width-driven, not a fixed cap: pinned views that do not
 class IdeSidebarViewStrip extends ConsumerStatefulWidget {
   /// Creates an [IdeSidebarViewStrip].
   const IdeSidebarViewStrip({
@@ -463,7 +453,7 @@ class _OverflowButton extends StatelessWidget {
 
 /// One row of the caret menu: pick the view, or pin/unpin it.
 ///
-/// The label and the pin are **siblings**, not a button inside a button, so a
+/// The label and the pin are siblings, not a button inside a button, so a
 /// tap on the pin can never be swallowed by the row. The row's hover wash is
 /// owned by an outer [MouseRegion] so hovering the label also reveals the pin.
 class _ViewMenuRow extends StatefulWidget {

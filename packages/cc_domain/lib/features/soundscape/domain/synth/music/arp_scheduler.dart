@@ -5,7 +5,6 @@ import 'package:cc_domain/features/soundscape/domain/synth/seeded_prng.dart';
 
 /// Broken-chord ladder scheduling — the density layer that gives focus its
 /// "many notes" texture.
-///
 /// Focus audio carries ~40+ soft note events per minute spread
 /// over several octaves. This scheduler produces that layer: it steps an eighth-note grid
 /// and walks a pendulum over a ladder of the *current chord's* tones tiled across `lowMidi`–`highMidi`,
@@ -14,7 +13,6 @@ import 'package:cc_domain/features/soundscape/domain/synth/seeded_prng.dart';
 /// parameter with metric weighting (on-beats fire first, off-beats only join
 /// as fill rises), which keeps the stream predictable — arousal without
 /// surprisal, per the salience literature.
-///
 /// Determinism: every step draws the same number of PRNG values whether or
 /// not it sounds, so the event stream is a pure function of the seed and the
 /// sample clock (live `fill` changes only gate audibility, exactly like the

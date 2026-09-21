@@ -3,24 +3,13 @@ import 'dart:convert';
 import 'package:cc_rpc/cc_rpc.dart';
 import 'package:flutter/widgets.dart';
 
-/// The connected server's signed-media origin, plus the pairing credential that
-/// authorises this device against it.
+/// Signed-media origin plus pairing credential for this device.
 ///
-/// The phone never fetches remote media itself — the north-star invariant is
-/// that every outbound fetch goes through `cc_server` — and it cannot read the
-/// server's disk either, so a workspace logo and a GitHub avatar both arrive
-/// over the same host endpoints (`/workspace/logo`, `/proxy/media`). Each URL
-/// carries a canonical target signed with the device PSK
-/// ([RemoteControlCrypto.signProxyTarget]); the host re-derives the signature
-/// from the stored PSK of an `active`, unexpired device, then enforces
-/// workspace membership on top.
-///
-/// The origin is the LIVE path's `probeUri` rather than anything stored: the
-/// supervisor may have failed over to a different address than the one the QR
-/// carried. A broker-relayed session has no HTTP origin at all (`probeUri` is
-/// null), so there is simply no endpoint and every caller falls back — a logo
-/// becomes the workspace initial, an avatar becomes its monogram. That is the
-/// honest degradation: the relay carries JSON-RPC frames, not byte ranges.
+/// Phone never fetches remote media directly — all via cc_server
+/// (`/workspace/logo`, `/proxy/media`), PSK-signed
+/// ([RemoteControlCrypto.signProxyTarget]) then membership-checked. Origin is
+/// live `probeUri` (failover). Broker relay has no HTTP origin — callers fall
+/// back to initials/monograms.
 @immutable
 class RemoteMediaEndpoint {
   /// Creates a [RemoteMediaEndpoint].

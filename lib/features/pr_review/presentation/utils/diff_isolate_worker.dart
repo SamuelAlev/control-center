@@ -10,32 +10,13 @@ import 'package:control_center/shared/syntax/cc_shiki_theme.dart';
 import 'package:flutter/foundation.dart';
 import 'package:isolate_manager/isolate_manager.dart';
 
-/// Process-singleton pool of long-lived workers that parse + tokenize PR diffs
-/// in two passes (structure first, syntax tokens streamed in chunks).
+/// Process-singleton pool: two-pass PR diff parse + tokenize off the UI thread.
 ///
-/// Modeled on Pierre's diff pipeline. Pass 1 is cheap — `parseUnifiedDiff` on
-/// the patch text — and lets the canvas paint plain text + addition/deletion
-/// row backgrounds within ~one frame of opening a file. Pass 2 streams
-/// syntax-highlighted tokens back in chunks of [diffTokenChunkLines] lines so
-/// colour fades in progressively without blocking the UI.
-///
-/// The heavy compute runs off the main thread on **every** platform via
-/// [`isolate_manager`](https://pub.dev/packages/isolate_manager): real isolates
-/// on native, a generated `web/diffWorker.js` Web Worker on the web (desktop
-/// parity — the pre-migration web path ran inline on the main thread and janked
-/// large PRs). Everything crossing the boundary is a JSON **string**, because a
-/// Web Worker cannot transfer a Dart Map (isolate_manager issue #31). If the
-/// worker ever errors or fails to load, [enqueue] falls back to tokenizing on
-/// the main isolate so syntax highlighting is never lost. The pure compute
-/// pipeline + worker entrypoint live in `diff_worker_core.dart` (Flutter-free);
-/// this class owns the main-side pool, cache and streaming plumbing.
-///
-/// Each enqueued file gets a generation counter; bumping the generation cancels
-/// any pending or in-flight pass-2 chunks for that file.
-///
-/// The pool is also a [ChangeNotifier] — listeners are pinged whenever the
-/// per-worker backlog, the active-job map, or the LRU cache size changes, so
-/// a live UI indicator can mirror queue state in real time.
+/// Pass 1: structure (`parseUnifiedDiff`). Pass 2: tokens in
+/// [diffTokenChunkLines] chunks. Via `isolate_manager` (isolates / `diffWorker.js`);
+/// payloads are JSON strings (Workers cannot transfer Maps). Worker failure →
+/// main-isolate fallback. Generation per file cancels in-flight pass-2.
+/// [ChangeNotifier] for queue UI. Core in `diff_worker_core.dart`.
 class DiffWorkerPool extends ChangeNotifier {
   DiffWorkerPool._();
 
@@ -110,22 +91,13 @@ class DiffWorkerPool extends ChangeNotifier {
   int get cacheSize => _cache.length;
 
   /// LRU cache of completed pass-2 token results, keyed by
-  /// `{cacheKey}|{brightness}|{lang}|{patch fingerprint}`. Re-enqueuing the
-  /// same file returns the cached events synchronously (in the same microtask)
-  /// instead of spinning up worker work.
-  ///
-  /// The patch fingerprint is part of the key because tokens carry the TEXT
-  /// the painter draws: the same filename is routinely tokenized from
-  /// DIFFERENT patches (the PR "Files changed" diff vs the base branch, a
-  /// worktree diff vs the index, a re-diff after an edit landed). Without the
-  /// fingerprint those collide and a stale hit paints one patch's text under
-  /// another patch's line numbers.
-  ///
-  /// Only tokens are cached. Pass-1 structure is deliberately NOT retained
-  /// here: the sole consumer (`DiffStructureStore`) parses structure
-  /// synchronously itself and ignores worker `DiffRawLines` events, so
-  /// caching them would keep a second full copy of every file's patch text
-  /// resident for the whole session.
+  /// `{cacheKey}|{brightness}|{lang}|{patch fingerprint}`.
+  /// Re-enqueuing the same file returns the cached events synchronously (in the same
+  /// microtask) instead of spinning up worker work.
+  /// The patch fingerprint is part of the key because tokens carry the TEXT the painter
+  /// draws: the same filename is routinely tokenized from DIFFERENT patches (the PR "Files
+  /// changed" diff vs the base branch, a worktree diff vs the index, a re-diff after an edit
+  /// landed).
   final Map<String, _CachedResult> _cache = {};
   static const int _maxCacheEntries = 128;
 
@@ -543,7 +515,6 @@ class DiffError extends DiffEvent {
   final String message;
 }
 
-// ─── Main-isolate synchronous parse (no worker) ──────────────────────────────
 
 /// Pass-1: parses [patch] into the flat-column [DiffRawLines] structure.
 ///
@@ -588,7 +559,6 @@ DiffRawLines buildDiffRawLinesFromParsed(List<DiffLine> parsed) {
   );
 }
 
-// ─── Wire decoders (main-isolate side) ───────────────────────────────────────
 
 DiffTokensChunk _decodeTok(Map<String, dynamic> e) {
   final startIndex = e[DiffWire.startIndex] as int;
@@ -630,7 +600,6 @@ List<String> _strings(dynamic list) => [
   for (final v in (list as List)) v as String,
 ];
 
-// ─── Internals ─────────────────────────────────────────────────────────────
 
 @immutable
 class _CachedResult {

@@ -3,29 +3,11 @@ import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 
 /// Server-side resolution and storage of per-forge credentials.
 ///
-/// One workspace may hold repos on several forges, so there is no single "the
-/// token" any more: every forge-touching call resolves its credential through
-/// here, keyed by the forge of the repo it is acting on.
-///
-/// Every method takes an optional `userId`, and that argument is the whole
-/// model:
-///
-///  * **With a user** — the credential that BELONGS to them, minted by signing
-///    in or pasted by them. This is what an identity read ("am I connected?"),
-///    an agent run they started and a private asset they are looking at
-///    resolve through, so work is attributed to the human who asked for it.
-///  * **Without one** — the server acting as itself: its app installation
-///    token, then the server owner's own credential, then the environment.
-///    Webhooks, polling and sync have no caller, and having them silently ride
-///    on whichever human onboarded first is how forge access disappears when
-///    that person leaves.
-///
-/// The precedence inside each lane is fixed rather than configurable so that
-/// "I pasted a token and nothing changed" is never a supported outcome.
-///
-/// **Tokens never cross the RPC boundary.** [connections] is what clients see;
-/// [tokenFor] is server-internal. Implementations must not log a token or put
-/// one in an error message.
+/// Keyed by forge (one workspace may hold several). Optional `userId`: with a
+/// user → their credential (sign-in/paste); without → app install token, then
+/// server owner's, then environment (webhooks/pollers have no caller).
+/// Precedence is fixed. Tokens never cross the RPC boundary — [connections]
+/// for clients, [tokenFor] server-internal; never log a token.
 abstract interface class ForgeCredentialPort {
   /// The resolved token for [forge], or null when none is configured.
   ///

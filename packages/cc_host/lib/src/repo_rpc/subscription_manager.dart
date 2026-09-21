@@ -8,23 +8,12 @@ import 'package:cc_host/src/repo_rpc/repo_op_dispatcher.dart'
     show ServerOwnerResolver, WorkspaceRoleResolver;
 import 'package:cc_host/src/repo_rpc/watch_query.dart';
 
-/// Owns a session's live reactive subscriptions and proxies server-side
-/// repository `.watch()` streams to the client as `sub/snapshot` pushes.
+/// Session live subscriptions → `sub/snapshot` pushes (snapshot-only v1).
 ///
-/// Semantics (plan § Protocol):
-///  * `sub/subscribe {query, args}` → `{subscriptionId, rev:0}`, then an initial
-///    full snapshot and one per change (v1 is snapshot-only).
-///  * **Authoritative workspace** — a workspace-scoped query names its target
-///    in args; when [workspaceExists] is wired, an id the registry does not
-///    know is refused (sub/error, not-found) BEFORE the handler runs, because
-///    the handler opens that workspace's database and opening CREATES the
-///    file — an ungated stale id sprays empty ghost `workspace.db` files.
-///  * **Per-session cap** — rejects past [maxPerSession] live subscriptions.
-///  * **Workspace switch** — [invalidateAll] tears every subscription down with
-///    a `sub/error{workspace_changed}` so the client re-subscribes under the new
-///    workspace; no cross-workspace emission can leak.
-///  * Subscriptions are session-scoped: the client replays `sub/subscribe` on
-///    reconnect (the first emission is the reconciliation).
+/// Workspace-scoped queries: refuse unknown ids via [workspaceExists] before
+/// the handler runs (opening creates the file). Cap [maxPerSession].
+/// [invalidateAll] on workspace switch. Client replays `sub/subscribe` on
+/// reconnect.
 class SubscriptionManager {
   /// Creates a [SubscriptionManager].
   ///

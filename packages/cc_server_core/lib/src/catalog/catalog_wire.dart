@@ -267,25 +267,14 @@ Future<void> assertTicketInWorkspace(
   }
 }
 
-/// Builds the code-server workbench URL query that opens the conversation
-/// worktree [folderPath] (and, when [rawPath] names a file inside it, deep-links
-/// that file into an editor). code-server web reads `?folder=` / `?payload=`
-/// from `window.location` on load — the CLI positional folder/file are ignored
-/// once the workbench is served at the proxy root, so the folder + file must
-/// ride the URL or the editor opens on an empty window.
+/// Query that opens code-server on conversation worktree [folderPath]
+/// (and [rawPath] when it names a file inside). code-server web reads
+/// `?folder=` / `?payload=` from the URL; CLI positionals are ignored at the
+/// proxy root.
 ///
-/// The folder always opens. The file is best-effort: it is confined to the
-/// worktree (a `..` escape or an out-of-tree absolute path is dropped and the
-/// folder still opens) and encoded as an `openFile` payload against the
-/// `vscode-remote://remote` authority code-server web uses (see the workbench
-/// `remoteAuthority` in its bootstrap config). A malformed payload is ignored by
-/// the workbench, degrading to folder-only — never a hard failure.
-///
-/// When [line] is a positive 1-based line number, it is appended to the file
-/// URI as a `:<line>` suffix — the same `code -g file:line` convention the
-/// workbench parses via `parseLineAndColumnAware`. That parser only strips a
-/// trailing `:<number>` and otherwise keeps the whole path, so an unrecognised
-/// suffix degrades to opening the file at its top rather than failing.
+/// Folder always opens. File is best-effort: confined to the worktree (`..`
+/// / out-of-tree dropped); `openFile` payload on `vscode-remote://remote`.
+/// Positive 1-based [line] → `:<line>` suffix (`parseLineAndColumnAware`).
 String codeServerOpenQuery(String folderPath, String? rawPath, {int? line}) {
   final params = <String>['folder=${Uri.encodeQueryComponent(folderPath)}'];
   if (rawPath != null && rawPath.isNotEmpty) {
@@ -1130,22 +1119,13 @@ Map<String, dynamic> reactionToWire(MessageReactionsTableData r) => {
   'created_at': r.createdAt.toIso8601String(),
 };
 
-/// Maps a [Message] to the `MessageDto` wire shape (parent/space ids +
-/// compacted flag carried so the thread/timeline UI can rebuild the entity).
+/// Maps [Message] to `MessageDto` wire shape (parent/space ids + compacted).
 ///
-/// LIST emissions (every `messaging.watch*` subscription) pass
-/// `includeSegments: false`: the `metadata['segments']` transcript — the fat
-/// payload, potentially megabytes of tool outputs re-sent on every DB write —
-/// is elided and flagged (`segments_elided`). The client renders the answer
-/// from `content` immediately and pulls the full transcript once per message
-/// via `messaging.getMessageById` (finalized transcripts are immutable), or
-/// takes it live from the turn relay. One-shot reads keep the full shape.
-///
-/// An elided row also carries `segment_count`: how tall the turn will be once
-/// its transcript lands is the one thing the feed needs before it has one, and
-/// without it the list has to guess a height for every row it has not built —
-/// which is what makes a scrollbar thumb jump under the cursor. It costs an
-/// integer against a payload measured in megabytes.
+/// List `messaging.watch*` passes `includeSegments: false`: elides the fat
+/// `metadata['segments']` transcript (`segments_elided`); client pulls full
+/// via `messaging.getMessageById` or the turn relay. One-shot reads keep full.
+/// Elided rows carry `segment_count` so the feed can size rows before the
+/// transcript lands (avoids scrollbar jump).
 Map<String, dynamic> messageToWire(Message m, {bool includeSegments = true}) {
   var metadata = m.metadata;
   if (!includeSegments && metadata != null) {
@@ -1298,20 +1278,10 @@ List<EntityRef>? entityRefsFromWire(Object? raw) {
   return out;
 }
 
-/// Decodes the `dispatch.sendAndDispatch` `metadata` arg down to the ONE key a
-/// client is allowed to author: `attachments`.
-///
-/// A message's metadata is otherwise server-written — `mentions` are resolved
-/// here, `entityRefs` are decoded from their own argument, `chat` is the
-/// bridge's provenance stamp and an `ask_user` answer resumes a blocked run —
-/// so accepting a client's map verbatim would let any member forge all four.
-/// Attachments are different in kind: they describe bytes the caller just
-/// uploaded, and nobody else can know them.
-///
-/// Entries are re-serialized through [MessageAttachment] rather than passed
-/// along, so the row carries the shape this server understands (and a malformed
-/// entry is dropped rather than stored). Returns null when nothing survives, so
-/// the port's own "no metadata" path applies.
+/// Decodes `dispatch.sendAndDispatch` `metadata` to the one client-authored
+/// key: `attachments`. Other metadata is server-written (forging risk).
+/// Re-serialized through [MessageAttachment]; malformed entries dropped.
+/// Null when nothing survives.
 Map<String, dynamic>? userMessageMetadataFromWire(Object? raw) {
   if (raw is! Map) {
     return null;
@@ -1678,7 +1648,6 @@ VoiceProfile voiceProfileFromWire(Map<String, dynamic> w) {
   );
 }
 
-// ---- Meetings wire helpers ----
 //
 // Meetings are workspace-scoped at the repository. Enums travel as `.name`,
 // timestamps as ISO-8601 and the speaker embedding as a raw `List<double>`.
@@ -1827,7 +1796,6 @@ Map<String, dynamic> meetingActionItemStatsToWire(
     entry.key: {'total': entry.value.total, 'done': entry.value.done},
 };
 
-// ---- Calendar wire helpers ----
 //
 // The calendar feature is workspace-scoped at the repository (the per-workspace
 // Google account, not id uniqueness, is the isolation boundary). The thin
@@ -1847,19 +1815,9 @@ Map<String, dynamic> calendarAttendeeToWire(CalendarAttendee a) => {
   'organizer': a.organizer,
 };
 
-/// Whether a space's repo selection actually moved, in the encoding both
-/// `messaging.createSpace` and `messaging.setSpaceRepos` speak: `null` → every
-/// workspace repo, an empty list → explicitly none, a list → those ids.
-///
-/// Order is not part of the selection (the join rows carry no ordering the
-/// picker preserves), so the comparison is by SET — otherwise re-saving the
-/// same repos in a different checkbox order would re-provision the space.
-///
-/// `null` is deliberately never equated with a list, even one naming exactly
-/// today's workspace repos: the two disagree about the FUTURE (a repo linked
-/// to the workspace later follows a `null` space and not a pinned one), and
-/// resolving that here would mean reading the repo list to answer a question
-/// whose wrong answer only costs one idempotent re-provision.
+/// Whether a space's repo selection moved: `null` → every workspace repo,
+/// `[]` → none, else those ids. Compared as a SET (order ignored).
+/// `null` is never equal to a list — they disagree about future links.
 bool spaceReposChanged(List<String>? before, List<String>? after) {
   if (before == null || after == null) {
     return (before == null) != (after == null);
@@ -1937,7 +1895,6 @@ Map<String, dynamic> calendarSourceToWire(CalendarSource s) => {
 List<String> stringListArg(Object? arg) =>
     (arg as List?)?.whereType<String>().toList() ?? const [];
 
-// ---- PR lifecycle wire helper ----
 //
 // `PullRequests` is workspace-scoped. The wire shape stamps the AUTHORITATIVE
 // `workspace_id` (host→client only — never accepted as a client arg) so the
@@ -1957,7 +1914,6 @@ Map<String, dynamic> prGenerationToWire(PrGeneration p) => {
   'branch': ?p.branch,
 };
 
-// ---- Activity-log wire helper ----
 //
 // The `activity_log` table is workspace-scoped. The thin client only READS the
 // audit trail for one entity, so only the entity → wire direction is mapped here
@@ -2381,7 +2337,6 @@ Orchestration orchestrationFromWire(Map<String, dynamic> w) => Orchestration(
       : null,
 );
 
-// ---- Plan Studio wire helpers (PRD 17) ----
 
 /// Maps an [OrchestrationRevision] snapshot to its wire shape.
 Map<String, dynamic> orchestrationRevisionToWire(OrchestrationRevision r) => {
@@ -2408,7 +2363,6 @@ Map<String, dynamic> planDocumentToWire(PlanDocument d) => {
   'updated_at': d.updatedAt.toIso8601String(),
 };
 
-// ---- Work product / artifact wire helpers (PRD 09 + artifacts) ----
 //
 // The client had NO path to work products at all: the subsystem was complete
 // server-side and unreachable, so an agent-published artifact could not be
@@ -2456,7 +2410,6 @@ Map<String, dynamic> playbookToWire(Playbook p) => {
   'updated_at': p.updatedAt.toIso8601String(),
 };
 
-// ---- PR review wire helpers ----
 //
 // The PR-review surface is per-`(owner, repo)` rather than purely
 // workspace-scoped: the host binds the workspace per session, but the GitHub
@@ -2744,19 +2697,9 @@ Map<String, dynamic> prReviewerCandidateToWire(PrReviewerCandidate c) => {
   'avatar_url': ?c.avatarUrl,
 };
 
-/// Whether [error] is GitHub refusing an inline review comment because its
-/// anchor is not part of the pull request's diff.
-///
-/// GitHub answers a 422 whose `errors[].field` is
-/// `pull_request_review_thread.path` (the file is not among the changed files)
-/// or `pull_request_review_thread.line` (the file changed, but that line is not
-/// in a hunk). Both mean the same thing to a reviewer — the comment has nowhere
-/// to hang — and neither is retryable, so they are reported apart from the
-/// failures that are.
-///
-/// Matched on the `pull_request_review_thread.` prefix rather than the message
-/// text, which is prose GitHub is free to reword. A 422 from anything else on
-/// this endpoint (a malformed body, a stale `commit_id`) is still a failure.
+/// Whether [error] is GitHub 422 because the inline comment anchor is outside
+/// the PR diff (`pull_request_review_thread.path` / `.line`). Matched on that
+/// field prefix (not message text). Other 422s stay failures.
 bool isOutOfDiffAnchorRejection(Object error) {
   if (error is! NetworkException || error.statusCode != 422) {
     return false;
@@ -2797,19 +2740,9 @@ typedef OpenPrListFetcher =
       String? workspaceId,
     });
 
-/// Returns the SERVER's authenticated GitHub user (`{login, avatar_url, name}`
-/// wire map) or null. Lets a thin client resolve the current user (its `login`
-/// drives review filters, attribution and the "review-requested:@me" dashboard)
-/// without holding a token. Null when the server has no gh token.
-/// The GitHub account of the user identified by [actingUserId].
-///
-/// Every fetcher in this group answers a question whose truth depends on WHO IS
-/// ASKING ("who am I", "what am I in", "what wants me", "what have I done"), so
-/// each one names the acting principal — `RepoOpContext.userId`, the
-/// authenticated session's user, never anything the client supplied. They used
-/// to take no argument at all and answer for a single process-wide "the server
-/// user", which made the server hold an opinion about which human it belongs
-/// to: a second member asking "who am I" was told they were the first one.
+/// GitHub account for [actingUserId] (`{login, avatar_url, name}`), or null.
+/// Who-am-I surfaces must name the session user (`RepoOpContext.userId`),
+/// never a client-supplied id or a process-wide "server user".
 typedef CurrentGitHubUserFetcher =
     Future<Map<String, dynamic>?> Function(String actingUserId);
 

@@ -37,15 +37,11 @@ ReachabilityResolver resolverWith({
   );
 }
 
-/// Regression for the web-to-local-server case: a web client pointing at a
-/// `cc_server` on the same machine used to throw `NoReachablePathException`
-/// with an *empty* failure list, because `ReachabilityResolver.usablePaths`
-/// dropped the server's loopback path — first unconditionally on web, then
-/// whenever the page itself was not served from loopback, which still failed a
-/// deployed `https://` page talking to a server on that same machine. Loopback
-/// is potentially trustworthy in browsers (not mixed content from an `https`
-/// page) and a *foreign* machine's loopback is rejected by `probePath`'s
-/// `serverId` check, so the page origin is the wrong thing to filter on.
+/// Regression for the web-to-local-server case: a web client pointing at a `cc_server` on
+/// the same machine used to throw `NoReachablePathException` with an *empty* failure list,
+/// because `ReachabilityResolver.usablePaths` dropped the server's loopback path — first
+/// unconditionally on web, then whenever the page itself was not served from loopback,
+/// which still failed a deployed `https://` page talking to a server on that same machine.
 void main() {
   ConnectionDescriptor descriptor(List<ConnectionPath> paths) =>
       ConnectionDescriptor(
@@ -366,11 +362,9 @@ void main() {
     );
   });
 
-  // ---------------------------------------------------------------------------
   // connect — probes every path, then dials the best reachable one. With all
   // paths unreachable at probe time, it throws NoReachablePathException. A
   // reachable-but-unconnectable path adds a connect failure and moves on.
-  // ---------------------------------------------------------------------------
 
   group('connect', () {
     test(

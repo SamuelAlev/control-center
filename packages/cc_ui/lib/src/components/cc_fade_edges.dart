@@ -1,26 +1,8 @@
 import 'package:flutter/widgets.dart';
 
-/// Fades the edges of its child *unconditionally* — a static treatment for
-/// content cropped by design (a preview, a marquee, a truncated row).
-///
-/// For a scrollable, use [CcScrollArea] instead: it shows each edge hint only
-/// while content actually remains beyond that edge, where this static fade
-/// falsely signals "more content" even when the list sits at the very top or
-/// bottom.
-///
-/// Wraps [child] in an alpha-only [ShaderMask]. Because the mask is pure alpha
-/// ([BlendMode.dstIn]) it works identically in light and dark mode — no theme
-/// awareness required.
-///
-/// By default both the start and end edges fade. For one-sided hints (a common
-/// choice — once a user has scrolled, they only need to know there is more in
-/// one direction) set [fadeStart] or [fadeEnd] to `false`.
-///
-/// ```dart
-/// CcFadeEdges(
-///   child: ListView(children: items),
-/// )
-/// ```
+/// Unconditionally fades child edges (static crop treatment). For scrollables
+/// use [CcScrollArea] instead. Alpha-only [ShaderMask] ([BlendMode.dstIn]).
+/// Default both edges; set [fadeStart]/[fadeEnd] false for one-sided hints.
 class CcFadeEdges extends StatelessWidget {
   /// Creates a [CcFadeEdges].
   const CcFadeEdges({

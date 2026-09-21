@@ -172,25 +172,10 @@ abstract class ReviewRunSnapshotRepository {
     int limit = 200,
   });
 
-  /// Applies a human's status decision back onto every recorded pass that
-  /// reported [nodeMessageId], recomputing that pass's counters.
-  ///
-  /// Without this a status change reaches nothing that matters. A pass is
-  /// finalized once and its fingerprints freeze the statuses as they stood at
-  /// that instant — but a person marks a finding fixed AFTER reading the
-  /// review, which is the only order this ever happens in. So `actionRate`
-  /// (the share of findings someone actually fixed, and the one number that
-  /// says whether running the review is worth it) would stay structurally
-  /// zero, and [dismissedFindingTitles] — the workspace's record of what it
-  /// does not want to be told again — would never see a dismissal either.
-  ///
-  /// Scoped to one pull request rather than the workspace: a message id is
-  /// unique, and scanning every pass in the workspace to find one row is work
-  /// with no upside.
-  ///
-  /// Returns how many passes were rewritten (0 when the finding predates any
-  /// finalized pass, which is not an error — reviewers file findings before
-  /// the pass that summarizes them ends).
+  /// Applies a human status decision onto every pass that reported
+  /// [nodeMessageId], recomputing counters (`actionRate`,
+  /// [dismissedFindingTitles]). Scoped to one PR. Returns passes rewritten
+  /// (0 if the finding predates any finalized pass — not an error).
   Future<int> applyFindingStatus(
     String workspaceId,
     String prExternalId,

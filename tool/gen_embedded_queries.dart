@@ -1,19 +1,6 @@
-// Regenerates packages/cc_natives/lib/src/code_index/embedded_queries.dart
-// from the canonical tree-sitter queries in scripts/natives/queries/*.scm.
-//
-// Usage (from the repo root):
-//   fvm dart run tool/gen_embedded_queries.dart
-//
-// Same discipline as build_runner / tool/gen_workers.sh: edit the .scm, run
-// the generator, commit both. test/tooling/embedded_queries_test.dart fails
-// CI whenever the generated Dart drifts from the .scm files, so forgetting to
-// regenerate (or to add a new language) cannot merge.
-//
-// Why embed at all: `dart build cli` only bundles `bin/` + `lib/` (dynamic
-// libraries); the experimental data-assets hook protocol is not yet supported
-// by the CLI, so a loose .scm cannot ride inside the server binary's bundle.
-// Compiling the queries in keeps both hosts (desktop and cc_server)
-// self-contained with zero data files to stage.
+// Embeds tree-sitter `.scm` queries into Dart (`dart build cli` cannot bundle
+// loose data assets). Edit `.scm`, regenerate, commit both; CI byte-diffs.
+// Usage: fvm dart run tool/gen_embedded_queries.dart
 
 import 'dart:io';
 

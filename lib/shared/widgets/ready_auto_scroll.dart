@@ -2,28 +2,14 @@ import 'package:control_center/shared/widgets/auto_scroll/auto_scroll.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 
-/// Drop-in [AutoScroll] replacement that survives asynchronously-loading
-/// content and mid-attach scroll positions.
-///
-/// Our vendored [AutoScroll] reads `controller.position.maxScrollExtent`
-/// from a post-frame callback in `initState`. That call has two failure
-/// modes:
-///
-/// 1. **Empty content.** For scrollables whose extent only appears after a
-///    Riverpod async load (PR detail diff, PR list, newsfeed grid, file
-///    tree), the one-shot check sees `maxScrollExtent == 0` and middle-click
-///    stays permanently disabled.
-/// 2. **Mid-attach position.** During route transitions or when more than
-///    one widget has attached the controller, the call either throws
-///    `Null check operator used on a null value` (content dimensions not yet
-///    applied) or trips the `ScrollController attached to multiple scroll
-///    views` assertion.
-///
-/// To avoid both we never mount [AutoScroll] until we've actually observed
-/// a [ScrollMetricsNotification] with a non-zero extent and exactly one
-/// position attached to the controller — by then the scrollable is laid out
-/// and safe to probe. Until then we render the child directly so middle-
-/// click is simply inert (instead of crashing the subtree).
+/// Drop-in [AutoScroll] replacement that survives asynchronously-loading content and
+/// mid-attach scroll positions.
+/// Empty content. For scrollables whose extent only appears after a
+/// one widget has attached the controller, the call either throws `Null check operator used
+/// on a null value` (content dimensions not yet applied) or trips the `ScrollController
+/// attached to multiple scroll views` assertion.
+/// To avoid both we never mount [AutoScroll] until we've actually observed a
+/// [ScrollMetricsNotification] with a non-zero extent and exactly one position attached to
 class ReadyAutoScroll extends StatefulWidget {
   /// Creates a [ReadyAutoScroll].
   const ReadyAutoScroll({

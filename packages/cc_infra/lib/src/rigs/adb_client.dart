@@ -62,20 +62,11 @@ class AdbScreenSegment {
 
 /// Drives one Android device over ADB.
 ///
-/// The mobile surface's control space. Every method shells out to `adb`
-/// with an explicit `-s <serial>`: an emulator host commonly has more than one
-/// device attached, and an unqualified `adb shell` picks whichever one ADB
-/// feels like, which is how you tap the wrong phone. The serial is fixed at
-/// construction and [ensureReady] re-checks it before every action, so a
-/// device that is swapped or unplugged mid-session is named rather than
-/// silently replaced by its neighbour.
-///
-/// **Egress honesty:** unlike the QEMU surfaces, this one does NOT get a
-/// deny-by-default NIC in Tier 1. The Android emulator manages its own
-/// networking and `-http-proxy` only covers traffic that honours a proxy, so
-/// an app using raw sockets reaches the internet. Real enforcement arrives
-/// with the Tier 2 worker (redroid/Cuttlefish behind tap + nftables). The
-/// capability layer says so rather than implying parity.
+/// Every method uses `-s <serial>` fixed at construction; [ensureReady]
+/// re-checks before each action so a swapped device is named, not silently
+/// replaced. Egress is not deny-by-default here: the emulator owns networking
+/// and `-http-proxy` only covers proxy-aware traffic — capability UI says so
+/// rather than implying QEMU parity.
 class AdbClient {
   /// Creates an [AdbClient] for [serial] using the `adb` at [adbPath].
   ///

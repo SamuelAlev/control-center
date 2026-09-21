@@ -1,23 +1,8 @@
 #!/usr/bin/env bash
-# Writes the THIRD-PARTY-LICENSES.txt a packaged artifact carries.
 #
-# Usage:
-#   bash scripts/release/gen_third_party_licenses.sh <role> <out-file>
+# Writes THIRD-PARTY-LICENSES.txt from scripts/lib/third_party.sh.
+# Usage: scripts/release/gen_third_party_licenses.sh
 #
-#   role      desktop | server  — which component set the artifact ships
-#   out-file  where to write (the packagers put it beside the app / in the
-#             archive root)
-#
-# The component table is scripts/lib/third_party.sh; the license texts live in
-# third_party/licenses/. Nothing is fetched: a signed artifact must not depend
-# on a network read at package time, and the Linux release job blocks egress
-# anyway.
-#
-# WHY THIS EXISTS. Control Center itself is MIT, but the artifacts redistribute
-# a dozen third-party components — and one of them, libmp3lame, is LGPL-2.1 and
-# STATICALLY linked. MIT/BSD/Apache all require their notice to travel with the
-# binary; LGPL-2.1 section 6 additionally requires that a recipient be able to
-# relink. Shipping only the app's own LICENSE satisfied none of that.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

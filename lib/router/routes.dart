@@ -22,7 +22,6 @@ final rootNavigatorKey = GlobalKey<NavigatorState>();
 /// The go_router path-parameter name carrying the active workspace id. Pass this to any route builder to obtain its `:workspaceId` *pattern* form.
 const String workspaceIdParam = ':workspaceId';
 
-// ─── Pre-context routes (no workspace prefix) ─────────────────────────────────
 
 /// Loading screen shown while we figure out whether onboarding is complete.
 const String splashRoute = '/splash';
@@ -39,7 +38,6 @@ const String signedOutRoute = '/signed-out';
 /// Workspaces list / picker. Full-screen (outside the workspace shell) — it is where the user chooses or creates the workspace whose context everything else runs in.
 const String workspaceListRoute = '/workspaces';
 
-// ─── Workspace shell ──────────────────────────────────────────────────────────
 
 /// The bare workspace root. Redirects to that workspace's inbox.
 String workspaceRoot(String workspaceId) => '/workspaces/$workspaceId';
@@ -153,7 +151,6 @@ String newsfeedRoute(String workspaceId) => '/workspaces/$workspaceId/newsfeed';
 String newsfeedArticleRoute(String workspaceId, String articleId) =>
     '/workspaces/$workspaceId/newsfeed/article/$articleId';
 
-// ── Settings ────────────────────────────────────────────────────────────────
 //
 // Settings paths are namespaced by SCOPE — `you/`, `workspace/`, `server/` —
 // because the question an operator asks of a setting is "who does changing this
@@ -373,7 +370,6 @@ String calendarRoute(String workspaceId) => '/workspaces/$workspaceId/calendar';
 String calendarDetailRoute(String workspaceId, String id) =>
     '/workspaces/$workspaceId/calendar/$id';
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 /// Maps a concrete in-shell location to the *logical* route that keybinding `when` clauses and `scope`s are written against (they predate the/ `/workspaces/:id` prefix).
 /// For example `/workspaces/ws-1/tickets/42` → `/tickets/42`. Non-workspace locations (`/onboarding`, the `/workspaces` picker) pass through unchanged.

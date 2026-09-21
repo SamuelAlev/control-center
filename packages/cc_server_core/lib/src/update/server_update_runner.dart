@@ -14,38 +14,13 @@ typedef UpdateHttpGet = Future<(int, List<int>)> Function(Uri uri);
 /// streams to disk instead of being accumulated in memory twice.
 typedef UpdateHttpDownload = Future<int> Function(Uri uri, File destination);
 
-/// Runs `cc_server update` — the standalone-server self-update flow.
+/// Runs `cc_server update` (opt-in command; never a timer).
 ///
-/// Opt-in by construction (a command, never a background timer) and never
-/// silent: without `--apply` it only *checks for, downloads and verifies* a
-/// newer release into a staging directory **next to the install** (never
-/// inside `--data-dir`, which must survive updates untouched); `--apply`
-/// performs the swap and prints "restart the process".
-///
-/// Invariants (from the auto-update spec):
-///  * **Verify before exec.** The archive's SHA-256 must match the release's
-///    `SHA256SUMS.txt` and when the `gh` CLI is available the SLSA
-///    attestation is verified too. A missing checksums file is a hard refusal.
-///  * **Whole artifact, never the binary alone.** Natives are boot-required
-///    and ABI-coupled, so the unit of update is the whole extracted archive
-///    layout (`bin/` + natives + optional code-server).
-///  * **Never replace a running server.** `--apply` probes the configured
-///    port's `/healthz`; any live server answering there (let alone one with
-///    open sessions) is a refusal unless `--force`, which is documented as
-///    "you will drop clients".
-///  * **Never move backwards by accident.** The latest published release is
-///    ORDERED against this build, not merely compared for equality; an older
-///    release is refused unless `--allow-downgrade`.
-///  * **Windows swaps differently.** Windows refuses to rename a directory
-///    containing the running image, so there the live `cc_server.exe` is
-///    parked as `.old` and the verified tree is overlaid in place — see
-///    `_applyWindows`.
-///  * Managed installs refuse instead of fighting their manager: the
-///    desktop-embedded binary (spawned with the `CC_EMBEDDED` env), a source
-///    checkout (`dart run`) and a Docker container (prints the `docker
-///    pull` line instead) all no-op with an explanatory line.
-///  * One previous tree is kept as `<install>.bak` for rollback; older `.bak`
-///    trees are removed so repeated updates cannot accumulate.
+/// Without `--apply`: download+verify into staging next to the install (never `--data-dir`).
+/// With `--apply`: swap and print restart. Verify SHA-256 (+ SLSA via `gh` when available) before exec;
+/// update the whole archive layout; refuse a live `/healthz` unless `--force`; refuse older releases
+/// unless `--allow-downgrade`. Windows overlays in place (`_applyWindows`). Embedded/`dart run`/Docker
+/// refuse. Keeps one `<install>.bak`.
 class ServerUpdateRunner {
   /// Creates a runner. [log] receives every human-facing line (CLI stdout or
   /// a test collector); [probeUri] is the healthz endpoint a live server on

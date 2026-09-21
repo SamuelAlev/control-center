@@ -3,27 +3,11 @@ import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_domain/features/mcp/domain/value_objects/mode_tool_policy.dart';
 
-/// MCP-layer guard consulted by the dispatcher to enforce per-mode tool
-/// allow-lists.
+/// MCP-layer per-mode tool allow-list guard (keys off `spaces.mode`).
 ///
-/// Replaces the original `ReviewSpaceToolGuard`, which keyed off the
-/// `review_spaces` association table. The new shape keys off the
-/// `spaces.mode` column so the guard generalizes to plan mode (and any
-/// future mode) without needing a separate join table.
-///
-/// **Server-authoritative mode resolution.** The guard never trusts a
-/// client-supplied `space_id` as the sole authority: when a call omits one
-/// it falls back to the calling agent's *active run* (resolved from the DB via
-/// [AgentRunLogRepository]) to recover the conversation it is working in.
-/// Without this, an agent in review/plan mode could escape its restrictions by
-/// simply not passing `space_id`.
-///
-/// **Maintenance note:** the allow-lists themselves live in [ModeToolPolicy]
-/// (pure data, shared with the built-in harness registry so the two paths
-/// cannot diverge). When adding a new mutating MCP tool, decide whether it
-/// belongs in `ModeToolPolicy.reviewAllowed` / `planAllowed` /
-/// `orchestrateAllowed`. The default is "no" — the absence of an entry means
-/// the tool is rejected in that mode.
+/// Mode is server-authoritative: missing `space_id` falls back to the agent's
+/// active run via [AgentRunLogRepository]. Allow-lists live in [ModeToolPolicy]
+/// (shared with the harness); new mutating tools default to denied.
 class ModeToolGuard {
   /// Creates a new [ModeToolGuard].
   ModeToolGuard(this._resolver, {this._runLogs});

@@ -104,9 +104,7 @@ Future<Map<String, dynamic>> _readJson(HttpClientResponse response) async {
 }
 
 void main() {
-  // ---------------------------------------------------------------------------
   // Lifecycle & state tests (no real server needed for most)
-  // ---------------------------------------------------------------------------
   group('lifecycle', () {
     test('isRunning starts false', () {
       final server = McpHttpServer(port: 8421, dispatcher: _FakeDispatcher());
@@ -156,9 +154,7 @@ void main() {
     });
   });
 
-  // ---------------------------------------------------------------------------
   // HTTP integration tests (real server on real port)
-  // ---------------------------------------------------------------------------
   group('HTTP integration', () {
     // Each test gets a unique port via an incrementing counter to avoid
     // TIME_WAIT collisions on macOS.

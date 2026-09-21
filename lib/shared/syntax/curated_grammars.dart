@@ -1,22 +1,10 @@
-// The curated eager grammar tier: the ~50 languages that cover day-to-day
-// fences, tool bodies and PR diffs. This is the FULL grammar surface on web
-// until a deferred pack loads (grammar_registry_web.dart) and the full
-// surface of the web-compiled diff worker (worker_grammars_web.dart). Native
-// builds don't use it — they index `CodeLanguages.all`.
-//
-// Uses only the public `CodeLanguages` members, so each reference pulls in
-// exactly that grammar (plus its embedded dependencies) and the other ~200
-// tree-shake away.
-//
-// DELIBERATE EXCLUSIONS — the mega-embedders: `markdown`/`mdx` statically
-// reference ~57 embedded grammars, `vue`/`svelte`/`astro` ~25 each. One
-// reference would drag the whole dependency tree into every web bundle and
-// the worker JS. On web they arrive via the deferred packs instead; markdown
-// fences *inside* CC markdown are extracted and highlighted per-fence by
-// cc_markdown anyway, so the missing `markdown` grammar only affects diffs
-// of .md files on web (plain text, same as today's hljs rendering of them).
-//
-// FLUTTER-FREE ON PURPOSE: imported by the diff worker core (dart compile js).
+// The curated eager grammar tier: the ~50 languages that cover day-to-day fences, tool
+// bodies and PR diffs.
+// This is the FULL grammar surface on web until a deferred pack loads
+// (grammar_registry_web.dart) and the full surface of the web-compiled diff worker
+// (worker_grammars_web.dart).
+// Uses only the public `CodeLanguages` members, so each reference pulls in exactly that
+// grammar (plus its embedded dependencies) and the other ~200 tree-shake away.
 
 import 'package:shiki_flutter/langs.dart';
 

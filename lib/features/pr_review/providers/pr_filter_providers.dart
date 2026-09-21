@@ -465,7 +465,7 @@ List<PullRequest> applyFilters(
   ];
 }
 
-/// The operator's login **on the forge currently in view**, lowercased. Empty
+/// The operator's login on the forge currently in view, lowercased. Empty
 /// when no identity has resolved for it.
 ///
 /// There is no single "current login" any more: the same human is `octocat` on

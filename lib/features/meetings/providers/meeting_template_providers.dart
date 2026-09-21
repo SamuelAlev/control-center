@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// All meeting-note templates for the ACTIVE workspace = the built-in presets
 /// followed by that workspace's custom templates.
 ///
-/// **Workspace-scoped**: the templates (and the active one) shape summaries for
+/// Workspace-scoped: the templates (and the active one) shape summaries for
 /// meetings that live in the workspace's own database, so every member must see
 /// the same set — they are stored in `workspace_settings` (admin-gated writes,
 /// watched live) rather than in device-local preferences, which is where they

@@ -1,23 +1,9 @@
 #!/usr/bin/env bash
 #
-# Packages the built Linux app into a portable AppImage (+ a raw .tar.gz):
-#   1. copies the staged native .so files into the bundle's lib/ (matches the
-#      $ORIGIN/lib RPATH + the loaders' <exeDir>/lib candidate),
-#   2. tars the raw bundle as a fallback artifact,
-#   3. assembles a Type-2 AppDir and runs appimagetool and
-#   4. writes SHA-256 checksums.
+# Packages the Linux desktop app with embedded cc_server + staged natives.
+# Verifies REQUIRED natives before archive.
+# Usage: scripts/release/linux_package.sh <version>
 #
-# Expects `flutter build linux --release` to have run and the native libs to be
-# staged in build/natives/ (see scripts/natives/build_natives.sh, or the verify
-# gate fails).
-#
-# Environment:
-#   VERSION   release version, e.g. 1.0.0 (required; or pass as $1)
-#   ARCH      AppImage arch tag (default: x86_64)
-#   NATIVES   staged natives dir (default: build/natives)
-#
-# Usage:
-#   VERSION=1.0.0 scripts/release/linux_package.sh
 set -euo pipefail
 
 REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"

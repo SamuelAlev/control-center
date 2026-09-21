@@ -277,26 +277,11 @@ class SmolvmWorktreeTransport implements WorktreeTransport {
 
 /// Moves a repository between the host worktree and a rig's guest.
 ///
-/// **The host worktree is authoritative; the guest copy is a satellite.** That
-/// is the whole design in one sentence, and it is what stops the in-VM
-/// terminal from quietly becoming a scratch copy: a commit made inside the rig
-/// is not real until it lands back on the host, and this class is the only
-/// thing that lands it.
-///
-/// Direction by direction:
-///
-///  * **In** ([syncIn]) — a tar of the worktree streamed into the guest at
-///    boot. Fast, simple, and it does not require the guest to know anything
-///    about the host's filesystem.
-///  * **Out** ([writeBack]) — `git bundle` of everything the guest committed,
-///    streamed back and fetched into the host repository under a
-///    `refs/rigs/<rigId>/*` namespace. A FETCH, never a push and never a
-///    checkout: the operator's working tree and current branch are theirs, and
-///    a rig must not be able to move either. The commits arrive, are visible
-///    in the log, and merging them is a human decision.
-///  * **Uncommitted work** ([diffOut]) — a plain `git diff` fetched as text so
-///    the UI can show it before anything is applied. Nothing writes to the
-///    host worktree without a person asking.
+/// The host worktree is authoritative; the guest copy is a satellite. In
+/// ([syncIn]): tar stream into the guest. Out ([writeBack]): `git bundle`
+/// fetched under `refs/rigs/<rigId>/*` — never a push or checkout. Uncommitted
+/// ([diffOut]): plain `git diff` as text for the UI; nothing writes the host
+/// worktree without a person asking.
 class WorktreeSync {
   /// Creates a [WorktreeSync] over SSH, for the guest reachable on [sshPort]
   /// with [privateKeyPath] (QEMU rigs).
@@ -470,20 +455,11 @@ class WorktreeSync {
 
   /// Strips embedded credentials out of the COPY of `.git/config` in the guest.
   ///
-  /// A remote can be stored as `https://user:token@host/org/repo.git`, and
-  /// `.git/config` has to travel (the guest needs its branches and remotes),
-  /// so it cannot simply be excluded the way `.git-credentials` is. The token
-  /// half can: the guest's own push credentials come from the loopback broker
-  /// per operation, so a userinfo segment inherited from the host buys nothing
-  /// there and is a durable secret sitting in a machine an agent drives.
-  ///
-  /// Also drops any inherited `credential.helper`: on the host it names a
-  /// store this sync deliberately did not copy, so in the guest it is at best
-  /// a no-op and at worst a path back to one.
-  ///
-  /// Best effort by design — a worktree whose `.git` is a FILE (the
-  /// `git worktree` backend) has no `.git/config` at all, and a failure here
-  /// must not fail a sync that otherwise succeeded.
+  /// Remotes may be `https://user:token@…`; config must travel but userinfo
+  /// must not — guest pushes use the loopback broker. Also drops inherited
+  /// `credential.helper` (names a store this sync did not copy). Best-effort:
+  /// a `git worktree` `.git` file has no config, and failure must not fail
+  /// an otherwise-successful sync.
   Future<void> _scrubGuestGitCredentials() async {
     const sed =
         r"sed -i -E 's#(url[[:space:]]*=[[:space:]]*"

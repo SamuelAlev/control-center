@@ -80,7 +80,6 @@ void showTicketContextMenu({
   overlay.insert(entry);
 }
 
-// ── Entry model ──────────────────────────────────────────────────────────────
 
 sealed class _MenuEntry {
   const _MenuEntry();
@@ -118,7 +117,6 @@ class _MenuDivider extends _MenuEntry {
   const _MenuDivider();
 }
 
-// ── Entry assembly ───────────────────────────────────────────────────────────
 
 List<_MenuEntry> _buildEntries({
   required BuildContext context,
@@ -404,7 +402,6 @@ Future<void> _confirmDelete(
   }
 }
 
-// ── Overlay widget ───────────────────────────────────────────────────────────
 
 /// Width of a menu panel. Submenus flip to the other side when there isn't
 /// room for two panels side by side.

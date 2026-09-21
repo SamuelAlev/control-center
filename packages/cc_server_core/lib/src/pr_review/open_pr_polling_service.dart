@@ -91,26 +91,10 @@ class _WorkspacePollState {
   DateTime? lastSweepAt;
 }
 
-/// Polls GitHub for every workspace's open pull requests and turns changes
-/// into live updates — the "smart polling" freshness driver behind the PR
-/// surfaces (webhooks are deliberately not relied on: this server may run with
-/// no public URL at all).
+/// Polls open PRs per workspace (no webhook dependency) and pushes live updates.
 ///
-/// Design:
-///  - **Cheap change detection.** Each sweep probes every linked repo's open-PR
-///    list with a conditional request ([GitHubPrClient.probeOpenPullRequests]);
-///    GitHub's 304 answers are rate-limit-free, so the fast cadence costs
-///    almost nothing while nothing changes.
-///  - **Fetch on change only.** A changed probe (or an explicit refresh) runs
-///    the enriched GraphQL batch, diffs the new snapshot against the previous
-///    one, persists it to the `caches` table (whose Drift watch feeds
-///    `pr.watchOpenForWorkspace` — that's the push to every connected client),
-///    emits [ExternalPrDetected] / [PullRequestStatusChanged] domain events,
-///    and publishes [PrChangeSignal]s so open PR-detail streams re-validate.
-///  - **Interest-scaled cadence.** Workspaces with active list watchers sweep
-///    every [fastInterval] (plus a checks-only pass every [checksEvery] ticks —
-///    CI state doesn't move list ETags); workspaces nobody is watching fall
-///    back to [idleInterval] so notifications stay fresh without UI-grade cost.
+/// Conditional list probes ([GitHubPrClient.probeOpenPullRequests]); fetch+diff+persist+events only on change.
+/// Active watchers use [fastInterval] (+ checks every [checksEvery]); idle workspaces use [idleInterval].
 class OpenPrPollingService {
   /// Creates an [OpenPrPollingService].
   OpenPrPollingService({
@@ -862,33 +846,11 @@ class OpenPrPollingService {
   /// That collision is the whole reason [_carryEnrichmentForward] exists.
   static const String _unreadEnrichment = 'none';
 
-  /// Merges one pull request's freshly fetched wire map with what the previous
-  /// snapshot knew, so an enrichment this sweep could not read is never
-  /// persisted as if the forge had answered it.
+  /// Merges fresh PR wire with the previous snapshot so unread enrichment is not persisted as forge truth.
   ///
-  /// `checks_status` and `review_decision` do not come from the open-PR list
-  /// query. They are a second, far heavier GraphQL pass (`statusCheckRollup`
-  /// across every open PR of every repo), and it is the one GitHub answers
-  /// with 502/504 under load — several times an hour on a busy org. Both
-  /// fields decode an unread answer to `none`, which is indistinguishable from
-  /// "this PR has no checks / no review decision", so a failed pass used to
-  /// overwrite `failing`/`approved` with `none` and the next successful pass
-  /// re-detected the very same edge and announced it as news.
-  ///
-  /// Only the recovery is notifiable — a downgrade to `none` deliberately is
-  /// not — so the flap was silent in one direction and a notification in the
-  /// other: ONE approval, re-announced every few minutes for as long as the
-  /// heavy query kept timing out. It loses notifications too, in the same
-  /// stroke: `failing -> none -> passing` is not a recovery, so the green
-  /// build that followed a fix went unannounced.
-  ///
-  /// `review_decision` is carried unconditionally: the forge reports
-  /// `REVIEW_REQUIRED` when an approval is dismissed and never drops back to
-  /// null while a pull request is open, so `none` after a known decision is
-  /// always a failed read. `checks_status` is carried only while the head
-  /// commit is unchanged — a push legitimately lands on a commit that has no
-  /// rollup yet, and re-arming there is what keeps the next real failure on
-  /// the new commit newsworthy.
+  /// `checks_status` / `review_decision` come from a heavy GraphQL pass that often 502s; unread decodes to
+  /// `none`, which used to overwrite real values and flap notifications. Carry `review_decision` when fresh
+  /// is unread; carry `checks_status` only while `head_sha` is unchanged (a push may legitimately have no rollup).
   static Map<String, dynamic> _carryEnrichmentForward(
     Map<String, dynamic> fresh,
     Map<String, dynamic>? previous,

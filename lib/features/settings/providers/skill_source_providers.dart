@@ -4,22 +4,13 @@ import 'package:cc_rpc/cc_rpc.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Web-safe access to the host's SKILL SOURCES subsystem: GitHub repositories
-/// the operator registers as skill catalogs (the skills.sh registry
-/// replacement).
-///
-/// The source store, the GitHub catalog adapter, the scanner and the install
-/// pipeline all live in the HOST (the spawned `cc_server` that BOTH the
-/// desktop and the web client connect to). This control drives the
-/// `skills.sources*` / `skills.source*` RPC ops, so the browse-and-install UI
-/// is identical on desktop and web and never touches GitHub directly. The
-/// file carries no `dart:io`, so it is safe in the shared web compilation
-/// graph.
-///
-/// SECURITY NOTE: a source repository is UNTRUSTED. A listing's name,
-/// description and star count are display-only provenance evidence — they are
-/// NEVER a safety guarantee. The real safety signal is the scan `verdict`
-/// returned by `detail`/`install`; the UI surfaces it prominently.
+/// Web-safe access to the host's SKILL SOURCES subsystem: GitHub repositories the operator
+/// registers as skill catalogs (the skills.sh registry replacement).
+/// The source store, the GitHub catalog adapter, the scanner and the install pipeline all
+/// live in the HOST (the spawned `cc_server` that BOTH the desktop and the web client
+/// connect to).
+/// This control drives the `skills.sources*` / `skills.source*` RPC ops, so the
+/// browse-and-install UI is identical on desktop and web and never touches GitHub directly.
 
 /// One registered GitHub skill-source repository.
 class SkillSourceDto {

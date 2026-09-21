@@ -43,24 +43,11 @@ class BuildGitHubReviewUseCase {
   /// Footer appended to every inline comment so the source is unambiguous.
   static const String inlineFooter = '— Control Center AI review';
 
-  /// Builds the plan. [approveOnShip] lets the caller opt into an `APPROVE`
-  /// event on a clean verdict; the safe default leaves a `COMMENT` review so
-  /// the bot never approves on the author's behalf unexpectedly.
-  /// [walkthrough], when the finalized review carried one, renders the
-  /// narrative summary + per-area sections at the top of the body.
-  ///
-  /// [nitpickMessageIds] names the findings the review level demoted. They are
-  /// kept out of the inline comments — an inline comment is the most intrusive
-  /// thing a review can do to a diff — and rendered in a collapsed group in the
-  /// body instead. Nothing is dropped: a demoted finding is still published,
-  /// still counted and still one click from being read.
-  ///
-  /// [anchors] is the set of lines the pull request's current diff actually
-  /// touches. Findings that fall outside it are moved out of the inline
-  /// comments and into the body — they may still be true, but a comment on
-  /// code this PR did not change is a comment on the wrong pull request.
-  /// Defaults to [DiffAnchorIndex.permissive] so a caller that could not fetch
-  /// the diff publishes everything rather than nothing.
+  /// Builds the plan. [approveOnShip] → `APPROVE` on clean verdict (default
+  /// `COMMENT`). [walkthrough] renders narrative at body top.
+  /// [nitpickMessageIds]: demoted findings → collapsed body group, not inline.
+  /// [anchors]: off-diff findings move to body; default
+  /// [DiffAnchorIndex.permissive] publishes all if no diff.
   GitHubReviewPlan execute({
     required List<ReviewFindingDraft> findings,
     required ReviewVerdict verdict,

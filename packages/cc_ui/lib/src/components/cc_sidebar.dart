@@ -73,31 +73,14 @@ class CcSidebarScope extends InheritedWidget {
       transitioning != oldWidget.transitioning;
 }
 
-/// A vertical app-shell navigation container.
+/// Vertical app-shell nav: optional [header], scrolling [children], optional
+/// pinned [footer]. [background] defaults to the `sidebar` token.
 ///
-/// Stacks an optional [header], a scrolling body of [children] (typically
-/// [CcSidebarGroup]s and [CcSidebarItem]s) and an optional pinned [footer]. The
-/// surface fills with [background] (defaulting to the `sidebar` token) so items'
-/// transparent rows read against it.
-///
-/// Setting [collapsed] animates the width down to a 54px icon-only rail
-/// ([CcMotion.slow], reduced-motion aware) and publishes the collapsed state via
-/// a [CcSidebarScope] so descendant items render icon-only.
-///
-/// The scope flip is deliberately deferred from the width animation so the
-/// toggle blends without layout shift: when collapsing, descendants keep their
-/// expanded geometry (with labels faded out and badges removed) until the rail
-/// width arrives, then swap to the centered squares; when expanding, the swap
-/// happens up front. Both modes place icon centers on the same x=27 line
-/// (the expanded row's 10px visual left inset aligns the icon with the group
-/// header text AND centers it on that line), so no icon ever moves — the
-/// animation reads as labels appearing/disappearing while the panel narrows
-/// or grows.
-///
-/// A 1px trailing hairline (`borderPrimary`, the token the top bar's bottom
-/// hairline uses) separates the rail from the pane beside it — content, or a
-/// second sidebar such as the settings sub-sidebar. It is drawn inside the
-/// container's bounds, so it never shifts layout.
+/// [collapsed] animates to a 54px rail ([CcMotion.slow]) and publishes via
+/// [CcSidebarScope]. Scope flip is deferred from width animation: collapse keeps
+/// expanded geometry until rail width arrives; expand swaps first. Icon centers
+/// stay on x=27 in both modes. Trailing 1px `borderPrimary` hairline is inside
+/// bounds (no layout shift).
 class CcSidebar extends StatefulWidget {
   /// Creates a [CcSidebar].
   const CcSidebar({

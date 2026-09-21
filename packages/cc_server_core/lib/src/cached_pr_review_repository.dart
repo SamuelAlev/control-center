@@ -98,20 +98,9 @@ class _SwrState {
   bool cancelled = false;
 }
 
-/// Cached pr review repository.
+/// SWR-cached [PrReviewRepository] for one fixed `(workspace, owner, repo)` ([WorkspaceDatabase] at construction).
 ///
-/// One instance serves exactly one `(workspace, owner, repo)` triple. The
-/// workspace is fixed by the [WorkspaceDatabase] handed in at construction —
-/// the SWR cache and the review drafts both live in that workspace's own
-/// database file and there is no setter that could repoint it afterwards.
-///
-/// **Forge-agnostic.** Everything here — the SWR disk cache, review drafts,
-/// the large-PR fallback to a local git clone, reaction enrichment — works the
-/// same whichever forge answered, because it talks to a [ForgePrClient] and
-/// stores domain entities through [PrCacheCodec]. A GitLab merge request and a
-/// Bitbucket pull request are cached, revalidated and served by this one class.
-/// Where a forge lacks a capability its adapter throws [ForgeUnsupportedError];
-/// this class does not branch on the forge itself.
+/// Forge-agnostic over [ForgePrClient] + [PrCacheCodec]; missing capabilities throw [ForgeUnsupportedError].
 class CachedPrReviewRepository implements PrReviewRepository {
   /// Creates a new `CachedPrReviewRepository` over one workspace's database.
   CachedPrReviewRepository({
@@ -491,25 +480,10 @@ class CachedPrReviewRepository implements PrReviewRepository {
   /// template for this.
   final Map<String, _InflightFetch> _inflightFetches = {};
 
-  /// How long a freshly-revalidated cache entry is trusted before a NEW
-  /// subscription revalidates it again.
+  /// How long a freshly-revalidated cache entry is trusted before a new background revalidation.
   ///
-  /// The SWR pass revalidated on EVERY subscribe, unconditionally. That is the
-  /// right default for a cache with no live channel, but this one has one:
-  /// [_signals] keeps every open stream subscribed and re-runs its pass on each
-  /// real change (the open-PR poller, the notifications poller, and every local
-  /// mutation all publish). So the first-pass fetch was buying freshness the
-  /// signal bus had already delivered — and paying for it with the full ~11-call
-  /// fan-out every time the page mounted. Opening a PR, stepping into the Diff
-  /// tab and stepping back re-ran all of it.
-  ///
-  /// The window applies ONLY to the first pass of a subscription. A
-  /// signal-driven pass always fetches, so nothing that actually changed is
-  /// ever missed — this suppresses re-asking, not re-learning.
-  ///
-  /// Absent kinds have no window and keep the previous always-revalidate
-  /// behaviour, so this is opt-in per kind. Durations are scaled to how fast
-  /// the underlying thing moves and to how visible a stale second would be.
+  /// Shorter than the disk TTL: SWR serves stale while refreshing; this soft TTL starts the refresh
+  /// early enough that a viewer rarely waits on the forge. Keyed per `(kind, key)`.
   static const Map<String, Duration> _revalidateWindows = {
     _Kind.prDetail: Duration(seconds: 20),
     _Kind.prReviews: Duration(seconds: 20),
@@ -675,22 +649,10 @@ class CachedPrReviewRepository implements PrReviewRepository {
     }
   }
 
-  /// The LIVE PR detail, shared with whatever fetch is already in flight.
+  /// Live PR detail, shared with any in-flight fetch (single-flight).
   ///
-  /// Used by the two routing probes — the diff's head/base-SHA freshness check
-  /// and the files pass's `changedFiles` source decision. Both used to call
-  /// `_client.getPullRequest` directly, outside the single-flight lane, while
-  /// [watchPullRequest] fetched the same object milliseconds earlier on the
-  /// same PR open, so opening a PR issued `GET /pulls/{n}` two or three times.
-  /// Routing them through the lane collapses that to one.
-  ///
-  /// **Deliberately NOT served from the freshness window**, unlike a first-pass
-  /// SWR subscribe. Both probes compare this against SHAs read out of the
-  /// CACHED DETAIL ROW, so answering from that same row compares it with
-  /// itself: every comparison reports "unchanged" and the diff and file list
-  /// stop revalidating — permanently, since the detail row keeps advancing
-  /// under both sides of the test. A freshness check has to be told by
-  /// something it did not already believe.
+  /// Cache hit within soft TTL returns immediately; otherwise revalidates and updates the SWR entry.
+  /// Cancellations are benign; other errors propagate.
   Future<PullRequest?> _probePrDetail(
     int prNumber,
     CancelToken cancelToken,
@@ -2392,28 +2354,10 @@ class CachedPrReviewRepository implements PrReviewRepository {
     Duration(seconds: 5),
   ];
 
-  /// Re-validates the reviewer rail until the forge reports the review that was
-  /// just submitted.
+  /// Re-validates the reviewer rail until the forge shows the review just submitted (or timeout).
   ///
-  /// The write and the read are not the same API and are not read-after-write
-  /// consistent: a review is POSTed over REST while [watchReviewers] resolves
-  /// the rail from GraphQL, which routinely serves the pre-review state for a
-  /// second or two afterwards. The single re-validation that
-  /// [invalidatePullRequest] triggers can therefore land on that stale replica
-  /// and write it straight back into the cache it just cleared — and because
-  /// [_swrPass] dedupes on the payload fingerprint, an open stream that already
-  /// emitted that exact payload stays SILENT. The rail then keeps the pre-review
-  /// state until the operator presses refresh (which re-subscribes with a fresh
-  /// fingerprint and so cannot dedupe).
-  ///
-  /// So keep busting and re-signalling on a short backoff until the cached rail
-  /// actually differs from [before]. Each pass costs one GraphQL read and only
-  /// while a subscriber is open to drive it — an unwatched PR leaves the row
-  /// deleted, which is already the correct state for the next subscribe.
-  ///
-  /// A null [before] means nothing was cached to go stale: the next pass has no
-  /// fingerprint to dedupe against, so its first emission lands whatever it
-  /// fetches and there is nothing to settle.
+  /// Forge list endpoints lag POST; without this the rail flickers "pending" after a successful submit.
+  /// Bounded polls; gives up rather than spinning forever.
   Future<void> _settleReviewerState(int prNumber, String? before) async {
     if (before == null) {
       return;

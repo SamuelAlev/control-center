@@ -33,23 +33,9 @@ Future<CallResult?> _denyUnlessRepoInWorkspace(
   return null;
 }
 
-/// Resolves the graph partition a code-graph call should search: the space's
-/// isolated worktree partition when [spaceId] is set and the space owns a
-/// worktree for [repoId], else null (the linked checkout's partition).
-///
-/// The scope is the SPACE — `isolated_repos` is keyed by `space_id` and every
-/// conversation in a space shares that one worktree. This used to be filled
-/// from the conversation id, which resolves nothing: every call fell back to
-/// the linked checkout, so an agent reviewing a PR branch had `code_impact` /
-/// `code_callers` answer from the BASE checkout with no error to notice.
-///
-/// An EMPTY worktree partition is the normal steady state, not a failure: a
-/// worktree stores only its delta against the linked checkout, so a space that
-/// has not diverged owns no rows at all. Resolving to the linked partition
-/// there is both correct and cheaper — the merged read would return exactly the
-/// base rows anyway. It also covers the genuinely-unbuilt cases (provisioning in
-/// flight, natives missing, an older host with no watch service). Fails OPEN to
-/// the linked partition on any error.
+/// Graph partition for a call: space worktree when [spaceId] owns one for
+/// [repoId], else null (linked checkout). Empty worktree partition is normal
+/// (delta-only). Scope is the space, not conversation. Fails open to linked.
 Future<String?> _effectiveCheckoutId({
   required CodeGraphTreePort? tree,
   required CodeGraphRepository repository,
@@ -87,24 +73,14 @@ Future<String?> _effectiveCheckoutId({
   }
 }
 
-/// Filters [symbols] down to the ones whose file still exists in the tree the
-/// CALLER reads and self-heals the graph as it goes.
+/// Filters [symbols] down to the ones whose file still exists in the tree the CALLER reads
+/// and self-heals the graph as it goes.
 ///
-/// The code graph is built from the workspace's linked checkout and is only
-/// refreshed by a re-index, so it drifts: it happily returns symbols for files
-/// that were renamed or deleted weeks ago. An agent then `read`s those paths,
-/// gets "File not found" and retries — the loop this exists to stop.
-///
-/// Two distinct verdicts, deliberately not conflated:
-/// * absent from the CALLER's tree → hidden from this answer (a space's own
-///   repo copy may sit at another revision, where the file legitimately does
-///   not exist);
-/// * absent from the INDEXED tree → provably dead rows, pruned via the same
-///   [CodeGraphRepository.deleteFiles] the incremental indexer uses, so the
-///   graph converges through use instead of waiting for the next full index.
-///
-/// Fails OPEN: with no [tree] wired, an unresolvable tree, or any error, the
-/// symbols are returned untouched. A stale answer beats an empty one.
+/// The code graph is built from the workspace's linked checkout and is only refreshed by a
+/// re-index, so it drifts: it happily returns symbols for files that were renamed or
+/// deleted weeks ago.
+/// An agent then `read`s those paths, gets "File not found" and retries — the loop this
+/// exists to stop.
 Future<({List<CodeSymbol> live, int omitted})> _liveSymbols(
   List<CodeSymbol> symbols, {
   required CodeGraphTreePort? tree,

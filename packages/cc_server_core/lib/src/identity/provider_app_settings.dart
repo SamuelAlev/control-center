@@ -120,23 +120,10 @@ class ProviderAppStatus {
 /// An OAuth client id/secret pair.
 typedef OAuthAppCredentials = ({String clientId, String clientSecret});
 
-/// Server-wide provider app credentials: the GitHub App and the Linear app.
+/// Server-wide GitHub App + Linear app credentials.
 ///
-/// Two lanes come out of one registration and this is the seam that keeps them
-/// straight:
-///
-///  * **The server acting as itself** — a GitHub App installation token, a
-///    Linear API key. Everything with no human behind it (webhooks, polling,
-///    sync, private-asset fetches) authenticates this way, so background work
-///    does not silently depend on one person's PAT still being valid.
-///  * **A user signing in** — the same app's OAuth client id/secret, used by
-///    `ProviderOAuthService` to mint a token that belongs to that user.
-///
-/// Storage mirrors `SsoSettingsService`, which solved this shape first:
-/// non-secret fields in `server_settings`, secrets in the 0600
-/// [FileSecretsStore], never a database column. The environment seeds a field
-/// the FIRST time it has no stored value, so an operator can configure the
-/// server with env vars and still edit it later in Settings.
+/// Two lanes: install tokens for background work; OAuth client for user sign-in.
+/// Non-secrets in `server_settings`, secrets in [FileSecretsStore]; env seeds once then store wins.
 class ProviderAppSettings {
   /// Creates a [ProviderAppSettings].
   ProviderAppSettings({

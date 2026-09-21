@@ -18,7 +18,7 @@ import 'package:uuid/uuid.dart';
 /// custom ones. Built-in presets are read-only; custom templates can be
 /// edited/removed.
 ///
-/// **Workspace-scoped**: templates shape summaries for meetings that live in
+/// Workspace-scoped: templates shape summaries for meetings that live in
 /// this workspace's database, so every member reads the same set. Writes are
 /// admin-gated server-side; non-admins get a read-only view.
 class MeetingTemplatesSection extends ConsumerStatefulWidget {

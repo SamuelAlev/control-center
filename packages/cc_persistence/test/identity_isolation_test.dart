@@ -3,24 +3,9 @@ import 'package:test/test.dart';
 
 import 'helpers/test_database.dart';
 
-/// Workspace isolation for the identity tables: members, invites, repo grants
-/// and the audit trail are workspace-scoped — a query for one workspace must
-/// never surface another's rows (the CLAUDE.md invariant: every new scoped
-/// surface ships a cross-workspace denial test).
-///
-/// After the database split there are TWO mechanisms to hold and this file
-/// checks both, because each catches a different bug:
-///
-///  * **Routing** — a row written for `ws-b` lands in `ws-b`'s own database
-///    file, so `ws-a`'s connection cannot see it at all. This is what the
-///    production path exercises and it is what makes the isolation structural.
-///  * **Filtering** — every one of these DAO reads still carries
-///    `WHERE workspace_id = ?`. It is now belt-and-braces, but it is the thing
-///    that contains a row that was somehow stamped with the WRONG workspace id
-///    (a bad mapper, a copied companion) inside an otherwise correct file.
-///
-/// Identity also straddles the split: users and their preferences are global,
-/// membership/invites/activity are per-workspace.
+/// Identity tables isolation: members/invites/grants/audit never cross
+/// workspaces (routing via separate DB files + `WHERE workspace_id`).
+/// Users/preferences are global; membership is per-workspace.
 void main() {
   late GlobalDatabase global;
   late WorkspaceDatabaseManager dbs;

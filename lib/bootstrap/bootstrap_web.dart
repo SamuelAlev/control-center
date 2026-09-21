@@ -551,25 +551,14 @@ class _WebRootState extends State<_WebRoot> {
   }
 }
 
-/// The connected web app: a Riverpod scope whose overrides install the
-/// web-flavoured dependencies, rendering the FULL [ControlCenterApp].
-///
-/// Overrides:
-///  - [rpcClientProvider] → the connected [RemoteRpcClient] (the entire UI's
-///    single data entrypoint; on web there is no in-process host default).
-///  - [appPreferencesProvider] → a `localStorage`-backed store (shared
-///    `_webBackend`), so web preferences survive a reload.
-///  - [secureStoreProvider] → flutter_secure_storage, which works on web.
-///  - The onboarding gate is NOT overridden: it computes live exactly like the
-///    desktop (the signed-in user's forge connections, plus the server's
-///    workspace list over RPC). Connecting to a freshly-minted
-///    server therefore lands on the same first-run onboarding the desktop
-///    shows, instead of an empty inbox with nothing configured.
-///  - [activeWorkspaceIdProvider] → bound to the workspace resolved at connect
-///    (the persisted last-active one, else the first), so workspace-scoped
-///    screens scope to it immediately; switches persist via the inherited
-///    setActive. The desktop notifier reads the Drift bootstrap stream, which
-///    does not exist on web.
+/// The connected web app: a Riverpod scope whose overrides install the web-flavoured
+/// dependencies, rendering the FULL [ControlCenterApp].
+/// single data entrypoint; on web there is no in-process host default).
+/// `_webBackend`), so web preferences survive a reload.
+/// [secureStoreProvider] → flutter_secure_storage, which works on web.
+/// The onboarding gate is NOT overridden: it computes live exactly like the
+/// desktop (the signed-in user's forge connections, plus the server's workspace list over
+/// RPC).
 class _ConnectedApp extends StatelessWidget {
   const _ConnectedApp({
     super.key,
@@ -714,23 +703,14 @@ const _kTheme = 'cc_web.theme';
 _WebThemeMode _loadThemeMode() =>
     _WebThemeMode.fromName(web.window.localStorage.getItem(_kTheme));
 
-// --- Connected-origin cookie → host-scoped CSP --------------------------------
-//
-// The deployed web client is a static SPA served by Cloudflare; its CSP can't
-// name the cc-server host until the user connects (the host is typed in the
-// connect form and only then is it known). The Cloudflare Worker
-// (worker/csp.js, run_worker_first) reads this cookie on each document request
-// and stamps a per-request CSP adding the connected cc-server origin to
-// connect-src, img-src and media-src — so the CanvasKit `fetch()` to
-// `/proxy/media`, the `<img>` src and the `<audio>`/`<video>` src (soundscape
-// stream, meeting playback, proxied video) are all allowed for the paired host,
-// and ONLY that host.
-//
-// The cookie holds ONLY the origin (scheme+host+port) — never the pairing key,
-// which stays in secure storage — so it is not sensitive. CSP can only tighten
-// (never relax) after a page has loaded, so the first connect on a fresh page
-// (no cookie → strict CSP) reloads once; subsequent reloads see the cookie and
-// skip the reload, resuming straight into the session.
+// Connected-origin cookie → host-scoped CSP --------------------------------
+// The deployed web client is a static SPA served by Cloudflare; its CSP can't name the
+// cc-server host until the user connects (the host is typed in the connect form and only
+// then is it known).
+// The Cloudflare Worker (worker/csp.js, run_worker_first) reads this cookie on each
+// document request and stamps a per-request CSP adding the connected cc-server origin to
+// connect-src, img-src and media-src — so the CanvasKit `fetch()` to `/proxy/media`, the
+// `<img>` src and the `<audio>`/`<video>` src (soundscape stream, meeting playback,
 
 const _kProxyOriginCookie = 'cc_proxy_origin';
 

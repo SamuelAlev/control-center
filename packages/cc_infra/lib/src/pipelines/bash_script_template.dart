@@ -12,24 +12,10 @@ import 'package:cc_domain/features/pipelines/domain/services/template_renderer.d
 import 'package:cc_domain/features/pipelines/domain/templates/builtin_template_seeds.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
 
-/// Registers the agentless `pipeline.bashScript` body.
-///
-/// Use it for steps that don't need an LLM — cloning a branch, running a
-/// build, kicking off `gh` commands, etc. The body:
-///
-///  - Renders the `config.script` template, substituting `{{key}}` against
-///    pipeline state + trigger payload.
-///  - Resolves the cwd to `<cc_root>/pipelines/<pipelineRunId>/` so all
-///    bash steps in a run share a workspace.
-///  - Exposes `GITHUB_TOKEN` (from the credentials repo) so `gh` and
-///    `git clone https://x-access-token:$GITHUB_TOKEN@…` work out of the
-///    box.
-///  - Spawns the script with `Process.start` and streams stdout/stderr
-///    into the step-run row in real time so the run-detail card shows
-///    output as it happens. Output is throttled to keep DB write load
-///    sane on chatty scripts.
-///  - On exit 0, writes the trimmed stdout to `config.outputKey` for
-///    downstream nodes. On non-zero, fails the step with stderr.
+/// Registers agentless `pipeline.bashScript`: render `config.script` against
+/// state; cwd `<cc_root>/pipelines/<pipelineRunId>/`; expose `GITHUB_TOKEN`;
+/// stream stdout/stderr (throttled) into the step-run; exit 0 →
+/// `config.outputKey`, else fail with stderr.
 void registerBashScriptBody(
   PipelineBodyRegistry registry, {
   required PipelineTemplateRepository templateRepository,

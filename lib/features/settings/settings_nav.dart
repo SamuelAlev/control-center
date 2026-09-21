@@ -88,7 +88,7 @@ class SettingsNavGroup {
   final List<SettingsNavItem> items;
 }
 
-/// The settings information architecture — **the single source of truth**.
+/// The settings information architecture — the single source of truth.
 ///
 /// The sub-sidebar, the J/K cycle order, the breadcrumb registry and the route
 /// title registry all derive from this list. Before it existed, five files each

@@ -7,23 +7,9 @@ import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
 import 'package:cc_persistence/database/daos/cache_dao.dart';
 import 'package:cc_persistence/database/workspace_database_manager.dart';
 
-/// The take-over / hand-back mechanism (PRD 16 §8) — defined, not vibes:
+/// Take-over / hand-back (PRD 16 §8): a human holds mutating control; the agent may still observe.
 ///
-///  1. **Begin**: every active run in the conversation is paused at its next
-///     clean turn boundary (built-in harness) or stopped (external CLI — no
-///     safe boundary exists). The per-turn git snapshot taken at that
-///     boundary makes the take-over reversible. A DURABLE take-over marker
-///     lands in the `Caches` table, so a server restart comes back paused —
-///     never auto-resuming into a human's half-finished edit — and new
-///     dispatches into the space are refused while it stands.
-///  2. The human edits the SAME rift worktree through the embedded
-///     code-server IDE (already shipped; the client opens it).
-///  3. **Hand back**: a structured diff summary of the worktree is posted to
-///     the space, queued as steering for every paused run (the agent
-///     re-reads it before resuming), the runs resume and the marker clears.
-///
-/// One live editor per worktree is a SOFT claim: the marker + the presence
-/// lane make a second take-over visible and refused, not silently merged.
+/// Enforced at the act chokepoint, not by prompt. Control changes are attributed and sequenced.
 class TakeoverService {
   /// Creates the service.
   TakeoverService({

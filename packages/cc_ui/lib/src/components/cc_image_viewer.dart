@@ -61,28 +61,12 @@ class CcImageViewerLabels {
   int get hashCode => Object.hash(expand, zoomIn, zoomOut, resetZoom, close);
 }
 
-/// A pannable, zoomable frame around one visual — the body of the fullscreen
-/// image lightbox [showCcImageViewer] presents.
+/// Pannable/zoomable frame for [showCcImageViewer]. Child laid out at viewer
+/// size then transformed — scale 1 = fit (`BoxFit.contain`); [minScale] may go
+/// below that.
 ///
-/// The child is laid out at the viewer's own size (so hand it something that
-/// paints with `BoxFit.contain`) and then transformed, so scale 1 means *the
-/// whole image is on screen*, whatever its aspect ratio. That is the resting
-/// point, not the floor: [minScale] goes below it, because "show me less of the
-/// screen than the frame gives" is a real request — a tall screenshot at fit is
-/// still taller than the panel.
-///
-/// **Scrolling scrolls; it does not zoom.** `InteractiveViewer` hardwires a
-/// mouse wheel to zoom with no flag to change it, which makes a lightbox lurch
-/// under a two-finger flick. Here a plain wheel or trackpad scroll PANS, and
-/// zoom is on ⌥ / ⌘ / Ctrl + scroll. All three modifiers, deliberately: ⌥ is
-/// the image-editor convention, ⌘/Ctrl is what the app's other canvases already
-/// use (`CanvasWheelPan`), and a trackpad pinch reaches the framework AS
-/// ctrl+scroll — so dropping Ctrl would break pinch-to-zoom on the web build.
-///
-/// Zoom is reachable four ways because each covers a device the others don't:
-/// the toolbar buttons (the only discoverable one), modifier+scroll and pinch
-/// (mouse + trackpad + touch), double-tap (touch) and `+` / `-` / `0`
-/// (keyboard).
+/// Plain wheel/trackpad pans (not zoom — InteractiveViewer would lurch). Zoom:
+/// ⌥/⌘/Ctrl+scroll (Ctrl required for web pinch), toolbar, double-tap, `+`/`-`/`0`.
 class CcImageViewer extends StatefulWidget {
   /// Creates a [CcImageViewer].
   const CcImageViewer({

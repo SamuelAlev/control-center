@@ -1,26 +1,14 @@
 import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/widgets.dart';
 
-/// The single source of truth for diff add/remove colors across CC's three diff
-/// surfaces — the PR-details canvas diff, the messaging transcript edit diff,
-/// and the session-review diff. Previously each surface defined its own
-/// add/delete backgrounds (8–12% vs a hard-coded 20% vs design-token green/red),
-/// so the same change looked different depending on where you saw it.
-///
-/// The add/delete set is GitHub's hand-tuned diff palette, per brightness:
-/// line tint, stronger word-level (intraline) tint and the line-number gutter
-/// tint. Light mode uses Primer's solid tints rather than alpha blends of the
-/// accent — an alpha blend over white always drags the dominant space below
-/// 255 and reads grey-muddy, while the tuned values keep it at 255 so the tint
-/// stays luminous. Dark mode alpha-blends GitHub's *dark* hues over the editor
-/// surface (the light-mode hues turn brown on dark). Context/gutter/hunk colors
-/// come from the design-system tokens. An imported VS Code theme can override
-/// the whole set via [DiffColors.fromEditorTheme] — the typed adapter
-/// (`diffColorsFromVsCode`) lives with the theme in the vscode_theme feature,
-/// so core never reaches into a feature.
-///
-/// The syntax-token palette is *already* shared (`lightSyntaxPalette` /
-/// `darkSyntaxPalette`), so it is intentionally not duplicated here.
+/// The single source of truth for diff add/remove colors across CC's three diff surfaces —
+/// the PR-details canvas diff, the messaging transcript edit diff, and the session-review
+/// diff.
+/// Previously each surface defined its own add/delete backgrounds (8–12% vs a hard-coded
+/// 20% vs design-token green/red), so the same change looked different depending on where
+/// you saw it.
+/// An imported VS Code theme can override the whole set via [DiffColors.fromEditorTheme] —
+/// the typed adapter (`diffColorsFromVsCode`) lives with the theme in the vscode_theme
 @immutable
 class DiffColors {
   /// Creates a [DiffColors].

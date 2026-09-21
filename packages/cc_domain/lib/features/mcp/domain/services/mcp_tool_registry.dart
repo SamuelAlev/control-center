@@ -10,29 +10,13 @@ abstract interface class ToolCatalog {
 
 /// The live set of MCP tools served to agents.
 ///
-/// Holds three layers:
-/// * **base** tools — CC's native tool classes, fixed at construction.
-/// * **dynamic** tools — tools bridged from external MCP servers, swapped in via
-///   [setDynamicTools] as servers connect / hot-reload.
-/// * **extra** tools — host-registered singletons such as the BM25 search tool,
-///   added via [register].
-///
-/// Every registered tool is advertised in `tools/list`. An earlier revision
-/// gated the list to a curated "essential" subset above a discovery threshold
-/// and relied on a hidden-but-callable contract (`lookup` resolved unlisted
-/// names). That contract is unenforceable against real MCP clients: Claude
-/// Code validates tool names against its cached `tools/list` *client-side*
-/// and refuses anything unlisted without ever contacting the server — which
-/// made every gated tool (all writes included) structurally unreachable. The
-/// list is therefore ungated; context savings for CC's own harness belong in
-/// the harness layer, where activation is real.
-///
-/// Transports keep clients fresh through two levers: [onToolsChanged] fires on
-/// every mutation (the MCP HTTP server broadcasts
-/// `notifications/tools/list_changed` from it) and [toolsetRevision] is a
-/// stable fingerprint of the catalogue that dispatch embeds in each agent's
-/// MCP client config, so a toolset change busts config-hash-keyed client
-/// caches on server upgrades.
+/// Layers: **base** (native, fixed at construction), **dynamic** (external MCP
+/// via [setDynamicTools]), **extra** (host singletons via [register]).
+/// Every registered tool is in `tools/list` — ungated. Gating was unenforceable:
+/// Claude Code validates names against its cached list client-side and refuses
+/// unlisted tools, so gated writes were unreachable. Harness deferral belongs
+/// in the harness layer. [onToolsChanged] drives `tools/list_changed`;
+/// [toolsetRevision] fingerprints the catalogue for dispatch config-hash busts.
 class McpToolRegistry implements ToolCatalog {
   /// Creates a registry over the [tools] base set.
   McpToolRegistry(List<McpTool> tools)

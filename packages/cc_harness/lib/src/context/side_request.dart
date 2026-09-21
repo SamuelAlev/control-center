@@ -2,26 +2,10 @@ import 'package:cc_harness/src/messages.dart';
 import 'package:cc_harness/src/provider/llm_provider_port.dart';
 import 'package:cc_harness/src/provider/reasoning_effort.dart';
 
-/// Asks the LIVE conversation a question without polluting it.
-///
-/// **The mechanism is the feature.** A naive implementation sends the history
-/// plus a question as a fresh request, which diverges from the turn that just
-/// ran at the system prompt — so the provider's cached prefix misses entirely
-/// and the side question costs as much as a full turn. This instead appends
-/// exactly ONE trailing message to a snapshot of the real history, keeps the
-/// same system prompt and the same cache key, and asks for text only. The
-/// trailing message is the only divergence point, so everything before it
-/// still hits cache.
-///
-/// The trailing message is a `user` turn even though the agent authored it.
-/// That is deliberate: a `developer`/`system` message at the tail changes the
-/// shape of the prefix on several providers, and a `user` turn is what the
-/// cached conversation was already expecting next.
-///
-/// Two features ride this one primitive — a handoff document and an ephemeral
-/// side question (`/btw`). Building it once is what keeps them from becoming
-/// two subtly different implementations, one of which silently loses the
-/// cache.
+/// Asks the live conversation a question without polluting it: append one
+/// trailing `user` message to a history snapshot, same system prompt/cache key,
+/// text-only. A system/developer tail would break the cached prefix on several
+/// providers. Used by handoff docs and `/btw`.
 class SideRequest {
   /// Creates a [SideRequest] over `provider`.
   const SideRequest(this._provider);

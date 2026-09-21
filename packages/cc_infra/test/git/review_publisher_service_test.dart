@@ -265,10 +265,6 @@ void main() {
   });
 }
 
-// ---------------------------------------------------------------------------
-// Fakes
-// ---------------------------------------------------------------------------
-
 class _SubmitCall {
   _SubmitCall(this.owner, this.repo, this.prNumber, this.comments);
   final String owner;

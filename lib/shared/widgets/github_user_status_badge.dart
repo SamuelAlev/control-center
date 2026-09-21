@@ -352,37 +352,12 @@ BoxDecoration _pillBorder(
   ),
 );
 
-/// The badge's emoji, or a fallback icon for a status that carries a message
-/// but no emoji.
+/// Badge emoji (or fallback icon when message has no emoji).
 ///
-/// Centring an emoji is not `Alignment.center`, and both axes had to be paid
-/// for separately. Measured against the real Apple Color Emoji (CoreText, at
-/// 100pt): the ink is the em SQUARE — `[0, 1em]` from the pen horizontally and
-/// `[-0.125em, +0.875em]` about the baseline — while the ADVANCE the run is
-/// laid out to is 1.275em. So:
-///
-///  * **Horizontally**, centring the text BOX puts half of that trailing air —
-///    0.1375em — on the wrong side, and the ink sits left of centre by it
-///    (measured at 4px inside a 50px badge on a 2x display). The glyph is
-///    shifted back by half the overhang, taken from the painter rather than
-///    hardcoded, so a font whose advance IS its em is shifted by nothing.
-///  * **Vertically**, the correction is to stop overriding the line height at
-///    all. A single-line box is `ascent + descent` tall with its baseline at
-///    `ascent`, which centres the font's em box in it by construction. Forcing
-///    `height: 1` collapses that box to one em and moves the baseline, and the
-///    descent-sized nudge that used to compensate over-corrected by ~0.125em —
-///    the glyph rode visibly low in the circle.
-///
-/// [TextStyle.inherit] is false on purpose. [Text] merges the ambient
-/// [DefaultTextStyle], so the widget rendered with `fontFamily: Manrope` (the
-/// emoji reached only through the fallback list) while the [TextPainter] beside
-/// it measured with the emoji font as PRIMARY — two different sets of line
-/// metrics, which is what made the old vertical correction wrong. Opting out of
-/// the merge makes the measurement and the render the same layout, and keeps
-/// the overlay's error-fallback style off the glyph for free.
-///
-/// The glyph is an icon, not text: it does not take the text scaler, because
-/// the circle it sits in is sized from the avatar and cannot grow with it.
+/// Center via advance overhang (Apple Color Emoji advance > em square), not
+/// `Alignment.center`; do not force `height: 1` (breaks baseline centering).
+/// [TextStyle.inherit] false so [Text] and [TextPainter] share metrics (ambient
+/// Manrope vs emoji-primary). No text scaler — circle is avatar-sized.
 class _StatusGlyph extends StatelessWidget {
   const _StatusGlyph({
     required this.emoji,

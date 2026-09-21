@@ -424,27 +424,13 @@ class ChatTransportStatus {
   final String? error;
 }
 
-/// Everything provider-specific about bridging one workspace to one chat app.
+/// Provider-specific seam for bridging one workspace to one chat app.
 ///
-/// This is the seam the whole feature turns on: the bridge core is written
-/// against it and contains no Slack (or Discord) knowledge at all, so adding a
-/// provider is one implementation of this interface plus a descriptor — no
-/// schema, RPC or UI change.
-///
-/// Three rules keep an implementation honest:
-///
-///  * **Text crossing this boundary is markdown.** Inbound, the adapter converts
-///    the provider's markup to markdown and strips the bot mention; outbound it
-///    converts back. The core never sees `mrkdwn`, `<@U123>` or a Discord
-///    embed.
-///  * **Advertised capabilities are what the core degrades on.** Anything
-///    [capabilities] does not claim is never called and a call the provider
-///    refuses at runtime still has to fail in a typed way
-///    ([ChatStreamingUnavailable]) rather than throwing something the core would
-///    have to pattern-match on a string to understand.
-///  * **Ids are opaque strings, in the provider's own space.** The adapter never
-///    invents Control Center ids and never reads the database; it is a transport
-///    and a translator.
+/// Core has no Slack/Discord knowledge — add a provider via this + a descriptor.
+/// Markdown crosses the boundary (inbound strip bot mention; outbound convert).
+/// Core only calls what [capabilities] claims; runtime refusal is typed
+/// ([ChatStreamingUnavailable]). Ids are opaque provider-space strings; adapter
+/// never invents CC ids or reads the DB.
 abstract interface class ChatProviderAdapter {
   /// Which provider this adapter speaks to.
   ChatProvider get provider;

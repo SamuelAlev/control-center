@@ -18,25 +18,12 @@ enum SandboxExecGrantDecision {
       );
 }
 
-/// An operator decision about running executables from inside a writable
-/// directory tree — the exception to the sandbox's writable-dir exec block.
+/// Operator grant to exec inside a writable tree (exception to the sandbox
+/// writable-dir exec block).
 ///
-/// The macOS profile denies `process-exec` across all of `$HOME` and `/tmp`,
-/// which closes the TOCTOU where a binary is copied or symlinked somewhere
-/// writable and run from there. An agent's CoW worktree lives under `$HOME`, so
-/// that block also catches every tool a checked-out repo installs for itself
-/// (`node_modules/.bin/husky`, `.venv/bin/pytest`, …). A grant re-opens exec
-/// for one worktree, and only after the operator was asked.
-///
-/// **A grant is a real widening.** It covers binaries the AGENT writes into
-/// that tree, not only ones the package manager installed — which is precisely
-/// the case the blanket block exists to stop. It is contained to a disposable
-/// worktree rather than the user's own checkout, and it is per-workspace and
-/// revocable, but it is not free and the confirmation copy says so.
-///
-/// [path] is stored **symlink-resolved**, because that is the spelling the
-/// kernel matches an exec rule against; a grant written against an unresolved
-/// path would emit a rule that never fires.
+/// macOS denies `process-exec` under `$HOME`/`/tmp` (closes TOCTOU); CoW
+/// worktrees need a per-tree grant after ask. Widens to agent-written binaries
+/// too. [path] is symlink-resolved (kernel matching).
 class SandboxExecGrant {
   /// Creates a [SandboxExecGrant].
   SandboxExecGrant({

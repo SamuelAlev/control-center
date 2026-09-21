@@ -166,21 +166,12 @@ const String kSmolvmExecPackVariant = 'tools-v1';
 
 /// Apt packages warmed into every exec (terminal) guest.
 ///
-/// Modeled on GitHub-hosted `ubuntu-24.04` runners' apt toolset (vital,
-/// common and cmd packages in actions/runner-images) plus git/socat the
-/// enclosure itself needs, python3 so `python-is-python3` has a target, and
-/// cmake/ninja-build/zstd which the runner image ships outside apt. The
-/// desktop qcow2 (`COMMON_PACKAGES` in `scripts/rigs/build_image.sh`) ships
-/// the same names — a Computer tab and a terminal tab should not disagree
-/// about what "a basic toolchain" means.
-///
-/// Not included, on purpose: language toolcaches (Node, Go, Java, Ruby,
-/// .NET), Docker (needs a nested daemon the microVM does not run), GUI and
-/// daemon packages (`xvfb`, `sphinxsearch`, `haveged`), Canonical
-/// phone-home (`pollinate`), the `ssh` metapackage (it would install a
-/// server; `openssh-client` is enough), and names Ubuntu 24.04 will not
-/// install (`netcat` is virtual — we use `netcat-openbsd`; `p7zip-rar`
-/// lives in multiverse).
+/// Modeled on GitHub `ubuntu-24.04` runner apt sets plus git/socat, python3
+/// (for `python-is-python3`), and cmake/ninja/zstd. Matches the desktop
+/// qcow2's `COMMON_PACKAGES`. Excluded on purpose: language toolcaches,
+/// Docker, GUI/daemon packages, `pollinate`, the `ssh` metapackage
+/// (`openssh-client` only), and names Ubuntu 24.04 will not install
+/// (`netcat` → `netcat-openbsd`; `p7zip-rar` is multiverse).
 const List<String> kSmolvmExecPackages = [
   'acl',
   'aria2',
@@ -304,23 +295,12 @@ String smolvmExecWarmProbe() => _smolvmBinariesPresent([
 
 /// The git credential helper installed into every exec guest.
 ///
-/// Speaks git's credential-helper protocol: git pipes `host=...` on stdin and
-/// reads `username=`/`password=` back. The helper asks the host's guest
-/// credential service — reachable at guest loopback because the ports service
-/// plants a REVERSE TUNNEL there (`rig_ports.dart`); smolvm's filtered NIC
-/// cannot dial host loopback on its own, which is the measured opposite of
-/// what this comment used to claim — per operation, so no durable credential
-/// ever sits in the guest. The `CC_RIG_ID` /
-/// `CC_RIG_SECRET` / `CC_BROKER_PORT` env it reads is injected at create time
-/// (the secret via `--secret-file`, so only the reference is persisted in
-/// smolvm's machine record).
-///
-/// The field extraction is sed, not a JSON parser: the values are produced by
-/// our own broker and are token strings by construction (no quotes, no
-/// backslashes, no newlines), and a guest that corrupts them only breaks its
-/// own push. Any failure exits 0 with no output, which is git's signal to
-/// fall back to prompting — the same behaviour the QEMU image's python helper
-/// has.
+/// Speaks git's credential-helper protocol; asks the host guest-credential
+/// service over the reverse tunnel at guest loopback (`rig_ports.dart`) —
+/// smolvm's filtered NIC cannot dial host loopback. `CC_RIG_ID` /
+/// `CC_RIG_SECRET` / `CC_BROKER_PORT` come from create time (secret via
+/// `--secret-file`). Field extraction is sed (broker tokens are plain
+/// strings); any failure exits 0 with no output so git falls back to prompt.
 const String kSmolvmCredentialHelper = r'''
 #!/bin/sh
 [ "$1" = "get" ] || exit 0
@@ -346,21 +326,11 @@ exit 0
 /// Maps one entry of the rig egress-allowlist vocabulary to a smolvm
 /// `--allow-host` argument, or null when it cannot be expressed.
 ///
-/// smolvm has no wildcard syntax, and its host entries already match
-/// subdomains (allowing `github.com` admits `api.github.com` — verified
-/// against smolvm 1.8.x). So:
-///
-///  * `example.com` → `example.com`.
-///  * `*.example.com` (subdomains only, apex excluded) → `example.com`, which
-///    also admits the apex: the smallest faithful widening available, and the
-///    apex of an allowlisted domain is the operator's own site far more often
-///    than it is a threat.
-///  * `bedrock.*.amazonaws.com` (a MIDDLE-label wildcard) → **null**. The only
-///    smolvm entry that would cover it is `amazonaws.com`, which admits every
-///    S3 bucket in the world — the exact over-grant the middle-label form was
-///    introduced to remove. Widening an entry until it fits the tool is how a
-///    narrow rule becomes a broad one without anybody deciding to broaden it,
-///    so this drops it instead and the caller logs which host went missing.
+/// smolvm has no wildcards; allowing `github.com` already admits
+/// `api.github.com`. `example.com` → itself; `*.example.com` → `example.com`
+/// (also admits the apex — smallest faithful widening). Middle-label forms
+/// like `bedrock.*.amazonaws.com` → null: the only covering entry would be
+/// `amazonaws.com`, which over-grants every S3 bucket.
 String? mapSmolvmAllowlistEntry(String entry) {
   if (entry.startsWith('*.')) {
     final rest = entry.substring(2);
@@ -531,22 +501,12 @@ String _writeHomePageCommand(
 
 /// The persistent workload a FIREFOX browser machine runs on every start.
 ///
-/// Three things here were each paid for once and must not be undone:
-///
-///  * **`mkdir -p` the profile.** Firefox does not create a `--profile`
-///    directory that does not exist. It does not complain either: it falls
-///    back to a default profile and never starts its remote agent at all.
-///    Nothing listens, the rig times out, and the only symptom is silence.
-///  * **The socat relay.** The remote agent binds guest loopback and Firefox
-///    has no flag to change that. The relay on the guest NIC is the only
-///    address a host `-p` forward can reach.
-///  * **`--remote-allow-hosts`.** Firefox validates the `Host` header. The
-///    entries are host NAMES; the port is checked separately against the
-///    agent's own, which is why the client sends the guest-side port.
-///
-/// `exec` keeps Firefox the workload's main process: if the browser exits the
-/// machine stops and the rig is reported dead, instead of wedging behind a
-/// still-live relay.
+/// `mkdir -p` the profile: Firefox does not create a missing `--profile` dir
+/// and silently never starts its remote agent. Socat relay: the agent binds
+/// guest loopback; a host `-p` can only reach a NIC address.
+/// `--remote-allow-hosts` validates Host names; the port check is separate, so
+/// the client sends the guest-side port. `exec` keeps Firefox the main
+/// process — if it exits the machine stops.
 List<String> buildSmolvmFirefoxWorkload(
   RigDisplaySize display, {
   RigBrowserHomeTheme? homeTheme,
@@ -729,21 +689,12 @@ class SmolvmLaunchPlan {
 
 /// Builds the `smolvm machine create` argument vector for [plan].
 ///
-/// The security load-bearing invariants, pinned by
-/// `smolvm_enclosure_backend_test.dart`:
-///
-///  * Restricted rigs carry `--outbound-localhost-only` and never bare
-///    `--net`: the guest's only unconditional route out is host loopback (the
-///    credential broker), everything else goes through the allowlist.
-///  * An explicitly unrestricted rig carries bare `--net` and no host
-///    allowlist flags. That exception is only reachable through the confirmed
-///    restart flow and is visible in the persisted [RigSpec].
-///  * Every restricted allowlist entry becomes its own `--allow-host`, and the
-///    Docker Hub pull path is unioned in: the guest agent pulls the machine's
-///    image through this same gate, so a machine without it can never boot an
-///    image that is not already cached.
-///  * The broker secret travels by `--secret-file` reference, never as an
-///    env value smolvm would persist in its machine record.
+/// Pinned by `smolvm_enclosure_backend_test.dart`: restricted rigs carry
+/// `--outbound-localhost-only` (never bare `--net`); unrestricted use bare
+/// `--net` with no allowlist (confirmed restart only, visible on [RigSpec]);
+/// each restricted allowlist entry is its own `--allow-host`, unioned with
+/// the Docker Hub pull path; broker secret travels by `--secret-file`, never
+/// as a persisted env value.
 List<String> buildSmolvmCreateArgs(SmolvmLaunchPlan plan) {
   final isExec = plan.isExec;
   final dropped = <String>[];
@@ -1433,7 +1384,6 @@ class SmolvmEnclosureBackend {
     return removed;
   }
 
-  // ── Image pack cache ──────────────────────────────────────────────────────
 
   /// Where the pre-extracted image packs live.
   String get _packsDir => p.join(_dataDir, 'rigs', 'smolvm-packs');
@@ -1463,26 +1413,13 @@ class SmolvmEnclosureBackend {
 
   /// Builds the pack for [image] in the background.
   ///
-  /// Runs strictly AFTER the image landed in smolvm's local cache (the
-  /// machine that triggered it already started), so the flatten is disk
-  /// work, not a second download. Written next to its destination and
-  /// renamed into place, so a killed build never leaves a file a later boot
-  /// would trust. Best-effort throughout: the pack is a cache, and no
-  /// failure here may surface anywhere near a boot.
-  ///
-  /// Two flavours, measured on this host:
-  ///
-  ///  * The BROWSER image packs directly — it is fully baked, nothing runs
-  ///    at boot, so the pack only skips the per-machine layer flatten.
-  ///  * The EXEC image packs a WARMED throwaway template: a pristine machine
-  ///    is booted, its init installs the GitHub-runner-style toolset into
-  ///    the overlay, and THAT machine is snapshotted. Boots from it take
-  ///    seconds against a first start that would otherwise apt-install a
-  ///    compiler and friends on every machine (and depend on the Ubuntu
-  ///    mirrors being reachable). The template carries NO secrets, NO
-  ///    worktree, no per-rig state — it never gets any: no broker secret, no
-  ///    port forwards, nothing synced in — so the snapshot is safe to share
-  ///    across every later rig and conversation.
+  /// After the image is already in smolvm's cache (so no second download).
+  /// Written beside the destination and renamed in — a killed build must not
+  /// leave a file a later boot trusts. Best-effort: pack failures must not
+  /// surface near a boot.
+  /// Browser image packs directly (fully baked). Exec packs a warmed
+  /// throwaway template after init installs the toolset — no secrets,
+  /// worktree, or per-rig state — so later boots skip apt and mirrors.
   Future<void> _buildPack(
     String binary,
     String image, {
@@ -1913,19 +1850,11 @@ class SmolvmEnclosureBackend {
 
   /// Runs a smolvm CLI call under a HARD deadline.
   ///
-  /// Every call in this backend goes through here, and every one of them is
-  /// bounded. The alternative is not theoretical: `Process.run` waits forever,
-  /// so a single wedged CLI invocation — a `machine exec` into a guest whose
-  /// init hung, a `machine delete` blocked on a read-only pack layer — hung
-  /// the whole path it was on. The boot readiness loop checked its 120 s
-  /// deadline only BETWEEN attempts, so one stuck attempt made the deadline
-  /// unreachable; teardown and the startup sweep had no deadline at all.
-  ///
-  /// `Process.run` cannot be cancelled, so the real path starts the process
-  /// itself and SIGKILLs it on expiry. A timeout comes back as a synthetic
-  /// exit 124 (the conventional code) with a stderr that says so, which every
-  /// `exitCode != 0` caller already handles and [_runChecked] turns into a
-  /// named [RigToolException].
+  /// Every call goes through here. `Process.run` cannot be cancelled, so this
+  /// starts the process and SIGKILLs on expiry (synthetic exit 124;
+  /// [_runChecked] turns it into a [RigToolException]). Without it a wedged
+  /// `machine exec`/`delete` hung boot readiness (deadline only checked
+  /// between attempts) and teardown had no deadline at all.
   Future<ProcessResult> _run(
     String binary,
     List<String> args, {

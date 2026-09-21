@@ -2,28 +2,12 @@ import 'dart:async';
 
 import 'package:cc_domain/features/subscriptions/subscriptions.dart';
 
-/// A short-lived, single-flight cache in front of Claude's usage endpoint.
+/// Short-lived single-flight cache in front of Claude's usage endpoint.
 ///
-/// ## Why this has to exist
-///
-/// `/api/oauth/usage` rate-limits callers aggressively, and multi-account
-/// turned one read per machine into one read PER ACCOUNT — then two independent
-/// readers wanted them: the title-bar pill (every ten minutes, and on every
-/// open) and the dispatch-time headroom check (before every run). Three
-/// accounts times two readers is six requests where there used to be one, and
-/// the endpoint answered with 429s. The visible symptom is the worst kind:
-/// every account reports no usage at once, which reads as "all my plans are
-/// broken" rather than "we asked too often".
-///
-/// ## What it guarantees
-///
-/// * At most one in-flight request per config dir — concurrent callers share
-///   the same future rather than racing (the pill opening while a dispatch
-///   resolves is the normal case, not a rare one).
-/// * A successful reading is reused for [ttl].
-/// * A FAILED reading is cached too, for [errorTtl]. That is the important
-///   half: retrying a 429 immediately is what turns a brief throttle into a
-///   sustained one.
+/// `/api/oauth/usage` rate-limits hard; multi-account × pill + dispatch readers
+/// caused 429s that looked like "all plans broken". Guarantees: one in-flight
+/// future per config dir; success reused for [ttl]; failures cached for
+/// [errorTtl] (immediate 429 retries sustain the throttle).
 class ClaudeUsageCache {
   /// Creates a [ClaudeUsageCache] over [_fetch].
   ClaudeUsageCache({

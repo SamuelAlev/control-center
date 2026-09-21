@@ -8,28 +8,9 @@ import 'package:super_sliver_list/super_sliver_list.dart';
 /// are built.
 const int kFeedPrecalcRowBudget = 24;
 
-/// Precalculation policy that measures rows only while the feed is idle, and
-/// only up to [kFeedPrecalcRowBudget] of them.
-///
-/// **Precalculating an extent builds the row.** SuperListView measures by
-/// building the item off-screen, laying it out and throwing it away
-/// (`measureExtentForItem`), so for this feed one measurement is a whole
-/// [SpaceMessageBubble]: a markdown parse, the syntax-highlighted diffs a file
-/// edit opens by default — and, for the lite list rows the wire ships without
-/// their transcript, a `messaging.getMessageById` round trip apiece. Measuring
-/// the window unconditionally therefore costs exactly what rendering the entire
-/// conversation costs, which is the thing the windowed lazy list exists to
-/// avoid: opening a long space spent seconds building sixty turns nobody was
-/// looking at, and fired one transcript fetch per turn to do it.
-///
-/// So measurement is deferred out of the open (and out of every window growth
-/// and scroll) and bounded. The budget is what buys back the original intent —
-/// a stable scrollbar thumb and a growth delta the follow physics can trust —
-/// for the rows around the viewport, where it is felt, without paying it for
-/// scrollback nobody has reached. Beyond the budget rows keep
-/// `estimateMessageRowExtent`, which is content-derived rather than the
-/// package's flat 100px, and every row corrects itself the moment it is
-/// genuinely built.
+/// Precalculation policy that measures rows only while the feed is idle, and only up to
+/// [kFeedPrecalcRowBudget] of them.
+/// Precalculating an extent builds the row. SuperListView measures by
 class IdlePrecalculationPolicy extends ExtentPrecalculationPolicy {
   bool _armed = false;
 

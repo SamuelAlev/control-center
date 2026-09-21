@@ -1,23 +1,8 @@
-/// Default-deny allow-list governing which MCP tools a paired **phone** may
-/// invoke over the remote-control space.
+/// Default-deny allow-list of MCP tools a paired phone may invoke.
 ///
-/// The remote space shares the app-wide `McpToolDispatcher`/registry with the
-/// local MCP server, which exposes ~60 tools — including ones that spend LLM
-/// budget (`consult_agent`, `start_ai_review`), drive processes (`kill_agent`),
-/// post under the user's GitHub identity (`publish_review_to_github`), or mutate
-/// org-wide state (hiring, agent lifecycle, workspace creation). A phone is a
-/// **lower-privilege principal** than a local agent: it must reach only the
-/// read/observe surface the `cc_remote` PWA actually uses, plus a small set of
-/// intentional, local-only write verbs.
-///
-/// This policy enforces that distinction. It is the security boundary that keeps
-/// an approved (or leaked) pairing from becoming a full remote-control of the
-/// desktop. Anything not listed here is denied — adding a tool to the phone UI
-/// requires consciously adding it to [allowed] (and, if it writes, to
-/// [mutating]).
-///
-/// Not workspace-scoped: this is a per-*principal* capability gate, orthogonal
-/// to the per-call `workspace_id` scoping the session already enforces.
+/// Phone is lower-privilege than a local agent: only the `cc_remote` read/observe
+/// surface plus listed local write verbs. Unlisted tools denied. Not
+/// workspace-scoped — a per-principal gate orthogonal to `workspace_id`.
 class RemoteToolPolicy {
   RemoteToolPolicy._();
 
@@ -47,16 +32,12 @@ class RemoteToolPolicy {
   // NEWSFEED TOOLS ARE DELIBERATELY ABSENT.
   //
   // `list_feeds` / `list_articles` / `get_article` / `set_article_read` /
-  // `set_article_saved` used to be on this list. The newsfeed is PER-USER
-  // (global tables keyed by `user_id`) and the MCP tools are bound to the
-  // SERVER OWNER's identity at construction — "agents ride the owner's feed
-  // list". Over the phone space that made every paired member a reader and
-  // mutator of the OWNER's feeds: the `tools/call` membership gate only fires
-  // for arguments carrying a `workspace_id`, and these carry none.
-  //
-  // Nothing is lost: `cc_remote`'s newsfeed screen reads through
-  // `RemoteNewsfeedRepository` — the `newsfeed.*` repo-RPC ops, which scope by
-  // `ctx.userId` (the session's own user), never the owner's.
+  // `set_article_saved` used to be on this list.
+  // The newsfeed is PER-USER (global tables keyed by `user_id`) and the MCP tools are bound
+  // to the SERVER OWNER's identity at construction — "agents ride the owner's feed list".
+  // Over the phone space that made every paired member a reader and mutator of the OWNER's
+  // feeds: the `tools/call` membership gate only fires for arguments carrying a
+  // `workspace_id`, and these carry none.
 
   /// Whether [toolName] may be invoked over the remote space.
   static bool isAllowed(String toolName) => allowed.contains(toolName);

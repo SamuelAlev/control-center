@@ -4,28 +4,13 @@ import 'package:control_center/core/utils/app_log.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Keeps the app fully active while a long-running background task — a meeting
-/// recording — is in progress, so the OS does not throttle it when its window
-/// loses focus.
-///
-/// On macOS, an unfocused/occluded app is subject to **App Nap**: the system
-/// coalesces timers and slows the main run loop, which stalls Flutter
-/// platform-channel delivery. The audio-capture plugins keep enqueuing PCM on
-/// their real-time threads, but the buffered chunks are only handed to Dart in a
-/// burst when the window is refocused — so transcription appears to "pause while
-/// unfocused and catch up all at once" on focus. Holding an `NSProcessInfo`
-/// activity assertion for the duration of the recording prevents App Nap (and
-/// idle system sleep), keeping capture + transcription continuous in the
-/// background.
-///
-/// The same stall used to hide new chat-bridge spaces until the window was
-/// focused: RPC subscription frames sat unprocessed. That path is covered by a
-/// process-lifetime assertion in `AppDelegate` (`liveSessionActivity`, allows
-/// idle sleep). This guard is the stronger, task-scoped one (recording / agents)
-/// stacked on top.
-///
-/// Other platforms do not throttle background apps this way for our capture
-/// path, so the guard is a no-op there.
+/// Keeps the app fully active while a long-running background task — a meeting recording —
+/// is in progress, so the OS does not throttle it when its window loses focus.
+/// On macOS, an unfocused/occluded app is subject to App Nap: the system coalesces
+/// timers and slows the main run loop, which stalls Flutter platform-channel delivery.
+/// The audio-capture plugins keep enqueuing PCM on their real-time threads, but the
+/// buffered chunks are only handed to Dart in a burst when the window is refocused — so
+/// transcription appears to "pause while unfocused and catch up all at once" on focus.
 abstract interface class BackgroundActivityGuard {
   /// Begins an activity assertion described by [reason]. Idempotent.
   Future<void> begin(String reason);

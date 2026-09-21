@@ -16,9 +16,7 @@ import 'package:test/test.dart';
 
 import 'helpers/test_database.dart';
 
-// ===========================================================================
 // Fakes
-// ===========================================================================
 
 class FakeWorkspaceRepository implements WorkspaceRepository {
   FakeWorkspaceRepository({required this.workspaces, required this.reposByWs});
@@ -194,9 +192,7 @@ class FakeOpenPrFetchPort implements OpenPrFetchPort {
   }
 }
 
-// ===========================================================================
 // Helpers
-// ===========================================================================
 
 Repo _repo(String id) => Repo(
   id: id,
@@ -277,9 +273,7 @@ Map<String, dynamic> _prToWire(PullRequest pr) => {
   'requested_team_slugs': pr.requestedTeamSlugs,
 };
 
-// ===========================================================================
 // Tests
-// ===========================================================================
 
 void main() {
   late WorkspaceDatabase db;
@@ -1159,9 +1153,7 @@ void main() {
     });
   });
 
-  // =========================================================================
   // Author-facing lanes: merge readiness, review decisions, checks.
-  // =========================================================================
   group('author-facing notifications', () {
     late OpenPrPollingService authored;
     late List<Object> events;

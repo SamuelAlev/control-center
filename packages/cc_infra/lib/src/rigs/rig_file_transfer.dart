@@ -25,23 +25,10 @@ class RigFileTransferException implements Exception {
 /// Moves files between the host and a rig's guest, over whatever space that
 /// rig already has.
 ///
-/// **Why this rides [WorktreeTransport] and not the guest agent.** Three
-/// reasons, and the third is the one that decided it:
-///
-///  1. Every surface has a transport (SSH into a QEMU rig, `machine exec` into
-///     a microVM) — but only the DESKTOP has a guest agent. A terminal rig has
-///     no agent and no driver, and dropping a file into a shell is exactly the
-///     same operation as dropping one onto a desktop.
-///  2. The transport is a stream, so a 200 MB file is piped rather than
-///     base64'd into a JSON body the server holds whole.
-///  3. It needs no new guest endpoint, so it works on images that were built
-///     before this feature existed. The clipboard could not avoid a new
-///     endpoint; this could, and one forced image rebuild is enough.
-///
-/// Everything here is bounded: a guest that never closes its stdout, a `cat`
-/// that streams forever, a path that resolves to `/dev/zero`. The host holds
-/// these bytes in its own heap, so "the guest decides how many" is not an
-/// option.
+/// Rides [WorktreeTransport] (not the guest agent): every surface has a
+/// transport, only desktop has an agent; streams avoid base64-in-JSON heap
+/// holds; works on images built before this feature. Bounded against a guest
+/// that never closes stdout or resolves to `/dev/zero`.
 class RigFileTransfer {
   /// Creates a [RigFileTransfer] over [_transport], landing dropped files in
   /// [_dropDirectory] inside the guest.
@@ -83,23 +70,11 @@ class RigFileTransfer {
 
   Future<RigGuestFile> _putOne(RigFilePayload file) async {
     final name = file.sanitizedName;
-    // The whole write is one shell script so the naming and the copy cannot
-    // disagree: the guest chooses a free path, writes to THAT path, and
-    // prints it back. A host that picked the name first would race every
-    // other drop into the same directory.
-    //
-    // The claim is made with noclobber inside a subshell, which is the only
-    // way to say "create this, atomically, only if it does not exist" in
-    // POSIX sh. `[ -e ]` then `>` is a check-then-act with a window in it,
-    // and losing that race means overwriting a file the user still wanted —
-    // data loss nobody would ever attribute to a drag. The bound on the
-    // counter is for the OTHER reason a create fails: an unwritable
-    // directory, where an unbounded loop would spin forever holding a
-    // process open inside the guest.
-    //
-    // `umask 077` first, `chmod 0644` after: the file exists and is
-    // incomplete for as long as the copy takes, and it should not be
-    // world-readable in that window.
+    // One shell script: guest picks a free path (noclobber claim), writes
+    // there, prints it back — host-picked names race other drops.
+    // `[ -e ]` then `>` is TOCTOU; bound the counter so an unwritable dir
+    // cannot spin forever. `umask 077` then `chmod 0644` so the incomplete
+    // file is not world-readable while copying.
     const script =
         'set -e; '
         'umask 077; '
@@ -296,21 +271,10 @@ String? rejectGuestPath(String guestPath) {
 
 /// Where a host-side drop lands inside a guest, per surface.
 ///
-/// Chosen by the SERVER, never by the caller: a host that could name the
-/// destination could write `~/.ssh/authorized_keys` or a systemd unit into a
-/// machine an agent then drives.
-///
-/// One directory per surface, and each one is somewhere that surface can
-/// actually see:
-///
-///  * The desktop uses `~/Drops` under the `cc` user's home, so the file
-///    manager already lists it. Deliberately NOT the worktree — a dropped
-///    file must never turn up as an untracked change in somebody's repo.
-///  * A terminal rig gets `~/drops` beside its worktree, for the same reason
-///    and with the lowercase name shells are used to.
-///  * Browser guests are disposable Debian microVMs whose workloads use
-///    `/tmp` for profiles and local pages; it is writable and shared by every
-///    supported engine without inventing an engine-specific home contract.
+/// Chosen by the server, never the caller (no writing `~/.ssh/authorized_keys`
+/// into an agent-driven machine). Desktop: `~/Drops` under `cc` (not the
+/// worktree). Terminal: `~/drops` beside the worktree. Browser: `/tmp` on the
+/// disposable Debian guest.
 String rigDropDirectory({required RigSurface surface, required bool exec}) {
   if (exec) {
     return '/home/cc/drops';

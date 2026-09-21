@@ -1002,22 +1002,10 @@ const int _kNarrowColumnCharBudget = 24;
 /// with a "Package" sibling and squeeze the name past the cell.
 const int _kMediaColumnFlexFloor = 12;
 
-/// Per-column [TableColumnWidth] overrides. Short, media-free columns are set
-/// to [IntrinsicColumnWidth] so they hug their content (a "Name / Link" table
-/// no longer splits 50/50). Every other column gets a weighted
-/// [FlexColumnWidth]: remaining width is split by content length (with
-/// [_kMediaColumnFlexFloor] for badge-only columns) so a Package cell with a
-/// name outranks an Age badge instead of sharing 1/N and overflowing.
-///
-/// The two outcomes this produces, both GitHub-like:
-///  * mixed — some short, some wide/media columns: the short ones hug while the
-///    wide ones fill, so the table spans the surface width with tight labels;
-///  * uniformly short — every column intrinsic: the table shrink-wraps to its
-///    content (no flex column to stretch it) rather than sprawling.
-///
-/// Intrinsic sizing is assigned ONLY to media-free columns: image and custom
-/// inline builders use `LayoutBuilder`, which throws when the `Table` runs its
-/// intrinsic-width measurement pass.
+/// Column widths: media-free short columns → [IntrinsicColumnWidth]; others →
+/// weighted [FlexColumnWidth] (see [_kMediaColumnFlexFloor]). Intrinsic only on
+/// media-free columns — image/custom builders use LayoutBuilder and throw under
+/// Table's intrinsic pass.
 Map<int, TableColumnWidth> _tableColumnWidths(CcTable table, int columnCount) {
   if (columnCount == 0) {
     return const {};

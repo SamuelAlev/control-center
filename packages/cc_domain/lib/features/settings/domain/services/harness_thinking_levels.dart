@@ -14,26 +14,11 @@ final List<ThinkingLevel> harnessEffortLevels = [
     ThinkingLevel(id: e.id, label: e.label),
 ];
 
-/// The effort levels to offer for a built-in-harness model, given what the
-/// models.dev catalog knows about it ([info], null when the catalog has no
-/// entry).
+/// Effort levels for a built-in-harness model ([info] from models.dev, or null).
 ///
-/// This deliberately mirrors `DispatchSession._resolveHarnessEffort`, which is
-/// what actually decides whether an effort reaches the provider:
-///
-/// - **Catalog miss** — the run keeps thinking on and passes the requested
-///   effort through unclamped, so the picker MUST appear. This is the common
-///   case for a model newer than the last models.dev fetch (`zai/glm-5.3`) or
-///   served by a custom provider, and it is why the built-in adapter looked
-///   like it had no effort knob at all: the picker renders only when the model
-///   carries levels, and the harness branch never attached any.
-/// - **Known reasoning model** — offer exactly the efforts it accepts, so the
-///   slider cannot propose a level that `ThinkingConfig.resolve` will
-///   silently clamp away.
-/// - **Known non-reasoning model** — no levels, because the run sends no
-///   reasoning at all and a knob that changes nothing is worse than no knob.
-///
-/// Returned as a record because [AcpModel] asserts the two travel together.
+/// Mirrors `DispatchSession._resolveHarnessEffort`: catalog miss → show picker
+/// (unclamped); known reasoning → exact accepted efforts; known non-reasoning
+/// → none. Returned as a record ([AcpModel] asserts the pair).
 ({List<ThinkingLevel>? levels, String? defaultLevel}) harnessThinkingLevels(
   ModelInfo? info,
 ) {

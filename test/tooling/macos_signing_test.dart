@@ -2,24 +2,10 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
-/// Ratchet over how the macOS **Release** build signs itself.
-///
-/// The release pipeline signs AFTER Xcode: `macos_package.sh` re-signs the whole
-/// bundle inside-out with Developer ID, embeds the provisioning profile, applies
-/// `Runner/Release.entitlements`, notarizes and staples. Xcode's signature is
-/// replaced wholesale, so the Release configuration must not try to produce a
-/// real one — it cannot on a CI runner and it does not need to anywhere.
-///
-/// Both halves of that failed a release separately:
-///   * `"Apple Development"` + `DEVELOPMENT_TEAM` → Xcode looked for a Mac
-///     Development provisioning profile no runner has ("No profiles for
-///     'com.alev.control-center' were found").
-///   * `CODE_SIGN_ENTITLEMENTS` → pulled in `keychain-access-groups`, a
-///     RESTRICTED entitlement that requires a provisioning profile even under
-///     manual signing ("Runner requires a provisioning profile").
-///
-/// Xcode rewrites project.pbxproj whenever the project is opened and edited, so
-/// these settings can come back without anyone deciding they should.
+/// Release macOS signing: Xcode must not produce a real signature (no
+/// `"Apple Development"` + team, no `CODE_SIGN_ENTITLEMENTS`) — packaging
+/// re-signs inside-out with Developer ID after the build. Xcode can rewrite
+/// project.pbxproj and bring these back.
 void main() {
   final root = Directory.current.path;
   final pbxproj = File(

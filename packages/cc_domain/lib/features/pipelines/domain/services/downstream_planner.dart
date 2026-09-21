@@ -29,42 +29,13 @@ class DownstreamPlan {
   final bool terminalReached;
 }
 
-/// Decides what happens next in [definition] given the steps that have
-/// [completed] and those already [skipped], the [existing] step-run ids (any
-/// status — these are neither re-skipped nor re-run) and the branch each
-/// router [chosenRoutes] selected (`stepId -> routeKey`).
+/// Next steps given [completed]/[skipped]/[existing]/[chosenRoutes]. Pure.
 ///
-/// [resumable] names steps that HAVE a row but are still owed an execution — an
-/// interrupted step a crash-resume is holding until its sources finish. They are
-/// exempt from the [existing] veto and judged on readiness like any other step,
-/// so the caller can re-fire them on the row they already own.
-///
-/// [startStepId] is the [StepKind.trigger] node this run entered. Incoming
-/// edges from other trigger nodes are ignored for this run so a Schedule
-/// start does not wait on a Manual-only Condition, and a body wired only to
-/// another start is skipped rather than hung.
-///
-/// Branching rules:
-/// - A non-join step fires when **every** *work* trigger is satisfied: all of a
-///   trigger's sources have *completed* (skipped does not count) and, for a
-///   routed edge, the source router chose exactly this key.
-/// - Incoming edges whose sources include a trigger node are *start-bound*.
-///   Start-bound edges that do not name [startStepId] do not apply. When a
-///   step has both start-bound and work inbounds, it is ready if **either**
-///   side is satisfied (`Manual → Condition → Work` plus `Schedule → Work`
-///   still runs Work on a schedule start after Condition is skipped).
-/// - A join fires when **all** its `waitForStepIds` have reached a terminal
-///   state (completed *or* skipped) — so a gated branch that was skipped does
-///   not stall the join.
-/// - A step is *dead* (→ skipped) when any of its *applicable work* triggers
-///   can never be satisfied, and (when it has start-bound inbounds) every
-///   applicable start-bound trigger is dead too. A step whose only inbounds
-///   belong to another start is skipped. Skipping one step can kill its
-///   descendants, so skip detection iterates to a fixpoint. Joins are never
-///   killed this way (a skipped wait-for source still counts as terminal for
-///   them).
-/// - A terminal is "reached" only via a branch that actually *completed*; an
-///   all-skipped incoming edge does not finish the run.
+/// [resumable] bypasses [existing] (crash-resume). [startStepId] ignores other
+/// triggers' edges. Non-join: every work trigger satisfied (completed only;
+/// routed key exact). Start-bound+work: either side readies. Join: all
+/// wait-fors terminal. Dead→skipped at fixpoint (joins never killed). Terminal
+/// only via a completed branch.
 DownstreamPlan planDownstream({
   required PipelineDefinition definition,
   required Set<String> completed,

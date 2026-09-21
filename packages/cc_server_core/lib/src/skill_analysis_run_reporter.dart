@@ -9,25 +9,9 @@ import 'package:cc_domain/features/pipelines/domain/templates/builtin_template_s
 import 'package:cc_domain/features/skills/domain/ports/skill_analysis_port.dart';
 import 'package:uuid/uuid.dart';
 
-/// Publishes the settings UI's synchronous skill-analysis scans as runs of the
-/// `skill_analysis` template — the same rows the engine writes when that
-/// template is started manually or by `SkillUpdated`, so a Scan-button click
-/// lands in the runs table and run history beside them.
+/// Publishes settings UI skill-analysis scans as pipeline run rows for history/visibility.
 ///
-/// It writes those rows DIRECTLY rather than calling `PipelineEngine.start`,
-/// for the same reasons `PipelineCodeIndexRunReporter` does: the UI's scan ops
-/// need the outcome SYNCHRONOUSLY (the dialog renders verdicts and findings),
-/// while the engine's `start` is fire-and-forget through the body. The run row
-/// here is a PROJECTION of work the scan op owns, not a request to do work.
-///
-/// Two consequences, both deliberate (see the code-index reporter's rationale):
-///
-/// * no `PipelineRunStarted`/`PipelineRunCompleted` domain events are
-///   published — those are the engine's lifecycle and event triggers listen
-///   to them;
-/// * the engine must not adopt these rows on resume.
-///   [SkillAnalysisRunReporter.reapInterrupted] closes out the ones a crash
-///   left non-terminal and the server calls it before `resumeAll()`.
+/// Projection only — does not re-invoke the scanner through the engine.
 class SkillAnalysisRunReporter {
   /// Creates a reporter over the pipeline-run repository. `onError` receives
   /// reporting failures, which are never surfaced to the scan itself.

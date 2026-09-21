@@ -22,7 +22,7 @@ import 'package:go_router/go_router.dart';
 /// One pipeline run, full width: a meta strip (start, active duration, step
 /// progress, retry / delete) over the timing waterfall and the run's graph.
 ///
-/// Deliberately **not** a split with the runs list — the list is its own page
+/// Deliberately not a split with the runs list — the list is its own page
 /// ([pipelinesRoute]), reached back through the breadcrumb. The run's name and
 /// status live in that breadcrumb rather than in a page title, so the graph
 /// starts at the top of the viewport instead of below a header that repeats what

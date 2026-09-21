@@ -31,25 +31,8 @@ class AecUnavailable implements NativeLibraryUnavailable {
 /// (`libaec_ffi`), a thin C ABI over WebRTC's AEC3 `AudioProcessing` module.
 ///
 /// The library exposes a tiny C ABI (see `packages/cc_natives/native/aec_ffi.cc`):
-///
-/// ```c
-/// void* aec_create(int sample_rate_hz, int num_channels);            // opaque handle / NULL
-/// void  aec_process_reverse(void* h, const int16_t* ref, int n);     // far-end / render block
-/// void  aec_process_capture(void* h, const int16_t* cap,
-///                           int16_t* out, int n, int stream_delay_ms);// near-end -> cleaned
-/// void  aec_get_metrics(void* h, double* erl, double* erle,
-///                       double* residual, int* delay_ms);            // diagnostics
-/// void  aec_destroy(void* h);
-/// const char* aec_version(void);                                     // static, do not free
-/// ```
-///
-/// Blocks are mono PCM16 of [framesPerBlock] samples (10 ms @ 16 kHz).
-///
-/// [tryLoad] returning `null` is a PROBE RESULT, not a licence to degrade — the
-/// dylib is required. `AecProcessor.create` converts it into a thrown
-/// [AecUnavailable]. (The separate `AecMicFilter(null)` passthrough is the
-/// in-person recording MODE — no loopback means no far-end reference, so AEC
-/// does not apply — not an availability fallback.)
+/// [tryLoad] returning `null` is a PROBE RESULT, not a licence to degrade — the dylib is
+/// required.
 class AecFfiBindings {
   AecFfiBindings._(
     this._create,

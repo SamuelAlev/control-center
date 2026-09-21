@@ -8,11 +8,11 @@ typedef RigActionSender = Future<void> Function(Map<String, dynamic> action);
 
 /// Delivers input actions to a rig, one at a time, in the order they happened.
 ///
-/// **Single-flight is the point.** `rig.act` calls are awaited sequentially so
+/// Single-flight is the point. `rig.act` calls are awaited sequentially so
 /// a `left_mouse_up` can never overtake the `mouse_move` before it — with
 /// parallel RPCs the guest sees clicks land where the pointer USED to be.
 ///
-/// **Coalescing is what keeps that affordable.** Consecutive actions of the
+/// Coalescing is what keeps that affordable. Consecutive actions of the
 /// same kind (a fast drag's stream of moves) collapse to the newest one, so a
 /// slow link produces a late pointer rather than a growing backlog of stale
 /// positions.

@@ -2,31 +2,10 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
-/// Enumerates the repo's Dart SOURCE files for the source-scanning ratchets
-/// (architecture constraints, lib boundary, keyboard hygiene, l10n, …).
-///
-/// Use this instead of `Directory(root).listSync(recursive: true)`. That call
-/// enumerates the whole subtree BEFORE any filtering, so a skip list applied
-/// to the results does not prevent the walk — and `apps/cc_server/data/` is a
-/// runtime data dir holding provisioned worktree clones plus a vendored
-/// code-server install. Measured on a real dev tree: ~1.9 MILLION files under
-/// `apps/`, which took one such test 9m34s of a ~19m suite. Nothing under
-/// there is repo source.
-///
-/// Enumeration therefore comes from git — `git ls-files --cached --others
-/// --exclude-standard` — the same mechanism `SourceFileWalker` uses in
-/// production:
-///
-///  * it is one process (~20ms for ~3.5k files, versus minutes of `stat`),
-///  * `--exclude-standard` honours `.gitignore`, so every generated/vendored/
-///    runtime tree (`data/`, `build/`, `.dart_tool/`, cargo `target/`) is
-///    excluded automatically — a NEW artifact dir needs no new skip entry,
-///  * `--others` keeps untracked-but-not-ignored files in scope, so a file a
-///    developer has not staged yet is still policed locally, exactly as CI
-///    would police it once committed.
-///
-/// Falls back to a pruning manual walk when git is unavailable (a tarball
-/// export, a sandbox without the binary) so the ratchets still run.
+/// Enumerates Dart SOURCE files for scanning ratchets via `git ls-files`
+/// (not recursive `listSync` — `apps/cc_server/data/` alone is ~1.9M files).
+/// Honours `.gitignore`; includes untracked-but-not-ignored. Falls back to a
+/// pruning walk when git is unavailable.
 List<File> dartSourceFiles({
   List<String> roots = const ['lib', 'packages', 'apps'],
   bool includeTests = false,

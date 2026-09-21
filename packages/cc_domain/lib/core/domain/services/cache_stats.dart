@@ -6,13 +6,11 @@
 /// eviction count and no size reading anywhere, which means every capacity and
 /// every TTL in the repo is a guess that has never been checked against a
 /// running system. You cannot tune what you cannot see.
-///
 /// This is deliberately the cheapest thing that fixes that: three integer
 /// increments and one gauge per cache, read out through `/healthz`. It is NOT
 /// a metrics framework — no histograms, no time series, no exporter. A counter
 /// that costs an increment can live on a hot path; anything heavier would have
 /// to be sampled, and a sampled hit rate is the kind of number that misleads.
-///
 /// Pure Dart with no dependencies so both tiers can use it.
 library;
 

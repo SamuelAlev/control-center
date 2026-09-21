@@ -21,30 +21,15 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
 
-/// A single row in a [CcMenu] — an action, a single/multi-select option, a
-/// submenu, a section heading, or a divider.
+/// One [CcMenu] row: action, select option, submenu, section heading, or divider.
+/// Short verb labels; don't repeat the trigger's shared action. Put
+/// [destructive] last, after a [CcMenuItem.divider].
 ///
-/// Keep labels short verbs describing the action and don't repeat the menu
-/// trigger's shared action in every row (a "Move to" menu lists targets, not
-/// "Move to X" / "Move to Y"). Place destructive rows ([destructive]) last,
-/// separated from the safe actions by a [CcMenuItem.divider].
-///
-/// Modifiers:
-/// * [selected] draws a leading check mark (single- or multi-select). When any
-///   sibling is selectable the whole column reserves the check gutter so
-///   selected and unselected rows stay left-aligned.
-/// * [trailing] shows a right-aligned keyboard-shortcut hint (e.g. `⌘W`). Only
-///   set it for a shortcut that is actually bound — a hint for a dead shortcut
-///   is a broken affordance.
-/// * [searchText] adds words a searchable menu matches the row on without
-///   rendering them. Use it for the term a [CcMenuItem.section] heading lifted
-///   out of the labels beneath it: once "Chromium (VM)" is just "Chromium"
-///   under a VIRTUAL MACHINE heading, typing "vm" must still find it.
-/// * [CcMenuItem.submenu] nests a flyout of [children] behind a caret. Avoid
-///   more than one nesting level and omit a term shared by every child from
-///   the child labels (a "Split" submenu lists "Up"/"Down", not "Split up").
-///   Submenus render only in the pointer-anchored [showCcMenuAt]; a flat
-///   [CcMenu] dropdown does not open them.
+/// [selected]: leading check; reserve check gutter for the whole column when any
+/// sibling is selectable. [trailing]: only for a bound shortcut. [searchText]:
+/// extra match terms (e.g. words lifted into a [CcMenuItem.section] heading).
+/// [CcMenuItem.submenu]: one nesting level max; omit shared parent terms from
+/// child labels; only in [showCcMenuAt], not flat [CcMenu].
 @immutable
 class CcMenuItem {
   /// Creates an action / selectable [CcMenuItem].
@@ -253,31 +238,15 @@ List<CcMenuItem> _filterItems(List<CcMenuItem> items, String query) {
   return [for (final s in scored) s.$1];
 }
 
-/// A flat dropdown menu — the cc_ui replacement for Material's
-/// `PopupMenuButton`.
+/// Flat dropdown menu (Material `PopupMenuButton` replacement). Tap [target]
+/// for a floating panel of [CcTappable] rows; destructive rows use `t.danger`.
+/// Selection closes then calls `onSelected`.
 ///
-/// Tapping [target] opens a floating panel (golden float, hairline border,
-/// large radius) listing [items] as flat [CcTappable] rows with a hover wash.
-/// Destructive rows render their label and icon in `t.danger`. Selecting a row
-/// closes the menu, then calls the item's `onSelected`.
-///
-/// Keyboard: Up/Down move an explicit highlight (wrapping, skipping dividers,
-/// [CcMenuItem.section] headings and disabled rows, scrolling the highlighted
-/// row into view), Enter activates it and Escape dismisses. The highlight is an
-/// index rather than real focus because [searchable] puts focus in the search
-/// field, and focus cannot sit in the field and on a row at once.
-///
-/// This anchored dropdown is intentionally flat — it renders [CcMenuItem.icon],
-/// [CcMenuItem.selected] (check gutter), [CcMenuItem.section] and
-/// [CcMenuItem.trailing], but does NOT open [CcMenuItem.submenu] flyouts. Use
-/// [showCcMenuAt] (right-click / context menus) when you need cascading
-/// submenus.
-///
-/// Trigger guidance: the [target] must telegraph that it opens a list — a
-/// labeled button carries a trailing caret ([CcButton.trailing] with a
-/// chevron), an overflow trigger is the ellipsis icon button. The panel is
-/// never narrower than its trigger and grows with long labels up to
-/// [maxWidth], where rows truncate with a tooltip instead of wrapping.
+/// Arrows move an index highlight (skip dividers/sections/disabled); Enter
+/// activates; Esc dismisses. Index (not focus) so [searchable] can keep focus
+/// in the search field. Flat only — no [CcMenuItem.submenu]; use [showCcMenuAt]
+/// for cascading menus. Panel ≥ trigger width, grows to [maxWidth], then
+/// truncates with tooltip.
 class CcMenu extends StatefulWidget {
   /// Creates a [CcMenu].
   const CcMenu({

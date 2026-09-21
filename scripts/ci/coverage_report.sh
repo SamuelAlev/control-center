@@ -1,20 +1,8 @@
 #!/usr/bin/env bash
-# Produce a per-package line-coverage report for the whole workspace.
 #
-# Usage: scripts/ci/coverage_report.sh [output-dir]
+# CI coverage report helper.
+# Usage: scripts/ci/coverage_report.sh
 #
-# NON-GATING BY DESIGN. Coverage was deliberately unmeasured because nothing
-# consumed it (ci.yml says so where it drops `--coverage`), and that is a
-# defensible call for a merge gate — a percentage threshold rewards testing the
-# easy half. It is not a defensible call for VISIBILITY: with 20 workspace
-# members and no number anywhere, a package with no tests at all
-# (`cc_remote`) looks exactly like a package with good ones. This script prints
-# the number and stops. It never fails on a threshold.
-#
-# Both runners are handled: `flutter test --coverage` writes lcov directly,
-# while `dart test --coverage=<dir>` writes raw JSON that `format_coverage`
-# (package:coverage, activated globally rather than added as a dev_dependency
-# to 17 pubspecs) turns into the same shape.
 set -uo pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")/../.." || exit 1

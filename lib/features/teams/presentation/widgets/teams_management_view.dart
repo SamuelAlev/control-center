@@ -13,22 +13,10 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
-/// The teams management surface: group agents into teams and route work
-/// through a leader.
-///
-/// Hosted by the agent registry (Settings → Workspace → Agents): teams are
-/// agent constructs — their members and their leader are agents — so they are
-/// managed beside the roster they draw from, not as a workspace-membership
-/// page where "Teams" read as being about people.
-///
-/// ## Why it looks like this
-///
-/// It sits in the registry's body, so it is built from the registry's parts:
-/// one [SectionCard] with a state strip over a [SettingsMasterDetail]. It used
-/// to invent its own page instead — a bare title row, a rail of divider-
-/// separated tiles, and a detail pane of stacked cards — which meant the two
-/// halves of the same screen disagreed about what a rail row, a card and a
-/// heading look like the moment you pressed the toolbar toggle between them.
+/// The teams management surface: group agents into teams and route work through a leader.
+/// Hosted by the agent registry (Settings → Workspace → Agents): teams are agent constructs
+/// — their members and their leader are agents — so they are managed beside the roster they
+/// draw from, not as a workspace-membership page where "Teams" read as being about people.
 class TeamsManagementView extends ConsumerStatefulWidget {
   /// Creates a [TeamsManagementView].
   const TeamsManagementView({required this.workspaceId, super.key});

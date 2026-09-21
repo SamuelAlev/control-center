@@ -4,30 +4,9 @@ import 'dart:io';
 import 'package:cc_harness/loop.dart';
 import 'package:path/path.dart' as p;
 
-/// Opt-in, on-disk configuration for a harness run, read from
-/// `.agents/harness.json` in the working tree (or the agent config dir).
-///
-/// Absent file → everything off (the default loop behavior). This is how the
-/// otherwise-inert loop extensions (stream rules, advisor, shell hooks) get
-/// activated without a database field.
-///
-/// Shape:
-/// ```json
-/// {
-///   "streamRules": [{"pattern": "Box::leak", "reminder": "Use Arc instead."}],
-///   "advisor": {
-///     "enabled": true,
-///     "model": "claude-haiku-4-5",
-///     "everyTurns": 3,
-///     "instructions": "Watch especially for missing error handling."
-///   },
-///   "hooks": {
-///     "sessionStart": ".agents/hooks/start.sh",
-///     "preTool": ".agents/hooks/pre.sh",
-///     "postTool": ".agents/hooks/post.sh"
-///   }
-/// }
-/// ```
+/// Opt-in on-disk harness config from `.agents/harness.json` (working tree or
+/// agent config dir). Absent file → defaults (stream rules, advisor, shell hooks
+/// off). Keys: `streamRules`, `advisor`, `hooks`.
 class HarnessRunConfig {
   /// Creates a [HarnessRunConfig].
   const HarnessRunConfig({

@@ -9,22 +9,10 @@ import 'package:flutter/widgets.dart';
 part 'artifact_table_metrics.dart';
 
 /// Renders an [ArtifactTableBlock] as a tokenized data table.
-///
-/// Scrolls horizontally inside its own box rather than letting a wide table
-/// widen the page — the surrounding surface must never scroll sideways.
-///
-/// Distinct from cc_markdown's table renderer, which draws tables parsed from
-/// markdown source. This one takes typed data (columns with keys and alignment,
-/// rows as values), which is what an agent produces when it has a result set
-/// rather than prose.
-///
-/// Typed does NOT mean literal, though: a cell is a string an agent wrote, and
-/// agents write `path/to/file.ts`, *emphasis* and **bold** into result sets the
-/// same way they write them into prose. Cells are therefore parsed as INLINE
-/// markdown ([CcParser.parseInline]) and drawn with the app's markdown
-/// renderer, so a backtick is a code chip here exactly as it is in a markdown
-/// table. Inline only, on purpose — a cell is not a block context, so a leading
-/// `- ` stays a hyphen instead of becoming a list.
+/// Scrolls horizontally inside its own box rather than letting a wide table widen the page
+/// — the surrounding surface must never scroll sideways.
+/// Inline only, on purpose — a cell is not a block context, so a leading `- ` stays a
+/// hyphen instead of becoming a list.
 class ArtifactTable extends StatefulWidget {
   /// Creates an [ArtifactTable].
   const ArtifactTable({

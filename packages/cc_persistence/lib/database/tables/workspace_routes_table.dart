@@ -1,24 +1,10 @@
 import 'package:drift/drift.dart';
 
-/// Global routing index: an opaque key → the workspace that owns it.
+/// Opaque key → owning workspace (pre-auth routing).
 ///
-/// **CROSS-WORKSPACE BY DESIGN** — this table lives in `global.db` and is the
-/// one sanctioned way to answer "which workspace does this belong to?" *before*
-/// a workspace is known.
-///
-/// The database is split into `global.db` + one file per workspace, so a lookup
-/// needs its workspace id to pick a file. Almost every call site already has
-/// one (the RPC session binds it). The exceptions are pre-auth entry points
-/// that receive nothing but a secret or an opaque id:
-///
-///  * an invite code hash arriving from an unauthenticated redeemer,
-///  * a webhook token on an inbound HTTP request,
-///  * a deep link naming a pipeline run / space / ticket with no workspace.
-///
-/// Those resolve here. Writes are strict and fail loudly: the route row is
-/// written by the same server-side operation that creates the entity (entity
-/// first, then route) and a lookup miss is simply "not found" — there is no
-/// scan fallback that could quietly paper over a missing route.
+/// CROSS-WORKSPACE BY DESIGN — lives in `global.db`. Used when only a secret
+/// or opaque id is known (invite hash, webhook token, deep link). Written with
+/// the entity (entity first, then route); miss is not-found (no scan fallback).
 class WorkspaceRoutesTable extends Table {
   /// The kind of key being routed — see [WorkspaceRouteKind].
   TextColumn get kind => text()();

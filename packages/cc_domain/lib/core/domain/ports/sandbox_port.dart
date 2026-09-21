@@ -62,14 +62,11 @@ abstract interface class SandboxPort {
   /// spec's default `guestWorkdir` for this one invocation — that's how the
   /// agent dispatcher targets the agent directory while the interactive
   /// terminal stays in the conversation directory.
-  ///
   /// [onPid] is called once with the child process id immediately after
   /// `Process.start` returns, before any stdio is forwarded. Use it to
   /// capture the PID for process-management UI (kill button, run logs, etc.).
-  ///
   /// Returns the exit code. Streams stdout/stderr to the same [events]
   /// stream so the chat UI can pick them up just like the un-sandboxed path.
-  ///
   /// [stdinInput], when non-null, is written to the child's stdin and stdin
   /// is then closed. Used by CLIs that expect the prompt on stdin rather
   /// than as an argv entry. When null the child's stdin is closed immediately

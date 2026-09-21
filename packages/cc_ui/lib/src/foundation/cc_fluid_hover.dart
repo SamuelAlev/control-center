@@ -43,28 +43,14 @@ abstract interface class CcFluidHoverTarget {
   bool get fluidHoverEnabled;
 }
 
-/// A nearest-target hover group for compact, stable collections.
+/// Nearest-target hover for compact, stable collections. Highlight follows the
+/// nearest enabled item (gaps/padding included); containing row wins, else
+/// center distance along [axis]. One geometry pass per frame.
 ///
-/// One highlight follows the pointer to the nearest enabled item, including
-/// while the pointer crosses inter-item gaps or the collection's padding. A
-/// row containing the pointer always wins; otherwise distance is measured to
-/// each item's center along [axis]. Pointer moves are coalesced to one geometry
-/// pass per animation frame.
-///
-/// Use this only when every enabled item is a safe target, items sit close
-/// together, and their relative positions stay stable while the pointer is in
-/// the group. Do not use it for mixed interactive/static cards, destructive
-/// gap-click behavior, sparse layouts, or independently reordering rows.
-///
-/// The highlight is one non-interactive overlay shared by every item. It moves
-/// with a transform and only interpolates width/height when target extents
-/// differ. Reduced motion keeps nearest-item selection but snaps the visual
-/// between targets.
-///
-/// A still pointer over a scrolling list is the same gesture as a moving
-/// pointer over a still list. Ancestor and descendant scrollables both
-/// retarget after the scroll layout commits. Travel animates only when the
-/// active item changes; the same item's rect tracks without lag.
+/// Only when every enabled item is a safe target and layout stays stable —
+/// not mixed cards, sparse layouts, or reordering rows. Shared non-interactive
+/// overlay; reduced motion snaps. Scrollables retarget after layout; animate
+/// travel only when the active item changes.
 class CcFluidHover extends StatefulWidget {
   /// Creates a fluid hover group.
   const CcFluidHover({

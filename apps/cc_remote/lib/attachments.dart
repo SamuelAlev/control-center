@@ -1,27 +1,9 @@
-// Attaching a picture or a file to a message from the phone.
+// Phone attachment upload: bytes must reach the server before the message.
 //
-// **Why the phone needs its own lane.** cc_remote is a browser PWA: there is no
-// filesystem to name, so a path is not a thing it can send. Whatever is
-// attached here exists only as bytes in the tab, and those bytes have to reach
-// the server before the message does — otherwise the message names a file that
-// exists nowhere the agent can reach, which is exactly the failure the
-// desktop's upload lane exists to prevent.
-//
-// **Two lanes, and the transport forces the choice.**
-//
-// *HTTP (`POST /blob`)* whenever the pairing has an origin — LAN, tailnet, a
-// reachable tunnel. It has to be HTTP there, because that connection carries
-// JSON-RPC over a WebSocket whose inbound frames the server caps at 256 KB and
-// CLOSES past: a base64 screenshot on that socket does not arrive late, it
-// drops the link and takes the message with it.
-//
-// *RPC (`blob.put`)* when there is no origin at all. That is the BROKERED RELAY
-// — a server behind NAT reached through the signalling broker — where there is
-// no endpoint to POST to. It is safe there for the same reason it is unsafe
-// above: the relay is not a WebSocket. It runs `ChunkedRelaySession`, which
-// splits a frame into 16 KB sealed pieces with credit-based backpressure, so a
-// large frame is precisely what it is built to carry. It is still the slow
-// lane, and the ceiling here is lower than the store's to say so.
+// HTTP `POST /blob` when the pairing has an origin — the RPC WebSocket caps
+// inbound frames at 256 KB and closes past that. RPC `blob.put` on brokered
+// relay (no HTTP origin): `ChunkedRelaySession` carries large frames; slower,
+// lower ceiling than the store.
 library;
 
 import 'dart:async';

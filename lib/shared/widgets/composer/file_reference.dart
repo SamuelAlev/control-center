@@ -1,32 +1,9 @@
-// Inline file references in the composer: `@[file:<name>]`.
+// Composer `@[file:<name>]` naming helpers (`package:path`).
 //
-// The GRAMMAR (the pattern, the matches, the expansion) lives in the shared
-// kernel — `cc_domain`'s `file_reference.dart` — because both ends need it: the
-// composer writes the token, and the server expands it into a real path before
-// an agent reads the prompt. Two copies of that regex would be two definitions
-// of what a reference is. What stays here is what only the composer needs: the
-// naming rules, which are about how a name READS in a sentence and want
-// `package:path`.
-//
-// A reference is ORDINARY TEXT, not a widget. That is the whole design, and it
-// is not a compromise:
-//
-//  * An editable field maps a caret offset to a character index. A `WidgetSpan`
-//    counts as ONE character in the text painter while the token it replaces is
-//    N characters in the controller, so every offset after the first chip goes
-//    out of sync — the caret lands somewhere else, selection highlights the
-//    wrong range, and undo replays into the wrong place. Painting the same
-//    characters with a different style leaves the count untouched.
-//  * A reference the user can select, copy, retype and delete character by
-//    character behaves like the rest of their sentence, because it IS the rest
-//    of their sentence.
-//
-// The "max width" the token needs comes from bounding the NAME, not from
-// clipping a box: a 120-character path pasted mid-prompt is what actually
-// dominates the line. [ellipsizeFileRefName] keeps the head, the tail and — the
-// part that says what the file IS — the extension. The full path never appears
-// in the field at all; it lives in the composer's registry keyed by the token
-// and is spliced back in on submit.
+// Grammar/expansion live in `cc_domain` (shared with the server). Keep as
+// styled text, not `WidgetSpan` — span length ≠ controller length breaks caret/
+// selection/undo. [ellipsizeFileRefName] on the name; full path in the registry
+// until submit.
 library;
 
 import 'package:path/path.dart' as p;

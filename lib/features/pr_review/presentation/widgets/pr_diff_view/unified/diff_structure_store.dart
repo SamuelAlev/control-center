@@ -11,7 +11,7 @@ import 'package:flutter/foundation.dart';
 /// Owns diff line data for the unified viewer, split into two tiers with very
 /// different availability guarantees:
 ///
-/// **Structure (pass-1)** — parsed *synchronously on demand* on the main
+/// Structure (pass-1) — parsed *synchronously on demand* on the main
 /// isolate the first time a file is touched, then cached in the [PrDiffDocument]
 /// for the rest of the session. `parseUnifiedDiff` is cheap pure-Dart work, so
 /// doing it inline the moment a file becomes visible guarantees the painter
@@ -19,7 +19,7 @@ import 'package:flutter/foundation.dart';
 /// loading placeholder, even on the fastest scrollbar fling. This is the core
 /// fix for white space during drag.
 ///
-/// **Tokens (pass-2, syntax colour)** — fetched lazily off the UI thread from
+/// Tokens (pass-2, syntax colour) — fetched lazily off the UI thread from
 /// the existing [DiffWorkerPool] for files in (or near) the viewport, cached in
 /// a bounded LRU and surfaced through [repaint] so colour fades in over the
 /// already-painted plain text without ever blocking a frame.

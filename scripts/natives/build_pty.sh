@@ -1,36 +1,9 @@
 #!/usr/bin/env bash
 #
-# Builds libccpty — the pseudo-terminal native (vendored verbatim from
-# flutter_pty 0.4.2, see packages/cc_natives/native/pty/PROVENANCE.md) — and
-# installs it where the cc_natives PTY loader looks for it (the app-support root
-# next to control_center.db, plus an optional explicit DEST for CI staging /
-# bundle embedding).
+# Builds libccpty (vendored flutter_pty; REQUIRED). Loose dylib so pure-Dart
+# cc_server can load it without a Flutter plugin build step.
+# Usage: scripts/natives/build_pty.sh [DEST_DIR]
 #
-# Why a loose dylib: flutter_pty is a Flutter ffiPlugin (its C is compiled only
-# by `flutter build`). The pure-Dart `cc_server` binary (`dart build cli`) has
-# no Flutter build step, so the headless server can't use the plugin. We compile
-# the identical C here — the same runtime-dylib pattern as rift / fff /
-# tree-sitter / aec — and load it via dart:ffi DynamicLibrary at runtime, so the
-# headless agent executor can spawn PTYs (sandboxed shells / terminal).
-#
-# Self-contained: only libc + pthread (no third-party clone, unlike build_aec).
-# The Dart Native API DL (Dart_PostCObject_DL) is compiled in from the vendored
-# include/dart_api_dl.c — it links against the loading process's Dart runtime at
-# load time, so the SAME dylib works in the standalone Dart VM and under Flutter.
-#
-# REQUIRED on every platform: cc_server's boot preflight refuses to start without
-# libccpty and `Pty.start` throws PtyUnavailable — there is no non-PTY path for
-# the sandboxed terminals / agent executor to degrade into.
-#
-# Cross-platform: macOS (arm64/x86_64) and Linux (x86_64/arm64) here; Windows is
-# built separately by scripts/release/windows_natives.sh (MSVC over this same
-# vendored umbrella source, with flutter_pty_win.c driving ConPTY). Any other OS
-# is a hard error.
-#
-# Requirements: a C compiler (cc/clang/gcc).
-#
-# Usage:
-#   scripts/natives/build_pty.sh [DEST_DIR]
 set -euo pipefail
 
 REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"

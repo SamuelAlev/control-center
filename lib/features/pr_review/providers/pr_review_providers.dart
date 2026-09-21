@@ -116,7 +116,7 @@ Stream<T> _prStream<T>(
   return read(repository);
 }
 
-/// Provides the cached PR review repository for **repo-level** work — reads and
+/// Provides the cached PR review repository for repo-level work — reads and
 /// writes that carry no PR identity at all (the assignee/reviewer pickers the
 /// compose screen shows with no PR in play).
 ///
@@ -170,25 +170,12 @@ final prDetailProvider = StreamProvider.autoDispose.family<PullRequest?, PrRef>(
 );
 
 /// The row for `prNumber` out of the last open-PR snapshot, or null.
-///
-/// Everything on a PR page waited on [prDetailProvider], so a cold detail cache
-/// meant a forge round trip before ANY chrome appeared — title, author,
-/// branches, state, reviewers, all of it blank behind a skeleton. But the row
-/// the operator just clicked was already in hand: the list query carries the
-/// whole entity except `body`/`body_html`, and [lastGoodOpenPrsProvider] keeps
-/// the snapshot alive across the navigation (the list provider itself is
-/// autoDispose and dies with the list).
-///
-/// Scoped to the repo the URL pinned, never merely matched on number: a PR
-/// number is unique only inside its repo, and a workspace routinely links
-/// several. A same-numbered PR from a sibling repo would seed the page with
-/// another PR's title and author.
-///
-/// **Chrome only.** The seed's `body` is empty because the list query never
-/// asked for one — which is indistinguishable from a PR that genuinely has no
-/// description. Rendering the empty-description placeholder off a seed would
-/// state something false and then reflow when the real body lands, so callers
-/// gate the description on [prDetailPendingProvider] instead.
+/// Everything on a PR page waited on [prDetailProvider], so a cold detail cache meant a
+/// forge round trip before ANY chrome appeared — title, author, branches, state, reviewers,
+/// all of it blank behind a skeleton.
+/// Scoped to the repo the URL pinned, never merely matched on number: a PR number is unique
+/// only inside its repo, and a workspace routinely links several.
+/// Chrome only. The seed's `body` is empty because the list query never
 final prDetailSeedProvider = Provider.autoDispose.family<PullRequest?, PrRef>((
   ref,
   pr,

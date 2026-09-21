@@ -34,26 +34,13 @@ class SpaceAdapterEnforcement {
   int get hashCode => Object.hash(adapter, enforcement);
 }
 
-/// The adapter enforcement in force for `spaceId`, or null while the answer is
-/// still unknown (no workspace, or participants/agents not loaded yet).
-///
-/// ## How the adapter is resolved
-///
-/// Deliberately the same chain `DispatchAgentUseCase` walks, so the badge cannot
-/// claim one thing while dispatch does another: the agent's own `adapterId`
-/// first, then the configured default-chat adapter, then a lookup in
-/// [predefinedAdapters], and finally [builtInAdapter] — which is what an agent
-/// with no adapter actually runs on. A space with no agent participant yet
-/// falls back the same way; that is the adapter the next hire will run on.
-///
-/// ## Why the weakest wins
-///
-/// A space can hold several agents on different adapters and a mode guarantee
-/// is only as good as the runner most able to break it. Reporting the strongest
-/// (or the first) would let one sandbox-only agent hide behind a fully-enforced
-/// peer, which is exactly the dishonesty this whole surface exists to remove.
-/// Returning null on an unresolved chain is likewise deliberate: an absent badge
-/// says "unknown", never "fine".
+/// The adapter enforcement in force for `spaceId`, or null while the answer is still
+/// unknown (no workspace, or participants/agents not loaded yet).
+/// A space can hold several agents on different adapters and a mode guarantee is only as
+/// good as the runner most able to break it.
+/// Reporting the strongest (or the first) would let one sandbox-only agent hide behind a
+/// fully-enforced peer, which is exactly the dishonesty this whole surface exists to
+/// remove.
 final spaceAdapterEnforcementProvider = Provider.autoDispose
     .family<SpaceAdapterEnforcement?, String>((ref, spaceId) {
       final workspaceId = ref.watch(activeWorkspaceIdProvider);

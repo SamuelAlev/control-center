@@ -50,24 +50,8 @@ AccountLane accountLaneFor(Agent agent) =>
     accountLaneForAdapter(agent.adapterId);
 
 /// Per-agent account pools — this agent's override of the workspace's.
-///
-/// ## Why it shows the agent's own lane
-///
-/// This listed EVERY lane at first, on the reasoning that an agent's adapter
-/// can change and inferring one lane would hide the pool that mattered the day
-/// it did. But the cost of that landed on every other agent: an "Accounts" tab
-/// on a harness agent that headed a block of Claude Code logins it cannot use.
-/// The tab is now gated and scoped by transport (`agentHasAccountsToRotate` /
-/// `accountLaneFor`); an adapter change re-evaluates both on the next build,
-/// and a pool written earlier keeps resolving server-side regardless.
-///
-/// The harness lane deliberately stays plural. One run can reach a second
-/// provider mid-chain through the `a/b|c/d` model syntax, so every provider
-/// with something to choose between is in scope for a harness agent.
-///
-/// Every block starts out inheriting. Nothing is written until the operator
-/// changes something, so an agent that never opens this tab keeps resolving
-/// through the workspace exactly as before.
+/// Nothing is written until the operator changes something, so an agent that never opens
+/// this tab keeps resolving through the workspace exactly as before.
 class AgentAccountPoolsTab extends ConsumerWidget {
   /// Creates an [AgentAccountPoolsTab] for [agentId].
   const AgentAccountPoolsTab({

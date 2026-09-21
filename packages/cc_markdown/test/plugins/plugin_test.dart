@@ -1,10 +1,6 @@
 import 'package:cc_markdown/cc_markdown.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-// ---------------------------------------------------------------------------
-// Fixtures: custom nodes
-// ---------------------------------------------------------------------------
-
 /// A custom block node emitted by [_NotePlugin] and [_PrefixPlugin].
 final class _NoteBlock extends CcCustomBlock {
   const _NoteBlock(this.body);
@@ -38,10 +34,6 @@ final class _MentionInline extends CcCustomInline {
   @override
   int get hashCode => Object.hash(nodeType, name);
 }
-
-// ---------------------------------------------------------------------------
-// Fixtures: plugins
-// ---------------------------------------------------------------------------
 
 /// `:::note` fenced block. Returns null (falls through) when unclosed.
 final class _NotePlugin extends CcBlockPlugin {
@@ -163,10 +155,6 @@ final class _BadPlugin extends CcParserPlugin {
   @override
   String get id => 'bad';
 }
-
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
 
 void main() {
   group('CcPluginSet construction', () {

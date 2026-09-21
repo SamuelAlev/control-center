@@ -492,7 +492,6 @@ void main() {
   });
 }
 
-// --- Fakes ----------------------------------------------------------------
 
 class _FakeTemplateRepository implements PipelineTemplateRepository {
   _FakeTemplateRepository(this._extras);

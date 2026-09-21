@@ -1,16 +1,8 @@
 //! Offline speech recognition (Whisper + transducer) over the sherpa-onnx C API.
 //!
-//! Drives the recognizer for `sherpa_onnx_transcriber.dart`'s worker isolate:
-//! build an `OfflineRecognizerConfig`, create a recognizer, then per window
-//! create a stream → accept waveform → decode → read the text → free the
-//! stream.
-//!
-//! ## Every `char*` must point at a real string
-//!
-//! sherpa's C++ side wraps incoming `const char*` config fields in
-//! `std::string`, which dereferences them — a NULL is a crash, not a default.
-//! [`Config`] therefore starts from a zeroed struct and points EVERY `char*` at
-//! a shared empty string before the caller's values are applied.
+//! Drives the recognizer for `sherpa_onnx_transcriber.dart`'s worker isolate: build an
+//! `OfflineRecognizerConfig`, create a recognizer, then per window create a stream → accept
+//! waveform → decode → read the text → free the stream.
 
 use std::ffi::{c_char, CString};
 use std::panic::{catch_unwind, AssertUnwindSafe};
@@ -245,21 +237,12 @@ unsafe fn build_whisper(
     CcAsr::create(&config.raw)
 }
 
-/// Creates a transducer recognizer. `joiner` may be empty for models that have
-/// none.
+/// Creates a transducer recognizer.
 ///
-/// `model_type` is left EMPTY on purpose so sherpa-onnx auto-routes from the
-/// encoder's own `model_type` metadata: NeMo Parakeet encoders
-/// (`EncDecRNNTBPEModel` / `EncDecHybridRNNTCTCBPEModel`) take the NeMo
-/// recognizer, while Zipformer/conformer encoders take the k2 one. Hardcoding
-/// `"transducer"` forces the k2 path, whose decoder init reads `vocab_size`
-/// from the *decoder* ONNX — which NeMo models carry on the *encoder* instead —
-/// so it fails with `'vocab_size' does not exist in the metadata` and tears
-/// down the recognizer for every Parakeet model.
-///
-/// # Safety
-/// All string arguments must be valid NUL-terminated UTF-8 (or NULL where
-/// optional).
+/// `model_type` is left EMPTY on purpose so sherpa-onnx auto-routes from the encoder's own
+/// `model_type` metadata: NeMo Parakeet encoders (`EncDecRNNTBPEModel` /
+/// `EncDecHybridRNNTCTCBPEModel`) take the NeMo recognizer, while Zipformer/conformer
+/// encoders take the k2 one.
 #[no_mangle]
 pub unsafe extern "C" fn cc_asr_create_transducer(
     encoder: *const c_char,

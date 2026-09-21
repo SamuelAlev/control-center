@@ -4,28 +4,10 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../helpers/source_files.dart';
 
-/// RTL directionality ratchet — physical-edge geometry must not grow.
-///
-/// The app ships RTL locales, so anything that should mirror
-/// with the reading direction must use logical geometry (`EdgeInsetsDirectional`,
-/// `AlignmentDirectional`, `TextAlign.start`/`end`) rather than physical
-/// left/right APIs. See "RTL & directionality" in AGENTS.md.
-///
-/// This is a shrinking allowlist over the UI production trees (the root client,
-/// cc_ui, cc_markdown and cc_remote): a file using a banned physical pattern
-/// must either be listed in [_allowlistPath] (pre-RTL debt, to be migrated) or
-/// carry an `// RTL carve-out:` comment naming why it is deliberately LTR
-/// (source code, diffs, terminals, diagram canvases — the carve-outs the policy
-/// enumerates). Fixing a file means REMOVING it from the allowlist; the stale
-/// check enforces that the list mirrors the real migration state.
-///
-/// To regenerate the allowlist to the current baseline (e.g. after a bulk
-/// migration), run:
-///
-/// ```sh
-/// CC_REGEN_RTL_ALLOWLIST=1 fvm flutter test \
-///   test/core/rtl_directionality_ratchet_test.dart --concurrency=1
-/// ```
+/// RTL ratchet: physical-edge geometry must not grow (shrinking allowlist).
+/// Files need logical geometry or an `// RTL carve-out:` comment. Fixing means
+/// removing from the allowlist. Regen:
+/// `CC_REGEN_RTL_ALLOWLIST=1 fvm flutter test test/core/rtl_directionality_ratchet_test.dart --concurrency=1`
 void main() {
   test('physical-edge geometry does not grow (RTL ratchet)', () {
     final allowlistFile = File(_allowlistPath);

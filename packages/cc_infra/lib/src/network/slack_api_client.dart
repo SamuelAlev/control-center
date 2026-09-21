@@ -165,22 +165,10 @@ class SlackStreamHandle {
 
 /// Client for Slack's Web API (`https://slack.com/api/...`).
 ///
-/// Patterned on the GitHub/Calendar clients: one method per endpoint, every
-/// transport failure mapped through [mapDioException] and cancellations
-/// re-thrown. Two Slack-specific rules shape it:
-///
-///  * **`ok: false` is the error space.** Slack answers HTTP 200 for
-///    application failures, so every response is checked and a refusal becomes
-///    a [SlackApiException] rather than silently looking like success.
-///  * **Tokens are per-call, not per-client.** A connection juggles three: the
-///    bot token (`xoxb-`, most calls), the app-level token (`xapp-`, only
-///    `apps.connections.open`) and a short-lived app *configuration* token (the
-///    manifest methods). The bot token is the default; the others are passed
-///    explicitly at the call site so a manifest edit can never accidentally
-///    ride the bot's authority.
-///
-/// Outbound HTTPS works from anywhere, including a laptop behind NAT with no
-/// public endpoint — which is the whole premise of the Socket Mode bridge.
+/// `ok: false` is the error space (HTTP 200 for app failures →
+/// [SlackApiException]). Tokens are per-call: bot default, app-level
+/// (`apps.connections.open`), and config tokens passed explicitly so manifest
+/// edits never ride the bot token.
 class SlackApiClient {
   /// Creates a [SlackApiClient]. [_botToken] is the default authorization for
   /// every call that does not name its own token.

@@ -10,7 +10,7 @@ import 'package:control_center/features/pr_review/providers/pr_review_providers.
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// The PR-detail **Overview** tab: the PR title + actions, the description,
+/// The PR-detail Overview tab: the PR title + actions, the description,
 /// and the activity timeline (main column) beside a space-style collapsible
 /// sidebar (status, reviewers, assignees, checks, files). The title + actions
 /// live here — at the top of the tab — rather than in a page header above the

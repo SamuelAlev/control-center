@@ -9,23 +9,13 @@ import 'package:cc_natives/src/inference/cc_inference_bindings.dart';
 import 'package:cc_natives/src/inference/inference_library.dart';
 import 'package:ffi/ffi.dart';
 
-/// On-device speech-to-text using sherpa-onnx + Whisper, decoded on a dedicated
-/// worker isolate.
+/// On-device speech-to-text using sherpa-onnx + Whisper, decoded on a dedicated worker
+/// isolate.
 ///
-/// Whisper decoding is a *synchronous* native (FFI) call: a multi-second window
-/// takes hundreds of milliseconds to a few seconds of solid CPU. Running it on
-/// the main isolate froze the UI (Sentry "ANR") and starved live capture, so the
-/// recognizer lives entirely on a long-lived worker isolate. The native
-/// recognizer handle cannot cross isolates, so it is created INSIDE the worker
-/// and fed PCM windows over a [SendPort]; only plain bytes and strings travel
-/// between isolates. The worker's message loop processes
-/// one request at a time, which serializes the single recognizer safely (matching
-/// the previous single-recognizer behavior) — but now off the UI thread.
-///
-/// The worker binds the `cc_inference` dylib for ITS OWN isolate
-/// ([ensureInferenceBindings]): FFI bindings are per-isolate, so the host's
-/// binding does not carry over. The dylib statically links sherpa-onnx and its
-/// ONNX Runtime, so there is nothing else to locate alongside it.
+/// Whisper decoding is a *synchronous* native (FFI) call: a multi-second window takes
+/// hundreds of milliseconds to a few seconds of solid CPU.
+/// Running it on the main isolate froze the UI (Sentry "ANR") and starved live capture, so
+/// the recognizer lives entirely on a long-lived worker isolate.
 class SherpaOnnxTranscriber implements SpeechTranscriber {
   /// Creates a [SherpaOnnxTranscriber].
   ///

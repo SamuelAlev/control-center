@@ -31,7 +31,6 @@ typedef CcDomainLogSink =
 /// (`CcHostLog` / `CcInfraLog` / `CcPersistenceLog` / `CcDomainLog`), each
 /// installed at the composition root — so no package depends on another, or on
 /// Flutter, merely to log.
-///
 /// Note: pure domain *entities and value objects* must stay silent (a null
 /// return / thrown error is their contract). And where a service already takes
 /// explicit `onWarn`/`onError` callbacks (e.g. `TicketWorkflowService`), keep

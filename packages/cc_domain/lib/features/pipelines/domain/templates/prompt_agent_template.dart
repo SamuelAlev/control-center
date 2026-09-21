@@ -12,25 +12,12 @@ import 'package:cc_domain/features/pipelines/domain/services/template_renderer.d
 import 'package:cc_domain/features/pipelines/domain/templates/builtin_template_seeds.dart';
 import 'package:cc_domain/features/pipelines/domain/templates/dispatch_conversation_step.dart';
 
-/// Registers the generic `conversation.promptAgent` body.
+/// Registers `conversation.promptAgent` for all prompt-style nodes.
 ///
-/// Every "prompt-style" node (built-in reviewers, consolidation and any
-/// custom user-authored node) routes through this body. The body:
-///
-/// 1. Resolves the step's [PipelineNodeConfig] from the template repository.
-/// 2. Substitutes `{{key}}` placeholders in `config.prompt` against
-///    pipeline state + trigger payload.
-/// 3. Fetches the agent referenced by `config.agentId` directly — no role
-///    or skill matching.
-/// 4. Dispatches into the conversation via [dispatchConversationStep] — the
-///    room named by `extras['spaceId']` when the node carries one (generated
-///    orchestration/plan nodes do), else a hidden one (the prompt +
-///    output-contract footer are posted; the agent is dispatched with the output
-///    contract stamped onto its run).
-/// 5. Suspends the step until the dispatched run finishes.
-///
-/// The engine harvests the run's `submit_output` payload into pipeline state
-/// under `config.outputKey` so downstream nodes can read the result.
+/// Resolves [PipelineNodeConfig], renders `config.prompt`, fetches
+/// `config.agentId` directly, dispatches via [dispatchConversationStep]
+/// (`extras['spaceId']` or hidden room), suspends until done. Engine harvests
+/// `submit_output` into `config.outputKey`.
 void registerPromptAgentBody(
   PipelineBodyRegistry registry, {
   required PipelineTemplateRepository templateRepository,

@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// Keeps [rpcClientProvider]'s `activeWorkspaceId` pointed at the active
 /// workspace, so every workspace-scoped RPC carries the right `workspace_id`.
 ///
-/// The server is **stateless** — it holds no per-session workspace — so each
+/// The server is stateless — it holds no per-session workspace — so each
 /// request must name its own workspace. `RemoteRpcClient` injects this active id
 /// into every `call`/`subscribe` whose args don't already carry one. This sink
 /// seeds it and follows every change, so all transports (web, desktop-remote,

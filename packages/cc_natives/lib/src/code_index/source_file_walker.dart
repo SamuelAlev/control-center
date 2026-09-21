@@ -54,22 +54,13 @@ class HashedSourceFile {
 
 /// Enumerates indexable source files under a repo root.
 ///
-/// When the root is a git work tree (the normal case — indexing targets a
-/// checked-out repo) enumeration defers to git itself via
-/// `git ls-files --cached --others --exclude-standard`, so `.gitignore`,
-/// nested `.gitignore` files, `.git/info/exclude` and the global excludes
-/// file are all honoured. This is what keeps `node_modules/`, build output,
-/// and other ignored trees out of the graph — reusing git's own ignore engine
-/// rather than a hardcoded skip list that can never match a project's actual
-/// `.gitignore`.
-///
-/// For non-git directories (e.g. tests, or a path that isn't a work tree) it
-/// falls back to a manual walk with a hardcoded skip set and a soft cap.
-///
-/// Regardless of how files are discovered, results are filtered by extension
-/// and exclude generated Dart: generated files are typically committed (so git
-/// alone wouldn't drop them) yet churn on every codegen run, which would
-/// pollute the graph.
+/// When the root is a git work tree (the normal case — indexing targets a checked-out repo)
+/// enumeration defers to git itself via `git ls-files --cached --others
+/// --exclude-standard`, so `.gitignore`, nested `.gitignore` files, `.git/info/exclude` and
+/// the global excludes file are all honoured.
+/// This is what keeps `node_modules/`, build output, and other ignored trees out of the
+/// graph — reusing git's own ignore engine rather than a hardcoded skip list that can never
+/// match a project's actual `.gitignore`.
 class SourceFileWalker {
   /// Creates a [SourceFileWalker].
   const SourceFileWalker({Set<String>? extensions, this.maxEntries = 50000})
@@ -307,28 +298,9 @@ class SourceFileWalker {
     return sha256.convert(bytes).toString();
   }
 
-  /// [walk] plus the content hash of every file, computed on a SEPARATE
-  /// ISOLATE so the caller's event loop keeps running.
-  ///
-  /// This is the expensive half of indexing and it is all main-thread-hostile
-  /// work: a `statSync` per path during enumeration, then a full read and
-  /// SHA-256 of every source file — thousands of files on a real repo, every
-  /// time, since hashing is exactly how unchanged files are detected. Run
-  /// inline it stalls the server's event loop (RPC, watchers, dispatch) for as
-  /// long as it takes.
-  ///
-  /// Offloading is safe here because the work is pure filesystem + CPU with no
-  /// handles crossing the boundary: only the root path goes in and plain data
-  /// comes back. Subclasses that override [walk]/[hashFile] (tests, fakes)
-  /// should override this too, or their overrides will not be used.
-  ///
-  /// [known] is what the index already holds and turns the common case into a
-  /// stat: a file whose mtime is not newer than its recorded `indexedAt` cannot
-  /// have changed, so its hash is reused without reading a byte. Without it,
-  /// every arm of every checkout re-read and re-hashed the WHOLE tree just to
-  /// conclude nothing had changed — on a host with 4 repos and 72 worktrees
-  /// that is ~100k file reads per boot, which is what pinned the CPU and made
-  /// the server unreachable while it churned.
+  /// [walk] plus content hashes on a separate isolate (stat/read/SHA-256 is
+  /// main-thread-hostile). [known] reuses hashes when mtime ≤ recorded
+  /// `indexedAt`. Subclasses overriding [walk]/[hashFile] should override this.
   Future<List<HashedSourceFile>> walkAndHash(
     String rootPath, {
     Map<String, IndexedFileState> known = const {},
@@ -369,33 +341,12 @@ class SourceFileWalker {
     });
   }
 
-  /// Hashes exactly [relativePaths] under [rootPath] — the TARGETED counterpart
-  /// of [walkAndHash], for a run that already knows what changed.
+  /// Hashes exactly [relativePaths] under [rootPath] (targeted counterpart of
+  /// [walkAndHash] when the changed set is already known).
   ///
-  /// [walkAndHash] has to discover what changed, so it pays a `git ls-files`
-  /// plus a stat of every file in the checkout before it can conclude that one
-  /// file moved. A watcher-driven run already holds that answer: measured on a
-  /// 19k-file checkout, rediscovering it cost 5-9 SECONDS per run to index a
-  /// single saved file, ~90 times an hour while an agent worked in a worktree.
-  /// This pays only for the paths it was handed.
-  ///
-  /// Applies the SAME filters [walk] does, because a targeted run must not
-  /// index anything a full run would have left out:
-  ///
-  ///  * the extension + generated-file filter ([_isIndexableName]);
-  ///  * git's ignore rules, via ONE `git check-ignore` spawn for the whole set
-  ///    (see [_gitIgnoredPaths]) — a `.gitignore` entry the watcher's static
-  ///    [watchIgnoredDirs] list knows nothing about would otherwise be indexed
-  ///    incrementally and never by a full pass, so the two would disagree;
-  ///  * outside a git work tree, the manual walk's hardcoded [_skipDirs].
-  ///
-  /// A supplied path that is filtered out, no longer exists, or is unreadable
-  /// is simply absent from the result — the caller reads that absence as
-  /// "prune it", which is exactly right for a deleted file.
-  ///
-  /// Runs on its own isolate for the same reason [walkAndHash] does: reading
-  /// and SHA-256'ing even a handful of files is main-thread-hostile work and
-  /// the server's event loop has RPCs to answer.
+  /// Same filters as [walk]: [_isIndexableName], one `git check-ignore` for
+  /// the set ([_gitIgnoredPaths]), else [_skipDirs]. Missing/filtered paths are
+  /// omitted (caller treats as prune). Runs on its own isolate.
   Future<List<HashedSourceFile>> hashPaths(
     String rootPath,
     List<String> relativePaths,

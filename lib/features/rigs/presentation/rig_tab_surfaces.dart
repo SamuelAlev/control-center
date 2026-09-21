@@ -246,23 +246,9 @@ abstract final class RigTabSurfaces {
     slotId: slotId,
   );
 
-  /// The label a `[+]` menu row uses for [target] — the same names as
-  /// [labelFor] with the "(VM)" suffix dropped.
-  ///
-  /// The suffix is not redundant chrome; it is what keeps a browser RIG from
-  /// reading like the in-app webview next to it. In the menu the VIRTUAL
-  /// MACHINE heading carries that job instead, and carries it better: the
-  /// distinguishing word arrives before the group rather than at the end of
-  /// every row, and it is said once rather than five times. A TAB has no
-  /// heading above it, so [labelFor] keeps the suffix and this stays
-  /// menu-only.
-  ///
-  /// Deliberately NOT numbered either, even though a press may open the
-  /// conversation's second machine of that kind: the menu names a KIND of
-  /// machine, and a standing entry that reads "Chromium 2" is a menu whose
-  /// items rename themselves as you work. The number belongs on the things
-  /// that identify ONE machine — its tab and its row in the sidebar's
-  /// BROWSERS list.
+  /// The label a `[+]` menu row uses for [target] — the same names as [labelFor] with the
+  /// "(VM)" suffix dropped.
+  /// A TAB has no heading above it, so [labelFor] keeps the suffix and this stays menu-only.
   static String menuLabelFor(AppLocalizations l10n, RigTabTarget target) =>
       switch (target.surface) {
         browser =>

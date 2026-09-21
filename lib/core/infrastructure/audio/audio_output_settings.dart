@@ -13,7 +13,7 @@ import 'package:media_kit/media_kit.dart';
 ///
 /// Holds the media_kit [AudioDevice.name] (libmpv's stable device id, e.g.
 /// `coreaudio/12345`), or `null` for "system default" — which maps to mpv's
-/// `auto` device. **Device-scoped** like the microphone choice: the id names
+/// `auto` device. Device-scoped like the microphone choice: the id names
 /// this machine's hardware and means nothing on another computer, so it stays
 /// in local storage and never joins the synced user preferences.
 class AudioOutputDeviceNotifier extends Notifier<String?> {
@@ -72,7 +72,7 @@ double mediaKitVolume(double normalized) => normalized.clamp(0.0, 1.0) * 100.0;
 /// Routes [player] through the app's chosen output device [name].
 ///
 /// The one place every sound-making surface calls, so "which device" is
-/// decided once rather than re-derived per player. **No-op on web**: the
+/// decided once rather than re-derived per player. No-op on web: the
 /// browser routes audio and mpv's device API is not there — calling it would
 /// throw on a surface that can do nothing about it.
 Future<void> applyAppAudioOutput(Player player, String? name) async {
@@ -86,7 +86,7 @@ Future<void> applyAppAudioOutput(Player player, String? name) async {
 ///
 /// The list arrives as an mpv property event shortly after the player forms,
 /// so the provider awaits the first non-empty emission and falls back to the
-/// player's (possibly still empty) snapshot on timeout. **Desktop-only**: the
+/// player's (possibly still empty) snapshot on timeout. Desktop-only: the
 /// web player cannot choose an output device (the browser routes audio), so
 /// this yields an empty list on web and the settings section hides itself —
 /// an honest absence rather than a picker that silently does nothing.

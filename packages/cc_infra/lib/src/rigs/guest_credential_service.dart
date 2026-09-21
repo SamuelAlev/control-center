@@ -49,19 +49,10 @@ class _RigCredentialGrant {
 /// A host-side endpoint that mints short-lived forge credentials for code
 /// running inside a rig.
 ///
-/// This is what makes `git push` work from an in-VM terminal without ever
-/// putting a durable credential inside the enclosure. The guest ships a git
-/// credential helper that asks this service per operation; the service mints
-/// through [CredentialBrokerPort], hands over just the username/password pair
-/// git needs, and revokes everything when the rig closes.
-///
-/// Why a per-VM secret is not a contradiction of "no credentials inside
-/// enclosures": the secret is not a credential to anything outside. It is a
-/// capability to ASK this host for a scoped token, it is minted at boot and
-/// dies with the machine, it only reaches the host's own loopback, every use
-/// is audited and rate-limited, and the answer is bounded by the rig's own
-/// allowlist. A real forge token sitting in `~/.git-credentials` inside the
-/// guest would be none of those things.
+/// Guest git credential helper asks this per push via [CredentialBrokerPort];
+/// revoked when the rig closes. The per-VM secret is a capability to ask this
+/// host (boot-minted, loopback-only, audited, allowlist-bounded) — not a
+/// durable forge token in the guest.
 class GuestCredentialService {
   /// Creates a [GuestCredentialService] over [_broker].
   GuestCredentialService({required this._broker});
@@ -187,15 +178,9 @@ class GuestCredentialService {
       await response.close();
       return;
     }
-    // Bounded BEFORE anything is read, and again while reading.
-    //
-    // Every policy check below — the secret compare, the host allowlist, the
-    // rate limit — runs only after the body is fully buffered, and this
-    // endpoint is reachable by every local process AND by every exec guest
-    // through the reverse tunnel. An unbounded `join()` therefore let an
-    // unauthenticated caller allocate as much of the server's heap as it cared
-    // to send, without ever getting past the first check. A real request is
-    // three short strings.
+    // Bound content-length before and while reading: auth checks run only
+    // after the body is buffered, and this endpoint is reachable by every
+    // local process and every exec guest via the reverse tunnel.
     final declared = request.headers.contentLength;
     if (declared > _maxRequestBytes) {
       response.statusCode = HttpStatus.requestEntityTooLarge;

@@ -22,30 +22,13 @@ enum ConstraintMatch {
   miss,
 }
 
-/// The argument-level condition on a policy rule: which paths, refs and hosts
-/// it covers, and what magnitude it tolerates.
+/// Argument-level condition on a policy rule (paths, refs, hosts, magnitude).
 ///
-/// Deliberately a CLOSED, typed, loop-free grammar rather than a general
-/// expression language. Three properties fall out of that and all three are
-/// the point:
-///
-///  * every rule can be rendered as a sentence in the UI ("push to anything
-///    except `main`"), so an operator can read their own policy back;
-///  * a denial can name the constraint that matched, so it is explainable;
-///  * the whole policy can be statically enumerated — you can show a customer
-///    what an agent may do BEFORE it runs, which is what an unbounded DSL
-///    gives up.
-///
-/// Patterns are glob-ish, matched case-sensitively:
-///  * `*` matches within a segment, `**` across segments (paths only);
-///  * a leading `!` NEGATES an entry — `refs: ['**', '!main']` reads as "any
-///    ref except main". Negations are checked first and win.
-///  * a bare `*.example.com` host entry matches subdomains, `example.com`
-///    matches exactly.
-///
-/// A null/absent facet means "this constraint says nothing about that", so it
-/// matches. That is what keeps a rule with NO constraint (the pre-constraint
-/// shape of every stored row) matching every request exactly as before.
+/// Closed typed grammar (not a DSL): UI-renderable, explainable denials,
+/// statically enumerable. Glob-ish, case-sensitive: `*` within a segment,
+/// `**` across (paths); leading `!` negates (checked first); `*.example.com`
+/// matches subdomains, `example.com` exact. Null/absent facet matches anything
+/// (pre-constraint rows stay equivalent).
 class ActionConstraint {
   /// Creates an [ActionConstraint].
   const ActionConstraint({
@@ -99,7 +82,6 @@ class ActionConstraint {
   ///
   /// [restrictive] selects the semantics, and the two are genuinely different
   /// questions:
-  ///
   /// * A **restrictive** rule (deny / prompt) asks "does this request touch
   ///   anything I forbid?" — so ANY covered value is a hit. Requiring every
   ///   value to match would let an agent launder a forbidden path by batching
@@ -107,7 +89,6 @@ class ActionConstraint {
   /// * A **permissive** rule (allow) asks "is this request entirely within
   ///   what I permit?" — so EVERY value must be covered, and anything it
   ///   cannot prove is a miss.
-  ///
   /// A facet the request says nothing about is unknown for a restrictive
   /// rule (the caller escalates) and a miss for a permissive one (an allow
   /// never applies on faith).

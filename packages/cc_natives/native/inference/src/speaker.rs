@@ -89,16 +89,12 @@ pub unsafe extern "C" fn cc_spk_dim(handle: *const CcSpeakerEmbedder) -> i32 {
     .unwrap_or(-1)
 }
 
-/// Computes one voiceprint from `samples`, writing `cc_spk_dim` floats into
-/// `out`.
+/// Computes one voiceprint from `samples`, writing `cc_spk_dim` floats into `out`.
 ///
-/// Returns 0 on success, **1 when the audio is too short** for the model to
-/// produce an embedding (the caller skips that speaker — not an error) and -1
-/// on failure.
-///
-/// # Safety
-/// `samples` must hold at least `n` floats; `out` must hold at least
-/// `out_capacity` floats; `handle` must be live.
+/// Returns 0 on success, **1 when the audio is too short** for the model to produce an
+/// embedding (the caller skips that speaker — not an error) and -1 on failure.
+/// `samples` must hold at least `n` floats; `out` must hold at least `out_capacity` floats;
+/// `handle` must be live.
 #[no_mangle]
 pub unsafe extern "C" fn cc_spk_compute(
     handle: *mut CcSpeakerEmbedder,

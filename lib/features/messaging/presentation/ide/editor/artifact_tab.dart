@@ -28,7 +28,7 @@ EditorTab artifactTab({
 
 /// Opens [workProductId] on a surface of its own.
 ///
-/// Inside the messaging IDE that is a new editor **tab** next to the
+/// Inside the messaging IDE that is a new editor tab next to the
 /// conversation the artifact was published into — the preview in the feed stays
 /// where it is. On a surface with no host layout (the PR workbench's chat tab, a
 /// dialog) it falls back to a modal, since an artifact has no route of its own:

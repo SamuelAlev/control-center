@@ -2,44 +2,14 @@ import 'dart:io';
 
 import 'package:test/test.dart';
 
-/// Enforces workspace isolation as a CI ratchet.
+/// CI ratchet for workspace isolation after the `global.db` + per-workspace
+/// file split (isolation is structural, not WHERE-clause filtering).
 ///
-/// What this test checks changed shape when the database was split into
-/// `global.db` + one file per workspace and the change is worth understanding
-/// before editing it.
-///
-/// **Before:** one database held every workspace's rows, so isolation was a
-/// query-level convention — every read of a workspace-scoped table had to
-/// remember `WHERE workspace_id = ?`. This test policed that with a line-window
-/// heuristic over the DAO sources, plus an allow-list of reviewed exceptions. It
-/// worked, but it could only pattern-match: its own comment admitted it "will
-/// occasionally miss a leak".
-///
-/// **Now:** a `WorkspaceDatabase` physically contains one workspace's rows and
-/// does not declare any other workspace's tables, so a cross-workspace read is
-/// not something you can write — it fails to compile. The WHERE clause is no
-/// longer the isolation mechanism and policing it would be theatre.
-///
-/// So the ratchet moved from *filtering* to **routing**. The remaining ways to
-/// break isolation are structural and all four are checked here:
-///
-///  1. A table lands in both databases, or in neither (its rows would be
-///     duplicated across files, or unreachable).
-///  2. A DAO on the workspace database reaches a global table, or vice versa —
-///     the drift accessor would resolve and the table would be silently
-///     created in the wrong file.
-///  3. Anything server-side caches a resolved DAO in a field instead of
-///     resolving it per call from the workspace id. A cached DAO pins the FIRST
-///     workspace it saw and then serves every later caller from that
-///     workspace's file — the exact leak the split is meant to make impossible.
-///  4. Cross-workspace fan-out happens outside `CrossWorkspaceQueries` without
-///     saying why. Fan-out is legitimate (dashboards, reconcilers, retention,
-///     backup) but must stay enumerable rather than diffuse.
-///
-/// Checks 3 and 4 scan every server-side package, not just this one, and each
-/// carries a companion test asserting that its own detector still matches the
-/// shapes it claims to — a ratchet whose regex quietly stopped matching is
-/// worse than no ratchet, because the suite goes on passing.
+/// Checks: (1) each table in exactly one database; (2) no DAO reaches across
+/// the global/workspace boundary; (3) no server-side cached per-workspace DAO
+/// field (would pin the first workspace); (4) cross-workspace fan-out only via
+/// `CrossWorkspaceQueries`. Checks 3–4 scan all server packages; companion
+/// tests assert the detectors still match.
 void main() {
   // Resolve relative to the package root whether the test is run from inside
   // the package (`dart test`, CWD = package) or from the workspace root
@@ -63,17 +33,11 @@ void main() {
   final tablesDir = pkgDir('lib/database/tables');
   final daosDir = pkgDir('lib/database/daos');
 
-  /// Every server-side package that can hold a `WorkspaceDatabaseManager`.
+  /// Server-side packages that may hold a `WorkspaceDatabaseManager`.
   ///
-  /// The DAO-caching and fan-out checks used to look only at this package's
-  /// `lib/repositories/`, which is where repositories live but not where the
-  /// leak has to live: a service in `cc_server_core` that takes an
-  /// `ActivityLogDao` in its constructor pins a workspace exactly as hard as a
-  /// repository field does, and the original scope could not see it. (One did:
-  /// `ActivityLogPersister` held a single DAO and wrote every workspace's audit
-  /// rows into whichever file resolved it first.) Clients are deliberately
-  /// absent — they cannot import `cc_persistence` at all, which the
-  /// architecture ratchet already enforces.
+  /// DAO-cache and fan-out checks scan these (not only this package's
+  /// repositories) — a constructor-injected DAO in `cc_server_core` pins a
+  /// workspace the same way.
   final serverLibDirs = <Directory>[
     for (final rel in const [
       'cc_persistence/lib',
@@ -300,24 +264,9 @@ void main() {
   });
 
   test('nothing caches a workspace-scoped DAO in a field', () {
-    // The one mistake that reintroduces cross-workspace leakage after the split.
-    // `final AgentDao _dao;` can only have been resolved from SOME workspace,
-    // and every later call — for any workspace — is then served from that one
-    // file. Resolving per call (`_dbs.of(workspaceId).agentDao`) makes the
-    // workspace an argument again.
-    //
-    // The declaration forms below all pin a workspace identically, and the
-    // first version of this check only saw the first one:
-    //
-    //     final AgentDao _dao;                    // caught before
-    //     late final AgentDao _dao;               // `late` — missed
-    //     AgentDao? _dao;                         // nullable, non-final — missed
-    //     final Map<String, AgentDao> _byThing;   // a cache — missed
-    //
-    // A `Map<String, XDao>` counts even when it looks keyed by workspace:
-    // `WorkspaceDatabaseManager` already memoizes one database per workspace,
-    // so a second cache in front of it is redundant at best and keyed on
-    // something else at worst — and nothing in a field declaration says which.
+    // Cached per-workspace DAO fields reintroduce leaks: `final AgentDao _dao`
+    // (also `late final`, nullable, or `Map<…, XDao>`) pins the first workspace.
+    // Resolve per call: `_dbs.of(workspaceId).agentDao`.
     final workspaceDaoNames = workspaceDaos.toSet();
     final daoAlternation = workspaceDaoNames.join('|');
     // A FIELD, not a local: class-body indentation (two spaces), and never
@@ -406,23 +355,10 @@ void main() {
   });
 
   test('every cross-workspace enumeration is accounted for', () {
-    // Fan-out is legitimate — dashboards, startup reconcilers, retention,
-    // backup — but it must stay COUNTABLE: the point of the rule is that the
-    // complete list of things spanning workspaces can be read in one sitting.
-    //
-    // The first version of this check grepped two directories for the literal
-    // string `allWorkspaceIds()` and treated a file-level mention of
-    // `CrossWorkspaceQueries` as absolution. Both halves leaked. It could not
-    // see `openIds` or `orphanedDatabaseFiles()`, it never looked outside
-    // `cc_persistence` (where `IdentityBootstrap` enumerates every workspace),
-    // and a file that legitimately uses the helper ONCE was thereafter free to
-    // hand-roll a fan-out anywhere else in the same file.
-    //
-    // So: every enumeration SITE is found, and each is justified within the 15
-    // lines above it — either by routing through the helper or by the
-    // `CROSS-WORKSPACE BY DESIGN:` marker the project convention requires. The
-    // marker is not a rubber stamp; it is a comment someone has to write a
-    // reason into, next to the code, where review sees it.
+    // Fan-out is legitimate but must stay countable via CrossWorkspaceQueries
+    // (or an allow-listed site with CROSS-WORKSPACE BY DESIGN). Grepping
+    // `allWorkspaceIds()` or a file-level CrossWorkspaceQueries mention is not
+    // enough — call sites must go through the helper.
     final enumeration = RegExp(
       r'allWorkspaceIds\(|\.openIds\b|orphanedDatabaseFiles\(',
     );

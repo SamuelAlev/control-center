@@ -1,38 +1,17 @@
-/// Lifecycle shell scripts configured per registered repo and executed by the
-/// server against a space's isolated worktree of that repo (the checkout under
-/// `<dataDir>/<workspaceId>/spaces/<spaceId>/repos/<repo>/`).
-///
-/// Two kinds, modelled on Conductor's per-workspace scripts:
-///
-/// - [setup] runs in the worktree immediately after the provisioner
-///   materializes it (install dependencies, generate files, copy `.env`,
-///   symlink). A non-zero exit FAILS the space provisioning; the worktree is
-///   kept so a retry resumes a half-finished install.
-/// - [archive] runs just before that worktree is destroyed or garbage
-///   collected (stop services, clean up resources outside the worktree).
-///   It is best-effort: a failure is recorded but never blocks deletion.
-///
-/// Both run via `bash -lc` with the worktree as the working directory and the
-/// environment variables `CC_WORKSPACE_PATH` (the worktree), `CC_ROOT_PATH`
-/// (the registered source repo root), `CC_SPACE_ID`, `CC_SPACE_NAME` and
-/// `CC_REPO_NAME` set.
-///
-/// ## Test runs
-///
-/// A draft of either script can be TESTED from the settings dialog
-/// (`RepoScriptPort.runTest`): the server materializes a throwaway
-/// copy-on-write clone of the registered repo (pristine — a clean tree, the
-/// same state a freshly provisioned worktree is in) and runs the draft there,
-/// so nothing in the operator's checkout is touched. A test run exports the
-/// same variables minus the space ones (`CC_SPACE_ID`/`CC_SPACE_NAME`) plus
-/// `CC_SCRIPT_TEST=1` — the flag an archive script checks to skip the steps
-/// that are only safe against a worktree that is really going away. Test
-/// outcomes are recorded like any other run and never fail anything.
-///
-/// Scripts are edited by a workspace admin in Settings → Repositories and are
-/// deliberately NOT part of the `Repo` entity/DTO: they are server-executed
-/// code, so they travel on their own admin-gated RPC op instead of riding the
-/// member-level `repos.upsert`.
+/// Lifecycle shell scripts per registered repo, run by the server against a
+/// space's isolated worktree
+/// (`…/spaces/<spaceId>/repos/<repo>/`).
+/// [setup] runs right after the worktree is materialized (deps, `.env`,
+/// symlink). Non-zero exit fails provisioning; the worktree is kept for retry.
+/// [archive] runs just before destroy/GC (stop services, clean external
+/// resources). Best-effort — failure is recorded, never blocks deletion.
+/// Both via `bash -lc` in the worktree with `CC_WORKSPACE_PATH`,
+/// `CC_ROOT_PATH`, `CC_SPACE_ID`, `CC_SPACE_NAME`, `CC_REPO_NAME`.
+/// Drafts can be tested via `RepoScriptPort.runTest` on a throwaway pristine
+/// CoW clone (same vars minus space ones, plus `CC_SCRIPT_TEST=1` so archive
+/// scripts skip irreversible steps). Outcomes are recorded; never fail a run.
+/// Admin-only in Settings → Repositories — not on the `Repo` DTO (server-
+/// executed code rides its own admin-gated RPC, not member `repos.upsert`).
 class RepoScripts {
   /// Creates [RepoScripts]. Whitespace-only scripts are normalized to null.
   factory RepoScripts({String? setup, String? archive}) => RepoScripts._(

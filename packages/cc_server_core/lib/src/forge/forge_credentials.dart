@@ -27,36 +27,12 @@ typedef ProviderTokenRefresh =
       String? workspaceId,
     });
 
-/// Server-side [ForgeCredentialPort].
+/// Server-side [ForgeCredentialPort], resolved per call (not captured at boot).
 ///
-/// Four lanes, consulted in this order, and which of them can answer depends on
-/// whether there is a user behind the request:
-///
-///  1. **That user's own credential** (`userId` given) — minted by signing in
-///     to the forge, or pasted by them. Refreshed in place when it has expired
-///     and a refresh token is available. GitHub overlays are per workspace.
-///  2. **The workspace's GitHub App** (or the install App when the workspace
-///     inherits) — a GitHub App installation token. This is what background
-///     work runs on, so a webhook does not depend on a human's PAT surviving.
-///  3. **The server owner's credential**, when there is no caller. A solo
-///     desktop configures no app, and its owner signing in is the whole setup.
-///     PAT-only and workspace-App fallbacks use the owner's *pasted* PAT, not
-///     an App OAuth token, so one workspace cannot ride another workspace's
-///     Sign in.
-///  4. **The environment** (`GITHUB_TOKEN`, `GITLAB_TOKEN`, …) — the CI/headless
-///     path.
-///
-/// The lanes are exclusive by design: naming a user gets that user's
-/// credential or nothing, because the environment is the SERVER's credential
-/// and not theirs. [tokenForActor] is the one deliberate exception — it is how
-/// a human-driven write says "act as me, and fall back to the server only if I
-/// have not signed in to this forge".
-///
-/// Credentials are resolved **per call**, not captured once at boot. That is
-/// the difference that makes "sign in and it works" true without a restart: the
-/// old design read a token during startup and baked it into a Dio interceptor
-/// closure, so a credential that arrived later was invisible until the process
-/// was restarted.
+/// Lanes: (1) caller's own credential when `userId` set — else nothing for that call;
+/// (2) workspace/install GitHub App; (3) server owner's pasted PAT when no caller;
+/// (4) environment (`GITHUB_TOKEN`, …) for CI. [tokenForActor] is the exception: act as
+/// the user, falling back to the no-caller chain only if they have not signed in.
 class ForgeCredentials implements ForgeCredentialPort {
   /// Creates a [ForgeCredentials].
   ///
@@ -135,25 +111,8 @@ class ForgeCredentials implements ForgeCredentialPort {
     return resolved.token.isEmpty ? null : resolved.token;
   }
 
-  /// The credential to act **as** [userId] on [forge].
-  ///
-  /// Their own credential first. That is what puts the human's name on
-  /// everything they drive from the app: a review approved, a comment posted, a
-  /// pull request opened through Control Center is attributed on the forge to
-  /// them, not to the server's app. [tokenFor] with no caller cannot answer
-  /// this question — it resolves the app identity FIRST, which is right for
-  /// background work (a webhook must not ride a human's token) and wrong for
-  /// anything a person just clicked.
-  ///
-  /// Falls back to the no-caller chain when that user has not connected this
-  /// forge. A member who only signed in to GitLab keeps READING a GitHub PR
-  /// rather than getting a 401 where the surface used to work — at the cost
-  /// that their writes are then authored by the app again, which is exactly the
-  /// state signing in fixes.
-  ///
-  /// When [workspaceId] is set, GitHub uses that workspace's overlay token,
-  /// then (inherit only) the global onboarding credential, then that
-  /// workspace's App. Never another workspace's App or token.
+  /// Credential to act as [userId]: their token first (forge attribution), else the no-caller chain.
+  /// With [workspaceId], GitHub uses that workspace's overlay → inherit onboarding → that workspace's App only.
   Future<String?> tokenForActor(
     ForgeHost forge,
     String? userId, {

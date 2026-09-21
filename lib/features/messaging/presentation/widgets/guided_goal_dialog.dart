@@ -5,13 +5,13 @@ import 'package:flutter/widgets.dart';
 
 /// Turns a rough `/goal` into an objective an agent can pursue unsupervised.
 ///
-/// **Why this interrupts at all.** An autonomous goal is the one place a vague
+/// Why this interrupts at all. An autonomous goal is the one place a vague
 /// brief is genuinely expensive: the run works for hours on an objective whose
 /// "done" nobody defined, and then reports success on its own terms. Six
 /// questions here are cheaper than one overnight run that finished whenever it
 /// felt finished.
 ///
-/// **It never blocks.** Every step offers "skip and run as written", because a
+/// It never blocks. Every step offers "skip and run as written", because a
 /// person who knows exactly what they want should not have to argue with an
 /// interviewer to get it. The interview is a default, not a gate.
 class GuidedGoalDialog extends StatefulWidget {

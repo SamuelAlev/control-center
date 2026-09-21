@@ -39,7 +39,7 @@ EditorTab planStudioTab({
 
 /// Opens Plan Studio for one plan.
 ///
-/// Inside the messaging IDE this is a new editor **tab** next to the
+/// Inside the messaging IDE this is a new editor tab next to the
 /// conversation that produced the plan — the plan stays where it was authored
 /// instead of throwing the operator out to a global page. On a surface with no
 /// host layout (the PR workbench's chat tab, a dialog) it falls back to the

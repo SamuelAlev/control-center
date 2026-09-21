@@ -270,7 +270,6 @@ List<String> buildQemuArgv(QemuLaunchPlan plan) {
       ..add(plan.firmwarePath!);
   }
 
-  // ── Storage ────────────────────────────────────────────────────────────
   argv
     ..add('-drive')
     ..add('file=${plan.overlayPath},if=virtio,format=qcow2,cache=writeback');
@@ -280,7 +279,6 @@ List<String> buildQemuArgv(QemuLaunchPlan plan) {
       ..add('file=${plan.seedImagePath},if=virtio,format=raw,readonly=on');
   }
 
-  // ── Network ────────────────────────────────────────────────────────────
   final netdev = StringBuffer(
     'user,id=net0${plan.unrestrictedNetwork ? '' : ',restrict=on'}',
   );
@@ -318,13 +316,8 @@ List<String> buildQemuArgv(QemuLaunchPlan plan) {
     ..add('-device')
     ..add('virtio-net-pci,netdev=net0');
 
-  // ── Graphics + input ───────────────────────────────────────────────────
-  //
-  // Keyed on whether the surface HAS A DISPLAY, not on "is not browser". The
-  // negative form was a statement about today's catalogue: add a
-  // browser-on-QEMU entry (or any third display surface) and it boots with no
-  // GPU and no input devices — a machine that renders nothing and cannot be
-  // clicked, for a reason nothing in the argv explains.
+  // Display/input keyed on whether the surface HAS A DISPLAY — not "is not
+  // browser". A third display surface would otherwise boot with no GPU/input.
   if (_surfaceNeedsDisplay(plan.surface)) {
     // 2D virtio-gpu. No `virtio-gpu-gl`: upstream QEMU on macOS has no
     // virglrenderer, so asking for GL fails to start rather than degrading.

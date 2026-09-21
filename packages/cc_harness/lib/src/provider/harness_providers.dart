@@ -44,31 +44,15 @@ class HarnessProviderMeta {
   bool get supportsApiKey => authMethods.contains(HarnessAuthMethod.apiKey);
 }
 
-/// All built-in providers the harness can run, keyed by id.
+/// Built-in providers keyed by id. OpenAI-compat remotes take an API key;
+/// openai also supports browser OAuth; codex is Codex Responses (OAuth, optional
+/// API key); cursor is OAuth (optional session token); kimi-code is OAuth-only.
+/// Local/self-hosted endpoints are custom providers.
 ///
-/// Remote OpenAI-compatible providers (openrouter/groq/deepseek/mistral/xai/
-/// zai/zai-coding/moonshotai/google-compat) take an API key; openai also supports
-/// a browser OAuth login, **codex** is ChatGPT Plus/Pro via the Codex Responses
-/// backend (OAuth, with an optional API key), cursor is OAuth (with an optional
-/// pasted session token) and kimi-code is OAuth-only. Local or self-hosted
-/// endpoints (Ollama, LM Studio, vLLM, private deployments, …) are added as
-/// custom providers instead.
-///
-/// **Anthropic is API-key-only, on purpose.** Running the harness on a Claude
-/// Pro/Max subscription would mean logging in through Claude Code's own OAuth
-/// client and sending Claude Code's identity with every request — presenting
-/// this app as Claude Code, which its terms do not allow. The subscription is
-/// reachable the legitimate way instead: the `claude-code` ADAPTER, which runs
-/// the real CLI under its own login.
-///
-/// Ids match the models.dev provider id wherever one exists (`moonshotai`, not
-/// `kimi`) so a qualified `provider/model` resolves against the catalog for
-/// price, context and modalities. Two exceptions keep a harness-native id
-/// (OAuth, usage, the credential store) and set
-/// [HarnessProviderMeta.modelsDevProviderId]:
-/// `kimi-code` → `kimi-for-coding`, `zai`/`zai-coding` → `zhipuai`. Without the
-/// alias the editor falls back to text-only even when the catalog lists
-/// image/video.
+/// Anthropic is API-key-only (subscription via the `claude-code` adapter, not
+/// Claude Code OAuth identity). Ids match models.dev where possible; aliases via
+/// [HarnessProviderMeta.modelsDevProviderId]: `kimi-code` → `kimi-for-coding`,
+/// `zai`/`zai-coding` → `zhipuai`.
 const Map<String, HarnessProviderMeta> harnessProviderMetas = {
   'anthropic': HarnessProviderMeta(
     id: 'anthropic',

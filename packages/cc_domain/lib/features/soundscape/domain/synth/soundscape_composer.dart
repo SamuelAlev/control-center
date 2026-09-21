@@ -20,26 +20,14 @@ import 'package:cc_domain/features/soundscape/domain/synth/voices/tick_voice.dar
 import 'package:cc_domain/features/soundscape/domain/value_objects/soundscape_arrangement.dart';
 import 'package:cc_domain/features/soundscape/domain/value_objects/soundscape_tune.dart';
 
-/// The top-level generative audio engine for one soundscape.
+/// Top-level generative audio engine for one soundscape.
 ///
-/// Builds its layers — noise bed, voice-led pad, grounding sub drone,
-/// phrase-scheduled motif swells, a broken-chord arp ladder and an
-/// energy-gated bass pulse — seeded deterministically from
-/// [SoundscapeContext.seed], so two composers built from the same context
-/// render identical audio (for the same block sizes). [renderBlock] produces
-/// successive interleaved stereo blocks; [updateContext] retargets every
-/// glidable parameter (gains, cutoffs, melodic density, AM depth, reverb)
-/// through [ParamRamp]s so the arrangement morphs smoothly as
-/// weather/daypart change — it never rebuilds or restarts the voices, so
-/// there is no click or dropout. The mood-level musical identity (pentatonic
-/// key, voicing, tempo, AM rate) is fixed at construction: mood is part of
-/// the session key and a running session never changes it.
-///
-/// On top of the context mapping, a web of seeded [DriftLfo]s at
-/// incommensurate periods and a slow cyclic intensity arc keep the mix in
-/// constant sub-perceptual motion (nothing ever repeats, nothing ever jumps),
-/// and sleep sessions wind their brightness and level down over the first
-/// twenty minutes before holding a near-static floor.
+/// Layers (noise, pad, drone, motifs, arp, bass pulse) seeded from
+/// [SoundscapeContext.seed] — identical context → identical audio.
+/// [renderBlock] emits stereo blocks; [updateContext] ramps glidable params
+/// without restarting voices. Mood (key/voicing/tempo/AM) is fixed at
+/// construction. Seeded [DriftLfo]s + intensity arc keep sub-perceptual motion;
+/// sleep winds brightness/level down over ~20 minutes then holds.
 class SoundscapeComposer {
   /// Builds a composer for [context] at [sampleRate] Hz.
   factory SoundscapeComposer({

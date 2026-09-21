@@ -1339,22 +1339,10 @@ void main() {
 
   group('web build must not transitively reach native (FFI) code', () {
     test('no web-reachable library imports cc_natives / onnxruntime / dart:ffi', () {
-      // The deployed web build (`flutter build web`) compiles the WEB branch of
-      // every conditional import, starting at lib/main.dart. If any web-reachable
-      // library imports dart:ffi — directly, or via `package:cc_natives` (which
-      // owns the FFI bindings/loaders, including the cc_inference ones) — the CFE
-      // aborts with "library 'dart:ffi' is not available on this platform" and
-      // the whole web build fails. The error only names a package-level chain
-      // (control_center => cc_natives), never the file, so it is painful to
-      // diagnose by hand.
-      //
-      // This guard reproduces that exact reachability (BFS from lib/main.dart,
-      // following the web branch of every conditional import/export) and fails
-      // with the precise import chain, catching the leak in CI instead of in a
-      // deploy. The classic cause: importing the `package:cc_infra/cc_infra.dart`
-      // barrel (which re-exports code_extractor → cc_natives) from web-reachable
-      // presentation/provider code. `show` does NOT help — the barrel is still
-      // compiled. Fix: import the specific `package:cc_infra/src/<file>.dart`.
+      // Web build must not reach dart:ffi / cc_natives (CFE fails; error names
+      // only the package). BFS from lib/main.dart on the web import branch;
+      // classic leak: `package:cc_infra/cc_infra.dart` barrel (`show` still
+      // compiles it). Fix: import `package:cc_infra/src/<file>.dart`.
       final chains = _webReachableNativeSinks(projectRoot);
       expect(
         chains,

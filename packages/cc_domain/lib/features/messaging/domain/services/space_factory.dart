@@ -7,24 +7,9 @@ import 'package:cc_domain/features/messaging/domain/value_objects/space_kind.dar
 
 /// The one place a space is brought into existence.
 ///
-/// Writing the row is only half of creating a space. A new space is born
-/// `provisioning`, and the checkout that clears that state — the copy-on-write
-/// worktrees its conversations work in — is driven off [SpaceCreated] by the
-/// background provisioner. A caller that writes the row and forgets the event
-/// leaves a room parked behind its "preparing workspace" gate forever: the
-/// composer refuses to send, no worktree ever lands on disk, and nothing later
-/// notices, because the only signal that provisioning was ever due is the event
-/// that was never published.
-///
-/// Pairing the two by hand at each call site is a convention, not an invariant:
-/// a caller that forgets the event fails no test and simply produces a space
-/// nothing will ever provision. The pair lives here instead, which makes
-/// `MessagingRepository.createSpace` an implementation detail of this class
-/// rather than an entry point.
-///
-/// It deliberately holds no other behaviour: agents joining, repo scope and the
-/// space's first conversation all belong to the callers that know about them.
-/// This exists to make one invariant unbreakable, not to become a god object.
+/// Writes the row and publishes [SpaceCreated] together — omitting the event
+/// leaves the room stuck in `provisioning` forever. Holds no other behaviour
+/// (roster, repos, first conversation belong to callers).
 class SpaceFactory {
   /// Creates a [SpaceFactory] over [_repository], announcing on [_eventBus].
   ///
@@ -42,26 +27,11 @@ class SpaceFactory {
 
   /// Creates a space in [workspaceId] and announces it.
   ///
-  /// Returns as soon as the row is written: provisioning runs in the background
-  /// off the published [SpaceCreated], so a caller that does not need the
-  /// checkout (an agent dispatch gates on readiness itself) is not held for the
-  /// length of one.
-  ///
-  /// [repoIds] is the space's checkout scope and is the field that decides how
-  /// much disk a run costs. Null means every workspace repo — keep it for a
-  /// room a human opens with no stated scope, and pass an explicit list (or an
-  /// empty one, meaning "no repos") from anything automated. A pipeline step
-  /// that leaves this null checks out the whole workspace once per space it
-  /// mints.
-  ///
-  /// [beforeAnnounce] runs after the row is written and BEFORE [SpaceCreated]
-  /// is published — for the rows a listener goes straight back to the database
-  /// looking for. The PR-review space is the case that needs it: its
-  /// association (which pull request, at which head ref) is what the
-  /// provisioner reads to decide what to check out, so announcing first races
-  /// the provisioner into checking the default branch out instead of the PR.
-  /// Anything that must be true before the rest of the system hears about the
-  /// space belongs here rather than after the call.
+  /// Returns once the row is written; provisioning continues off [SpaceCreated].
+  /// [repoIds] is checkout scope: null → every workspace repo; empty → none;
+  /// automated callers must pass an explicit list. [beforeAnnounce] runs after
+  /// the row and before [SpaceCreated] (e.g. PR association must exist before
+  /// the provisioner reads it).
   Future<Space> create(
     String workspaceId,
     String name,

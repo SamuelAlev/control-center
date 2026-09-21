@@ -175,9 +175,7 @@ class AgentStreamProcessor {
     );
   }
 
-  // ---------------------------------------------------------------------------
   // Event handling
-  // ---------------------------------------------------------------------------
 
   void _onEvent(_StreamContext ctx, AgentProcessEvent event) {
     switch (event) {
@@ -237,9 +235,7 @@ class AgentStreamProcessor {
     }
   }
 
-  // ---------------------------------------------------------------------------
   // Finalization
-  // ---------------------------------------------------------------------------
 
   Future<void> _onDone(_StreamContext ctx) async {
     if (ctx.finalized) {
@@ -458,9 +454,7 @@ class AgentStreamProcessor {
     );
   }
 
-  // ---------------------------------------------------------------------------
   // Side effects (unchanged behavior, single message id)
-  // ---------------------------------------------------------------------------
 
   void _embedAssistantResponse(_StreamContext ctx, String response) {
     final port = ctx.embeddingPort;

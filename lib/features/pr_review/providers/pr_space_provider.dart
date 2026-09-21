@@ -124,27 +124,13 @@ typedef SpaceBranchPr = ({
 });
 
 /// The pull requests opened FROM this conversation, matched by head branch.
-///
-/// A conversation commits on `conv/<id>` in its own CoW worktree. Pushing that
-/// branch and opening a PR records nothing that links the two: the
-/// `review_spaces` association runs the other way (`pr.ensureSpace` mints a
-/// workbench space FOR a PR read off the PR list), so a conversation that
-/// authored a PR had no way to know about it and every surface kept offering to
-/// create one. The branch is the join, and it holds however the PR was opened —
-/// the compose screen, `gh`, the GitHub web UI, or an agent in the space's own
-/// terminal.
-///
-/// Resolved SERVER-SIDE (`pr.forSpaceBranches`) off the open-PR poller's
-/// persisted snapshot, so this costs a cache read rather than a forge call and
-/// the client holds one PR instead of the whole open-PR list — which is
-/// deliberately autoDisposed (see `prsByRepoProvider`) precisely because it is
-/// too big to keep resident, and a space surface stays open while someone works.
-///
-/// Not live: it resolves when a space surface mounts and on an explicit
-/// refresh, rather than subscribing — the alternative is streaming the full
-/// snapshot this exists to avoid. A PR opened while the panel is on screen
-/// shows up on the next refresh or the next visit. A host too old to know the
-/// op reports no matches rather than an error.
+/// The branch is the join, and it holds however the PR was opened — the compose screen,
+/// `gh`, the GitHub web UI, or an agent in the space's own terminal.
+/// Resolved SERVER-SIDE (`pr.forSpaceBranches`) off the open-PR poller's persisted
+/// snapshot, so this costs a cache read rather than a forge call and the client holds one
+/// PR instead of the whole open-PR list — which is deliberately autoDisposed (see
+/// `prsByRepoProvider`) precisely because it is too big to keep resident, and a space
+/// surface stays open while someone works.
 final spaceBranchPullRequestsProvider = FutureProvider.autoDispose
     .family<List<SpaceBranchPr>, String>((ref, spaceId) async {
       if (spaceId.isEmpty) {

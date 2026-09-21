@@ -35,27 +35,12 @@ typedef CcAutocompleteFilter<T> =
       String query,
     );
 
-/// A flat autocomplete field — an input whose typed query filters a list of
-/// [CcSelectOption]s, shown in a floating panel anchored below the field.
-///
-/// The field is an input-styled box wrapping an [EditableText] (no Material).
-/// Clicking anywhere in the field opens the menu. A field that still shows
-/// its last selection lists every option — so a picker is not pre-filtered
-/// down to the one row it is displaying. As the user types, [filter]
-/// (or a default case-insensitive `contains` on the label) narrows [options]
-/// and the best-matching (first) option stays highlighted. The matches render
-/// in a width-matched floating panel of [CcTappable] rows. Selecting a row —
-/// by tap or by keyboard (`↑`/`↓` to highlight, `Enter` to choose, `Esc` to
-/// close) — fills the field with the option's display string (via
-/// [displayString], defaulting to its label), closes the panel and calls
-/// [onSelected]. A ✕ appears to the right of any typed text and clears the
-/// input. The field keeps focus while the list is open. An empty match list
-/// shows a "No results" row.
-///
-/// Pass [onCustomValue] for combo-box behavior: when the typed text matches
-/// no option, clicking outside the field, pressing Tab, or pressing Enter
-/// commits it as a custom value and the field keeps displaying it. An exact
-/// option match is always a selection, never a custom commit.
+/// Flat autocomplete: typed query filters [CcSelectOption]s in a panel below
+/// an [EditableText] (no Material). Showing a prior selection lists all options
+/// (not pre-filtered to that row). [filter] or default label `contains`; first
+/// match stays highlighted. Tap / arrows+Enter select via [displayString]; Esc
+/// closes; ✕ clears. Empty → "No results". [onCustomValue] commits unmatched
+/// text on blur/Tab/Enter; exact option match is always a selection.
 class CcAutocomplete<T> extends StatefulWidget {
   /// Creates a [CcAutocomplete].
   const CcAutocomplete({

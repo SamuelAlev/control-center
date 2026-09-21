@@ -51,7 +51,7 @@ enum _CloseDecision { save, dontSave, cancel }
 
 /// Close interceptor for a code-server editor tab. When the file is clean this
 /// returns true immediately; when dirty it shows a Save / Don't save / Cancel
-/// prompt and, on **Save**, awaits [onSave] (which asks the embedded editor to
+/// prompt and, on Save, awaits [onSave] (which asks the embedded editor to
 /// persist the buffer) before returning true. Returns false to cancel the close
 /// (Cancel, or scrim/Escape dismissal).
 ///

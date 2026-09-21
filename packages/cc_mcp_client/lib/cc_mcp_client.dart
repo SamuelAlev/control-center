@@ -1,24 +1,7 @@
-/// The Control Center MCP CLIENT and tool ecosystem.
-///
-/// CC has always been an MCP *server* (it exposes ~55 typed tools). This
-/// package adds the other half: a multi-transport MCP *client* that connects to
-/// EXTERNAL MCP servers (stdio / Streamable HTTP / SSE), bridges their remote
-/// tools into CC's local `McpToolRegistry` and layers on the cross-cutting
-/// tool ecosystem the agent loop needs at scale:
-///
-/// * connection lifecycle with a crash-storm circuit breaker + hot-reload
-/// * OAuth 2.1 (dynamic client registration, PKCE, loopback callback)
-/// * multi-format config discovery (Claude / Codex / Cursor / Gemini / VS Code
-///   / Windsurf / OpenCode / standalone `.mcp.json`)
-/// * BM25 tool discovery (context savings once tool count crosses a threshold)
-/// * per-args capability-tier approval (read / write / exec)
-/// * worktree-aware semantic code search
-/// * background-process management
-/// * the advisor/watchdog secondary reviewer
-///
-/// Pure Dart (cc_domain + `dart:io`), no Flutter, so it links into both the
-/// desktop app and the Flutter-free `dart build cli` server binary, exactly
-/// like `cc_mcp`.
+/// MCP client: connect to external MCP servers (stdio / HTTP / SSE), bridge
+/// tools into `McpToolRegistry`, plus OAuth, config discovery, BM25 tool
+/// search, capability-tier approval, and process lifecycle. Pure Dart
+/// (no Flutter) for desktop and `cc_server`.
 library;
 
 // The BM25 index moved to the shared kernel so the harness's own `search_tools`

@@ -129,7 +129,7 @@ const Duration kAttachmentClockSkewAllowance = Duration(minutes: 2);
 
 /// A stable identity for a piece of remote markdown media.
 ///
-/// **Not the URL.** A pre-signed attachment URL carries a JWT that expires
+/// Not the URL. A pre-signed attachment URL carries a JWT that expires
 /// after five minutes, so refreshing `body_html` mints a DIFFERENT URL for the
 /// same bytes — and a URL-keyed memo would miss on exactly the refresh that
 /// causes the visible jump. Both GitHub forms carry the attachment's UUID

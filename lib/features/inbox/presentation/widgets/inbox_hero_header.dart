@@ -100,22 +100,11 @@ class InboxHeroHeader extends ConsumerWidget {
                   38.0,
                   60.0,
                 );
-                // The panel keeps its hero stature: reserve exactly the
-                // vertical space the old display-size title (titleSize at
-                // height 1.0), the 12px gap and the 18px/1.4 subtitle line
-                // occupied, while the text itself drops to the standard
-                // page-header typography (PageHeaderText, same as the pull
-                // request and pipeline pages). Top-anchored so the slack
-                // collects at the bottom.
-                //
-                // Rounded to a whole logical pixel on purpose: the hero is a
-                // full-bleed panel and EVERYTHING below it — the rail, the
-                // pinned section headers, every row hairline — inherits its
-                // height as an offset. A fractional one (the 18/1.4 subtitle
-                // line alone contributes .2) puts that whole column on half
-                // device pixels, which blurs the hairlines and lets the row
-                // scrolling under a pinned header bleed through the partial
-                // pixel above it.
+                // The panel keeps its hero stature: reserve exactly the vertical space the old
+                // display-size title (titleSize at height 1.0), the 12px gap and the 18px/1.4 subtitle
+                // line occupied, while the text itself drops to the standard page-header typography
+                // (PageHeaderText, same as the pull request and pipeline pages).
+                // Top-anchored so the slack collects at the bottom.
                 return SizedBox(
                   height: (titleSize + AppSpacing.md + 18 * 1.4)
                       .roundToDouble(),

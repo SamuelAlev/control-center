@@ -49,38 +49,12 @@ class GraphCluster {
   }
 }
 
-/// Places the knowledge graph's nodes as a set of per-domain clusters packed to
-/// a target aspect ratio.
+/// Per-domain clusters packed toward a fixed [targetAspect] (not viewport).
 ///
-/// ## Why not one flat hierarchy
-///
-/// This graph used to be three absolute Y bands — domains on one row, topics on
-/// the next, facts on the third — with every domain laid side by side along the
-/// first row. That is fine for three domains with two topics each and falls
-/// apart at real size: a workspace with two domains and 27 topics produced a
-/// canvas roughly 5,500 x 450, a 12:1 band. "Fit to view" solves
-/// `min(w/W, h/H)`, so it answered ~0.2 and rendered every label at two pixels.
-/// Worse, a domain node connected to 27 topics spread over 5,000 points drew 27
-/// near-horizontal curves through the same corridor: the "starburst" that graph
-/// visualisation literature names as the thing to design away, not to route
-/// around.
-///
-/// So the unit of layout is the CLUSTER, not the row:
-///
-/// * a domain's topics are packed into a **grid** whose column count targets
-///   [targetAspect], not a single row, and each topic's facts stack directly
-///   under it ([GraphStrip]) so those edges stay short and vertical;
-/// * policies sit beside the domain node in the cluster's header band, where
-///   the edge to their domain would be too short to be worth drawing;
-/// * the clusters themselves are then shelf-packed, again toward
-///   [targetAspect], so eight domains become a block roughly 3 x 3 rather than
-///   a line 20,000 points long.
-///
-/// The target aspect is a CONSTANT rather than the live viewport's, deliberately.
-/// Re-flowing on every resize would fight the operator's hand-placed nodes and
-/// make the graph jump while a window is being dragged; a fixed landscape
-/// target lands close enough on every real panel and keeps the layout a pure
-/// function of the data.
+/// Flat Y-bands explode width and starburst edges; clusters grid topics to
+/// [targetAspect], stack facts under topics ([GraphStrip]), put policies in the
+/// header band, then shelf-pack clusters. Constant aspect keeps layout a pure
+/// function of data and avoids fighting hand-placed nodes on resize.
 class KnowledgeGraphLayout {
   const KnowledgeGraphLayout._();
 

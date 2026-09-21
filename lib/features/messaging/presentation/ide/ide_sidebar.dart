@@ -13,21 +13,9 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// The IDE-style sidebar for the messaging screen.
-///
-/// An icon rail — General, Explorer, Source Control, Notes, Artifacts — over
-/// the matching panel. Labelled tabs never fit a sidebar that narrows to
-/// 200px, so the rail is icon-only and width-aware: the operator pins the
-/// views they want a cell for (persisted per user) and whatever does not fit
-/// folds into the trailing caret menu. See [IdeSidebarViewStrip].
-///
-/// The editor↔sidebar boundary is drawn by the resizable divider in the parent
-/// layout, so this panel paints no left edge of its own (a border here would
-/// double the divider hairline). General (the session dashboard: todos, agents,
-/// terminals) is first and selected by default. Notes (PRD 16 §11) holds the
-/// shared per-space handoff doc both humans and agents read/write. The active
-/// view is mirrored in [tabNotifier] so the parent layout (e.g. a "focus source
-/// control" action from the chat header) can drive the selection from the
-/// outside.
+/// Labelled tabs never fit a sidebar that narrows to 200px, so the rail is icon-only and
+/// width-aware: the operator pins the views they want a cell for (persisted per user) and
+/// whatever does not fit folds into the trailing caret menu.
 class IdeSidebar extends ConsumerStatefulWidget {
   /// Creates an [IdeSidebar].
   const IdeSidebar({

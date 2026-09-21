@@ -25,36 +25,13 @@ import 'package:drift/drift.dart';
 
 part 'global_database.g.dart';
 
-/// The server-global database (`<dataDir>/global.db`).
+/// Server-global DB (`<dataDir>/global.db`). Workspace content lives in
+/// `<dataDir>/<workspaceId>/workspace.db` ([WorkspaceDatabase]).
 ///
-/// One of the two halves of Control Center's persistence. This file holds only
-/// what is genuinely **server-wide**; every workspace's content lives in its own
-/// `workspaces/<id>.db` (see `WorkspaceDatabase`). The split is what makes
-/// workspace isolation a *compile-time* property rather than a WHERE-clause
-/// convention: this class simply has no agents/spaces/tickets to leak.
-///
-/// What earns a table a place here:
-///
-///  * **[WorkspacesTable]** — the registry. The switcher must list every
-///    workspace without opening a single workspace file.
-///  * **[UsersTable] / [UserPreferencesTable] / [PairedDevicesTable]** —
-///    identity is global. One human is one user across every workspace and a
-///    paired device survives a workspace being deleted.
-///  * **[RssFeedsTable] / [RssArticlesTable]** — the newsfeed is a per-USER
-///    pillar (each user curates their own feeds); its RPC ops are
-///    `workspaceScoped: false` and scope by the session's user, not a
-///    workspace.
-///  * **[WorkersTable] / [JobsTable] / [PlacementLogTable]** — the fleet
-///    scheduler scans the whole queue on every tick and matches it against
-///    every worker. Jobs are ephemeral execution records, so they carry a
-///    `workspaceId` as a plain attribute rather than living in the workspace
-///    file. The rule that keeps this honest: **a job payload carries ids, never
-///    workspace content.**
-///  * **[WorkspaceRoutesTable] / [ServerMetaTable]** — the pre-auth "which
-///    workspace owns this key?" index and the install identity.
-///
-/// Boot opens only this file and it stays small, so the `quick_check` on open
-/// is cheap no matter how much history the workspaces accumulate.
+/// Tables here must be server-wide: workspace registry; users / preferences /
+/// paired devices; per-user RSS; fleet workers/jobs/placement (payloads carry
+/// ids, never workspace content); workspace_routes + server_meta. Boot opens
+/// only this file.
 @DriftDatabase(
   tables: [
     WorkspacesTable,

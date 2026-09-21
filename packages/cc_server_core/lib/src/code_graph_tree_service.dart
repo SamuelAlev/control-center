@@ -6,27 +6,10 @@ import 'package:cc_domain/core/domain/repositories/workspace_repository.dart';
 import 'package:cc_domain/features/code_graph/domain/ports/code_graph_tree_port.dart';
 import 'package:path/path.dart' as p;
 
-/// Filesystem-backed [CodeGraphTreePort]: resolves the tree behind the
-/// searched code-graph partition and reports which indexed paths still exist
-/// in it.
+/// Filesystem-backed [CodeGraphTreePort] for the code-graph explorer.
 ///
-/// The graph is partitioned per checkout: the linked checkout (what
-/// `index_code` walks) plus one partition per space/PR worktree (built and kept
-/// current by the `CodeGraphWatchService`). A space-scoped call therefore
-/// resolves BOTH the searched partition and the audit tree to the space's
-/// isolated repo copy; a non-space call uses the linked checkout for both.
-///
-/// The scope is the SPACE. `isolated_repos` is keyed by `space_id` and every
-/// conversation in a space shares that one worktree, so a conversation id here
-/// matches nothing: both lookups below miss, both fall back to the linked
-/// checkout and an agent on a PR branch is answered from the base checkout
-/// with no error anywhere.
-///
-/// Workspace isolation: the repo must be linked to `workspaceId`
-/// ([WorkspaceRepository.isRepoLinkedToWorkspace]) and the worktree lookup is
-/// workspace-scoped, so a foreign repo or space simply does not resolve and
-/// the audit returns null (serve unfiltered) rather than reaching another
-/// workspace's files.
+/// Resolves trees from linked checkouts / worktrees; workspace isolation via the linked-repo gate.
+/// Missing paths return empty rather than throwing across the RPC boundary.
 class CodeGraphTreeService implements CodeGraphTreePort {
   /// Creates a [CodeGraphTreeService].
   CodeGraphTreeService({

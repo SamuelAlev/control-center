@@ -96,9 +96,7 @@ class CodeGraphDao extends DatabaseAccessor<WorkspaceDatabase>
     ];
   }
 
-  // ---------------------------------------------------------------------------
   // Ingest
-  // ---------------------------------------------------------------------------
 
   /// Batch-upserts symbols (deterministic ids → in-place update on re-index).
   Future<void> upsertSymbols(List<CodeSymbolsTableCompanion> rows) =>
@@ -113,9 +111,7 @@ class CodeGraphDao extends DatabaseAccessor<WorkspaceDatabase>
   Future<void> upsertFile(CodeFilesTableCompanion row) =>
       into(codeFilesTable).insertOnConflictUpdate(row);
 
-  // ---------------------------------------------------------------------------
   // Incremental re-index
-  // ---------------------------------------------------------------------------
 
   /// Reads the code-file index entry for a single file in the [checkoutId]
   /// partition (null = linked checkout).
@@ -439,9 +435,7 @@ class CodeGraphDao extends DatabaseAccessor<WorkspaceDatabase>
             .go();
       });
 
-  // ---------------------------------------------------------------------------
   // Reads
-  // ---------------------------------------------------------------------------
 
   /// Reads a symbol by id, scoped to [workspaceId].
   Future<CodeSymbolsTableData?> getSymbolById(String workspaceId, String id) =>
@@ -577,17 +571,13 @@ class CodeGraphDao extends DatabaseAccessor<WorkspaceDatabase>
         .get();
   }
 
-  /// Reads RESOLVED edges pointing AT the given [targetSymbolIds] — the
-  /// inbound direction, used to find which files (tests included) reference a
-  /// PR's changed symbols.
+  /// Reads RESOLVED edges pointing AT the given [targetSymbolIds] — the inbound direction,
+  /// used to find which files (tests included) reference a PR's changed symbols.
   ///
-  /// [getResolvedEdgesBySourceFiles] is the outbound equivalent and cannot
-  /// answer this: it starts from the changed files, whereas coverage starts
-  /// from everything ELSE that reaches them. Scoped to [workspaceId] and the
-  /// [checkoutId] partition (null = linked checkout).
-  ///
-  /// Chunked because a large PR can change thousands of symbols and SQLite
-  /// caps a statement's variable count.
+  /// [getResolvedEdgesBySourceFiles] is the outbound equivalent and cannot answer this: it
+  /// starts from the changed files, whereas coverage starts from everything ELSE that reaches
+  /// them.
+  /// Scoped to [workspaceId] and the [checkoutId] partition (null = linked checkout).
   Future<List<CodeEdgesTableData>> getEdgesIntoSymbols(
     String workspaceId,
     String repoId,
@@ -778,9 +768,7 @@ class CodeGraphDao extends DatabaseAccessor<WorkspaceDatabase>
     return out;
   }
 
-  // ---------------------------------------------------------------------------
   // Index checkpoints
-  // ---------------------------------------------------------------------------
 
   /// Reads the checkpoint row(s) visible to the [checkoutId] partition in one
   /// query: the partition's own row plus (for a worktree) the base
@@ -802,9 +790,7 @@ class CodeGraphDao extends DatabaseAccessor<WorkspaceDatabase>
   Future<void> upsertCheckpoint(CodeIndexCheckpointsTableCompanion row) =>
       into(codeIndexCheckpointsTable).insertOnConflictUpdate(row);
 
-  // ---------------------------------------------------------------------------
   // Search — mirrors MemoryFactDao (FTS5 / vector / RRF hybrid)
-  // ---------------------------------------------------------------------------
 
   /// Full-text search over code symbols via FTS5, scoped to the [checkoutId]
   /// partition (null = linked checkout).
@@ -928,9 +914,7 @@ class CodeGraphDao extends DatabaseAccessor<WorkspaceDatabase>
     );
   }
 
-  // ---------------------------------------------------------------------------
   // Graph traversal
-  // ---------------------------------------------------------------------------
 
   String _kindPlaceholders(Set<CodeEdgeKind> kinds) =>
       List.filled(kinds.length, '?').join(', ');

@@ -20,22 +20,11 @@ enum CcTextFieldSize {
   sm,
 }
 
-/// A flat, single-line text field built directly on [EditableText].
-///
-/// A purist replacement for Material's `TextField`: it supplies the box
-/// decoration, hint, prefix/suffix, focus treatment and error treatment that
-/// Material's `InputDecorator` would normally provide, while staying on the
-/// widgets layer (no Material, no ink).
-///
-/// The resting box is a quiet [CcInputTokens.bg] fill closed by a single 1px
-/// bottom underline; gaining focus (keyboard or pointer) draws a 2px
-/// [CcInputTokens.borderFocused] outline around the box via
-/// `foregroundDecoration`, so layout never shifts. Supplying [errorText]
-/// swaps the outline to danger (+ subtle tint). Desktop-first: there are no
-/// drag selection handles (`selectionControls: null`), but pointer selection
-/// (click-drag, double-click word select) is wired via a
-/// [TextSelectionGestureDetectorBuilder]; keyboard selection works via the
-/// default shortcuts.
+/// Flat single-line field on [EditableText] (no Material). Rest: [CcInputTokens.bg]
+/// + 1px bottom underline; focus draws 2px [CcInputTokens.borderFocused] via
+/// `foregroundDecoration` (no layout shift). [errorText] → danger outline.
+/// Desktop: no selection handles; pointer select via
+/// [TextSelectionGestureDetectorBuilder].
 class CcTextField extends StatefulWidget {
   /// Creates a [CcTextField].
   const CcTextField({

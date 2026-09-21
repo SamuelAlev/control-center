@@ -9,29 +9,13 @@ import 'package:control_center/shared/utils/repo_filters.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// The compose-screen branch selector: the repo to open the PR in, plus the
-/// `base ← compare` branch pair. Picking the repo sets the active repo (so all
-/// repo-scoped providers re-resolve); picking branches stages them into
-/// [composePrProvider].
-///
-/// Candidates come from the GitHub remote, **plus** [localBranch] — the branch
-/// checked out in the launching conversation's isolated worktree. That branch is
-/// created with a local `git checkout -b` and never pushed, so it is absent from
-/// the remote's ref list; offering only remote refs is what made "create pull
-/// request" from a chat a dead end. It is listed first, flagged as local and the
-/// screen offers to publish it before the PR is opened.
-///
-/// Both pickers accept free text, so a branch the remote listing missed (or that
-/// is still loading) can always be typed. Previously the field was hard-disabled
-/// whenever the candidate list was empty, which collapsed "no branches", "still
-/// loading", "GitHub timed out" and "no server token" into one inert grey box
-/// with no explanation.
-///
-/// Layout: a labels row above a fields row that share identical column widths,
-/// so everything stays on one line. The repo is a fixed-width picker while the
-/// two branch pickers flex to fill the rest (selecting a long branch name never
-/// shifts the layout) and the `←` is vertically centred against the picker row
-/// — no fixed picker height assumed.
+/// The compose-screen branch selector: the repo to open the PR in, plus the `base ←
+/// compare` branch pair.
+/// Picking the repo sets the active repo (so all repo-scoped providers re-resolve); picking
+/// branches stages them into [composePrProvider].
+/// That branch is created with a local `git checkout -b` and never pushed, so it is absent
+/// from the remote's ref list; offering only remote refs is what made "create pull request"
+/// from a chat a dead end.
 class ComposeBranchBar extends ConsumerWidget {
   /// Creates a [ComposeBranchBar].
   const ComposeBranchBar({super.key, this.localBranch});
@@ -203,27 +187,13 @@ class _Label extends StatelessWidget {
 }
 
 /// A typeahead single-select over branch names, with free text allowed.
-///
-/// The controller is seeded with the current [value] whenever it is a real
-/// selection — a member of [branches]. A value that is neither (a branch staged
-/// for a previously-active repo) renders empty rather than showing an invalid
-/// selection.
-///
-/// [localBranch] is annotated in the list as unpublished, so the one candidate
-/// that does not yet exist on GitHub is visibly different from the ones that do.
-/// The annotation lives in the option's label only: [_Typeahead] writes the bare
-/// `value` into the field, so the staged branch name is never polluted with UI
-/// text.
-///
-/// Never disabled. An empty candidate list means the remote listing is empty,
-/// still loading, or failed — in all three the user must still be able to type a
-/// branch name and [CcAutocomplete] refuses to even open its panel when
-/// disabled, so the old `enabled: branches.isNotEmpty` produced a field that
-/// silently did nothing on click.
-///
-/// The field is keyed on the candidate set so that swapping the branch list
-/// (e.g. when the active repo changes and its branches reload) rebuilds the
-/// field from scratch, re-seeding the controller against the new candidates.
+/// The annotation lives in the option's label only: [_Typeahead] writes the bare `value`
+/// into the field, so the staged branch name is never polluted with UI text.
+/// Never disabled.
+/// An empty candidate list means the remote listing is empty, still loading, or failed — in
+/// all three the user must still be able to type a branch name and [CcAutocomplete] refuses
+/// to even open its panel when disabled, so the old `enabled: branches.isNotEmpty` produced
+/// a field that silently did nothing on click.
 class _BranchSelect extends StatelessWidget {
   const _BranchSelect({
     required this.slot,

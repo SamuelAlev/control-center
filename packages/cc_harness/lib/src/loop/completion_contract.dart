@@ -1,24 +1,9 @@
 import 'package:cc_harness/src/loop/agent_loop.dart';
 
-/// A run's deliverable, declared up front.
-///
-/// Generalizes the pattern `submit_output` proved on the pipeline path —
-/// declare → validate → echo violations → cap → terminal state — to any run.
-/// Without it the loop's only definition of "done" is "the model emitted no
-/// tool calls", which makes a run that researched for thirty turns and produced
-/// nothing indistinguishable from a success. That is exactly how a plan-mode
-/// run could end `completed` having never called `submit_plan`.
-///
-/// **Relationship to PRD 26's `Verifier`.** A [CompletionContract] is the
-/// degenerate deterministic verifier: a *presence* check (did the artifact
-/// materialize?), boolean, evaluated once at the terminal boundary, cheap
-/// enough to be default-on. A `Verifier` is a *quality* check (a graded verdict
-/// with feedback, per candidate, opt-in). [probe] is the seam where a future
-/// `VerifierSet` plugs in without changing the loop.
-///
-/// The kernel deliberately knows nothing about Control Center's conversation
-/// modes: a contract is a set of tool names plus text. Dispatch maps
-/// `Mode.plan → submit_plan` at the boundary.
+/// A run's deliverable, declared up front (presence check at the terminal
+/// boundary). Without it, "no tool calls" counts as success even with no
+/// artifact. Kernel-agnostic: tool names + text; dispatch maps modes. [probe]
+/// is the seam for a future quality verifier.
 class CompletionContract {
   /// Creates a completion contract.
   const CompletionContract({

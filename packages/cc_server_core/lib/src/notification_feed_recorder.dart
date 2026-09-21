@@ -11,24 +11,9 @@ import 'package:cc_host/cc_host.dart';
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:cc_server_core/src/notification_wire.dart';
 
-/// Records the durable per-workspace notification feed.
+/// Durable per-workspace notification feed from domain events (same mapping as live toasts).
 ///
-/// Subscribes ONCE to the domain-event bus (unlike `RemoteEventForwarder`,
-/// which is per connected device) and writes one `notification_feed` row per
-/// notification-class event into the owning workspace's database, via the
-/// same event → frame mapping the forwarder pushes — so the stored history
-/// and the live toasts always agree. Clients render rows through their own
-/// frame mapper, which is where localization and the PRD 16 §7 principal
-/// routing apply; read/cleared state is per user (`notification_read_marks`).
-///
-/// Only frames the client actually renders as notifications are recorded:
-/// task-lifecycle frames and `ticket_reassigned` are pushed live for other
-/// surfaces but have no notification rendering, so storing them would only
-/// bloat the feed. A frame without a `workspace_id` (genuinely
-/// cross-workspace, e.g. external-PR polling against an unlinked repo) has no
-/// owning database file and stays toast-only.
-///
-/// Follows the long-lived listener shape of `WorktreeGcListener`.
+/// Skips frames with no notification rendering and frames without `workspace_id`.
 class NotificationFeedRecorder {
   /// Creates a [NotificationFeedRecorder].
   NotificationFeedRecorder({

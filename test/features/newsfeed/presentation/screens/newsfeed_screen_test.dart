@@ -228,6 +228,19 @@ void main() {
       expect(find.text('All'), findsOneWidget);
       expect(find.text('Unread'), findsOneWidget);
       expect(find.text('Saved'), findsOneWidget);
+
+      // Both controls pin to the same trailing edge as the page-header actions.
+      final layoutRect = tester.getRect(
+        find.byType(CcSegmentedToggle<NewsfeedLayout>),
+      );
+      final settingsRect = tester.getRect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is CcIconButton &&
+              widget.semanticLabel == 'Newsfeed settings',
+        ),
+      );
+      expect(layoutRect.right, settingsRect.right);
     });
   });
 

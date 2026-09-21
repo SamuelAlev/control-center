@@ -28,9 +28,7 @@ void main() {
     await global.close();
   });
 
-  // ---------------------------------------------------------------------------
   // Helpers
-  // ---------------------------------------------------------------------------
 
   Meeting meeting0({
     String id = 'm1',
@@ -84,9 +82,7 @@ void main() {
     );
   }
 
-  // ---------------------------------------------------------------------------
   // upsert
-  // ---------------------------------------------------------------------------
   group('upsert', () {
     test('inserts a new meeting', () async {
       final meeting = meeting0();
@@ -151,9 +147,7 @@ void main() {
     });
   });
 
-  // ---------------------------------------------------------------------------
   // getById
-  // ---------------------------------------------------------------------------
   group('getById', () {
     test('returns null for non-existent id', () async {
       final result = await repo.getById('ws-1', 'nonexistent');
@@ -177,9 +171,7 @@ void main() {
     });
   });
 
-  // ---------------------------------------------------------------------------
   // getByWorkspace
-  // ---------------------------------------------------------------------------
   group('getByWorkspace', () {
     test('returns empty list for workspace with no meetings', () async {
       final result = await repo.getByWorkspace('ws-1');
@@ -235,9 +227,7 @@ void main() {
     });
   });
 
-  // ---------------------------------------------------------------------------
   // delete
-  // ---------------------------------------------------------------------------
   group('delete', () {
     test('deletes an existing meeting', () async {
       await repo.upsert(meeting0());
@@ -272,9 +262,7 @@ void main() {
     });
   });
 
-  // ---------------------------------------------------------------------------
   // watchByWorkspace
-  // ---------------------------------------------------------------------------
   group('watchByWorkspace', () {
     test('emits initial empty list', () async {
       final stream = repo.watchByWorkspace('ws-1');
@@ -352,9 +340,7 @@ void main() {
     });
   });
 
-  // ---------------------------------------------------------------------------
   // appendSegment & getSegments
-  // ---------------------------------------------------------------------------
   group('segments', () {
     test('getSegments returns empty for meeting with no segments', () async {
       await repo.upsert(meeting0());
@@ -431,9 +417,7 @@ void main() {
     });
   });
 
-  // ---------------------------------------------------------------------------
   // watchSegments
-  // ---------------------------------------------------------------------------
   group('watchSegments', () {
     test('emits initial empty list for meeting with no segments', () async {
       await repo.upsert(meeting0());
@@ -477,9 +461,7 @@ void main() {
     });
   });
 
-  // ---------------------------------------------------------------------------
   // action items & decisions
-  // ---------------------------------------------------------------------------
   group('action items & decisions', () {
     MeetingActionItem item(
       String id,
@@ -584,9 +566,7 @@ void main() {
     });
   });
 
-  // ---------------------------------------------------------------------------
   // manual editing: add / update / delete action items
-  // ---------------------------------------------------------------------------
   group('manual action items', () {
     MeetingActionItem item(String id, String content, {int sortOrder = 0}) =>
         MeetingActionItem(
@@ -722,9 +702,7 @@ void main() {
     });
   });
 
-  // ---------------------------------------------------------------------------
   // manual editing: add / update / delete decisions
-  // ---------------------------------------------------------------------------
   group('manual decisions', () {
     MeetingDecision agentDecision(String id, String content) => MeetingDecision(
       id: id,
@@ -811,9 +789,7 @@ void main() {
     );
   });
 
-  // ---------------------------------------------------------------------------
   // updateTitle / updateNotes
-  // ---------------------------------------------------------------------------
   group('updateTitle & updateNotes', () {
     test('updateTitle changes only the title', () async {
       await repo.upsert(meeting0(title: 'Old'));
@@ -866,9 +842,7 @@ void main() {
     );
   });
 
-  // ---------------------------------------------------------------------------
   // getUnfinalized (cross-workspace sweep)
-  // ---------------------------------------------------------------------------
   group('getUnfinalized', () {
     test('returns non-terminal meetings across all workspaces', () async {
       await repo.upsert(
@@ -899,9 +873,7 @@ void main() {
     });
   });
 
-  // ---------------------------------------------------------------------------
   // replaceSegments
-  // ---------------------------------------------------------------------------
   group('replaceSegments', () {
     test('replaces a meeting transcript wholesale', () async {
       await repo.upsert(meeting0());
@@ -961,9 +933,7 @@ void main() {
     });
   });
 
-  // ---------------------------------------------------------------------------
   // per-segment speaker label / name overrides
-  // ---------------------------------------------------------------------------
   group('segment speaker overrides', () {
     test('setSegmentSpeakerLabel stamps a diarization label', () async {
       await repo.upsert(meeting0());
@@ -1058,9 +1028,7 @@ void main() {
     );
   });
 
-  // ---------------------------------------------------------------------------
   // diarized speakers
-  // ---------------------------------------------------------------------------
   group('speakers', () {
     MeetingSpeakerLabel speaker({
       String id = 'sp1',

@@ -150,20 +150,12 @@ class RigImageDownloadProgress {
 
 /// The built-in image catalogue.
 ///
-/// Deliberately small and explicit. Adding an entry is a supply-chain
-/// decision — this is the software that runs inside the boundary — so it is a
-/// code change with a pinned hash, not a config file a workspace can point at
-/// an arbitrary URL.
-///
-/// Only the QEMU desktop image lives here: it is NOT published yet — it needs
-/// our own guest agent baked in, which a stock cloud image has no way to
-/// provide. It carries no artifacts, so [RigImageSpec.isPublished] is false,
-/// the UI offers import instead of download, and
-/// `scripts/rigs/build_image.sh` builds one.
-///
-/// Terminal (exec) and browser rigs need no entry at all: they are smolvm
-/// microVMs whose images are digest-pinned OCI references
-/// (`kSmolvmExecImage` / `kSmolvmDebianBrowserImage`) pulled by the runtime.
+/// Adding an entry is a supply-chain decision (code change + pinned hash), not
+/// a workspace URL. Only the QEMU desktop image lives here — unpublished until
+/// our guest agent is baked in; [RigImageSpec.isPublished] is false and the UI
+/// offers import (`scripts/rigs/build_image.sh`). Exec/browser are smolvm OCI
+/// pins (`kSmolvmExecImage` / `kSmolvmDebianBrowserImage`), not catalogue
+/// entries.
 const List<RigImageSpec> kRigImageCatalog = [
   RigImageSpec(
     id: 'cc-desktop-linux',
@@ -306,29 +298,12 @@ class RigImageStore {
 
   /// Adopts an existing disk image at [sourcePath] as [spec]'s artifact.
   ///
-  /// The path that works TODAY: the catalogue's own artifacts are not
-  /// published, so an operator who built an image locally (or already has a
-  /// qcow2) needs a way in that does not involve a URL.
-  ///
-  /// Copied rather than referenced, because the store owns its files: a rig
-  /// boots an overlay whose backing file must not move or change underneath
-  /// it, and a symlink into the operator's Downloads folder is exactly the
-  /// kind of thing that gets cleaned up mid-session.
-  ///
-  /// **Verified, like the download path.** This is the production path for the
-  /// desktop and browser images (their artifacts are not published), so
-  /// installing whatever bytes were named would mean the "base images are
-  /// checksum-pinned" invariant simply does not hold where it is actually
-  /// used. Three checks, in ascending strength:
-  ///
-  ///  * a size floor — a bootable qcow2 is never under a megabyte;
-  ///  * the qcow2 magic (`QFI\xFB`) — a tarball, a truncated download or the
-  ///    wrong file entirely becomes `disk.qcow2` and reports `present`
-  ///    otherwise, deferring the failure to a confusing first boot minutes
-  ///    later;
-  ///  * the catalogue's pinned SHA-256 when there is one. When there is not,
-  ///    the digest of what WAS installed is logged, so the bytes a host is
-  ///    running are at least recorded rather than unknown.
+  /// Copied, not referenced: the store owns its files and a symlink into
+  /// Downloads must not vanish mid-session under a live overlay.
+  /// Verified like the download path (this is the production path while
+  /// catalogue artifacts are unpublished): size floor (≥1 MB), qcow2 magic
+  /// (`QFI\xFB`), and the catalogue's pinned SHA-256 when present — else the
+  /// installed digest is logged.
   Stream<RigImageDownloadProgress> importFrom(
     RigImageSpec spec,
     String sourcePath,

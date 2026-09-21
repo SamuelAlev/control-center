@@ -3,33 +3,12 @@ import 'dart:math' as math;
 import 'package:flutter/widgets.dart';
 import 'package:kalender/kalender.dart' as k;
 
-/// A kalender [k.EventLayoutStrategy] that lays events out from their *real*
-/// time ranges rather than their rendered heights, placing genuine time
-/// conflicts *side by side* in equal-width columns.
+/// Side-by-side columns from real time ranges (not inflated rendered heights).
 ///
-/// kalender ships two strategies and both fall short here:
-///
-///  * [k.EventLayoutStrategy.overlap] stacks conflicting tiles on top of one
-///    another, each narrower and pinned to the right. The base tile keeps its
-///    full width, so its title runs *underneath* the tiles on top — two
-///    overlapping events paint their titles in the same horizontal band and
-///    collide into an unreadable mess.
-///  * [k.EventLayoutStrategy.sideBySide] places tiles next to each other (the
-///    layout we want) but inflates every tile to `minimumTileHeight` first:
-///    before grouping, so two short back-to-back events like 09:15–09:30 and
-///    09:30–09:45, which don't actually conflict, get treated as overlapping
-///    and split into separate columns; and when sizing, so a 15-minute event
-///    is painted 30-minutes tall, visually running past its real end into the
-///    following event's slot.
-///
-/// This strategy takes the side-by-side placement but fixes both inflation
-/// problems: it groups and assigns columns on the untouched event ranges so only
-/// genuine time conflicts share the width and it sizes each tile to its true
-/// duration, growing a short tile toward `minimumTileHeight` (the legibility
-/// floor) *only* into empty space — never past the start of the next event. So
-/// overlapping events sit side by side and stay readable, an event ends exactly
-/// where its time ends and a short event followed immediately by another is not
-/// inflated into it.
+/// kalender `overlap` stacks titles unreadable; `sideBySide` inflates to
+/// `minimumTileHeight` before grouping (false conflicts) and when sizing
+/// (overruns next event). Group on true ranges; grow short tiles toward
+/// `minimumTileHeight` only into empty space.
 class CalendarEventLayoutStrategy extends k.EventLayoutStrategy {
   /// Creates a [CalendarEventLayoutStrategy].
   const CalendarEventLayoutStrategy();

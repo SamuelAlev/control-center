@@ -3,25 +3,11 @@ import 'package:cc_harness/loop.dart';
 import 'package:cc_harness/messages.dart';
 import 'package:cc_harness/provider.dart';
 
-/// A watchdog [Advisor] backed by an [LlmProviderPort]: a cheap second model
-/// silently watches the driving agent work and flags real problems.
-///
-/// Unlike a stateless one-shot reviewer, it keeps its **own append-only
-/// context** and feeds the model only the primary transcript appended since its
-/// last review (a "Session update" delta), so the reviewer accumulates
-/// continuity across turns without re-sending the whole history each time.
-/// Its output runs through an
-/// [AdvisorEmissionGuard] that drops content-free noise, exact repeats and
-/// de-escalations before a note ever reaches the primary.
-///
-/// Contract with the reviewer model (enforced in [_parse] + the guard, not just
-/// prose): reply `OK` for nothing to flag (the common case) or a single
-/// `<severity>: <sentence>` line where severity is `nit`, `concern`, or
-/// `blocker`.
-///
-/// The call is cache-free and never throws — a provider failure returns null
-/// and, after a few in a row, the advisor goes quiet for the rest of the run
-/// (re-armed by `reset`).
+/// Watchdog [Advisor] on an [LlmProviderPort]: cheap second model with its own
+/// append-only context, fed only the primary delta since last review. Output
+/// through [AdvisorEmissionGuard]. Model must reply `OK` or
+/// `<nit|concern|blocker>: <sentence>` ([_parse] + guard). Cache-free; failures
+/// return null and quiet the advisor after a few (re-arm with `reset`).
 class WatchdogAdvisor implements Advisor {
   /// Creates a [WatchdogAdvisor] over `provider`.
   ///

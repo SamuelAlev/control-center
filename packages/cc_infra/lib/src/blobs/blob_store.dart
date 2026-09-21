@@ -49,24 +49,11 @@ class StoredBlob {
   final String mediaType;
 }
 
-/// Content-addressed storage for binary payloads an agent produced — today,
-/// screenshots from `computer_use`, `browser_use`, `mobile_use`, or `ios_use`.
+/// Content-addressed binary store for agent payloads (e.g. tool screenshots).
 ///
-/// **Why this exists.** A tool-result image arrives as base64 in the model's
-/// message content. Persisting that inline would put megabytes of base64 into
-/// `conversation_messages` — a row every transcript query drags along, in a
-/// column FTS indexes, for content no query ever matches on. Blobs move the
-/// bytes out and leave a 71-character reference behind.
-///
-/// **Why per workspace, not global.** A single global blob directory would
-/// dedup a screenshot shared across sessions. Control Center cannot: a
-/// screenshot is workspace-scoped data, and workspace isolation here is
-/// structural — everything belonging to one workspace lives in that
-/// workspace's directory and is deleted with it. A global store would outlive
-/// the workspace whose agent produced it and would need a `WHERE`-clause
-/// equivalent to keep separate, which is exactly the convention the database
-/// split replaced. Dedup within a workspace still works, and that is where the
-/// repeats actually are (an agent screenshotting an unchanged screen).
+/// Keeps megabytes of base64 out of `conversation_messages` / FTS. Per
+/// workspace (structural isolation — deleted with the workspace); no global
+/// store. Dedup within a workspace still applies.
 class BlobStore {
   /// Creates a [BlobStore] whose per-workspace directory comes from
   /// [_workspaceDir].

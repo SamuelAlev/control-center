@@ -1,13 +1,11 @@
 /// Platform-neutral control surface for server-hosted code-server (VS Code in
 /// the browser) sessions.
-///
 /// code-server runs on the **server** (`cc_server`) — never on a client — bound
 /// loopback only, opening the conversation's isolated copy-on-write worktree as
 /// its folder. A connected client reaches it through the authenticated
 /// `/proxy/vscode/<sessionId>/` reverse proxy; a loopback-local desktop/Linux
 /// may hit `127.0.0.1:<port>` directly. The thin-client invariant holds: every
 /// client talks to the same server.
-///
 /// Sessions are **WORKSPACE-SCOPED**: `ensureSession` records the owning
 /// workspace and the host validates ownership on every `closeSession` /
 /// `lookup` before touching a session, so one workspace can never reach
@@ -25,14 +23,12 @@ abstract interface class CodeServerPort {
   /// repoId)` — reusing a running instance keyed by the conversation's
   /// worktree, or spawning one bound loopback on an ephemeral port with its
   /// `--folder` set to the worktree path.
-  ///
   /// [deviceId] is the paired-device id of the minting client; the returned
   /// [CodeServerSession.sessionId] is a high-entropy capability bound to it.
   /// [path], when given, deep-links the file code-server opens first. Returns
   /// the live session (its `status` reports install/readiness). Throws on a
   /// cross-workspace mismatch or when the worktree cannot be resolved (never
   /// falls back to the raw checkout).
-  ///
   /// [autoSave] is the client's editor auto-save preference — the VS Code
   /// `files.autoSave` value (`'off'`, `'afterDelay'`, `'onFocusChange'`,
   /// `'onWindowChange'`) — seeded into the session's `settings.json` so the

@@ -69,22 +69,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
 
-/// The IDE-style messaging surface: a tiling editor split-tree on the left plus
-/// a fixed activity sidebar on the right.
-///
-/// The editor layout (split tree + per-leaf tab state) is owned by an
-/// [EditorLayoutController]; tab *bodies* (chat / terminal / browser / file /
-/// diff) are built and **kept alive** here, in one place, under a stable
-/// per-tab [GlobalKey] — so a tab dragged between panes is reparented, not
-/// rebuilt, keeping its live webview / terminal session intact.
-///
-/// The layout is persisted **per conversation** (keyed by space id) in the
-/// workspace-scoped cache and restored on restart. Sidebar geometry is
-/// ephemeral session state.
-/// A small command sink the IDE layout state populates so external callers
-/// (keyboard shortcuts) can drive IDE actions (open the code-server editor,
-/// close the active tab, toggle the sidebar) without reaching into the private
-/// [State].
+/// Command sink the IDE layout populates for keyboard shortcuts (open editor,
+/// close tab, toggle sidebar) without reaching into private [State].
 class MessagingIdeActions {
   /// Opens the code-server editor pane (keyboard-shortcut driven).
   VoidCallback? openEditor;
@@ -96,8 +82,11 @@ class MessagingIdeActions {
   VoidCallback? toggleSidebar;
 }
 
-/// The messaging IDE layout: an editor split tree on the left and a sidebar
-/// (General / Explorer / Source Control / Pull Requests) on the right.
+/// IDE messaging surface: editor split-tree plus activity sidebar.
+///
+/// [EditorLayoutController] owns the tree; tab bodies stay under stable
+/// [GlobalKey]s (reparent on drag, keep webview/terminal). Layout persisted
+/// per conversation (space id); sidebar geometry is session-ephemeral.
 class MessagingIdeLayout extends ConsumerStatefulWidget {
   /// Creates the IDE layout.
   const MessagingIdeLayout({
@@ -132,7 +121,6 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
   late EditorLayoutController _layout;
   late final ValueNotifier<IdeSidebarView> _sidebarTab;
 
-  // ── Central tab-body host (keep-alive) ───────────────────────────────────
   // Keep-alive / lazy-build / TickerMode / webview-LRU machinery is shared with
   // the PR workbench via [EditorBodyHost]. Feature-specific per-tab resources
   // (terminal session CLAIMS) stay here and are pruned alongside in
@@ -205,7 +193,6 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
     maxHiddenWebviews: kMaxHiddenWebviews,
   );
 
-  // ── Sidebar geometry (ephemeral) ─────────────────────────────────────────
   double _sidebarWidth = 300;
   static const double _minSidebar = 200;
   static const double _maxSidebar = 560;
@@ -218,18 +205,15 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
   /// editor↔sidebar seam. Matches [CcResizable]'s default `dividerHitSize`.
   static const double _dividerHitSize = 8;
 
-  // ── Persistence ──────────────────────────────────────────────────────────
   EditorLayoutPersistence? _persistence;
   String? _workspaceId;
 
-  // ── Editor dirty state (unsaved-changes dot) ─────────────────────────────
   /// Per-file unsaved-changes state (shared with the PR workbench), fed by the
   /// bridge extension via [codeServerDirtyStateProvider]. Keys a code-server
   /// file tab to its dot and gates the Save/Don't-save close prompt. Ephemeral,
   /// cleared on conversation switch.
   final _dirty = EditorDirtyTracker();
 
-  // ── Descendant-driven tab opens ───────────────────────────────────────────
   /// Published to the subtree via [EditorTabOpenerScope] so a widget rendered
   /// inside a tab body (a plan bubble in the conversation feed) can open its own
   /// tab here without a callback threaded through the whole feed. Built once —
@@ -319,7 +303,6 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
     }
   }
 
-  // ── URL tab sync (`?tab=`) ────────────────────────────────────────────────
 
   /// Two-way sync between the focused editor tab and the URL's `?tab=` param:
   /// a tab switch publishes lightweight browser history, while back/forward or
@@ -393,7 +376,6 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
     _openConversation(spaceId, conv.id);
   }
 
-  // ── Layout lifecycle ──────────────────────────────────────────────────────
 
   /// Opens (or focuses) the conversation's code-server editor tab on its
   /// isolated worktree — the single place where files are created/saved. Driven
@@ -668,29 +650,11 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
     dedupKey: '${MessagingTabKinds.rig}:${target.dedupKey}',
   );
 
-  /// The `[+]` menu's target for [kind]: the lowest-numbered machine of that
-  /// surface and engine that has no tab yet.
-  ///
-  /// `[+]` means "one I do not have open" — that is what a new-tab button
-  /// means everywhere else in the strip, and re-picking an entry only to be
-  /// walked back to the tab already on screen tells a person nothing.
-  ///
-  /// Keyed on the open TABS, not on the running machines, and that distinction
-  /// is the whole design:
-  ///
-  ///  * The first press takes the conversation's DEFAULT machine — the one an
-  ///    agent's `*_use` calls drive. So a person opening "the browser" while an
-  ///    agent is already using one lands on THAT machine and can watch it work,
-  ///    rather than booting a second browser beside it.
-  ///  * A press while that tab is open takes the next slot: a real second VM,
-  ///    which is what someone comparing two builds asked for.
-  ///  * A press when a machine of that kind is running with no tab lands back
-  ///    on it — closing a rig tab puts the viewer away and leaves the guest
-  ///    running, so this is the common case. Re-attaching to a machine that is
-  ///    already up is free; booting another beside it is gigabytes.
-  ///
-  /// The phone is the exception and always addresses the one device — see
-  /// [RigTabSurfaces.nextTarget], which owns both rules.
+  /// The `[+]` menu's target for [kind]: the lowest-numbered machine of that surface and
+  /// engine that has no tab yet.
+  /// `[+]` means "one I do not have open" — that is what a new-tab button means everywhere
+  /// else in the strip, and re-picking an entry only to be walked back to the tab already on
+  /// screen tells a person nothing.
   RigTabTarget _nextRigTarget(RigTabTarget kind) =>
       RigTabSurfaces.nextTarget(kind, [
         for (final tab in _layout.allTabs())
@@ -1003,7 +967,6 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
     });
   }
 
-  // ── Host browser tabs (sidebar BROWSERS rows) ──────────────────────────────
 
   /// Focuses a HOST browser tab by its mirror id — a BROWSERS row's tap.
   void _focusBrowserTab(String tabId) {
@@ -1037,7 +1000,6 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
     }
   }
 
-  // ── Persistence ────────────────────────────────────────────────────────────
 
   void _schedulePersist() {
     final spaceId = widget.selectedSpaceId;
@@ -1066,7 +1028,6 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
     );
   }
 
-  // ── Body host (keep-alive build) ───────────────────────────────────────────
 
   Widget _buildBody(
     EditorTab tab,
@@ -2307,26 +2268,9 @@ String _browserLabel(AppLocalizations l10n) =>
     kIsWeb ? l10n.ideSimpleWebBrowser : l10n.ideWebBrowser;
 
 /// A thin draggable handle between the editor area and the sidebar.
-///
-/// A hairline centered in a wider invisible hit area showing a column-resize
-/// cursor; dragging reports the horizontal delta so the parent can resize the
-/// sidebar. Intended to be overlaid (via [Positioned]) on the seam between the
-/// two panes so it consumes no layout width and the hairline lands on the
-/// boundary — matching [CcResizable]'s divider treatment.
-///
-/// The drag uses a [GestureDetector] horizontal-drag gesture (not a raw
-/// [Listener]) and, while the gesture is live, pushes a full-IDE
-/// [PointerInterceptor] into the root [Overlay]. This is the fix for the web
-/// iframe pointer-steal: an `<iframe>` platform view swallows raw pointer events
-/// the moment the cursor crosses into it, so the drag would die mid-resize. A
-/// Flutter [AbsorbPointer] alone can't stop this — the iframe is a real DOM
-/// element outside Flutter's hit-test tree, so the browser keeps routing events
-/// to it regardless of what Flutter paints on top. [PointerInterceptor] drops a
-/// transparent DOM element above every platform view, so pointer events keep
-/// reaching Flutter and the already-captured drag recognizer keeps getting
-/// `onHorizontalDragUpdate` no matter where the pointer travels. The overlay is
-/// inserted on drag-start (while the pointer is still on the handle) so the
-/// shield is already covering the iframe by the time the cursor reaches it.
+/// This is the fix for the web iframe pointer-steal: an `<iframe>` platform view swallows
+/// raw pointer events the moment the cursor crosses into it, so the drag would die
+/// mid-resize.
 class _SidebarDivider extends StatefulWidget {
   const _SidebarDivider({
     required this.color,

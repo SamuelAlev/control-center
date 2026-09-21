@@ -9,11 +9,11 @@ enum _ConditionMode { filesAny, filesAll, comparison, switchOn }
 ///
 /// Surfaces the four practical shapes the `pipeline.condition` body understands
 /// and writes them back as a normalized `extras` map:
-/// - **Files exist (any)** → `predicate: {type: fileExists, paths, …}` — routes
+/// - Files exist (any) → `predicate: {type: fileExists, paths, …}` — routes
 ///   `true` when any path exists (or, inverted, when none do).
-/// - **Files exist (all)** → `predicate: {type: and, of: [fileExists…]}`.
-/// - **Comparison** → `predicate: {type: comparison, left, op, right}`.
-/// - **Switch** → top-level `switchKey` / `cases` / `default` (multi-way).
+/// - Files exist (all) → `predicate: {type: and, of: [fileExists…]}`.
+/// - Comparison → `predicate: {type: comparison, left, op, right}`.
+/// - Switch → top-level `switchKey` / `cases` / `default` (multi-way).
 ///
 /// Either way the router emits a route key (`true`/`false`, or the matched
 /// case) that an outgoing edge must carry.

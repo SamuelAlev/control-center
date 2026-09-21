@@ -24,23 +24,10 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// The agent's configuration form — the Settings tab of the agent registry.
-///
-/// ## Why it looks like this
-///
-/// It used to be a flat column of eighteen ad-hoc rows: a hand-rolled 12px
-/// tertiary label above every control, two switches with no shared anatomy,
-/// and a Save button parked at the bottom of a scroll long enough that the
-/// widget test had to `scrollUntilVisible` to reach it. Beside Skills, Model
-/// providers and Detected runners — which all read as one system — the agent
-/// registry read as a different product.
-///
-/// So it is built from the same kit as those surfaces: [SettingsGroup] blocks
-/// (identity, runtime, skills, guardrails) of [SettingsField] rows, so every
-/// label lands on the same vertical line and the form scans as a list of
-/// values; [SettingsToggle] for the two switches; [SettingsDisclosure] for the
-/// capability matrix, which is expert and per-agent; and a [SettingsSaveBar]
-/// pinned below the scroll, so unsaved work announces itself instead of hiding
-/// at the end of a column.
+/// It used to be a flat column of eighteen ad-hoc rows: a hand-rolled 12px tertiary label
+/// above every control, two switches with no shared anatomy, and a Save button parked at
+/// the bottom of a scroll long enough that the widget test had to `scrollUntilVisible` to
+/// reach it.
 class AgentSettingsForm extends ConsumerStatefulWidget {
   /// Creates a new [AgentSettingsForm].
   const AgentSettingsForm({
@@ -291,7 +278,6 @@ class _AgentSettingsFormState extends ConsumerState<AgentSettingsForm> {
         : _resolveReportsToName(_reportsToId);
   }
 
-  // ─── Groups ──────────────────────────────────────────────────────────────
 
   Widget _identityGroup(AppLocalizations l10n) {
     final workspaceId = ref.watch(activeWorkspaceIdProvider);
@@ -594,7 +580,6 @@ class _AgentSettingsFormState extends ConsumerState<AgentSettingsForm> {
     );
   }
 
-  // ─── Staging helpers ─────────────────────────────────────────────────────
 
   void _setContextSize(int tokens) {
     // Writing the controller fires `_onFieldChanged`, which is what actually

@@ -4,29 +4,9 @@ import 'package:cc_data/src/absent_op.dart';
 import 'package:cc_domain/core/domain/ports/workspace_filesystem_port.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 
-/// A [WorkspaceFilesystemPort] backed by the RPC client — the thin-client data
-/// path for the workspace on-disk layout (agents / skills / conversation dirs).
-///
-/// The real filesystem lives on the SERVER's machine; this adapter forwards
-/// every port method to the matching `fs.*` op the host catalog registers and
-/// returns the wire result. Path accessors return the server's absolute path as
-/// a `String` the client treats as an OPAQUE token (it hands it straight back to
-/// a server-side op — e.g. the messaging terminal passes [agentDir] to
-/// `terminal.spawn`); it never opens it as a local browser file. Mutations write
-/// THROUGH this port to the server.
-///
-/// Every `fs.*` op is workspace-scoped and the host is STATELESS — it holds no
-/// session workspace — so each call must carry its own `workspace_id`. This
-/// adapter passes the one its port method was handed rather than leaning on
-/// [RemoteRpcClient.activeWorkspaceId], which is the route's active workspace and
-/// so is either absent (onboarding, before any workspace exists) or the wrong
-/// workspace (creating a second one while another is open — that would have
-/// persisted the new workspace's logo into the open workspace's directory).
-///
-/// The opaque-path methods ([ensureDir] / [writeString]) are the exception: they
-/// take a server path and no workspace, so they still resolve against the active
-/// workspace and are declared workspace-scoped on the host purely so an unbound
-/// session cannot reach them.
+/// [WorkspaceFilesystemPort] over RPC — server paths are opaque tokens, never
+/// opened locally. Each scoped `fs.*` call passes its own `workspace_id` (host
+/// is stateless; do not use [RemoteRpcClient.activeWorkspaceId]).
 class RpcWorkspaceFilesystemPort implements WorkspaceFilesystemPort {
   /// Creates an [RpcWorkspaceFilesystemPort] over [_client].
   RpcWorkspaceFilesystemPort(this._client);

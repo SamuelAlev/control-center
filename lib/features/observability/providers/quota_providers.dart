@@ -5,7 +5,6 @@ import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:control_center/features/observability/providers/observability_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-// ── Quota dashboard providers (PRD 06, feature #4) ───────────────────────────
 //
 // CC has no provider-usage API, so USAGE is computed from run logs (rolling
 // 5h / daily / weekly windows) and LIMITS are user-configured (persisted in

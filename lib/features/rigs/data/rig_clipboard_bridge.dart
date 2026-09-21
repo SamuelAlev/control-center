@@ -95,7 +95,7 @@ class RigClipboardBridge {
   /// understands); this reads the result. Splitting the two is deliberate —
   /// the chord differs per surface, and this half does not.
   ///
-  /// **Unchanged content is not carried across**, and that is what makes a
+  /// Unchanged content is not carried across, and that is what makes a
   /// bare ctrl+C safe on a Windows or Linux host. There the crossing chord IS
   /// the guest's own chord, and in a guest terminal it means INTERRUPT, not
   /// copy — so the guest's clipboard still holds whatever it held before.

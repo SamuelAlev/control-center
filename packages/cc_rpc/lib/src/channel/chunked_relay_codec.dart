@@ -47,26 +47,14 @@ class RelayTransferProgress {
   double get fraction => totalChunks == 0 ? 1 : transferredChunks / totalChunks;
 }
 
-/// Chunking + credit-based backpressure for the sealed relay data plane
-/// (PRD 15 §11).
+/// Chunking + credit-based backpressure for the sealed relay data plane (PRD 15 §11).
 ///
-/// A TURN-style relayed channel is a control-plane transport: one unbounded
-/// send can stall every session sharing the broker. This codec seals each
-/// JSON-RPC frame with the link PSK ([RelayFrameCrypto]), splits the sealed
-/// text into ≤[maxChunkChars] pieces and paces the sender with a cumulative
-/// **credit window**: at most [windowChunks] un-acknowledged chunks may be in
-/// flight; the receiver returns sealed credit frames every [creditEvery]
-/// chunks. Small frames ride a single-piece fast path. Both sides of a relay
-/// link (cc_rpc client channel and cc_server relay transport) share this
-/// class, so the wire contract lives in exactly one place.
-///
-/// Wire payloads (inside broker `signal.payload`):
-///  * `{"e": <sealed>}` — a whole sealed frame (fast path; counts as 1 chunk).
-///  * `{"c": <piece>, "id": <frameSeq>, "i": <index>, "n": <total>}` — one
-///    piece of a sealed frame, reassembled by (`id`) then opened.
-///  * A sealed frame whose plaintext is `{"__cc_credit": <cumulative>}` is a
-///    flow-control ack and is never surfaced to the RPC session. Credits are
-///    sealed so a hostile room member cannot forge window inflation.
+/// A TURN-style relayed channel is a control-plane transport: one unbounded send can stall
+/// every session sharing the broker.
+/// This codec seals each JSON-RPC frame with the link PSK ([RelayFrameCrypto]), splits the
+/// sealed text into ≤[maxChunkChars] pieces and paces the sender with a cumulative **credit
+/// window**: at most [windowChunks] un-acknowledged chunks may be in flight; the receiver
+/// returns sealed credit frames every [creditEvery] chunks.
 class ChunkedRelaySession {
   /// Creates one side of a relay link.
   ///

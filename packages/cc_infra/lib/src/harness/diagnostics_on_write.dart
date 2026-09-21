@@ -10,24 +10,11 @@ import 'package:path/path.dart' as p;
 /// Argument keys the built-in write tools use for their target path.
 const List<String> _pathKeys = ['path', 'file_path', 'filename', 'file'];
 
-/// Wraps a file-mutating tool so its result carries the compiler's opinion.
+/// Wraps a file-mutating tool so its result includes compiler diagnostics.
 ///
-/// **This is the feature, not the `lsp` tool.** An agent that has to remember
-/// to ask "did that compile?" mostly does not, and finds out several edits
-/// later when the error is entangled with three other changes. Folding
-/// diagnostics into the write result closes the loop at the moment it is
-/// cheapest to close: the model just wrote the line, and the feedback arrives
-/// attached to that write.
-///
-/// Two properties make it usable rather than noisy:
-///
-///  * **Only NEW diagnostics.** A file with a dozen pre-existing warnings
-///    would otherwise re-report all of them after every edit, burying the one
-///    error the edit introduced. The [DiagnosticsLedger] holds what has
-///    already been said.
-///  * **A budget, not a blocker.** The wait is bounded; a server still
-///    indexing simply contributes nothing this time. A successful edit must
-///    never fail because a language server was slow.
+/// Closes the feedback loop at write time (agents rarely call `lsp` later).
+/// Reports only NEW diagnostics via [DiagnosticsLedger]. Wait is budgeted —
+/// a slow language server must not fail a successful edit.
 class DiagnosticsOnWriteTool extends HarnessTool {
   /// Wraps [_inner], reporting diagnostics for whatever file it wrote.
   DiagnosticsOnWriteTool({

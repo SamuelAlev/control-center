@@ -45,7 +45,7 @@ class AdBlockerWebView extends ConsumerStatefulWidget {
   /// First URL to load.
   final Uri initialUrl;
 
-  /// Controller for driving the webview. **Owned by the caller** — create
+  /// Controller for driving the webview. Owned by the caller — create
   /// it in the parent's `initState` and dispose it in the parent's
   /// `dispose`. This widget does NOT dispose it. Owning the controller in
   /// the parent avoids the lifecycle race where the widget's dispose
@@ -184,22 +184,11 @@ class _AdBlockerWebViewState extends ConsumerState<AdBlockerWebView> {
     return built;
   }
 
-  /// Filters the blocklist for a page at [host], keeping the WKContentRuleList
-  /// compile under WebKit's practical limit while preserving cross-origin
-  /// iframe coverage.
+  /// Filters the blocklist for [host] under WebKit's compile limit.
   ///
-  /// **Block (network) rules** are filtered by host: we drop any block
-  /// whose `if-domain` list is non-empty and doesn't match [host]. The
-  /// vast majority of rules in EasyList/uBlock are network blocks
-  /// anchored to specific publishers, so this cuts the bulk of the
-  /// volume.
-  ///
-  /// **Cosmetic rules (`css-display-none`)** are kept regardless of
-  /// `if-domain`. WebKit applies them per-document, so a rule scoped to
-  /// `yahoo.com` still hides the cookie banner inside a cross-origin
-  /// iframe that TechCrunch loads from `consent.yahoo.com`. Filtering
-  /// these by the parent page's host would silently drop those iframe
-  /// rules and leave consent dialogs visible.
+  /// Drop host-anchored network blocks that do not match [host]. Keep all
+  /// cosmetic (`css-display-none`) rules — WebKit applies them per-document,
+  /// including cross-origin iframes.
   List<Map<String, dynamic>> _filterEntriesForHost(
     List<Map<String, dynamic>> entries,
     String host,
@@ -238,10 +227,10 @@ class _AdBlockerWebViewState extends ConsumerState<AdBlockerWebView> {
   }
 
   /// Builds the list of [UserScript]s the webview needs to inject:
-  /// - **Scriptlets** (uBO `+js(...)`): all platforms. Injected at
+  /// - Scriptlets (uBO `+js(...)`): all platforms. Injected at
   ///   `AT_DOCUMENT_START` so anti-adblock / consent-detection code is
   ///   neutralised before the page's own scripts run.
-  /// - **Fallback CSS hiding** (`<style>` tag with combined selectors):
+  /// - Fallback CSS hiding (`<style>` tag with combined selectors):
   ///   non-Apple platforms only. On Apple the equivalent is handled
   ///   natively by WebKit's `WKContentRuleList`.
   Future<List<UserScript>> _loadUserScripts({

@@ -15,43 +15,15 @@ class SalvagedToolCall {
   String toString() => 'SalvagedToolCall($name, $arguments)';
 }
 
-/// Recovers tool calls a model wrote as prose instead of emitting them through
-/// the provider's structured tool-call channel.
+/// Recovers tool calls written as prose instead of the structured tool channel.
 ///
-/// **Why this exists.** Not every model reliably drives the OpenAI `tool_calls`
-/// field. Local and merged builds drift out of their own documented dialect and
-/// a server-side tool-call parser only recognizes the dialect it was written
-/// for — anything else falls through to `delta.content` as text. When that
-/// happens the model's intent is usually perfectly correct and completely
-/// legible; discarding it as prose is a pure, avoidable loss. One observed run
-/// wrote five well-formed research calls and a complete plan submission as text,
-/// and the harness threw all of it away.
+/// A candidate becomes a call only when its name is in the run's declared tool
+/// list. Salvage decides what was asked for; the loop's approval gate still
+/// decides what is allowed.
 ///
-/// **The declared tool list is the safety boundary.** A candidate becomes a call
-/// only when its name is one the run actually offers, so this can neither invent
-/// a tool nor turn prose that merely mentions one into an invocation. Every
-/// recovered call still passes through the loop's normal approval gate — salvage
-/// decides *what was asked for*, never *what is allowed*.
-///
-/// Dialects recognized (all observed in the wild):
-///
-/// 1. `qwen3_xml` / `qwen3_coder`, the documented form for Qwen-family models:
-///    ```
-///    <tool_call><function=read><parameter=path>a.txt</parameter></function></tool_call>
-///    ```
-/// 2. The attribute variant, including the corrupted shape where the function
-///    name arrives in a `parameter` tag closed by `</function>`:
-///    ```
-///    <parameter name="read"><parameter name="path">a.txt</parameter></function>
-///    ```
-///    The tool list disambiguates: `read` is a declared tool, `path` is not.
-/// 3. A JSON object naming a tool, inside a fence or a `<tool_call>` wrapper —
-///    what a model falls back to when it has no tool channel at all:
-///    ```
-///    ```json
-///    {"tool": "read", "path": "a.txt"}
-///    ```
-///    ```
+/// Dialects: `qwen3_xml` / `qwen3_coder` XML; attribute/`parameter` variants
+/// (tool list disambiguates tool vs arg names); JSON objects in fences or
+/// `<tool_call>` wrappers.
 class TextToolCallSalvage {
   /// Creates a [TextToolCallSalvage].
   const TextToolCallSalvage();
@@ -95,10 +67,6 @@ class TextToolCallSalvage {
     }
     return _parseJson(text, knownToolNames);
   }
-
-  // ---------------------------------------------------------------------------
-  // XML dialects
-  // ---------------------------------------------------------------------------
 
   List<SalvagedToolCall> _parseXml(String text, Set<String> known) {
     final calls = <SalvagedToolCall>[];
@@ -216,10 +184,6 @@ class TextToolCallSalvage {
     }
     return trimmed;
   }
-
-  // ---------------------------------------------------------------------------
-  // JSON dialect
-  // ---------------------------------------------------------------------------
 
   /// Recovers calls from JSON objects, but only inside a fenced code block or a
   /// `<tool_call>` wrapper, or when the object is the entire message.

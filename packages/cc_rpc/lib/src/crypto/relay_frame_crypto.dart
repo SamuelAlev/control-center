@@ -4,29 +4,11 @@ import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
 
-/// End-to-end authenticated encryption for the JSON-RPC frames that the phone
-/// and cc_server exchange THROUGH the (untrusted) signaling broker.
+/// E2E encrypt-then-MAC for JSON-RPC frames over the untrusted signaling broker.
 ///
-/// When cc_server is not directly reachable from the phone, the two rendezvous
-/// in a broker room and relay frames as opaque `signal` payloads. The broker is
-/// a dumb relay — but, unlike the WebRTC path, there is no DTLS to keep it from
-/// reading the relayed bytes. So every frame is sealed here: the broker only
-/// ever sees ciphertext. Both peers derive the same keys from the shared PSK,
-/// so no key exchange is needed.
-///
-/// Construction: **encrypt-then-MAC** built from HMAC-SHA256 only — the same
-/// primitive (and the same "hand-rolled to stay dependency-free and web-safe"
-/// stance) the codebase already uses for `RemoteControlCrypto`/`PskHandshake`,
-/// rather than pulling a native-leaning cipher package that risks
-/// `flutter build web`. The phone mirrors this byte-for-byte (it cannot import
-/// this package), so the wire format below is a contract — change it on both
-/// sides at once and bump [version].
-///
-///  - `kEnc = HMAC-SHA256(psk, "cc-relay-enc-v1")`, `kMac = HMAC-SHA256(psk, "cc-relay-mac-v1")`
-///  - keystream block `i = HMAC-SHA256(kEnc, nonce(16) || uint32_be(i))` (CTR)
-///  - `ciphertext = plaintext XOR keystream`
-///  - `tag = HMAC-SHA256(kMac, nonce || ciphertext)` (encrypt-then-MAC)
-///  - wire = `base64url(nonce(16) || tag(32) || ciphertext)` without padding
+/// Both peers derive keys from the shared PSK (no exchange). HMAC-SHA256
+/// keystream CTR + MAC; wire `base64url(nonce||tag||ciphertext)`. Phone mirrors
+/// byte-for-byte — bump [version] on both sides together.
 class RelayFrameCrypto {
   RelayFrameCrypto._();
 

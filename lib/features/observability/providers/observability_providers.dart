@@ -8,7 +8,6 @@ import 'package:control_center/features/agents/providers/agent_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-// ── Observability core providers (PRD 06) ────────────────────────────────────
 //
 // Every analytic here is computed CLIENT-SIDE from the existing
 // `agent_run_log.watchAll` RPC stream — no new persisted surface. Reads are

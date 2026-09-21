@@ -11,7 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Settings → Workspace → General: the runner that names new conversations.
 ///
-/// An **adapter + model pair**, laid out like the default-runner rows in
+/// An adapter + model pair, laid out like the default-runner rows in
 /// Settings → Adapters, because that is what a runner is everywhere else in
 /// the app — a model id alone does not say what executes it, and the same
 /// string means different things per adapter (`cc-harness` folds its provider

@@ -1,27 +1,11 @@
 // Web bindings for the messaging services declared in `messaging_providers.dart`.
-//
-// A web thin client has no in-process agent dispatch / live streaming (and the
-// cc_infra `MessagingService` / `AgentStreamProcessor` would drag the dispatch
-// stack into the web compile), so both services run SERVER-SIDE over RPC:
-//
-//   * `buildMessagingService` returns an `RpcMessagingPort` over the RPC client.
-//     Space LIFECYCLE (open DM, create/delete/clear space, remove
-//     participant) forwards to the DB-backed `messaging.*` ops, which EVERY host
-//     registers — so those actions work even against a pure-Dart headless server.
-//     Agent DISPATCH (send-and-dispatch, dispatch agent, retry, refine, …)
-//     forwards to `dispatch.*` ops that only a `cc_server` running the dispatch
-//     engine registers; the agent reply streams back
-//     through the conversation view's existing `messaging.watchMessages`
-//     subscription (the server-side `AgentStreamProcessor` persists transcript
-//     segments to the message rows), so the web UI sees the live reply with no
-//     extra wiring. Against a HEADLESS server (which omits the `dispatch.*` ops)
-//     only the dispatch actions degrade loudly to "agent dispatch runs on the
-//     server host".
-//   * `buildAgentQuestionService` returns a REAL `AgentQuestionService` over the
-//     RPC messaging repository — submitting an answer marks the persisted
-//     question message answered server-side (a genuine, not faked, action). The
-//     local completer-unblock is inert on web (the agent is blocked
-//     server-side and resumes there).
+// A web thin client has no in-process agent dispatch / live streaming (and the cc_infra
+// `MessagingService` / `AgentStreamProcessor` would drag the dispatch stack into the web
+// compile), so both services run SERVER-SIDE over RPC:
+// `buildMessagingService` returns an `RpcMessagingPort` over the RPC client.
+// Agent DISPATCH (send-and-dispatch, dispatch agent, retry, refine, …) forwards to
+// `dispatch.*` ops that only a `cc_server` running the dispatch engine registers; the
+// agent reply streams back through the conversation view's existing
 library;
 
 import 'package:cc_data/cc_data.dart';

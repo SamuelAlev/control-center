@@ -45,18 +45,13 @@ class UsersTable extends Table {
 
   /// When this user finished first-run setup (null = never has).
   ///
-  /// A column on the IDENTITY rather than a row in `user_preferences`, because
-  /// the preference lane carries a one-time promotion pass that seeds the
-  /// server from whatever the first device happens to hold locally. This flag
-  /// used to ride that lane, and a stale device-local `true` was promoted onto
-  /// a brand-new account: the onboarding gate then read "has been set up
-  /// before", so a person who had never onboarded was sent to the re-auth
-  /// screen — which offers a sign-in and none of the setup they actually
-  /// needed. Nothing can promote a column.
-  ///
-  /// Monotonic by convention: it records that setup happened, never whether
-  /// the setup is currently intact (a lapsed forge credential is a different
-  /// question, and the one this flag exists to disambiguate).
+  /// A column on the IDENTITY rather than a row in `user_preferences`, because the preference
+  /// lane carries a one-time promotion pass that seeds the server from whatever the first
+  /// device happens to hold locally.
+  /// This flag used to ride that lane, and a stale device-local `true` was promoted onto a
+  /// brand-new account: the onboarding gate then read "has been set up before", so a person
+  /// who had never onboarded was sent to the re-auth screen — which offers a sign-in and none
+  /// of the setup they actually needed.
   DateTimeColumn get onboardingFinishedAt => dateTime().nullable()();
 
   /// When the user was provisioned.

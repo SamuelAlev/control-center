@@ -17,24 +17,11 @@ import 'package:control_center/shared/widgets/section_card.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Auto-detection panel for installed agent runner CLIs, plus default
-/// adapter+model configuration for chat and short-task agents.
-///
-/// ## Why it looks like this
-///
-/// Every runner in the catalogue used to render its whole configuration inline:
-/// the enforcement matrix, an environment-variable button and an extra-argv
-/// field, for the installed ones and the missing ones alike. Nine runners
-/// produced a page you scrolled for half a minute to learn one fact — which
-/// CLIs are actually on this machine. The accordion that replaced it still hid
-/// the answer a disclosure deep per row.
-///
-/// So the page now reads like the providers surface below it: the ready count
-/// comes first, a rail keeps every runner visible with its detection dot
-/// (installed sort to the top), and the detail pane owns one runner at a
-/// time — what its transport enforces, its launch configuration, and (for
-/// Claude Code) which logins runs may spend. The catalog is fixed (runners
-/// are CLIs the host may or may not have), so there is no add row.
+/// Auto-detection panel for installed agent runner CLIs, plus default adapter+model
+/// configuration for chat and short-task agents.
+/// Every runner in the catalogue used to render its whole configuration inline: the
+/// enforcement matrix, an environment-variable button and an extra-argv field, for the
+/// installed ones and the missing ones alike.
 class AdaptersSettings extends ConsumerStatefulWidget {
   /// Creates a new [AdaptersSettings].
   const AdaptersSettings({super.key});

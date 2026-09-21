@@ -349,22 +349,14 @@ class AddReviewNodeTool extends McpTool {
       metadata['reasoning'] = reasoning;
     }
 
-    // File the finding in the REVIEWER'S OWN stream, not the space's standing
-    // conversation.
+    // File the finding in the REVIEWER'S OWN stream, not the space's standing conversation.
     //
-    // The standing conversation is the consolidate lane: the lead's report and
-    // the artifact the PR's review tab renders. Every reviewer writing its
-    // findings there buried that report under dozens of nodes, and left each
-    // reviewer's own thread showing its narration with none of the findings it
-    // was narrating — the operator watching the "Architect review" tab saw the
-    // architect say "filed 14 findings" and no findings.
-    //
-    // Resolved from the run rather than taken as an argument: the agent should
-    // not have to be told which thread it is in, and an argument is a thing a
-    // model can get wrong. Falls back to the standing conversation when there
-    // is no active run (nothing is lost — that is where these went before), and
-    // every space-wide reader now gathers across conversations, so a finding is
-    // found wherever it was filed.
+    // The standing conversation is the consolidate lane: the lead's report and the artifact
+    // the PR's review tab renders.
+    // Every reviewer writing its findings there buried that report under dozens of nodes, and
+    // left each reviewer's own thread showing its narration with none of the findings it was
+    // narrating — the operator watching the "Architect review" tab saw the architect say
+    // "filed 14 findings" and no findings.
     final conversationId = await _reviewerConversation(
       workspaceId: rawWorkspaceId,
       agentId: senderId,

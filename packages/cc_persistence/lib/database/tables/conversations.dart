@@ -3,19 +3,10 @@ import 'package:drift/drift.dart';
 
 /// Drift table for conversations (message streams) inside a space.
 ///
-/// A space owns the worktree, participants, autonomy and provisioning; a
-/// conversation owns a stream of messages and the agent run sessions bound to
-/// it. A space holds MANY conversations, all sharing its one worktree while
-/// keeping their own history + agent sessions.
-///
-/// There is **no `main` conversation and no id aliasing**. Every conversation
-/// carries its own uuid, so a conversation id is never a space id — the two
-/// were briefly the same value and every place that still assumes it is a
-/// silent bug, not a shortcut (see `ConversationDao.ensureStandingConversation`
-/// for what "the space's conversation" resolves to instead). What a space opens
-/// on is its STANDING conversation: the oldest active, unanchored one.
-///
-/// Workspace-scoped (isolation invariant): every read filters on `workspaceId`.
+/// A space owns the worktree, participants, autonomy and provisioning; a conversation owns
+/// a stream of messages and the agent run sessions bound to it.
+/// A space holds MANY conversations, all sharing its one worktree while keeping their own
+/// history + agent sessions.
 @TableIndex(name: 'idx_conversations_spaceId', columns: {#spaceId})
 @TableIndex(name: 'idx_conversations_workspaceId', columns: {#workspaceId})
 class ConversationsTable extends Table {

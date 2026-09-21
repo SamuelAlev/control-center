@@ -13,7 +13,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// preferences themselves, so it is atomically visible to every device the user
 /// signs in from.
 ///
-/// **This marker is load-bearing.** Without it, promotion is "push my local
+/// This marker is load-bearing. Without it, promotion is "push my local
 /// value whenever the server has none" and deleting a synced key on device A
 /// lets device B — which still holds the local copy — immediately re-promote
 /// it. The setting becomes undeletable. The marker makes the first promotion
@@ -26,27 +26,12 @@ const String promotionMarkerKey = 'cc.promotion.v1';
 typedef PreferencePush = Future<void> Function(String key, String? value);
 
 /// Two-way sync of the [SyncedPreference] registry against the server.
-///
-/// Local [AppPreferences] stays the **synchronous read path** — every settings
-/// notifier reads it in `build()` and it must keep working offline and before
-/// the RPC session exists. The server is the convergence point, not the read
-/// path. So:
-///
-///  * **Pull**: write the server's value into the local store (muted) and
-///    invalidate the owning providers, which re-read and decode it.
-///  * **Push**: observe the *store's* change stream rather than N providers, so
-///    a write from anywhere — a settings screen, onboarding, the command
-///    palette — is caught.
-///
-/// Loop safety has two layers. The primary guard is `_serverMirror`: a push is
-/// skipped when the value already equals what the server last reported. The
-/// second is [ObservableKeyValueBackend.muted] around the pull write, because
-/// the write → stream → push path is implicit here and a missed comparison
-/// would be an infinite RPC loop rather than one wasted write.
-///
-/// Pushes are held until the one-time promotion pass resolves ([_armed]),
-/// otherwise a local write racing the pass would push a value the pass is about
-/// to reconcile.
+/// Local [AppPreferences] stays the synchronous read path — every settings notifier
+/// reads it in `build()` and it must keep working offline and before the RPC session
+/// exists.
+/// The second is [ObservableKeyValueBackend.muted] around the pull write, because the write
+/// → stream → push path is implicit here and a missed comparison would be an infinite RPC
+/// loop rather than one wasted write.
 class UserPreferenceSync {
   /// Creates a sync over [registry], reading and writing through [ref].
   ///

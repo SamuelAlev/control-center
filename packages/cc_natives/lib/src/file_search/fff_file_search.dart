@@ -555,30 +555,11 @@ class _FffWorker {
   }
 }
 
-/// [FileSearch] backed by fff (Rust) via its C ABI.
+/// [FileSearch] via fff C ABI. Native lib required ([FffUnavailable] on miss);
+/// only [listEntries] is pure-Dart (fff has no list-all). One handle per root.
 ///
-/// The native library is REQUIRED: [warmUp] and [search] throw
-/// [FffUnavailable] when `libfff_c` cannot be loaded (no silent pure-Dart
-/// degrade). Only [listEntries] uses the pure-Dart walk, because fff has no
-/// list-all surface — a functional gap, not an availability fallback.
-///
-/// One fff instance (opaque handle) is kept alive per root directory.
-/// Construct once and share via the `fileSearchProvider`.
-///
-/// fff-backed [FileSearch], with every native call on a worker isolate.
-///
-/// The engine has to live off the caller's isolate, not merely be `async`:
-/// `fff_wait_for_scan` blocks for up to 5 SECONDS on a cold root, and both
-/// `search` and `warmUp` reach it. This object is constructed on cc_server's
-/// main isolate and backs both the Explorer RPC and the harness `read` /
-/// `file_search` agent tools, so an agent searching a cold root used to freeze
-/// every concurrent RPC for the duration.
-///
-/// One long-lived isolate rather than `Isolate.run` per call: fff instance
-/// handles are per-root native pointers that must be created once, reused, and
-/// destroyed by whoever created them — they cannot cross an isolate boundary,
-/// so the isolate that owns them owns the whole engine. Same shape as the
-/// embedder and transcriber workers.
+/// All native calls run on one long-lived worker isolate (`fff_wait_for_scan`
+/// blocks; handles cannot cross isolates).
 class FffFileSearch implements FileSearch {
   /// Creates an [FffFileSearch].
   ///

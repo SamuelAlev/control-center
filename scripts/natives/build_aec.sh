@@ -1,43 +1,9 @@
 #!/usr/bin/env bash
 #
-# Builds libaec_ffi — a thin C ABI (packages/cc_natives/native/aec_ffi.cc) over WebRTC's AEC3
-# AudioProcessing module — and installs it where AecFfiBindings looks for it
-# (see core/storage/control_center_paths.dart -> aecFfiDylibCandidatePaths):
-#   1. the app-support root (next to control_center.db) — the single dev /
-#      runtime location and
-#   2. an optional explicit DEST ($1) — CI stages the lib there before embedding
-#      it into Runner.app/Contents/Frameworks/.
+# Builds libaec_ffi over WebRTC AEC3 (REQUIRED). Installs to app-support +
+# optional DEST. Pins via natives_common / native_pins.env.
+# Usage: scripts/natives/build_aec.sh [DEST_DIR]
 #
-# The meeting recorder feeds the system loopback as the AEC far-end reference and
-# subtracts it from the mic before transcription, killing the speaker bleed that
-# Whisper otherwise transcribes as a duplicate "me" line.
-#
-# REQUIRED: AecProcessor.create THROWS AecUnavailable when the lib is absent and
-# the desktop's system-capture recorder lets that fail the recording rather than
-# quietly taping an echo-laden track. (The text-based MeetingEchoFilter is a
-# second, complementary defense — not a fallback for this. `AecMicFilter(null)`
-# is the in-person recording MODE: no loopback means no far-end reference, so AEC
-# does not apply there at all.)
-#
-# abseil is statically linked from the meson wrap (NOT the system/Homebrew
-# shared abseil) so the dylib is self-contained and embeddable in the app bundle.
-#
-# Cross-platform: builds on macOS (arm64/x86_64) and Linux (x86_64/arm64).
-# WebRTC AEC3 compiles on all three via the meson webrtc-audio-processing wrap;
-# only the shim's compile defines, the link line and the symbol-check tooling
-# differ per OS (handled below). Windows is built separately by
-# scripts/release/windows_natives.sh (MSVC). Any other OS is a hard error: this
-# script is only ever reached on a host that can build the full native set.
-#
-# Source/ref (override to iterate or bump; keep WAP_REF in sync with CI):
-#   WAP_REPO  default gitlab.freedesktop.org/pulseaudio/webrtc-audio-processing
-#   WAP_REF   default d0569cfa... (v2.1; Renovate-managed)
-#
-# Requirements: git, meson, ninja, pkg-config, a C++ compiler (c++).
-#
-# Usage:
-#   scripts/natives/build_aec.sh [DEST_DIR]
-#   WAP_REF=<sha> scripts/natives/build_aec.sh ./build/natives
 set -euo pipefail
 
 REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"

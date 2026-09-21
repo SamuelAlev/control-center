@@ -1,22 +1,13 @@
 // Orchestrates port visibility + forwarding across a conversation's terminals
 // and destinations.
 //
-// One instance per server, owned by `RigService`. For every EXEC (terminal)
-// rig it polls the guest for listening TCP ports, auto-opens a host loopback
-// bridge per port (VS Code's auto-forward behaviour), and keeps the panel's
-// snapshot stream current. For every HOST-SHELL session it polls that
-// session's PTY process tree — never the whole machine — and publishes those
-// listeners. For every BROWSER rig sharing the conversation it plants
-// guest-loopback listeners on the same ports, so `localhost:3000` typed into
-// the enclosed browser lands on this space's server — and a `myapp.test`
-// domain routes through the Host-header router. For every ANDROID rig in the
-// conversation it plants `adb reverse` so the emulator's `localhost` matches.
-//
-// Everything here rides the two validated primitives in `rig_ports.dart`;
-// this file is bookkeeping and policy: what gets forwarded, what stays
-// loopback-only, and who is told when it changes. Maps are strictly per
-// space (`workspaceId` + `conversationId`); a null conversation never
-// broadcasts.
+// One instance per server, owned by `RigService`. EXEC: polls guest listeners,
+// auto-opens host loopback bridges, keeps the panel stream current.
+// HOST-SHELL: polls that session's PTY process tree only. BROWSER: plants
+// guest-loopback listeners and Host-header routes for `myapp.test`. ANDROID:
+// `adb reverse`. Mechanism lives in `rig_ports.dart`; this file is policy.
+// Maps are per space (`workspaceId` + `conversationId`); a null conversation
+// never broadcasts.
 
 import 'dart:async';
 import 'dart:io';
@@ -262,7 +253,6 @@ class RigPortsService {
   Map<int, int> debugAndroidReverses(String androidRigId) =>
       Map.of(_androids[androidRigId]?.planted ?? const {});
 
-  // ── Lifecycle ─────────────────────────────────────────────────────────────
 
   /// Attaches an exec (terminal) rig: bootstraps the in-guest mux, arms the
   /// credential broker's reverse tunnel and starts port discovery.
@@ -458,7 +448,6 @@ class RigPortsService {
     await _changes.close();
   }
 
-  // ── Snapshots ─────────────────────────────────────────────────────────────
 
   /// The current snapshot for [id], or null when it is not an attached
   /// exec rig or host-shell session in [workspaceId]. A [spaceId] that does
@@ -632,7 +621,6 @@ class RigPortsService {
     }
   }
 
-  // ── Mutations (panel actions) ───────────────────────────────────────────
 
   /// Turns auto-forwarding on or off for [id].
   Future<bool> setAutoForward(
@@ -905,7 +893,6 @@ class RigPortsService {
     return state;
   }
 
-  // ── Discovery ─────────────────────────────────────────────────────────────
 
   Future<void> _poll(_ExecPorts state) async {
     if (state.polling || _disposed || !_execs.containsKey(state.rigId)) {
@@ -1167,7 +1154,6 @@ class RigPortsService {
     }
   }
 
-  // ── Browser-side listeners ────────────────────────────────────────────────
 
   /// Same workspace AND a non-null conversation on both sides. A missing
   /// space never matches — that would broadcast into every conversation.
@@ -1397,7 +1383,6 @@ class RigPortsService {
     }
   }
 
-  // ── Android reverses ──────────────────────────────────────────────────────
 
   Future<void> _syncAndroid(_AndroidPorts android) async {
     if (_disposed || !_androids.containsKey(android.rigId)) {

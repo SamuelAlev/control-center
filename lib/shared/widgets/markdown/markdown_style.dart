@@ -435,28 +435,13 @@ class _InlineCodeChip extends StatelessWidget {
 }
 
 /// Builds the canonical fenced code-block widget.
-///
-/// A labeled fence (` ```dart `) keeps a slim header: language on the left,
-/// copy on the right. An unlabeled fence (` ``` ` with no info string) skips
-/// that row — an empty chrome band is wasted space — and parks copy in the
-/// top-right of the body, the GitHub treatment.
-///
-/// The body is a horizontally-scrollable, syntax-highlighted code surface
-/// (via shiki + the CC theme — see `shared/syntax/`).
-///
-/// This is the single code renderer for every markdown surface — passed to
-/// cc_markdown as the `codeBuilder` callback.
-///
-/// Pass `cache: false` for volatile content (a still-streaming code block)
-/// whose string changes on every build — see [highlightCodeSpans].
-///
-/// Giant blocks (> [kSharedCodeBlockMaxHighlightChars] source chars) skip
-/// syntax highlighting entirely and render only the first
-/// [kSharedCodeBlockMaxLines] lines with a truncation notice; the copy button
-/// always copies the FULL text. Long-but-sane blocks (>
-/// [kSharedCodeBlockCollapseThreshold] lines) collapse to their first
-/// [kSharedCodeBlockCollapsedLines] lines behind a ghost "Show more"/"Show
-/// less" toggle, so a wall of code never dominates the surrounding surface.
+/// Pass `cache: false` for volatile content (a still-streaming code block) whose string
+/// changes on every build — see [highlightCodeSpans].
+/// Giant blocks (> [kSharedCodeBlockMaxHighlightChars] source chars) skip syntax
+/// highlighting entirely and render only the first [kSharedCodeBlockMaxLines] lines with a
+/// truncation notice; the copy button always copies the FULL text.
+/// Long-but-sane blocks (> [kSharedCodeBlockCollapseThreshold] lines) collapse to their
+/// first [kSharedCodeBlockCollapsedLines] lines behind a ghost "Show more"/"Show less"
 Widget buildSharedCodeBlock(
   BuildContext context,
   String code,

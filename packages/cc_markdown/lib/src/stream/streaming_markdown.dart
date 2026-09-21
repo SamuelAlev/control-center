@@ -11,23 +11,10 @@ import 'package:cc_markdown/src/style/style.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
-/// Streaming-first markdown rendering for LLM output.
-///
-/// Sealed blocks (see [CcMarkdownStreamController]) render ONCE and are
-/// reused as `identical()` widget instances across frames — `Element.update`
-/// skips their whole subtree, so a delta costs one small tail rebuild, not a
-/// document re-render. The volatile tail parses ephemerally per frame (one
-/// block, typically small) with `cache: false` threaded to [codeBuilder] so
-/// a still-streaming fence doesn't churn the app's highlight cache.
-///
-/// Three ways to drive it:
-///  * [CcStreamingMarkdown.new] — bring your own controller (shared state,
-///    `complete()` on finish seeds the global parse cache);
-///  * [CcStreamingMarkdown.value] — data-in per rebuild; an internal
-///    controller `setText`s the grown string (drop-in for parents that
-///    already rebuild per delta);
-///  * [CcStreamingMarkdown.listenable] — subscribes to a
-///    `ValueListenable<String>` so the PARENT never rebuilds per delta.
+/// Streaming markdown: sealed blocks reuse `identical()` widgets; volatile
+/// tail re-parses per frame (`cache: false` to [codeBuilder]). Drivers:
+/// [CcStreamingMarkdown.new] (own controller), `.value` (rebuild-per-delta),
+/// `.listenable` (parent skips rebuilds).
 class CcStreamingMarkdown extends StatefulWidget {
   /// Controller-driven streaming rendering.
   const CcStreamingMarkdown({

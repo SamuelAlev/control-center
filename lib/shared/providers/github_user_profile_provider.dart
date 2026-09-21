@@ -47,22 +47,12 @@ final githubUserProfileProvider = FutureProvider.autoDispose
     });
 
 /// Profiles resolved earlier in this session, keyed by lower-cased login.
-///
-/// The provider is `autoDispose`, so leaving a screen throws its result away
-/// and the next screen showing the same person starts from nothing again. For
-/// a hover card that is fine — nobody sees the gap. For anything rendered
-/// INLINE it is a layout shift on every visit: the PR meta strip has only
-/// `@login` to draw until the profile lands, then swaps in a name-plus-handle
-/// pair roughly twice as wide, which re-wraps the strip and moves the whole
-/// description down the page.
-///
-/// A plain module-level map rather than a `keepAlive`, because the value has to
-/// be readable SYNCHRONOUSLY from `build` — a `FutureProvider` delivers
-/// `AsyncLoading` on its first read no matter how warm its cache is, and that
-/// first frame is precisely the one being fixed.
-///
-/// Never a substitute for the request: the provider still runs and still
-/// overwrites this, so `ref.refresh` on the profile screen is authoritative.
+/// The provider is `autoDispose`, so leaving a screen throws its result away and the next
+/// screen showing the same person starts from nothing again.
+/// For anything rendered INLINE it is a layout shift on every visit: the PR meta strip has
+/// only `@login` to draw until the profile lands, then swaps in a name-plus-handle pair
+/// roughly twice as wide, which re-wraps the strip and moves the whole description down the
+/// page.
 final Map<String, GitHubUserProfile?> _profileMemo = {};
 const int _maxMemoEntries = 256;
 

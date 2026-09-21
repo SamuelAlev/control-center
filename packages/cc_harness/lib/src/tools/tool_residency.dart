@@ -1,22 +1,8 @@
 import 'package:cc_harness/src/tools/tool.dart';
 
-/// Splits an admitted tool surface into what the model sees up front and what
-/// it can pull in on demand.
-///
-/// The problem this solves is not cost, it is ATTENTION. A catalogue of ~130
-/// tools costs ~24k tokens of every request, but the measured damage is to
-/// tool-selection accuracy: published evaluations put the cliff at 30-50 tools
-/// and report accuracy RISING when the surplus is deferred rather than shown.
-/// So the resident set is deliberately small and the rest stays one step away.
-///
-/// Residency is applied AFTER `ToolSurfaceSpec` filtering, never instead of it.
-/// A deferred tool is one the run is already allowed to call — deferral hides a
-/// schema, it never widens a surface. Everything a mode denies stays denied,
-/// and an activated tool still passes the approval callback and the action
-/// guard exactly like a resident one.
-///
-/// Name-based data only, like `ToolSurfaceSpec`: the kernel knows nothing about
-/// Control Center's modes. Dispatch projects its policy onto one of these.
+/// Splits an admitted tool surface into resident schemas vs on-demand names.
+/// Applied AFTER `ToolSurfaceSpec` — deferral never widens a surface; activated
+/// tools still pass approval/guard. Name-based only; dispatch projects policy.
 class ToolResidencySpec {
   /// Creates a residency spec.
   const ToolResidencySpec({

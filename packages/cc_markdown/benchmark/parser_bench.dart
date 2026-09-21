@@ -1,19 +1,7 @@
-// Pure-Dart parser benchmark harness — `fvm dart run benchmark/parser_bench.dart`.
-//
-// Imports only the Flutter-free slices of the engine (block parser, options,
-// plugins, boundary scanner); NOT the barrel and NOT the cache/controller,
-// which pull in flutter/foundation.
-//
-// Benchmarks:
-//   a) one-shot parseMarkdownDocument over three authored fixtures
-//      (typical chat answer, code-heavy, Renovate-style PR body);
-//   b) streaming replay of the chat fixture in ~40-char deltas through
-//      CcBlockBoundaryScanner, parsing each newly sealed range;
-//   c) a parse-cache-shaped map-hit micro-bench (long source-string keys,
-//      LRU touch on hit);
-//   d) mermaid dialect parsing (the pure-Dart half of the diagram engine; the
-//      layout half needs Flutter's text metrics, so it is exercised by
-//      test/mermaid/mermaid_layout_test.dart instead).
+// Pure-Dart parser bench (`fvm dart run benchmark/parser_bench.dart`).
+// Flutter-free slices only (not barrel/cache/controller). Covers: one-shot
+// parse, streaming sealed ranges, parse-cache map hits, mermaid dialect parse
+// (layout covered in mermaid_layout_test).
 //
 // ignore_for_file: avoid_print
 

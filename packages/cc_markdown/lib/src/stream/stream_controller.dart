@@ -28,24 +28,10 @@ final class CcSealedBlock {
   final List<CcBlockNode> nodes;
 }
 
-/// The streaming markdown model: append-only text segmented into sealed
-/// blocks + one volatile tail.
-///
-/// Per [append]: the fence/details/list-aware boundary scanner consumes the
-/// new complete lines in O(delta); when the safe boundary advances, ONLY the
-/// newly sealed segment is parsed (once, ephemerally — never inserted into
-/// the global cache) and appended to [sealedBlocks]. The volatile tail
-/// ([tailText]) re-parses per frame — it is one block, typically small.
-///
-/// Compared to whole-prefix re-parsing: per-delta cost drops from
-/// O(accumulated text) to O(delta) + O(tail) and the global parse cache
-/// sees ZERO traffic during the stream ([complete] seeds exactly one final
-/// authoritative parse).
-///
-/// Known bounded imperfection (by design): a link-reference or footnote
-/// definition arriving in a LATER segment cannot retro-resolve a reference
-/// inside an already-sealed block mid-stream; [complete]'s authoritative
-/// whole-document parse fixes the final state.
+/// Append-only streaming markdown: sealed blocks + one volatile [tailText].
+/// [append] parses only newly sealed segments (ephemeral, not global cache);
+/// tail re-parses per frame. [complete] seeds one authoritative parse.
+/// Mid-stream sealed blocks cannot retro-resolve later link/footnote defs.
 final class CcMarkdownStreamController extends ChangeNotifier {
   /// Creates a [CcMarkdownStreamController].
   CcMarkdownStreamController({

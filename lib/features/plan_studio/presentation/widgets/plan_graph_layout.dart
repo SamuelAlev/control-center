@@ -2,27 +2,12 @@ import 'dart:ui' show Offset;
 
 import 'package:cc_domain/features/plan_studio/domain/value_objects/plan_graph.dart';
 
-/// Deterministic layered (Sugiyama-style) auto-layout for a [PlanGraph]
-/// (PRD 17 §1, clarification: "layout is client-side and deterministic — same
-/// graph, same layout on every client; no persisted x/y").
-///
-/// Mirrors the pipeline canvas's `PipelineGraphLayout`: nodes are placed in
-/// ranks by their longest-path depth from a root and stacked vertically within
-/// a rank (centered on y = 0), ordered by the barycenter of their already-placed
-/// predecessors to cut edge crossings. Cycle-safe (a `visiting` guard demotes a
-/// cycle participant to depth 0 — [PlanGraph.validate] rejects cycles before an
-/// editable graph is committed, but the layout must never loop on a malformed
-/// one).
-///
-/// **A rank wider than [defaultMaxRowsPerRank] wraps into lanes** instead of
-/// stacking without a ceiling. A single-rank stack is unbounded by nature: a
-/// plan with 30 independent roots (or a fan-out to 30 parallel tasks) produces a
-/// one-node-wide, 30-node-tall ribbon nobody can read or pan. Wrapping trades
-/// some edge crossings inside an over-wide rank for an aspect ratio that fits a
-/// viewport, which is what every DAG editor of this shape does. Lanes are filled
-/// after the barycenter sort and in reading order (down the first lane, then
-/// across), so nodes with neighbouring barycenters share a lane and the added
-/// crossings stay local.
+/// Deterministic layered (Sugiyama-style) auto-layout for a [PlanGraph] (PRD 17 §1,
+/// clarification: "layout is client-side and deterministic — same graph, same layout on
+/// every client; no persisted x/y").
+/// Cycle-safe (a `visiting` guard demotes a cycle participant to depth 0 —
+/// [PlanGraph.validate] rejects cycles before an editable graph is committed, but the
+/// layout must never loop on a malformed one).
 class PlanGraphLayout {
   const PlanGraphLayout._();
 

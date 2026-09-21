@@ -1,19 +1,10 @@
-/// Pure-Dart persistence layer for Control Center.
+/// Pure-Dart persistence: `GlobalDatabase` (`global.db`) + one
+/// `WorkspaceDatabase` per `<dataDir>/<workspaceId>/workspace.db`, plus tables,
+/// DAOs and connection factories.
 ///
-/// Holds the Drift schema in two halves — `GlobalDatabase` (`global.db`: the
-/// workspace registry, identity, repos-free server state, the fleet queue) and
-/// `WorkspaceDatabase` (one `workspaces/<id>.db` per workspace, holding
-/// everything else) — plus all tables, DAOs and the connection factories.
-///
-/// Splitting the file is what makes workspace isolation structural instead of a
-/// WHERE-clause convention: a `WorkspaceDatabase` does not declare another
-/// workspace's tables, so a cross-workspace read does not compile.
-/// `WorkspaceDatabaseManager` hands out the per-workspace databases and
-/// `CrossWorkspaceQueries` is the only sanctioned way to span them.
-///
-/// It depends only on `drift` + `sqlite3` + `cc_domain` (no Flutter, no
-/// `path_provider`), so it runs inside a `dart build cli` headless server
-/// binary.
+/// Isolation is structural — a workspace DB does not declare another
+/// workspace's tables. Repositories resolve DAOs via
+/// `WorkspaceDatabaseManager` per call (never cache a DAO).
 library;
 
 // `Value` is drift's insert-token type every companion field wraps, so it is

@@ -27,8 +27,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// A VS Code-style source-control surface for the PR workbench: a commit
 /// message + "commit & push" split button pinned at the TOP of the left
-/// column, the PR space worktree's changes split into **Staged changes** (the
-/// git index) and **Changes** (working tree + untracked) below it and the
+/// column, the PR space worktree's changes split into Staged changes (the
+/// git index) and Changes (working tree + untracked) below it and the
 /// focused file's diff on the right. The commit UX lives HERE, not in chat; the
 /// split button's dropdown offers commit-only, amend and commit & sync.
 ///

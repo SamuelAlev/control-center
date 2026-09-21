@@ -6,22 +6,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-/// Regression coverage for text-field undo/redo (⌘Z / ⇧⌘Z).
-///
-/// The app's key pipeline is the [KeybindingDispatcher] (a HardwareKeyboard
-/// handler), NOT the focus tree — `DefaultTextEditingShortcuts`' delivery of
-/// undo/redo intents does not fire under the native-windowing runtime for keys
-/// pressed while a text input connection is live, which killed ⌘Z in every
-/// input while typing and IME (text-input channel) kept working. The fix has
-/// two halves, pinned here:
-///
-/// 1. The dispatcher bridges the platform undo/redo strokes to the focused
-///    field by invoking the same intents `DefaultTextEditingShortcuts` would
-///    have (`_bridgeTextUndoRedo`).
-/// 2. A `Shortcuts` inside `MaterialApp.builder` shadows the framework's own
-///    undo/redo mappings (`kTextUndoNeutralizerShortcuts`), so wherever the
-///    focus tree DOES work the bridge stays the only actor — one keypress,
-///    exactly one undo step.
+/// Text undo/redo: dispatcher bridges ⌘Z/⇧⌘Z to the focused field (framework
+/// shortcuts do not fire under native windowing with a live input connection);
+/// `kTextUndoNeutralizerShortcuts` keeps the bridge the only actor.
 Future<void> _pressUndo(WidgetTester tester, {bool shift = false}) async {
   await tester.sendKeyDownEvent(LogicalKeyboardKey.metaLeft);
   if (shift) {

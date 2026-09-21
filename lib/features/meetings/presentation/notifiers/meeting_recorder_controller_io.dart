@@ -24,24 +24,13 @@ import 'package:record/record.dart';
 import 'package:uuid/uuid.dart';
 
 /// Desktop meeting recorder — a NATIVE-capture thin client over RPC.
-///
-/// The desktop opens no database: it captures the microphone + system-output
-/// audio natively (a capability the headless `cc_server` cannot reach), but the
-/// transcription, echo de-duplication, persistence and summary pipeline all run
-/// on the connected `cc_server`. So this controller is the desktop sibling of the
-/// web recorder (`meeting_recorder_controller_web.dart`): it streams 16 kHz mono
-/// PCM16 frames for the `me` (mic) and `them` (system) channels to the host via
-/// [MeetingRecordingControlPort] (`meeting.startRecording` → `ingestAudio` →
-/// `stopRecording`) and the host appends segments this client watches over
-/// `meeting.watchSegments`. The data edits the meeting screens drive (notes,
-/// title, action-item / decision CRUD) route through the RPC-backed
-/// `MeetingRepository` — never the DB-backed `dao*` one.
-///
-/// The desktop keeps two native niceties the host can't do for it, both pure
-/// stream/state work with no database: signal-level acoustic echo cancellation
-/// (the host only runs the cross-platform text echo filter) and the live
-/// input-level meter + dead-mic warning. App Nap is held off for the recording
-/// so capture delivery never stalls while the user is in their meeting app.
+/// So this controller is the desktop sibling of the web recorder
+/// (`meeting_recorder_controller_web.dart`): it streams 16 kHz mono PCM16 frames for the
+/// `me` (mic) and `them` (system) channels to the host via [MeetingRecordingControlPort]
+/// (`meeting.startRecording` → `ingestAudio` → `stopRecording`) and the host appends
+/// segments this client watches over `meeting.watchSegments`.
+/// The data edits the meeting screens drive (notes, title, action-item / decision CRUD)
+/// route through the RPC-backed `MeetingRepository` — never the DB-backed `dao*` one.
 class MeetingRecorderController extends Notifier<MeetingRecorderState> {
   static const _uuid = Uuid();
 

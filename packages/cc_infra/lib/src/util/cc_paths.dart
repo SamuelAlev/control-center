@@ -8,28 +8,11 @@ import 'dart:io';
 import 'package:cc_natives/native_library_paths.dart';
 import 'package:path/path.dart' as p;
 
-/// Pure-Dart resolver for everything Control Center persists on disk, rooted at
-/// an [appSupportRoot] the composition root supplies.
+/// On-disk layout resolver rooted at [appSupportRoot] (desktop app-support or
+/// headless `cc_server` data dir). Flutter-free so client and server share it.
 ///
-/// The desktop passes the `path_provider` app-support directory (resolved in
-/// lib via `AppSupportPathProvider`); a headless `cc_server` passes its own data
-/// dir. Keeping the layout logic here — Flutter-free, parameterized by the root
-/// — is the foundational unblocker for moving the dispatch / sandbox / relay /
-/// repo cluster off lib and lets the same on-disk layout serve both hosts.
-///
-/// Layout under [appSupportRoot]:
-/// ```
-/// <root>/
-///   global.db            # server-global Drift database
-///   <workspaceId>/
-///     workspace.db       # one file per workspace
-///   mcp.json             # MCP client config
-///   rift.sqlite          # rift CoW registry
-///   models/              # on-device models (Whisper, embeddings)
-///   grammars/            # tree-sitter runtime + grammar libs
-///   pipelines/<runId>/   # per-pipeline-run working dir
-///   meetings/<id>/       # retained per-space audio
-/// ```
+/// Under [appSupportRoot]: `global.db`; `<workspaceId>/workspace.db`; `mcp.json`;
+/// `rift.sqlite`; `models/`; `grammars/`; `pipelines/<runId>/`; `meetings/<id>/`.
 class CcPaths {
   /// Creates a resolver rooted at [appSupportRoot] (an already app-scoped dir).
   const CcPaths(this.appSupportRoot);

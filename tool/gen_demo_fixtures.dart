@@ -1,20 +1,7 @@
-// Generates the demo server's compiled-in fixtures from authored JSON.
-//
-// Run: fvm dart run tool/gen_demo_fixtures.dart
-//
-// WHY the fixtures compile into the binary rather than shipping beside it:
-// `dart build cli` produces a self-contained bundle, and a demo that only has
-// its data when a sibling directory happens to exist fails as an EMPTY demo —
-// the worst failure shape, because it looks like it booted fine.
-//
-// The generator deliberately emits the JSON verbatim as a Dart string rather
-// than generating object literals: the parsing already exists
-// (`DemoRunScript.fromJson`, which validates and rejects unknown step kinds),
-// so generating code that reproduces it would be a second thing to keep right.
-//
-// Same discipline as `tool/gen_workers.sh` + `test/tooling/web_workers_test.dart`:
-// the generated file is COMMITTED, and a test byte-diffs it so a stale fixture
-// fails CI instead of silently shipping yesterday's demo.
+// Generates demo fixtures into the binary from authored JSON (sibling data
+// dirs fail as an empty demo). Emits JSON as a Dart string; parsing stays in
+// `DemoRunScript.fromJson`. Committed; a test byte-diffs for staleness.
+// Usage: fvm dart run tool/gen_demo_fixtures.dart
 import 'dart:convert';
 import 'dart:io';
 

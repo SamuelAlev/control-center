@@ -2,19 +2,11 @@
 /// when the AI summary did not absorb them. Stable so re-runs are idempotent.
 const String writtenNotesHeading = '### Written notes';
 
-/// Ensures the user's manually-typed notes survive an AI (re-)summarization.
+/// Ensures user-typed notes survive AI (re-)summarization.
 ///
-/// The summarizer is told to weave the user's rough notes into [enhanced], but
-/// a model can silently drop a line — and on a re-run the user expects their
-/// own words to never disappear. This deterministic backstop compares each
-/// non-empty [userNotes] line against [enhanced]; any line the AI did not carry
-/// through (no ~40-char fuzzy substring match) is appended verbatim under a
-/// "### Written notes" section.
-///
-/// Idempotent: a prior "### Written notes" section in [enhanced] is stripped
-/// and recomputed each run, so repeated summaries never stack duplicate
-/// sections. Returns null when [enhanced] is null (nothing to merge into).
-/// Pure — no I/O — so the `meeting.saveNotes` step can call it directly.
+/// Appends non-empty [userNotes] lines missing from [enhanced] (~40-char fuzzy
+/// match) under "### Written notes". Idempotent (strips prior section). Null
+/// [enhanced] → null. Pure; used by `meeting.saveNotes`.
 String? mergeManualNotes({
   required String userNotes,
   required String? enhanced,

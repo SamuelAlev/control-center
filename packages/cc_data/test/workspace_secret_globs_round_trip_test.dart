@@ -6,17 +6,13 @@ import 'package:test/test.dart';
 
 /// `workspaces.secret_exclude_globs` must survive a client-side round trip.
 ///
-/// The regression this pins: [RpcWorkspaceRepository] used to drop the field in
-/// both mapping directions. Because `WorkspaceDto.toJson` writes
-/// `secret_exclude_globs` UNCONDITIONALLY (unlike its null-guarded neighbours),
-/// dropping it did not omit the key — it sent `[]`. The host decodes that as
-/// "no custom exclusions", so an ordinary rename or logo change from the
-/// workspace picker silently wiped the operator's secret-path exclusions for
+/// The regression this pins: [RpcWorkspaceRepository] used to drop the field in both
+/// mapping directions.
+/// Because `WorkspaceDto.toJson` writes `secret_exclude_globs` UNCONDITIONALLY (unlike its
+/// null-guarded neighbours), dropping it did not omit the key — it sent `[]`.
+/// The host decodes that as "no custom exclusions", so an ordinary rename or logo change
+/// from the workspace picker silently wiped the operator's secret-path exclusions for
 /// viewer/guest callers.
-///
-/// A carry-over-on-omit guard on the host would NOT have caught this, because
-/// the field arrives present-and-empty. Fixing the mapping is the only fix,
-/// which is why this test lives here rather than server-side.
 class _StubHost {
   _StubHost(this.space) {
     space.incoming.listen(_onFrame);

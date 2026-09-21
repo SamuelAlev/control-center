@@ -41,38 +41,13 @@ const _canvasMargin = 600.0;
 // which reads as the graph jumping. "Fit to view" is the way back.
 const _boundaryMargin = double.infinity;
 
-/// Interactive knowledge graph visualizing domains, topics, facts and policies
-/// as a navigable node canvas.
+/// Interactive knowledge graph: domains, topics, facts, policies on a canvas.
 ///
-/// ## How it reads
-///
-/// The graph is drawn as one CLUSTER per domain — a hull enclosing that
-/// domain's card, its policies and a grid of topic columns — rather than as
-/// rows of nodes joined by hierarchy edges. Two decisions follow from that, and
-/// both are deliberate:
-///
-/// * **Containment replaces the hierarchy edges.** A domain with 27 topics drew
-///   27 near-horizontal curves through one corridor; the hull says "these
-///   belong to this domain" with no ink crossing anything. What is still drawn
-///   is the edges that carry information you cannot get from position: a
-///   topic to the facts stacked under it, and a policy to the facts it was
-///   derived from.
-/// * **Facts are collapsed by default.** The graph opens on the domain/topic
-///   overview and a topic reveals its facts on demand, which is what keeps the
-///   first screen at a readable size instead of rendering every card in the
-///   workspace at once.
-///
-/// [KnowledgeGraphLayout] owns the geometry; this widget owns the rendering and
-/// the interaction.
-///
-/// Pan and zoom are handled by an [InteractiveViewer] (a single GPU-composited
-/// transform — no per-frame widget rebuilds), individual nodes are dragged via
-/// per-node [ValueNotifier]s so only the moved node rebuilds and all edges and
-/// hulls are drawn by one [CustomPaint] that repaints when any node moves.
-///
-/// The navigation vocabulary matches the app's other node canvases: drag or
-/// wheel to move the view, ⌘/Ctrl + wheel or a trackpad pinch to zoom, and the
-/// bottom-right controls for zoom in / out / fit.
+/// One cluster hull per domain (containment, not hierarchy edges). Draw only
+/// topic→fact and policy→fact edges. Facts start collapsed. Geometry is
+/// [KnowledgeGraphLayout]; pan/zoom via [InteractiveViewer]; node drag via
+/// per-node [ValueNotifier]s; edges/hulls in one [CustomPaint]. Same canvas
+/// controls as elsewhere: drag/wheel pan, ⌘/Ctrl+wheel or pinch zoom, fit.
 class KnowledgeGraph extends ConsumerStatefulWidget {
   /// Creates a [KnowledgeGraph] for the given [workspaceId].
   const KnowledgeGraph({super.key, required this.workspaceId});

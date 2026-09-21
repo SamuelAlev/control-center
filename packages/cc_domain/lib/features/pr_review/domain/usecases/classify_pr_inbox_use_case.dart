@@ -98,13 +98,11 @@ class ClassifyPrInboxUseCase {
 
   /// Classifies [openByRepo] (the live open-PR snapshot) and [mergedByRepo]
   /// (the operator's merged/closed PR history).
-  ///
   /// [viewerLoginByForge] is the operator's account name **per forge**. One
   /// workspace may hold repos on several forges and the same human has a
   /// different login on each, so "is this mine?" is resolved through the forge
   /// of the repo each PR belongs to — never against one global login, which
   /// would silently drop every PR on the other forges.
-  ///
   /// [reviewedByMeKeys] holds `"owner/repo#number"` keys of open PRs the
   /// operator has already reviewed (the lazily-fetched overlay) — it drives
   /// [PrInboxSection.waitingForAuthor]. [viewerTeamsByOrg] is the operator's

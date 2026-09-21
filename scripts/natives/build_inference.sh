@@ -1,36 +1,9 @@
 #!/usr/bin/env bash
 #
-# Builds libcc_inference — Control Center's on-device inference native — and
-# installs it where the loader looks for it (the app-support root next to
-# control_center.db, plus an optional explicit DEST for CI staging / bundle
-# embedding).
+# Builds libcc_inference (speech + embeddings; REQUIRED). First-party cargo
+# crate; statically links sherpa-onnx + one ONNX Runtime.
+# Usage: scripts/natives/build_inference.sh [DEST_DIR]
 #
-# FIRST-PARTY SOURCE, in-repo (packages/cc_natives/native/inference/), cargo-
-# built. The crate wraps TWO workloads behind the C ABI in cc_inference.h:
-#   * speech — offline ASR (Whisper + transducer), Silero VAD, pyannote
-#     diarization, WeSpeaker voiceprints, via sherpa-onnx's C API;
-#   * text  — BERT sentence embeddings, via the ONNX Runtime C API.
-#
-# Both are STATICALLY LINKED, against ONE ONNX Runtime, producing one
-# self-contained library: no loader-path search, no version skew between the
-# generated headers and the runtime they call and no way for two runtimes to
-# collide by base name in one process (how Windows resolves a DLL dependency).
-#
-# The prebuilt sherpa-onnx static archive is PRE-FETCHED here and pinned by
-# sha256 in scripts/lib/native_pins.env, then handed to the crate's build script
-# via SHERPA_ONNX_LIB_DIR. Left to itself that build script downloads an
-# unverified archive from GitHub at build time; pre-fetching keeps the build
-# reproducible, offline-capable after the first run and auditable.
-#
-# REQUIRED native, no fallback: semantic search and the entire speech stack are
-# unavailable without it and cc_server's boot preflight refuses to start.
-# build_natives.sh therefore aborts on a failure here rather than warning past
-# it.
-#
-# Requirements: a Rust toolchain (cargo), curl, tar (with bzip2).
-#
-# Usage:
-#   scripts/natives/build_inference.sh [DEST_DIR]
 set -euo pipefail
 
 REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"

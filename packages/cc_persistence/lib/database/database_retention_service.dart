@@ -5,30 +5,12 @@ import 'package:cc_persistence/database/cross_workspace_queries.dart';
 import 'package:cc_persistence/database/workspace/workspace_database.dart';
 import 'package:cc_persistence/database/workspace_database_manager.dart';
 
-/// Periodically prunes append-only audit/log tables so the database does not
-/// grow without bound. These tables are pure history — old rows have no
-/// functional purpose beyond a retention window:
-///  * `activity_log` — the audit feed (UI only ever shows recent entries)
-///  * `webhook_deliveries` — inbound webhook receipts (idempotency + debugging)
-///  * `cron_executions` — the cron-fire idempotency ledger
-///  * `user_activity` — the per-user accountability trail
-///  * `run_transcripts` — finished runs' activity timelines
-///  * `pipeline_runs`, for `index_code` ONLY — the code-graph watcher publishes
-///    one run per background reindex, which is the only pipeline that fires by
-///    itself often enough to need a window (every other template's history is
-///    the operator's and is never pruned)
+/// Prunes append-only audit/log tables past retention windows.
 ///
-/// All of these tables are workspace-scoped, so a sweep visits every workspace's
-/// database in turn — including workspaces nobody has opened this session and
-/// soft-deleted ones, whose files are still on disk and would otherwise never be
-/// pruned. The visits are sequential (via
-/// [CrossWorkspaceQueries.forEachWorkspace]) so a sweep does not fire ten write
-/// transactions at once while the server is trying to serve.
-///
-/// Runs once shortly after start and then on a daily tick. Best-effort: a prune
-/// failure is logged (via the `onError` callback) and retried on the next tick,
-/// never throwing into the caller. Retention windows are generous by default so
-/// legitimate recent history is always kept.
+/// Targets: `activity_log`, `webhook_deliveries`, `cron_executions`,
+/// `user_activity`, `run_transcripts`, and `pipeline_runs` for `index_code`
+/// only. Workspace-scoped; sweeps every workspace file sequentially via
+/// [CrossWorkspaceQueries.forEachWorkspace]. Best-effort daily tick.
 class DatabaseRetentionService {
   /// Creates a retention service over every workspace database in [workspaces].
   ///

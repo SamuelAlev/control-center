@@ -107,25 +107,14 @@ class ReachabilityResolver {
   /// plaintext when the page is itself plaintext loopback (local dev).
   final Uri Function() _pageOrigin;
 
-  /// The subset of [descriptor] paths this client can use at all, in rank
-  /// order.
+  /// The subset of [descriptor] paths this client can use at all, in rank order.
   ///
-  /// On a native client every path is usable. On web the filter is about what
-  /// the *browser* will dial at all and the two plaintext cases differ:
-  ///
-  /// - **Loopback is always kept**, whatever the page origin. Browsers treat
-  ///   loopback as a potentially-trustworthy origin, so `ws://127.0.0.1` is
-  ///   not mixed content even from a deployed `https://` page. Whether the
-  ///   browser's loopback is *this server's* loopback is not guessed from the
-  ///   page origin — it is decided by probing, because [probePath] compares
-  ///   the `serverId` `/healthz` reports against [ConnectionDescriptor.serverId]
-  ///   and refuses a stranger. Filtering on the page origin instead cost the
-  ///   legitimate "deployed page, server on this same machine" case its only
-  ///   path and did so silently (an empty probe set yields a
-  ///   [NoReachablePathException] that names no reason).
-  /// - **Off-loopback plaintext stays filtered** unless the page is itself
-  ///   loopback: `ws://192.168.1.42` from an `https://` page is mixed content
-  ///   with no exemption, so probing it can only ever burn the timeout.
+  /// On a native client every path is usable.
+  /// On web the filter is about what the *browser* will dial at all and the two plaintext
+  /// cases differ:
+  /// Filtering on the page origin instead cost the legitimate "deployed page, server on this
+  /// same machine" case its only path and did so silently (an empty probe set yields a
+  /// [NoReachablePathException] that names no reason).
   List<ConnectionPath> usablePaths(ConnectionDescriptor descriptor) {
     final pageIsLoopback =
         _isWeb && TransportSecurityPolicy.isLoopbackHost(_pageOrigin().host);

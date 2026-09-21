@@ -187,27 +187,11 @@ class _DialogCloseButton extends StatelessWidget {
   }
 }
 
-/// Presents a confirmation dialog for a consequential action and resolves to
-/// whether the user confirmed.
-///
-/// This encodes the common-actions ladder for destructive/irreversible
-/// operations — match the friction to the blast radius:
-///
-/// * **Low impact** (trivially undone or recreated): don't confirm at all;
-///   act immediately and offer undo instead of calling this.
-/// * **Moderate impact** (bulk changes, hard-to-recreate data): call with
-///   [danger] and a [message] that spells out the consequences — what is
-///   destroyed, what survives, whether it can be recovered.
-/// * **High impact** (expensive or large-scale loss): additionally pass
-///   [typeToConfirm] (usually the resource's name); the confirm button stays
-///   disabled until the user types it back exactly.
-///
-/// The cancel action is always the quiet secondary button, the confirm action
-/// carries the weight ([CcButtonVariant.destructive] when [danger], primary
-/// otherwise) and its [confirmLabel] should name the specific action
-/// ("Delete workspace"), never a bare "OK"/"Yes". Danger dialogs are not
-/// dismissed by Escape or a scrim tap — they demand an explicit choice. The
-/// caller localizes every string.
+/// Confirmation dialog for a consequential action → whether the user confirmed.
+/// Low impact: skip this and use undo. Moderate: [danger] + consequence
+/// [message]. High: also [typeToConfirm] (confirm disabled until exact match).
+/// Cancel is secondary; confirm is destructive when [danger] and must name the
+/// action. Danger dialogs ignore Esc/scrim. Caller localizes every string.
 Future<bool> showCcConfirmDialog({
   required BuildContext context,
   required String title,
@@ -359,26 +343,11 @@ class _DialogFocusScopeState extends State<_DialogFocusScope> {
   @override
   void dispose() {
     _scopeNode.dispose();
-    // Restore focus to whatever opened the dialog — but only while that node is
-    // still in the focus tree.
-    //
-    // `context != null` is NOT a liveness test: a [FocusNode] keeps the context
-    // it was attached with after it detaches, so a trigger that unmounted while
-    // the dialog was up (a popover closing behind it, the page below rebuilding,
-    // a list item recycling) still passes it. `parent != null` is the real test
-    // — a detached node has no parent — and it also skips the root scope, where
-    // there is nothing to restore anyway.
-    //
-    // Focusing a detached node is not a harmless no-op. [FocusNode] defers such
-    // a request to its next reparent, but [FocusScopeNode] (the popover/menu
-    // panel case, where the panel's own scope holds the focus) overrides
-    // `_doRequestFocus` without that guard: it walks its *stale* ancestors cache
-    // and re-registers the dead node as the route scope's `focusedChild`. That
-    // trips `_focusedChildren.last.enclosingScope == this` inside
-    // `FocusScopeNode.focusedChild` — thrown from the focus microtask via the
-    // next pending autofocus, so the report lands far from this line — and in
-    // release parks the primary focus on a detached subtree, which silently
-    // breaks keyboard input until something else takes focus.
+    // Restore focus to the opener only if still in the focus tree.
+    // `context != null` is NOT liveness (detached [FocusNode] keeps it);
+    // require `parent != null` (also skips the root scope).
+    // Focusing a detached [FocusScopeNode] re-registers a dead focusedChild
+    // via stale ancestors and breaks keyboard focus (assert in debug).
     final previous = _previousFocus;
     if (previous != null &&
         previous.parent != null &&

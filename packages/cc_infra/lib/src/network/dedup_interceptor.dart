@@ -4,32 +4,12 @@ import 'package:cc_infra/src/network/retry_interceptor.dart';
 import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
 
-/// Coalesces identical concurrent GET requests into a single network call.
+/// Coalesces identical concurrent GET requests into one network call.
 ///
-/// When two or more requests sharing the same `(method, URI, Accept)` are in
-/// flight at the same time, only the first reaches the network; the others
-/// resolve from that same response. This removes duplicate GitHub calls that
-/// otherwise arise when several providers/widgets ask for the same resource
-/// simultaneously — e.g. the PR-list fan-out colliding with the background PR
-/// poller's `listOpenPullRequestsPage`, or multiple widgets watching the same
-/// PR-detail family at once.
-///
-/// Only safe, side-effect-free requests are coalesced:
-///  * **GET only** — never mutations.
-///  * **Requests without a [CancelToken] only.** A coalesced waiter must never
-///    be cancelled because an unrelated caller cancelled the shared request
-///    (and vice-versa), so any request carrying a cancel token bypasses
-///    coalescing entirely. Those are already covered by the app-level SWR cache.
-///  * **Never a [RetryInterceptor] re-issue.** See [_isCoalescable] — that one
-///    is a deadlock, not an optimisation.
-///
-/// The first request of a group flows through the full interceptor chain
-/// (auth, retry, logging) via `handler.next`; its outcome — success OR failure
-/// — is fanned out to the coalesced waiters from [onResponse]/[onError]. This
-/// avoids re-issuing the request (which raced under dio 5.x: a coalesced
-/// waiter could attach to an already-settled in-flight future and never
-/// resolve) and never creates a second unlistened error future (the regression
-/// that once crashed the zone-less `cc_server` on a 415 feed).
+/// Only: GET; no [CancelToken] (cancel must not affect coalesced waiters);
+/// never a [RetryInterceptor] re-issue (deadlock — see [_isCoalescable]).
+/// First request runs the full chain; success or failure fans out from
+/// [onResponse]/[onError] (re-issue raced under dio 5.x).
 class DedupInterceptor extends Interceptor {
   /// Creates a [DedupInterceptor]. The optional [dio] argument is accepted for
   /// backward compatibility with earlier call sites and is otherwise unused —
@@ -103,22 +83,10 @@ class DedupInterceptor extends Interceptor {
     if (options.cancelToken != null) {
       return false;
     }
-    // A request [RetryInterceptor] re-issued must NEVER be coalesced, and this
-    // is a deadlock rather than a missed optimisation. Dio runs error
-    // interceptors in REGISTRATION order and `createDio` registers retry first,
-    // so `RetryInterceptor.onError` re-fetches from inside itself without ever
-    // calling `handler.next(err)`. This interceptor's [onError] therefore has
-    // not run, the group is still open, and the retry — same URI, same Accept,
-    // same credential, so the same key — enqueues itself as a waiter on the
-    // very request that is waiting for it. Neither future ever settles, and
-    // nothing is logged, because the chain never reaches the error-logging
-    // interceptor.
-    //
-    // Measured against an endpoint that always answers 429: plain dio fails in
-    // 41ms, retry-alone in 4.4s after 4 attempts, dedup-alone in 2ms — and the
-    // production pair hung forever after a single network hit. In the field
-    // that read as `subscriptions.usage` blowing its 60s RPC budget on every
-    // poll once the Kimi Code plan started answering 429 `resource_exhausted`.
+    // Never coalesce a [RetryInterceptor] re-issue: retry runs inside onError
+    // without handler.next, so this group's onError has not cleared and the
+    // retry (same key) waits on itself — deadlock. Measured: production pair
+    // hung forever after one 429.
     if (options.extra.containsKey(RetryInterceptor.retryCountKey)) {
       return false;
     }

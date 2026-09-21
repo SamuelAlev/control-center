@@ -48,27 +48,12 @@ class RegisterAgentInput {
   final String? sessionFile;
 }
 
-/// Process-global registry of agents — the main session plus every subagent —
-/// keyed by stable id.
+/// Process-global registry of agents (main + subagents) by stable id.
 ///
-/// Tracks each agent's [AgentStatus] and live work so peers can be addressed by
-/// id and a work-aware roster can render who is alive and what they are doing.
-/// Sessions are registered explicitly at dispatch; finished agents stay
-/// registered as [AgentStatus.idle] (or [AgentStatus.parked] once their
-/// dispatch is released) and are only dropped on explicit [unregister].
-///
-/// The registry is a single process-wide instance shared by the dispatch
-/// service, MCP tools and the UI, so a concrete implementation exposes a
-/// global accessor rather than being constructed per call site.
-///
-/// ## Workspace isolation
-///
-/// The registry spans every open workspace, so it is workspace-scoped data:
-/// every roster / peer query MUST be filtered by `workspaceId`. Use
-/// [listForWorkspace] / [watchWorkspaceRoster] for rosters and [listVisibleTo]
-/// for peer discovery — all three are workspace-scoped. The unscoped [list] is
-/// CROSS-WORKSPACE BY DESIGN and reserved for the all-workspaces dashboard /
-/// diagnostics; never use it to answer a workspace-scoped question.
+/// Tracks [AgentStatus] and live work. Registered at dispatch; finished stay
+/// idle/parked until [unregister]. Filter roster/peer queries by workspaceId
+/// ([listForWorkspace]/[watchWorkspaceRoster]/[listVisibleTo]). Unscoped
+/// [list] is CROSS-WORKSPACE BY DESIGN (dashboard/diagnostics only).
 abstract interface class AgentRegistry {
   /// Registers a new agent, or refreshes an already-registered one (status,
   /// dispatch, activity) while preserving its original `createdAt`. Returns the

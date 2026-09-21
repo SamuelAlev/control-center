@@ -4,22 +4,11 @@ import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
-/// A read-only value the operator has to hand to something else: an ACS URL, a
-/// SCIM endpoint, a redirect URI, a base URL.
-///
-/// These were previously rendered as a row subtitle in tertiary 12px text —
-/// unselectable, untruncated, and indistinguishable from the explanatory prose
-/// two lines above. But this is the single value the reader came to the page to
-/// collect, and it has to survive being pasted into an identity provider's
-/// console with no character lost.
-///
-/// So it reads as a value: mono face, field fill, one copy button, and a toast
-/// confirming the copy happened. When there is nothing to show yet it says so
-/// in words rather than rendering an empty well.
-///
-/// Copy, not selection: `SelectableText` and `SelectionArea` are Material, and
-/// the whole value is what gets pasted into an IdP console anyway — a partial
-/// selection of an ACS URL is never what anyone wanted.
+/// A read-only value the operator has to hand to something else: an ACS URL, a SCIM
+/// endpoint, a redirect URI, a base URL.
+/// Copy, not selection: `SelectableText` and `SelectionArea` are Material, and the whole
+/// value is what gets pasted into an IdP console anyway — a partial selection of an ACS URL
+/// is never what anyone wanted.
 class SettingsCopyField extends StatelessWidget {
   /// Creates a [SettingsCopyField].
   const SettingsCopyField({

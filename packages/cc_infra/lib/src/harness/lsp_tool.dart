@@ -7,22 +7,11 @@ import 'package:cc_infra/src/lsp/lsp_supervisor.dart';
 import 'package:cc_infra/src/lsp/lsp_symbol_position.dart';
 import 'package:path/path.dart' as p;
 
-/// Gives the agent everything the IDE knows: diagnostics, navigation, symbol
-/// search and code actions.
+/// Gives the agent LSP diagnostics, navigation, symbol search, and code actions.
 ///
-/// **The gap this closes.** Control Center's code graph gives the agent
-/// structure — symbols, call edges, an impact radius — from tree-sitter. What
-/// it cannot give is TYPES: whether the call actually compiles, whether that
-/// field exists, whether the rename missed a re-export. Without a language
-/// server an agent finds out at `dart analyze` time, or never.
-///
-/// **Addressing is by symbol, not by column.** A model asked for a column
-/// number guesses, and a wrong guess silently resolves to a different symbol
-/// on the same line — the answer looks plausible and is about the wrong thing.
-/// Here it supplies `line` plus a `symbol` substring (with an optional
-/// `name#2` occurrence selector) and the tool resolves the column. Omitting
-/// `symbol` on a navigation action is a hard error rather than a first-column
-/// guess.
+/// Code graph has structure; LSP adds types/compile truth. Address by
+/// `line` + `symbol` substring (optional `name#2`); omit `symbol` on navigation
+/// is a hard error (no first-column guess).
 class LspTool extends HarnessTool {
   /// Creates an [LspTool].
   LspTool({

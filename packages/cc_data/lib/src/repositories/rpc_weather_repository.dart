@@ -6,20 +6,10 @@ import 'package:cc_rpc/cc_rpc.dart';
 /// A [WeatherRepository] backed by the RPC client — the thin-client data path.
 ///
 /// Implements the domain interface over the host's `weather.*` ops + the
-/// `weather.watchCurrent` subscription, mapping the `WeatherSnapshotDto` wire
-/// shape back to [WeatherSnapshot]. The host is the single source of truth and
-/// owns the live Open-Meteo fetch + all persistence; this client never touches
-/// a database.
-///
-/// Every method takes a leading `workspaceId` (the workspace-isolation
-/// contract) which is not passed explicitly over the wire: `RemoteRpcClient`
-/// injects its `activeWorkspaceId` as `workspace_id` on any call that does not
-/// name one. That injection is CLIENT-side — the server holds no session
-/// workspace and its dispatcher refuses a scoped op with no `workspace_id`.
-///
-/// All ops are exposed to the client — reads ([getCurrent] / [watchCurrent]) and
-/// the host-serviced writes ([refreshNow] / [setManualLocation] /
-/// [clearManualLocation] / [reportDeviceLocation]) — so none throw.
+/// `weather.watchCurrent` subscription, mapping the `WeatherSnapshotDto` wire shape back to
+/// [WeatherSnapshot].
+/// The host is the single source of truth and owns the live Open-Meteo fetch + all
+/// persistence; this client never touches a database.
 class RpcWeatherRepository implements WeatherRepository {
   /// Creates an [RpcWeatherRepository] over [client].
   RpcWeatherRepository(RemoteRpcClient client)

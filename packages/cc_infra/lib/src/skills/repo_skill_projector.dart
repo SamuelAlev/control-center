@@ -68,23 +68,10 @@ class RepoSkillProjection {
   }
 }
 
-/// Materializes ONE repo's skills into the agent's overlay, so every adapter
-/// sees them through the discovery path it already has.
-///
-/// The agent's cwd is its overlay (`<spaceRoot>/agents/<slug>/`) and the repos
-/// are checked out two levels away behind a `repos → ../../repos` symlink, so
-/// no adapter finds what a repo ships for agents: Claude Code looks in
-/// `.claude/skills` at the cwd and its parents, and the built-in harness
-/// scans a fixed list of bases. Writing the active repo's skills into the
-/// overlay puts them on those paths at once, with no per-adapter flags —
-/// and Claude Code watches its project skills directory, so a swap lands
-/// mid-session without restarting the CLI.
-///
-/// Only the ACTIVE repo is ever projected. Listing every repo's skills at once
-/// is both wrong (a `testing` skill from one service does not describe another)
-/// and expensive: the index sits in context permanently while the bodies do
-/// not, and a handful of repos is enough to push it past the size where tool
-/// and skill selection stays reliable.
+/// Projects one repo's skills into the agent's overlay discovery paths
+/// (`.claude/skills` + harness bases). Claude Code watches the dir — mid-session
+/// swap without CLI restart. Only the active repo (cross-repo dumps thrash
+/// context and mis-apply sibling skills).
 class RepoSkillProjector {
   /// Creates a [RepoSkillProjector].
   ///

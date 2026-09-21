@@ -26,9 +26,7 @@ import 'package:control_center/shared/utils/repo_filters.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Attention strip (non-PR items: blocked agents, failed syncs)
-// ─────────────────────────────────────────────────────────────────────────────
 
 /// A source that contributes items to the inbox's pinned attention strip
 /// (PRD 19 §7).
@@ -145,9 +143,7 @@ List<InboxAttentionItem> buildInboxAttentionItems(
   return sortInboxAttentionItems(items);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Sidebar badge count
-// ─────────────────────────────────────────────────────────────────────────────
 
 /// Live count of open PRs awaiting my review across the active workspace,
 /// computed SERVER-SIDE from the open-PR poller's snapshot.
@@ -182,9 +178,7 @@ final inboxCountProvider = Provider<int>((ref) {
   return count;
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Filters, sort, collapse state
-// ─────────────────────────────────────────────────────────────────────────────
 
 /// Every PR loaded into the inbox (open + recently merged), flattened — the
 /// population the filter menu's facet counts and the filter bar run over.
@@ -375,9 +369,7 @@ final collapsedInboxSectionsProvider =
       CollapsedInboxSectionsNotifier.new,
     );
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Data
-// ─────────────────────────────────────────────────────────────────────────────
 
 /// The last merged-history page per `workspace|login`, seeded into
 /// [recentlyMergedPrsProvider] on revisit (see `LastGoodStore`).

@@ -6,37 +6,13 @@ import 'dart:typed_data';
 import 'package:cc_domain/core/domain/services/cache_stats.dart';
 import 'package:crypto/crypto.dart';
 
-/// A bytes-on-disk cache for media the client fetches over the media proxy.
+/// On-disk cache for `/proxy/media` bytes (desktop only; web uses the browser).
 ///
-/// ## Why this exists on desktop and NOT on web
-///
-/// Every remote image the app shows is rewritten to a signed `/proxy/media`
-/// URL, and the server answers those with `Cache-Control: max-age=86400` over a
-/// URL that is stable for a given `(source, width)`. On **web** that is already
-/// a disk cache — the browser's — with eviction, a byte budget and corruption
-/// handling that nobody here has to write, so the web build deliberately gets
-/// an inert stub instead of a second cache in IndexedDB that would only add a
-/// place for a stale image to hide.
-///
-/// **Desktop has no such cache.** `NetworkImage` on `dart:io` goes through a
-/// bare `HttpClient` with no HTTP cache at all, and Flutter's `ImageCache` is
-/// memory-only and dies with the process. A desktop paired to a REMOTE server
-/// therefore re-downloaded its entire working set — every avatar, favicon and
-/// feed image — on every launch. (A desktop on loopback is covered by the
-/// server's own `MediaCache`; this closes the remote case.)
-///
-/// ## Shape
-///
-/// Deliberately the smallest thing that works: content addressed by a hash of
-/// the resolved URL, a body file plus a tiny sidecar, and an LRU sweep by total
-/// bytes. It is NOT an HTTP cache — no revalidation, no `ETag`, no `Vary`.
-/// That is sound only because of the URL property above: the signed URL embeds
-/// the source and the width, so *different bytes mean a different URL*. An
-/// entry can go stale only if the upstream replaces an image in place under a
-/// URL it already served, which the [ttl] bounds.
-///
-/// Reports to [CacheStatsRegistry] under `media_disk`, because a cache that
-/// reports nothing is a capacity number nobody ever checked.
+/// `NetworkImage` on `dart:io` has no HTTP cache; this covers remote-server
+/// desktops (loopback already has server `MediaCache`). Keyed by URL hash;
+/// body + sidecar; LRU by bytes. Not an HTTP cache — signed URLs embed
+/// `(source, width)`, so [ttl] bounds in-place upstream replacement. Reports
+/// under `media_disk` in [CacheStatsRegistry].
 class MediaDiskCache {
   /// Creates a cache rooted at [root].
   MediaDiskCache({
@@ -103,8 +79,8 @@ class MediaDiskCache {
     return future;
   }
 
-  /// Bytes already on disk for [url] (or [cacheKey]), or null. **Never
-  /// fetches.**
+  /// Bytes already on disk for [url] (or [cacheKey]), or null. Never
+  /// fetches.
   ///
   /// The read half of a cache entry whose write the caller owns. [get] fetches
   /// on a miss, which is right for an `ImageProvider` that wants bytes and

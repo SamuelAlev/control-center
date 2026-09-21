@@ -1,19 +1,8 @@
 // App-level terminal keep-alive registry.
-//
-// The messaging IDE unmounts every `TerminalSessionView` on a space switch;
-// the sessions must survive that. This registry owns one
-// `TerminalSessionController` per client-side session id (minted into the tab
-// args at tab creation) so a controller — its server-side PTY, its 10k-line
-// xterm buffer, its subscriptions — lives across layout swaps. Views come and
-// go; the shell keeps running.
-//
-// Footprint stays bounded: one PTY ≈ one shell process + one 10k-line xterm
-// buffer + two subscriptions. `kMaxLiveTerminalSessions` caps live shells
-// app-wide at what a handful of recently-used spaces need; the
-// least-recently-touched controller NOT claimed by a live tab of the active
-// space is evicted past the cap (its space respawns a blank shell on next
-// visit — today's behaviour for every space). On-screen tabs are never
-// evicted: if the user genuinely has more open than the cap, the cap yields.
+// The messaging IDE unmounts every `TerminalSessionView` on a space switch; the sessions
+// must survive that.
+// On-screen tabs are never evicted: if the user genuinely has more open than the cap, the
+// cap yields.
 library;
 
 import 'dart:async';

@@ -15,7 +15,7 @@ enum SettingsGroupSeparator {
   none,
 }
 
-/// A titled block **inside** a `SectionCard` — the layer between "one card, one
+/// A titled block inside a `SectionCard` — the layer between "one card, one
 /// subject" and "one row, one control".
 ///
 /// A card that asks more than one question needs a way to say so. The obvious

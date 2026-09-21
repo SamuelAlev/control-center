@@ -13,25 +13,13 @@ import 'package:dio/dio.dart' show CancelToken;
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
-/// A TARGETED run is what makes "reindex on save" cost the size of the CHANGE
-/// instead of the size of the CHECKOUT.
+/// Targeted index runs: cost the change, not the checkout (full discovery was
+/// multi-second per save on large trees).
 ///
-/// Before it, every watcher event re-ran the whole discovery pass — a
-/// `git ls-files` plus a stat of every file in the tree, and a read of the
-/// partition's entire `code_files` table (twice for a worktree: its own and the
-/// base's). Measured on a 19k-file checkout that was 5-9 SECONDS per run to
-/// index ONE saved file, ~90 times an hour while an agent worked, and 185s for
-/// a single file once runs started contending.
-///
-/// These tests use the REAL [SourceFileWalker] over a REAL git work tree,
-/// because the risk targeting introduces is not "is it faster" — it is whether
-/// the narrow path can index something the full path would have excluded, or
-/// prune something it should not have touched. Only git can answer the first
-/// (`.gitignore` is per-project and the watcher's static ignore list knows
-/// nothing about it).
-/// The platform-native form of a repo-relative POSIX literal. The walker's
-/// stored `filePath`s (and everything keyed by them) use native separators on
-/// Windows, so every seed, handed path and expectation goes through here.
+/// Uses real [SourceFileWalker] + git so targeting cannot index ignored paths
+/// or prune outside the handed set (`.gitignore` is project-specific).
+
+/// Native separators for a repo-relative POSIX literal (walker stores native paths).
 String _f(String posix) => p.joinAll(posix.split('/'));
 
 void main() {

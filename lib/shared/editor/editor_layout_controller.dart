@@ -70,9 +70,7 @@ class EditorLayoutController extends ChangeNotifier {
 
   String _nextId(String prefix) => '$prefix-${_idCounter++}';
 
-  // ---------------------------------------------------------------------------
   // Non-structural operations (tab selection / opens within a leaf)
-  // ---------------------------------------------------------------------------
 
   /// Marks [leafId] active (the target for subsequent opens).
   void setActiveLeaf(String leafId) {
@@ -190,9 +188,7 @@ class EditorLayoutController extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ---------------------------------------------------------------------------
   // Structural operations
-  // ---------------------------------------------------------------------------
 
   /// Moves the dragged tab into [toLeafId] at [toIndex].
   ///
@@ -366,9 +362,7 @@ class EditorLayoutController extends ChangeNotifier {
     return result;
   }
 
-  // ---------------------------------------------------------------------------
   // Tree maintenance
-  // ---------------------------------------------------------------------------
 
   void _insertSibling(
     EditorNode target,
@@ -525,9 +519,7 @@ class EditorLayoutController extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ---------------------------------------------------------------------------
   // Tree queries
-  // ---------------------------------------------------------------------------
 
   EditorLeafNode? _findLeaf(String id, [EditorNode? node]) {
     node ??= _root;

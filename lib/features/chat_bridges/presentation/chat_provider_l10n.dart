@@ -6,7 +6,7 @@ import 'package:control_center/l10n/app_localizations.dart';
 ///
 /// The descriptor is server data: its labels and hints are authored in English,
 /// like an MCP tool description. The client localizes what it *recognizes* — by
-/// the stable field/step **id**, never by matching text — and falls back to the
+/// the stable field/step id, never by matching text — and falls back to the
 /// server's English for anything it has never heard of.
 ///
 /// That fallback is what keeps a new provider from needing a client release: its

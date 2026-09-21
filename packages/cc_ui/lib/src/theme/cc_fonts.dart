@@ -5,31 +5,15 @@ import 'package:cc_ui/src/theme/cc_font_registry.dart';
 import 'package:cc_ui/src/theme/cc_script_fonts.dart';
 import 'package:flutter/widgets.dart';
 
-/// Font helpers for cc_ui — Manrope for UI text, Fira Code for code.
+/// Font helpers: Manrope (UI), Fira Code (code). Base fonts are bundled
+/// (`fonts:` in pubspec) — no network for defaults. User-selected families load
+/// via [CcFontRegistry]. Sole owner of bundled files; consumers use [uiFamily] /
+/// [codeFamily].
 ///
-/// The base fonts are **bundled as host assets** by this package (see the
-/// `fonts:` section of `pubspec.yaml`), so the default text NEVER touches the
-/// network — important for deploys behind a strict CSP (the web client + the
-/// cc_remote PWA). A network fetch happens for one case only: when a call site
-/// explicitly asks for a *different* family (a user-selected font), which
-/// [CcFontRegistry] loads on demand through the host.
-///
-/// This package is the SOLE owner of the bundled font files; the main app,
-/// cc_remote and cc_gallery all resolve them through [uiFamily] / [codeFamily]
-/// rather than bundling their own copy. [uiFamily] is the single Dart token for
-/// the UI family — `AppFonts.uiFamily` in the main app aliases it, so swapping
-/// the font means changing this one constant (plus the matching `family:` name
-/// in `pubspec.yaml`).
-///
-/// Script coverage Manrope lacks (Thai, Hebrew, Arabic-script, CJK, leftover
-/// Greek) is a SEPARATE lane: [activateForLocale] attaches only that locale's
-/// companion as `fontFamilyFallback` and FontLoaders its vendored file. The
-/// companions are package **assets**, not `fonts:` entries, so Flutter web
-/// does not download Thai+Hebrew+Arabic on an English boot. [CcTheme] calls
-/// [activateForLocale] from the ambient [Localizations] locale.
-///
-/// Pure [TextStyle] helpers only (no Material `TextTheme`), so cc_ui stays on
-/// the widgets layer.
+/// Script companions (Thai/Hebrew/Arabic/CJK/…) via [activateForLocale] as
+/// `fontFamilyFallback`; companions are package assets, not `fonts:` entries
+/// (web must not download them on English boot). Widgets-only [TextStyle]
+/// helpers — no Material `TextTheme`.
 abstract final class CcFonts {
   const CcFonts._();
 

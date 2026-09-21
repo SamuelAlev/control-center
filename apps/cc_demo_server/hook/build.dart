@@ -4,38 +4,16 @@ import 'package:code_assets/code_assets.dart';
 import 'package:hooks/hooks.dart';
 import 'package:path/path.dart' as p;
 
-/// Bundles the prebuilt Control Center native libraries into the `cc_demo_server`
-/// binary the SAME way `sqlite3`/`sqlite_vector` bundle theirs: each dylib is
-/// emitted as a [CodeAsset] with [DynamicLoadingBundled], so `dart build cli`
-/// copies it into `bundle/lib/` beside `libsqlite3` — the server is then
-/// self-contained and nothing but the on-device MODELS is downloaded at
-/// runtime.
+/// Bundles prebuilt Control Center natives into the `cc_demo_server` binary as [CodeAsset]s with
+/// [DynamicLoadingBundled] (same pattern as sqlite3/sqlite_vector).
 ///
-/// The natives themselves are NOT compiled here (rift/fff are cargo builds,
-/// aec is meson+WebRTC, …). They are staged as prebuilt artifacts by
-/// `scripts/natives/build_natives.sh`
-/// into `<repo>/build/natives/` (override with `CC_NATIVES_PREBUILT_DIR`) and
-/// this hook re-emits whatever is staged — mirroring `sqlite_vector`'s
-/// prebuilt-re-emit hook rather than `sqlite3`'s compile-from-source hook.
+/// Does not compile natives — stages from `scripts/natives/build_natives.sh`
+/// into `build/natives/` (or `.cc_natives_prebuilt_dir`). Missing staging
+/// fails the build (server preflight would refuse to boot anyway).
 ///
-/// Missing staging FAILS the build. Every native is required — the produced
-/// server would refuse to boot (`cc_server_runtime`'s native preflight throws) —
-/// so failing here turns "it built fine but dies on start" into one actionable
-/// error naming the script to run.
-///
-/// Escape hatch for compile-only workflows that never run the binary (a syntax
-/// check on a fresh clone): create an empty `.cc_natives_allow_missing` file at
-/// the repo root, which downgrades the failure to a warning. Do NOT leave it in
-/// place for a packaging run — `scripts/release/verify_natives.sh` would catch
-/// the result anyway, but only after a much longer build.
-///
-/// A FILE, not an environment variable: the hooks runner spawns this hook as its
-/// own process and does NOT forward the caller's environment, so
-/// `CC_NATIVES_ALLOW_MISSING=1 dart build cli` is silently ignored. Both env
-/// names are still read first in case a future SDK does forward them, but the
-/// file is what actually works today. (The long-documented
-/// `CC_NATIVES_PREBUILT_DIR` override was non-functional for the same reason;
-/// `.cc_natives_prebuilt_dir` replaces it.)
+/// Escape hatch: empty `.cc_natives_allow_missing` at repo root downgrades to
+/// a warning. A FILE, not env — the hooks runner does not forward the caller
+/// environment (`CC_NATIVES_ALLOW_MISSING=1` is ignored).
 void main(List<String> args) async {
   await build(args, (input, output) async {
     if (!input.config.buildCodeAssets) {

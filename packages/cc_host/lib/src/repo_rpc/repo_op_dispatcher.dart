@@ -114,24 +114,13 @@ abstract interface class WriteLedgerPort {
 class RepoOpDispatcher {
   /// Creates a [RepoOpDispatcher].
   ///
-  /// [confirm] is consulted for [RepoOpKind.destructive] ops; when null (no
-  /// approver, e.g. headless) destructive ops are denied — never run unconfirmed.
-  ///
-  /// [resolveRole] resolves workspace membership for the role gate. When null
-  /// (bare test dispatchers), the role gate is skipped — production wiring
-  /// always supplies it.
-  ///
-  /// [resolveRepoGrant] resolves per-repo grants for ops declaring
-  /// [RepoOp.repoAccess]; owners/admins pass implicitly. When null, grant-
-  /// gated ops are denied for non-admin roles (fail closed).
-  ///
-  /// [recordActivity] appends the audit record for successful mutating ops.
-  ///
-  /// [mapException] classifies handler errors into stable [RpcErrorCodes]. The
-  /// embedding app supplies it so the generic kernel can surface its domain
-  /// exceptions (workspace-mismatch, not-found, conflict, …) to clients without
-  /// `cc_host` knowing the app's exception hierarchy. Unmapped errors are logged
-  /// locally and reported as a generic internal error.
+  /// [confirm] is consulted for [RepoOpKind.destructive] ops; when null (no approver, e.g.
+  /// headless) destructive ops are denied — never run unconfirmed.
+  /// [resolveRole] resolves workspace membership for the role gate.
+  /// When null, grant- gated ops are denied for non-admin roles (fail closed).
+  /// The embedding app supplies it so the generic kernel can surface its domain exceptions
+  /// (workspace-mismatch, not-found, conflict, …) to clients without `cc_host` knowing the
+  /// app's exception hierarchy.
   RepoOpDispatcher({
     required this.registry,
     this.confirm,

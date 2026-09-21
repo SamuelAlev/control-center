@@ -355,7 +355,6 @@ class DebugTool extends HarnessTool {
     }
   }
 
-  // ---- breakpoints ----
 
   /// Breakpoints the model set, per file.
   ///
@@ -442,7 +441,6 @@ class DebugTool extends HarnessTool {
     );
   }
 
-  // ---- reads ----
 
   int? _threadId(Map<String, dynamic> args, DebugSession session) {
     final explicit = args['thread_id'];

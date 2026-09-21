@@ -14,9 +14,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// The chrome deliberately mirrors [buildSharedCodeBlock] — same surface,
 /// border, radius and header anatomy — because a diagram and a code block are
 /// the same kind of embedded artifact and the fence they come from is a code
-/// fence. What it adds is what a diagram specifically needs: **view source**
-/// (the mermaid text is often the thing a developer wants to edit), **expand**
-/// (a dense flowchart outgrows a chat bubble) and **copy** of the fence.
+/// fence. What it adds is what a diagram specifically needs: view source
+/// (the mermaid text is often the thing a developer wants to edit), expand
+/// (a dense flowchart outgrows a chat bubble) and copy of the fence.
 class AppMermaidBuilder extends CcNodeBuilder {
   /// Creates an [AppMermaidBuilder].
   const AppMermaidBuilder();

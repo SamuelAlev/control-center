@@ -427,15 +427,11 @@ class SyncedStore {
 
 /// The tables a client actually READS out of each delta store.
 ///
-/// The server ships every adopted table's changes; this is the subset the
-/// client keeps. Anything absent is applied to nothing and costs no memory —
-/// most importantly `conversation_messages`, whose rows carry the full text of
-/// every message in the workspace and which no client reader watches (message
-/// history rides the windowed `messaging.watchMessagesWindow` subscription,
-/// not the delta mirror).
-///
-/// Returns null for an unknown store, which mirrors everything — a new store
-/// works before anyone has thought about this list.
+/// The server ships every adopted table's changes; this is the subset the client keeps.
+/// Anything absent is applied to nothing and costs no memory — most importantly
+/// `conversation_messages`, whose rows carry the full text of every message in the
+/// workspace and which no client reader watches (message history rides the windowed
+/// `messaging.watchMessagesWindow` subscription, not the delta mirror).
 Set<String>? mirroredTablesFor(String store) => switch (store) {
   'messaging' => const {'spaces', 'space_participants'},
   'tickets' => const {'tickets'},

@@ -40,26 +40,9 @@ import 'package:cc_persistence/database/daos/space_extras_dao.dart';
 import 'package:cc_persistence/repositories/team_activity_repository_impl.dart';
 import 'package:uuid/uuid.dart';
 
-/// Builds the MCP tool registry the headless `cc_server` exposes over its
-/// RPC/MCP endpoint. This is the ONLY tool registry — the desktop's
-/// in-process MCP stack was deleted with the thin-client migration; every
-/// client reaches these tools through `cc_server`.
+/// Builds the MCP tool registry for headless `cc_server` (same tools as in-process dispatch).
 ///
-/// This registers the tools whose dependencies are wholly server-side data
-/// (repositories backed by the server's Drift DB). The three pre-built repos
-/// (newsfeed / ticket / messaging) are threaded in from `runCcServer`; the rest
-/// are constructed here straight from the DAOs. Write/orchestration tools that
-/// need stateful services (TicketWorkflowService, the pipeline engine, the
-/// dispatch/sandbox stack) are wired in as those services land server-side.
-///
-/// The full catalogue is advertised in `tools/list` — no discovery gating.
-/// External MCP clients (Claude Code) refuse to call tools absent from
-/// their cached `tools/list`, so an "essential subset + hidden-but-callable"
-/// list makes every hidden tool unreachable in practice (this broke all agent
-/// writes: `todo_write`, `propose_fact`, …). `search_tool_bm25` and
-/// `list_my_tools` stay registered as navigation aids over the large catalogue;
-/// both take the optional [modeGuard] so they can report which tools are
-/// callable in the caller's conversation mode.
+/// Wiring is explicit; the ratchet test fails on unwired `McpTool` classes.
 McpToolRegistry buildServerMcpRegistry({
   // The two halves of the schema: `globalDb` for the workspace registry and the
   // pre-auth route index, `workspaceDbs` for everything workspace-scoped (each

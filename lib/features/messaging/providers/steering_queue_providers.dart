@@ -21,24 +21,14 @@ final steeringQueueProvider = Provider.autoDispose
       return queued;
     });
 
-/// Whether any live run in the conversation can take mid-run steering
-/// (built-in harness). False for external-CLI transports (`claude -p`, …):
-/// their cards still queue and convert at run end, but a "steer now" button
-/// would promise an injection nothing can perform, so the strip hides it.
-///
-/// Stamped by the composer at ENQUEUE time — the one moment the server's
-/// answer is authoritative (it holds the live dispatch table) — rather than
-/// polled: the flag only changes when a run starts or ends, and a per-rebuild
-/// capability read would be a subscription in disguise.
-///
-/// Null is a THIRD state and not the same as false: nobody has asked yet.
-/// A queued card outlives the client that typed it (a reload, a second device,
-/// a card enqueued from the phone), and defaulting those to "not steerable"
-/// silently retired the affordance for runs that could take it perfectly well.
-/// The strip shows the button on null and the delivery call is the check: it
-/// returns false when no live session took the card, and the caller says so
-/// rather than pretending. Only a definite false — the server, about this
-/// conversation's runs — hides it.
+/// Whether any live run in the conversation can take mid-run steering (built-in harness).
+/// False for external-CLI transports (`claude -p`, …): their cards still queue and convert
+/// at run end, but a "steer now" button would promise an injection nothing can perform, so
+/// the strip hides it.
+/// Stamped by the composer at ENQUEUE time — the one moment the server's answer is
+/// authoritative (it holds the live dispatch table) — rather than polled: the flag only
+/// changes when a run starts or ends, and a per-rebuild capability read would be a
+/// subscription in disguise.
 class SteeringSteerableNotifier extends Notifier<bool?> {
   /// Creates a flag bound to [key].
   SteeringSteerableNotifier(this.key);

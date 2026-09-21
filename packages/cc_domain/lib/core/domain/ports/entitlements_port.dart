@@ -33,7 +33,6 @@ enum Entitlement {
 /// consults it when REGISTERING ops, so an unentitled capability's ops are
 /// genuinely absent and the dispatcher answers `opUnknown` — the same
 /// structural absence the demo profile uses.
-///
 /// The line the packaging holds: never gate a SAFETY control. The guardrail
 /// engine, the audit log and its local export, fixed roles and per-repo
 /// grants are unconditional. What a paid tier buys is administering those

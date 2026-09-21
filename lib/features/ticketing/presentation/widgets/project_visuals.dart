@@ -8,7 +8,7 @@ import 'package:flutter/widgets.dart';
 /// Resolves a [ProjectColor] to a display [Color].
 ///
 /// The semantic hues reuse the design system design tokens; purple / teal / pink
-/// are a small **sanctioned categorical palette** (design system 500-step hues)
+/// are a small sanctioned categorical palette (design system 500-step hues)
 /// for project identity, analogous to the diff viewer's domain palette. They
 /// are always paired with the project name and box glyph — never color alone.
 Color projectColorValue(DesignSystemTokens t, ProjectColor color) =>

@@ -25,25 +25,10 @@ class PipelineContext {
   /// invocation), where there is no budget to give up.
   final Future<T> Function<T>(Future<T> Function() action)? _idleRunner;
 
-  /// Runs [action] WITHOUT holding the engine's step-concurrency permit, and
-  /// re-takes one before returning.
+  /// Runs [action] without the step-concurrency permit; re-takes before return.
   ///
-  /// The engine caps how many step bodies execute at once, across every
-  /// workspace on the host, to bound how much real work is in flight. A body
-  /// that is merely *waiting* on something it did not start is not work, and a
-  /// permit held through the wait turns that cap into head-of-line blocking:
-  /// enough steps parked in a three-minute checkout poll and every other
-  /// pipeline on the host queues behind them, deterministic ones included.
-  ///
-  /// Use it ONLY for genuinely idle waits — polling, watching for an external
-  /// signal. Do not wrap work that consumes the machine (a subprocess, a
-  /// dispatch that starts agents): the cap exists to bound exactly that, and
-  /// releasing a permit for it is how a fan-out dispatches everything at once.
-  ///
-  /// Re-acquisition can itself block when the host is busy, which is the
-  /// intended back-pressure: the body resumes when there is budget for it. The
-  /// permit is always re-taken, including when [action] throws, so the engine's
-  /// own release stays balanced.
+  /// Only for idle waits (poll/watch) — not subprocesses or agent dispatch.
+  /// Re-acquisition may block (back-pressure). Always re-takes, even on throw.
   Future<T> whileWaiting<T>(Future<T> Function() action) {
     final runner = _idleRunner;
     return runner == null ? action() : runner(action);

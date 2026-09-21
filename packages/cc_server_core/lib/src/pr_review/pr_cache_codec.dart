@@ -14,21 +14,7 @@ import 'package:cc_domain/features/pr_review/domain/entities/reaction_group.dart
 
 /// Symmetric JSON codecs for the PR-review SWR disk cache.
 ///
-/// The cache used to store GitHub's *wire* JSON and re-derive domain entities
-/// from it on read, which meant a cached PR could only ever have come from
-/// GitHub. These codecs are forge-neutral and, unlike the old pair, genuinely
-/// symmetric: `xToCache` and `xFromCache` name the same keys, so what is
-/// written is exactly what is read back and a GitLab merge request caches the
-/// same way a GitHub pull request does.
-///
-/// Keys are short but spelled out rather than positional — a cache row outlives
-/// a release, and a renamed field should read as a missing value (safely
-/// defaulted) instead of silently taking a neighbour's data.
-///
-/// Every `fromCache` tolerates a missing or wrongly-typed key: a cache is a
-/// performance aid, so a partially-unreadable row degrades to defaults and gets
-/// overwritten by the next revalidation. It must never throw and take a stream
-/// down.
+/// Encode/decode must round-trip; unknown fields are preserved where possible.
 class PrCacheCodec {
   const PrCacheCodec._();
 

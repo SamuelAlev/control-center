@@ -5,23 +5,9 @@ import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/command_fuzzy.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// The codified performance-budget ratchet (PRD 19 §10).
-///
-/// These assert STABLE, hardware-independent properties — algorithmic scaling
-/// (a ratio, not a wall-clock) — so they don't get quarantined as flaky on
-/// noisy CI. A change that turns a linear hot path quadratic (an accidental
-/// O(n²), a synchronous round-trip in the ranker) trips them; ordinary
-/// machine-speed variance does not.
-///
-/// A budget here is a SHAPE, not a number: limits sit far above real cost so
-/// they are tripwires for a regression rather than targets to optimize
-/// against. The one absolute ceiling (omnibox first paint) exists because a
-/// product promise was made about it.
-///
-/// Every speed assertion is paired with a CORRECTNESS twin in this file. A
-/// budget test that only measures speed is passed perfectly by code that does
-/// nothing, so "redaction still redacts" and "elision still elides" sit next
-/// to their ratios.
+/// Perf-budget ratchet: hardware-independent shape/ratio tripwires (not
+/// wall-clock targets). Each speed assert has a correctness twin so empty
+/// implementations cannot pass.
 void main() {
   /// Median elapsed microseconds of [body] over a few runs (drops warm-up
   /// jitter without depending on absolute speed).

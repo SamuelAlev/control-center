@@ -1,24 +1,8 @@
-// Splits the test files under a root directory into balanced shards and prints
-// the files belonging to one shard, one per line.
-//
-// Usage:
-//   dart run tool/test_shard.dart --index 0 --total 6 --output shard.txt [--root test]
-//
-// The file list goes to `--output`, not stdout: `dart run` prints build-hook
-// progress ("Running build hooks...") to stdout in this workspace and that
-// would be captured as a bogus test path.
-//
-// Why this exists instead of `flutter test --total-shards/--shard-index`:
-// package:test applies those flags *inside* each suite (see `_shardSuite` in
-// test_core's runner.dart) — every shard still loads and compiles every test
-// file and only runs a slice of the `test()` cases in it. For a Flutter app
-// suite the compile + `flutter_tester` boot per file is the dominant cost, so
-// that form of sharding parallelizes almost nothing. Splitting the *file list*
-// is what actually divides the work.
-//
-// Balance is by file size rather than file count: a shard's cost tracks how
-// many test cases it carries and bytes are a closer proxy for that than a file
-// count that weighs a 20-line file the same as a 900-line one.
+// Splits test files into balanced shards (by file size); writes paths to
+// `--output` (not stdout — `dart run` prints build-hook noise there).
+// Prefer this over `flutter test --total-shards`: package:test shards cases
+// inside each file, so every shard still compiles every file.
+// Usage: dart run tool/test_shard.dart --index 0 --total 6 --output shard.txt
 import 'dart:io';
 
 void main(List<String> args) {

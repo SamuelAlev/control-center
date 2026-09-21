@@ -1,20 +1,6 @@
-/// Heuristic token estimation for context-window accounting.
-///
-/// The kernel has no provider-side tokenizer, so we approximate. The
-/// widely-used rule of thumb for English+code is ~4 characters per token;
-/// code and JSON skew a little denser, so we bias slightly toward
-/// over-counting (which is the safe direction for a budget: it triggers
-/// compaction a touch early rather than overflowing the real window).
-///
-/// Estimates are intentionally cheap and deterministic — no I/O, no model
-/// call. When an adapter reports real usage, prefer that for the live meter
-/// and use these estimates only to plan ahead (deciding what to keep
-/// verbatim, where to cut, how much a prune would reclaim).
-///
-/// Message-shaped helpers over Control Center's `Message` /
-/// `TranscriptSegment` live host-side as an extension
-/// (`ConversationTokenEstimate` in `cc_domain`); this class stays text-level
-/// so the kernel never sees conversation entities.
+/// Heuristic token estimates (~4 chars/token, slight over-count). Cheap and
+/// deterministic; prefer provider usage for the live meter. Text-level only —
+/// conversation helpers live in cc_domain.
 class TokenEstimator {
   /// Creates a [TokenEstimator] with the given [charsPerToken] divisor.
   const TokenEstimator({this.charsPerToken = 3.8});

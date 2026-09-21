@@ -6,64 +6,16 @@ import 'package:cc_server_core/cc_server_core.dart';
 
 /// Entrypoint for the Control Center **public demo** server.
 ///
-/// It is the real `cc_server` composition — the real RPC catalog, the real
-/// client — booted with [buildDemoWiring]. What a visitor sees is the product,
-/// not a mock of it, and there is no second UI to maintain.
+/// Real `cc_server` composition via [buildDemoWiring] (not a mock). Separate
+/// binary (not `--demo`) so fixtures never ship in desktop installs and a
+/// forgotten env flag cannot arm a public endpoint.
 ///
-/// ## Why a separate binary rather than `cc_server --demo`
-///
-/// Two reasons, and both are load-bearing:
-///
-///  1. **The fixtures would ship to every desktop install.** The demo's run
-///     scripts and its pull-request world compile INTO the binary (a demo whose
-///     data lives in a sibling directory fails as an empty demo, which is the
-///     worst failure shape). A runtime `if (demoMode)` branch inside
-///     `runCcServer` is reachable code, so tree-shaking could not remove any of
-///     it. With a separate entrypoint that `cc_server`'s `main` never
-///     references, the entire subtree is shaken out of the production binary.
-///
-///  2. **A flag can be forgotten.** A public endpoint whose lockdown depends on
-///     `CC_SERVER_DEMO=1` becomes a fully armed server on the internet the first
-///     time someone drops that variable from a deployment. A demo-only artifact
-///     makes that failure impossible: deploying this image IS the lockdown.
-///
-/// ## What the demo removes
-///
-/// Structurally, by passing `null` for every execution port — so the ops are
-/// never built and `RepoOpDispatcher` answers `opUnknown`, exactly as it would
-/// for an op that does not exist:
-///
-///  * terminals, rigs (enclosures), the code-server proxy, the filesystem
-///    surface, process control, repo scripts and every git-mutating verb;
-///  * MCP server + client control (so `/mcp` and `/sse` are never mounted);
-///  * OAuth, the provider app identity, forge and per-user credentials;
-///  * SSO (OIDC/SAML/SCIM), inbound webhooks, database backup/export;
-///  * the media and font proxies — the last outbound HTTP a demo container
-///    could have made.
-///
-/// On top of that, `DemoProfile` is a default-deny name allowlist over the
-/// remaining ops, and a ratchet test forces every op added to the catalog in
-/// future to be consciously classified.
-///
-/// Agent runs are real runs with a scripted brain: a `ScriptedAgentLoop` is
-/// injected into the dispatch adapter, so **zero** tools execute and no model
-/// is ever called, while run logs, transcript segments, the live stream, cost
-/// accounting and `AgentRunCompleted` all behave exactly as they do in
-/// production.
-///
-/// ## Configuration
-///
-/// Standard `CC_SERVER_*` process configuration applies (`--data-dir`,
-/// `--port`, `--bind`, `--insecure`, TLS). The demo adds, all optional:
-///
-/// ```
-/// CC_SERVER_DEMO_TTL_MINUTES     45     how long a visitor's workspace lives
-/// CC_SERVER_DEMO_MAX_VISITORS    60     live visitors before redemption 503s
-/// CC_SERVER_DEMO_POOL_SIZE       4      workspaces seeded and kept warm
-/// CC_SERVER_DEMO_DISK_BUDGET_MB  8192   data-directory ceiling
-/// CC_SERVER_DEMO_MAX_PER_IP      3      concurrent sessions from one address
-/// CC_SERVER_DEMO_INVITE_CODE     demo   the code the public entry URL carries
-/// ```
+/// Execution ports are null (ops never built → `opUnknown`); `DemoProfile`
+/// default-denies the rest; a ratchet forces new ops to be classified. Agent
+/// runs use `ScriptedAgentLoop` (no tools, no model). Optional demo env:
+/// `CC_SERVER_DEMO_TTL_MINUTES`, `CC_SERVER_DEMO_MAX_VISITORS`,
+/// `CC_SERVER_DEMO_POOL_SIZE`, `CC_SERVER_DEMO_DISK_BUDGET_MB`,
+/// `CC_SERVER_DEMO_MAX_PER_IP`, `CC_SERVER_DEMO_INVITE_CODE`.
 Future<void> main(List<String> args) async {
   if (args.isNotEmpty && (args.first == '--version' || args.first == '-v')) {
     stdout.writeln(

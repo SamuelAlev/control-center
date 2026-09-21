@@ -61,24 +61,9 @@ class ChatAppSetup {
   };
 }
 
-/// Per-workspace, per-provider credential store:
-/// `<dataDir>/<workspaceId>/chat_credentials/<provider>.json`.
+/// Per-workspace, per-provider chat credentials on disk under the data dir.
 ///
-/// The credentials live in the workspace's **own directory, beside its
-/// database**, for two reasons that are easy to lose later:
-///
-///  * Deleting a workspace unlinks that directory, so its chat tokens go with it
-///    — no orphaned credentials for a workspace that no longer exists.
-///  * `workspace.export` / backup copy `workspace.db`, not the directory, so a
-///    workspace handed to somebody else does **not** carry live bot tokens inside
-///    it. (Same reasoning as keeping the Google refresh token out of Drift.)
-///
-/// One file per provider rather than one file with a provider map: a revoked
-/// Slack app is deleted by unlinking its file and a corrupt file costs one
-/// provider instead of all of them.
-///
-/// Writes are atomic (temp file + rename) and tightened to owner-only, matching
-/// the Google credentials store next door.
+/// Secrets stay file-backed (0600); metadata is enough for the UI. Missing/corrupt files → empty.
 class FileChatConnectionStore {
   /// Creates a store rooted at [_dataDir].
   FileChatConnectionStore({required this._dataDir});

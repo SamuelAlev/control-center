@@ -1,33 +1,9 @@
 #!/usr/bin/env bash
 #
-# Packages the built macOS app into a distributable, Developer-ID-signed,
-# notarized DMG:
-#   1. embeds the staged native dylibs into the .app's Contents/Frameworks/,
-#   2. signs the bundle inside-out (every nested framework/dylib first, the app
-#      last) with Developer ID + hardened runtime + a secure timestamp, applying
-#      the Release entitlements to the app itself,
-#   3. builds a drag-to-Applications DMG (create-dmg, hdiutil fallback) + signs it,
-#   4. notarizes the DMG with notarytool and staples the ticket and
-#   5. writes a SHA-256 checksum next to the DMG.
+# Packages the macOS .app/.dmg: embed cc_server + natives, Developer-ID sign
+# inside-out + hardened runtime, notarize/staple. Verifies REQUIRED natives.
+# Usage: scripts/release/macos_package.sh <version>
 #
-# Signing + notarization are REQUIRED — there is no unsigned fallback. Expects
-# `flutter build macos --release` to have run and the native libs to be staged
-# in build/natives/ (see scripts/natives/build_natives.sh).
-#
-# Environment:
-#   VERSION                 release version, e.g. 1.0.0 (required; or pass as $1)
-#   MACOS_CERTIFICATE       base64 Developer ID Application .p12 (CI). If unset,
-#                           the installed login-keychain identity is used (local).
-#   MACOS_CERTIFICATE_PWD   password for the .p12
-#   MACOS_PROVISIONING_PROFILE        path to the Developer ID .provisionprofile
-#                           (defaults to macos/Control_Center__macOS.provisionprofile)
-#   MACOS_PROVISIONING_PROFILE_BASE64 base64 of the profile (CI alternative)
-#   NOTARY_PROFILE          stored notarytool keychain profile name (local), OR
-#   APPLE_ID / APPLE_TEAM_ID / APPLE_APP_PASSWORD   notarytool credentials (CI)
-#
-# Usage:
-#   CI:    VERSION=1.0.0 MACOS_CERTIFICATE=... APPLE_ID=... scripts/release/macos_package.sh
-#   Local: VERSION=1.0.0 NOTARY_PROFILE=control-center scripts/release/macos_package.sh
 set -euo pipefail
 
 REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"

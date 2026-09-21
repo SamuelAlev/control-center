@@ -1,15 +1,12 @@
 /// An ordered set of credentials some scope may run on, plus how to choose
 /// between them — the provider-agnostic half of multi-account support.
-///
 /// One vocabulary, two mechanisms, because the transports fail over in
 /// fundamentally different places and no amount of abstraction merges them:
-///
 ///  * The **harness** owns the LLM call, so `FallbackProvider` swaps credential
 ///    mid-stream on a capacity error and the turn never restarts.
 ///  * The **`claude-code` adapter** spawns a CLI that owns its own credential,
 ///    so the account can only be chosen BEFORE the spawn; failing over means
 ///    re-running the turn.
-///
 /// What this file holds is the part they genuinely share: which credentials a
 /// scope may use, in what order, and the rule for picking one. The ids are
 /// opaque — Claude Code account ids in one lane, harness `credentialId`s in the

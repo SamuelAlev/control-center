@@ -8,23 +8,12 @@ import 'package:cc_infra/src/soundscape/soundscape_context_builder.dart';
 import 'package:cc_infra/src/soundscape/soundscape_session.dart';
 import 'package:cc_natives/cc_natives.dart' show Mp3Encoder;
 
-/// Owns the server-side generative soundscape sessions and streams their audio
-/// to clients.
+/// Owns generative soundscape sessions and streams audio to clients.
 ///
-/// Sessions are keyed by `(workspaceId, mood)` and SHARED: any number of
-/// listeners on the same key hear one generative session (per-listener volume is
-/// a client concern), so the server renders each distinct scene once. Weather is
-/// per-workspace (the reporting app's device location, or the server's IP when
-/// none has been reported), so mood is the only per-listener dimension — which
-/// is exactly why weather/daypart adapt *within* a session
-/// (via [SoundscapeSession.updateContext] ramps) rather than by re-keying it.
-///
-/// `liblame_ffi` is a REQUIRED native on every platform — `cc_server`'s boot
-/// preflight refuses to start without it — so there is no "audio unavailable"
-/// mode: [streamFor] lets `LameUnavailable` propagate rather than quietly 404ing
-/// a feature the host is supposed to have. It still returns null for the genuine
-/// behavioural cases (the hub is disposed, or the [maxSessions] cap is reached),
-/// which the routes render as 404.
+/// Sessions keyed by `(workspaceId, mood)` and shared across listeners.
+/// Weather is per-workspace; adapt via [SoundscapeSession.updateContext], not
+/// re-keying. `liblame_ffi` is required — [streamFor] lets `LameUnavailable`
+/// propagate. Returns null when disposed or at [maxSessions] (routes → 404).
 class SoundscapeHub {
   /// Creates a hub reading location/weather from [_weather].
   ///

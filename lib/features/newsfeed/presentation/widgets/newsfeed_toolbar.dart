@@ -20,19 +20,29 @@ class NewsfeedToolbar extends ConsumerWidget {
     final view = ref.watch(newsfeedViewProvider);
     final layout = ref.watch(newsfeedLayoutProvider);
 
+    // Search is Flexible (it may shrink) and the source menu is not, so a
+    // sibling Spacer would split the free width with the search and leave the
+    // unused share as a gap after the toggles. The leading cluster takes that
+    // width instead, which pins both segmented controls to the trailing edge.
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 8, 24, 10),
       child: Row(
         children: [
-          Flexible(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 320),
-              child: const _ArticleSearchField(),
+          Expanded(
+            child: Row(
+              children: [
+                Flexible(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 320),
+                    child: const _ArticleSearchField(),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                SourceFilterMenu(provider: newsfeedFilterProvider),
+              ],
             ),
           ),
           const SizedBox(width: 8),
-          SourceFilterMenu(provider: newsfeedFilterProvider),
-          const Spacer(),
           CcSegmentedToggle<NewsfeedView>(
             value: view,
             // Field height: these sit in the same row as the search field.

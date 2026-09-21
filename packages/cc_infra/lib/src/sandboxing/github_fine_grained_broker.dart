@@ -4,22 +4,13 @@ import 'package:cc_domain/features/auth/domain/repositories/credentials_reposito
 import 'package:cc_infra/src/log/cc_infra_log.dart';
 import 'package:cc_infra/src/network/github/github_app_client.dart';
 
-/// Broker that mints **fine-grained, repo-scoped, time-limited** GitHub tokens
-/// per sandbox launch instead of handing the user's raw PAT down (FINDINGS
-/// §1.1/1.2).
+/// Mints fine-grained, repo-scoped, time-limited GitHub tokens per sandbox
+/// launch (avoids handing the raw PAT down).
 ///
-/// When the server has a GitHub App, a GitHub-API/push
-/// capability mints a scoped **installation access token** limited to the run's
-/// repo, with `contents:write` only when the run may push. Without an app — or
-/// on any mint failure — it falls back to the user's PAT, so it is never worse
-/// than the plain `EnvCredentialBroker`. Surfaced as "Strong (per-launch
-/// token)".
-///
-/// The installation is resolved from the run's **repo owner**, per launch.
-/// There used to be one `GITHUB_APP_INSTALLATION_ID` for the whole server,
-/// which cannot be right: an app is installed per account, and which account
-/// matters is only known once a repo is picked — so a host whose agents touched
-/// two orgs minted against whichever one was pinned.
+/// With a GitHub App: installation token for the run's repo (`contents:write`
+/// only if push allowed). Else / on mint failure: user's PAT (never worse than
+/// EnvCredentialBroker). Installation resolved from repo owner per launch —
+/// not a single server-wide installation id.
 class GitHubFineGrainedTokenBroker implements CredentialBrokerPort {
   /// Creates a [GitHubFineGrainedTokenBroker].
   ///

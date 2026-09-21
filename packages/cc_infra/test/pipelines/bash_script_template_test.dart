@@ -269,7 +269,6 @@ void main() {
     skip: Platform.isWindows ? 'bash exec contract is POSIX-only' : false);
 }
 
-// --- Fakes -----------------------------------------------------------------
 
 class _PipelineConfig {
   const _PipelineConfig({this.stepId, this.script, this.outputKey});

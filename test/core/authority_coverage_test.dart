@@ -2,22 +2,9 @@ import 'dart:io';
 
 import 'package:test/test.dart';
 
-/// Ratchets for the two authority declarations `op/list` cannot lie about.
-///
-/// 1. **Unscoped ops**: `RepoOpDispatcher` evaluates the workspace role gate
-///    only for `workspaceScoped` ops, so an unscoped op's ONLY declarative
-///    gate is `serverAuthority`. Every unscoped op must either declare it or
-///    sit in the curated self-service list below with its reason — otherwise
-///    a new install-wide op ships gated by nothing but hope.
-/// 2. **Watch queries**: the reactive lane used to be membership-only (the
-///    invite roster and the whole audit trail streamed to guests). Every
-///    workspace-scoped `WatchQuery` must either declare a `minRole` or be
-///    pinned in the guest-visible set; every unscoped watch must declare
-///    `serverAuthority` or be pinned with its self-scoping reason.
-///
-/// Source-level (grep) tests, like `rpc_op_coverage_test.dart` — the catalog
-/// takes ~40 dependencies to instantiate. Dynamic (`$`-interpolated) names
-/// are skipped, never false-flagged.
+/// Unscoped ops need `serverAuthority` or a curated self-service reason;
+/// workspace watches need `minRole` or guest-visible pin; unscoped watches
+/// need `serverAuthority` or a self-scoping pin. Source-level grep.
 void main() {
   Directory repoRoot() {
     var dir = Directory.current;

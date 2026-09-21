@@ -1,25 +1,9 @@
-/// The layered (Sugiyama-style) layout that serves every box-and-arrow dialect:
-/// flowchart, state, class, and ER.
+/// Sugiyama-style layered layout for flowchart, state, class, and ER.
 ///
-/// Pipeline, in order:
-///
-///  1. **measure** every node from its text, per shape;
-///  2. **break cycles** by reversing back edges found in a DFS (remembering the
-///     flip so the arrow still points the way the author wrote it);
-///  3. **rank** with longest-path over the resulting DAG. Ranks are DOUBLED so
-///     every edge crosses at least one free intermediate rank — that rank is
-///     where labels live, which is why an `A -->|label| B` never has its text
-///     land on top of a box;
-///  4. **insert dummies** along every multi-rank edge (label dummies carry the
-///     label's measured size, so labels reserve real space);
-///  5. **order** within ranks by iterated barycenter sweeps, keeping the best
-///     crossing count, with cluster members constrained to stay contiguous so a
-///     `subgraph` box can be drawn without swallowing outsiders;
-///  6. **position** across the rank with median-of-neighbors relaxation plus a
-///     feasibility pass, then down the rank axis by layer height;
-///  7. **transform** from layout space to visual space — the one place `LR`/`RL`
-///     (axes swapped) and `BT`/`RL` (axis flipped) are handled, so the five
-///     directions cost one coordinate map instead of five layouts.
+/// Order: measure → DFS cycle-break (remember flips) → longest-path rank
+/// (ranks doubled so edge labels sit on free intermediate ranks) → dummy nodes
+/// on multi-rank edges → barycenter order (clusters contiguous) → position →
+/// one transform for LR/RL/BT directions.
 library;
 
 import 'dart:math' as math;

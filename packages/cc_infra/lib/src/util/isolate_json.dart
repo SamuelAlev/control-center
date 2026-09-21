@@ -1,19 +1,8 @@
-/// JSON (de)serialization helpers that move large payloads onto a background
-/// isolate so parsing/serialization never blocks the UI thread.
+/// JSON helpers that offload large payloads to a background isolate.
 ///
-/// HTTP IO in `dart:io` is already asynchronous and does not block the UI
-/// isolate — the only CPU-bound cost of a request is encoding the body and
-/// decoding the response. Dio's transformer already off-loads decoding of large
-/// *network* responses (see `createDio`); these helpers cover the other place
-/// the app does heavy JSON work on the UI thread: reading and writing the
-/// on-disk SWR cache of GitHub data (PR file lists with patches, long comment
-/// threads, contribution calendars, …).
-///
-/// Both helpers are threshold-guarded. Small payloads are (de)serialized inline
-/// because spawning an isolate (a few hundred microseconds to a couple of
-/// milliseconds) costs more than parsing a few kilobytes; only larger payloads
-/// are handed to a background isolate via [Isolate.run]. The 50 KB threshold
-/// mirrors the one Flutter and Dio use for the same trade-off.
+/// Covers on-disk SWR cache (de)serialize (Dio already offloads large network
+/// bodies). Below ~50 KB runs inline — isolate spawn costs more than a small
+/// parse ([Isolate.run] above the threshold).
 library;
 
 import 'dart:convert';

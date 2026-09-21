@@ -16,28 +16,14 @@ typedef CcFontBytesLoader =
       required bool italic,
     });
 
-/// Registers user-selected font families with Flutter's font system, on demand.
+/// On-demand registration of user-selected font families. [apply] is sync
+/// (called from [TextStyle] during build): returns the variant name immediately,
+/// fetches in the background, [FontLoader.load] then invalidates layout. Until
+/// then falls back to the bundled family.
 ///
-/// HOW A FONT ARRIVES: [apply] is synchronous, because it is called from
-/// [TextStyle] construction during build. It returns a style naming the variant
-/// immediately and, the first time it sees that variant, starts a background
-/// fetch. When the bytes land, [FontLoader.load] registers them and Flutter
-/// invalidates its text layout caches and repaints — so the text swaps itself in
-/// with no notifier, no rebuild plumbing and no `await` at the call site. Until
-/// then the style falls back to the bundled family, so text is always readable
-/// and never a tofu row.
-///
-/// WHY ONE FAMILY NAME PER VARIANT: Skia matches a weight within a registered
-/// family, so registering only the 400 file and asking for w700 yields synthetic
-/// (smeared) bold. Registering each `(weight, italic)` under its own derived
-/// family name — `Inter 700 italic` — makes every weight the real cut. This is
-/// what `package:google_fonts` does internally and the reason this class is not
-/// simply one [FontLoader] per family.
-///
-/// This replaced `package:google_fonts`, whose compiled-in manifest of ~1900
-/// families cost 14 MB of the web bundle (over half of `main.dart.js`, enough to
-/// break a 25 MiB per-asset deploy limit). Here the catalogue is data fetched at
-/// runtime, so the bundle carries none of it.
+/// One derived family name per `(weight, italic)` — Skia would otherwise
+/// synthesize bold from a single 400 cut. Catalogue is fetched at runtime (no
+/// google_fonts manifest in the web bundle).
 class CcFontRegistry {
   CcFontRegistry._();
 

@@ -1,30 +1,10 @@
 #!/usr/bin/env bash
 #
-# Packages the standalone PUBLIC DEMO server (`cc_demo_server`) into a
-# downloadable Linux archive — the same shape `cc_server_package.sh` produces,
-# and the archive that feeds the `cc-server-demo` container image.
+# Packages standalone cc_demo_server as a Linux archive (demo is hosted-only;
+# no macOS signing). Same native matrix/verify as cc_server_package — preflight
+# requires every native even though the demo executes nothing.
+# Usage: scripts/release/cc_demo_server_package.sh <version>
 #
-# LINUX ONLY, deliberately. The demo exists to be hosted: it ships as a
-# container and nothing else. Skipping macOS means skipping the Developer-ID
-# signing + notarization half of `cc_server_package.sh`, which is most of that
-# script and none of what a demo needs — so this is a small script rather than
-# a second set of flags on a battle-tested one.
-#
-# It reuses the SAME native matrix and the SAME verifier as the production
-# packager (scripts/lib/natives.sh via verify_natives.sh), because the demo
-# binary boots through the identical preflight: every native is required, and
-# an archive that cannot start is worse than no archive.
-#
-# Note the demo needs those natives even though it executes nothing — the boot
-# preflight probes them all regardless, and adding a demo carve-out would be a
-# second boot path whose failure mode is "boots degraded". That is exactly what
-# the preflight exists to prevent.
-#
-# Usage:
-#   scripts/release/cc_demo_server_package.sh <version>
-#
-# Environment:
-#   NATIVES   staged-natives dir (default build/natives)
 set -euo pipefail
 
 REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -101,22 +81,8 @@ done
 # build hook) or in the staged dir, so both are searched.
 bash scripts/release/verify_natives.sh --dir "$DIST/lib" --dir "$STAGE" "$OS" server
 
-# 3b. Drop the second copy of every native. The bundle carries each one TWICE:
-# the build hook emits them as DynamicLoadingBundled code assets into
-# `<bundle>/lib/`, and step 2 stages them into `bin/lib/`. Both are searched
-# (`bundledLibraryCandidates` tries `<exeDir>/../lib` then `<exeDir>/lib`), so
-# the second copy is pure weight — 49 MB of a 316 MB image, measured.
-#
-# The STAGED copy is the one kept: it is the directory `CC_NATIVE_LIB_DIR`
-# names, the one the `.scm` queries sit beside, and the fallback every
-# env-var-driven resolver (inference, pty, watcher, saml) lands on anyway. So
-# deleting from `lib/` leaves every runtime lookup exactly where it already
-# resolved. Byte-identical is the condition, which keeps the staging's original
-# purpose intact: it is a safety net for a bundle built BEFORE the natives were
-# staged, and in that case `lib/` holds nothing to match and nothing is removed.
-# Nothing resolves these by ASSET ID (the hook says so, and no `@Native` in
-# cc_natives does), which is what makes `lib/` the removable copy rather than
-# the load-bearing one — unlike libsqlite3, which stays.
+# Drop the duplicate natives in bundle lib/ (keep staged copy — CC_NATIVE_LIB_DIR,
+# queries, env resolvers). Byte-identical only.
 freed=0
 for f in "$STAGE"/*."$LIBEXT"; do
   dup="$DIST/lib/$(basename "$f")"

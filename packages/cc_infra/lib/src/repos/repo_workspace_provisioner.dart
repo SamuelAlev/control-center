@@ -134,23 +134,11 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
   /// cancelled quietly finishes on the other path.
   final Map<String, _SpaceCancellation> _cancelSources = {};
 
-  /// Per-`(workspace, space, repo)` lock chain serializing [_ensureRepo].
+  /// Per-`(workspace, space, repo)` lock serializing [_ensureRepo].
   ///
-  /// A space is provisioned from more than one path at once — the background
-  /// run off `SpaceCreated` and the inline call every `dispatchAgent` makes to
-  /// resolve its cwd — and a fan-out sends several agents into one room within
-  /// the same second. [_cancelSources] already accounts for that overlap; what
-  /// it does not do is stop the two runs from materializing the SAME worktree.
-  ///
-  /// Unserialized, both read `forUnitRepo` as empty, both ask the backend for a
-  /// copy at one destination, and the loser fails with `already_exists` — then
-  /// runs its own failure cleanup, which reaps the directory the WINNER just
-  /// created and registered. The registry is then left holding a row for a
-  /// worktree that is gone, and the agent's overlay symlinks into nothing.
-  ///
-  /// Keyed per repo rather than per space so two different repos of one space
-  /// still materialize in parallel; the second holder of a key finds the
-  /// winner's registered row and reuses it.
+  /// Provisioning races (background + dispatch, fan-out) both read empty and
+  /// create the same worktree; the loser hits `already_exists` then cleans up
+  /// the winner's directory. Per-repo key so different repos stay parallel.
   final Map<String, Future<void>> _repoLocks = {};
 
   /// Spaces whose last provisioning run was cancelled. Read by

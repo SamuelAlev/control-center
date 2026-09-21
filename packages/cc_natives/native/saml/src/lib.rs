@@ -1,27 +1,11 @@
-//! cc_saml — Control Center's SAML 2.0 service-provider native.
-//!
-//! FIRST-PARTY seam (not vendored crypto): the C ABI in `cc_saml.h` is
-//! consumed by `packages/cc_natives/lib/src/saml/` over `dart:ffi`. All
-//! XML-DSig verification, canonicalization and SAML profile validation live
-//! in the pinned pure-Rust `saml` crate (quick-xml + RustCrypto; no
-//! libxml2/xmlsec1/openssl C toolchain). Built by
+//! cc_saml — SAML 2.0 SP native (C ABI in `cc_saml.h`, FFI from
+//! `packages/cc_natives/lib/src/saml/`). Pure-Rust `saml` crate; built by
 //! `scripts/natives/build_saml.sh`.
 //!
-//! Statelessness is the design: every entry point takes its whole world as
-//! arguments and returns a JSON string. The one piece of cross-request state
-//! SAML needs — matching an ACS'd Response back to the AuthnRequest that
-//! started it — travels as the serialized `LoginTracker` JSON that
-//! `cc_saml_build_authn_request` returns and `cc_saml_verify_response`
-//! accepts back; the CALLER (Dart) stores it with a TTL, exactly like the
-//! OIDC pending-state map. Replay defense is likewise caller-side: the verify
-//! result carries `assertion_id` + `not_on_or_after` for the caller's dedupe
-//! cache (the crate's in-memory cache sweeps by wall clock, which would mix
-//! clock sources with the caller-supplied validation clock).
-//!
-//! Every extern "C" body is wrapped in `catch_unwind`: a panic becomes a
-//! NULL return plus `cc_saml_last_error`, never an unwind across FFI.
-//! Domain failures are NOT null — they are `{"ok": false, "error_code": …}`
-//! JSON so Dart can branch on typed codes.
+//! Stateless entry points; ACS↔AuthnRequest state is caller-held
+//! `LoginTracker` JSON. Replay dedupe is caller-side (`assertion_id` +
+//! `not_on_or_after`). `catch_unwind` on every `extern "C"`; domain failures
+//! are `{"ok": false, "error_code": …}` JSON, not null.
 
 use std::ffi::{c_char, CStr, CString};
 use std::panic::{catch_unwind, AssertUnwindSafe};
@@ -296,15 +280,14 @@ pub unsafe extern "C" fn cc_saml_build_authn_request(
     })
 }
 
-/// Verifies + consumes a POST-binding SAMLResponse (raw XML; the caller
-/// base64-decodes the form field) against the IdP metadata and SP policy.
+/// Verifies + consumes a POST-binding SAMLResponse (raw XML; the caller base64-decodes the
+/// form field) against the IdP metadata and SP policy.
 ///
-/// Returns the identity JSON (see `identity_to_json`) or
-/// `{"ok": false, "error_code", "error"}`. NULL only on panic/OOM.
-///
-/// # Safety
-/// All string args must be valid NUL-terminated UTF-8; `tracker_json_utf8`
-/// may be null (unsolicited responses require FLAG_ALLOW_UNSOLICITED).
+/// Returns the identity JSON (see `identity_to_json`) or `{"ok": false, "error_code",
+/// "error"}`.
+/// NULL only on panic/OOM.
+/// All string args must be valid NUL-terminated UTF-8; `tracker_json_utf8` may be null
+/// (unsolicited responses require FLAG_ALLOW_UNSOLICITED).
 #[no_mangle]
 pub unsafe extern "C" fn cc_saml_verify_response(
     idp_metadata_xml: *const c_char,
@@ -416,10 +399,8 @@ pub unsafe extern "C" fn cc_saml_sp_metadata(
     })
 }
 
-// =============================================================================
 // Tests (unit — they compile the crate itself, so the `saml` dependency is
 // visible; the conformance corpus drives the extern entry points directly so
 // the FFI seam is what's under test).
-// =============================================================================
 #[cfg(test)]
 mod tests;

@@ -7,26 +7,9 @@ import 'package:cc_domain/features/presence/domain/value_objects/participant_pre
 import 'package:cc_domain/features/presence/domain/value_objects/presence_locus.dart';
 import 'package:cc_host/cc_host.dart';
 
-/// Synthesizes agent entries for the presence lane (PRD 16 §2/§3
-/// clarification: agents have no client, so their presence comes from the
-/// server's own run/lifecycle signals, on the SAME roster as humans).
+/// Synthesizes agent presence from run/lifecycle events (PRD 16 §2/§3).
 ///
-/// Exactly ONE entry per `(workspace, agent)` is published per pass, decided by
-/// a single representative run (live beats lingering-done, then newest) — an
-/// agent with several concurrent runs must not have its state, locus and cost
-/// decided by whichever run happened to be written last.
-///
-/// Sources:
-///  * active run logs → `running` (with live running cost) and, briefly,
-///    `done` after completion;
-///  * the pending-approval registry → `blocked` (the fail-closed gate is
-///    visible on the roster, not buried in a panel);
-///  * the run's space AND conversation → a [SpaceLocus], so "where is this
-///    agent working" is a roster fact precise enough to follow.
-///
-/// A 10s re-publish heartbeat keeps entries alive through long quiet tool
-/// calls; entries expire from the hub like any other participant when a run
-/// vanishes.
+/// Ephemeral only — never persisted. Humans and agents share one roster.
 class AgentPresenceSynthesizer {
   /// Creates a synthesizer. Call [start].
   AgentPresenceSynthesizer({

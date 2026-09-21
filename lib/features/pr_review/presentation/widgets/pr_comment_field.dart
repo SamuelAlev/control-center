@@ -13,25 +13,11 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_emoji/flutter_emoji.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// THE input for every PR comment — inline diff comments, thread replies and
-/// the review body alike.
-///
-/// Before this existed, the review overlay had emoji, GIFs, image upload and a
-/// preview toggle all inlined into it and reachable from nowhere else, while
-/// every actual comment box was a bare `CcTextField` with a send button. Same
-/// act, three different affordances depending on where you happened to click.
-/// One widget now carries the whole vocabulary:
-///
-///  * Write/Preview and the formatting toolbar, from the shared
-///    [MarkdownEditor] (so ⌘B/⌘I/⌘K work here exactly as in a PR body);
-///  * `@user` / `#issue` autocomplete, from [MentionAutocompleteField];
-///  * emoji, GIF and (where the host can upload) image, as toolbar inserters;
-///  * `:shortcode:` → emoji as you type;
-///  * a preview rendered by the SAME renderer the posted comment will use, so
-///    what the preview shows is what GitHub will show.
-///
-/// The host still owns submission: buttons, keyboard shortcuts, drafts and
-/// what "send" means all vary per surface and stay outside.
+/// THE input for every PR comment — inline diff comments, thread replies and the review
+/// body alike.
+/// Before this existed, the review overlay had emoji, GIFs, image upload and a preview
+/// toggle all inlined into it and reachable from nowhere else, while every actual comment
+/// box was a bare `CcTextField` with a send button.
 class PrCommentField extends ConsumerStatefulWidget {
   /// Creates a [PrCommentField].
   const PrCommentField({

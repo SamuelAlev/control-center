@@ -7,14 +7,10 @@ import 'package:cc_domain/features/mcp/domain/services/mode_tool_guard.dart';
 
 /// The authoritative "what can I actually call right now" tool.
 ///
-/// `tools/list` and `search_tool_bm25` return the whole catalogue — but a tool
-/// being *catalogued* does not mean it is *callable in this conversation*: the
-/// conversation-mode guard restricts mutating tools in plan / review /
-/// orchestrate mode. Agents used to discover that only by calling a tool and
-/// getting rejected. This tool answers the question up front: it partitions the
-/// catalogue into what you can call now and what is restricted (with the reason
-/// for each), for the caller's actual conversation mode.
-///
+/// `tools/list` and `search_tool_bm25` return the whole catalogue — but a tool being
+/// *catalogued* does not mean it is *callable in this conversation*: the conversation-mode
+/// guard restricts mutating tools in plan / review / orchestrate mode.
+/// Agents used to discover that only by calling a tool and getting rejected.
 /// `read`-tier — inspection only, never prompts.
 class ListMyToolsTool extends McpTool {
   /// Creates a [ListMyToolsTool] over [_catalog], classified by [_modeGuard].

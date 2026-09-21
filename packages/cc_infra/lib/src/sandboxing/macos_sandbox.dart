@@ -6,23 +6,14 @@ import 'dart:io';
 
 import 'package:cc_infra/src/sandboxing/sandbox_config.dart';
 
-/// Wrapping logic for macOS, using Apple's `sandbox-exec` and a dynamically
-/// generated Seatbelt (sbpl) profile.
+/// macOS `sandbox-exec` with a generated Seatbelt profile.
 ///
-/// The profile is permissive-by-default (`(allow default)`) — a fully
-/// deny-by-default profile makes macOS interactive shells unusable (too many
-/// dyld/xpc/mach calls to enumerate) — then carves out explicit denies:
-///   - `file-read*` denies for secret paths (`~/.ssh`, …)
-///   - `file-write*` reset to deny, then explicit subpath allows, with
-///     mandatory-deny paths (shell rc, `.git/hooks`, Claude config, …)
-///     blocked even inside writable roots
-///   - `file-write-unlink` denies (move-blocking) on every denied path +
-///     its ancestor directories so `mv payload ~/.bashrc` can't bypass a
-///     write-deny via rename
-///   - `process-exec` denies for always-dangerous binaries + writable-dir
-///     exec blocks (no running copied/symlinked binaries from $HOME or /tmp)
-///   - `network*` restricted to ONLY the in-process proxy ports + DNS;
-///     loopback is NOT blanket-allowed, unix-sockets are NOT allowed
+/// Permissive-by-default (`(allow default)`) — full deny-by-default breaks
+/// dyld/xpc/mach shells — then explicit denies: secret `file-read*`; write
+/// reset + subpath allows with mandatory-deny even inside writable roots;
+/// `file-write-unlink` on denied paths + ancestors (block rename bypass);
+/// `process-exec` deny for dangerous bins + writable-dir exec; `network*` only
+/// proxy ports + DNS (no blanket loopback, no unix sockets).
 abstract final class MacosSandbox {
   /// Generates an sbpl profile string from [config].
   ///
@@ -42,7 +33,6 @@ abstract final class MacosSandbox {
     lines.add('(allow default)');
     lines.add('');
 
-    // --- Filesystem reads ---
     for (final path in config.filesystem.denyRead) {
       lines.add('(deny file-read* ${_seatbeltPath(path)})');
     }
@@ -54,7 +44,6 @@ abstract final class MacosSandbox {
       lines.add('');
     }
 
-    // --- Filesystem writes ---
     // Read-only bind mounts (review/plan/orchestrate modes). On Linux bwrap
     // gets an explicit `--ro-bind`; on macOS the equivalent is a deny-write
     // emitted AFTER the `$HOME` allowance, because Seatbelt is
@@ -110,7 +99,6 @@ abstract final class MacosSandbox {
       lines.add('');
     }
 
-    // --- Move-blocking ---
     // For every denied path, deny file-write-unlink on the path AND its
     // ancestor directories. This prevents `mv payload ~/.bashrc` from
     // bypassing a write-deny via rename (rename(2) triggers
@@ -133,7 +121,6 @@ abstract final class MacosSandbox {
       lines.add('');
     }
 
-    // --- Exec deny ---
     // Always-dangerous binaries (resolved to absolute paths) + writable-dir
     // exec blocks (no running binaries from $HOME or /tmp — closes the
     // TOCTOU where a copied/symlinked binary bypasses literal exec-denies).
@@ -196,7 +183,6 @@ abstract final class MacosSandbox {
       lines.add('');
     }
 
-    // --- Network ---
     if (config.network.isRestricted) {
       lines.add('(deny network*)');
       // Local IP binding is needed for outbound connection setup (the

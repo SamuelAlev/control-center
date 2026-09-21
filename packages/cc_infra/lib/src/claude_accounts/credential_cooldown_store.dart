@@ -6,22 +6,9 @@ import 'package:path/path.dart' as p;
 
 /// Remembers which harness credentials are out of quota, and until when.
 ///
-/// ## Why this exists separately from the account registry
-///
-/// A Claude Code account's cooldown lives on its registry row, because there
-/// the directory IS the account and there is already a file describing it. A
-/// harness credential has no such file — the credential store holds secrets and
-/// nothing about their recent behaviour — so the cooldown needs a home of its
-/// own. Both lanes mean the same thing by it; only the storage differs, and
-/// that difference is the shape of what each lane already persists.
-///
-/// ## Why it is persisted at all
-///
-/// `FallbackProvider` already advances past an exhausted key WITHIN a turn, so
-/// nothing breaks without this. What it buys is not paying that 429 again on
-/// every subsequent dispatch: a serial rotation with no memory re-enters the
-/// spent key each time, discovers the same limit, and moves on — correct, but
-/// one wasted request per turn for as long as the window is closed.
+/// Separate from the Claude account registry: harness credentials have no
+/// account dir row. Persisted so `FallbackProvider` does not re-hit a spent
+/// key (and its 429) on every subsequent dispatch within the window.
 class CredentialCooldownStore {
   /// Creates a store rooted at [dataDir].
   CredentialCooldownStore({required String dataDir, DateTime Function()? now})

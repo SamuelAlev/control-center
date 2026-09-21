@@ -190,16 +190,14 @@ class AgentDao extends DatabaseAccessor<WorkspaceDatabase>
     agentRunLogsTable,
   )..orderBy([(t) => OrderingTerm.desc(t.startedAt)])).watch();
 
-  /// Watches the [limit] most recent run logs across every workspace, newest
-  /// first.
+  /// Watches the [limit] most recent run logs across every workspace, newest first.
   ///
-  /// The bounded companion to [watchAllLogs] for live dashboards: only the
-  /// newest [limit] rows are read and re-emitted per change, keeping memory and
-  /// wire traffic flat as history grows.
-  ///
-  /// An all-workspace "most recent N" takes N from every workspace and
-  /// merge-sorts (`CrossWorkspaceQueries.topN` / `mergeStreams`) — taking fewer
-  /// per workspace could miss rows that outrank another workspace's.
+  /// The bounded companion to [watchAllLogs] for live dashboards: only the newest [limit]
+  /// rows are read and re-emitted per change, keeping memory and wire traffic flat as history
+  /// grows.
+  /// An all-workspace "most recent N" takes N from every workspace and merge-sorts
+  /// (`CrossWorkspaceQueries.topN` / `mergeStreams`) — taking fewer per workspace could miss
+  /// rows that outrank another workspace's.
   Stream<List<AgentRunLogsTableData>> watchRecentLogs(int limit) =>
       (select(agentRunLogsTable)
             ..orderBy([(t) => OrderingTerm.desc(t.startedAt)])

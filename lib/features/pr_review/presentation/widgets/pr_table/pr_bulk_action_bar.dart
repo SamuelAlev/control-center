@@ -19,8 +19,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// The floating batch-action bar shown while PRs are selected in the
 /// repo-grouped table. It reports the selection count and offers three bulk
-/// actions over the selected pull requests — **close**, **assign to…** and
-/// **ask for review…** — plus a clear button.
+/// actions over the selected pull requests — close, assign to… and
+/// ask for review… — plus a clear button.
 ///
 /// Each action fans out over the selection with [runBulkAction] (per-item
 /// isolation: one PR failing never aborts the batch), resolving every selected

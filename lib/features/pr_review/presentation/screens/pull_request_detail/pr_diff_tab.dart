@@ -27,7 +27,7 @@ import 'package:control_center/shared/widgets/ready_auto_scroll.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// The PR-detail **Diff** tab: one toolbar row (tree toggle, commit-range
+/// The PR-detail Diff tab: one toolbar row (tree toggle, commit-range
 /// dropdown, diff stats, view settings) over the diff surface — a resizable
 /// file-tree beside the scrolling diff. The tree toggle persists across
 /// sessions; the tree is also dropped on narrow windows where there is no

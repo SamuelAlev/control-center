@@ -1,24 +1,9 @@
 #!/usr/bin/env bash
 #
-# Builds all bundled native FFI libraries (rift + fff + tree-sitter + grammars +
-# aec + lame + pty + watcher + inference + saml) into a single staging directory
-# by invoking the per-library build scripts.
+# Builds every REQUIRED native for this host into build/natives/ (or DEST).
+# Aborts on first failure. Windows: use windows_natives.sh instead.
+# Usage: scripts/natives/build_natives.sh [DEST_DIR]
 #
-# Used by the macOS and Linux release jobs (see .github/workflows/release.yml)
-# and handy locally to populate everything at once.
-#
-# FAIL-HARD: every library here is REQUIRED. `cc_server`'s boot preflight refuses
-# to start when one cannot be loaded and the packaging scripts refuse to produce
-# an artifact without it, so there is no degraded mode left for a warning to
-# describe — the first failure aborts the whole run.
-#
-# (`build_pty.sh` still exits 0 on a platform it does not handle; that is a
-# platform SKIP, not a failure. Windows builds every native through
-# scripts/release/windows_natives.sh instead, except rift — no MSVC
-# copy-on-write backend exists, so `git worktree` is the backend there.)
-#
-# Usage:
-#   scripts/natives/build_natives.sh [DEST_DIR]   # DEST defaults to <repo>/build/natives
 set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"

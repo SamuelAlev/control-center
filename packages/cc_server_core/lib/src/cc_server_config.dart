@@ -19,84 +19,26 @@ enum CcServerLogLevel {
   error,
 }
 
-/// Resolved configuration for the headless server, from CLI args + environment.
+/// Resolved configuration for the headless server (CLI args override env override defaults).
 ///
-/// Args (`--key value` or `--key=value`) override environment, which overrides
-/// defaults:
-///  * `--data-dir` / `CC_SERVER_DATA_DIR` — where the SQLite DB + secrets live.
-///    Defaults to `<cwd>/.cc_server`.
-///  * `--port` / `CC_SERVER_PORT` — TCP port (default 9030).
-///  * `--bind` / `CC_SERVER_BIND` — `loopback` (default) or `any`. `any` exposes
-///    the server beyond localhost and `LocalRpcServer` then requires TLS.
-///  * `--repo-roots` / `CC_SERVER_REPO_ROOTS` — comma-separated base directories
-///    a connected (web) client may browse when picking a git checkout to
-///    register. Defaults to the OS user's home directory. Browsing above a root
-///    is refused, so this is the only filesystem a client can enumerate.
-///  * `--public-url` / `CC_SERVER_PUBLIC_URL` — the RPC WebSocket URL this
-///    server advertises to paired clients (handed back by `pairing.mint` so a
-///    phone can dial the server directly). Defaults to `ws://localhost:<port>`
-///    for a loopback bind and `wss://<hostname>:<port>` for a public bind; a
-///    real deployment behind a proxy/NAT MUST set this explicitly.
-///  * `--allowed-origins` / `CC_SERVER_ALLOWED_ORIGINS` — comma-separated
-///    browser origins permitted to dial the RPC WebSocket cross-origin (e.g. a
-///    hosted web build). Defaults to [CcServerConfig.defaultAllowedOrigins]
-///    (`https://app.usectrl.dev`). Loopback (`localhost` / `127.0.0.1`) and
-///    native clients are always allowed regardless of this list.
+/// * `--data-dir` / `CC_SERVER_DATA_DIR` — SQLite DB + secrets dir (default `<cwd>/.cc_server`).
+/// * `--port` / `CC_SERVER_PORT` — TCP port (default 9030).
+/// * `--bind` / `CC_SERVER_BIND` — `loopback` (default) or `any` (requires TLS in `LocalRpcServer`).
+/// * `--repo-roots` / `CC_SERVER_REPO_ROOTS` — browse roots for registering checkouts (default home; never above).
+/// * `--public-url` / `CC_SERVER_PUBLIC_URL` — RPC WebSocket URL advertised by `pairing.mint` (set explicitly behind NAT/proxy).
+/// * `--allowed-origins` / `CC_SERVER_ALLOWED_ORIGINS` — browser CORS origins (default [CcServerConfig.defaultAllowedOrigins]; loopback/native always allowed).
+/// * `--tls-cert`/`CC_SERVER_TLS_CERT` + `--tls-key`/`CC_SERVER_TLS_KEY` — PEM paths for in-process `wss://` (both required).
+/// * `--log-level` / `CC_SERVER_LOG_LEVEL` — `debug`/`info`/`warning`(default)/`error`; booting/ready lines always print.
+/// * `--sandbox` / `CC_SERVER_SANDBOX` — `on`(default)/`off`; OS-native agent sandbox kill switch.
+/// * `--code-index` / `CC_SERVER_CODE_INDEX` — `on`(default)/`off`; background code-graph indexing kill switch.
+/// * `--code-index-defer` / `CC_SERVER_CODE_INDEX_DEFER` — seconds to hold first reconcile after ready (default 15, 0..300).
+/// * `--tool-deferral` / `CC_SERVER_TOOL_DEFERRAL` — `on`(default)/`off`; `off` makes every admitted tool resident.
+/// * `--insecure` / `CC_SERVER_INSECURE` — allow non-loopback plaintext; only behind a TLS-terminating proxy (ignored when TLS set).
 ///
-/// Third-party credentials are the exception to the flag/env pairing above:
-/// they are **environment-only**, because a secret on a command line is
-/// readable by every process on the host through `ps`. There is no flag for
-/// any of them.
-///
-/// Each falls back to the credential baked into a release build (see
-/// `builtin_credentials.dart`), so an official build works with nothing
-/// configured while a self-hoster's own value always wins. Empty — neither set
-/// nor baked in — disables the feature that uses it rather than failing the
-/// boot.
-///
-///  * `GOOGLE_OAUTH_CLIENT_ID` + `GOOGLE_OAUTH_CLIENT_SECRET` — the
-///    Google OAuth device-code client used to connect + sync Google Calendar.
-///  * `KLIPY_APP_KEY` — the Klipy GIF app key; empty disables the `gif.*`
-///    ops.
-///  * `GITHUB_APP_ID` + `GITHUB_APP_PRIVATE_KEY`, `GITHUB_CLIENT_ID`,
-///    `LINEAR_CLIENT_ID` + `LINEAR_CLIENT_SECRET`, `LINEAR_API_KEY` —
-///    the provider apps, read once at boot by `ProviderAppSettings` and seeded
-///    into its own store (after which the stored value wins). Only
-///    `GITHUB_CLIENT_ID` has a built-in fallback — the private key and the
-///    Linear secret are never baked in, so the server's own app identity and
-///    Linear's sign-in stay bring-your-own.
-///  * `--tls-cert` / `CC_SERVER_TLS_CERT` + `--tls-key` / `CC_SERVER_TLS_KEY`
-///    — PEM cert-chain + private-key paths. When BOTH are set the server
-///    serves `wss://` directly (a public bind needs TLS); a real deployment
-///    behind a TLS-terminating proxy leaves them unset and uses `--insecure`.
-///  * `--log-level` / `CC_SERVER_LOG_LEVEL` — minimum severity emitted to
-///    stdio + the rotating file log: `debug`, `info`, `warning` (default),
-///    or `error`. `debug` opens the trace tier the façades suppress by
-///    default (e.g. dio request/response lines, a code-graph index run that
-///    found nothing to do). The booting/ready lines are always printed
-///    regardless of level — a silent process reads as a hung one.
-///  * `--sandbox` / `CC_SERVER_SANDBOX` — `on` (default) or `off`. Whether
-///    agent runs are wrapped in the host's OS-native sandbox (Seatbelt on
-///    macOS, bubblewrap on Linux/WSL2) when one is available. `off` is the
-///    field kill switch for a host where the sandbox profile misbehaves.
-///  * `--code-index` / `CC_SERVER_CODE_INDEX` — `on` (default) or `off`. The
-///    field kill switch for background code-graph indexing: a host where
-///    indexing misbehaves boots clean without a rebuild.
-///  * `--code-index-defer` / `CC_SERVER_CODE_INDEX_DEFER` — seconds to hold
-///    the first code-graph reconcile after the server reports ready (default
-///    15, clamped 0..300), keeping the initial index sweep out of the
-///    client's first RPC burst.
-///  * `--tool-deferral` / `CC_SERVER_TOOL_DEFERRAL` — `on` (default) or `off`.
-///    Whether a built-in harness run withholds the schemas of tools it is
-///    unlikely to need until it asks for them, sending a name index instead.
-///    `off` restores the pre-deferral behaviour byte for byte (every admitted
-///    tool resident), so a model that handles the two-tier surface badly is a
-///    flag away from the old one rather than a release away.
-///  * `--insecure` / `CC_SERVER_INSECURE` — allow a non-loopback bind over
-///    PLAINTEXT (no TLS). Off by default (the server fails closed). Set ONLY
-///    when a TLS-terminating reverse proxy fronts cc_server on a trusted
-///    private network — the standard containerised topology. Ignored when TLS
-///    cert+key are present (TLS always wins).
+/// Credentials are **environment-only** (`ps` can read argv): `GOOGLE_OAUTH_CLIENT_ID`/`SECRET`, `KLIPY_APP_KEY`,
+/// `GITHUB_APP_ID`/`PRIVATE_KEY`, `GITHUB_CLIENT_ID`, `LINEAR_CLIENT_ID`/`SECRET`, `LINEAR_API_KEY`. Each falls back
+/// to a release build-in (`builtin_credentials.dart`); empty disables the feature. Only `GITHUB_CLIENT_ID` may be baked in —
+/// private key and Linear secret must not. Provider apps seed `ProviderAppSettings` once at boot, then the store wins.
 class CcServerConfig {
   /// Creates a [CcServerConfig].
   const CcServerConfig({
@@ -172,22 +114,11 @@ class CcServerConfig {
   /// else [defaultSignalingUrl].
   final String signalingUrl;
 
-  /// The Google OAuth **device-code** (TV & limited-input) client id the server
-  /// authorizes Google Calendar with. From `--google-client-id` /
-  /// `GOOGLE_OAUTH_CLIENT_ID`, else the client baked into a release build.
-  /// Empty disables the calendar sync (the `calendar connect` command and the
-  /// periodic sync both no-op).
-  ///
-  /// This is also the client the "use Control Center's Google app" option
-  /// connects with, so a self-hoster who sets their own here gets *their* app
-  /// behind that option rather than ours.
+  /// Google OAuth device-code client id (`GOOGLE_OAUTH_CLIENT_ID`, else built-in).
+  /// Empty disables calendar sync. Also used by "use Control Center's Google app".
   final String googleClientId;
 
-  /// The client secret for the device-code client. From
-  /// `--google-client-secret` / `GOOGLE_OAUTH_CLIENT_SECRET`, else the one
-  /// baked into a release build. It never leaves the server: no RPC response
-  /// carries it and a built-in connection stores a marker rather than the
-  /// literal pair.
+  /// Device-code client secret (`GOOGLE_OAUTH_CLIENT_SECRET`, else built-in). Never leaves the server.
   final String googleClientSecret;
 
   /// Browser origins permitted to dial the RPC WebSocket cross-origin (e.g. a
@@ -223,16 +154,8 @@ class CcServerConfig {
   /// The booting/ready lines bypass this — they always print.
   final CcServerLogLevel logLevel;
 
-  /// Whether agent runs are wrapped in the host's OS-native sandbox when one
-  /// is available. From `--sandbox` / `CC_SERVER_SANDBOX` (`on`/`off`, default
-  /// on).
-  ///
-  /// This is an *opt-out*, not an enable: the host still has to offer a
-  /// backend (`sandbox-exec` on macOS, `bwrap` + `socat` on Linux/WSL2). Where
-  /// it does not — Windows, or a Linux box without those tools — agent runs
-  /// fall back to environment sanitization, the command policy and the action
-  /// guardrails, exactly as before. The switch exists so a host where the
-  /// sandbox profile itself misbehaves can boot clean without a rebuild.
+  /// OS-native agent sandbox when available (`--sandbox` / `CC_SERVER_SANDBOX`, default on).
+  /// Opt-out only: without a backend (Windows / missing tools) runs use env sanitization + policy.
   final bool sandboxEnabled;
 
   /// Whether background code-graph indexing runs at all. From `--code-index`
@@ -255,21 +178,11 @@ class CcServerConfig {
   /// byte for byte.
   final bool toolDeferralEnabled;
 
-  /// Seconds a run whose credential cannot serve it waits for a human to fix it
-  /// before failing with the message it would have failed with anyway. From
-  /// `--credential-gate` / `CC_SERVER_CREDENTIAL_GATE` (default 900, clamped
-  /// 0..3600).
-  ///
-  /// `0` is the kill switch: no run is ever parked, and a missing or spent
-  /// credential ends the turn exactly as it did before the gate existed. The
-  /// ceiling is what keeps an unattended run — a pipeline step, a cron trigger,
-  /// a webhook — from waiting on somebody who is asleep.
+  /// Seconds a run waits for a fixable credential before failing (`--credential-gate`, default 900, 0..3600).
+  /// `0` never parks; the ceiling keeps unattended runs from waiting forever.
   final int credentialGateSeconds;
 
-  /// The Klipy GIF app key the server uses for the `gif.*` ops (the GIF picker
-  /// in the PR/review composer). From `--klipy-app-key` / `KLIPY_APP_KEY`,
-  /// else the key baked into a release build. Empty disables the `gif.*` ops
-  /// (the picker then shows no results).
+  /// Klipy GIF app key (`KLIPY_APP_KEY`, else built-in). Empty disables `gif.*` ops.
   final String klipyAppKey;
 
   /// Human-readable server name shown in pickers, discovery and pairing
@@ -342,15 +255,7 @@ class CcServerConfig {
 
     String? pick(String flag, String envKey) => flags[flag] ?? env[envKey];
 
-    /// A third-party credential, from the ENVIRONMENT only.
-    ///
-    /// No flag: a secret passed on a command line is readable by every process
-    /// on the host through `ps`, and there is no flag worth that.
-    ///
-    /// An explicitly-empty value reads as absent so a built-in default still
-    /// applies — an unset variable and `X=` behave the same, because an empty
-    /// override is a deployment mistake rather than a choice to run without
-    /// the credential.
+    /// Env-only credential (`ps` can read argv). Empty/unset both mean absent so a built-in can apply.
     String? pickCredential(String envKey) {
       final value = env[envKey]?.trim();
       return (value == null || value.isEmpty) ? null : value;

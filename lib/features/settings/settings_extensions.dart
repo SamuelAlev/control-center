@@ -1,22 +1,6 @@
 /// The seam that lets a FEATURE own its own settings surface.
-///
-/// Settings used to be the de-facto integration point of the whole app: a
-/// screen under `settings/presentation/` named another feature's widgets
-/// directly, so `agents_settings.dart` alone imported presentation code from
-/// `agents`, `memory`, `pr_review`, `teams` and `workspaces`. The direction was
-/// backwards — the hub knew every spoke — and the `agents` feature had been
-/// hollowed out to a bag of widgets with no screen of its own.
-///
-/// So the dependency is inverted here. A feature declares WHAT it contributes
-/// and WHERE it goes; settings renders whatever it is handed and names nobody.
-/// The one place that still knows every feature is `lib/di/settings_registry.dart`,
-/// which is a composition root — knowing every module is its job, the same way
-/// `di/providers.dart` binds every repository port.
-///
-/// Deliberately contract-only: this file imports `flutter/widgets.dart`, the
-/// shared kernel and the l10n table, and nothing from `settings/presentation/`.
-/// A feature importing it therefore pulls in no settings UI, so there is no
-/// cycle to reason about. `architecture_constraints_test.dart` pins that.
+/// Deliberately contract-only: this file imports `flutter/widgets.dart`, the shared kernel
+/// and the l10n table, and nothing from `settings/presentation/`.
 library;
 
 import 'package:cc_domain/core/domain/entities/agent.dart';

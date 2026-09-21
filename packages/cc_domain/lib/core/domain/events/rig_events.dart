@@ -39,24 +39,9 @@ class RigClosedEvent implements DomainEvent {
 
 /// A human took exclusive control of a rig, or handed it back.
 ///
-/// Two consumers, both server-side:
-///
-///  - `RigEventListener` resolves the rig's driving agent and injects a notice
-///    onto its steering lane, so the agent is TOLD it no longer has the wheel
-///    instead of discovering it through refused actions. The refusal itself is
-///    still enforced at the `RigService.act` chokepoint — this event only
-///    explains it.
-///  - The notification wire (`rigControlChangedFrame`) forwards it to every
-///    entitled client and records it in the durable feed. The frame carries
-///    the controller principal so the person who took the wheel is not told
-///    they took the wheel.
-///
-/// Presence does NOT consume it: the roster is synthesized from run/lifecycle
-/// events, and who holds a rig's lock is read from the rig row the `rig.*` ops
-/// already push.
-///
-/// A release carries a null [controller] — the event does not record who let
-/// go — so nothing downstream can attribute one.
+/// `RigEventListener` steers a notice to the driving agent (refusal still at
+/// `RigService.act`). Notification wire forwards to clients. Presence ignores
+/// it (lock is on the rig row). Release has null [controller].
 class RigControlChanged implements DomainEvent {
   /// Creates a [RigControlChanged].
   const RigControlChanged({

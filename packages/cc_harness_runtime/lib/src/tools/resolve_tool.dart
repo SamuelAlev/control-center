@@ -2,24 +2,9 @@ import 'dart:io';
 
 import 'package:cc_harness/tools.dart';
 
-/// Commits or discards a change a tool staged instead of writing.
-///
-/// **Why an explicit tool rather than a magic write.** Committing a staged
-/// change by writing to a pseudo-path keeps the schema small at the
-/// cost of making the commit invisible: nothing in the transcript says a
-/// forty-file rewrite just landed, because it looks like an ordinary write. Our
-/// approval surface is a GUI, and a card that says "accept these 40 files"
-/// needs a call it can be attached to. So the commit is its own tool, its own
-/// approval, and its own line in the transcript.
-///
-/// **The staleness check is the whole safety property.** Between staging and
-/// committing, the agent may have edited one of those files by hand, a
-/// diagnostics pass may have rewritten it, or a watcher may have reformatted
-/// it. Committing anyway would silently discard that work, and the diff would
-/// look intentional. So every file is compared against the content captured at
-/// staging time and the whole change is refused on any mismatch — never
-/// partially applied, because a partly-applied structural rewrite leaves a tree
-/// that compiles under neither shape.
+/// Commits or discards a staged change as its own tool (visible approval +
+/// transcript line). Refuses the whole change if any file drifted since staging
+/// — never partially applied.
 class ResolveTool extends HarnessTool {
   /// Creates a [ResolveTool] over [store].
   ResolveTool(this.store);

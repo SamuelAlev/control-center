@@ -130,7 +130,6 @@ class SlackChatAdapter implements ChatProviderAdapter {
     await _status.close();
   }
 
-  // ── Inbound: Slack envelopes → normalized events ──
 
   /// Handles one Socket Mode envelope, emitting normalized events.
   ///
@@ -254,7 +253,6 @@ class SlackChatAdapter implements ChatProviderAdapter {
     }
   }
 
-  // ── Outbound: markdown → Slack ──
 
   @override
   Future<void> postMessage({

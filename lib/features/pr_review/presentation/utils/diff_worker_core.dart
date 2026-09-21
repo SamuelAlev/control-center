@@ -1,19 +1,11 @@
 /// Flutter-free compute core for the PR diff worker.
-///
-/// This file is deliberately free of any Flutter / `dart:ui` import: the
-/// [diffWorker] entrypoint below is compiled to a standalone JavaScript Web
-/// Worker by `dart compile js` (via `tool/gen_workers.sh` →
-/// `dart run isolate_manager:generate`) and that toolchain cannot compile
-/// Flutter. The main-isolate side (`DiffWorkerPool` in `diff_isolate_worker.dart`)
-/// imports this file for the worker entrypoint, the pure compute pipeline
-/// ([runDiffJob], exercised directly by tests) and the wire-protocol keys.
-///
-/// Everything crossing the isolate / Web Worker boundary is a plain
-/// `Map<String, dynamic>` of primitives and primitive lists — the only shape
-/// `isolate_manager` can transfer on the web. The syntax palette (which is
-/// derived from the Flutter theme) is computed on the main isolate and passed
-/// **into** the job as a `Map<String, int>`, so this core never touches the
-/// design system.
+/// This file is deliberately free of any Flutter / `dart:ui` import: the [diffWorker]
+/// entrypoint below is compiled to a standalone JavaScript Web Worker by `dart compile js`
+/// (via `tool/gen_workers.sh` → `dart run isolate_manager:generate`) and that toolchain
+/// cannot compile Flutter.
+/// The main-isolate side (`DiffWorkerPool` in `diff_isolate_worker.dart`) imports this file
+/// for the worker entrypoint, the pure compute pipeline ([runDiffJob], exercised directly
+/// by tests) and the wire-protocol keys.
 library;
 
 import 'dart:convert';
@@ -48,7 +40,6 @@ abstract final class DiffWire {
   /// `type` value: terminal failure.
   static const String err = 'err';
 
-  // ── Job (main → worker) ──────────────────────────────────────────────────
   /// Job key: unified-diff patch text.
   static const String patch = 'patch';
 
@@ -74,7 +65,6 @@ abstract final class DiffWire {
   /// [paletteKeys].
   static const String paletteValues = 'pv';
 
-  // ── tok event ────────────────────────────────────────────────────────────
   /// tok: index of the first line in this chunk.
   static const String startIndex = 's';
 
@@ -94,7 +84,6 @@ abstract final class DiffWire {
   /// Older payloads omit this; the decoder treats a missing array as zeros.
   static const String kinds = 'k';
 
-  // ── err event ────────────────────────────────────────────────────────────
   /// err: human-readable message.
   static const String message = 'm';
 }
@@ -139,7 +128,6 @@ void runDiffJob(
         paletteKeys[i] as String: paletteValues[i] as int,
     };
 
-    // ── Pass 1: parse structure ────────────────────────────────────────────
     // Structure is NOT emitted: DiffStructureStore parses it synchronously on
     // the main isolate and always ignored the worker's copy. The parse here
     // only feeds pass 2.
@@ -150,7 +138,6 @@ void runDiffJob(
       return;
     }
 
-    // ── Pass 2: tokenize per hunk in chunks, then apply word-diff ───────────
     // A hunk is tokenized as ONE shiki call over its rows joined by newlines,
     // so grammar state carries across lines — multi-line strings, block
     // comments and JSX color correctly, which the old per-line hljs parse
@@ -272,7 +259,6 @@ void diffWorker(dynamic params) {
   );
 }
 
-// ─── Wire encoders (worker side) ─────────────────────────────────────────────
 
 Map<String, dynamic> _encodeTok(int startIndex, List<List<DiffToken>> lines) {
   final lineLens = <int>[];
@@ -300,7 +286,6 @@ Map<String, dynamic> _encodeTok(int startIndex, List<List<DiffToken>> lines) {
   };
 }
 
-// ─── Tokenizer (shiki engine, per-isolate highlighter) ───────────────────────
 
 bool _tokensEqual(List<DiffToken> a, List<DiffToken> b) {
   if (a.length != b.length) {

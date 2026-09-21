@@ -283,36 +283,14 @@ typedef CodeServerDirtyReporter =
 typedef CodeServerCommandStreamResolver =
     Stream<Map<String, Object?>> Function(String sessionId);
 
-/// A WebSocket JSON-RPC server — the **reachable-server** transport.
-///
-/// Where the WebRTC path (`RemoteControlServer`) reaches a desktop behind NAT
-/// via a broker, this server is dialed directly: a client opens `wss://…/rpc`
-/// on the LAN / Tailnet / VPS, or `ws://localhost:<port>` for a same-origin web
-/// build. It is the server a headless `cc_server` runs and the one the desktop
-/// starts in "act as server" (LOCAL+serve) mode. The same paired-device PSK
-/// authenticates each connection and the same shared `RpcDispatcher` +
-/// `RemoteRpcSession` handle the RPC — TLS replaces DTLS as the space guard.
-///
-/// Security posture (matches the plan's § Security):
-///  * **Loopback or TLS.** Binding any non-loopback interface requires a
-///    `SecurityContext`; otherwise `start` throws rather than expose plaintext.
-///  * **Origin allow-list.** Browser `Origin` headers are checked against
-///    `allowedOrigins` (loopback always allowed) — never reflected.
-///  * **PSK challenge.** A connection must prove PSK possession (mutual HMAC
-///    challenge) for an `active` device before any RPC is dispatched.
 /// Whether [uri] points at an address the media proxy must refuse: loopback,
-/// link-local (incl. the 169.254.169.254 cloud-metadata endpoint), the GCP
-/// `metadata.google.internal` name, or RFC-1918 / IPv6 unique-local private
-/// ranges. IP literals are checked directly; bare `localhost` is refused by
-/// name. Defence-in-depth behind the PSK signature — and, critically, this is
-/// re-run on every redirect hop so an authorised signed URL cannot 3xx its way
-/// to an internal address.
+/// link-local (incl. 169.254.169.254), `metadata.google.internal`, or
+/// RFC-1918 / IPv6 unique-local ranges. IP literals checked directly; bare
+/// `localhost` refused by name. Re-run on every redirect hop so a signed URL
+/// cannot 3xx to an internal address.
 ///
-/// A bare hostname (not an IP literal) returns `false` here — it cannot be
-/// judged without resolving it. Callers pair this with
-/// [resolvesToBlockedAddress], which does resolve and applies the same rules
-/// to every answer, so a domain pointed at `10.x` / `127.x` /
-/// `169.254.169.254` is refused rather than fetched.
+/// A bare hostname returns `false` — pair with [resolvesToBlockedAddress],
+/// which resolves and applies the same rules to every answer.
 bool isBlockedProxyTarget(Uri uri) {
   final host = uri.host.toLowerCase();
   if (host.isEmpty) {
@@ -368,22 +346,15 @@ bool isBlockedProxyTarget(Uri uri) {
   return false;
 }
 
-/// Whether [uri]'s HOST resolves to an address the media proxy must refuse.
+/// Whether [uri]'s host resolves to a media-proxy-blocked address.
 ///
-/// [isBlockedProxyTarget] can only judge IP literals; a hostname needed a
-/// resolution, which is how `evil.example.com A 10.0.0.5` walked straight
-/// through the literal-IP blocks (classic DNS rebinding, in front of an
-/// internal service the server can reach and the caller cannot).
+/// [isBlockedProxyTarget] only judges IP literals; hostnames need resolution
+/// (DNS rebinding to private IPs). Resolution failure is BLOCKED. Callers
+/// re-check every redirect hop.
 ///
-/// Resolution failure is treated as BLOCKED: a name the proxy cannot resolve
-/// is a name it has no business fetching. Callers still re-check every
-/// redirect hop.
-///
-/// Residual: the proxy connects by NAME, so a resolver that answers
-/// differently between this check and the connect can still slip through.
-/// Closing that fully means connecting by IP with a preserved `Host` +TLS SNI;
-/// this removes the cheap version of the attack, which is the one that matters
-/// behind the PSK signature.
+/// Residual: connects by name, so a resolver that answers differently between
+/// check and connect can still slip; full close needs connect-by-IP with
+/// preserved Host/SNI.
 Future<bool> resolvesToBlockedAddress(Uri uri) async {
   final host = uri.host;
   if (host.isEmpty || InternetAddress.tryParse(host) != null) {
@@ -460,7 +431,14 @@ bool mcpRemoteClientAllowed({
   required bool hasToken,
 }) => hasToken || (remote?.isLoopback ?? false);
 
-/// The in-process RPC server: binds repo-RPC catalog ops + MCP tools to the
+/// Reachable-server WebSocket JSON-RPC transport (`wss://…/rpc` or
+/// `ws://localhost:<port>`). Same paired-device PSK and shared
+/// `RpcDispatcher` / `RemoteRpcSession` as the WebRTC path; TLS replaces DTLS.
+///
+/// Security: non-loopback bind requires a [SecurityContext] (else `start`
+/// throws); browser `Origin` checked against `allowedOrigins` (loopback
+/// always allowed, never reflected); active-device PSK HMAC challenge before
+/// any RPC.
 class LocalRpcServer implements McpHostServer {
   /// Creates a [LocalRpcServer].
   LocalRpcServer({
@@ -1395,21 +1373,12 @@ class LocalRpcServer implements McpHostServer {
     await res.close();
   }
 
-  /// Streams a recorded meeting's mixed audio (`mixed.wav`) to a thin client for
-  /// playback, with HTTP Range support so the player can seek.
+  /// Streams a meeting's `mixed.wav` with HTTP Range (seek). Waveform/duration
+  /// travel separately via `meeting.audioClip` RPC.
   ///
-  /// This is the byte path; the scrubber waveform + duration travel separately
-  /// over the `meeting.audioClip` RPC. Both web and desktop play through this URL
-  /// (built by `MediaProxyConfig.meetingAudioUrl`), so playback works the same
-  /// whether the server is loopback-local or a remote instance — the file never
-  /// has to be on the client's own disk.
-  ///
-  /// Auth mirrors `/proxy/media`: the caller signs the canonical target
-  /// `meeting-audio:<workspaceId>/<meetingId>` with its device PSK
-  /// ([RemoteControlCrypto.signProxyTarget]); the signature is re-derived from
-  /// the stored PSK of an `active`, unexpired device. Ownership is enforced by
-  /// [meetingAudio], which resolves the file only when the meeting belongs to the
-  /// signed `workspaceId` (a foreign meeting is simply not found → 404).
+  /// Auth: sign `meeting-audio:<workspaceId>/<meetingId>` with device PSK
+  /// ([RemoteControlCrypto.signProxyTarget]). [meetingAudio] resolves only when
+  /// the meeting belongs to the signed workspace (foreign → 404).
   Future<void> _serveMeetingAudio(HttpRequest request) async {
     final res = request.response;
     _setProxyCors(request, res);
@@ -1533,22 +1502,12 @@ class LocalRpcServer implements McpHostServer {
     await _serveFileWithRange(request, file, _logoContentType(file.path));
   }
 
-  /// Serves one stored tool-result image over `/blob`.
+  /// Serves one stored tool-result image over `/blob` (`blob:sha256:<hex>` refs
+  /// in transcripts; bytes are not in the message row).
   ///
-  /// This is how a screenshot an agent took reaches the transcript the human is
-  /// reading. The bytes never travel in the message row — the transcript
-  /// carries a `blob:sha256:<hex>` reference and the client resolves it here.
-  ///
-  /// Auth mirrors `/workspace/logo` exactly: the caller signs the canonical
-  /// target `blob:<workspaceId>:<hash>` with its device PSK, and an active
-  /// device belonging to a NON-member of that workspace is refused. Both checks
-  /// matter — the signature proves the device, membership proves the right to
-  /// this workspace's pixels, and a screenshot can contain anything that was on
-  /// the agent's screen.
-  ///
-  /// There is no SSRF surface: the request names a content hash, not a URL, and
-  /// the store resolves it inside one workspace's directory (a hash that is not
-  /// 64 hex characters never becomes a path).
+  /// Auth mirrors `/workspace/logo`: sign `blob:<workspaceId>:<hash>` with device
+  /// PSK; non-members refused. No SSRF — names a content hash resolved inside
+  /// one workspace directory (non-64-hex never becomes a path).
   Future<void> _serveBlob(HttpRequest request) async {
     final res = request.response;
     _setProxyCors(request, res);
@@ -1714,21 +1673,12 @@ class LocalRpcServer implements McpHostServer {
     await res.close();
   }
 
-  /// Serves one variant of a selectable font family over `/proxy/font` so a
-  /// client can register it with Flutter's font loader — built by
-  /// `MediaProxyConfig.fontUrl`.
+  /// Serves a selectable font variant over `/proxy/font` for Flutter's loader
+  /// (`MediaProxyConfig.fontUrl`). Host-side because Skia needs `ttf`/`otf` and
+  /// upstreams pick format from `User-Agent` (browser `fetch` cannot set it).
   ///
-  /// WHY THE HOST IS IN THIS PATH AT ALL: Skia decodes `ttf`/`otf`, not `woff2`,
-  /// and font upstreams choose the format from the request's `User-Agent` —
-  /// which a browser `fetch()` cannot set. So a client physically cannot obtain
-  /// bytes it can render; the host can and caches them once for every client.
-  ///
-  /// Auth mirrors `/workspace/logo`: the caller signs the canonical target
-  /// `font:<family>/<subset>/<weight>/<style>` with its device PSK
-  /// ([RemoteControlCrypto.signProxyTarget]). Note what is NOT in the request: a
-  /// URL. [fontFile] mints one only for a family in the host's catalogue, so
-  /// this route has no SSRF surface to blocklist — an uncatalogued family is
-  /// simply a 404.
+  /// Auth: sign `font:<family>/<subset>/<weight>/<style>` with device PSK.
+  /// No SSRF — [fontFile] mints URLs only for catalogued families (else 404).
   Future<void> _serveFontProxy(HttpRequest request) async {
     final res = request.response;
     _setProxyCors(request, res);
@@ -2282,25 +2232,14 @@ class LocalRpcServer implements McpHostServer {
   final Future<({int maxAgeMinutes, int idleTimeoutMinutes})> Function()?
   sessionPolicy;
 
-  /// Whether [userId] — the user bound to the device that signed this request
-  /// — is NOT a member of [workspaceId].
+  /// Whether [userId] (device-bound user) is NOT a member of [workspaceId].
+  /// Signed-target proves the device; this proves the user may touch the
+  /// workspace. Fail-closed with no usable user binding; pass-through only on
+  /// hosts without identity wiring (matches session gates).
   ///
-  /// The signed-target check proves an active DEVICE; this proves the device's
-  /// USER may touch the workspace the target names. Fail-closed when the
-  /// device has no usable user binding; pass-through only on hosts without
-  /// identity wiring (single-user), matching the session gates.
-  ///
-  /// Takes an already-resolved user rather than a device id: every caller has
-  /// just read the device row to verify the PSK, and looking it up again was a
-  /// second query per proxy request for a value already in hand.
-  ///
-  /// The registry existence gate runs FIRST, for the same reason it does at
-  /// `repo/call` and `sub/subscribe`: `workspace_members` lives in the named
-  /// workspace's OWN database, so the membership lookup below OPENS that file
-  /// — and opening CREATES it. A client that keeps a stale
-  /// `active_workspace_id` across a data-dir reset renders its shell against
-  /// that id and fetches the workspace logo, which materialised an empty ghost
-  /// `<dataDir>/<id>/workspace.db` on a server that had never heard of it.
+  /// Takes a resolved user (caller already read the device for PSK).
+  /// Registry existence gate runs FIRST: membership lives in that workspace's
+  /// DB, and opening CREATES the file (stale ids must not spray ghost dbs).
   Future<bool> _lacksMembershipForUser(
     String? userId,
     String workspaceId,

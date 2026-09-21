@@ -44,35 +44,17 @@ enum RecordingChannel {
       this == RecordingChannel.me ? MeetingSpeaker.me : MeetingSpeaker.them;
 }
 
-/// Host-side meeting recorder driven by streamed PCM16 over RPC.
+/// Host-side meeting recorder for streamed 16 kHz mono PCM16 over RPC
+/// (`meeting.startRecording` / `ingestAudio` / `stopRecording`).
 ///
-/// A thin client (the web app) captures the microphone + system audio in the
-/// browser, downsamples to 16 kHz mono PCM16 and pushes the frames to the host
-/// via `meeting.startRecording` → `meeting.ingestAudio` → `meeting.stopRecording`.
-/// This service runs the *same* windowed transcription + echo-dedup the desktop
-/// recorder runs (the desktop `MeetingRecorderController` is the reference), but
-/// with the audio arriving over the wire instead of from native capture: it
-/// owns one [_RecordingSession] per `(workspaceId, meetingId)`, feeds each
-/// channel through a [MeetingTranscriptionService] gated by RMS, dedups mic echo
-/// against the system channel via [MeetingEchoFilter] and appends the resulting
-/// [MeetingSegment]s — which a connected client watches live through
-/// `meeting.watchSegments`. On stop it marks the meeting `processing` and
-/// publishes [MeetingRecordingStopped], which the built-in `meeting_summary`
-/// pipeline picks up to augment the notes (the `MeetingSummaryReconciler`
-/// finalizes it to `done`).
-///
-/// Sessions are keyed by `(workspaceId, meetingId)`; [ingest] / [stop] for a
-/// meeting with no open session in the caller's workspace throw — a foreign
-/// meeting is never reachable (the workspace binding is the boundary).
-///
-/// **Concurrent recordings are supported.** One server holds many live sessions
-/// at once — two clients (e.g. desktop + web) each recording their own meeting,
-/// or the same operator recording several — because every [start] mints a fresh
-/// id and gets its own session, transcription channels, echo filter and WAV
-/// sinks. The single shared [SpeechTranscriber] serializes decodes across all
-/// sessions (one worker isolate) but never blocks: each channel buffers its
-/// audio while a decode is in flight, so concurrent meetings interleave rather
-/// than starve. Isolation is covered by `meeting_recording_concurrency_test`.
+/// Same windowed transcription + [MeetingEchoFilter] as desktop capture: one
+/// [_RecordingSession] per `(workspaceId, meetingId)`, RMS-gated
+/// [MeetingTranscriptionService] per channel, live segments via
+/// `meeting.watchSegments`. Stop → `processing` + [MeetingRecordingStopped]
+/// (`meeting_summary` / [MeetingSummaryReconciler] finalize to `done`).
+/// [ingest]/[stop] without an open session in the caller's workspace throw.
+/// Many concurrent sessions; shared [SpeechTranscriber] serializes decodes
+/// while channels buffer (no starve).
 class MeetingRecordingService {
   /// Creates a [MeetingRecordingService].
   ///

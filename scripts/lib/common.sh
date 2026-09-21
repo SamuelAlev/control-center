@@ -45,26 +45,11 @@ require_cmd() { # cmd hint
 # Temp directories
 # ---------------------------------------------------------------------------
 
-# Sets $SCRATCH_DIR to a fresh directory that is ALWAYS removed on exit.
-#
-# CALL IT, DO NOT CAPTURE IT:
-#     scratch_dir; secrets="$SCRATCH_DIR"     # correct
-#     secrets="$(scratch_dir)"                # BROKEN — see below
-#
-# The capturing form is what shipped and it self-destructs: command
-# substitution runs in a SUBSHELL, so the `trap … EXIT` registered inside it
-# fires the moment that subshell exits — deleting the directory before the
-# caller ever writes to it. The failure surfaced one line later as
-#   macos_package.sh: line 98: /var/folders/…/tmp.XXXX/cert.p12: No such file
-# Returning through a global keeps the mktemp, the bookkeeping and the trap in
-# the caller's own shell, where they survive.
-#
-# Use this for anything sensitive — decoded .p12 certificates, provisioning
-# profiles, private keys. The packagers used to mint these under
-# `RUNNER_TEMP="${RUNNER_TEMP:-$(mktemp -d)}"` with no trap, which is fine on a
-# throwaway CI runner and leaks Developer ID material into /tmp on a developer's
-# machine. Bulk staging (AppDirs, notarization zips) can still use RUNNER_TEMP;
-# secrets go here.
+# Sets $SCRATCH_DIR to a fresh directory always removed on EXIT.
+# CALL IT — do not capture: `secrets="$(scratch_dir)"` runs in a subshell so
+# the EXIT trap deletes the dir before the caller writes. Use
+# `scratch_dir; secrets="$SCRATCH_DIR"`. For secrets (certs/keys); bulk staging
+# may still use RUNNER_TEMP.
 _CC_SCRATCH_DIRS=()
 _cc_scratch_cleanup() {
   local d
@@ -254,22 +239,9 @@ ensure_cc_server_bundle() { # macos|linux|windows
   printf '%s\n' "$bundle"
 }
 
-# Copies the staged native libraries + the tree-sitter `.scm` queries from a
-# staging dir into a destination and asserts something actually landed.
-#
-# This was six near-identical loops across the three packagers and two inline
-# workflow steps; the `.scm` half was silently missing from run_desktop.sh.
-# GrammarManager resolves a language's query from the same directory as its
-# library, so the two always travel together.
-#
-# Pass `no-queries` as the 4th argument for a destination that must hold code
-# and nothing else — the ONE such destination is a macOS .app's
-# Contents/Frameworks/, which codesign's default rules treat as a nested-code
-# location: any non-Mach-O file there fails the bundle signature with
-# "code object is not signed at all ... In subcomponent: .../dart.scm".
-# GrammarManager falls back to `embeddedTreeSitterQueries` (generated from these
-# same files and pinned to them by test/tooling/embedded_queries_test.dart), so
-# the queries are compiled in rather than lost.
+# Copies staged natives + tree-sitter `.scm` queries into dest (asserts copy).
+# Pass `no-queries` for macOS Frameworks — non-Mach-O there fails codesign;
+# GrammarManager falls back to embedded queries. Queries always travel with libs.
 stage_natives() { # src dest ext [no-queries]
   local src="$1" dest="$2" ext="$3" queries="${4:-queries}" f copied=0
   case "$queries" in

@@ -299,7 +299,7 @@ void _pairAndDiff(
 /// applies inline diff highlighting.
 ///
 /// Lines are grouped by hunk: within each hunk, deletion and addition lines
-/// are paired by **content similarity** (not adjacency), so reorganizations
+/// are paired by content similarity (not adjacency), so reorganizations
 /// like wrapping existing code in a new `<div>` produce the correct word-diff
 /// pairings. Unmatched lines keep full-line highlighting.
 void applyInlineWordDiff(List<DiffLineSpec> specs, Map<String, int> palette) {

@@ -36,24 +36,15 @@ class AuthRejectedException implements Exception {
   String toString() => message;
 }
 
-/// Runs the client side of the mutual PSK handshake over any
-/// [RemoteRpcChannelPort] (direct WS or broker relay), verifying the
-/// server's Ed25519 identity and enforcing the TOFU pin (PRD 15 §9).
+/// Runs the client side of the mutual PSK handshake over any [RemoteRpcChannelPort] (direct
+/// WS or broker relay), verifying the server's Ed25519 identity and enforcing the TOFU pin
+/// (PRD 15 §9).
 ///
-/// Protocol: client sends `{type:'auth', device_id, nonce, proof}`; the
-/// server replies `auth_response` carrying its mutual PSK proof **and** its
-/// identity (`sid_pub` + `sid_sig`, a signature over the client's fresh
-/// nonce), then `approved`. Failure modes are all hard stops:
-///
-///  * `auth_denied` / bad PSK proof → [AuthRejectedException] (wrong device
-///    credential).
-///  * [pinnedFingerprint] set and the server presents no identity, a
-///    different fingerprint, or an invalid signature →
-///    [ServerIdentityMismatchException] — the rebind/MITM signal. No
-///    "continue anyway" path exists by design.
-///
-/// On success returns the channel plus the **verified** fingerprint, which a
-/// first-time caller pins (TOFU).
+/// Protocol: client sends `{type:'auth', device_id, nonce, proof}`; the server replies
+/// `auth_response` carrying its mutual PSK proof **and** its identity (`sid_pub` +
+/// `sid_sig`, a signature over the client's fresh nonce), then `approved`.
+/// Failure modes are all hard stops:
+/// * `auth_denied` / bad PSK proof → [AuthRejectedException] (wrong device credential).
 Future<AuthenticatedRemoteChannel> authenticateRemoteChannel({
   required RemoteRpcChannelPort channel,
   required String deviceId,

@@ -11,20 +11,10 @@ typedef ForgeTokenLookup = Future<String?> Function(ForgeHost forge);
 
 /// Builds authenticated [Dio] clients, one per forge.
 ///
-/// Each forge gets its own base URL and its own `Authorization` scheme — they
-/// genuinely differ, and getting one wrong fails as a silent 401 rather than a
-/// compile error, so they live in exactly one place here:
-///
-/// | Forge     | Base                          | Header                          |
-/// |-----------|-------------------------------|---------------------------------|
-/// | GitHub    | `https://api.github.com`      | `Bearer <token>`                |
-/// | GitLab    | `https://gitlab.com/api/v4`   | `Bearer <token>`                |
-/// | Bitbucket | `https://api.bitbucket.org/2.0` | `Basic base64(email:token)`   |
-///
-/// The token is read per request through the token lookup rather than captured
-/// when the client is built. A token pasted into Settings therefore applies to
-/// the very next request, with no client rebuild and no server restart — and a
-/// cleared token stops being sent immediately instead of lingering in a closure.
+/// Auth schemes live here once (wrong scheme → silent 401): GitHub/GitLab
+/// `Bearer` on their API bases; Bitbucket `Basic base64(email:token)` on
+/// `api.bitbucket.org/2.0`. Token is read per request via the lookup — Settings
+/// paste/clear applies on the next call without rebuild.
 class ForgeDioFactory {
   /// Creates a [ForgeDioFactory].
   ///

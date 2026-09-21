@@ -153,46 +153,13 @@ class _PendingReply {
   };
 }
 
-/// Bridges GitHub PR conversations into Control Center's PR review spaces and
-/// back.
+/// Bridges GitHub PR conversations into PR review spaces and back.
 ///
-/// A PR comment that @mentions the server's GitHub App bot (or replies inside
-/// a thread the bot is part of) becomes a real turn in that PR's review
-/// space, attributed to the member whose GitHub connection the author maps
-/// to; the answering agent's completed turn is posted back on GitHub in the
-/// lane it was asked in. A bare mention or `review` starts the AI review
-/// pipeline instead.
-///
-/// ## The gates, in order
-///
-/// 1. **Loop guard** — anything authored by a bot account is dropped before
-///    any other gate runs. Without it the bot's own answers would arrive as
-///    new comments and re-trigger it forever.
-/// 2. **Ack** — a 👀 reaction tells the human the comment was seen before any
-///    slower work (space provisioning can take two minutes) produces output.
-///    Best-effort: a failed reaction never blocks handling.
-/// 3. **Membership** — a GitHub login is an unauthenticated external identity
-///    until it maps to a writing member of the workspace whose repo was
-///    addressed. Unmapped or read-only authors are told so, once, and their
-///    words never enter the workspace.
-///
-/// ## Attribution
-///
-/// GitHub-side writes carry the SERVER's identity (the app) — nobody clicked
-/// anything in a client. The in-space question carries the mapped member's
-/// identity and the agent run executes on their behalf, so commits co-author
-/// and tokens resolve as for any message they typed.
-///
-/// ## The outbound lane
-///
-/// The dispatch's run-log id doubles as the `agent_turn` message id and as
-/// the key of a pending-reply row in the workspace's caches table. When that
-/// run completes, the listener reads the turn's final text and posts it back
-/// — in the review thread the question was asked in, or as a conversation
-/// comment @-addressing the asker. One attempt, then the row is dropped: a
-/// GitHub outage must not leave a queue of stale replies that fire long
-/// after the conversation moved on. The answer itself is never lost — it
-/// stays in the space.
+/// @mention (or reply in a bot thread) → space turn attributed to the mapped writing member;
+/// bare mention/`review` starts the AI review pipeline; agent reply posts back on GitHub.
+/// Gates: drop bot authors (loop guard); best-effort 👀 ack; unmapped/read-only authors never enter.
+/// GitHub writes use the app identity; in-space runs act as the mapped member.
+/// Outbound: run-log id keys a pending-reply cache row; one post-back attempt then drop (answer stays in space).
 class GitHubPrConversationBridge implements GitHubPrConversationSink {
   /// Creates a [GitHubPrConversationBridge]. Call [start] to arm the
   /// outbound listener.

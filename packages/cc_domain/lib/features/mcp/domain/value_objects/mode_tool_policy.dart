@@ -4,16 +4,13 @@ import 'package:cc_domain/core/domain/value_objects/mode.dart';
 ///
 /// Extracted from `ModeToolGuard` so *both* enforcement paths can consult one
 /// table instead of two diverging ones:
-///
 ///  * the MCP dispatcher (external CLI adapters reaching in over MCP) and
 ///  * the built-in harness registry, which bridges `McpTool`s directly and
 ///    therefore never reaches the dispatcher's guard at all.
-///
 /// That second path is why this file exists. The curated allow-lists were
 /// authoritative on paper and inert in practice for the built-in harness — the
 /// mode's tool surface there was "everything except exec tier", so a mutating
 /// MCP tool declaring no effect classes was neither filtered nor gated.
-///
 /// Dependency-free (no repositories, no async) so a test can assert
 /// prompt/allow-list/registry agreement without booting anything.
 class ModeToolPolicy {

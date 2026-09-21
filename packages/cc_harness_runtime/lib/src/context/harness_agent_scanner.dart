@@ -3,32 +3,12 @@ import 'dart:io';
 import 'package:cc_harness/tools.dart';
 import 'package:path/path.dart' as p;
 
-/// Discovers file-defined subagents: markdown files with YAML-ish frontmatter
-/// naming a base type, a description and a specialization prompt.
+/// Discovers file-defined subagents (markdown + YAML-ish frontmatter: base,
+/// description, specialization prompt) under `.agents/agents/`.
 ///
-/// **Why this exists.** `SubagentType` is three built-ins, which is a fine
-/// default and a poor ceiling: a repo that always wants its reviews done a
-/// particular way, or its migrations driven by a particular checklist, has
-/// nowhere to say so except by retyping it into every `task` call. A file on
-/// disk says it once.
-///
-/// **Why it cannot escalate.** A definition picks a BASE built-in and only
-/// narrows it — tighter tool list, extra prompt, its own model. Tiers come
-/// from the base and are never widened, and a definition may not shadow a
-/// built-in name. So the worst a malicious file can do is give an agent LESS
-/// reach than it already had.
-///
-/// Format (`.agents/agents/reviewer.md`):
-/// ```
-/// ---
-/// description: Reviews a diff against our conventions
-/// base: explore
-/// tools: read, search, find
-/// model: claude-haiku-4-5
-/// read-summarize: false
-/// ---
-/// Review the diff. Report P0 issues first…
-/// ```
+/// A definition picks a built-in base and may only narrow it (tools, prompt,
+/// model). Tiers come from the base and are never widened. Must not shadow a
+/// built-in name.
 class HarnessAgentScanner {
   /// Creates a [HarnessAgentScanner].
   const HarnessAgentScanner({this.maxAgents = 40, this.maxBodyBytes = 64 * 1024});

@@ -193,22 +193,11 @@ class WorkspaceSeeder {
     }
   }
 
-  /// Installs a built-in [seed], leaving alone what belongs to the user.
+  /// Installs a built-in [seed], leaving user-owned rows alone.
   ///
-  /// Two guards, both load-bearing now that this runs on every boot and not
-  /// only at workspace creation:
-  ///
-  /// * A row whose `isBuiltIn` is false was **taken over by the user** — the
-  ///   editor clears that flag when it saves an edited copy precisely so the
-  ///   bootstrap cannot overwrite the change. Skip it entirely.
-  /// * An untouched row that already equals the seed is left alone, so a boot
-  ///   in steady state performs no writes at all (no `updatedAt` churn, no
-  ///   sync-feed rows for every client). [PipelineDefinition]'s `==`
-  ///   deliberately ignores `version`, which is what makes the comparison
-  ///   answer "is this the same template?" rather than "was it rewritten?".
-  ///
-  /// An upgrade write preserves the user's `isEnabled` choice; `copyWith` keeps
-  /// the seed's declared inputs and steps, so manual-run forms survive it.
+  /// Skip when `isBuiltIn` is false (user took over). Skip when unchanged
+  /// (no boot write churn; `==` ignores `version`). Upgrade preserves
+  /// `isEnabled`; `copyWith` keeps seed inputs/steps.
   Future<void> _upsertBuiltIn(PipelineDefinition seed) async {
     final existing = await _templateRepository.getById(
       seed.workspaceId,

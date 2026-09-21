@@ -278,7 +278,6 @@ class _ViewToggle extends StatelessWidget {
   }
 }
 
-// ── Master list ──────────────────────────────────────────────────────────────
 
 /// The left (master) pane: the status-grouped ticket list. The currently open
 /// ticket is highlighted. The bulk-action bar floats over the whole frame (see
@@ -307,7 +306,6 @@ class _MasterList extends StatelessWidget {
   }
 }
 
-// ── List view ──────────────────────────────────────────────────────────────
 
 class _TicketListView extends StatelessWidget {
   const _TicketListView({
@@ -587,7 +585,6 @@ class _RowCheckbox extends StatelessWidget {
   }
 }
 
-// ── Bulk action bar ──────────────────────────────────────────────────────────
 
 /// A floating bar pinned to the bottom-center of the list view while one or
 /// more tickets are selected. Offers status / priority / delete across the
@@ -963,7 +960,6 @@ class _BarDivider extends StatelessWidget {
   }
 }
 
-// ── Board view ─────────────────────────────────────────────────────────────
 
 class _BoardView extends StatelessWidget {
   const _BoardView({

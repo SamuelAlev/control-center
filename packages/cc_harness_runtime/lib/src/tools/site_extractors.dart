@@ -1,20 +1,5 @@
-/// Turns a known site's HTML into the structure that page is actually about.
-///
-/// **Why generic HTML-to-text is not enough.** A GitHub issue stripped to text
-/// is a wall of nav chrome, reaction counts and "N participants" with the
-/// conversation buried in the middle. A pub.dev page becomes a list of link
-/// labels. What the agent needed — the title, the body, the answer, the
-/// version, the install line — was in there, and it now has to guess which
-/// paragraph it was.
-///
-/// Each extractor pulls the page's actual structure into markdown, keeping
-/// anchors and code blocks intact so the agent can quote and cite instead of
-/// paraphrasing something it half-read.
-///
-/// Every extractor is best-effort by construction: a site that changed its
-/// markup returns null and the caller falls back to generic text. A wrong
-/// extraction is worse than a generic one, so each returns null rather than
-/// guessing when its anchors are missing.
+/// Site-specific HTML → structured markdown (title/body/anchors/code). Best
+/// effort: missing anchors → null (caller falls back to generic text).
 abstract interface class SiteExtractor {
   /// Whether this extractor handles [uri].
   bool handles(Uri uri);

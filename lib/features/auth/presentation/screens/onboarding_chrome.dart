@@ -19,26 +19,14 @@ import 'package:control_center/shared/widgets/window_drag_area.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// The full-screen frame every pre-context auth surface sits in: the shader
-/// background, a centred column capped at a readable width, and the theme
-/// toggle in the corner.
-///
-/// Shared rather than copied because these screens are the app's first
-/// impression and the only ones drawn outside the shell — two hand-rolled
-/// frames drift in exactly the places (the max width, the inset, where the
-/// toggle sits) where the drift is visible as a jump between them.
-///
-/// **The whole frame moves the OS window.** The primary window is
-/// `isMovable = false` (see `styleWindowOnShow`) — the only switch that stops
-/// macOS dragging it out from under the app's own title bar — so the app moves
-/// it itself, from `ShellTitleBar`. That bar lives inside the shell, and these
-/// surfaces render outside it: without a drag area of their own the operator
-/// gets a window that cannot be moved at all, at the one moment they have not
-/// yet reached anything else. There is no bar here to make a strip out of and
-/// an invisible 40px band at the top is not an affordance anyone would find, so
-/// the whole surface drags; [WindowDragArea] stands down on anything that
-/// claims the press (buttons, fields, scrollables), leaving only inert
-/// background.
+/// The full-screen frame every pre-context auth surface sits in: the shader background, a
+/// centred column capped at a readable width, and the theme toggle in the corner.
+/// Shared rather than copied because these screens are the app's first impression and the
+/// only ones drawn outside the shell — two hand-rolled frames drift in exactly the places
+/// (the max width, the inset, where the toggle sits) where the drift is visible as a jump
+/// between them.
+/// `isMovable = false` (see `styleWindowOnShow`) — the only switch that stops macOS
+/// dragging it out from under the app's own title bar — so the app moves it itself, from
 class OnboardingScaffold extends StatelessWidget {
   /// Creates an [OnboardingScaffold].
   const OnboardingScaffold({required this.child, super.key});

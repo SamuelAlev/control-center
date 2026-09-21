@@ -157,21 +157,12 @@ List<RunTreeNode> _buildTree(List<AgentRunLog> logs) {
       if (l.parentRunId == null || !ids.contains(l.parentRunId)) l,
   ];
 
-  // One row per agent, standing for that agent's CURRENT run only, with that
-  // run's subagents hanging DIRECTLY off it.
-  //
-  // Every chat turn opens its own top-level run, so an agent accumulates one root
-  // run per message sent to it. Emitting a row per run turned a 200px sidebar
-  // into a run history in which the rows that actually matter — the subagents
-  // working right now — sank one level deeper on every turn. The newest dispatch
-  // wins; earlier runs and their subagents leave the tree. They stay reachable
-  // from the conversation transcript (a past turn's `task` cell opens its child
-  // run), the space activity flyout and any already-open activity tab.
-  //
-  // Superseded runs are dropped from `roots`, NEVER from `logs`: `ids` and
-  // `byParent` still see the whole conversation, so a superseded run's subagents
-  // read as "parent present, just not rendered" and are skipped. Pruning `logs`
-  // first would leave them parentless and promote them straight back to
+  // One row per agent, standing for that agent's CURRENT run only, with that run's subagents
+  // hanging DIRECTLY off it.
+  // Superseded runs are dropped from `roots`, NEVER from `logs`: `ids` and `byParent` still
+  // see the whole conversation, so a superseded run's subagents read as "parent present,
+  // just not rendered" and are skipped.
+  // Pruning `logs` first would leave them parentless and promote them straight back to
   // top-level rows — the exact bug this shape avoids.
   final order = <String>[];
   final currentByAgent = <String, AgentRunLog>{};

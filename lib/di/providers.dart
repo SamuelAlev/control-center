@@ -1,25 +1,11 @@
 // Web-safe composition root.
-//
 // This half of the app's DI holds ONLY web-safe providers:
-//
-//  - the `RpcX` data repositories (from `cc_data`) the UI reads through — they
-//    talk to the active `rpcClientProvider`, a connected `RemoteRpcClient` on
-//    both desktop and web (the desktop spawns/connects to `cc_server`, web
-//    connects directly — both flip through the same RPC adapters);
-//  - pure UI-domain helpers typed against `cc_domain` (schema validator, mention
-//    parser, memory-access policy);
-//  - the GitHub identity + calendar reads (over RPC — the host owns tokens) and the
-//    keychain-backed credential/preference providers;
-//  - the "VM-capable but UI-read" providers (process detection, the model
-//    catalog, …) — DECLARED here but RESOLVED through the
-//    `provider_bindings.dart` seam (`build*`), which on the VM resolves to RPC
-//    adapters (same as web) and on web resolves to the web seam directly.
-//
-// Every import below must stay web-safe (cc_data, cc_domain interfaces, cc_rpc,
-// flutter, the rpc_client + storage seams). `cc_server` is the
-// sole owner of the database, MCP registry and execution — the desktop links
-// no `cc_persistence`/`cc_server_core`/`cc_host`/`cc_mcp` package, so there is
-// no VM-only provider half left to import here.
+// talk to the active `rpcClientProvider`, a connected `RemoteRpcClient` on both desktop
+// and web (the desktop spawns/connects to `cc_server`, web connects directly — both flip
+// through the same RPC adapters);
+// the GitHub identity + calendar reads (over RPC — the host owns tokens) and the
+// catalog, …) — DECLARED here but RESOLVED through the `provider_bindings.dart` seam
+// (`build*`), which on the VM resolves to RPC adapters (same as web) and on web resolves
 library;
 
 import 'dart:async';
@@ -92,7 +78,6 @@ final schemaValidatorProvider = Provider<SchemaValidatorPort>((ref) {
   return const JsonSchemaValidator();
 });
 
-// ── Data repositories the UI reads through (RPC-flipped, web-safe) ───────────
 //
 // Each resolves to a `cc_data` `RpcX` adapter over the active
 // `rpcClientProvider` — a connected `RemoteRpcClient` talking to `cc_server`,
@@ -257,14 +242,12 @@ final voiceProfileRepositoryProvider = Provider<VoiceProfileRepository>((ref) {
   return RpcVoiceProfileRepository(ref.watch(rpcClientProvider));
 });
 
-// ── Pure UI-domain helpers (web-safe, cc_domain) ─────────────────────────────
 
 /// Provides the [AgentMentionParser] instance.
 final agentMentionParserProvider = Provider<AgentMentionParser>((ref) {
   return const AgentMentionParser();
 });
 
-// ── VM-backed but UI-read (seamed via provider_bindings.dart) ────────────────
 //
 // DECLARED here so the screens that read them compile on web; RESOLVED through
 // the `build*` factories from `provider_bindings.dart` — the real desktop
@@ -377,7 +360,6 @@ final entityActivityProvider = StreamProvider.autoDispose
       );
     });
 
-// ── GitHub identity (read over RPC — the HOST owns every forge token) ────────
 
 /// How often the viewer lookup is retried while no user has resolved.
 ///
@@ -503,7 +485,6 @@ Map<String, Set<String>> parseViewerGitHubTeams(Object? raw) {
   return byOrg;
 }
 
-// ── Credentials / preferences (keychain + shared_preferences; web-safe) ──────
 
 // There is no client credentials repository any more. Provider tokens belong
 // to the USER and live on the server (`credentials.*` / `oauth.*`), not in this

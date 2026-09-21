@@ -297,22 +297,11 @@ class AnthropicProvider implements LlmProviderPort {
       }
     }
 
-    // Prompt caching, spending all four breakpoints deliberately:
-    //
-    //   1. the last RESIDENT tool      ─┬─ the stable prefix, on the long TTL:
-    //   2. the last system block       ─┘  constant for the whole run and
-    //                                     shared across runs and subagents
-    //                                     that emit the same one.
-    //   3. the previous turn's tail    ─── the READ anchor (see below)
-    //   4. this turn's tail            ─── the write
-    //
-    // Breakpoints 3 and 4 are a rolling pair. A cache lookup walks BACKWARD a
-    // bounded number of content blocks looking for an entry a previous request
-    // wrote; one turn of parallel tool calls can emit more blocks than that
-    // window, and then a single tail breakpoint misses silently — nothing in
-    // the response says "your history did not match", it just costs full
-    // price. Anchoring breakpoint 3 exactly where the last request wrote makes
-    // the hit structural instead of a race against that window.
+    // Four cache breakpoints: (1) last resident tool + (2) last system block
+    // on the long TTL (stable prefix); (3) previous turn's tail (read anchor) +
+    // (4) this turn's tail (write) as a rolling pair — a single tail breakpoint
+    // can miss when parallel tool calls overrun the provider's backward lookup
+    // window.
     const shortTtl = {'type': 'ephemeral'};
     final stableTtl = config.stablePrefixTtl == LlmCacheTtl.fiveMinutes
         ? shortTtl

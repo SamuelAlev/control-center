@@ -1,53 +1,18 @@
-/// A pure-Dart, stateless WebSocket signaling broker for Control Center.
+/// Pure-Dart, stateless WebSocket signaling broker for Control Center.
 ///
-/// cc_server and its clients (desktop, web, phone) rendezvous through this
-/// broker when the server is not directly reachable: the server joins its
-/// relay room as the **owner** and every client joins with an **admission
-/// token**; JSON-RPC frames then relay as opaque, end-to-end-encrypted
-/// `signal` payloads. The broker is a **dumb relay**: it understands
-/// `join` / `signal` / `admit` / `turn-request` / `bye` from a client and
-/// emits `joined` / `admit-ok` / `peer-joined` / `peer-left` /
-/// `turn-credentials` / `error` of its own, but it **never** inspects,
-/// stores, or interprets a `signal` payload. It holds no application data and
-/// never sees a pairing PSK — admission tokens are one-way HMAC derivations
-/// of a device PSK, useless for anything but room admission and the frames
-/// it forwards are sealed (`RelayFrameCrypto`) before they reach it.
+/// Dumb relay: understands `join` / `signal` / `admit` / `turn-request` /
+/// `bye` and emits broker frames, but never inspects `signal` payloads or
+/// pairing PSKs (admission tokens are one-way HMAC of a device PSK; frames
+/// are sealed before arrival).
 ///
-/// ## Room model (N-capacity, invite-gated)
+/// Rooms (≤[SignalingBroker.maxPeersPerRoom], default 16): owner joins with
+/// `ownerToken` (broker stores `sha256` only); clients need an admitted
+/// `sha256(token)` — room id alone is refused as `not admitted` (same as a
+/// missing room). Removing an admission hash evicts that peer.
 ///
-/// Rooms are keyed by the server's relay room code (≥128-bit entropy) and
-/// hold at most [SignalingBroker.maxPeersPerRoom] peers (default 16): one
-/// **owner** (the cc_server) plus N clients.
-///
-/// * The owner joins with `owner: true` and an `ownerToken`; the broker
-///   stores only `sha256(ownerToken)` at room creation and verifies the
-///   preimage on every re-claim, so a wedged owner socket can always be
-///   superseded by the real server but never by a client.
-/// * A client join MUST carry a `token` whose `sha256` hex is in the room's
-///   admitted set — published and updated by the owner via `admit` frames.
-///   "Knows the room id" is NOT sufficient admission (PRD 15 §4): a joiner
-///   with a valid room id but no invite-derived token is refused before any
-///   frame is relayed, with the uniform error `not admitted` (which is also
-///   the answer for a nonexistent room, so the broker is not a room oracle).
-/// * Removing an admission hash evicts any connected peer that joined with
-///   it (live revocation).
-///
-/// ### Trust model
-///
-/// The broker is untrusted for confidentiality and integrity (E2E crypto and
-/// the mutual PSK handshake carry those) and is only a best-effort
-/// availability dependency. A hostile party that learns a room id can squat
-/// it by claiming ownership first; the legitimate server detects this as an
-/// `owner conflict` and surfaces it loudly. Squatting yields no data — every
-/// relayed frame is ciphertext under per-device keys the squatter lacks.
-///
-/// ## TURN credential issuance (PRD 15 §3)
-///
-/// When started with a coturn shared secret, the broker mints short-lived
-/// TURN credentials for admitted room members on request, using coturn's
-/// `static-auth-secret` HMAC-SHA1 scheme (`username = <expiry>:<label>`,
-/// `credential = base64(HMAC-SHA1(secret, username))`). Credentials are
-/// ephemeral by construction — never stored, never reused across requests.
+/// Broker is untrusted for confidentiality; room-id squatters get
+/// `owner conflict` and only ciphertext. With a coturn secret, mints
+/// ephemeral TURN creds (`static-auth-secret` HMAC-SHA1); never stored.
 library;
 
 import 'dart:async';
@@ -64,44 +29,15 @@ const int defaultSignalingPort = 8788;
 /// Default network interface the CLI binds when `--host` is not supplied.
 const String defaultSignalingHost = '0.0.0.0';
 
-/// A stateless WebSocket signaling relay with invite-gated N-capacity rooms.
+/// Stateless WebSocket signaling relay with invite-gated N-capacity rooms.
 ///
-/// One [SignalingBroker] instance safely serves many concurrent connections;
-/// Dart's single-threaded event loop serializes per-socket events, so no
-/// locks are required. Construct one, call [start] to run the periodic
-/// garbage collector (or drive [sweep] yourself with an injected clock in
-/// tests) and feed every upgraded WebSocket to [handleConnection].
-///
-/// Wire protocol (all frames are JSON objects; only broker-owned fields are
-/// interpreted — `signal` payloads relay verbatim):
-///
-/// * Client → broker:
-///   * `{"type":"join","room","from","owner":true,"ownerToken","admit":[..]}`
-///     — claim/create a room as its owner (the server). `admit` (optional)
-///     replaces the room's admitted-hash set.
-///   * `{"type":"join","room","from","token":"<preimage>"}` — enter a room
-///     as a client; `sha256(token)` must be admitted.
-///   * `{"type":"admit","room","add":[..],"remove":[..]}` — owner-only
-///     admission update; removing a hash evicts its connected peer.
-///   * `{"type":"signal","room","from","to"?,"kind","payload":{...}}` —
-///     relay an opaque blob. `from` is overwritten with the sender's joined
-///     id (no in-room spoofing); `to` targets one peer, otherwise the frame
-///     goes to every other peer.
-///   * `{"type":"turn-request","room"}` — mint TURN credentials (members
-///     only; empty `uris` when the broker has no TURN configured).
-///   * `{"type":"bye","room"}` — leave the room.
-/// * Broker → client:
-///   * `{"type":"joined","room","owner":you-are-owner,"ownerPresent":bool,
-///     "ownerPeer":id?,"peers":other-count}` — join ack.
-///   * `{"type":"admit-ok","room","count":admitted-hash-count}`.
-///   * `{"type":"peer-joined","room","from":peerId,"owner":bool}` —
-///     sent to every existing peer when someone joins.
-///   * `{"type":"peer-left","room","from":peerId,"owner":bool}`.
-///   * `{"type":"turn-credentials","room","uris":[..],"username",
-///     "credential","ttlSeconds"}`.
-///   * `{"type":"error","error":"<message>"}` — `not admitted`,
-///     `owner conflict`, `room full`, `invalid join`, `already joined`,
-///     `server busy`, `not a member`, `not owner`.
+/// Call [start] (or drive [sweep] with an injected clock) and feed sockets to
+/// [handleConnection]. JSON frames; only broker fields are interpreted —
+/// `signal` payloads relay verbatim. `from` on signal is overwritten (no
+/// spoofing). Client types: `join` (owner/`ownerToken` or client/`token`),
+/// `admit`, `signal`, `turn-request`, `bye`. Broker types: `joined`,
+/// `admit-ok`, `peer-joined`, `peer-left`, `turn-credentials`, `error`
+/// (`not admitted`, `owner conflict`, `room full`, …).
 class SignalingBroker {
   /// Creates a broker.
   ///

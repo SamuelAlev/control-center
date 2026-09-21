@@ -9,7 +9,6 @@ import 'package:control_center/features/workspaces/providers/workspace_providers
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-// ── Insights state + derivation (the observability "Insights" tab) ───────────
 //
 // Everything here derives from the EXISTING [workspaceRunLogsProvider]; its
 // semantics are unchanged — the Live tab's roster depends on the unfiltered
@@ -184,7 +183,6 @@ class ObsRunFiltersNotifier extends Notifier<ObsRunFilters> {
   }
 }
 
-// ── Pure helpers (unit-tested directly) ──────────────────────────────────────
 
 /// The inclusive start instant of [range] relative to [now], or `null` when
 /// the range is unbounded ([ObsTimeRange.all]).
@@ -368,7 +366,6 @@ List<TimeBucket> padSeries(
   }
 }
 
-// ── Derived providers ────────────────────────────────────────────────────────
 
 /// Runs inside the active time range, ignoring facet selections. Feeds the
 /// filter-option counts so they stay stable while toggles change.

@@ -15,35 +15,11 @@ import 'package:control_center/shared/widgets/transcript/tool_presentation.dart'
 import 'package:control_center/shared/widgets/transcript/widgets/shimmer_text.dart';
 import 'package:flutter/widgets.dart';
 
-/// Renders an agent turn as one **continuous, inline flow** — the reasoning,
-/// tool calls and answer text in the exact chronological order they were
-/// emitted, rather than collapsing the "process" behind a single
-/// "Thought for Ns · N tool calls" accordion and printing the answer separately
-/// at the end.
+/// Agent turn as chronological inline flow (reasoning, tools, answer).
 ///
-/// This is the conductor.build reading model: prose, then the tool calls it
-/// triggered shown inline where they happened, then more prose. Reasoning is
-/// shown inline (dimmed, expanded by default) instead of hidden — it is part of
-/// the story, not a footnote. Tool calls render as compact, expandable rows
-/// (reusing [TranscriptSegmentRow]). The transcript's full ordered segment list
-/// (text segments included) is persisted on the message, so this faithfully
-/// reconstructs the turn both live and on reload.
-///
-/// ## Rebuild isolation
-///
-/// The parent rebuilds this widget only on **structural** changes (segment
-/// open/close/finish — via `LiveTranscriptController.structure`). Within a
-/// build:
-///
-///   * **closed** rows are memoized by value-equal segment: the identical
-///     widget instance is returned across builds so `Element.update` skips
-///     their whole subtree and each sits under its own [RepaintBoundary];
-///   * **open** rows (still streaming) sit under a `ValueListenableBuilder`
-///     on [LiveTranscriptController.tail], re-reading just their own segment
-///     per delta — a delta costs one small row rebuild, not a turn rebuild.
-///
-/// No master collapse/expand state and no auto-collapse timer — everything is
-/// always visible, which is the whole point.
+/// Persisted ordered segments; tools as [TranscriptSegmentRow]. Parent rebuilds
+/// only on structure changes: closed rows memoized + [RepaintBoundary]; open
+/// rows listen to [LiveTranscriptController.tail] only. No master collapse.
 class TranscriptFlow extends StatefulWidget {
   /// Creates a [TranscriptFlow].
   const TranscriptFlow({

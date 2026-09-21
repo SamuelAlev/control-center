@@ -13,7 +13,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// Used when an isolated worktree is provisioned for a ticket. Supports
 /// `{type}`, `{ticket-key}`, `{slug}` placeholders.
 ///
-/// **Workspace-scoped**, not per-device: it names branches in repositories every
+/// Workspace-scoped, not per-device: it names branches in repositories every
 /// member shares, so two people must not generate differently-shaped branches
 /// for the same kind of work. It previously lived in device-local preferences
 /// AND never reached `RepoWorkspaceProvisioner`, which hardcoded the built-in

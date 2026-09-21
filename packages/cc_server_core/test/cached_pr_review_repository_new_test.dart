@@ -31,17 +31,11 @@ import 'package:test/test.dart';
 
 import 'helpers/test_database.dart';
 
-// ===========================================================================
 // Fake CacheDao — extends the real class with in-memory storage.
 // The test database is only used to satisfy the type system; all methods
 // are overridden so the real database is never touched.
-// ===========================================================================
-// ===========================================================================
 // Fake ReviewDao — same pattern
-// ===========================================================================
-// ===========================================================================
 // FakeGitHubPrClient — in-memory PR client
-// ===========================================================================
 class FakeGitHubPrClient extends GitHubPrClient {
   FakeGitHubPrClient() : super(_fakeDio);
 
@@ -225,9 +219,7 @@ class FakeGitHubPrClient extends GitHubPrClient {
   }) async => workflowRuns['$owner/$repo/$headSha'] ?? const [];
 }
 
-// ===========================================================================
 // FakeGitHubContentClient — minimal implementation
-// ===========================================================================
 class FakeGitHubContentClient extends GitHubContentClient {
   FakeGitHubContentClient() : super(_fakeDio);
 
@@ -318,9 +310,7 @@ class StubGraphqlClient extends GitHubGraphQLClient {
   }
 }
 
-// ===========================================================================
 // FakeGitHubApiClient — facade wrapping the fake sub-clients
-// ===========================================================================
 class FakeGitHubApiClient implements GitHubApiClient {
   FakeGitHubApiClient({required this.pr, required this.content})
     : _graphql = StubGraphqlClient();
@@ -340,9 +330,7 @@ class FakeGitHubApiClient implements GitHubApiClient {
   GitHubGraphQLClient get graphql => _graphql;
 }
 
-// ===========================================================================
 // FakePrDiffSource — stub diff source
-// ===========================================================================
 class FakePrDiffSource implements PrDiffSource {
   FakePrDiffSource({this.files, this.error});
 
@@ -380,10 +368,8 @@ class FakePrDiffSource implements PrDiffSource {
   }
 }
 
-// ===========================================================================
 // FakePrReviewRepository — simple in-memory implementation of the full
 // PrReviewRepository interface, suitable as a test double.
-// ===========================================================================
 class FakePrReviewRepository implements PrReviewRepository {
   final Map<int, PullRequest> _prs = {};
   final Map<int, String> _diffs = {};
@@ -762,17 +748,13 @@ class FakePrReviewRepository implements PrReviewRepository {
   Future<List<PrUser>> listSuggestedReviewers(int prNumber) async => [];
 }
 
-// ===========================================================================
 // _NullDio — Dio that never gets called; all methods are overridden
-// ===========================================================================
 class _NullDio implements Dio {
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-// ===========================================================================
 // Helpers
-// ===========================================================================
 GitHubPullRequest _testPR(int number) => GitHubPullRequest(
   number: number,
   title: 'Test PR $number',
@@ -884,9 +866,7 @@ CachedPrReviewRepository _makeRepo({
   changeSignals: changeSignals,
 );
 
-// ===========================================================================
 // Tests
-// ===========================================================================
 void main() {
   late WorkspaceDatabase db;
 

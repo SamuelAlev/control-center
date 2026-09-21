@@ -3,24 +3,9 @@ import 'package:cc_domain/core/domain/repositories/workspace_membership_reposito
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_server_core/src/identity/user_credentials_store.dart';
 
-/// Resolves a GitHub login to the workspace member who connected that account.
+/// Maps a GitHub login to the workspace member who connected that account.
 ///
-/// An inbound PR comment carries nothing but an author login — an
-/// unauthenticated external identity until it maps to a member. Membership is
-/// the access boundary, so the mapping is the gate: a login nobody connected,
-/// or one connected by a user who is not a member of THIS workspace, resolves
-/// to null and the caller refuses before anything enters the workspace.
-///
-/// The reverse index is built from what already exists — each member's stored
-/// GitHub credential caches its `accountLogin` — so there is no new table, no
-/// new link flow and nothing to backfill. It is rebuilt on a TTL because
-/// members connect, disconnect and are invited while the server runs.
-///
-/// GitHub logins are case-insensitive (`Octocat` == `octocat`), so the index
-/// keys on the lower-cased login. Two members claiming the same login cannot
-/// happen through sign-in (one GitHub account authorizes one app user), but a
-/// pasted token could lie; the oldest member wins deterministically and the
-/// lie is bounded by their own role.
+/// Unmapped logins are external identities — no workspace write access until linked.
 class GitHubLoginDirectory {
   /// Creates a [GitHubLoginDirectory].
   GitHubLoginDirectory({

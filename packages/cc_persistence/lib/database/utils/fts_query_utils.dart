@@ -83,23 +83,11 @@ String toFtsOrQuery(String raw) {
 
 /// Builds a **workspace-scoped** FTS5 MATCH expression.
 ///
-/// The user query (from [raw]) is matched only against [textColumns] and the
-/// whole match is constrained to rows whose `workspace_id` FTS column equals
-/// [workspaceId]. This scopes the FTS scan to a single workspace *at the index
-/// level* — the virtual table itself never yields another workspace's docs —
-/// rather than leaning solely on a post-join `WHERE workspace_id = ?` filter.
-///
-/// Callers MUST still apply that exact `workspace_id = ?` filter on the joined
-/// content table: this expression is the index-level narrowing (and the
-/// authoritative isolation boundary remains the SQL filter, which also handles
-/// the degenerate case below). Returns '' when [raw] yields no usable tokens,
-/// so callers can short-circuit to an empty result.
-///
-/// The FTS table stores the raw workspace id; FTS5 tokenizes it identically on
-/// both sides, so a UUID matches as a contiguous phrase against exactly its own
-/// rows. If [workspaceId] contains no alphanumeric character (so it would
-/// tokenize to nothing), the workspace clause is omitted and isolation falls
-/// back entirely to the caller's exact SQL filter.
+/// The user query (from [raw]) is matched only against [textColumns] and the whole match is
+/// constrained to rows whose `workspace_id` FTS column equals [workspaceId].
+/// This scopes the FTS scan to a single workspace *at the index level* — the virtual table
+/// itself never yields another workspace's docs — rather than leaning solely on a post-join
+/// `WHERE workspace_id = ?` filter.
 String toWorkspaceScopedFtsMatch(
   String raw,
   String workspaceId, {

@@ -104,24 +104,12 @@ class AgentDispatchService {
   )?
   adapterLaunchOverrides;
 
-  /// Resolves which Claude Code account directory a run signs in as.
-  ///
-  /// Returns that account's `CLAUDE_CONFIG_DIR`, or null when the install
-  /// manages no accounts and the CLI should resolve its own credential.
-  /// Server-scoped for the same reason as [adapterLaunchOverrides]: the
-  /// directory is on THIS host.
-  ///
-  /// It takes the conversation rather than only an account id because the
-  /// composer's pick is stored per conversation — resolving it here keeps
-  /// every dispatch entry point (chat, tickets, pipelines, the goal
-  /// supervisor) on the operator's choice without each one having to know the
-  /// feature exists. An explicit `accountId` still wins, for a caller that
-  /// genuinely means one specific login.
-  ///
-  /// `workingDirectory` is the resolved cwd of the run about to start. The
-  /// resolver needs it because Claude Code's workspace-trust dialog is keyed by
-  /// project path and is per config dir: without it, a dispatched run silently
-  /// drops the project's `permissions.allow` entries.
+  /// Resolves the Claude Code account dir for a run (`CLAUDE_CONFIG_DIR`), or
+  /// null when the CLI should use its own credential. Server-scoped (dir is
+  /// on this host). Takes conversation so the composer's per-conversation pick
+  /// applies on every entry point; explicit `accountId` wins.
+  /// `workingDirectory` is required for workspace-trust (per config dir) so
+  /// project `permissions.allow` is not silently dropped.
   final Future<ClaudeAccountPlan?> Function({
     String? workspaceId,
     String? conversationId,
@@ -148,22 +136,13 @@ class AgentDispatchService {
   })?
   onHarnessCredentialExhausted;
 
-  /// Parks a run whose Claude Code account cannot serve it — signed out, past
-  /// repair, or out of plan headroom — instead of failing the turn, and lets it
-  /// continue once a human fixes the credential.
+  /// Parks a run when the Claude Code account cannot serve it (signed out,
+  /// past repair, or out of plan headroom) until a human fixes the credential.
   ///
-  /// The Claude half of the gate lives HERE rather than in the session, and the
-  /// reason is the sandbox: the profile's writable set is built from the
-  /// resolved account directories before the process is spawned, so a run that
-  /// parked inside the session and came back on a DIFFERENT account (or on the
-  /// first account at all, having resolved none) would hold a directory its own
-  /// sandbox denies. Re-resolving before the session exists is what makes the
-  /// resumed run indistinguishable from one that never blocked. The harness
-  /// half stays in the session, where its credential reaches the provider
-  /// in-process and no profile has to agree.
-  ///
-  /// Null keeps the pre-gate behaviour exactly: the refusal is carried into the
-  /// session and the turn fails with the message it always did.
+  /// Lives here (not in the session): sandbox writables are built from resolved
+  /// account dirs before spawn — parking inside the session and resuming on a
+  /// different account would deny its own dirs. Harness credential gate stays
+  /// in-session (in-process, no profile). Null = pre-gate fail-in-session.
   final RunCredentialGatePort? credentialGate;
 
   /// Notified (fire-and-forget, after the run log row is stamped terminal) when
@@ -609,22 +588,10 @@ class AgentDispatchService {
     }
   }
 
-  /// Resolves this run's Claude Code accounts, parking the dispatch rather than
-  /// letting it fail when none of them can serve it.
-  ///
-  /// The loop is what "continue with the discussion" means in practice: the
-  /// plan is re-resolved from scratch after every unblock, so an operator who
-  /// signed into a DIFFERENT account, or into the only one there was, gets a run
-  /// that starts on what they just fixed. A single re-check would instead resume
-  /// on the stale directory that had already refused.
-  ///
-  /// It re-parks (rather than giving up) when the fresh plan still refuses:
-  /// pressing "retry" too early, or a second account expiring while the first
-  /// was being fixed, is a reason to keep waiting, not to lose the turn. The
-  /// registry's own deadline is what bounds the whole wait, so this cannot spin.
-  ///
-  /// Every exit that is not a usable plan returns the refusal untouched, which
-  /// the session then reports exactly as it did before the gate existed.
+  /// Resolves Claude Code accounts, parking instead of failing when none can
+  /// serve. Re-resolves from scratch after each unblock (stale dir must not
+  /// resume). Re-parks if the fresh plan still refuses; registry deadline
+  /// bounds the wait. Non-usable exits return the refusal for the session.
   Future<ClaudeAccountPlan?> _resolveClaudeAccounts({
     required String workspaceId,
     required String? conversationId,

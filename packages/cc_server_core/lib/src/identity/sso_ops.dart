@@ -4,22 +4,8 @@ import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
 import 'package:cc_host/cc_host.dart';
 import 'package:cc_server_core/src/identity/sso_settings_service.dart';
 
-/// Builds the `sso.*` repo-RPC ops (mounted via `extraOps` in
-/// `runCcServer`, the same pattern as the weather/fonts/soundscape groups).
-///
-/// GATE — every op requires the SERVER OWNER (the install's operator), the
-/// same authority as every other install-wide setting. SSO configuration
-/// decides who may authenticate to the whole server — the blast radius is
-/// every workspace — so it never rides mere pairing, and it must not ride a
-/// looser second definition of "admin" either: this group used to accept any
-/// owner of any single workspace, which let anyone who could create a
-/// workspace rewrite install-wide authentication. The `serverAuthority`
-/// declaration is the dispatcher-enforced gate; the in-handler check stays as
-/// depth for catalogs driven without the dispatcher.
-///
-/// All ops are `workspaceScoped: false` by design: authentication is
-/// server-wide (see `SsoConnectionsTable`) and the owner gate above is the
-/// access decision.
+/// `sso.*` repo-RPC ops. Server-owner only (`serverAuthority`) — SSO is install-wide.
+/// All ops `workspaceScoped: false`.
 List<RepoOp> buildSsoOps({
   required SsoSettingsService settings,
   required Future<bool> Function(String userId) isServerOwner,

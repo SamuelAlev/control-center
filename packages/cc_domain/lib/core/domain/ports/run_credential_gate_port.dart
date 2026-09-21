@@ -1,23 +1,10 @@
-/// Parking a run whose credential cannot serve it, instead of failing it.
+/// Parks a run whose credential cannot serve it, instead of failing it.
 ///
-/// A run that cannot authenticate used to die at the launch branch: an
-/// `ErrorEvent` naming the problem, exit 126/127, turn over. The operator then
-/// walked to Settings, fixed the credential and retyped the message — the work
-/// was lost for a reason that heals in seconds.
-///
-/// This port is the alternative. The dispatch stack hands the gate the SAME
-/// verdict it would have failed on, plus a `recheck` closure that answers "can
-/// this run go now?", and blocks. A host with a human attached publishes the
-/// block, offers the fix, watches for it and lets the run continue in place. A
-/// host with nobody attached times out and gets exactly the old failure, which
-/// is what keeps an unattended pipeline or cron run from turning into a hang.
-///
-/// Two lanes are gated today and the reason is what Control Center OWNS: it
-/// holds the Claude Code account directories and the harness provider
-/// credentials, so it can state, before a spawn, whether either can serve a
-/// run. The Cursor CLI owns its
-/// own login and expose no status probe, so a pre-flight for them would be a
-/// guess; they are a later, additive lane rather than a wrong one now.
+/// Dispatch hands the gate the same refusal verdict plus a `recheck` closure;
+/// with a human attached the host publishes the block and continues in place
+/// once fixed; unattended hosts time out to the old failure. Gates Claude Code
+/// account dirs and harness provider credentials (CC owns those). Cursor CLI
+/// has no status probe — not gated yet.
 library;
 
 /// Which credential lane a parked run is waiting on.

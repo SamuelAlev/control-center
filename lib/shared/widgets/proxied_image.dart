@@ -3,28 +3,11 @@ import 'package:control_center/core/media/disk_cached_network_image.dart';
 import 'package:control_center/shared/widgets/media_proxy_scope.dart';
 import 'package:flutter/widgets.dart';
 
-/// A remote image that loads through the host media proxy and cross-fades in:
-/// a server-downscaled lightweight preview fills the box almost instantly, then
-/// the full-resolution image fades in over it as its bytes arrive.
-///
-/// This does NOT size itself — the caller reserves the box (an [AspectRatio], a
-/// fixed [SizedBox], an [Expanded] in a bounded column, …). Reserving the box
-/// up front is what keeps layout from jumping when the image lands; this just
-/// fills that box. See the component doc on [CcImageFade] for the sizing rules.
-///
-/// Two proxy requests are issued per image:
-///   * [maxWidth] device px — the full-resolution variant, the one that ends up
-///     on screen.
-///   * [previewMaxWidth] device px (defaults to a small fraction of [maxWidth],
-///     capped) — a cheap lightweight variant the proxy serves almost
-///     instantly. It becomes [CcImageFade]'s placeholder, so the box fills with
-///     a recognisable (if soft) image within a frame and then sharpens, instead
-///     of sitting on a flat colour and snapping.
-///
-/// Each `(url, w)` is a distinct proxy cache key, so the lightweight fetch does
-/// not evict or thrash the full one — see `MediaProxyConfig.resolve`. When no
-/// [MediaProxyScope] is present (not-yet-connected) the URLs pass through
-/// unchanged.
+/// A remote image that loads through the host media proxy and cross-fades in: a
+/// server-downscaled lightweight preview fills the box almost instantly, then the
+/// full-resolution image fades in over it as its bytes arrive.
+/// Each `(url, w)` is a distinct proxy cache key, so the lightweight fetch does not evict
+/// or thrash the full one — see `MediaProxyConfig.resolve`.
 class ProxiedImage extends StatelessWidget {
   /// Creates a [ProxiedImage].
   const ProxiedImage({

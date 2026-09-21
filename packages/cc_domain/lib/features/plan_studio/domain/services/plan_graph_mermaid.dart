@@ -1,29 +1,10 @@
 import 'package:cc_domain/features/plan_studio/domain/value_objects/plan_graph.dart';
 
-/// Renders a [PlanGraph] as mermaid flowchart source.
+/// Renders a [PlanGraph] as mermaid flowchart source (pure string; no Flutter).
 ///
-/// Pure string production — no rendering, no Flutter — so it can be used
-/// anywhere: the plan bubble in the conversation, Plan Studio's overview pane,
-/// an artifact block, or a markdown export. The app's mermaid engine
-/// (`CcMermaidView`) draws it natively, with no WebView and no JS.
-///
-/// Why mermaid rather than reusing the DAG canvas: the canvas is an interactive
-/// editor bound to Plan Studio's layout and selection state. A conversation
-/// bubble wants a small, static, themable picture and mermaid is already a
-/// first-class block in this app's markdown pipeline.
-///
-/// Node shape encodes [PlanNodeType], so the structural frame
-/// (research/discussion/synthesis) reads differently from the work nodes at a
-/// glance:
-///
-///  * research   — `[/text/]` (parallelogram)
-///  * work       — `[text]` (rectangle)
-///  * discussion — `([text])` (stadium)
-///  * synthesis  — `{{text}}` (hexagon)
-///
-/// Theming is deliberately omitted: the engine themes diagrams from app tokens,
-/// so author-side `classDef`/`style` would be ignored anyway (and would break
-/// the light/dark contrast floor if it were not).
+/// For static bubbles/exports — not the interactive DAG canvas. Node shapes by
+/// [PlanNodeType]: research `[/text/]`, work `[text]`, discussion `([text])`,
+/// synthesis `{{text}}`. No author theming — engine uses app tokens.
 String planGraphToMermaid(
   PlanGraph graph, {
 

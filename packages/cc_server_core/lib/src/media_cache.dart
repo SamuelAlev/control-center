@@ -131,34 +131,12 @@ final class MediaCacheFailure extends MediaCacheResolution {
   const MediaCacheFailure();
 }
 
-/// A persistent, bounded disk cache for the `/proxy/media` upstream fetch.
+/// Persistent bounded disk cache for `/proxy/media` (key = hash of `(url, w)`).
 ///
-/// Before this, EVERY proxied image — avatars, favicons, PR-body media — cost
-/// a full upstream round trip per process lifetime: the desktop's Flutter
-/// `ImageCache` is memory-only and the web tier's browser cache is per-size,
-/// so "this avatar was on the previous page" still hit GitHub again. With the
-/// cache, a repeat is a loopback disk read.
-///
-/// Layout under `dir`: `<sha>.body` + `<sha>.json` (metadata sidecar:
-/// content-type, validators, expiry). The key hashes `(url, w)` so each
-/// downscale variant caches independently, mirroring GitHub's per-`s`
-/// avatars. Freshness honors upstream `max-age` clamped to `[minTtl, maxTtl]`
-/// (a floor so a `max-age=300` avatar host doesn't churn, a cap so a missing
-/// header can't pin a stale image forever). Expired entries with validators
-/// are revalidated with a conditional GET (`304` → serve stored, bump
-/// expiry); a failed refresh serves stale rather than erroring — avatars are
-/// the classic better-stale-than-broken content.
-///
-/// Hygiene is a two-pass sweep: a TTL-grace pass deletes entries expired
-/// longer than [MediaCache.new]'s `maxStaleAge` (plus any orphan body/meta
-/// file), then an LRU pass enforces the total-size cap. The sweep runs after
-/// every write AND on a periodic timer ([startPeriodicSweep]) — write-only
-/// scheduling would leave a quiet server's dead entries on disk forever.
-///
-/// Concurrent requests for the same key single-flight: one upstream fetch,
-/// every waiter serves the stored result. (A waiter whose shared fetch came
-/// back [MediaFetchStream] re-fetches for itself — a stream has exactly one
-/// consumer.)
+/// Layout: `<sha>.body` + `<sha>.json`. TTL from upstream `max-age` clamped to `[minTtl, maxTtl]`;
+/// expired entries revalidate conditionally; failed refresh serves stale. Sweep after writes and
+/// via [startPeriodicSweep] (TTL-grace then LRU). Same-key requests single-flight ([MediaFetchStream]
+/// waiters re-fetch — a stream has one consumer).
 class MediaCache {
   /// Creates a [MediaCache] rooted at [_dir] (created lazily on first write).
   ///

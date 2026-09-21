@@ -2,27 +2,9 @@ import 'dart:io';
 
 import 'package:test/test.dart';
 
-/// Every `McpTool` on disk must be WIRED, or explicitly listed as not wired.
+/// Every on-disk `McpTool` must be wired into the registry or listed as deliberately unwired.
 ///
-/// The tool surface is a hand-maintained list split across two files
-/// (`server_mcp_registry.dart`'s constructor list and the post-construction
-/// `..register(...)` cascade in `cc_server_runtime.dart`), and nothing tied
-/// "a tool class exists" to "the tool is registered". A tool could therefore be
-/// written, reviewed, tested and merged, and still never appear in
-/// `tools/list` — with no failing test anywhere, because its unit tests
-/// construct it directly.
-///
-/// That is not hypothetical. When this ratchet was written it found
-/// **19 of 123 tool classes** — 15% of the agent-facing API — that no
-/// production file ever constructs. Some of that is probably deliberate
-/// (`create_workspace`, `hire_agent`, `fire_agent` and `kill_agent` are
-/// powerful, and holding them back is a defensible product call); some of it
-/// looks like drift. Which is which is a decision for a human, so they are
-/// baselined below rather than guessed at.
-///
-/// Shrinking allowlist, the house pattern: a NEW unregistered tool fails, and
-/// an entry that no longer belongs (because the tool got wired, or deleted)
-/// ALSO fails. The list therefore cannot quietly stop describing reality.
+/// Prevents a tool class from shipping unreachable.
 void main() {
   // Tool classes that exist but are deliberately-or-not left unwired.
   //

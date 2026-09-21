@@ -13,23 +13,12 @@ import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// The right-hand editor for a single [team]: rename/describe, pick a leader,
-/// set operating instructions and add/remove members.
-///
-/// The leader is the source of truth for routing (`team.leaderId`); a member's
-/// "leader" status is derived from it, so promoting an agent simply rewrites
-/// `leaderId` and ensures the agent is a member.
-///
-/// ## Why it looks like this
-///
-/// It is the agent registry's detail pane with a different subject, so it is
-/// built from the same parts: an identity header carrying the pane's actions,
-/// [SettingsField] rows on one label column, and a [SettingsSaveBar] below the
-/// scroll. It used to stack three bordered section cards — a box for the
-/// leader select, a box for the instructions with its own Save floating
-/// mid-card, a box for the members — which spent a lot of chrome saying
-/// "these are three things" about one team, and hid the only commit on the
-/// page inside the middle box.
+/// The right-hand editor for a single [team]: rename/describe, pick a leader, set operating
+/// instructions and add/remove members.
+/// It used to stack three bordered section cards — a box for the leader select, a box for
+/// the instructions with its own Save floating mid-card, a box for the members — which
+/// spent a lot of chrome saying "these are three things" about one team, and hid the only
+/// commit on the page inside the middle box.
 class TeamDetailPanel extends ConsumerStatefulWidget {
   /// Creates a [TeamDetailPanel].
   const TeamDetailPanel({

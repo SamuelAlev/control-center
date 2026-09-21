@@ -14,23 +14,8 @@ import 'package:intl/intl.dart';
 final DateFormat _absoluteFormat = DateFormat('d MMM y HH:mm:ss');
 
 /// Wraps any date/time display with the shared accessibility hover tooltip.
-///
-/// A relative label like "1m ago" is convenient but ambiguous — it hides the
-/// absolute instant, the viewer's timezone and the machine-readable value.
-/// [AppTimestamp] keeps the compact display but, on hover or keyboard focus,
-/// reveals a [CcTooltip] with three rows:
-///
-/// - the local zone (`GMT±H`) followed by the fully-resolved absolute time,
-/// - the relative phrasing ("1 minute ago"),
-/// - the raw ISO-8601 timestamp.
-///
-/// The tooltip is descriptive and non-interactive (per the tooltip contract);
-/// **clicking the timestamp** copies the raw ISO value to the clipboard with a
-/// confirmation toast. The absolute time is exposed to screen readers via
-/// [Semantics] so the unambiguous value is available without a pointer.
-///
-/// Use [AppTimestamp.new] to wrap an existing display widget, or
-/// [AppTimestamp.relative] to render the relative label itself.
+/// A relative label like "1m ago" is convenient but ambiguous — it hides the absolute
+/// instant, the viewer's timezone and the machine-readable value.
 class AppTimestamp extends StatelessWidget {
   /// Wraps [child] (the visible date display) with the tooltip for [dateTime].
   const AppTimestamp({super.key, required this.dateTime, required this.child})

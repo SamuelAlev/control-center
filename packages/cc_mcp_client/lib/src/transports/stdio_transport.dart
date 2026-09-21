@@ -7,19 +7,14 @@ import 'package:cc_mcp_client/src/process/terminate_process_tree.dart';
 import 'package:cc_mcp_client/src/transports/bounded_lines.dart';
 import 'package:cc_mcp_client/src/transports/mcp_transport.dart';
 
-/// Stdio transport: spawns a local child process and speaks newline-delimited
-/// JSON-RPC ("JSONL") over its stdin/stdout. stderr is captured for diagnostics.
+/// Stdio transport: spawns a local child process and speaks newline-delimited JSON-RPC
+/// ("JSONL") over its stdin/stdout.
 ///
-/// [close] tears the child down through [terminateProcessTree]: reap the
-/// descendants, SIGTERM, 3s grace, SIGKILL. That ladder is load-bearing here —
-/// an `npx`-style wrapper exits on SIGTERM and would otherwise orphan its
-/// `node` grandchild (holding the pipe and any port it bound), and a child that
-/// ignores SIGTERM would survive `close()` entirely.
-///
-/// (This doc used to claim the child was spawned in its own process group and
-/// killed by negative PID. It never was: `Process.start` has no process-group
-/// option and `Process.kill` cannot target a negative pid — the implementation
-/// was a single bare SIGTERM to the direct child.)
+/// [close] tears the child down through [terminateProcessTree]: reap the descendants,
+/// SIGTERM, 3s grace, SIGKILL.
+/// That ladder is load-bearing here — an `npx`-style wrapper exits on SIGTERM and would
+/// otherwise orphan its `node` grandchild (holding the pipe and any port it bound), and a
+/// child that ignores SIGTERM would survive `close()` entirely.
 class StdioTransport implements McpTransport {
   /// Creates a [StdioTransport] for [config] (must be a stdio config).
   StdioTransport(this.config) {

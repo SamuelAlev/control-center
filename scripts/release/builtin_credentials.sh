@@ -1,37 +1,10 @@
 #!/usr/bin/env bash
 #
-# Bakes the built-in third-party app credentials into the source constants
-# `cc_server` compiles and puts the empty defaults back afterwards.
+# Inject/restore non-secret builtin credentials into cc_server source constants
+# (`dart build cli` has no -D). Committed file stays empty. Never bake private
+# keys or client secrets.
+# Usage: scripts/release/builtin_credentials.sh inject|restore
 #
-# WHY A SOURCE FILE AND NOT `-D`: cc_server is built with `dart build cli`,
-# which — unlike `dart compile exe` — has NO `--define`/`-D` flag, so a
-# `String.fromEnvironment` value can never reach the server binary. Rewriting
-# the constants before the build is the only mechanism left. The committed file
-# holds empty strings, so nothing secret lives in this public repository.
-#
-# Run `inject` BEFORE any `dart build cli` in a release job (next to the
-# sherpa/onnx staging step, which has the same ordering requirement). Absent
-# secrets are NOT an error: the constants keep their empty defaults and every
-# affected surface falls back the way a build from a fork does — Google Calendar
-# asks for a client id + secret and the GIF picker stays hidden.
-#
-# A half-configured Google pair IS an error. Both halves are required for
-# Google's device-code exchange, so shipping one of them would advertise a
-# "use Control Center's Google app" option that cannot work.
-#
-# Environment (all optional):
-#   CC_BUILTIN_GOOGLE_CLIENT_ID      Google device-code ("TVs and limited input
-#   CC_BUILTIN_GOOGLE_CLIENT_SECRET  devices") client. Both or neither.
-#   CC_BUILTIN_KLIPY_APP_KEY         Klipy GIF app key (not a secret — it rides
-#                                    in every request path — but kept out of git).
-#   CC_BUILTIN_GITHUB_CLIENT_ID      GitHub App client id for the device-flow
-#                                    sign-in. Public by design (a device flow
-#                                    sends no secret); the app's PRIVATE KEY is
-#                                    never baked in — see the target file.
-#
-# Usage:
-#   scripts/release/builtin_credentials.sh inject
-#   scripts/release/builtin_credentials.sh restore   # undo; safe to run twice
 set -euo pipefail
 
 REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"

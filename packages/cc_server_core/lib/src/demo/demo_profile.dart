@@ -3,31 +3,10 @@ import 'package:cc_harness/tools.dart';
 import 'package:cc_host/cc_host.dart'
     show RepoOp, RepoOpRegistry, WatchQueryRegistry;
 
-/// The demo's op-level lockdown: which RPC operations a public visitor may
-/// reach at all.
+/// Demo op lockdown: which RPC ops a public visitor may call.
 ///
-/// This is the SECOND of three layers. The first and primary one is structural
-/// absence — the demo runtime passes `null` for every execution port, so
-/// `terminal.*`, `rig.*`, `fs.*`, `codeServer.*`, `mcp.*` and the rest are never
-/// built into the registry and `RepoOpDispatcher` answers `opUnknown`. This
-/// profile is the belt over that brace, and the third layer is the ratchet test
-/// that forces a human to classify every op that is ever added.
-///
-/// **Why a name allowlist rather than an `ActionClass` denylist.** The catalog
-/// declares 548 ops, 326 of them mutating, and only 29 declare `actionClasses:`
-/// — `terminal.spawn` among the silent ones. A denylist keyed on `processSpawn`
-/// would therefore have admitted the terminal. ActionClass is kept as a second
-/// net below, never as the boundary.
-///
-/// The default is DENY: an op that is not explicitly allowed and is not a plain
-/// read cannot be called. Adding an op to the catalog tomorrow makes it
-/// unreachable in the demo until someone classifies it, which is the safe
-/// direction for a public endpoint.
-///
-/// The same discipline covers the SUBSCRIPTION lane: `sub/subscribe` answers
-/// from a separate watch-query registry the op allowlist never sees, so
-/// [reviewedWatchQueries] pins every watch name a demo visitor may stream and
-/// the ratchet fails when the catalog grows one nobody reviewed.
+/// Deny by prefix with explicit allow overrides; watch queries are an allowlist.
+/// Mutating/admin/identity surfaces stay closed on the public demo host.
 class DemoProfile {
   /// Creates a profile. The default lists are the shipped demo policy.
   const DemoProfile({

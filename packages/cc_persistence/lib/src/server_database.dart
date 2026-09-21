@@ -11,24 +11,14 @@ const globalDatabaseFileName = 'global.db';
 /// Filename of a workspace's database inside its own directory.
 const workspaceDatabaseFileName = 'workspace.db';
 
-/// Opens the server-global database (`<dataDir>/global.db`), with no Flutter
-/// dependency.
+/// Opens the server-global database (`<dataDir>/global.db`), with no Flutter dependency.
 ///
-/// This is the pure-Dart counterpart to a Flutter connection: the caller
-/// supplies an explicit [dataDir] and the native `libsqlite3` is bundled by the
-/// `sqlite3` package's build hook when the server is compiled with `dart build
-/// cli` — so the resulting binary needs neither the Flutter engine nor a system
-/// sqlite.
-///
-/// This is the ONLY database boot opens. Workspace databases open lazily, on
-/// first touch, through `WorkspaceDatabaseManager`.
-///
-/// The vector-search extension (`sqlite_vector`) is registered here even though
-/// `global.db` itself has no vector columns: it is a process-global SQLite
-/// auto-extension, so registering it once before the first connection makes it
-/// available to every workspace connection opened later. If the asset is ever
-/// unavailable, `WorkspaceDatabase` still degrades gracefully — its
-/// `vector_init` calls warn and skip rather than crash.
+/// This is the pure-Dart counterpart to a Flutter connection: the caller supplies an
+/// explicit [dataDir] and the native `libsqlite3` is bundled by the `sqlite3` package's
+/// build hook when the server is compiled with `dart build cli` — so the resulting binary
+/// needs neither the Flutter engine nor a system sqlite.
+/// This is the ONLY database boot opens.
+/// Workspace databases open lazily, on first touch, through `WorkspaceDatabaseManager`.
 QueryExecutor openGlobalDatabase({
   required String dataDir,
   String fileName = globalDatabaseFileName,
@@ -48,20 +38,12 @@ QueryExecutor openGlobalDatabase({
   });
 }
 
-/// Opens ONE workspace's database
-/// (`<dataDir>/<workspaceId>/workspace.db`).
+/// Opens ONE workspace's database (`<dataDir>/<workspaceId>/workspace.db`).
 ///
-/// Each workspace gets its own DIRECTORY, not just a file. The database is the
-/// only thing in it today, but a workspace already accumulates other on-disk
-/// state (worktrees, caches, exports) and giving it a folder means all of that
+/// Each workspace gets its own DIRECTORY, not just a file.
+/// The database is the only thing in it today, but a workspace already accumulates other
+/// on-disk state (worktrees, caches, exports) and giving it a folder means all of that
 /// lives — and is deleted — together.
-///
-/// Returns a [LazyDatabase], so calling this is cheap and synchronous-friendly:
-/// the file is not touched, the schema is not built and `beforeOpen` does not
-/// run until the first query. That is what lets `WorkspaceDatabaseManager.of()`
-/// stay synchronous and keep every repository's `Stream`-returning signature
-/// intact.
-///
 /// [workspaceId] MUST already be validated as a safe path segment — see
 /// `WorkspaceDatabaseManager`, which is the only intended caller.
 QueryExecutor openWorkspaceDatabase({

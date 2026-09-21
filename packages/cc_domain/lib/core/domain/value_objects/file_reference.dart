@@ -5,13 +5,11 @@
 // what the SERVER expands into a real path before an agent ever reads it. All
 // three have to agree on the same characters, so the grammar lives here rather
 // than in the widget layer that happens to have typed it first.
-//
 // The name is a display name, not a path: it is shortened and de-duplicated by
 // the composer so a sentence stays readable, and the message's
 // `metadata['attachments']` is what maps it back to bytes. Anything that needs
 // the file itself resolves through that map — never by treating the name as a
 // filename.
-//
 // Deliberately free of `package:path`: this is the shared kernel, and splitting
 // a basename is the composer's problem, not the grammar's.
 library;

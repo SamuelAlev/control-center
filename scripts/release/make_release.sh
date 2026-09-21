@@ -1,36 +1,9 @@
 #!/usr/bin/env bash
 #
-# Collects the per-platform build artifacts, writes authoritative SHA-256
-# checksums and release notes (first-run trust + provenance verification) and
-# creates a DRAFT GitHub Release. Review the draft, then publish.
+# Collects artifacts, writes SHA-256 + notes, creates a DRAFT GitHub Release.
+# Exact asset set from artifact_names.sh (not a glob). Needs gh + ARTIFACTS.
+# Usage: VERSION=… TAG=… scripts/release/make_release.sh [--dry-run]
 #
-# Expects the build jobs' artifacts downloaded under $ARTIFACTS (default
-# ./artifacts), the two Sparkle feeds written by gen_appcast.sh and the `gh`
-# CLI authenticated (GH_TOKEN + GH_REPO).
-#
-# The shipped asset set is EXACT, not a pattern match. Every name comes from
-# scripts/lib/artifact_names.sh and a missing OR unexpected file fails the job:
-#   * a silently short release used to be possible — an unquoted `$(ls …)` let a
-#     missing file print a warning to stderr while `gh` still succeeded — and
-#   * `cc_server update` treats a missing SHA256SUMS.txt entry as a hard
-#     refusal, so a dropped asset bricks self-update for that platform on a
-#     user's machine instead of failing here.
-#
-# Environment:
-#   VERSION              release version, e.g. 1.0.0 (required)
-#   TAG                  release tag, e.g. v1.0.0 (required)
-#   ARTIFACTS            downloaded-artifacts dir (default: artifacts)
-#   GITHUB_SHA           commit to target if the tag doesn't exist yet
-#   GITHUB_REPOSITORY    owner/repo (used for the attestation-verify hint)
-#   GH_TOKEN / GH_REPO   gh CLI auth + target repo
-#
-# Usage:
-#   VERSION=1.0.0 TAG=v1.0.0 scripts/release/make_release.sh
-#   VERSION=1.0.0 TAG=v1.0.0 scripts/release/make_release.sh --dry-run
-#
-# --dry-run does everything except `gh release create`, printing the argv it
-# would have used. This is the only script in the pipeline that cannot be safely
-# exercised for real, which is why it is the only one carrying a flag.
 set -euo pipefail
 
 REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"

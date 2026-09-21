@@ -6,15 +6,13 @@ import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_domain/features/pr_review/domain/repositories/open_pr_list_repository.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 
-/// An [OpenPrListRepository] backed by the RPC client — the thin-client data
-/// path for the PR-list screen, the dashboard priority reviews and the user
-/// profile PR history.
+/// An [OpenPrListRepository] backed by the RPC client — the thin-client data path for the
+/// PR-list screen, the dashboard priority reviews and the user profile PR history.
 ///
-/// All GitHub fetching runs SERVER-SIDE on the host's gh-authenticated client
-/// (the thin client holds no token). This repository issues the `pr.*` ops and
-/// maps the [PullRequestDto] rows back to domain [PullRequest]s via the shared
-/// [pullRequestFromWireDto]. Reactions are not carried by these list/search
-/// queries, so rows have none (the row UI doesn't render them).
+/// All GitHub fetching runs SERVER-SIDE on the host's gh-authenticated client (the thin
+/// client holds no token).
+/// This repository issues the `pr.*` ops and maps the [PullRequestDto] rows back to domain
+/// [PullRequest]s via the shared [pullRequestFromWireDto].
 class RpcOpenPrListRepository implements OpenPrListRepository {
   /// Creates an [RpcOpenPrListRepository] over [_client].
   RpcOpenPrListRepository(this._client);

@@ -4,9 +4,7 @@ import 'package:cc_domain/features/mcp/domain/ports/mcp_tool_port.dart';
 import 'package:cc_mcp/src/tools/start_ai_review_tool.dart';
 import 'package:test/test.dart';
 
-// ---------------------------------------------------------------------------
 // Fake hub start
-// ---------------------------------------------------------------------------
 
 class FakeHubStart {
   Map<String, dynamic>? _nextResult;
@@ -63,9 +61,7 @@ Future<CallResult> _call(
   return tool.run(args);
 }
 
-// ---------------------------------------------------------------------------
 // Tests
-// ---------------------------------------------------------------------------
 
 void main() {
   late FakeHubStart hub;
