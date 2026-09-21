@@ -32,6 +32,11 @@ esac
 # The repo root, so the script works from anywhere.
 cd "$(dirname "${BASH_SOURCE[0]}")/../.." || exit 1
 
+# Git Bash on windows-latest otherwise hands Flutter GNU tar, which treats
+# C:\ as a remote host when unpacking SDK zips. No-op on Linux/macOS.
+# shellcheck source=prefer_windows_tar.sh
+. "$(dirname "${BASH_SOURCE[0]}")/prefer_windows_tar.sh"
+
 failed=()
 ran=0
 for dir in packages/*/ apps/*/; do

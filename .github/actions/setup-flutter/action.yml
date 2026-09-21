@@ -65,6 +65,34 @@ runs:
         flutter-version-file: .fvmrc # single source of truth — synced via fvm
         cache: true
 
+    # GitHub's windows-latest PATH lists Git usr\bin (GNU tar) before
+    # System32 (bsdtar). Flutter unpacks cache zips with
+    # `tar -xf C:\path\file.zip` (flutter_tools os.dart _unpackWithTar);
+    # GNU tar treats "C:" as a remote host:
+    #   /usr/bin/tar: Cannot connect to C: resolve failed
+    # Two previous shadows failed for distinct reasons:
+    #   * `[ -x System32/tar.exe ]` is false on NTFS (no Unix +x bit), so
+    #     the copy never ran; exporting PATH="$RUNNER_TEMP/win-tar:$PATH"
+    #     also splits on the colon in D:\…
+    #   * GITHUB_PATH prepends for later *pwsh* steps, but Git Bash puts
+    #     /usr/bin back in front when the next step starts, so Dart still
+    #     finds GNU tar. Bash steps that spawn Flutter therefore source
+    #     prefer_windows_tar.sh in-process (cygpath + test -f).
+    # Do not prepend System32 itself: bash scripts later in the job would
+    # then pick up Windows find.exe/sort.exe.
+    - name: Prefer Windows tar (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        $dir = Join-Path $env:RUNNER_TEMP 'win-tar'
+        $src = Join-Path $env:SystemRoot 'System32\tar.exe'
+        if (-not (Test-Path $src)) {
+          throw "Windows tar.exe not found at $src"
+        }
+        New-Item -ItemType Directory -Force -Path $dir | Out-Null
+        Copy-Item -Force -Path $src -Destination (Join-Path $dir 'tar.exe')
+        Add-Content -Path $env:GITHUB_PATH -Value $dir
+
     # The desktop shell is built on Flutter's experimental multi-window
     # ("windowing") APIs (lib/app/app_windows.dart). The feature flag lives in
     # the MACHINE-global Flutter settings (~/.config/flutter/settings), not in
@@ -86,35 +114,14 @@ runs:
     - name: Enable the windowing feature flag
       if: inputs.windowing != 'false'
       shell: bash
-      run: flutter config --enable-windowing
-
-    # GitHub's windows-latest PATH lists Git usr\bin (GNU tar) before
-    # System32 (bsdtar). Flutter unpacks cache zips with
-    # `tar -xf C:\path\file.zip` (flutter_tools os.dart _unpackWithTar);
-    # GNU tar treats "C:" as a remote host and fails:
-    #   /usr/bin/tar: Cannot connect to C: resolve failed
-    # A same-step Git Bash PATH export does not reach Dart's Windows
-    # process lookup, and `[ -x tar.exe ]` is false on NTFS (no +x bit),
-    # so the previous shadow never ran. Prepend a directory that contains
-    # ONLY Windows tar.exe via GITHUB_PATH so every later step — pub get
-    # and the package tests — resolves that binary. Do not prepend
-    # System32 itself: bash scripts later in the job would then pick up
-    # Windows find.exe/sort.exe.
-    - name: Prefer Windows tar (Windows)
-      if: runner.os == 'Windows'
-      shell: pwsh
       run: |
-        $dir = Join-Path $env:RUNNER_TEMP 'win-tar'
-        $src = Join-Path $env:SystemRoot 'System32\tar.exe'
-        if (-not (Test-Path $src)) {
-          throw "Windows tar.exe not found at $src"
-        }
-        New-Item -ItemType Directory -Force -Path $dir | Out-Null
-        Copy-Item -Force -Path $src -Destination (Join-Path $dir 'tar.exe')
-        Add-Content -Path $env:GITHUB_PATH -Value $dir
+        . "$GITHUB_WORKSPACE/scripts/ci/prefer_windows_tar.sh"
+        flutter config --enable-windowing
 
     - name: Resolve dependencies
       if: inputs.pub-get == 'true'
       shell: bash
       working-directory: ${{ inputs.working-directory }}
-      run: flutter pub get
+      run: |
+        . "$GITHUB_WORKSPACE/scripts/ci/prefer_windows_tar.sh"
+        flutter pub get
