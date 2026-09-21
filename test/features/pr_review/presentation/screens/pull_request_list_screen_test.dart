@@ -12,10 +12,12 @@ import 'package:control_center/features/pr_review/providers/pr_review_providers.
 import 'package:control_center/features/repos/providers/repo_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/router/routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:riverpod/misc.dart';
 
 Repo _repo(String id, String owner, String name) {
@@ -224,5 +226,113 @@ void main() {
 
     await tester.pumpWidget(Container());
     await tester.pump(const Duration(milliseconds: 100));
+  });
+
+  testWidgets('?repo= selects that org/repo in the rail', (tester) async {
+    sizeView(tester);
+    final router = GoRouter(
+      initialLocation: pullRequestsRoute('ws1', repo: 'acme/beta'),
+      routes: [
+        GoRoute(
+          path: pullRequestsRoute(workspaceIdParam),
+          builder: (_, _) => CcTheme(
+            data: CcThemeData.light(),
+            child: const PullRequestListScreen(),
+          ),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          appPreferencesProvider.overrideWithValue(prefs),
+          activeWorkspaceIdProvider.overrideWith(_TestWorkspaceIdNotifier.new),
+          reposForWorkspaceProvider('ws1').overrideWith(
+            (ref) => Stream.value([
+              _repo('rA', 'acme', 'alpha'),
+              _repo('rB', 'acme', 'beta'),
+            ]),
+          ),
+          prsByRepoProvider.overrideWith(_SeededPrsByRepoNotifier.new),
+          currentUserLoginProvider.overrideWith((ref) => 'author'),
+          prReviewRepositoryProvider.overrideWith(
+            (ref) => const EmptyPrReviewRepository(),
+          ),
+        ],
+        child: MaterialApp.router(
+          localizationsDelegates: [
+            ...AppLocalizations.localizationsDelegates,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
+          routerConfig: router,
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('Beta change'), findsOneWidget);
+    expect(find.text('Alpha change'), findsNothing);
+  });
+
+  testWidgets('tapping a rail entry writes ?repo= onto the list URL', (
+    tester,
+  ) async {
+    sizeView(tester);
+    final router = GoRouter(
+      initialLocation: pullRequestsRoute('ws1'),
+      routes: [
+        GoRoute(
+          path: pullRequestsRoute(workspaceIdParam),
+          builder: (_, _) => CcTheme(
+            data: CcThemeData.light(),
+            child: const PullRequestListScreen(),
+          ),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          appPreferencesProvider.overrideWithValue(prefs),
+          activeWorkspaceIdProvider.overrideWith(_TestWorkspaceIdNotifier.new),
+          reposForWorkspaceProvider('ws1').overrideWith(
+            (ref) => Stream.value([
+              _repo('rA', 'acme', 'alpha'),
+              _repo('rB', 'acme', 'beta'),
+            ]),
+          ),
+          prsByRepoProvider.overrideWith(_SeededPrsByRepoNotifier.new),
+          currentUserLoginProvider.overrideWith((ref) => 'author'),
+          prReviewRepositoryProvider.overrideWith(
+            (ref) => const EmptyPrReviewRepository(),
+          ),
+        ],
+        child: MaterialApp.router(
+          localizationsDelegates: [
+            ...AppLocalizations.localizationsDelegates,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
+          routerConfig: router,
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('Alpha change'), findsOneWidget);
+    await tester.tap(find.text('acme/beta'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Beta change'), findsOneWidget);
+    expect(router.state.uri.queryParameters['repo'], 'acme/beta');
   });
 }

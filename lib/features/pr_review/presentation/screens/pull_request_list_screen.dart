@@ -93,6 +93,35 @@ class _PullRequestListScreenState extends ConsumerState<PullRequestListScreen> {
     }
   }
 
+  /// The rail selection from `?repo=` when this screen is under a [GoRouter].
+  /// Null outside a router (widget tests) so [PrRepoView] keeps local state.
+  String? _selectedRepoId(List<PrRepoSectionData> sections) {
+    final router = GoRouter.maybeOf(context);
+    if (router == null) {
+      return null;
+    }
+    return prListSelectedRepoId(
+      repos: sections.map((s) => s.repo),
+      repoFullName: router.state.uri.queryParameters['repo'],
+    );
+  }
+
+  /// Writes the tapped repo onto the list URL so the rail selection is
+  /// addressable (breadcrumb, reload, back). Null when there is no router.
+  ValueChanged<String>? _onSelectRepo(List<PrRepoSectionData> sections) {
+    if (GoRouter.maybeOf(context) == null) {
+      return null;
+    }
+    return (id) {
+      final repo = sections.where((s) => s.repo.id == id).firstOrNull?.repo;
+      final workspaceId = context.currentWorkspaceId;
+      if (repo == null || workspaceId == null) {
+        return;
+      }
+      context.go(pullRequestsRoute(workspaceId, repo: repo.fullName));
+    };
+  }
+
   /// Opens the compose screen for a new pull request (the repo is chosen there,
   /// defaulting to the active repo).
   void _newPr() {
@@ -297,7 +326,14 @@ class _PullRequestListScreenState extends ConsumerState<PullRequestListScreen> {
             PrFilterBar(scope: prListFilterScope),
             const SizedBox(height: AppSpacing.md),
           ],
-          Expanded(child: PrRepoView(sections: sections, selectable: true)),
+          Expanded(
+            child: PrRepoView(
+              sections: sections,
+              selectable: true,
+              selectedRepoId: _selectedRepoId(sections),
+              onSelect: _onSelectRepo(sections),
+            ),
+          ),
         ],
       ),
     );

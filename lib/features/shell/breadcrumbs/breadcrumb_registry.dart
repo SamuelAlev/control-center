@@ -452,7 +452,20 @@ List<CcBreadcrumbItem> _pullRequestsListCrumbs(
   BuildContext context,
   GoRouterState state,
   AppLocalizations l10n,
-) => [CcBreadcrumbItem(current: true, child: Text(l10n.pullRequests))];
+) {
+  final workspaceId = state.pathParameters['workspaceId']!;
+  final repo = state.uri.queryParameters['repo'];
+  if (repo == null || repo.isEmpty) {
+    return [CcBreadcrumbItem(current: true, child: Text(l10n.pullRequests))];
+  }
+  return [
+    CcBreadcrumbItem(
+      onPress: () => context.go(pullRequestsRoute(workspaceId)),
+      child: Text(l10n.pullRequests),
+    ),
+    CcBreadcrumbItem(current: true, child: Text(repo)),
+  ];
+}
 
 List<CcBreadcrumbItem> _pullRequestDetailCrumbs(
   WidgetRef ref,
@@ -460,28 +473,43 @@ List<CcBreadcrumbItem> _pullRequestDetailCrumbs(
   GoRouterState state,
   AppLocalizations l10n,
 ) {
+  final workspaceId = state.pathParameters['workspaceId']!;
   final raw = state.pathParameters['prNumber'] ?? '';
   final prRef = prRefFromRouteState(state);
-  final base = CcBreadcrumbItem(
-    onPress: () =>
-        context.go(pullRequestsRoute(state.pathParameters['workspaceId']!)),
+  final owner = state.pathParameters['owner'] ?? '';
+  final repo = state.pathParameters['repo'] ?? '';
+  final repoFullName = (owner.isNotEmpty && repo.isNotEmpty)
+      ? '$owner/$repo'
+      : null;
+  final listCrumb = CcBreadcrumbItem(
+    onPress: () => context.go(pullRequestsRoute(workspaceId)),
     child: Text(l10n.pullRequests),
   );
+  final repoCrumb = repoFullName == null
+      ? null
+      : CcBreadcrumbItem(
+          onPress: () =>
+              context.go(pullRequestsRoute(workspaceId, repo: repoFullName)),
+          child: Text(repoFullName),
+        );
+  List<CcBreadcrumbItem> trail(CcBreadcrumbItem current) => [
+    listCrumb,
+    if (repoCrumb != null) repoCrumb,
+    current,
+  ];
   if (prRef == null) {
-    return [base, CcBreadcrumbItem(current: true, child: Text('#$raw'))];
+    return trail(CcBreadcrumbItem(current: true, child: Text('#$raw')));
   }
   final prAsync = ref.watch(prDetailProvider(prRef));
   return prAsync.maybeWhen(
     data: (pr) {
       if (pr == null) {
-        return [
-          base,
+        return trail(
           CcBreadcrumbItem(current: true, child: Text('#${prRef.number}')),
-        ];
+        );
       }
       final hasDelta = pr.additions > 0 || pr.deletions > 0;
-      return [
-        base,
+      return trail(
         CcBreadcrumbItem(
           current: true,
           child: Row(
@@ -525,12 +553,10 @@ List<CcBreadcrumbItem> _pullRequestDetailCrumbs(
             ],
           ),
         ),
-      ];
+      );
     },
-    orElse: () => [
-      base,
-      CcBreadcrumbItem(current: true, child: Text('#${prRef.number}')),
-    ],
+    orElse: () =>
+        trail(CcBreadcrumbItem(current: true, child: Text('#${prRef.number}'))),
   );
 }
 

@@ -48,8 +48,18 @@ String workspaceRoot(String workspaceId) => '/workspaces/$workspaceId';
 String apiKeysRoute(String workspaceId) => '/workspaces/$workspaceId/api-keys';
 
 /// Pull requests list screen.
-String pullRequestsRoute(String workspaceId) =>
-    '/workspaces/$workspaceId/pull-requests';
+///
+/// Pass [repo] (`owner/name`) to select that repository in the left rail.
+/// The query is the source of truth for the rail selection, so a breadcrumb
+/// or reload lands on the same repo. Omit it for the implicit first-repo
+/// selection used by the sidebar.
+String pullRequestsRoute(String workspaceId, {String? repo}) {
+  final base = '/workspaces/$workspaceId/pull-requests';
+  if (repo == null || repo.isEmpty) {
+    return base;
+  }
+  return '$base?repo=${Uri.encodeQueryComponent(repo)}';
+}
 
 /// Compose-a-new-pull-request screen. Static segment, matched before the
 /// `:prNumber` detail route so "compose" isn't parsed as a PR number.

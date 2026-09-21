@@ -1,3 +1,4 @@
+import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_table/pr_bulk_action_bar.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_table/pr_repo_rail.dart';
@@ -27,6 +28,8 @@ class PrRepoView extends ConsumerStatefulWidget {
     super.key,
     required this.sections,
     this.selectable = false,
+    this.selectedRepoId,
+    this.onSelect,
   });
 
   /// Every repo + its (filtered) items, in rail order. Never hidden — a repo
@@ -36,21 +39,65 @@ class PrRepoView extends ConsumerStatefulWidget {
   /// Whether rows are selectable and the bulk-action bar is shown.
   final bool selectable;
 
+  /// The repo whose card is shown. When set (and present in [sections]) this
+  /// is the source of truth — used by the queue so `?repo=` on the list URL
+  /// can land on a specific org/repo. When null, the first section is
+  /// preselected and rail taps stay local.
+  final String? selectedRepoId;
+
+  /// Invoked with the tapped repo id. When set, the parent owns selection
+  /// (typically by writing the list URL); local state is not updated.
+  final ValueChanged<String>? onSelect;
+
   @override
   ConsumerState<PrRepoView> createState() => _PrRepoViewState();
+}
+
+/// The rail id to highlight for an `owner/repo` query.
+///
+/// Matching is case-insensitive on [Repo.fullName]. An empty or unknown
+/// query falls back to the first repo so the detail pane is never blank.
+String? prListSelectedRepoId({
+  required Iterable<Repo> repos,
+  String? repoFullName,
+}) {
+  final list = List<Repo>.of(repos, growable: false);
+  if (list.isEmpty) {
+    return null;
+  }
+  final needle = repoFullName?.trim();
+  if (needle == null || needle.isEmpty) {
+    return list.first.id;
+  }
+  final lower = needle.toLowerCase();
+  for (final repo in list) {
+    if (repo.fullName.toLowerCase() == lower) {
+      return repo.id;
+    }
+  }
+  return list.first.id;
 }
 
 class _PrRepoViewState extends ConsumerState<PrRepoView> {
   final ScrollController _scrollController = ScrollController();
 
-  /// The repo whose card is shown. Null until the user picks one — the build
-  /// falls back to the first section so the first repo is preselected.
+  /// Local selection when the parent does not drive [PrRepoView.selectedRepoId].
+  /// Null until the user picks one — the build falls back to the first
+  /// section so the first repo is preselected.
   String? _selectedRepoId;
 
   @override
   void dispose() {
     _scrollController.dispose();
     super.dispose();
+  }
+
+  void _onSelect(String id) {
+    if (widget.onSelect != null) {
+      widget.onSelect!(id);
+      return;
+    }
+    setState(() => _selectedRepoId = id);
   }
 
   @override
@@ -61,8 +108,10 @@ class _PrRepoViewState extends ConsumerState<PrRepoView> {
     }
 
     final ids = {for (final s in sections) s.repo.id};
-    final selectedId =
-        (_selectedRepoId != null && ids.contains(_selectedRepoId))
+    final controlledId = widget.selectedRepoId;
+    final selectedId = (controlledId != null && ids.contains(controlledId))
+        ? controlledId
+        : (_selectedRepoId != null && ids.contains(_selectedRepoId))
         ? _selectedRepoId!
         : sections.first.repo.id;
     final selected = sections.firstWhere((s) => s.repo.id == selectedId);
@@ -111,7 +160,7 @@ class _PrRepoViewState extends ConsumerState<PrRepoView> {
                   (repo: section.repo, count: section.items.length),
               ],
               selectedRepoId: selectedId,
-              onSelect: (id) => setState(() => _selectedRepoId = id),
+              onSelect: _onSelect,
             ),
           ),
         ),

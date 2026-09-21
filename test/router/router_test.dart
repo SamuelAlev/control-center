@@ -231,6 +231,13 @@ void main() {
       'pullRequestsRoute',
       () => expect(pullRequestsRoute('w1'), '/workspaces/w1/pull-requests'),
     );
+    test(
+      'pullRequestsRoute with repo query',
+      () => expect(
+        pullRequestsRoute('w1', repo: 'acme/web'),
+        '/workspaces/w1/pull-requests?repo=acme%2Fweb',
+      ),
+    );
     test('workspaceListRoute', () => expect(workspaceListRoute, '/workspaces'));
     test(
       'settingsRoute',
