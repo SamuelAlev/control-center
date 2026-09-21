@@ -73,20 +73,23 @@ class CountRailItem extends StatelessWidget implements CcFluidHoverTarget {
                     label,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
+                    // Keep the caption's 16px line. Manrope's g/y descend
+                    // ~3px below the baseline; `height: 1` shrinks the line
+                    // to the 12px em square, and an ellipsized label clips
+                    // to that box, so the tails are sliced off.
                     style: CcTypography.caption.copyWith(
                       color: tokens.textPrimary,
                       fontWeight: FontWeight.w500,
-                      height: 1,
                     ),
                   ),
                 ),
                 const SizedBox(width: AppSpacing.sm),
                 Text(
                   '$count',
+                  // Same line height as the label so the baselines align.
                   style: CcTypography.caption.copyWith(
                     color: count > 0 ? tokens.textSecondary : tokens.idle,
                     fontWeight: FontWeight.w600,
-                    height: 1,
                   ),
                 ),
               ],

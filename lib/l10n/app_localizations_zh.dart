@@ -10081,6 +10081,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get soundscapeMoodSleep => '睡眠';
 
   @override
+  String get soundscapeMoodRise => '上升';
+
+  @override
   String get soundscapeVolumeLabel => '音量';
 
   @override
@@ -10119,7 +10122,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get soundscapeLocationDetecting => '正在检测位置…';
 
   @override
-  String get soundscapeLocationAutoNote => '位置会根据此工作区自动检测。';
+  String get soundscapeLocationAutoNote => '位置来自此设备。';
 
   @override
   String get soundscapeRefreshWeather => '刷新天气';
@@ -24350,6 +24353,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get soundscapeMoodSleep => '睡眠';
 
   @override
+  String get soundscapeMoodRise => '上升';
+
+  @override
   String get soundscapeVolumeLabel => '音量';
 
   @override
@@ -24388,7 +24394,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get soundscapeLocationDetecting => '正在偵測位置…';
 
   @override
-  String get soundscapeLocationAutoNote => '位置會由此工作區自動偵測。';
+  String get soundscapeLocationAutoNote => '位置來自這部裝置。';
 
   @override
   String get soundscapeRefreshWeather => '重新整理天氣';

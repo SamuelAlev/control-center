@@ -13,8 +13,8 @@ import 'package:cc_rpc/cc_rpc.dart';
 ///
 /// Every op is exposed to the client: reads ([getCurrent] / [watchCurrent]) and
 /// the host-serviced writes ([refreshNow] / [setManualLocation] /
-/// [clearManualLocation]). The host owns the live Open-Meteo fetch and all
-/// state; this client never touches a database.
+/// [clearManualLocation] / [reportDeviceLocation]). The host owns the live
+/// Open-Meteo fetch and all state; this client never touches a database.
 class RemoteWeatherRepository {
   /// Creates a [RemoteWeatherRepository] over [_client].
   RemoteWeatherRepository(this._client);
@@ -51,6 +51,15 @@ class RemoteWeatherRepository {
   /// Clears the bound workspace's manual location, reverting to auto-detection.
   Future<void> clearManualLocation() =>
       _client.call('weather.clearManualLocation', const {});
+
+  /// Reports the app's device position for the bound workspace.
+  Future<void> reportDeviceLocation({
+    required double latitude,
+    required double longitude,
+  }) => _client.call('weather.reportDeviceLocation', {
+    'latitude': latitude,
+    'longitude': longitude,
+  });
 
   WeatherSnapshotDto? _snapshot(Map<String, dynamic> data) {
     final weather = data['weather'];

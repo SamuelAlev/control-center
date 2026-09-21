@@ -203,6 +203,9 @@ dependencies:
   media_kit_libs_macos_audio: ^1.1.4
   media_kit_libs_windows_audio: ^1.0.9
   media_kit_libs_linux: ^1.2.1
+  # Device position for soundscape weather on desktop and web. The host still
+  # fetches the forecast; this only reads the OS or browser location.
+  geolocator: ^14.0.3
 
 # The ONE override in this workspace, and it exists to break a `win32`
 # deadlock that has nothing to do with either package's behaviour:

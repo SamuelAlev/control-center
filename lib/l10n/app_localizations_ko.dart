@@ -10183,6 +10183,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get soundscapeMoodSleep => '수면';
 
   @override
+  String get soundscapeMoodRise => '상승';
+
+  @override
   String get soundscapeVolumeLabel => '볼륨';
 
   @override
@@ -10221,7 +10224,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get soundscapeLocationDetecting => '위치를 확인하는 중…';
 
   @override
-  String get soundscapeLocationAutoNote => '이 워크스페이스에서 위치가 자동으로 감지됩니다.';
+  String get soundscapeLocationAutoNote => '위치는 이 기기에서 가져옵니다.';
 
   @override
   String get soundscapeRefreshWeather => '날씨 새로고침';

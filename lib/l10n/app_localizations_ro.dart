@@ -10498,6 +10498,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get soundscapeMoodSleep => 'Somn';
 
   @override
+  String get soundscapeMoodRise => 'Avânt';
+
+  @override
   String get soundscapeVolumeLabel => 'Volum';
 
   @override
@@ -10537,7 +10540,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get soundscapeLocationAutoNote =>
-      'Locația este detectată automat din acest spațiu de lucru.';
+      'Locația provine de pe acest dispozitiv.';
 
   @override
   String get soundscapeRefreshWeather => 'Reîmprospătează vremea';

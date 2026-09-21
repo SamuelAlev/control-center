@@ -180,11 +180,12 @@ class SoundscapeTargets {
 /// Mood sets the balance and the functional profile (focus = drier, gently
 /// modulated at beta rate, sparse mid-register motifs; relax = warmer,
 /// wetter, alpha rate, sparser and lower; sleep = dark drones, no motifs,
-/// deep slow space). Weather shapes the noise bed (rain is bright and busy,
+/// deep slow space; rise = buoyant pentatonic, soft pulse, 16 Hz AM
+/// at 96 BPM). Weather shapes the noise bed (rain is bright and busy,
 /// storms loud, dark and gusty, fog muffled) and thins the melody; daypart
 /// and the day/temperature flags nudge brightness, density and reverb
-/// depth. It is a total, side-effect-free function — no clocks, no
-/// randomness.
+/// depth. Rise on a short day eases dusk/night darkening. It is a total,
+/// side-effect-free function — no clocks, no randomness.
 class SoundscapeArrangement {
   /// Creates the (stateless) arrangement engine.
   const SoundscapeArrangement();
@@ -194,6 +195,7 @@ class SoundscapeArrangement {
     final mood = _MoodProfile.of(context.mood);
     final weather = _WeatherProfile.of(context.weather);
     final daypart = _DaypartProfile.of(context.daypart);
+    final daypartEase = _daypartEase(context);
 
     // Noise bed: level scales with weather, dampened a little by calmer moods.
     final noiseGain = (weather.noiseGain * mood.noiseMultiplier).clamp(
@@ -205,11 +207,14 @@ class SoundscapeArrangement {
       -0.15,
       0.15,
     );
-    final dayBrightness = context.isDay ? 1.0 : 0.9;
+    final dayBrightness = _easeTowardOne(
+      context.isDay ? 1.0 : 0.9,
+      daypartEase,
+    );
     final noiseCutoff =
         (weather.noiseCutoffHz *
                 mood.cutoffMultiplier *
-                daypart.cutoffMultiplier *
+                _easeTowardOne(daypart.cutoffMultiplier, daypartEase) *
                 (1.0 + tempWarmth) *
                 dayBrightness)
             .clamp(200.0, 16000.0);
@@ -227,25 +232,30 @@ class SoundscapeArrangement {
     );
 
     // Motifs: sleep silences them; storms/rain/night thin them out.
+    // Rise on a short day eases dusk/night thinning so the gloom does
+    // not cancel the mood; weather still applies.
     final motifNotesPerMinute =
         (mood.motifNotesPerMinute *
                 weather.motifMultiplier *
-                daypart.motifMultiplier *
-                (context.isDay ? 1.0 : 0.85))
-            .clamp(0.0, 12.0);
+                _easeTowardOne(daypart.motifMultiplier, daypartEase) *
+                _easeTowardOne(context.isDay ? 1.0 : 0.85, daypartEase))
+            .clamp(0.0, 20.0);
 
     // Arp: same environmental thinning as the motifs, but softened — the
     // density layer recedes in rough weather / at night without vanishing.
     final arpFill =
         (mood.arpFill *
-                (0.6 + 0.4 * weather.motifMultiplier * daypart.motifMultiplier))
+                (0.6 +
+                    0.4 *
+                        weather.motifMultiplier *
+                        _easeTowardOne(daypart.motifMultiplier, daypartEase)))
             .clamp(0.0, 0.9);
 
-    // Neural AM: slightly shallower at night.
-    final amDepth = (mood.amDepth * (context.isDay ? 1.0 : 0.9)).clamp(
-      0.0,
-      0.5,
-    );
+    // Neural AM: slightly shallower at night. Rise on a short day eases
+    // that darkening the same way it eases cutoff and motif thinning.
+    final amDepth =
+        (mood.amDepth * _easeTowardOne(context.isDay ? 1.0 : 0.9, daypartEase))
+            .clamp(0.0, 0.5);
 
     // Reverb: mood sets the floor, fog/storm and night deepen it.
     final reverbWet =
@@ -288,6 +298,27 @@ class SoundscapeArrangement {
       wetHighPassHz: mood.wetHighPassHz,
     );
   }
+
+  /// How far Rise ignores dusk/night darkening. `1` fully counteracts
+  /// (day ≤ 10 h); `0` follows daypart (day ≥ 12 h). Other moods are 0.
+  static double _daypartEase(SoundscapeContext context) {
+    if (context.mood != SoundscapeMood.rise) {
+      return 0.0;
+    }
+    final hours = context.dayLengthHours;
+    if (hours <= 10.0) {
+      return 1.0;
+    }
+    if (hours >= 12.0) {
+      return 0.0;
+    }
+    return (12.0 - hours) / 2.0;
+  }
+
+  /// Pulls [value] toward `1` by [ease]. `ease` 0 leaves it; `ease` 1
+  /// returns 1.
+  static double _easeTowardOne(double value, double ease) =>
+      1.0 - (1.0 - value) * (1.0 - ease);
 }
 
 /// Per-mood balance and functional profile.
@@ -406,6 +437,34 @@ class _MoodProfile {
           reverbDamp: 0.55,
           preDelayMs: 60.0,
           wetHighPassHz: 160.0,
+        );
+      case SoundscapeMood.rise:
+        // Buoyant work sound: denser melody than focus, a softer pulse,
+        // a warmer pad. Lift is register and contour, not treble sparkle —
+        // the reference stays closed above ~3 kHz.
+        return const _MoodProfile(
+          padGain: 0.24,
+          padCutoffHz: 1800.0,
+          padDetuneCents: 6.5,
+          noiseMultiplier: 0.55,
+          cutoffMultiplier: 0.5,
+          motifGain: 0.24,
+          motifNotesPerMinute: 14.0,
+          motifAttackSeconds: 0.35,
+          motifReleaseSeconds: 3.0,
+          arpGain: 0.12,
+          arpFill: 0.12,
+          arpAttackSeconds: 0.06,
+          arpReleaseSeconds: 1.6,
+          pulseGain: 0.16,
+          pulseFill: 0.28,
+          subGain: 0.07,
+          amDepth: 0.28,
+          reverbWet: 0.24,
+          reverbDecay: 0.55,
+          reverbDamp: 0.40,
+          preDelayMs: 30.0,
+          wetHighPassHz: 320.0,
         );
     }
   }

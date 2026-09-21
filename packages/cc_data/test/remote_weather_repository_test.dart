@@ -97,6 +97,14 @@ void main() {
       await repo.clearManualLocation();
       expect(host.lastCall('weather.clearManualLocation'), isNotNull);
     });
+
+    test('reportDeviceLocation forwards coordinates', () async {
+      final repo = RemoteWeatherRepository(client);
+      await repo.reportDeviceLocation(latitude: 45.75, longitude: 4.85);
+      final call = host.lastCall('weather.reportDeviceLocation')!;
+      expect(call.args['latitude'], 45.75);
+      expect(call.args['longitude'], 4.85);
+    });
   });
 
   group('RpcWeatherRepository', () {
@@ -128,9 +136,14 @@ void main() {
       await repo.refreshNow('ws-1');
       await repo.setManualLocation('ws-1', latitude: 1, longitude: 2);
       await repo.clearManualLocation('ws-1');
+      await repo.reportDeviceLocation('ws-1', latitude: 45.75, longitude: 4.85);
       expect(host.lastCall('weather.refreshNow'), isNotNull);
       expect(host.lastCall('weather.setManualLocation')!.args['latitude'], 1);
       expect(host.lastCall('weather.clearManualLocation'), isNotNull);
+      expect(
+        host.lastCall('weather.reportDeviceLocation')!.args['longitude'],
+        4.85,
+      );
     });
   });
 }

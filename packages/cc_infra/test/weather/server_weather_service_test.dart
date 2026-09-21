@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -16,6 +17,7 @@ class _FakeWeatherClient extends WeatherApiClient {
   _FakeWeatherClient({
     WeatherSnapshot? snapshot,
     this.ipLocation,
+    this.city,
     this.fetchThrows,
   }) : snapshot = snapshot ?? _defaultSnapshot,
        super(dio: Dio());
@@ -35,9 +37,18 @@ class _FakeWeatherClient extends WeatherApiClient {
 
   final WeatherSnapshot snapshot;
   final ({double latitude, double longitude, String? label})? ipLocation;
+  final ({double latitude, double longitude, String label})? city;
   final Object? fetchThrows;
 
+  /// When set, the next [fetchCurrent] waits on this completer. Consumed once.
+  Completer<void>? holdNextFetch;
+
+  /// When true, the returned snapshot echoes the requested coordinates.
+  bool echoRequest = false;
+
   int fetchCalls = 0;
+  int ipCalls = 0;
+  int reverseCalls = 0;
   List<({double lat, double lon, String? label})> fetchArgs = [];
 
   @override
@@ -48,16 +59,49 @@ class _FakeWeatherClient extends WeatherApiClient {
   }) async {
     fetchCalls++;
     fetchArgs.add((lat: latitude, lon: longitude, label: label));
+    final hold = holdNextFetch;
+    holdNextFetch = null;
+    if (hold != null) {
+      await hold.future;
+    }
     if (fetchThrows != null) {
       throw fetchThrows!;
+    }
+    if (echoRequest) {
+      return WeatherSnapshot(
+        latitude: latitude,
+        longitude: longitude,
+        locationLabel: label,
+        condition: snapshot.condition,
+        isDay: snapshot.isDay,
+        temperatureCelsius: snapshot.temperatureCelsius,
+        windSpeedKmh: snapshot.windSpeedKmh,
+        sunrise: snapshot.sunrise,
+        sunset: snapshot.sunset,
+        observedAt: snapshot.observedAt,
+      );
     }
     return snapshot;
   }
 
   @override
   Future<({double latitude, double longitude, String? label})?>
-  ipGeolocate() async => ipLocation;
+  ipGeolocate() async {
+    ipCalls++;
+    return ipLocation;
+  }
+
+  @override
+  Future<({double latitude, double longitude, String label})?> nearestCity({
+    required double latitude,
+    required double longitude,
+  }) async {
+    reverseCalls++;
+    return city;
+  }
 }
+
+const _lyon = (latitude: 45.76, longitude: 4.84, label: 'Lyon');
 
 WeatherSnapshot _snap(double lat, double lon) => WeatherSnapshot(
   latitude: lat,
@@ -179,6 +223,119 @@ void main() {
       );
       await svc.refreshNow('ws1');
       expect(await svc.getCurrent('ws1'), isNull);
+    });
+  });
+
+  group('ServerWeatherService device location', () {
+    test(
+      'reportDeviceLocation fetches the nearest city, not the raw point',
+      () async {
+        final client = _FakeWeatherClient(city: _lyon);
+        final svc = ServerWeatherService(client: client, dataDir: temp.path);
+
+        await svc.reportDeviceLocation('ws1', latitude: 45.75, longitude: 4.85);
+
+        expect(client.reverseCalls, 1);
+        expect(client.ipCalls, 0);
+        expect(client.fetchArgs.single.lat, _lyon.latitude);
+        expect(client.fetchArgs.single.lon, _lyon.longitude);
+        expect(client.fetchArgs.single.label, 'Lyon');
+        expect(
+          File(p.join(temp.path, 'weather_locations.json')).existsSync(),
+          isFalse,
+        );
+      },
+    );
+
+    test('a missing city falls back to a coordinate label', () async {
+      final client = _FakeWeatherClient();
+      final svc = ServerWeatherService(client: client, dataDir: temp.path);
+
+      await svc.reportDeviceLocation('ws1', latitude: 45.7, longitude: 4.8);
+
+      expect(client.fetchArgs.single.label, '45.70, 4.80');
+    });
+
+    test('a manual pin is not replaced by a device report', () async {
+      final client = _FakeWeatherClient(city: _lyon);
+      final svc = ServerWeatherService(client: client, dataDir: temp.path);
+
+      await svc.setManualLocation(
+        'ws1',
+        latitude: 48.8,
+        longitude: 2.3,
+        label: 'Paris',
+      );
+      client.fetchArgs.clear();
+
+      await svc.reportDeviceLocation('ws1', latitude: 45.75, longitude: 4.85);
+
+      expect(client.fetchArgs.single.lat, 48.8);
+      expect(client.fetchArgs.single.lon, 2.3);
+      expect(client.fetchArgs.single.label, 'Paris');
+      final decoded =
+          jsonDecode(
+                File(
+                  p.join(temp.path, 'weather_locations.json'),
+                ).readAsStringSync(),
+              )
+              as Map<String, dynamic>;
+      final ws1 = decoded['ws1'] as Map<String, dynamic>;
+      expect(ws1['lat'], 48.8);
+      expect(ws1['label'], 'Paris');
+    });
+
+    test('without a device fix, refresh uses IP geolocation', () async {
+      final client = _FakeWeatherClient(
+        ipLocation: (latitude: 12, longitude: 34, label: 'Somewhere'),
+      );
+      final svc = ServerWeatherService(client: client, dataDir: temp.path);
+
+      await svc.refreshNow('ws1');
+
+      expect(client.ipCalls, 1);
+      expect(client.reverseCalls, 0);
+      expect(client.fetchArgs.single.lat, 12);
+      expect(client.fetchArgs.single.lon, 34);
+    });
+
+    test(
+      'an in-flight server-IP fetch does not replace a device fix',
+      () async {
+        final client = _FakeWeatherClient(
+          ipLocation: (latitude: 1, longitude: 2, label: 'Server'),
+          city: _lyon,
+        );
+        client.echoRequest = true;
+        final hold = Completer<void>();
+        client.holdNextFetch = hold;
+        final svc = ServerWeatherService(client: client, dataDir: temp.path);
+
+        final ipRefresh = svc.refreshNow('ws1');
+        while (client.fetchCalls < 1) {
+          await Future<void>.delayed(Duration.zero);
+        }
+        await svc.reportDeviceLocation('ws1', latitude: 45.75, longitude: 4.85);
+        hold.complete();
+        await ipRefresh;
+
+        final snap = await svc.getCurrent('ws1');
+        expect(snap!.latitude, _lyon.latitude);
+        expect(snap.longitude, _lyon.longitude);
+        expect(snap.locationLabel, 'Lyon');
+      },
+    );
+
+    test('rejects coordinates outside the valid range', () async {
+      final client = _FakeWeatherClient(city: _lyon);
+      final svc = ServerWeatherService(client: client, dataDir: temp.path);
+
+      expect(
+        () => svc.reportDeviceLocation('ws1', latitude: 91, longitude: 0),
+        throwsArgumentError,
+      );
+      expect(client.fetchCalls, 0);
+      expect(client.reverseCalls, 0);
     });
   });
 

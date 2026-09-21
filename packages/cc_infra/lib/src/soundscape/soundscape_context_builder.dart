@@ -33,7 +33,36 @@ class SoundscapeContextBuilder {
       weather: _weather(weather),
       isDay: isDay,
       temperatureCelsius: weather?.temperatureCelsius ?? 15.0,
+      dayLengthHours: _dayLengthHours(weather),
     );
+  }
+
+  /// Sunset − sunrise in hours.
+  ///
+  /// Unknown weather (no snapshot at all) is a temperate 12 h so Rise does
+  /// not guess at seasonal energy. A snapshot with no sun times, or a
+  /// non-positive interval, is polar night / no daylight (0 h) — Open-Meteo
+  /// omits sunrise/sunset when the sun does not rise. Overflow past a solar
+  /// day is clamped to 24 h (polar day).
+  static double _dayLengthHours(WeatherSnapshot? w) {
+    if (w == null) {
+      return 12.0;
+    }
+    final sunrise = w.sunrise;
+    final sunset = w.sunset;
+    if (sunrise == null || sunset == null) {
+      return 0.0;
+    }
+    final hours =
+        sunset.difference(sunrise).inMicroseconds /
+        Duration.microsecondsPerHour;
+    if (hours <= 0) {
+      return 0.0;
+    }
+    if (hours > 24) {
+      return 24.0;
+    }
+    return hours;
   }
 
   SoundscapeWeather _weather(WeatherSnapshot? w) {

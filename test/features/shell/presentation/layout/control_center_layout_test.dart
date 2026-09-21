@@ -6,6 +6,7 @@ import 'package:control_center/features/messaging/providers/messaging_providers.
 import 'package:control_center/features/pipelines/providers/pipeline_providers.dart';
 import 'package:control_center/features/repos/providers/repo_providers.dart';
 import 'package:control_center/features/shell/presentation/layout/control_center_layout.dart';
+import 'package:control_center/features/soundscape/device_location_reader.dart';
 import 'package:control_center/features/shell/presentation/widgets/app_sidebar.dart';
 import 'package:control_center/features/ticketing/providers/ticketing_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
@@ -82,6 +83,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          deviceLocationReaderProvider.overrideWithValue(
+            const UnavailableDeviceLocationReader(),
+          ),
           appPreferencesProvider.overrideWithValue(prefs),
           routerProvider.overrideWithValue(router),
           workspacesProvider.overrideWith((ref) => Stream.value([])),
@@ -119,6 +123,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          deviceLocationReaderProvider.overrideWithValue(
+            const UnavailableDeviceLocationReader(),
+          ),
           spacesProvider.overrideWith((ref) => Stream.value(const [])),
           appPreferencesProvider.overrideWithValue(prefs),
           routerProvider.overrideWithValue(router),
@@ -161,6 +168,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          deviceLocationReaderProvider.overrideWithValue(
+            const UnavailableDeviceLocationReader(),
+          ),
           spacesProvider.overrideWith((ref) => Stream.value(const [])),
           workspaceSpacesProvider.overrideWith(
             (ref, workspaceId) => Stream.value(const []),
@@ -212,6 +222,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          deviceLocationReaderProvider.overrideWithValue(
+            const UnavailableDeviceLocationReader(),
+          ),
           spacesProvider.overrideWith((ref) => Stream.value(const [])),
           workspaceSpacesProvider.overrideWith(
             (ref, workspaceId) => Stream.value(const []),
@@ -257,6 +270,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          deviceLocationReaderProvider.overrideWithValue(
+            const UnavailableDeviceLocationReader(),
+          ),
           spacesProvider.overrideWith((ref) => Stream.value(const [])),
           appPreferencesProvider.overrideWithValue(prefs),
           routerProvider.overrideWithValue(router),
@@ -300,6 +316,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          deviceLocationReaderProvider.overrideWithValue(
+            const UnavailableDeviceLocationReader(),
+          ),
           spacesProvider.overrideWith((ref) => Stream.value(const [])),
           appPreferencesProvider.overrideWithValue(prefs),
           routerProvider.overrideWithValue(router),
@@ -336,6 +355,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          deviceLocationReaderProvider.overrideWithValue(
+            const UnavailableDeviceLocationReader(),
+          ),
           spacesProvider.overrideWith((ref) => Stream.value(const [])),
           appPreferencesProvider.overrideWithValue(prefs),
           routerProvider.overrideWithValue(router),

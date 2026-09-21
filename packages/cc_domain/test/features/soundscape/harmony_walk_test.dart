@@ -25,13 +25,36 @@ HarmonyWalk _focusWalk(int seed) {
 
 void main() {
   group('MoodMusic', () {
-    test('AM rates are integer multiples of the beat (focus/relax)', () {
-      final focus = MoodMusic.of(SoundscapeMood.focus);
-      final relax = MoodMusic.of(SoundscapeMood.relax);
-      final focusRatio = focus.amRateHz / (focus.beatsPerMinute / 60.0);
-      final relaxRatio = relax.amRateHz / (relax.beatsPerMinute / 60.0);
-      expect(focusRatio, closeTo(focusRatio.roundToDouble(), 1e-9));
-      expect(relaxRatio, closeTo(relaxRatio.roundToDouble(), 1e-9));
+    test(
+      'AM rates are integer multiples of the beat (focus/relax/rise)',
+      () {
+        for (final mood in [
+          SoundscapeMood.focus,
+          SoundscapeMood.relax,
+          SoundscapeMood.rise,
+        ]) {
+          final music = MoodMusic.of(mood);
+          final ratio = music.amRateHz / (music.beatsPerMinute / 60.0);
+          expect(
+            ratio,
+            closeTo(ratio.roundToDouble(), 1e-9),
+            reason:
+                '${mood.name} AM ${music.amRateHz} Hz is not an integer '
+                'multiple of ${music.beatsPerMinute} BPM',
+          );
+        }
+      },
+    );
+
+    test('rise is a pulsed 96 BPM A-pentatonic with 16 Hz AM', () {
+      final music = MoodMusic.of(SoundscapeMood.rise);
+      expect(music.hasPulse, isTrue);
+      expect(music.hasMotifs, isTrue);
+      expect(music.hasArp, isTrue);
+      expect(music.beatsPerMinute, 96.0);
+      expect(music.amRateHz, 16.0);
+      expect(music.motifAscentBias, closeTo(0.7, 1e-9));
+      expect(music.subFrequencyHz, closeTo(82.41, 0.01));
     });
 
     test('sleep has no motifs and a frozen harmony', () {
@@ -45,6 +68,7 @@ void main() {
         SoundscapeMood.focus: _dPentatonic,
         SoundscapeMood.relax: <int>{0, 2, 4, 7, 9},
         SoundscapeMood.sleep: <int>{9, 4},
+        SoundscapeMood.rise: <int>{9, 11, 1, 4, 6},
       };
       for (final mood in SoundscapeMood.values) {
         final music = MoodMusic.of(mood);

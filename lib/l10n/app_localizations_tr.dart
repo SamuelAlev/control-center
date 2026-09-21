@@ -10398,6 +10398,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get soundscapeMoodSleep => 'Uyku';
 
   @override
+  String get soundscapeMoodRise => 'Yükseliş';
+
+  @override
   String get soundscapeVolumeLabel => 'Ses';
 
   @override
@@ -10436,8 +10439,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get soundscapeLocationDetecting => 'Konum algılanıyor…';
 
   @override
-  String get soundscapeLocationAutoNote =>
-      'Konum bu çalışma alanından otomatik olarak algılanır.';
+  String get soundscapeLocationAutoNote => 'Konum bu cihazdan gelir.';
 
   @override
   String get soundscapeRefreshWeather => 'Hava durumunu yenile';

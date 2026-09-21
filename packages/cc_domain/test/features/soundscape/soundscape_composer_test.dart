@@ -79,6 +79,19 @@ void main() {
       expect(rms, lessThan(0.9));
     });
 
+    test('rise stays finite and audible', () {
+      final composer = SoundscapeComposer(
+        sampleRate: _sampleRate,
+        context: _context(mood: SoundscapeMood.rise),
+      );
+      _renderAll(composer, 120);
+      final signal = _renderAll(composer, 40);
+      expect(_firstInvalid(signal), -1);
+      final rms = _rms(signal);
+      expect(rms, greaterThan(1e-4));
+      expect(rms, lessThan(0.9));
+    });
+
     test('holds the limiter under a loud storm arrangement', () {
       final composer = SoundscapeComposer(
         sampleRate: _sampleRate,

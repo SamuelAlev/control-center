@@ -19,10 +19,13 @@ typedef _Location = ({double latitude, double longitude, String? label});
 /// every tracked workspace on a [Timer.periodic]. Mirrors `CalendarSyncService`'s
 /// timer + immediate-run-on-[start] + [dispose] shape.
 ///
-/// Location resolution per workspace is: a pinned manual override, else a single
+/// Location resolution per workspace is: a pinned manual override, else the
+/// latest device position reported by a desktop or web client, else a single
 /// IP-geolocated fallback shared across workspaces. The IP fallback resolves the
 /// server's OWN public IP — a deliberately server-global, coarse location (it is
 /// not workspace-scoped data, so sharing it across workspaces is correct here).
+/// A device fix is in-memory only: it is not written to `weather_locations.json`,
+/// which stays the manual-pin store.
 class ServerWeatherService implements WeatherRepository {
   /// Creates a [ServerWeatherService] and loads any persisted manual locations.
   ServerWeatherService({
@@ -45,6 +48,12 @@ class ServerWeatherService implements WeatherRepository {
 
   /// Persisted manual location overrides, keyed by workspace id.
   final Map<String, _Location> _manual = {};
+
+  /// Latest device position reported by a client, keyed by workspace id.
+  ///
+  /// Not persisted. The last reporter wins; a manual pin still takes priority
+  /// at resolve time.
+  final Map<String, _Location> _device = {};
 
   Timer? _timer;
 
@@ -110,6 +119,15 @@ class ServerWeatherService implements WeatherRepository {
         longitude: location.longitude,
         label: location.label,
       );
+      // A device report (or a manual pin) can land while this fetch is in
+      // flight. Publishing the older place would put the server's IP back on
+      // top of the app's location.
+      final current = await _resolveLocation(workspaceId);
+      if (current == null ||
+          current.latitude != location.latitude ||
+          current.longitude != location.longitude) {
+        return;
+      }
       _latest[workspaceId] = snapshot;
       _emit(workspaceId, snapshot);
     } on Object catch (e) {
@@ -142,13 +160,42 @@ class ServerWeatherService implements WeatherRepository {
     await refreshNow(workspaceId);
   }
 
+  @override
+  Future<void> reportDeviceLocation(
+    String workspaceId, {
+    required double latitude,
+    required double longitude,
+  }) async {
+    _assertCoordinates(latitude, longitude);
+    // Snap to the nearest city so the forecast and the label are that city,
+    // not the raw device point.
+    final city = await _client.nearestCity(
+      latitude: latitude,
+      longitude: longitude,
+    );
+    final place =
+        city ??
+        (
+          latitude: latitude,
+          longitude: longitude,
+          label: _coordinateLabel(latitude, longitude),
+        );
+    _device[workspaceId] = (
+      latitude: place.latitude,
+      longitude: place.longitude,
+      label: place.label,
+    );
+    await refreshNow(workspaceId);
+  }
+
   /// Refreshes every workspace we track — anything with a cached snapshot, an
-  /// active watcher, or a pinned manual location.
+  /// active watcher, a pinned manual location, or a reported device fix.
   void _sweep() {
     final ids = <String>{
       ..._latest.keys,
       ..._controllers.keys,
       ..._manual.keys,
+      ..._device.keys,
     };
     for (final id in ids) {
       unawaited(refreshNow(id));
@@ -184,6 +231,10 @@ class ServerWeatherService implements WeatherRepository {
     final manual = _manual[workspaceId];
     if (manual != null) {
       return manual;
+    }
+    final device = _device[workspaceId];
+    if (device != null) {
+      return device;
     }
     return _resolveIpLocation();
   }
@@ -259,6 +310,20 @@ class ServerWeatherService implements WeatherRepository {
       CcInfraLog.warning('weather: failed to save manual locations: $e');
     }
   }
+
+  static void _assertCoordinates(double latitude, double longitude) {
+    if (latitude.isNaN || latitude < -90 || latitude > 90) {
+      throw ArgumentError('latitude must be between -90 and 90.');
+    }
+    if (longitude.isNaN || longitude < -180 || longitude > 180) {
+      throw ArgumentError('longitude must be between -180 and 180.');
+    }
+  }
+
+  /// Shown when reverse geocoding returns no city, so the panel does not stay
+  /// on "Detecting location…".
+  static String _coordinateLabel(double latitude, double longitude) =>
+      '${latitude.toStringAsFixed(2)}, ${longitude.toStringAsFixed(2)}';
 
   static double? _asDouble(Object? value) {
     if (value is num) {

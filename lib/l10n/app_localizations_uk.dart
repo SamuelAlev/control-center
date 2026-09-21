@@ -10512,6 +10512,9 @@ class AppLocalizationsUk extends AppLocalizations {
   String get soundscapeMoodSleep => 'Сон';
 
   @override
+  String get soundscapeMoodRise => 'Підйом';
+
+  @override
   String get soundscapeVolumeLabel => 'Гучність';
 
   @override
@@ -10551,7 +10554,7 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get soundscapeLocationAutoNote =>
-      'Розташування визначається автоматично з цього робочого простору.';
+      'Розташування надходить із цього пристрою.';
 
   @override
   String get soundscapeRefreshWeather => 'Оновити погоду';

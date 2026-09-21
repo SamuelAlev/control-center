@@ -10470,6 +10470,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get soundscapeMoodSleep => 'Schlaf';
 
   @override
+  String get soundscapeMoodRise => 'Aufstieg';
+
+  @override
   String get soundscapeVolumeLabel => 'Lautstärke';
 
   @override
@@ -10509,7 +10512,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get soundscapeLocationAutoNote =>
-      'Der Standort wird automatisch aus diesem Arbeitsbereich ermittelt.';
+      'Der Standort kommt von diesem Gerät.';
 
   @override
   String get soundscapeRefreshWeather => 'Wetter aktualisieren';

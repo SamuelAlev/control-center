@@ -10,6 +10,10 @@ const String _kForecastUrl = 'https://api.open-meteo.com/v1/forecast';
 /// Open-Meteo's keyless geocoding (city → coordinates) endpoint.
 const String _kGeocodingUrl = 'https://geocoding-api.open-meteo.com/v1/search';
 
+/// Photon's keyless reverse geocoder. `layer=city` returns the nearest town
+/// and that town's own coordinates (Open-Meteo has no reverse endpoint).
+const String _kPhotonReverseUrl = 'https://photon.komoot.io/reverse';
+
 /// Keyless IP-based geolocation endpoint (best-effort coarse location).
 const String _kIpGeoUrl = 'https://ipapi.co/json/';
 
@@ -21,12 +25,12 @@ const String _kIpGeoUrl = 'https://ipapi.co/json/';
 /// network I/O): the client drives `weather.*` over RPC and the host calls this.
 /// Open-Meteo requires no API key. Every network method wraps its call so a
 /// failure surfaces as a typed `NetworkException` (via [mapDioException]) the
-/// caller can catch — except [ipGeolocate], which is best-effort and returns
-/// null on any error.
+/// caller can catch — except [ipGeolocate] and [nearestCity], which are
+/// best-effort and return null on any error.
 class WeatherApiClient {
   /// Creates a [WeatherApiClient], optionally backed by a custom [dio]
-  /// (defaults to the shared [createDio]; no base URL, since the three
-  /// endpoints live on different hosts).
+  /// (defaults to the shared [createDio]; no base URL, since the endpoints
+  /// live on different hosts).
   WeatherApiClient({Dio? dio}) : _dio = dio ?? createDio();
 
   final Dio _dio;
@@ -116,9 +120,37 @@ class WeatherApiClient {
     }
   }
 
+  /// The nearest city to ([latitude], [longitude]), at that city's own
+  /// coordinates.
+  ///
+  /// Weather is fetched for this place, not the raw device point. Best-effort,
+  /// like [ipGeolocate]: a missing match or any network error returns null.
+  Future<({double latitude, double longitude, String label})?> nearestCity({
+    required double latitude,
+    required double longitude,
+  }) async {
+    try {
+      final response = await _dio.get<dynamic>(
+        _kPhotonReverseUrl,
+        queryParameters: <String, dynamic>{
+          'lat': latitude,
+          'lon': longitude,
+          'layer': 'city',
+          'lang': 'en',
+        },
+        options: Options(headers: const {'User-Agent': 'control-center'}),
+      );
+      return _nearestCityFromPhoton(response.data);
+    } on Object catch (e) {
+      CcInfraLog.warning('weather: nearest city lookup failed: $e');
+      return null;
+    }
+  }
+
   /// Best-effort coarse geolocation from the caller's public IP.
   ///
-  /// Used as the fallback location when a workspace has no manual override. IP
+  /// Used as the fallback location when a workspace has no manual pin and no
+  /// device fix. IP
   /// geolocation is inherently imprecise and the service may be unreachable, so
   /// this swallows every error and returns null rather than throwing — the
   /// caller treats a null as "location unknown".
@@ -143,8 +175,45 @@ class WeatherApiClient {
     }
   }
 
-  static Map<String, dynamic> _asMap(Object? data) =>
-      data is Map<String, dynamic> ? data : const <String, dynamic>{};
+  static Map<String, dynamic> _asMap(Object? data) {
+    if (data is Map<String, dynamic>) {
+      return data;
+    }
+    if (data is Map) {
+      return Map<String, dynamic>.from(data);
+    }
+    return const <String, dynamic>{};
+  }
+
+  /// Photon GeoJSON: coordinates are `[longitude, latitude]`, and `name` is
+  /// the city the forecast should be fetched for.
+  static ({double latitude, double longitude, String label})?
+  _nearestCityFromPhoton(Object? data) {
+    final features = _asMap(data)['features'];
+    if (features is! List || features.isEmpty) {
+      return null;
+    }
+    final feature = _asMap(features.first);
+    final name = _asString(_asMap(feature['properties'])['name'])?.trim();
+    final coordinates = _asMap(feature['geometry'])['coordinates'];
+    if (name == null || name.isEmpty || coordinates is! List) {
+      return null;
+    }
+    if (coordinates.length < 2) {
+      return null;
+    }
+    final longitude = _asDouble(coordinates[0]);
+    final latitude = _asDouble(coordinates[1]);
+    if (latitude == null ||
+        longitude == null ||
+        latitude < -90 ||
+        latitude > 90 ||
+        longitude < -180 ||
+        longitude > 180) {
+      return null;
+    }
+    return (latitude: latitude, longitude: longitude, label: name);
+  }
 
   static int? _asInt(Object? value) {
     if (value is int) {

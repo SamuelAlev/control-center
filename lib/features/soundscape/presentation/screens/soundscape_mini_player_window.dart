@@ -164,6 +164,7 @@ class _MiniPlayerView extends ConsumerWidget {
   String _moodLabel(AppLocalizations l10n, String mood) => switch (mood) {
     'relax' => l10n.soundscapeMoodRelax,
     'sleep' => l10n.soundscapeMoodSleep,
+    'rise' => l10n.soundscapeMoodRise,
     _ => l10n.soundscapeMoodFocus,
   };
 }
@@ -188,11 +189,10 @@ class _HudIconButton extends StatelessWidget {
       child: CcTappable(
         onPressed: onTap,
         semanticLabel: tooltip,
-        builder:
-            (context, states) => Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-              child: Icon(icon, size: 16, color: color),
-            ),
+        builder: (context, states) => Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+          child: Icon(icon, size: 16, color: color),
+        ),
       ),
     );
   }

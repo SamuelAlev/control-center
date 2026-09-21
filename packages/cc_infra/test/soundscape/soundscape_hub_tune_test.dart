@@ -27,6 +27,13 @@ class _FakeWeatherRepository implements WeatherRepository {
 
   @override
   Future<void> clearManualLocation(String workspaceId) async {}
+
+  @override
+  Future<void> reportDeviceLocation(
+    String workspaceId, {
+    required double latitude,
+    required double longitude,
+  }) async {}
 }
 
 void main() {

@@ -9155,6 +9155,10 @@
   "@soundscapeMoodSleep": {
     "description": "Soundscape mood: low drones for winding down"
   },
+  "soundscapeMoodRise": "Rise",
+  "@soundscapeMoodRise": {
+    "description": "Soundscape mood: buoyant melody with a soft pulse for when work feels heavy"
+  },
   "soundscapeVolumeLabel": "Volume",
   "@soundscapeVolumeLabel": {
     "description": "Label above the soundscape master volume slider"
@@ -9208,9 +9212,9 @@
   "@soundscapeLocationDetecting": {
     "description": "Shown when no weather location has been detected yet"
   },
-  "soundscapeLocationAutoNote": "Location is detected automatically from this workspace.",
+  "soundscapeLocationAutoNote": "Location comes from this device.",
   "@soundscapeLocationAutoNote": {
-    "description": "Note explaining that the soundscape weather location is auto-detected"
+    "description": "Note explaining that the soundscape weather location comes from this device"
   },
   "soundscapeRefreshWeather": "Refresh weather",
   "@soundscapeRefreshWeather": {

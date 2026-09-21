@@ -1,5 +1,5 @@
 // Temporary audition renderer: writes focus-mood WAVs at three tune-energy
-// points so the soundscape can be inspected/analyzed offline.
+// points, plus Rise at the two mix points the plan asks to listen to.
 // ignore_for_file: avoid_print
 import 'dart:io';
 import 'dart:typed_data';
@@ -12,24 +12,33 @@ const int sampleRate = 44100;
 const int seconds = 180;
 const int blockFrames = 1024;
 
+class _Case {
+  const _Case(this.name, this.mood, this.energy);
+  final String name;
+  final SoundscapeMood mood;
+  final double energy;
+}
+
 void main(List<String> args) {
   final outDir = args.isNotEmpty ? args[0] : '.';
-  final cases = <String, double>{
-    'focus_mellow': 0.0,
-    'focus_neutral': 0.5,
-    'focus_energetic': 1.0,
-  };
-  for (final entry in cases.entries) {
+  const cases = <_Case>[
+    _Case('focus_mellow', SoundscapeMood.focus, 0.0),
+    _Case('focus_neutral', SoundscapeMood.focus, 0.5),
+    _Case('focus_energetic', SoundscapeMood.focus, 1.0),
+    _Case('rise_neutral', SoundscapeMood.rise, 0.5),
+    _Case('rise_energetic', SoundscapeMood.rise, 1.0),
+  ];
+  for (final entry in cases) {
     final composer = SoundscapeComposer(
       sampleRate: sampleRate,
-      context: const SoundscapeContext(
-        mood: SoundscapeMood.focus,
+      context: SoundscapeContext(
+        mood: entry.mood,
         daypart: SoundscapeDaypart.day,
         weather: SoundscapeWeather.clear,
         isDay: true,
         temperatureCelsius: 20.0,
       ),
-    )..updateTune(SoundscapeTune(energy: entry.value, brightness: 0.5));
+    )..updateTune(SoundscapeTune(energy: entry.energy, brightness: 0.5));
 
     const totalFrames = sampleRate * seconds;
     final pcm = Int16List(totalFrames * 2);
@@ -47,7 +56,7 @@ void main(List<String> args) {
       written += frames;
     }
 
-    final path = '$outDir/${entry.key}.wav';
+    final path = '$outDir/${entry.name}.wav';
     File(path).writeAsBytesSync(_wav(pcm, sampleRate));
     print('wrote $path');
   }

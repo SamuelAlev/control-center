@@ -97,6 +97,7 @@ class SoundscapeComposer {
             scaleMidi: music.motifScaleMidi,
             beatsPerMinute: music.beatsPerMinute,
             timbreCount: motifTimbres.length,
+            ascentBias: music.motifAscentBias,
           )
         : null;
     final motifVoices = <MotifVoice>[

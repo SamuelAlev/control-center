@@ -10356,6 +10356,9 @@ class AppLocalizationsUr extends AppLocalizations {
   String get soundscapeMoodSleep => 'نیند';
 
   @override
+  String get soundscapeMoodRise => 'عروج';
+
+  @override
   String get soundscapeVolumeLabel => 'والیوم';
 
   @override
@@ -10394,8 +10397,7 @@ class AppLocalizationsUr extends AppLocalizations {
   String get soundscapeLocationDetecting => 'مقام دریافت ہو رہا ہے…';
 
   @override
-  String get soundscapeLocationAutoNote =>
-      'مقام اس ورک اسپیس سے خود دریافت ہوتا ہے۔';
+  String get soundscapeLocationAutoNote => 'مقام اس ڈیوائس سے آتا ہے۔';
 
   @override
   String get soundscapeRefreshWeather => 'موسم تازہ کریں';

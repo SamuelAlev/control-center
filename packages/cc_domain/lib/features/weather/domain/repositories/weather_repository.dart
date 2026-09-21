@@ -35,4 +35,17 @@ abstract class WeatherRepository {
   /// Clears a manual location for [workspaceId], reverting to auto-detection.
   /// Host-only.
   Future<void> clearManualLocation(String workspaceId);
+
+  /// Records the desktop or web app's device position for [workspaceId].
+  ///
+  /// This is the auto-detected location: it is kept in memory on the host
+  /// (not persisted as a manual pin) and loses to [setManualLocation]. The
+  /// host snaps the coordinates to the nearest city and re-fetches weather
+  /// for that city. A missing device fix falls back to the server's IP
+  /// geolocation.
+  Future<void> reportDeviceLocation(
+    String workspaceId, {
+    required double latitude,
+    required double longitude,
+  });
 }

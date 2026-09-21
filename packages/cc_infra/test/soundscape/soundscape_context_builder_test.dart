@@ -114,5 +114,67 @@ void main() {
       );
       expect(ctx.isDay, isFalse);
     });
+
+    test('day length is sunset minus sunrise in hours', () {
+      final ctx = builder.build(
+        mood: SoundscapeMood.rise,
+        weather: snapshot(
+          sunrise: DateTime(2026, 12, 21, 8),
+          sunset: DateTime(2026, 12, 21, 16),
+        ),
+        now: DateTime(2026, 12, 21, 13),
+      );
+      expect(ctx.dayLengthHours, closeTo(8.0, 1e-9));
+    });
+
+    test('day length falls back to 12 h when weather is unknown', () {
+      final missing = builder.build(
+        mood: SoundscapeMood.focus,
+        weather: null,
+        now: DateTime(2026, 7, 13, 13),
+      );
+      expect(missing.dayLengthHours, 12.0);
+    });
+
+    test('a snapshot with no sun, zero, or inverted daylight is 0 h', () {
+      final omitted = builder.build(
+        mood: SoundscapeMood.rise,
+        weather: snapshot(),
+        now: DateTime(2026, 12, 21, 13),
+      );
+      expect(omitted.dayLengthHours, 0.0);
+
+      final zero = builder.build(
+        mood: SoundscapeMood.rise,
+        weather: snapshot(
+          sunrise: DateTime(2026, 12, 21, 12),
+          sunset: DateTime(2026, 12, 21, 12),
+        ),
+        now: DateTime(2026, 12, 21, 13),
+      );
+      expect(zero.dayLengthHours, 0.0);
+
+      final inverted = builder.build(
+        mood: SoundscapeMood.rise,
+        weather: snapshot(
+          sunrise: DateTime(2026, 7, 13, 21),
+          sunset: DateTime(2026, 7, 13, 6),
+        ),
+        now: DateTime(2026, 7, 13, 13),
+      );
+      expect(inverted.dayLengthHours, 0.0);
+    });
+
+    test('day length longer than a solar day clamps to 24 h', () {
+      final ctx = builder.build(
+        mood: SoundscapeMood.rise,
+        weather: snapshot(
+          sunrise: DateTime(2026, 6, 21, 0),
+          sunset: DateTime(2026, 6, 22, 2),
+        ),
+        now: DateTime(2026, 6, 21, 13),
+      );
+      expect(ctx.dayLengthHours, 24.0);
+    });
   });
 }

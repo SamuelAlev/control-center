@@ -10354,6 +10354,9 @@ class AppLocalizationsFa extends AppLocalizations {
   String get soundscapeMoodSleep => 'خواب';
 
   @override
+  String get soundscapeMoodRise => 'خیز';
+
+  @override
   String get soundscapeVolumeLabel => 'بلندی صدا';
 
   @override
@@ -10392,8 +10395,7 @@ class AppLocalizationsFa extends AppLocalizations {
   String get soundscapeLocationDetecting => 'در حال تشخیص موقعیت…';
 
   @override
-  String get soundscapeLocationAutoNote =>
-      'موقعیت به‌صورت خودکار از این فضای کاری تشخیص داده می‌شود.';
+  String get soundscapeLocationAutoNote => 'موقعیت از این دستگاه می‌آید.';
 
   @override
   String get soundscapeRefreshWeather => 'تازه‌سازی هوا';

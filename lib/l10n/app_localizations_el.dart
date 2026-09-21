@@ -10499,6 +10499,9 @@ class AppLocalizationsEl extends AppLocalizations {
   String get soundscapeMoodSleep => 'Ύπνος';
 
   @override
+  String get soundscapeMoodRise => 'Άνοδος';
+
+  @override
   String get soundscapeVolumeLabel => 'Ένταση';
 
   @override
@@ -10538,7 +10541,7 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get soundscapeLocationAutoNote =>
-      'Η τοποθεσία ανιχνεύεται αυτόματα από αυτόν τον χώρο εργασίας.';
+      'Η τοποθεσία προέρχεται από αυτήν τη συσκευή.';
 
   @override
   String get soundscapeRefreshWeather => 'Ανανέωση καιρού';

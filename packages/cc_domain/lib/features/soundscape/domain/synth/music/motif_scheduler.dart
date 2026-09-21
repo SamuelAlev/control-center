@@ -44,7 +44,9 @@ class MotifEvent {
 /// line always agrees with the harmony. Density is a live parameter (weather
 /// and daypart thin it out) expressed in notes per minute; rests stretch to
 /// hit it. About half the notes trail a quiet one-beat echo on the opposite
-/// side of the stereo field — cheap call-and-response.
+/// side of the stereo field — cheap call-and-response. An optional
+/// [ascentBias] reinterprets the existing up/down coin flip so Rise
+/// phrases tend to rise without consuming extra PRNG draws.
 ///
 /// Everything is a pure function of the [SeededPrng] and the sample clock;
 /// advancing is boundary-exact so renders are independent of block size.
@@ -57,11 +59,13 @@ class MotifScheduler {
     required List<int> scaleMidi,
     required double beatsPerMinute,
     int timbreCount = 1,
+    double ascentBias = 0.5,
   }) : _sampleRate = sampleRate,
        _prng = prng,
        _scaleMidi = List<int>.unmodifiable(scaleMidi),
        _beatSamples = math.max(1, (sampleRate * 60.0 / beatsPerMinute).round()),
        _timbreCount = math.max(1, timbreCount),
+       _ascentBias = ascentBias.clamp(0.0, 1.0),
        _index = scaleMidi.length ~/ 2 {
     if (scaleMidi.isEmpty) {
       throw ArgumentError('motif scheduler needs a scale');
@@ -79,6 +83,7 @@ class MotifScheduler {
   final List<int> _scaleMidi;
   final int _beatSamples;
   final int _timbreCount;
+  final double _ascentBias;
 
   int _index;
   int _untilNext = 0;
@@ -238,7 +243,9 @@ class MotifScheduler {
       } else if (_index >= _scaleMidi.length - 2) {
         up = false;
       } else {
-        up = _prng.nextBool(0.5);
+        // Same PRNG draw as the historical fair coin; the probability is
+        // the only thing that changes, so bias 0.5 is stream-identical.
+        up = _prng.nextBool(_ascentBias);
       }
       step = up ? magnitude : -magnitude;
     }

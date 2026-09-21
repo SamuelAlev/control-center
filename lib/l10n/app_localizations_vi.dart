@@ -10383,6 +10383,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get soundscapeMoodSleep => 'Ngủ';
 
   @override
+  String get soundscapeMoodRise => 'Vươn';
+
+  @override
   String get soundscapeVolumeLabel => 'Âm lượng';
 
   @override
@@ -10421,8 +10424,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get soundscapeLocationDetecting => 'Đang xác định vị trí…';
 
   @override
-  String get soundscapeLocationAutoNote =>
-      'Vị trí được phát hiện tự động từ không gian làm việc này.';
+  String get soundscapeLocationAutoNote => 'Vị trí đến từ thiết bị này.';
 
   @override
   String get soundscapeRefreshWeather => 'Làm mới thời tiết';

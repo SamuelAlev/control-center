@@ -237,5 +237,67 @@ void main() {
         expect(a[i].event.pan, b[i].event.pan);
       }
     });
+
+    test('ascent bias 0.5 is sample-identical to the historical coin flip', () {
+      final music = MoodMusic.of(SoundscapeMood.focus);
+      MotifScheduler scheduler({required double ascentBias}) => MotifScheduler(
+        _sampleRate,
+        SeededPrng(41),
+        scaleMidi: music.motifScaleMidi,
+        beatsPerMinute: music.beatsPerMinute,
+        ascentBias: ascentBias,
+      );
+      final unbiased = _run(
+        scheduler(ascentBias: 0.5),
+        seconds: 900,
+        notesPerMinute: 8.0,
+      );
+      final defaulted = _run(
+        _focusScheduler(41),
+        seconds: 900,
+        notesPerMinute: 8.0,
+      );
+      expect(unbiased.length, defaulted.length);
+      for (var i = 0; i < unbiased.length; i++) {
+        expect(unbiased[i].atSample, defaulted[i].atSample);
+        expect(unbiased[i].event.frequencyHz, defaulted[i].event.frequencyHz);
+        expect(unbiased[i].event.velocity, defaulted[i].event.velocity);
+        expect(unbiased[i].event.pan, defaulted[i].event.pan);
+      }
+      final biased = _run(
+        scheduler(ascentBias: 0.7),
+        seconds: 900,
+        notesPerMinute: 8.0,
+      );
+      expect([
+        for (final n in biased) n.event.frequencyHz,
+      ], isNot([for (final n in unbiased) n.event.frequencyHz]));
+    });
+
+    test('ascent bias raises the typical motif register', () {
+      final music = MoodMusic.of(SoundscapeMood.rise);
+      List<_Note> run(double bias) => _run(
+        MotifScheduler(
+          _sampleRate,
+          SeededPrng(77),
+          scaleMidi: music.motifScaleMidi,
+          beatsPerMinute: music.beatsPerMinute,
+          ascentBias: bias,
+        ),
+        seconds: 1800,
+        notesPerMinute: 10.0,
+      );
+      double meanHz(List<_Note> notes) {
+        final main = notes.where((n) => _isMain(n.event)).toList();
+        expect(main.length, greaterThan(30));
+        var sum = 0.0;
+        for (final n in main) {
+          sum += n.event.frequencyHz;
+        }
+        return sum / main.length;
+      }
+
+      expect(meanHz(run(0.7)), greaterThan(meanHz(run(0.5))));
+    });
   });
 }

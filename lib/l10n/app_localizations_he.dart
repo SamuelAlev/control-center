@@ -10379,6 +10379,9 @@ class AppLocalizationsHe extends AppLocalizations {
   String get soundscapeMoodSleep => 'שינה';
 
   @override
+  String get soundscapeMoodRise => 'עלייה';
+
+  @override
   String get soundscapeVolumeLabel => 'עוצמת שמע';
 
   @override
@@ -10417,8 +10420,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get soundscapeLocationDetecting => 'מזהה מיקום…';
 
   @override
-  String get soundscapeLocationAutoNote =>
-      'המיקום מזוהה אוטומטית מתוך סביבת העבודה הזו.';
+  String get soundscapeLocationAutoNote => 'המיקום מגיע מהמכשיר הזה.';
 
   @override
   String get soundscapeRefreshWeather => 'רענון מזג האוויר';

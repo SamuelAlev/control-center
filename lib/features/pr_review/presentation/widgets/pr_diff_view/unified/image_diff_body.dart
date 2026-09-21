@@ -761,7 +761,16 @@ class _SizedDiffImageState extends State<_SizedDiffImage> {
       child: SizedBox(
         width: display.width,
         height: display.height,
-        child: picture,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            const CustomPaint(
+              key: Key('image-diff-checker'),
+              painter: ImageDiffCheckerPainter(),
+            ),
+            picture,
+          ],
+        ),
       ),
     );
     final expandable =
@@ -1013,6 +1022,80 @@ class _ModeItem extends StatelessWidget {
       ),
     );
   }
+}
+
+/// 10×10 tile so a transparent logo does not disappear into the dark surface.
+@visibleForTesting
+class ImageDiffCheckerPainter extends CustomPainter {
+  /// Creates the checker.
+  const ImageDiffCheckerPainter();
+
+  /// One square, in logical pixels. Matches one cell of the gif.
+  static const double square = 5;
+
+  static const Color _gray = Color(0xFFE5E5E5);
+  static const Color _white = Color(0xFFFFFFFF);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (size.isEmpty) {
+      return;
+    }
+    final white = Paint()
+      ..color = _white
+      ..isAntiAlias = false;
+    final gray = Paint()
+      ..color = _gray
+      ..isAntiAlias = false;
+    final bounds = Offset.zero & size;
+    // A Stack clips only when a child overflows layout, and this painter is
+    // laid out exactly to the frame. Squares that run past [size] would
+    // otherwise paint over the border and the page — a stair of every other
+    // cell, worst when the asset is not a multiple of [square].
+    canvas.save();
+    canvas.clipRect(bounds, doAntiAlias: false);
+    canvas.drawRect(bounds, white);
+
+    // Square edges land on device pixels. A 5px logical cell whose origin
+    // sits between pixels rasterizes as a blur, which on a 24px or 32px SVG
+    // reads as chewed edges.
+    final transform = canvas.getTransform();
+    final scaleX = transform[0] == 0 ? 1.0 : transform[0].abs();
+    final scaleY = transform[5] == 0 ? scaleX : transform[5].abs();
+    final originX = transform[12];
+    final originY = transform[13];
+    final squareX = math.max(1, (square * scaleX).round());
+    final squareY = math.max(1, (square * scaleY).round());
+    final startX = originX.floorToDouble();
+    final startY = originY.floorToDouble();
+    final endX = originX + size.width * scaleX;
+    final endY = originY + size.height * scaleY;
+
+    var row = 0;
+    for (var dy = startY; dy < endY; dy += squareY, row++) {
+      var col = 0;
+      for (var dx = startX; dx < endX; dx += squareX, col++) {
+        if ((col + row).isOdd) {
+          continue;
+        }
+        final rect = Rect.fromLTWH(
+          (dx - originX) / scaleX,
+          (dy - originY) / scaleY,
+          squareX / scaleX,
+          squareY / scaleY,
+        );
+        final clipped = rect.intersect(bounds);
+        if (clipped.isEmpty) {
+          continue;
+        }
+        canvas.drawRect(clipped, gray);
+      }
+    }
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(ImageDiffCheckerPainter oldDelegate) => false;
 }
 
 /// Clips to the leading [width] pixels (physical left; pictures stay LTR).

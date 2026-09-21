@@ -8,12 +8,14 @@ SoundscapeContext _context({
   SoundscapeWeather weather = SoundscapeWeather.clear,
   bool isDay = true,
   double temperatureCelsius = 20.0,
+  double dayLengthHours = 12.0,
 }) => SoundscapeContext(
   mood: mood,
   daypart: daypart,
   weather: weather,
   isDay: isDay,
   temperatureCelsius: temperatureCelsius,
+  dayLengthHours: dayLengthHours,
 );
 
 void main() {
@@ -80,6 +82,25 @@ void main() {
       expect(focus.motifNotesPerMinute, lessThanOrEqualTo(12.0));
     });
 
+    test('rise (day) is denser than focus but still sparse', () {
+      final focus = SoundscapeTargets.fromContext(
+        _context(mood: SoundscapeMood.focus, daypart: SoundscapeDaypart.day),
+      );
+      final rise = SoundscapeTargets.fromContext(
+        _context(
+          mood: SoundscapeMood.rise,
+          daypart: SoundscapeDaypart.day,
+        ),
+      );
+      expect(
+        rise.motifNotesPerMinute,
+        greaterThan(focus.motifNotesPerMinute),
+      );
+      expect(rise.motifNotesPerMinute, lessThanOrEqualTo(20.0));
+      expect(rise.pulseGain, greaterThan(0.0));
+      expect(rise.pulseGain, lessThan(focus.pulseGain));
+    });
+
     test('motif onsets are soft in every mood (no percussive attacks)', () {
       for (final mood in SoundscapeMood.values) {
         final t = SoundscapeTargets.fromContext(_context(mood: mood));
@@ -96,20 +117,27 @@ void main() {
       final focus = SoundscapeTargets.fromContext(
         _context(mood: SoundscapeMood.focus),
       );
+      final rise = SoundscapeTargets.fromContext(
+        _context(mood: SoundscapeMood.rise),
+      );
       final relax = SoundscapeTargets.fromContext(
         _context(mood: SoundscapeMood.relax),
       );
       final sleep = SoundscapeTargets.fromContext(
         _context(mood: SoundscapeMood.sleep),
       );
-      expect(focus.amDepth, greaterThan(relax.amDepth));
+      expect(focus.amDepth, greaterThan(rise.amDepth));
+      expect(rise.amDepth, greaterThan(relax.amDepth));
       expect(relax.amDepth, greaterThan(sleep.amDepth));
       expect(sleep.amDepth, greaterThan(0.0));
     });
 
-    test('focus is drier than relax, which is drier than sleep', () {
+    test('focus is drier than rise, which is drier than relax', () {
       final focus = SoundscapeTargets.fromContext(
         _context(mood: SoundscapeMood.focus),
+      );
+      final rise = SoundscapeTargets.fromContext(
+        _context(mood: SoundscapeMood.rise),
       );
       final relax = SoundscapeTargets.fromContext(
         _context(mood: SoundscapeMood.relax),
@@ -117,7 +145,8 @@ void main() {
       final sleep = SoundscapeTargets.fromContext(
         _context(mood: SoundscapeMood.sleep),
       );
-      expect(focus.reverbWet, lessThan(relax.reverbWet));
+      expect(focus.reverbWet, lessThan(rise.reverbWet));
+      expect(rise.reverbWet, lessThan(relax.reverbWet));
       expect(relax.reverbWet, lessThan(sleep.reverbWet));
       expect(sleep.reverbDecay, greaterThan(focus.reverbDecay));
     });
@@ -153,6 +182,135 @@ void main() {
       expect(night.motifNotesPerMinute, lessThan(day.motifNotesPerMinute));
     });
 
+    test(
+      'short day eases rise night darkening and leaves focus alone',
+      () {
+        final focusLong = SoundscapeTargets.fromContext(
+          _context(
+            mood: SoundscapeMood.focus,
+            daypart: SoundscapeDaypart.night,
+            isDay: false,
+            dayLengthHours: 16.0,
+          ),
+        );
+        final focusShort = SoundscapeTargets.fromContext(
+          _context(
+            mood: SoundscapeMood.focus,
+            daypart: SoundscapeDaypart.night,
+            isDay: false,
+            dayLengthHours: 8.0,
+          ),
+        );
+        expect(focusShort.motifNotesPerMinute, focusLong.motifNotesPerMinute);
+        expect(focusShort.noiseCutoffHz, focusLong.noiseCutoffHz);
+        expect(focusShort.amDepth, focusLong.amDepth);
+
+        final riseDay = SoundscapeTargets.fromContext(
+          _context(
+            mood: SoundscapeMood.rise,
+            daypart: SoundscapeDaypart.day,
+            isDay: true,
+            dayLengthHours: 8.0,
+          ),
+        );
+        final riseLongNight = SoundscapeTargets.fromContext(
+          _context(
+            mood: SoundscapeMood.rise,
+            daypart: SoundscapeDaypart.night,
+            isDay: false,
+            dayLengthHours: 16.0,
+          ),
+        );
+        final riseShortNight = SoundscapeTargets.fromContext(
+          _context(
+            mood: SoundscapeMood.rise,
+            daypart: SoundscapeDaypart.night,
+            isDay: false,
+            dayLengthHours: 8.0,
+          ),
+        );
+        final risePolarNight = SoundscapeTargets.fromContext(
+          _context(
+            mood: SoundscapeMood.rise,
+            daypart: SoundscapeDaypart.night,
+            isDay: false,
+            dayLengthHours: 0.0,
+          ),
+        );
+        final riseMidNight = SoundscapeTargets.fromContext(
+          _context(
+            mood: SoundscapeMood.rise,
+            daypart: SoundscapeDaypart.night,
+            isDay: false,
+            dayLengthHours: 11.0,
+          ),
+        );
+        final riseLongDusk = SoundscapeTargets.fromContext(
+          _context(
+            mood: SoundscapeMood.rise,
+            daypart: SoundscapeDaypart.dusk,
+            isDay: true,
+            dayLengthHours: 16.0,
+          ),
+        );
+        final riseShortDusk = SoundscapeTargets.fromContext(
+          _context(
+            mood: SoundscapeMood.rise,
+            daypart: SoundscapeDaypart.dusk,
+            isDay: true,
+            dayLengthHours: 8.0,
+          ),
+        );
+        final riseShortStormNight = SoundscapeTargets.fromContext(
+          _context(
+            mood: SoundscapeMood.rise,
+            daypart: SoundscapeDaypart.night,
+            isDay: false,
+            weather: SoundscapeWeather.storm,
+            dayLengthHours: 8.0,
+          ),
+        );
+
+        expect(
+          riseShortNight.motifNotesPerMinute,
+          closeTo(riseDay.motifNotesPerMinute, 1e-9),
+        );
+        expect(
+          risePolarNight.motifNotesPerMinute,
+          closeTo(riseDay.motifNotesPerMinute, 1e-9),
+        );
+        expect(
+          riseShortNight.noiseCutoffHz,
+          closeTo(riseDay.noiseCutoffHz, 1e-9),
+        );
+        expect(riseShortNight.amDepth, closeTo(riseDay.amDepth, 1e-9));
+        expect(
+          riseLongNight.motifNotesPerMinute,
+          closeTo(riseDay.motifNotesPerMinute * 0.4 * 0.85, 1e-9),
+        );
+        expect(
+          riseMidNight.motifNotesPerMinute,
+          closeTo(riseDay.motifNotesPerMinute * 0.7 * 0.925, 1e-9),
+        );
+        expect(
+          riseShortDusk.motifNotesPerMinute,
+          closeTo(riseDay.motifNotesPerMinute, 1e-9),
+        );
+        expect(
+          riseLongDusk.motifNotesPerMinute,
+          closeTo(riseDay.motifNotesPerMinute * 0.7, 1e-9),
+        );
+        expect(
+          riseShortStormNight.motifNotesPerMinute,
+          closeTo(riseDay.motifNotesPerMinute * 0.4, 1e-9),
+        );
+        expect(
+          riseShortStormNight.motifNotesPerMinute,
+          lessThan(riseShortNight.motifNotesPerMinute),
+        );
+      },
+    );
+
     test('all target values are finite and inside their ranges', () {
       for (final mood in SoundscapeMood.values) {
         for (final weather in SoundscapeWeather.values) {
@@ -168,7 +326,7 @@ void main() {
             expect(t.padCutoffHz, inInclusiveRange(120.0, 6000.0));
             expect(t.padDetuneCents, inInclusiveRange(3.0, 12.0));
             expect(t.motifGain, inInclusiveRange(0.0, 0.5));
-            expect(t.motifNotesPerMinute, inInclusiveRange(0.0, 12.0));
+            expect(t.motifNotesPerMinute, inInclusiveRange(0.0, 20.0));
             expect(t.motifAttackSeconds, greaterThan(0.0));
             expect(t.motifReleaseSeconds, greaterThan(0.0));
             expect(t.subGain, inInclusiveRange(0.0, 0.3));

@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:cc_domain/features/soundscape/domain/entities/soundscape_context.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/di/providers.dart';
+import 'package:control_center/features/soundscape/device_location_reader.dart';
 import 'package:control_center/features/soundscape/presentation/widgets/soundscape_tune_pad.dart';
 import 'package:control_center/features/soundscape/providers/soundscape_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
@@ -21,7 +24,7 @@ class SoundscapeControls extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     // Sleep is deliberately "homogenous and even" — no melody or drive to
-    // tune, so the pad only shows for focus/relax.
+    // tune, so the pad only shows for the other moods.
     final showTunePad = ref.watch(
       soundscapeProvider.select((s) => s.mood != SoundscapeMood.sleep),
     );
@@ -29,6 +32,7 @@ class SoundscapeControls extends ConsumerWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        const _DeviceLocationReport(),
         _sceneRow(context, ref),
         const SizedBox(height: 20),
         _sectionLabel(context, l10n.soundscapeMoodLabel),
@@ -145,22 +149,34 @@ class SoundscapeControls extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final state = ref.watch(soundscapeProvider);
     final controller = ref.read(soundscapeProvider.notifier);
-    const moods = SoundscapeMood.values;
-    return Row(
+    // Display order, independent of enum declaration order so existing
+    // serialized mood names stay stable.
+    const rows = <List<SoundscapeMood>>[
+      <SoundscapeMood>[SoundscapeMood.focus, SoundscapeMood.rise],
+      <SoundscapeMood>[SoundscapeMood.relax, SoundscapeMood.sleep],
+    ];
+    return Column(
       children: [
-        for (var i = 0; i < moods.length; i++) ...[
-          if (i > 0) const SizedBox(width: 8),
-          Expanded(
-            child: CcButton(
-              variant: moods[i] == state.mood
-                  ? CcButtonVariant.accent
-                  : CcButtonVariant.secondary,
-              fullWidth: true,
-              onPressed: () async {
-                await controller.setMood(moods[i]);
-              },
-              child: Text(_moodLabel(l10n, moods[i])),
-            ),
+        for (var r = 0; r < rows.length; r++) ...[
+          if (r > 0) const SizedBox(height: 8),
+          Row(
+            children: [
+              for (var i = 0; i < rows[r].length; i++) ...[
+                if (i > 0) const SizedBox(width: 8),
+                Expanded(
+                  child: CcButton(
+                    variant: rows[r][i] == state.mood
+                        ? CcButtonVariant.accent
+                        : CcButtonVariant.secondary,
+                    fullWidth: true,
+                    onPressed: () async {
+                      await controller.setMood(rows[r][i]);
+                    },
+                    child: Text(_moodLabel(l10n, rows[r][i])),
+                  ),
+                ),
+              ],
+            ],
           ),
         ],
       ],
@@ -172,6 +188,7 @@ class SoundscapeControls extends ConsumerWidget {
         SoundscapeMood.focus => l10n.soundscapeMoodFocus,
         SoundscapeMood.relax => l10n.soundscapeMoodRelax,
         SoundscapeMood.sleep => l10n.soundscapeMoodSleep,
+        SoundscapeMood.rise => l10n.soundscapeMoodRise,
       };
 
   Widget _volumeRow(BuildContext context, WidgetRef ref) {
@@ -228,7 +245,10 @@ class SoundscapeControls extends ConsumerWidget {
                   return;
                 }
                 try {
-                  await ref.read(weatherRepositoryProvider).refreshNow(ws);
+                  final reported = await reportDeviceWeatherLocation(ref, ws);
+                  if (!reported) {
+                    await ref.read(weatherRepositoryProvider).refreshNow(ws);
+                  }
                 } on Object {
                   // Host-only refresh may fail (offline / no host) — ignore;
                   // the watch keeps showing the last snapshot.
@@ -271,4 +291,35 @@ class SoundscapeControls extends ConsumerWidget {
       ],
     );
   }
+}
+
+/// Asks for the device location when the soundscape settings open, not at
+/// app boot. The shell mounts the audio host immediately; this widget only
+/// exists inside the settings panel.
+class _DeviceLocationReport extends ConsumerStatefulWidget {
+  const _DeviceLocationReport();
+
+  @override
+  ConsumerState<_DeviceLocationReport> createState() =>
+      _DeviceLocationReportState();
+}
+
+class _DeviceLocationReportState extends ConsumerState<_DeviceLocationReport> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      final workspaceId = ref.read(activeWorkspaceIdProvider);
+      if (workspaceId == null) {
+        return;
+      }
+      unawaited(reportDeviceWeatherLocation(ref, workspaceId));
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => const SizedBox.shrink();
 }

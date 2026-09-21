@@ -10442,6 +10442,9 @@ class AppLocalizationsHu extends AppLocalizations {
   String get soundscapeMoodSleep => 'Alvás';
 
   @override
+  String get soundscapeMoodRise => 'Emelkedés';
+
+  @override
   String get soundscapeVolumeLabel => 'Hangerő';
 
   @override
@@ -10481,7 +10484,7 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get soundscapeLocationAutoNote =>
-      'A helyszín automatikusan észlelődik ebből a munkaterületből.';
+      'A helyszín erről az eszközről származik.';
 
   @override
   String get soundscapeRefreshWeather => 'Időjárás frissítése';

@@ -10502,6 +10502,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get soundscapeMoodSleep => 'Spánek';
 
   @override
+  String get soundscapeMoodRise => 'Vzestup';
+
+  @override
   String get soundscapeVolumeLabel => 'Hlasitost';
 
   @override
@@ -10540,8 +10543,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get soundscapeLocationDetecting => 'Zjišťování polohy…';
 
   @override
-  String get soundscapeLocationAutoNote =>
-      'Poloha se zjišťuje automaticky z tohoto pracovního prostoru.';
+  String get soundscapeLocationAutoNote => 'Poloha pochází z tohoto zařízení.';
 
   @override
   String get soundscapeRefreshWeather => 'Obnovit počasí';

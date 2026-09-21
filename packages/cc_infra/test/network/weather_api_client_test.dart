@@ -164,6 +164,45 @@ void main() {
     });
   });
 
+  group('nearestCity', () {
+    test('returns the nearest city and its own coordinates', () async {
+      adapter.nextJson({
+        'features': [
+          {
+            'properties': {'name': 'Regensdorf'},
+            'geometry': {
+              'coordinates': [8.4680435, 47.4317645],
+            },
+          },
+        ],
+      });
+      final city = (await client.nearestCity(
+        latitude: 47.44,
+        longitude: 8.47,
+      ))!;
+      expect(city.label, 'Regensdorf');
+      expect(city.latitude, 47.4317645);
+      expect(city.longitude, 8.4680435);
+      expect(adapter.requests.single.path, 'https://photon.komoot.io/reverse');
+      expect(adapter.requests.single.queryParameters['layer'], 'city');
+      expect(adapter.requests.single.queryParameters['lat'], 47.44);
+      expect(adapter.requests.single.queryParameters['lon'], 8.47);
+    });
+
+    test('returns null when there is no city', () async {
+      adapter.nextJson({'features': const []});
+      expect(await client.nearestCity(latitude: 0, longitude: 0), isNull);
+    });
+
+    test('swallows errors and returns null', () async {
+      adapter.throwNext = DioException(
+        requestOptions: RequestOptions(),
+        type: DioExceptionType.connectionTimeout,
+      );
+      expect(await client.nearestCity(latitude: 1, longitude: 2), isNull);
+    });
+  });
+
   group('ipGeolocate', () {
     test('returns coordinates + city label on a 200 response', () async {
       adapter.nextJson({'latitude': 35.0, 'longitude': 139.0, 'city': 'Tokyo'});

@@ -1,6 +1,9 @@
+import 'dart:ui' as ui;
+
 import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
 import 'package:cc_domain/features/pr_review/domain/value_objects/image_diff_resolution.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/image_diff_body.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -147,5 +150,120 @@ void main() {
     );
     await tester.pump();
     expect(find.text('Difference'), findsNothing);
+  });
+
+  testWidgets('checker matches GitHub viewscreen bg.gif', (tester) async {
+    const key = Key('checker-tile');
+    await tester.pumpWidget(
+      const Directionality(
+        textDirection: TextDirection.ltr,
+        child: Align(
+          alignment: Alignment.topLeft,
+          child: RepaintBoundary(
+            key: key,
+            child: SizedBox(
+              width: 10,
+              height: 10,
+              child: CustomPaint(
+                painter: ImageDiffCheckerPainter(),
+                child: SizedBox.expand(),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final boundary = tester.renderObject<RenderRepaintBoundary>(
+      find.byKey(key),
+    );
+    final pixels = await tester.runAsync(() async {
+      final image = await boundary.toImage(pixelRatio: 1);
+      final data = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+      image.dispose();
+      return data!.buffer.asUint8List();
+    });
+
+    Color at(int x, int y) {
+      final i = (y * 10 + x) * 4;
+      return Color.fromARGB(
+        pixels![i + 3],
+        pixels[i],
+        pixels[i + 1],
+        pixels[i + 2],
+      );
+    }
+
+    // 5px squares, top-left gray (#e5e5e5), alternating with white.
+    const gray = Color(0xFFE5E5E5);
+    const white = Color(0xFFFFFFFF);
+    expect(at(0, 0), gray);
+    expect(at(4, 4), gray);
+    expect(at(5, 0), white);
+    expect(at(9, 4), white);
+    expect(at(0, 5), white);
+    expect(at(4, 9), white);
+    expect(at(5, 5), gray);
+    expect(at(9, 9), gray);
+  });
+
+  testWidgets('checker does not paint past the frame', (tester) async {
+    const key = Key('checker-bounds');
+    const blue = Color(0xFF0000FF);
+    await tester.pumpWidget(
+      const Directionality(
+        textDirection: TextDirection.ltr,
+        child: Align(
+          alignment: Alignment.topLeft,
+          child: RepaintBoundary(
+            key: key,
+            child: ColoredBox(
+              color: blue,
+              child: SizedBox(
+                width: 40,
+                height: 40,
+                child: Align(
+                  alignment: Alignment.topLeft,
+                  child: SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CustomPaint(
+                      painter: ImageDiffCheckerPainter(),
+                      child: SizedBox.expand(),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final boundary = tester.renderObject<RenderRepaintBoundary>(
+      find.byKey(key),
+    );
+    final pixels = await tester.runAsync(() async {
+      final image = await boundary.toImage(pixelRatio: 1);
+      final data = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+      image.dispose();
+      return data!.buffer.asUint8List();
+    });
+
+    Color at(int x, int y) {
+      final i = (y * 40 + x) * 4;
+      return Color.fromARGB(
+        pixels![i + 3],
+        pixels[i],
+        pixels[i + 1],
+        pixels[i + 2],
+      );
+    }
+
+    // 24 is not a multiple of the 5px cell. The last cell used to spill.
+    for (final p in const [(26, 4), (4, 26), (30, 30), (24, 12), (12, 24)]) {
+      expect(at(p.$1, p.$2), blue, reason: 'leaked at $p');
+    }
+    expect(at(0, 0), isNot(blue));
   });
 }

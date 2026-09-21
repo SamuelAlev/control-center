@@ -7,12 +7,14 @@ SoundscapeContext _context({
   SoundscapeWeather weather = SoundscapeWeather.clear,
   bool isDay = true,
   double temperatureCelsius = 20.0,
+  double dayLengthHours = 12.0,
 }) => SoundscapeContext(
   mood: mood,
   daypart: daypart,
   weather: weather,
   isDay: isDay,
   temperatureCelsius: temperatureCelsius,
+  dayLengthHours: dayLengthHours,
 );
 
 void main() {
@@ -46,6 +48,14 @@ void main() {
       final sleep = _context(mood: SoundscapeMood.sleep);
       expect(focus.contextHash, isNot(equals(sleep.contextHash)));
       expect(focus.seed, isNot(equals(sleep.seed)));
+    });
+
+    test('day length is mix-only: hash and seed ignore it', () {
+      final long = _context(dayLengthHours: 16.0);
+      final short = _context(dayLengthHours: 8.0);
+      expect(long.contextHash, equals(short.contextHash));
+      expect(long.seed, equals(short.seed));
+      expect(long, isNot(equals(short)));
     });
 
     test('differs when the weather differs', () {
@@ -97,6 +107,7 @@ void main() {
       expect(updated.daypart, base.daypart);
       expect(updated.isDay, base.isDay);
       expect(updated.temperatureCelsius, base.temperatureCelsius);
+      expect(updated.dayLengthHours, base.dayLengthHours);
     });
   });
 }

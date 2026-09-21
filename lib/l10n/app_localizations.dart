@@ -17915,6 +17915,12 @@ abstract class AppLocalizations {
   /// **'Sleep'**
   String get soundscapeMoodSleep;
 
+  /// Soundscape mood: buoyant melody with a soft pulse for when work feels heavy
+  ///
+  /// In en, this message translates to:
+  /// **'Rise'**
+  String get soundscapeMoodRise;
+
   /// Label above the soundscape master volume slider
   ///
   /// In en, this message translates to:
@@ -17987,10 +17993,10 @@ abstract class AppLocalizations {
   /// **'Detecting location…'**
   String get soundscapeLocationDetecting;
 
-  /// Note explaining that the soundscape weather location is auto-detected
+  /// Note explaining that the soundscape weather location comes from this device
   ///
   /// In en, this message translates to:
-  /// **'Location is detected automatically from this workspace.'**
+  /// **'Location comes from this device.'**
   String get soundscapeLocationAutoNote;
 
   /// Button to force an immediate weather re-fetch

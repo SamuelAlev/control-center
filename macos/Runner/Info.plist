@@ -47,6 +47,8 @@
 			</array>
 		</dict>
 	</array>
+	<key>NSLocationUsageDescription</key>
+	<string>Control Center uses this Mac's location so the soundscape matches the weather where you are. The coordinates are sent to your server, which looks up the forecast.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Control Center records your voice and transcribes it on-device to dictate messages into the composer. The audio stays on this Mac.</string>
 	<key>NSAudioCaptureUsageDescription</key>

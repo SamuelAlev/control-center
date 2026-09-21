@@ -10305,6 +10305,9 @@ class AppLocalizationsTh extends AppLocalizations {
   String get soundscapeMoodSleep => 'นอน';
 
   @override
+  String get soundscapeMoodRise => 'รุ่ง';
+
+  @override
   String get soundscapeVolumeLabel => 'ระดับเสียง';
 
   @override
@@ -10343,8 +10346,7 @@ class AppLocalizationsTh extends AppLocalizations {
   String get soundscapeLocationDetecting => 'กำลังตรวจจับตำแหน่ง…';
 
   @override
-  String get soundscapeLocationAutoNote =>
-      'ตำแหน่งถูกตรวจจับอัตโนมัติจากเวิร์กสเปซนี้';
+  String get soundscapeLocationAutoNote => 'ตำแหน่งมาจากอุปกรณ์นี้';
 
   @override
   String get soundscapeRefreshWeather => 'รีเฟรชสภาพอากาศ';

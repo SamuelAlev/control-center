@@ -52,6 +52,7 @@ class MoodMusic {
     required this.hasPulse,
     required this.motifTimbres,
     required this.arpTimbres,
+    this.motifAscentBias = 0.5,
   });
 
   /// The music for [mood].
@@ -181,6 +182,63 @@ class MoodMusic {
           motifTimbres: <NoteTimbre>[],
           arpTimbres: <NoteTimbre>[],
         );
+      case SoundscapeMood.rise:
+        // A major pentatonic (A B C# E F#). 96 BPM -> 1.6 Hz beat, so the
+        // 16 Hz beta-band AM is an exact 10x subdivision — same attention
+        // rate as focus, a slower pulse than 120 so the kit stays gentle.
+        // Motifs sit a register above focus (A3–A6); the sub hangs at E2
+        // (the measured 30–90 Hz body of the reference tracks).
+        return const MoodMusic._(
+          beatsPerMinute: 96.0,
+          amRateHz: 16.0,
+          harmonyVoices: <HarmonyVoicePlan>[
+            HarmonyVoicePlan(
+              initialMidi: 45,
+              candidatesMidi: <int>[40, 42, 45],
+              moveWeight: 0.5,
+            ),
+            HarmonyVoicePlan(
+              initialMidi: 57,
+              candidatesMidi: <int>[57, 59],
+              moveWeight: 0.5,
+            ),
+            HarmonyVoicePlan(
+              initialMidi: 61,
+              candidatesMidi: <int>[57, 59, 61, 64],
+            ),
+            HarmonyVoicePlan(
+              initialMidi: 64,
+              candidatesMidi: <int>[64, 66, 69],
+            ),
+            HarmonyVoicePlan(
+              initialMidi: 73,
+              candidatesMidi: <int>[69, 71, 73, 76],
+              moveWeight: 0.7,
+            ),
+          ],
+          harmonyIntervalSeconds: 20.0,
+          motifScaleMidi: <int>[
+            57, 59, 61, 64, 66, // A3 octave
+            69, 71, 73, 76, 78, // A4 octave
+            81, 83, 85, 88, 90, // A5 octave
+            93, // A6
+          ],
+          subFrequencyHz: 82.41, // E2
+          subFifthGain: 0.0,
+          padPartialGains: <double>[1.0, 0.48, 0.24, 0.10],
+          padSpread: 0.80,
+          padInnerSpread: 0.85,
+          arpLowMidi: 57, // A3
+          arpHighMidi: 93, // A6
+          hasPulse: true,
+          motifTimbres: <NoteTimbre>[
+            NoteTimbre.bloom,
+            NoteTimbre.flute,
+            NoteTimbre.piano,
+          ],
+          arpTimbres: <NoteTimbre>[NoteTimbre.piano, NoteTimbre.guitar],
+          motifAscentBias: 0.7,
+        );
     }
   }
 
@@ -236,6 +294,14 @@ class MoodMusic {
 
   /// The instrument colors the arp ladder rotates through per 4-bar section.
   final List<NoteTimbre> arpTimbres;
+
+  /// Probability that a non-edge motif step goes up, in `[0, 1]`.
+  ///
+  /// `0.5` is the unbiased walk (focus / relax / sleep). Rise is biased
+  /// upward so phrases tend to rise. The scheduler still draws one
+  /// [SeededPrng.nextBool] per step, so a bias of `0.5` is stream-identical
+  /// to the historical coin flip.
+  final double motifAscentBias;
 
   /// Whether this mood plays melodic motifs at all.
   bool get hasMotifs => motifScaleMidi.isNotEmpty;

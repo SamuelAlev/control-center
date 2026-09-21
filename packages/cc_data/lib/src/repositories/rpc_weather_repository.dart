@@ -19,7 +19,7 @@ import 'package:cc_rpc/cc_rpc.dart';
 ///
 /// All ops are exposed to the client — reads ([getCurrent] / [watchCurrent]) and
 /// the host-serviced writes ([refreshNow] / [setManualLocation] /
-/// [clearManualLocation]) — so none throw.
+/// [clearManualLocation] / [reportDeviceLocation]) — so none throw.
 class RpcWeatherRepository implements WeatherRepository {
   /// Creates an [RpcWeatherRepository] over [client].
   RpcWeatherRepository(RemoteRpcClient client)
@@ -55,4 +55,11 @@ class RpcWeatherRepository implements WeatherRepository {
   @override
   Future<void> clearManualLocation(String workspaceId) =>
       _remote.clearManualLocation();
+
+  @override
+  Future<void> reportDeviceLocation(
+    String workspaceId, {
+    required double latitude,
+    required double longitude,
+  }) => _remote.reportDeviceLocation(latitude: latitude, longitude: longitude);
 }

@@ -14,8 +14,9 @@ import 'package:cc_natives/cc_natives.dart' show Mp3Encoder;
 /// Sessions are keyed by `(workspaceId, mood)` and SHARED: any number of
 /// listeners on the same key hear one generative session (per-listener volume is
 /// a client concern), so the server renders each distinct scene once. Weather is
-/// per-workspace (the server's location), so mood is the only per-listener
-/// dimension — which is exactly why weather/daypart adapt *within* a session
+/// per-workspace (the reporting app's device location, or the server's IP when
+/// none has been reported), so mood is the only per-listener dimension — which
+/// is exactly why weather/daypart adapt *within* a session
 /// (via [SoundscapeSession.updateContext] ramps) rather than by re-keying it.
 ///
 /// `liblame_ffi` is a REQUIRED native on every platform — `cc_server`'s boot
@@ -34,7 +35,7 @@ class SoundscapeHub {
   SoundscapeHub({
     required this._weather,
     this.sampleRate = 48000,
-    this.maxSessions = 4,
+    this.maxSessions = 8,
     this._encoderLibraryPaths = const [],
     this._contextBuilder = const SoundscapeContextBuilder(),
   });

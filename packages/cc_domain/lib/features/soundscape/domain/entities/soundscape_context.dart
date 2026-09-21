@@ -11,6 +11,10 @@ enum SoundscapeMood {
 
   /// Low drones, near-zero accents, deep reverb — for winding down.
   sleep,
+
+  /// Buoyant pentatonic lines and a soft pulse — the positive-valence work
+  /// sound, for when Focus feels heavy (afternoon slump, short dark days).
+  rise,
 }
 
 /// The part of the day a soundscape is generated for.
@@ -65,11 +69,12 @@ enum SoundscapeWeather {
 ///
 /// The engine is fully deterministic in this value: the same
 /// [SoundscapeContext] always seeds the PRNG with the same [seed], so every
-/// render of the same context is sample-identical. Only the fields that a
-/// listener would perceptibly hear are folded into [contextHash] — the
-/// temperature is bucketed into ~3 degC bins so that trivially close readings
-/// (20.1 degC vs 21.9 degC) collapse to the same seed and do not restart the
-/// generator.
+/// render of the same context is sample-identical. Only the fields that
+/// restart the generator are folded into [contextHash] — the temperature is
+/// bucketed into ~3 degC bins so that trivially close readings (20.1 degC vs
+/// 21.9 degC) collapse to the same seed. [dayLengthHours] is mix-only (like
+/// the tune pad): it retargets Rise's dusk/night darkening without
+/// restarting the piece.
 class SoundscapeContext {
   /// Creates a [SoundscapeContext].
   const SoundscapeContext({
@@ -78,6 +83,7 @@ class SoundscapeContext {
     required this.weather,
     required this.isDay,
     required this.temperatureCelsius,
+    this.dayLengthHours = 12.0,
   });
 
   /// The listening mood.
@@ -96,6 +102,11 @@ class SoundscapeContext {
   /// The outdoor temperature in degrees Celsius.
   final double temperatureCelsius;
 
+  /// Hours of daylight (sunset − sunrise). Mix-only: never folded into
+  /// [contextHash] / [seed], so a shorter day retargets the arrangement
+  /// without restarting the piece. Neutral default is a 12-hour day.
+  final double dayLengthHours;
+
   /// Returns a copy with the given fields replaced.
   SoundscapeContext copyWith({
     SoundscapeMood? mood,
@@ -103,6 +114,7 @@ class SoundscapeContext {
     SoundscapeWeather? weather,
     bool? isDay,
     double? temperatureCelsius,
+    double? dayLengthHours,
   }) {
     return SoundscapeContext(
       mood: mood ?? this.mood,
@@ -110,6 +122,7 @@ class SoundscapeContext {
       weather: weather ?? this.weather,
       isDay: isDay ?? this.isDay,
       temperatureCelsius: temperatureCelsius ?? this.temperatureCelsius,
+      dayLengthHours: dayLengthHours ?? this.dayLengthHours,
     );
   }
 
@@ -160,15 +173,23 @@ class SoundscapeContext {
           daypart == other.daypart &&
           weather == other.weather &&
           isDay == other.isDay &&
-          temperatureCelsius == other.temperatureCelsius;
+          temperatureCelsius == other.temperatureCelsius &&
+          dayLengthHours == other.dayLengthHours;
 
   @override
-  int get hashCode =>
-      Object.hash(mood, daypart, weather, isDay, temperatureCelsius);
+  int get hashCode => Object.hash(
+    mood,
+    daypart,
+    weather,
+    isDay,
+    temperatureCelsius,
+    dayLengthHours,
+  );
 
   @override
   String toString() =>
       'SoundscapeContext(mood: ${mood.name}, daypart: ${daypart.name}, '
       'weather: ${weather.name}, isDay: $isDay, '
-      'temperatureCelsius: $temperatureCelsius)';
+      'temperatureCelsius: $temperatureCelsius, '
+      'dayLengthHours: $dayLengthHours)';
 }
