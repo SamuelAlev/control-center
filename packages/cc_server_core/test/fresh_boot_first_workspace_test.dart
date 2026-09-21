@@ -8,6 +8,7 @@ import 'package:cc_server_core/cc_server_core.dart';
 import 'package:test/test.dart';
 
 import 'helpers/best_effort_delete.dart';
+import 'helpers/booted_rpc.dart';
 import 'helpers/native_staging.dart';
 import 'helpers/test_database.dart';
 
@@ -70,7 +71,7 @@ void main() {
       );
       addTearDown(server.shutdown);
 
-      final client = await connectRemoteRpc(
+      final client = await connectBootedServer(
         uri: Uri.parse('ws://127.0.0.1:${server.rpc.boundPort}/rpc'),
         deviceId: deviceId,
         psk: psk,
@@ -183,7 +184,7 @@ void main() {
       );
       addTearDown(server.shutdown);
 
-      final client = await connectRemoteRpc(
+      final client = await connectBootedServer(
         uri: Uri.parse('ws://127.0.0.1:${server.rpc.boundPort}/rpc'),
         deviceId: deviceId,
         psk: psk,
@@ -264,7 +265,7 @@ void main() {
       );
       addTearDown(server.shutdown);
 
-      final client = await connectRemoteRpc(
+      final client = await connectBootedServer(
         uri: Uri.parse('ws://127.0.0.1:${server.rpc.boundPort}/rpc'),
         deviceId: deviceId,
         psk: psk,
@@ -340,7 +341,7 @@ void main() {
     addTearDown(server.shutdown);
 
     // The owner connects and creates a workspace.
-    final owner = await connectRemoteRpc(
+    final owner = await connectBootedServer(
       uri: Uri.parse('ws://127.0.0.1:${server.rpc.boundPort}/rpc'),
       deviceId: ownerDeviceId,
       psk: ownerPsk,
@@ -373,7 +374,7 @@ void main() {
     await guestSeed.close();
 
     // The guest connects: authenticated, but a member of NOTHING.
-    final guest = await connectRemoteRpc(
+    final guest = await connectBootedServer(
       uri: Uri.parse('ws://127.0.0.1:${server.rpc.boundPort}/rpc'),
       deviceId: guestDeviceId,
       psk: guestPsk,

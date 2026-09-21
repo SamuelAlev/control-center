@@ -141,7 +141,8 @@ class WsClientChannel implements RemoteRpcChannelPort {
 /// proves PSK possession both ways and verifies the server's Ed25519 identity
 /// against [pinnedFingerprint] when one is supplied (TOFU pinning — a changed
 /// fingerprint is a hard refusal). Throws [StateError] on auth failure or
-/// timeout (fail closed).
+/// timeout (fail closed). [timeout] bounds the handshake; [requestTimeout]
+/// bounds each later `repo/call`.
 Future<RemoteRpcClient> connectRemoteRpc({
   required Uri uri,
   required String deviceId,
@@ -149,6 +150,7 @@ Future<RemoteRpcClient> connectRemoteRpc({
   String? pinnedFingerprint,
   bool insecureAllowed = false,
   Duration timeout = const Duration(seconds: 15),
+  Duration requestTimeout = const Duration(seconds: 30),
 }) async {
   final channel = await WsClientChannel.connect(
     uri,
@@ -160,6 +162,7 @@ Future<RemoteRpcClient> connectRemoteRpc({
     psk: psk,
     pinnedFingerprint: pinnedFingerprint,
     timeout: timeout,
+    requestTimeout: requestTimeout,
   );
   return result.client;
 }

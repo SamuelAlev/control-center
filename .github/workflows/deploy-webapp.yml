@@ -1,25 +1,11 @@
 name: Deploy web client
 
-# Builds the Control Center WEB CLIENT (lib/main_web.dart) and deploys it to the
-# Cloudflare Worker "control-center-web" as static assets — the same model as the
-# design system gallery + cc_remote phone client. Config lives in the root
-# wrangler.jsonc (SPA fallback + the strict CSP `_headers` shipped under web/).
-#
-# The web client is a THIN CLIENT: no local database, it dials a running
-# cc-server (apps/cc_server) over a WebSocket. Build locally with
-# scripts/build_web.sh.
-#
-# Setup — reuses the existing repository secret:
-#   CLOUDFLARE_API_TOKEN  A Cloudflare API token scoped to "Edit Cloudflare
-#                         Workers" for the account below.
-# The account id is not sensitive, so it is inlined. `wrangler deploy` creates
-# the Worker on first run if it does not already exist.
+# Flutter web client → Cloudflare Worker "control-center-web" (wrangler.jsonc).
+# Thin client: it dials cc_server. The account id is not a secret.
 
 on:
   push:
     branches: [main]
-    # Redeploy when the web client, its entry point, or the shared code/config it
-    # bundles change.
     paths:
       - "lib/**"
       - "packages/**"
@@ -81,23 +67,12 @@ jobs:
       - name: Build web (SkWasm with CanvasKit fallback)
         run: flutter build web --release --wasm
 
-      # The manifest the client polls to offer a consent-driven refresh.
-      # Derived from the stamped build_info.dart, so the manifest and the
-      # BuildInfo compiled into the bundle are the same identity by
-      # construction — this used to be an inline heredoc here, in
-      # deploy-webapp.yml and in release.yml and the three had drifted into
-      # two different version semantics.
-      #
-      # deploy.json, NOT version.json: `flutter build web` writes its own
-      # build/web/version.json and would clobber it. Written AFTER the build
-      # for the same reason.
+      # After the build. flutter build web writes version.json; the poll
+      # manifest is deploy.json.
       - name: Write deploy.json
         run: dart run tool/gen_deploy_manifest.dart build/web
 
-      # Cloudflare rejects the whole deploy if ANY asset exceeds 25 MiB. The
-      # check lives in scripts/lib/common.sh so this is one implementation
-      # rather than the three verbatim copies these workflows used to carry
-      # (two of which pointed at the third in a comment).
+      # Cloudflare's per-asset cap is 25 MiB.
       - name: Check asset size budget
         run: |
           source "$GITHUB_WORKSPACE/scripts/lib/common.sh"

@@ -41,9 +41,10 @@ RUN printf '%s\n' \
  && dart compile exe bin/server.dart -o /signaling-server
 
 # ---- Runtime stage: minimal glibc base with the single binary ---------------
-# `dart compile exe` embeds the Dart VM, but the binary still links glibc, so we
-# keep a debian-slim base that matches the SDK image's glibc major (bookworm).
-FROM debian:bookworm-slim AS runtime
+# `dart compile exe` embeds the Dart VM, but the binary still links glibc, so the
+# runtime image has to match the SDK image. `dart:3.13-sdk` is Debian 13
+# (trixie, glibc 2.41); bookworm's glibc 2.36 cannot load that binary.
+FROM debian:trixie-slim AS runtime
 
 LABEL org.opencontainers.image.title="Control Center signaling server" \
       org.opencontainers.image.description="Pure-Dart stateless WebSocket signaling broker for WebRTC pairing" \

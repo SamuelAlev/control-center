@@ -12,6 +12,7 @@ import 'package:cc_server_core/cc_server_core.dart';
 import 'package:test/test.dart';
 
 import 'helpers/best_effort_delete.dart';
+import 'helpers/booted_rpc.dart';
 import 'helpers/native_staging.dart';
 import 'helpers/test_database.dart';
 
@@ -89,7 +90,7 @@ void main() {
       addTearDown(server.shutdown);
 
       // --- Connect a real client through the PSK handshake and read tickets.
-      final client = await connectRemoteRpc(
+      final client = await connectBootedServer(
         uri: Uri.parse('ws://127.0.0.1:${server.rpc.boundPort}/rpc'),
         deviceId: deviceId,
         psk: psk,
@@ -189,7 +190,7 @@ void main() {
     );
     addTearDown(server.shutdown);
 
-    final client = await connectRemoteRpc(
+    final client = await connectBootedServer(
       uri: Uri.parse('ws://127.0.0.1:${server.rpc.boundPort}/rpc'),
       deviceId: deviceId,
       psk: psk,
@@ -271,7 +272,7 @@ void main() {
     );
     addTearDown(server.shutdown);
 
-    final client = await connectRemoteRpc(
+    final client = await connectBootedServer(
       uri: Uri.parse('ws://127.0.0.1:${server.rpc.boundPort}/rpc'),
       deviceId: deviceId,
       psk: psk,
@@ -341,7 +342,7 @@ void main() {
     );
     addTearDown(server.shutdown);
 
-    final client = await connectRemoteRpc(
+    final client = await connectBootedServer(
       uri: Uri.parse('ws://127.0.0.1:${server.rpc.boundPort}/rpc'),
       deviceId: deviceId,
       psk: psk,
@@ -429,7 +430,7 @@ void main() {
       // server's `auth_denied` frame), NOT stall until the handshake timeout and
       // surface an opaque "Server did not complete auth".
       await expectLater(
-        connectRemoteRpc(
+        connectBootedServer(
           uri: Uri.parse('ws://127.0.0.1:${server.rpc.boundPort}/rpc'),
           deviceId: deviceId,
           psk: 'whatever-the-user-typed-0123456789',
@@ -501,7 +502,7 @@ void main() {
     final url = Uri.parse('ws://127.0.0.1:${server.rpc.boundPort}/rpc');
 
     // The fullClient mints a pairing for a NEW desktop client.
-    final admin = await connectRemoteRpc(
+    final admin = await connectBootedServer(
       uri: url,
       deviceId: adminId,
       psk: adminPsk,
@@ -522,7 +523,7 @@ void main() {
 
     // The newly-paired client connects to the SAME running server and drives
     // a working session.
-    final second = await connectRemoteRpc(
+    final second = await connectBootedServer(
       uri: url,
       deviceId: newDeviceId,
       psk: newPsk,
@@ -538,7 +539,7 @@ void main() {
 
     // The phone (restricted) is DENIED pairing.mint by the capability gate,
     // even though it authenticated and is bound to a workspace.
-    final phone = await connectRemoteRpc(
+    final phone = await connectBootedServer(
       uri: url,
       deviceId: phoneId,
       psk: phonePsk,
@@ -737,7 +738,7 @@ void main() {
       );
       addTearDown(server.shutdown);
 
-      final client = await connectRemoteRpc(
+      final client = await connectBootedServer(
         uri: Uri.parse('ws://127.0.0.1:${server.rpc.boundPort}/rpc'),
         deviceId: deviceId,
         psk: psk,
@@ -903,7 +904,7 @@ void main() {
       );
       addTearDown(server.shutdown);
 
-      final client = await connectRemoteRpc(
+      final client = await connectBootedServer(
         uri: Uri.parse('ws://127.0.0.1:${server.rpc.boundPort}/rpc'),
         deviceId: deviceId,
         psk: psk,
@@ -969,7 +970,7 @@ void main() {
     );
     addTearDown(server.shutdown);
 
-    final client = await connectRemoteRpc(
+    final client = await connectBootedServer(
       uri: Uri.parse('ws://127.0.0.1:${server.rpc.boundPort}/rpc'),
       deviceId: deviceId,
       psk: psk,
@@ -1090,7 +1091,7 @@ void main() {
     );
     addTearDown(server.shutdown);
 
-    final client = await connectRemoteRpc(
+    final client = await connectBootedServer(
       uri: Uri.parse('ws://127.0.0.1:${server.rpc.boundPort}/rpc'),
       deviceId: deviceId,
       psk: psk,
@@ -1198,7 +1199,7 @@ void main() {
       );
       addTearDown(server.shutdown);
 
-      final client = await connectRemoteRpc(
+      final client = await connectBootedServer(
         uri: Uri.parse('ws://127.0.0.1:${server.rpc.boundPort}/rpc'),
         deviceId: deviceId,
         psk: psk,
@@ -1339,7 +1340,7 @@ void main() {
     );
     addTearDown(server.shutdown);
 
-    final client = await connectRemoteRpc(
+    final client = await connectBootedServer(
       uri: Uri.parse('ws://127.0.0.1:${server.rpc.boundPort}/rpc'),
       deviceId: deviceId,
       psk: psk,

@@ -1,48 +1,13 @@
 name: Release
 
-# Builds desktop binaries for macOS (DMG — Developer ID signed + notarized;
-# the macOS job's MACOS_CERTIFICATE/MACOS_PROVISIONING_PROFILE_BASE64/APPLE_*
-# secrets are required — the profile authorizes keychain-access-groups so the app
-# launches on MDM-managed Macs), Windows (Inno
-# Setup exe — Authenticode-signed when a cert secret is present, else unsigned)
-# and Linux (AppImage), attaches them to a DRAFT GitHub Release with SHA-256 checksums,
-# and attaches an OIDC SLSA build-provenance attestation to each artifact.
-#
-# Trigger by pushing a version tag (e.g. `git tag v1.0.0 && git push --tags`),
-# or run manually from the Actions tab (workflow_dispatch) supplying a version.
-# The release is created as a DRAFT — review the artifacts, then publish.
-#
-# The heavy lifting lives in scripts/ so this file stays readable:
-#   scripts/lib/natives.sh              THE required-native matrix (one row per
-#                                       shipped library) — read it rather than a
-#                                       list written down here, which is how this
-#                                       comment came to name a script that no
-#                                       longer exists and omit two libraries
-#   scripts/natives/build_natives.sh    build every native (macOS/Linux)
-#   scripts/release/windows_natives.sh  build every native except rift (Windows)
-#   scripts/release/verify_natives.sh   assert a packaged dir carries the matrix
-#   scripts/release/macos_package.sh    embed + verify + sign + DMG + notarize
-#   scripts/release/windows_package.sh  bundle + verify + installer + sign + zip
-#   scripts/release/linux_package.sh    bundle + verify + AppImage + tarball
-#   scripts/release/make_release.sh     assemble + notes + draft release
-#
-# The native build step is cached: .github/actions/natives-cache restores the
-# build/natives a push-to-main run of natives.yml staged for identical inputs
-# (tag runs can only read default-branch caches) and prepare-release-build
-# skips the build on a hit. A miss — changed inputs or an evicted cache — just
-# builds from source exactly as before.
-#
-# Native builds are FATAL: every native is required, cc_server's boot preflight
-# refuses to start without one and the packaging scripts refuse to produce an
-# artifact — so a tolerated failure would only move the crash from this runner to
-# a user's machine. rift is the single documented exception: it is not built on
-# Windows (no MSVC copy-on-write backend), where `git worktree` is the backend.
-#
-# Every checkout passes persist-credentials: false: nothing in the release path
-# authenticates through the persisted git extraheader — make_release.sh uses an
-# explicit GH_TOKEN env and all native/toolchain clones are public HTTPS — so
-# the build-provenance jobs (id-token: write) never leave a reusable github
-# token lying in .git/config (zizmor's artipacked audit).
+# Tag push (`v*`) or workflow_dispatch. Draft GitHub Release (macOS DMG,
+# Windows installer, Linux AppImage) plus GHCR images. Packaging is
+# scripts/release/; natives come from natives-cache (seeded on main) or a
+# source build on miss. macOS signing secrets are required (the provisioning
+# profile authorizes keychain-access-groups). Windows signs only when
+# WINDOWS_CERT is set.
+# persist-credentials: false on every checkout — release auth is GH_TOKEN,
+# and id-token jobs must not leave a token in .git/config.
 
 on:
   push:
@@ -83,10 +48,7 @@ jobs:
       - name: Resolve version
         id: v
         shell: bash
-        # The dispatch input reaches the script through env, never a ${{ }}
-        # interpolation inside run: — user-supplied strings interpolated into
-        # a shell script are injection-shaped, even though only a collaborator
-        # can set this one (zizmor's template-injection audit).
+        # INPUT_VERSION via env, not ${{ }} inside run: (template injection).
         env:
           INPUT_VERSION: ${{ github.event.inputs.version }}
         run: |
@@ -104,21 +66,19 @@ jobs:
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
 
-  # ---------------------------------------------------------------------------
   build-macos:
     needs: prepare
     runs-on: macos-26 # Apple Silicon (arm64)
     permissions:
       contents: read
-      id-token: write # OIDC for build-provenance attestation
+      id-token: write # SLSA provenance
       attestations: write
     env:
       VERSION: ${{ needs.prepare.outputs.version }}
       BUILD_NUMBER: ${{ github.run_number }}
     steps:
       - name: Harden runner
-        # `block` is Linux-only in harden-runner; audit is the ceiling
-        # on macOS. This job holds the Developer ID certificate.
+        # block is Linux-only. This job holds the Developer ID certificate.
         uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
           egress-policy: audit
@@ -160,11 +120,7 @@ jobs:
           APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
         run: bash scripts/release/macos_package.sh "$VERSION"
 
-      # Standalone, self-hostable cc_server (the backend web/phone thin clients
-      # dial). Reuses the natives in build/natives + the cc_server bundle the
-      # desktop package already built, signs/notarizes it on its own and emits a
-      # downloadable archive. The keychain macos_package.sh set up is still on the
-      # search list, so the script finds the Developer ID identity.
+      # Reuses the bundle macos_package.sh already built; the keychain is still up.
       - name: Package standalone cc_server (sign + notarize)
         env:
           MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
@@ -197,7 +153,6 @@ jobs:
             cc_server-*-macos-*.tar.gz
           if-no-files-found: error
 
-  # ---------------------------------------------------------------------------
   build-windows:
     needs: prepare
     runs-on: windows-latest
@@ -208,12 +163,9 @@ jobs:
     env:
       VERSION: ${{ needs.prepare.outputs.version }}
       BUILD_NUMBER: ${{ github.run_number }}
-      # Native source pins live in scripts/lib/native_pins.env, which
-      # windows_natives.sh loads directly — see load_native_pins.
     steps:
       - name: Harden runner
-        # `block` is Linux-only in harden-runner; audit is the ceiling
-        # on Windows.
+        # block is Linux-only.
         uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
           egress-policy: audit
@@ -231,9 +183,6 @@ jobs:
         with:
           arch: x64
 
-      # meson+ninja drive the WebRTC AEC3 build. libmp3lame (for lame_ffi.dll)
-      # comes from the runner's preinstalled vcpkg — see windows_natives.sh's lame
-      # branch, which also honours LAME_PREFIX for a hand-built copy.
       - name: Install AEC build tools (meson/ninja)
         run: pip install meson ninja
 
@@ -248,12 +197,19 @@ jobs:
           github-client-id: ${{ secrets.CC_BUILTIN_GITHUB_CLIENT_ID }}
           fetch-code-server: "false"
 
+      # pwsh: Git Bash shadows MSVC link.exe and Windows tar.exe. Prepend the
+      # tar.exe setup-flutter staged. Do not use GITHUB_PATH (see that action).
       - name: Build Windows release
-        run: flutter build windows --release --build-name="$env:VERSION" --build-number="$env:BUILD_NUMBER"
+        shell: pwsh
+        run: |
+          $dir = Join-Path $env:RUNNER_TEMP 'win-tar'
+          $tar = Join-Path $dir 'tar.exe'
+          if (-not (Test-Path $tar)) {
+            throw "Windows tar.exe missing at $tar"
+          }
+          $env:PATH = "$dir;$env:PATH"
+          flutter build windows --release --build-name="$env:VERSION" --build-number="$env:BUILD_NUMBER"
 
-      # Everything from staging natives to the signed installer + portable zip
-      # lives in one script, symmetric with macos_package.sh / linux_package.sh,
-      # so the Windows path can be dry-run and reviewed outside CI.
       - name: Package (bundle + verify + installer + sign + zip)
         shell: bash
         env:
@@ -261,9 +217,7 @@ jobs:
           WINDOWS_CERT_PWD: ${{ secrets.WINDOWS_CERT_PWD }}
         run: bash scripts/release/windows_package.sh "$VERSION"
 
-      # Standalone, self-hostable cc_server. Reuses the cc_server bundle that
-      # windows_package.sh already built + build/natives and emits a downloadable
-      # .zip. Windows builds are unsigned (matches the installer).
+      # Unsigned, matching the installer. Reuses the bundle windows_package.sh built.
       - name: Package standalone cc_server
         shell: bash
         run: bash scripts/release/cc_server_package.sh "$VERSION" windows
@@ -293,11 +247,8 @@ jobs:
             cc_server-*-windows-*.zip
           if-no-files-found: error
 
-  # ---------------------------------------------------------------------------
-  # Stay on 24.04, not 26.04: natives compiled here are copied into
-  # debian:trixie-slim (glibc 2.41). Ubuntu 26.04's newer glibc would
-  # produce binaries the container cannot load — the same ABI trap the
-  # Dockerfile documents for Debian 12.
+  # ubuntu-24.04, not 26.04: natives are copied into debian:trixie-slim
+  # (glibc 2.41). A newer glibc will not load there.
   build-linux:
     needs: prepare
     runs-on: ubuntu-24.04
@@ -310,58 +261,10 @@ jobs:
       BUILD_NUMBER: ${{ github.run_number }}
       ARCH: x86_64
     steps:
-      # Every native is FATAL here, so this allowlist is part of the build: a host
-      # missing from it fails the release rather than degrading a feature. What
-      # needs what (comments cannot live inside the folded block below — a `#`
-      # there would become part of the string):
-      #   apt (*.archive.ubuntu.com, esm.ubuntu.com)      the Linux build deps
-      #   github.com + release-assets./objects.github…    rift, fff, tree-sitter +
-      #                                                   grammars, code-server,
-      #                                                   the abseil wrap tarball
-      #   index./static.crates.io, static.rust-lang.org   cargo (rift, fff, watcher)
-      #   gitlab.freedesktop.org                          webrtc-audio-processing
-      #                                                   (aec) — build_aec.sh
-      #   wrapdb.mesonbuild.com                           meson's abseil-cpp wrap
-      #                                                   patch (aec, forced
-      #                                                   fallback subproject)
-      #   downloads. + *.dl.sourceforge.net               the pinned LAME 3.100
-      #                                                   tarball (build_lame.sh);
-      #                                                   downloads. 302s to a
-      #                                                   per-run *.dl mirror
-      #   dl.google.com, pub.dev, storage.googleapis.com  Flutter/Dart SDK + pub
-      #   fulcio./rekor.sigstore.dev                      provenance attestation
-      #   *.blob.core.windows.net                         the natives-cache
-      #                                                   blobs (actions/cache
-      #                                                   stores on Azure, the
-      #                                                   same hosts as
-      #                                                   artifacts — see the
-      #                                                   release job's note)
-      # Every native is FATAL here, so this allowlist is part of the build: a host
-      # missing from it fails the release rather than degrading a feature. What
-      # needs what (comments cannot live inside the folded block below — a `#`
-      # there would become part of the string):
-      #   apt (*.archive.ubuntu.com, esm.ubuntu.com)      the Linux build deps
-      #   github.com + release-assets./objects.github…    rift, fff, tree-sitter +
-      #                                                   grammars, code-server,
-      #                                                   the abseil wrap tarball
-      #   index./static.crates.io, static.rust-lang.org   cargo (rift, fff, watcher)
-      #   gitlab.freedesktop.org                          webrtc-audio-processing
-      #                                                   (aec) — build_aec.sh
-      #   wrapdb.mesonbuild.com                           meson's abseil-cpp wrap
-      #                                                   patch (aec, forced
-      #                                                   fallback subproject)
-      #   downloads. + *.dl.sourceforge.net               the pinned LAME 3.100
-      #                                                   tarball (build_lame.sh);
-      #                                                   downloads. 302s to a
-      #                                                   per-run *.dl mirror
-      #   dl.google.com, pub.dev, storage.googleapis.com  Flutter/Dart SDK + pub
-      #   fulcio./rekor.sigstore.dev                      provenance attestation
-      #   *.blob.core.windows.net                         the natives-cache
-      #                                                   blobs (actions/cache
-      #                                                   stores on Azure, the
-      #                                                   same hosts as
-      #                                                   artifacts — see the
-      #                                                   release job's note)
+      # A missing host fails the release. Do not put comments inside the
+      # folded scalar below. Hosts: apt, GitHub release assets, crates/rustup,
+      # freedesktop + wrapdb (aec), SourceForge (LAME; downloads. redirects
+      # to *.dl), Flutter, sigstore, Azure blobs (actions/cache).
       - name: Harden runner
         uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
@@ -399,24 +302,10 @@ jobs:
       - name: Install Linux build dependencies
         run: |
           sudo apt-get update
-          # System libs required by the plugins' Linux CMake (pkg_check_modules)
-          # plus curl/zlib for the bundled sentry-native build. meson+ninja build
-          # the WebRTC AEC3 dylib (scripts/natives/build_aec.sh).
-          #
-          # Two of these are load-bearing in ways the build only tells you about
-          # once it is too late:
-          #   - libayatana-appindicator3-dev is a REQUIRED pkg_check_modules of
-          #     cnativeapi's tray (src/CMakeLists.txt), so without it
-          #     `flutter build linux` fails at configure time, not at runtime.
-          #   - libpulse-dev is optional to flutter_webrtc's CMake, which is
-          #     worse: it degrades silently to a build whose
-          #     getDisplayMedia({audio:true}) yields no audio track, i.e. a
-          #     release that records meetings with no system audio.
-          #   - libmpv-dev is the same silent-degradation class for media_kit:
-          #     nothing links it at build time (the Dart FFI dlopens
-          #     libmpv.so), so the build succeeds without it and every
-          #     playback surface (soundscape, meeting audio, rig listen,
-          #     notification sounds) is dead on first use.
+          # libayatana-appindicator3-dev: tray CMake fails without it.
+          # libpulse-dev and libmpv-dev are optional at build time; without
+          # them meeting audio and playback are silently dead.
+          # meson/ninja: WebRTC AEC. curl/zlib: sentry-native.
           sudo apt-get install -y \
             clang cmake meson ninja-build pkg-config \
             libgtk-3-dev liblzma-dev libblkid-dev libfuse2 \
@@ -443,18 +332,11 @@ jobs:
       - name: Package (bundle + AppImage + tarball + checksums)
         run: bash scripts/release/linux_package.sh "$VERSION"
 
-      # Standalone, self-hostable cc_server. Reuses the cc_server bundle
-      # linux_package.sh already built + build/natives and emits a downloadable
-      # .tar.gz. This same archive feeds the cc_server Docker image (containers job).
+      # Feeds the cc-server image. Reuses the bundle linux_package.sh built.
       - name: Package standalone cc_server
         run: bash scripts/release/cc_server_package.sh "$VERSION" linux
 
-      # The PUBLIC DEMO server: the same composition, the same natives and the
-      # same boot preflight, built from apps/cc_demo_server. It is a separate
-      # BINARY rather than a flag on cc_server so the demo's compiled-in
-      # fixtures never ship to a desktop install and its lockdown cannot be
-      # switched off by a missing environment variable. Feeds the
-      # `cc-server-demo` image in the containers job.
+      # Separate binary, not a flag on cc_server. Feeds the cc-server-demo image.
       - name: Package standalone cc_demo_server
         run: bash scripts/release/cc_demo_server_package.sh "$VERSION"
 
@@ -492,7 +374,6 @@ jobs:
             cc_demo_server-*-linux-*.tar.gz
           if-no-files-found: error
 
-  # ---------------------------------------------------------------------------
   release:
     needs: [prepare, build-macos, build-windows, build-linux]
     runs-on: ubuntu-latest
@@ -508,12 +389,7 @@ jobs:
         uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
           egress-policy: block
-          # *.blob.core.windows.net: actions/download-artifact redirects to
-          # Azure blob storage (productionresultssa*.blob.core.windows.net).
-          # Relying on harden-runner's implicit baseline for it left the
-          # download step failing with "Artifact download failed after 5
-          # retries" on a subset of artifacts, twice in a row, while the same
-          # blobs downloaded fine from outside the runner.
+          # download-artifact redirects to Azure blob storage.
           allowed-endpoints: >
             api.github.com:443
             github.com:443
@@ -527,10 +403,7 @@ jobs:
         with:
           persist-credentials: false
 
-      # gen_appcast.sh signs the enclosures with python3 + cryptography.
-      # Installed explicitly rather than assumed: the runner image's contents
-      # are not a contract and the egress block above means a missing module
-      # cannot be fixed implicitly at signing time.
+      # cryptography is not on the image, and the egress block cannot fetch it later.
       - name: Install appcast signing dependencies
         run: python3 -m pip install --quiet --disable-pip-version-check cryptography
 
@@ -538,21 +411,13 @@ jobs:
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           path: artifacts
-          # Only the six platform bundles make_release.sh actually collects.
-          # The containers job's buildx build-record artifacts (*.dockerbuild)
-          # rode along in the download-everything default and could fail the
-          # whole job on artifacts this job never reads.
+          # Platform bundles only. A download-everything default also pulls
+          # the containers job's *.dockerbuild records and can fail on them.
           pattern: "{macos,windows,linux,cc_server-*}"
 
-      # Sparkle/WinSparkle appcasts for the desktop in-app updater (see
-      # scripts/release/gen_appcast.sh): macOS items EdDSA-signed
-      # (SPARKLE_ED25519_KEY), Windows items DSA-signed
-      # (SPARKLE_DSA_PRIVATE_KEY) — neither is the Developer ID cert. The
-      # feed URLs use releases/latest/download/…, so DRAFT releases stay
-      # invisible to the updater until published — the intended gate.
-      # BUILD_NUMBER must be the SAME github.run_number the build jobs passed
-      # to --build-number: it becomes the item's sparkle:version, which
-      # Sparkle compares against the installed bundle's CFBundleVersion.
+      # Sparkle keys, not the code-signing certs. Drafts stay off
+      # releases/latest until published. BUILD_NUMBER must match the build
+      # jobs' --build-number (sparkle:version vs CFBundleVersion).
       - name: Generate Sparkle appcast
         env:
           SPARKLE_ED25519_KEY: ${{ secrets.SPARKLE_ED25519_KEY }}
@@ -563,35 +428,21 @@ jobs:
       - name: Create draft release (assemble + checksums + notes)
         run: bash scripts/release/make_release.sh
 
-  # ---------------------------------------------------------------------------
-  # Container images → GHCR: the self-hostable backend (cc-server), the two
-  # static thin clients (web + phone PWA) and the signaling relay. Independent
-  # of the desktop release;
-  # the Cloudflare deploys (deploy-webapp.yml / deploy-remote.yml) are unchanged
-  # — these are the self-hostable Docker alternative. Reuses the standalone
-  # cc_server Linux archive build-linux already produced (no native rebuilds).
+  # GHCR: cc-server, demo, web, phone PWA, signaling. Reuses the Linux
+  # cc_server archive. Separate from the Cloudflare deploys.
   containers:
     needs: [prepare, build-linux]
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: write # push images + attestations to GHCR
-      id-token: write # OIDC for the SLSA build-provenance attestation
+      packages: write # push images + attestations
+      id-token: write # SLSA provenance
       attestations: write
     env:
       VERSION: ${{ needs.prepare.outputs.version }}
     steps:
-      # audit, not block: docker base-image pulls (debian / nginx) hit variable
-      # Docker Hub + GHCR CDN hosts that can't be reliably enumerated.
-      # harden-runner still records every egress for the dashboard.
-      #
-      # Dependencies resolve through the shared setup-flutter composite, so the
-      # web bundles baked into these images come from the same graph CI
-      # validated.
       - name: Harden runner
-        # audit, not block: docker base-image pulls (debian / nginx) hit
-        # variable Docker Hub + GHCR CDN hosts that can't be reliably
-        # enumerated. harden-runner still records every egress.
+        # audit: base-image pulls hit Docker Hub and GHCR hosts that move.
         uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
           egress-policy: audit
@@ -609,18 +460,12 @@ jobs:
         shell: bash
         run: echo "owner=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
 
-      # Stamp the shared build identity so the self-hosted web bundles report
-      # the same version their /healthz-serving cc_server image does (stamped
-      # in build-linux) and remember the sha for the version manifests.
       - name: Stamp build identity
         run: |
           dart run tool/gen_build_info.dart --version "$VERSION"
           echo "CC_BUILD_SHA=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
 
-      # Mirrors deploy-webapp.yml (pub get + generate Web Workers + Wasm build)
-      # — the proven recipe for the static bundle this image serves. The worker
-      # generation guarantees the shipped bundle has current off-main-thread
-      # web/*.js; it overwrites the already-correct committed artifact.
+      # Regenerates committed web/*.js so the image cannot ship a stale worker.
       - name: Build web client (root app)
         run: |
           ./tool/gen_workers.sh
@@ -632,10 +477,7 @@ jobs:
           flutter pub get
           flutter build web --release --wasm
 
-      # The update manifests for the self-hosted web images (the same generator
-      # the Cloudflare deploys run; served no-cache by the nginx maps).
-      # deploy.json, not version.json — `flutter build web` owns that name and
-      # would clobber these, so they are also written AFTER both builds.
+      # After both builds. flutter build web owns version.json.
       - name: Write deploy.json manifests
         run: |
           dart run tool/gen_deploy_manifest.dart build/web
@@ -657,21 +499,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          # cc-server: extract the standalone Linux bundle (binary + sqlite3 +
-          # natives staged in bin/lib) into the image context.
           mkdir -p docker/cc_server/bundle
           tar xzf artifacts/cc_server-linux/cc_server-*-linux-x64.tar.gz \
             -C docker/cc_server/bundle --strip-components=1
-          # cc-server-demo: the same image recipe (one Dockerfile, selected by
-          # the CC_SERVER_BINARY build arg) over the DEMO bundle. A separate
-          # context because the bundle differs; a shared Dockerfile because the
-          # image mechanics — natives layout, unprivileged user, healthcheck,
-          # PaaS port shim — must not drift between the two.
           mkdir -p docker/cc_demo_server/bundle
           tar xzf artifacts/cc_demo_server-linux/cc_demo_server-*-linux-x64.tar.gz \
             -C docker/cc_demo_server/bundle --strip-components=1
-          # web + cc_remote: copy the pre-built static bundles beside their
-          # Dockerfiles (a tiny, self-contained build context each).
           mkdir -p docker/web/site docker/cc_remote/site
           cp -R build/web/. docker/web/site/
           cp -R apps/cc_remote/build/web/. docker/cc_remote/site/
@@ -695,9 +528,7 @@ jobs:
           tags: |
             ghcr.io/${{ steps.ns.outputs.owner }}/cc-server:${{ env.VERSION }}
             ghcr.io/${{ steps.ns.outputs.owner }}/cc-server:latest
-          # We attach a signed Sigstore attestation below (matches the desktop
-          # binaries, verifiable with `gh attestation verify`), so disable
-          # buildkit's separate inline provenance manifest.
+          # Sigstore attestation is attached in the next step.
           provenance: false
 
       - name: Attest cc-server image
@@ -712,9 +543,7 @@ jobs:
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: docker/cc_demo_server
-          # ONE Dockerfile for both server images: the demo differs only in
-          # which binary it runs, and duplicating the file would be two places
-          # to keep the security posture in step.
+          # Shared Dockerfile; CC_SERVER_BINARY selects the binary.
           file: docker/cc_server/Dockerfile
           build-args: |
             CC_SERVER_BINARY=cc_demo_server
@@ -767,10 +596,7 @@ jobs:
           subject-digest: ${{ steps.remote.outputs.digest }}
           push-to-registry: true
 
-
-      # The signaling relay is pure Dart with one pure-Dart dependency, so
-      # unlike cc-server it compiles hermetically in-image (the Dockerfile
-      # synthesizes a standalone pubspec — no monorepo context, no natives).
+      # Compiles in-image: no natives, no monorepo context.
       - name: Build + push signaling relay image
         id: signaling
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0

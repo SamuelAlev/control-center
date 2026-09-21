@@ -1,32 +1,12 @@
 name: Deploy docs
 
-# Builds the documentation + marketing site (docs/, Astro + Starlight) and
-# deploys it to the Cloudflare Worker named in docs/wrangler.jsonc — the same
-# model as the web client, the phone client and the design-system gallery.
-# Published at https://usectrl.dev.
-#
-# This REPLACES Cloudflare's git-integration auto-build. The point of moving it
-# here is that the docs then deploy on the same terms as everything else: a
-# pinned toolchain, a pinned pnpm (via the `packageManager` field), an egress
-# allowlist and a build that can be reproduced locally with `pnpm build`.
-# Leaving the Cloudflare-side build enabled as well would mean two builders
-# racing for one Worker, so disable it once this workflow has deployed green.
-#
-# Setup — reuses the existing repository secret:
-#   CLOUDFLARE_API_TOKEN  A Cloudflare API token scoped to "Edit Cloudflare
-#                         Workers" for the account below.
-# The account id is not sensitive, so it is inlined. `wrangler deploy` creates
-# the Worker on first run if it does not already exist.
+# docs/ (Astro) → the Worker in docs/wrangler.jsonc (https://usectrl.dev).
+# Replaces Cloudflare's git auto-build; disable that once this is green.
+# Pull requests build and test only.
 
-# A pull_request run builds and tests the site but stops short of deploying —
-# the deploy step is `push`-only. Without it a broken Astro build (a bad MDX
-# frontmatter, a dead internal link, a dependency bump) only ever surfaced
-# AFTER merge, on the branch that publishes, where the fix costs a second PR.
 on:
   push:
     branches: [main]
-    # Only redeploy when the site itself changes. Nothing under docs/ is built
-    # from the Flutter tree, so the app's own paths are deliberately absent.
     paths:
       - "docs/**"
       - ".github/workflows/deploy-docs.yml"
@@ -39,8 +19,7 @@ on:
 permissions: {}
 
 concurrency:
-  # PR runs are keyed per-ref so a push supersedes its own earlier run without
-  # cancelling the main-branch deploy.
+  # Per ref so a PR run does not cancel the main deploy.
   group: deploy-docs-${{ github.ref }}
   cancel-in-progress: true
 
@@ -58,10 +37,7 @@ jobs:
         uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
           egress-policy: block
-          # The site self-hosts its fonts (docs/public/fonts/), so the build
-          # fetches nothing but npm packages — keep it that way. A build-time
-          # font/CDN fetch would show up here as a blocked request rather than
-          # as a silently third-party-dependent page.
+          # Fonts are self-hosted; a new CDN host fails this allowlist.
           allowed-endpoints: >
             github.com:443
             registry.npmjs.org:443
@@ -95,17 +71,14 @@ jobs:
         working-directory: docs
         run: pnpm build
 
-      # Cloudflare rejects the whole deploy if ANY asset exceeds 25 MiB.
+      # Cloudflare's per-asset cap is 25 MiB.
       - name: Check asset size budget
         working-directory: docs
         run: |
           source "$GITHUB_WORKSPACE/scripts/lib/common.sh"
           assert_asset_budget dist 24
 
-      # The repo's own wrangler (docs/package.json pins ^4.122.0 and
-      # pnpm-workspace.yaml holds it out of the minimum-release-age gate), not
-      # an `npx wrangler@<version>` that could disagree with the adapter the
-      # site was just built against.
+      # Repo-pinned wrangler, the same one the site was built with.
       - name: Deploy to Cloudflare
         if: github.event_name != 'pull_request'
         working-directory: docs

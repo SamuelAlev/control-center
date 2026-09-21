@@ -14,7 +14,7 @@
 #
 # Source/refs (override to iterate or bump; keep FFF_REF in sync with CI):
 #   FFF_REPO  default github.com/dmtrKovalenko/fff
-#   FFF_REF   default v0.10.6 (Renovate-managed)
+#   FFF_REF   default v0.11.0 (Renovate-managed)
 #
 # Requirements: git, a Rust toolchain (cargo).
 #

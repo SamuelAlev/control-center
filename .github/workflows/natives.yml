@@ -1,41 +1,13 @@
 name: Natives
 
-# Builds the native FFI libraries on every change to a native input, doing two
-# jobs the main CI cannot:
+# Compiles native FFI libs when a native input changes: ci.yml does not build
+# them, and only a push to main can seed a cache a release tag can restore.
+# The key lives in natives-cache. Runners match release.yml (glibc ABI, macos-26).
 #
-#   1. Pre-release validation. Nothing in ci.yml compiles the natives, so a
-#      Renovate bump to scripts/lib/native_pins.env or an edit under
-#      packages/cc_natives/native/ used to merge green without ever being
-#      compiled — and first fail on a release tag, the worst place to discover
-#      it (the same argument ci.yml's codegen job makes for generated code).
-#
-#   2. Cache seeding. GitHub scopes caches by ref: a tag-triggered release run
-#      can only RESTORE caches created on the default branch and a cache saved
-#      on a tag is never readable again. The push-to-main run of this workflow
-#      is therefore what stocks the build/natives cache that
-#      .github/actions/prepare-release-build restores. PR runs save too, but a
-#      PR-scoped cache is invisible to main and tags — it only speeds up
-#      re-runs of the same PR and can never reach a release.
-#
-# The cache key (and the no-restore-keys invariant) lives in ONE place:
-# .github/actions/natives-cache. actions/cache saves in its post step, only on
-# a key miss. A cache idle for more than 7 days is evicted by GitHub, in which
-# case the release simply falls back to a full source build — the cache is an
-# accelerator, never a correctness dependency.
-#
-# Runners MUST match release.yml's build jobs (macos-26, not macos-latest):
-# the key includes runner.os/arch and an artifact built on a different
-# image family is not the artifact the release would have built.
+# paths are duplicated because the workflow parser rejects YAML anchors.
+# verify_natives.sh is in the path filter, not the cache key: the gate does
+# not change build/natives.
 
-# The path list is the union of what BUILDS build/natives and what CHECKS it.
-# verify_natives.sh is in it for the second reason: it is the only assertion
-# this workflow makes, so a change to the gate has to re-run the three jobs that
-# exercise it. It is deliberately NOT in the cache key — the gate does not
-# determine the directory's contents, so a hit stays valid and the run is just
-# the new gate against restored libraries.
-#
-# The list is written out twice because the Actions workflow parser rejects YAML
-# anchors; keep the two copies identical.
 on:
   push:
     branches: [main]
@@ -60,8 +32,6 @@ on:
       - "packages/cc_natives/native/**"
       - ".github/workflows/natives.yml"
       - ".github/actions/natives-cache/**"
-  # Manual seeding — e.g. right after this workflow lands, or after a cache
-  # eviction ahead of a planned release.
   workflow_dispatch:
 
 permissions: {}
@@ -81,8 +51,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Stay on 24.04, not 26.04: same glibc ABI contract as
-          # release.yml's build-linux (debian:trixie-slim).
+          # ubuntu-24.04, not 26.04: same glibc ABI as release.yml's build-linux.
           - runner: ubuntu-24.04
             os: linux
           - runner: macos-26
@@ -90,41 +59,11 @@ jobs:
           - runner: windows-latest
             os: windows
     steps:
-      # Every native is FATAL, so this allowlist is part of the build — a host
-      # missing from it fails the run rather than degrading a library. It is
-      # release.yml's build-linux list minus everything Flutter/Dart (this
-      # workflow compiles no Dart) and minus attestation. What needs what:
-      #   apt (*.archive.ubuntu.com, esm.ubuntu.com,      meson/ninja-build
-      #        *.microsoft.com — the Azure apt mirrors)
-      #   github.com + api. + objects. + release-assets.  rift, fff,
-      #                                                   tree-sitter +
-      #                                                   grammars, the pinned
-      #                                                   sherpa-onnx archive
-      #   index./static.crates.io, static.rust-lang.org   cargo (rift, fff,
-      #                                                   watcher, inference,
-      #                                                   saml)
-      #   gitlab.freedesktop.org                          webrtc-audio-
-      #                                                   processing (aec)
-      #   wrapdb.mesonbuild.com                           meson's abseil-cpp
-      #                                                   wrap (aec)
-      #   downloads. + *.dl.sourceforge.net               the pinned LAME
-      #                                                   tarball
-      #   *.blob.core.windows.net                         actions/cache blobs —
-      #                                                   the cache service
-      #                                                   stores on Azure, the
-      #                                                   same hosts as
-      #                                                   artifacts (see the
-      #                                                   war story in
-      #                                                   release.yml's
-      #                                                   release job)
-      # ONE step, not two with `if:`. GitHub still runs an action's pre-hook
-      # when the main step is skipped, so a Linux-only `block` sibling
-      # installed the agent with this allowlist on macOS and Windows too —
-      # then the second pre-hook saw the agent already there and no-op'd.
-      # macOS then could not resolve Homebrew's bottle host; Windows pip
-      # got WinError 10013 talking to pypi.org. `block` is Linux-only in
-      # harden-runner; audit is the ceiling on macOS and Windows. The
-      # allowlist is ignored under audit.
+      # One step: a skipped harden-runner still runs its pre-hook, so a
+      # Linux-only block sibling would install this allowlist on macOS and
+      # Windows and then no-op the real audit step. block is Linux-only.
+      # Hosts: apt, GitHub release assets, crates/rustup, freedesktop + wrapdb
+      # (aec), SourceForge (LAME), Azure blobs (actions/cache).
       - name: Harden runner
         uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
@@ -155,11 +94,7 @@ jobs:
         id: natives-cache
         uses: $/.github/actions/natives-cache
 
-      # Toolchain setup only on a miss: a hit skips straight to verification.
-      # cargo, curl, tar, make and a C/C++ compiler are preinstalled on all
-      # three runner images (the release jobs already rely on that); meson,
-      # ninja and pkg-config drive the WebRTC AEC3 build (build_aec.sh) and are
-      # installed the same way release.yml's platform jobs install them.
+      # Miss only. cargo/curl/tar/a compiler are on the image; meson/ninja are not.
       - name: Install AEC build tools (meson/ninja)
         if: runner.os == 'Linux' && steps.natives-cache.outputs.cache-hit != 'true'
         run: |
@@ -180,13 +115,7 @@ jobs:
         if: runner.os == 'Windows' && steps.natives-cache.outputs.cache-hit != 'true'
         run: pip install meson ninja
 
-      # Same two-branch dispatch as prepare-release-build: no rift on Windows
-      # (no MSVC copy-on-write backend — `git worktree` is the backend there).
-      #
-      # matrix.os reaches the script through env rather than a ${{ }}
-      # interpolation inside run:, the same way prepare-release-build threads
-      # its inputs — it keeps the shape uniform across every place this
-      # two-branch dispatch is written (zizmor's template-injection audit).
+      # No rift on Windows. OS via env, not ${{ }} inside run:.
       - name: Build native FFI libraries
         if: steps.natives-cache.outputs.cache-hit != 'true'
         shell: bash
@@ -199,10 +128,7 @@ jobs:
             bash scripts/natives/build_natives.sh build/natives
           fi
 
-      # Runs on hit AND miss: the desktop and server roles together are the
-      # complete contents of build/natives (desktop adds aec_ffi; server adds
-      # the boot-preflight set), so this catches a bad restore and a bad build
-      # at the same chokepoint.
+      # Hit and miss.
       - name: Verify the staged set
         shell: bash
         env:

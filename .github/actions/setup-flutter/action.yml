@@ -1,19 +1,8 @@
 name: Set up Flutter
 description: >
-  Install the pinned Flutter SDK and resolve dependencies WITH the local patches
-  applied. Requires the repo to be checked out already.
-
-# WHY THIS DOES NOT HARDEN THE RUNNER OR CHECK OUT THE REPO
-#
-# `$/.github/...` loads this composite from the running commit without a
-# checkout, so it CAN be a job's first step. It still isn't: it operates on
-# the workspace (`flutter pub get`, patches), so `actions/checkout` has to
-# have run, and `step-security/harden-runner` has to BE the first step to
-# intercept egress. Those two stay inline in each job; this action owns
-# everything after them.
-#
-# Every job resolves the same dependency graph through this one composite, so a
-# green CI proves the deployed bundle was built from the same deps it validated.
+  Install the pinned Flutter SDK and resolve dependencies. Requires a checkout
+  already: harden-runner must stay the job's first step, and this action reads
+  the workspace.
 
 inputs:
   pub-get:
@@ -26,33 +15,19 @@ inputs:
     default: "."
   windowing:
     description: >
-      Enable the experimental multi-window feature flag. Must stay ON for
-      desktop build jobs (see the step below). Windows TEST jobs pass
-      `windowing: false`: with the flag on, WidgetsBinding eagerly
-      constructs the Win32 windowing owner, whose FFI symbol
-      (InternalFlutterWindows_WindowManager_Initialize) flutter_tester
-      on Windows does not carry — every testWidgets file then fails to
-      LOAD. No package test uses multi-window.
+      Enable Flutter's multi-window flag. Desktop builds need it on.
+      Windows test jobs pass false: flutter_tester cannot resolve
+      InternalFlutterWindows_WindowManager_Initialize, so every
+      testWidgets file fails to load.
     required: false
     default: "true"
 
 runs:
   using: composite
   steps:
-    # `.fvmrc` pins a Flutter COMMIT, not a release channel, so flutter-action
-    # clones the full SDK repo and checks that sha out. On Windows that clone
-    # fails without this:
-    #
-    #   error: unable to create file engine/src/flutter/testing/ios_scenario_app/
-    #     ios/Scenarios/ScenariosUITests/golden_platform_view_clip_rsuperellipse_
-    #     multiple_clips_impeller_iPhone SE (3rd generation)_26.2_simulator.png:
-    #     Filename too long
-    #   fatal: unable to checkout working tree
-    #
-    # git's own long-path support is off by default and independent of the
-    # Windows MAX_PATH setting, and the SDK's iOS golden fixtures blow past 260
-    # characters. Nothing in this repo is that deeply nested, which is why only
-    # the SDK checkout trips it.
+    # `.fvmrc` pins a commit, so flutter-action checks out the full SDK.
+    # Windows git rejects the SDK's iOS golden paths (>260 chars) unless
+    # core.longpaths is on.
     - name: Allow long paths in git (Windows)
       if: runner.os == 'Windows'
       shell: bash
@@ -65,22 +40,14 @@ runs:
         flutter-version-file: .fvmrc # single source of truth — synced via fvm
         cache: true
 
-    # GitHub's windows-latest PATH lists Git usr\bin (GNU tar) before
-    # System32 (bsdtar). Flutter unpacks cache zips with
-    # `tar -xf C:\path\file.zip` (flutter_tools os.dart _unpackWithTar);
-    # GNU tar treats "C:" as a remote host:
-    #   /usr/bin/tar: Cannot connect to C: resolve failed
-    # Two previous shadows failed for distinct reasons:
-    #   * `[ -x System32/tar.exe ]` is false on NTFS (no Unix +x bit), so
-    #     the copy never ran; exporting PATH="$RUNNER_TEMP/win-tar:$PATH"
-    #     also splits on the colon in D:\…
-    #   * GITHUB_PATH prepends for later *pwsh* steps, but Git Bash puts
-    #     /usr/bin back in front when the next step starts, so Dart still
-    #     finds GNU tar. Bash steps that spawn Flutter therefore source
-    #     prefer_windows_tar.sh in-process (cygpath + test -f).
-    # Do not prepend System32 itself: bash scripts later in the job would
-    # then pick up Windows find.exe/sort.exe.
-    - name: Prefer Windows tar (Windows)
+    # windows-latest puts Git's GNU tar ahead of System32. Flutter runs
+    # `tar -xf C:\…`, and GNU tar treats "C:" as a remote host. Stage
+    # Windows tar.exe here; do not prepend it via GITHUB_PATH (that leaks
+    # into every later step, and Git Bash puts /usr/bin back in front).
+    # Bash steps source scripts/ci/prefer_windows_tar.sh. A PowerShell step
+    # that runs Flutter prepends $RUNNER_TEMP/win-tar itself.
+    # Do not prepend System32: later bash steps would pick up find.exe/sort.exe.
+    - name: Stage Windows tar (Windows)
       if: runner.os == 'Windows'
       shell: pwsh
       run: |
@@ -91,26 +58,10 @@ runs:
         }
         New-Item -ItemType Directory -Force -Path $dir | Out-Null
         Copy-Item -Force -Path $src -Destination (Join-Path $dir 'tar.exe')
-        Add-Content -Path $env:GITHUB_PATH -Value $dir
 
-    # The desktop shell is built on Flutter's experimental multi-window
-    # ("windowing") APIs (lib/app/app_windows.dart). The feature flag lives in
-    # the MACHINE-global Flutter settings (~/.config/flutter/settings), not in
-    # the repo, so a fresh runner builds with it OFF — and that binary throws
-    #   Unsupported operation: Windowing APIs are not enabled.
-    # at its first WindowController. In a release desktop build that is a Dock
-    # icon with no window at all: the exception unwinds root-widget attach
-    # before anything is shown (v0.0.1 shipped exactly that). Enable it here,
-    # in the one composite every workflow installs the SDK through, so CI
-    # builds the way a configured dev machine does.
-    #
-    # EXCEPT on Windows test runs (`windowing: false`): the flag makes
-    # WidgetsBinding.initInstances construct the Win32 windowing owner at
-    # binding init, and flutter_tester there cannot resolve its FFI symbol —
-    # so with the flag on, every testWidgets suite fails to load rather than
-    # failing a test. `isWindowingEnabled` is read at binding init, so leaving
-    # the flag off is a clean "windowing unsupported here" owner, and no
-    # package test touches multi-window anyway.
+    # The flag is machine-global (~/.config/flutter/settings), so a fresh
+    # runner builds with windowing off and the desktop shell throws at the
+    # first WindowController. Skipped when windowing=false (Windows tests).
     - name: Enable the windowing feature flag
       if: inputs.windowing != 'false'
       shell: bash

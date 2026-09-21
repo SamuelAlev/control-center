@@ -1,27 +1,14 @@
 name: Deploy remote client
 
-# Builds the cc_remote phone PWA (apps/cc_remote) and deploys it to the
-# Cloudflare Worker "control-center-remote" as static assets — the same model as
-# the design system. Config lives in apps/cc_remote/wrangler.jsonc (SPA fallback
-# + the strict CSP `_headers` shipped under web/).
-#
-# Setup — reuses the existing repository secret:
-#   CLOUDFLARE_API_TOKEN  A Cloudflare API token scoped to "Edit Cloudflare
-#                         Workers" for the account below.
-# The account id is not sensitive, so it is inlined. `wrangler deploy` creates
-# the Worker on first run if it does not already exist.
+# cc_remote phone PWA → Cloudflare Worker "control-center-remote"
+# (apps/cc_remote/wrangler.jsonc). The account id is not a secret.
 
 on:
   push:
     branches: [main]
-    # Redeploy when the phone client or the shared packages it bundles change.
     paths:
       - "apps/cc_remote/**"
-      # Every workspace package, not the enumerated closure: cc_remote also
-      # depends on cc_rpc and cc_data and the enumeration silently missed them
-      # (a change there redeployed the web client but NOT the phone PWA). A
-      # closure list is right the day it is written and wrong at the next
-      # package; an unnecessary 3-minute redeploy beats a silently stale one.
+      # Every workspace package: an enumerated closure went stale once.
       - "packages/**"
       - "tool/gen_build_info.dart"
       - ".github/workflows/deploy-remote.yml"
@@ -73,23 +60,12 @@ jobs:
         working-directory: apps/cc_remote
         run: flutter build web --release --wasm
 
-      # The manifest the client polls to offer a consent-driven refresh.
-      # Derived from the stamped build_info.dart, so the manifest and the
-      # BuildInfo compiled into the bundle are the same identity by
-      # construction — this used to be an inline heredoc here, in
-      # deploy-webapp.yml and in release.yml and the three had drifted into
-      # two different version semantics.
-      #
-      # deploy.json, NOT version.json: `flutter build web` writes its own
-      # build/web/version.json and would clobber it. Written AFTER the build
-      # for the same reason.
+      # After the build. flutter build web writes version.json; the poll
+      # manifest is deploy.json.
       - name: Write deploy.json
         run: dart run tool/gen_deploy_manifest.dart apps/cc_remote/build/web
 
-      # Cloudflare rejects the whole deploy if ANY asset exceeds 25 MiB. The
-      # check lives in scripts/lib/common.sh so this is one implementation
-      # rather than the three verbatim copies these workflows used to carry
-      # (two of which pointed at the third in a comment).
+      # Cloudflare's per-asset cap is 25 MiB.
       - name: Check asset size budget
         working-directory: apps/cc_remote
         run: |

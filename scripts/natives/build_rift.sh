@@ -21,7 +21,7 @@
 #
 # Source/refs (override to iterate or bump; keep RIFT_REF in sync with CI):
 #   RIFT_REPO  default github.com/anomalyco/rift
-#   RIFT_REF   default v0.0.10 (Renovate-managed; pin a SHA in CI)
+#   RIFT_REF   default v0.0.11 (Renovate-managed; pin a SHA in CI)
 #
 # Requirements: git, a Rust toolchain (cargo).
 #

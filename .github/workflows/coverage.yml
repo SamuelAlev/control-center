@@ -1,23 +1,10 @@
 name: Coverage
 
-# A weekly, NON-GATING line-coverage report for every workspace member.
-#
-# ci.yml deliberately drops `--coverage` and says why: nothing consumed the
-# output, and a percentage threshold on a merge gate rewards testing the easy
-# half of a codebase. That reasoning holds for a gate and not for visibility —
-# with 20 workspace members and no number published anywhere, a package with no
-# tests at all looks exactly like a package with good ones. This workflow
-# publishes the number and does nothing else: no threshold, no failure, no
-# required check.
-#
-# Weekly rather than per-PR because it re-runs every suite with instrumentation
-# (roughly the cost of the whole test matrix again) to answer a question that
-# does not change between Tuesday and Wednesday.
+# Weekly, non-gating line coverage. ci.yml omits --coverage on purpose.
 
 on:
   schedule:
-    # Mondays, 06:00 UTC — a number waiting at the start of the week.
-    - cron: "0 6 * * 1"
+    - cron: "0 6 * * 1" # Mondays 06:00 UTC
   workflow_dispatch:
 
 permissions: {}
@@ -52,17 +39,13 @@ jobs:
       - name: Set up Flutter
         uses: $/.github/actions/setup-flutter
 
-      # Globally activated rather than added as a dev_dependency to 17
-      # pubspecs: it is a reporting tool, not something any package's code or
-      # tests import, and a dependency in the lockfile is a dependency the
-      # resolver has to satisfy forever.
+      # Not a dev_dependency: nothing imports it.
       - name: Install coverage formatter
         run: |
           dart pub global activate coverage
           echo "$HOME/.pub-cache/bin" >> "$GITHUB_PATH"
 
-      # A failing suite does not fail this job: the point is the number, and a
-      # break is already reported — loudly, and as itself — by ci.yml.
+      # A failing suite does not fail this job; ci.yml already reports it.
       - name: Measure
         run: scripts/ci/coverage_report.sh build/coverage
 

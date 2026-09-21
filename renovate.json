@@ -65,7 +65,7 @@
       "datasourceTemplate": "github-tags"
     },
     {
-      "description": "tree-sitter-typescript grammar pin (TS_TYPESCRIPT_REF; covers typescript + tsx)",
+      "description": "tree-sitter-typescript grammar pin (TS_TYPESCRIPT_REF)",
       "customType": "regex",
       "managerFilePatterns": [
         "/scripts/lib/native_pins\\.env$/"
@@ -197,7 +197,7 @@
       "datasourceTemplate": "github-tags"
     },
     {
-      "description": "tree-sitter-swift grammar pin (TS_SWIFT_REF; only *-with-generated-files tags ship parser.c). currentValue is the tag without the comment's `v` prefix \u2014 upstream tags are 0.7.3-with-generated-files, not v0.7.3, and extractVersion + a v-prefixed currentValue cannot resolve a digest.",
+      "description": "tree-sitter-swift grammar pin (TS_SWIFT_REF)",
       "customType": "regex",
       "managerFilePatterns": [
         "/scripts/lib/native_pins\\.env$/"
@@ -258,7 +258,7 @@
       "datasourceTemplate": "github-tags"
     },
     {
-      "description": "tree-sitter-ada grammar pin (TS_ADA_REF; no releases \u2014 track master HEAD)",
+      "description": "tree-sitter-ada grammar pin (TS_ADA_REF)",
       "customType": "regex",
       "managerFilePatterns": [
         "/scripts/lib/native_pins\\.env$/"
@@ -273,7 +273,7 @@
       "versioningTemplate": "regex:^(?<major>0)?master$"
     },
     {
-      "description": "tree-sitter-dart grammar pin (TS_DART_REF; no releases \u2014 track master HEAD)",
+      "description": "tree-sitter-dart grammar pin (TS_DART_REF)",
       "customType": "regex",
       "managerFilePatterns": [
         "/scripts/lib/native_pins\\.env$/"
@@ -301,7 +301,7 @@
       "registryUrlTemplate": "https://gitlab.freedesktop.org"
     },
     {
-      "description": "sherpa-onnx static archive pin (SHERPA_ONNX_VERSION). Checksums in native_pins.env must be regenerated with the version.",
+      "description": "sherpa-onnx archive pin (SHERPA_ONNX_VERSION)",
       "customType": "regex",
       "managerFilePatterns": [
         "/scripts/lib/native_pins\\.env$/"
@@ -314,7 +314,7 @@
       "extractVersionTemplate": "^v(?<version>.*)$"
     },
     {
-      "description": "appimagetool tagged release pin (APPIMAGETOOL_URL). SHA256 must be regenerated with the version. Ignore the mutable `continuous` tag.",
+      "description": "appimagetool release pin (APPIMAGETOOL_URL)",
       "customType": "regex",
       "managerFilePatterns": [
         "/scripts/lib/native_pins\\.env$/"
@@ -326,7 +326,7 @@
       "datasourceTemplate": "github-releases"
     },
     {
-      "description": "code-server release pin (codeServerVersion). CI fetch and the managed download both grep this const.",
+      "description": "code-server release pin (codeServerVersion)",
       "customType": "regex",
       "managerFilePatterns": [
         "/packages/cc_infra/lib/src/ide/code_server_service\\.dart$/"
@@ -339,7 +339,7 @@
       "extractVersionTemplate": "^v(?<version>.*)$"
     },
     {
-      "description": "code-server curated Dart LSP extension (Open VSX fetch follows this version).",
+      "description": "Dart LSP extension pin (dart-code)",
       "customType": "regex",
       "managerFilePatterns": [
         "/packages/cc_infra/lib/src/ide/code_server_service\\.dart$/"
@@ -352,7 +352,7 @@
       "extractVersionTemplate": "^v(?<version>.*)$"
     },
     {
-      "description": "WebDriverAgent simulator runner pin. Artifact checksums in ios_automation_store.dart must be regenerated with the version.",
+      "description": "WebDriverAgent simulator runner pin",
       "customType": "regex",
       "managerFilePatterns": [
         "/packages/cc_infra/lib/src/rigs/ios_automation_store\\.dart$/",
@@ -366,7 +366,7 @@
       "datasourceTemplate": "github-releases"
     },
     {
-      "description": "Phosphor Regular icon font (phosphor-icons/core). Replace the vendored TTF when this bumps.",
+      "description": "Phosphor icon font",
       "customType": "regex",
       "managerFilePatterns": [
         "/packages/cc_ui/fonts/Phosphor-LICENSE\\.txt$/",
@@ -383,7 +383,7 @@
       "extractVersionTemplate": "^v(?<version>.*)$"
     },
     {
-      "description": "Fira Code mono font. Replace the vendored TTF when this bumps.",
+      "description": "Fira Code font",
       "customType": "regex",
       "managerFilePatterns": [
         "/packages/cc_ui/fonts/FiraCode-LICENSE\\.txt$/",
@@ -398,7 +398,7 @@
       "datasourceTemplate": "github-releases"
     },
     {
-      "description": "Vendored flutter_pty C sources (ccpty). Re-copy src/ from the pub package when this bumps.",
+      "description": "Vendored flutter_pty sources (ccpty)",
       "customType": "regex",
       "managerFilePatterns": [
         "/packages/cc_natives/native/pty/PROVENANCE\\.md$/",
@@ -413,7 +413,7 @@
       "datasourceTemplate": "dart"
     },
     {
-      "description": "Flutter SDK commit pin (.fvmrc). Channel is main; the git ref is master.",
+      "description": "Flutter SDK commit pin (.fvmrc)",
       "customType": "regex",
       "managerFilePatterns": [
         "/\\.fvmrc$/"
@@ -428,7 +428,7 @@
       "versioningTemplate": "regex:^(?<major>0)?master$"
     },
     {
-      "description": "smolvm exec rig OCI image (digest-pinned Ubuntu 24.04).",
+      "description": "smolvm exec rig image",
       "customType": "regex",
       "managerFilePatterns": [
         "/packages/cc_infra/lib/src/rigs/smolvm_enclosure_backend\\.dart$/"
@@ -441,7 +441,7 @@
       "versioningTemplate": "ubuntu"
     },
     {
-      "description": "smolvm browser rig OCI image (digest-pinned Debian trixie-slim).",
+      "description": "smolvm browser rig image",
       "customType": "regex",
       "managerFilePatterns": [
         "/packages/cc_infra/lib/src/rigs/smolvm_enclosure_backend\\.dart$/"
@@ -454,7 +454,7 @@
       "versioningTemplate": "debian"
     },
     {
-      "description": "Dart SDK pin for the signaling-server image (ARG DART_SDK_VERSION).",
+      "description": "Signaling image Dart SDK pin",
       "customType": "regex",
       "managerFilePatterns": [
         "/apps/cc_signaling_server/Dockerfile$/"
@@ -468,7 +468,7 @@
   ],
   "packageRules": [
     {
-      "description": "Bump the tree-sitter runtime + all grammars together so the ABI stays consistent.",
+      "description": "tree-sitter runtime and grammars",
       "matchPackageNames": [
         "tree-sitter/tree-sitter",
         "tree-sitter/tree-sitter-javascript",
@@ -494,7 +494,7 @@
       "groupName": "tree-sitter native libs"
     },
     {
-      "description": "Keep the sherpa-onnx archive pin and the sherpa-onnx-sys crate on the same version.",
+      "description": "sherpa-onnx archive and crate",
       "matchPackageNames": [
         "k2-fsa/sherpa-onnx",
         "sherpa-onnx-sys"
@@ -502,14 +502,14 @@
       "groupName": "sherpa-onnx"
     },
     {
-      "description": "appimagetool's `continuous` tag is rebuilt in place and is not a pin.",
+      "description": "appimagetool numeric tags only",
       "matchPackageNames": [
         "AppImage/appimagetool"
       ],
       "allowedVersions": "/^[0-9]/"
     },
     {
-      "description": "Debian OCI tags are a codename plus an optional -slim suffix. Docker versioning only accepts numeric tags, so strip -slim as compatibility and compare the codename with debian versioning (trixie-slim → forky-slim, not a digest-only pin).",
+      "description": "Debian codename tags",
       "matchDatasources": [
         "docker"
       ],
@@ -520,9 +520,19 @@
       "versionCompatibility": "^(?<version>.*?)(?<compatibility>-slim)?$"
     },
     {
-      "description": "WAP v2.1's tag (846fe90) is behind the pinned master commit (d0569cfa). Ignore digest-only tag syncs so Renovate does not downgrade AEC3.",
+      "description": "Skip webrtc-audio-processing digest updates",
       "matchPackageNames": [
         "pulseaudio/webrtc-audio-processing"
+      ],
+      "matchUpdateTypes": [
+        "digest"
+      ],
+      "enabled": false
+    },
+    {
+      "description": "Skip flutter/flutter digest updates",
+      "matchPackageNames": [
+        "flutter/flutter"
       ],
       "matchUpdateTypes": [
         "digest"

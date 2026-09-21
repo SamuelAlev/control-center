@@ -88,9 +88,27 @@ Future<void> stageServerNatives(String dataDir) async {
       if (target.existsSync()) {
         continue; // First source wins.
       }
-      entity.copySync(target.path);
+      _stageNative(entity, target.path);
     }
   }
+}
+
+/// Hard-link a native into the temp data dir, copying only when `ln` cannot.
+///
+/// A full copy is ~70 MB per boot (libcc_inference dominates). Two suites
+/// at `--concurrency=2` then each fault a private ONNX Runtime and blow the
+/// 30s test timeout while still inside preflight. A hard link is one inode,
+/// so the page cache is shared across boots. `ln` fails across devices and
+/// is not a hard link on Windows; those fall back to a copy. The staged
+/// path must not be rewritten — a hard link mutates the source.
+void _stageNative(File source, String targetPath) {
+  if (!Platform.isWindows) {
+    final result = Process.runSync('ln', [source.absolute.path, targetPath]);
+    if (result.exitCode == 0) {
+      return;
+    }
+  }
+  source.copySync(targetPath);
 }
 
 /// The repo root, found by walking up from CWD (`dart test` runs from the

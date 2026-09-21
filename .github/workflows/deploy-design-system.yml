@@ -1,23 +1,12 @@
 name: Deploy design system
 
-# Builds the cc_ui Widgetbook gallery (apps/cc_gallery) and deploys it to the
-# Cloudflare Worker "control-center-design-system" as static assets — the same
-# model as the docs site. Config lives in apps/cc_gallery/wrangler.jsonc.
-#
-# Setup — add one repository secret:
-#   CLOUDFLARE_API_TOKEN  A Cloudflare API token scoped to "Edit Cloudflare
-#                         Workers" for the account below.
-# The account id is not sensitive, so it is inlined. `wrangler deploy` creates
-# the Worker on first run if it does not already exist.
+# cc_ui Widgetbook gallery → Cloudflare Worker "control-center-design-system"
+# (apps/cc_gallery/wrangler.jsonc). Pull requests build only.
+# The account id is not a secret.
 
-# A pull_request run builds the gallery but stops short of deploying — the
-# deploy step is `push`-only. `flutter analyze` does not compile a web bundle,
-# so a gallery that fails to BUILD (a Widgetbook codegen mismatch, a deferred
-# grammar pack that no longer resolves) used to surface only after merge.
 on:
   push:
     branches: [main]
-    # Only redeploy when the gallery or the design system it showcases changes.
     paths:
       - "apps/cc_gallery/**"
       - "packages/cc_ui/**"
@@ -32,7 +21,7 @@ on:
 permissions: {}
 
 concurrency:
-  # Keyed per-ref so a PR run never cancels the main-branch deploy.
+  # Per ref so a PR run does not cancel the main deploy.
   group: deploy-design-system-${{ github.ref }}
   cancel-in-progress: true
 
@@ -67,20 +56,16 @@ jobs:
       - name: Set up Flutter
         uses: $/.github/actions/setup-flutter
 
-
+      # So a stale committed navigation tree is not what gets deployed.
       - name: Generate Widgetbook navigation
         working-directory: apps/cc_gallery
-        # Regenerate main.directories.g.dart so a deploy never ships a stale
-        # navigation tree, even if the committed file lags the use-cases.
         run: dart run build_runner build
 
       - name: Build web (SkWasm with CanvasKit fallback)
         working-directory: apps/cc_gallery
         run: flutter build web --release --wasm
 
-      # Cloudflare rejects the whole deploy if ANY asset exceeds 25 MiB. The
-      # check lives in scripts/lib/common.sh so this is one implementation
-      # rather than the three verbatim copies these workflows used to carry.
+      # Cloudflare's per-asset cap is 25 MiB.
       - name: Check asset size budget
         working-directory: apps/cc_gallery
         run: |

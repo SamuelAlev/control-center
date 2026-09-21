@@ -103,7 +103,7 @@ lib/features/pr_review/presentation/widgets/pr_diff_file_tree.dart  819
 lib/features/pr_review/presentation/widgets/pr_diff_view/commit_range_selector.dart  425
 lib/features/pr_review/presentation/widgets/pr_diff_view/unified/diff_goto.dart  648
 lib/features/pr_review/presentation/widgets/pr_diff_view/unified/file_header.dart  390
-lib/features/pr_review/presentation/widgets/pr_diff_view/unified/image_diff_body.dart  1110
+lib/features/pr_review/presentation/widgets/pr_diff_view/unified/image_diff_body.dart  1059
 lib/features/pr_review/presentation/widgets/pr_diff_view/unified/outdated_comments.dart  522
 lib/features/pr_review/presentation/widgets/pr_diff_view/unified/pr_diff_document.dart  929
 lib/features/pr_review/presentation/widgets/pr_diff_view/unified/suggestion_composer.dart  319

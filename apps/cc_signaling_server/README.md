@@ -56,7 +56,7 @@ docker run --rm -p 8788:8788 cc-signaling-server
 
 The image is a two-stage build: a Dart SDK stage compiles `bin/server.dart` to a
 self-contained native executable, then ships just that binary in a
-`debian:bookworm-slim` runtime. Configure the bind interface and port with
+`debian:trixie-slim` runtime. Configure the bind interface and port with
 environment variables (no Flutter SDK or network needed at build time):
 
 ```sh

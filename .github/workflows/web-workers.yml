@@ -1,10 +1,8 @@
 name: Web Workers
 
-# Byte-level drift guard for the committed isolate_manager Web Workers
-# (web/*.js). Scoped to PRs/pushes that touch a worker entrypoint or the
-# Flutter-free code it compiles in, so it never slows the main CI. Regenerates
-# and diffs via tool/check_workers.sh. The cheap floor (every annotated worker
-# has *an* asset) runs in the normal test suite (test/tooling/web_workers_test.dart).
+# Byte-level drift guard for the committed isolate_manager workers (web/*.js).
+# Path-filtered so it stays off the main CI path. tool/check_workers.sh
+# regenerates and diffs; the "asset exists" floor is test/tooling/web_workers_test.dart.
 on:
   push:
     paths:
@@ -71,7 +69,6 @@ jobs:
 
       - name: Set up Flutter
         uses: $/.github/actions/setup-flutter
-
 
       - name: Check Web Workers are up to date
         run: ./tool/check_workers.sh

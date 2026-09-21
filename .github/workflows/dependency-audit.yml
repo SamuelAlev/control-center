@@ -1,10 +1,7 @@
 name: Dependency audit
 
-# Reports outdated / discontinued dependencies across the pub workspace and
-# fails on any dependency flagged by pub.dev's security-advisory database or
-# discontinued upstream. Uses only first-party Dart tooling (`dart pub
-# outdated`), so no third-party action needs SHA-pinning / egress-allowing.
-# Runs weekly and on demand.
+# Reports outdated dependencies and fails on a pub.dev advisory, a retraction,
+# or a discontinued package. Weekly and on demand.
 
 on:
   schedule:
@@ -42,12 +39,9 @@ jobs:
       - name: Set up Flutter
         uses: $/.github/actions/setup-flutter
 
-
       - name: Report outdated dependencies
         run: dart pub outdated --show-all
 
-      # Fail on any dependency flagged by pub.dev's security-advisory database
-      # (isCurrentAffectedByAdvisory), retracted, or discontinued upstream.
       - name: Fail on advisories / retracted / discontinued packages
         run: |
           dart pub outdated --json > outdated.json

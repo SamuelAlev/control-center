@@ -161,6 +161,7 @@ authenticateRemoteClient({
   required String psk,
   String? pinnedFingerprint,
   Duration timeout = const Duration(seconds: 15),
+  Duration requestTimeout = const Duration(seconds: 30),
 }) async {
   final authed = await authenticateRemoteChannel(
     channel: channel,
@@ -169,7 +170,8 @@ authenticateRemoteClient({
     pinnedFingerprint: pinnedFingerprint,
     timeout: timeout,
   );
-  final client = RemoteRpcClient(authed.channel)..start();
+  final client = RemoteRpcClient(authed.channel, timeout: requestTimeout)
+    ..start();
   await client.initialize();
   return (client: client, serverFingerprint: authed.serverFingerprint);
 }
