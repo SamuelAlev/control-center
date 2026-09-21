@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:cc_infra/src/network/github_content_client.dart';
 import 'package:dio/dio.dart';
 
@@ -23,6 +25,21 @@ class FakeGitHubContentClient extends GitHubContentClient {
   }) async {
     lastCall = (owner: owner, repo: repo, path: path, ref: ref);
     return files['$owner/$repo/$path@$ref'] ?? '';
+  }
+
+  /// Bytes keyed like [files].
+  final Map<String, Uint8List> bytes = {};
+
+  @override
+  Future<Uint8List> getFileBytes(
+    String owner,
+    String repo,
+    String path,
+    String ref, {
+    CancelToken? cancelToken,
+  }) async {
+    lastCall = (owner: owner, repo: repo, path: path, ref: ref);
+    return bytes['$owner/$repo/$path@$ref'] ?? Uint8List(0);
   }
 }
 

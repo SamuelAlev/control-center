@@ -1,6 +1,13 @@
 import 'package:control_center/core/providers/rpc_client_provider.dart';
+import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/shared/utils/open_url.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+/// Pins an unscoped forge/oauth op to the current workspace overlay.
+Map<String, dynamic> overlayWorkspaceArgs(String? workspaceId) =>
+    workspaceId == null || workspaceId.isEmpty
+    ? const <String, dynamic>{}
+    : <String, dynamic>{'workspace_id': workspaceId};
 
 /// How a provider signs a user in.
 enum SignInFlow {
@@ -43,10 +50,14 @@ class SignInProvider {
 final signInProvidersProvider = FutureProvider<Map<String, SignInProvider>>((
   ref,
 ) async {
+  // PAT-only workspaces omit GitHub sign-in; inherit/app workspaces offer it
+  // through that workspace's App. Watch the workspace so the button set
+  // follows the overlay rather than the first workspace we opened.
+  final workspaceId = ref.watch(activeWorkspaceIdProvider);
   try {
     final data = await ref
         .watch(rpcClientProvider)
-        .call('oauth.providers', const {});
+        .call('oauth.providers', overlayWorkspaceArgs(workspaceId));
     final raw = data['providers'];
     if (raw is! List) {
       return const {};
@@ -115,8 +126,10 @@ Future<SignInStarted> startProviderSignIn(
   WidgetRef ref,
   String provider,
 ) async {
+  final workspaceId = ref.read(activeWorkspaceIdProvider);
   final data = await ref.read(rpcClientProvider).call('oauth.begin', {
     'provider': provider,
+    ...overlayWorkspaceArgs(workspaceId),
   });
   if (data['mode'] == 'device') {
     final code = data['user_code'] as String? ?? '';

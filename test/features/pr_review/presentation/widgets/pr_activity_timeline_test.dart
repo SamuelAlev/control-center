@@ -435,6 +435,38 @@ void main() {
     );
 
     testWidgets(
+      'timeline rail is continuous through conversation cards',
+      (tester) async {
+        tester.view.physicalSize = const Size(800, 4000);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        await tester.pumpWidget(
+          _wrap(
+            CustomScrollView(
+              cacheExtent: 8000,
+              slivers: [
+                PrActivityTimeline(pr: _pr(), prRef: _prRef),
+              ],
+            ),
+          ),
+        );
+        await tester.pumpAndSettle(const Duration(seconds: 5));
+
+        final connectors = tester
+            .widgetList<PositionedDirectional>(
+              find.byKey(const ValueKey<String>('timeline-connector')),
+            )
+            .toList();
+        expect(connectors, isNotEmpty);
+        // Event bubbles skip the 24px disc; conversation / reply rows
+        // must start at 0 or the rail cuts above every card.
+        expect(connectors.any((p) => p.top == 0), isTrue);
+        expect(connectors.any((p) => p.top == 24), isTrue);
+      },
+    );
+
+    testWidgets(
       'only on-screen conversations build, even when they start open',
       (tester) async {
         tester.view.physicalSize = const Size(800, 400);

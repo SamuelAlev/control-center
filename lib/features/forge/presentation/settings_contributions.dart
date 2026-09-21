@@ -1,21 +1,32 @@
 import 'package:control_center/features/forge/presentation/widgets/forge_connections_card.dart';
+import 'package:control_center/features/forge/presentation/widgets/workspace_github_identity_card.dart';
 import 'package:control_center/features/settings/settings_extensions.dart';
 import 'package:flutter/widgets.dart';
 
-/// What `forge` puts into settings: the code-hosting connections card on the
-/// profile page.
+/// What `forge` puts into settings: the code-hosting connections card on
+/// Workspace → Profile & identity, and this workspace's GitHub identity on
+/// Workspace → General.
 ///
-/// It belongs under the `You` scope because a forge credential is now the
-/// signed-in user's, not the server's — the same card in onboarding, settings
-/// and (once they sign in) every other member's account.
+/// A forge credential on Profile is the signed-in user's in this workspace.
+/// The identity card is how the workspace itself talks to GitHub (its App or
+/// PAT) — that is workspace policy, not a personal preference.
 const List<SettingsSectionContribution> forgeSettingsSections = [
   SettingsSectionContribution(
     id: 'forge.connections',
-    slot: SettingsSlot.userProfile,
+    slot: SettingsSlot.workspaceProfile,
     order: 10,
     builder: _buildForgeConnections,
+  ),
+  SettingsSectionContribution(
+    id: 'forge.github-identity',
+    slot: SettingsSlot.workspaceGeneral,
+    order: 5,
+    builder: _buildWorkspaceGitHubIdentity,
   ),
 ];
 
 Widget _buildForgeConnections(BuildContext context) =>
     const ForgeConnectionsCard();
+
+Widget _buildWorkspaceGitHubIdentity(BuildContext context) =>
+    const WorkspaceGitHubIdentityCard();

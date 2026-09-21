@@ -1126,7 +1126,7 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get calendarSettingsDescription =>
-      'یک حساب Google وصل کنید تا رویدادها به این فضای کاری همگام شوند.';
+      'حساب گوگل را وصل کنید تا رویدادها به این فضا همگام شوند. این تقویم‌ها اینجا مال شماست.';
 
   @override
   String get calendarConnecting => 'در حال اتصال…';
@@ -6964,7 +6964,7 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get connectGitHubHint =>
-      'وارد GitHub شوید یا در تنظیمات ← شما ← نمایه و هویت ← میزبانی کد توکن اضافه کنید';
+      'وارد GitHub شوید یا در تنظیمات ← فضای کاری ← نمایه و هویت ← میزبانی کد توکن اضافه کنید';
 
   @override
   String get connectGitHubToLoadPrs =>
@@ -7447,6 +7447,43 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get preview => 'پیش‌نمایش';
+
+  @override
+  String get imageDiffBefore => 'قبل';
+
+  @override
+  String get imageDiffAfter => 'بعد';
+
+  @override
+  String get imageDiffModeTwoUp => 'دو ستونه';
+
+  @override
+  String get imageDiffModeSwipe => 'کشیدن';
+
+  @override
+  String get imageDiffModeDifference => 'تفاوت';
+
+  @override
+  String imageDiffChangedPercent(String percent) {
+    return '$percent٪ تغییر کرده';
+  }
+
+  @override
+  String get imageDiffPictures => 'تصاویر';
+
+  @override
+  String get imageDiffSource => 'منبع';
+
+  @override
+  String get imageDiffDeleted => 'حذف‌شده';
+
+  @override
+  String get imageDiffAdded => 'اضافه‌شده';
+
+  @override
+  String imageDiffDimensions(int width, int height) {
+    return 'ع: ${width}px | ط: ${height}px';
+  }
 
   @override
   String get outdated => 'کهنه';
@@ -9509,7 +9546,7 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get profileSectionDescription =>
-      'چطور برای هم‌تیمی‌ها و در نویسندگی کامیت git ظاهر می‌شوید.';
+      'چگونه در این فضا برای تیم و نویسندگی commit گیت دیده می‌شوید. فیلدهای خالی نام و ایمیل حساب را به ارث می‌برند.';
 
   @override
   String get displayNameLabel => 'نام نمایشی';
@@ -12080,7 +12117,7 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get settingsProfileDescription =>
-      'نام، ایمیل و هویت git که روی کامیت‌های به‌نام شما می‌خورد.';
+      'نام، ایمیل و هویت git شما در این فضا. تعویض فضا این لایه را عوض می‌کند؛ شناسه، ورود و دستگاه‌ها روی حساب می‌مانند.';
 
   @override
   String get settingsServerConnectionDescription =>
@@ -12096,6 +12133,10 @@ class AppLocalizationsFa extends AppLocalizations {
   @override
   String get settingsWorkspaceGeneralDescription =>
       'هویت، سیاست و قراردادهای مشترک همه در این فضای کاری.';
+
+  @override
+  String get settingsWorkspaceMeetingsDescription =>
+      'الگوهای یادداشت و صداهای ذخیره‌شده برای جلسات این فضای کاری.';
 
   @override
   String get settingsWorkspacePolicyLabel => 'سیاست فضای کاری';
@@ -12675,7 +12716,7 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get providerAppsDescription =>
-      'این سرور به‌عنوان خودش چطور احراز هویت می‌کند، و شخص از چه مسیری وارد می‌شود. کار پس‌زمینه — وب‌هوک، نظرسنجی، همگام‌سازی — روی برنامه اجرا می‌شود، هرگز روی توکن شخص.';
+      'فضاهای کاری این GitHub App را به ارث می‌برند مگر App دیگر یا رمز دسترسی شخصی انتخاب کنند. کار پس‌زمینه — وب‌هوک، نظرسنجی، همگام‌سازی — روی برنامه اجرا می‌شود، نه روی رمز فرد.';
 
   @override
   String get providerAppId => 'شناسهٔ برنامه';
@@ -13062,14 +13103,14 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get providerAppsGroupServerDescription =>
-      'به کار پس‌زمینه اجازه می‌دهد بدون انسان پشت درخواست به مخزن‌ها برسد: وب‌هوک، نظرسنجی pull request، همگام‌سازی تیکت.';
+      'برای فضاهایی که GitHub App این نصب را به ارث می‌برند. فضا با App یا PAT خودش در فضای کاری → عمومی پیکربندی می‌شود.';
 
   @override
   String get providerAppsGroupPrConversations => 'گفتگوهای pull request';
 
   @override
   String get providerAppsGroupPrConversationsDescription =>
-      'توسعه‌دهندگان چطور می‌توانند مستقیم روی GitHub با این سرور حرف بزنند. بدون وب‌هوک یا URL عمومی کار می‌کند — سرور نظرسنجی می‌کند.';
+      'چگونه توسعه‌دهندگان در فضاهای ارثی در GitHub با این سرور صحبت می‌کنند. فضای با App خودش رباتش را در فضای کاری → عمومی دارد. بدون وب‌هوک یا نشانی عمومی — سرور نظرسنجی می‌کند.';
 
   @override
   String get providerAppBotLogin => 'ورود ربات';
@@ -14448,4 +14489,49 @@ class AppLocalizationsFa extends AppLocalizations {
   @override
   String get rigClipboardAlwaysCopyDescription =>
       'محتوای بریده‌دان را از هر محیطی بدون پرسش روی این دستگاه قرار دهد.';
+
+  @override
+  String get workspaceGitHubIdentity => 'هویت GitHub';
+
+  @override
+  String get workspaceGitHubIdentityDescription =>
+      'نحوه احراز هویت کار پس‌زمینه GitHub در این فضای کاری. ارث‌بردن App نصب، App دیگر، یا فقط رمز دسترسی شخصی.';
+
+  @override
+  String get workspaceGitHubModeInherit => 'استفاده از GitHub App این نصب';
+
+  @override
+  String get workspaceGitHubModeApp => 'استفاده از GitHub App دیگر';
+
+  @override
+  String get workspaceGitHubModePat => 'فقط رمز دسترسی شخصی';
+
+  @override
+  String get workspaceGitHubInheritHint =>
+      'از GitHub App در سرور → برنامه‌های ارائه‌دهنده استفاده می‌کند.';
+
+  @override
+  String get workspaceGitHubAppHint =>
+      'هویت ربات و نظرسنجی این فضا. اعضا در شما از طریق این App وارد می‌شوند.';
+
+  @override
+  String get workspaceGitHubPatLabel => 'رمز پس‌زمینه';
+
+  @override
+  String get workspaceGitHubPatDescription =>
+      'برای نظرسنجی و عامل‌ها در این فضا. رمز نمایه عضو نیست.';
+
+  @override
+  String get workspaceGitHubHasPat => 'رمز پس‌زمینه ذخیره شده است.';
+
+  @override
+  String get workspaceGitHubNoPat => 'رمز پس‌زمینه‌ای ذخیره نشده.';
+
+  @override
+  String get profileOverlayHint =>
+      'این فیلدها شما در این فضای کاری هستید. فیلدهای خالی نام و ایمیل حساب را به ارث می‌برند. تعویض فضا این لایه را عوض می‌کند.';
+
+  @override
+  String get forgeConnectionsThisWorkspace =>
+      'وارد شوید یا رمزی برای این فضای کاری جای‌گذاری کنید.';
 }

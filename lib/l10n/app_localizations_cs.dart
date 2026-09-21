@@ -1143,7 +1143,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get calendarSettingsDescription =>
-      'Připojte účet Google a synchronizujte události do tohoto pracovního prostoru.';
+      'Propojte účet Google a synchronizujte události do tohoto workspace. Tyto kalendáře jsou tady vaše.';
 
   @override
   String get calendarConnecting => 'Připojování…';
@@ -7060,7 +7060,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get connectGitHubHint =>
-      'Přihlaste se na GitHub nebo přidejte token v Nastavení → Vy → Profil a identita → Hostování kódu';
+      'Přihlaste se na GitHub nebo přidejte token v Nastavení → Pracovní prostor → Profil a identita → Hostování kódu';
 
   @override
   String get connectGitHubToLoadPrs =>
@@ -7561,6 +7561,43 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get preview => 'Náhled';
+
+  @override
+  String get imageDiffBefore => 'Předtím';
+
+  @override
+  String get imageDiffAfter => 'Potom';
+
+  @override
+  String get imageDiffModeTwoUp => 'Vedle sebe';
+
+  @override
+  String get imageDiffModeSwipe => 'Potáhnout';
+
+  @override
+  String get imageDiffModeDifference => 'Rozdíl';
+
+  @override
+  String imageDiffChangedPercent(String percent) {
+    return 'Změněno $percent %';
+  }
+
+  @override
+  String get imageDiffPictures => 'Obrázky';
+
+  @override
+  String get imageDiffSource => 'Zdroj';
+
+  @override
+  String get imageDiffDeleted => 'Odstraněno';
+
+  @override
+  String get imageDiffAdded => 'Přidáno';
+
+  @override
+  String imageDiffDimensions(int width, int height) {
+    return 'Š: ${width}px | V: ${height}px';
+  }
 
   @override
   String get outdated => 'Zastaralé';
@@ -9646,7 +9683,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get profileSectionDescription =>
-      'Jak se zobrazujete kolegům a v autorství git commitů.';
+      'Jak vás vidí tým a autorství git commitů v tomto workspace. Prázdná pole zdědí jméno a e-mail účtu.';
 
   @override
   String get displayNameLabel => 'Zobrazované jméno';
@@ -12272,7 +12309,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsProfileDescription =>
-      'Vaše jméno, e-mail a git identita razítkovaná na commitech udělaných za vás.';
+      'Vaše jméno, e-mail a git identita v tomto workspace. Přepnutí workspace přepne tuto vrstvu; handle, přihlášení a zařízení zůstanou na účtu.';
 
   @override
   String get settingsServerConnectionDescription =>
@@ -12288,6 +12325,10 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get settingsWorkspaceGeneralDescription =>
       'Identita, politika a konvence sdílené všemi v tomto pracovním prostoru.';
+
+  @override
+  String get settingsWorkspaceMeetingsDescription =>
+      'Šablony poznámek a uložené hlasy pro schůzky v tomto pracovním prostoru.';
 
   @override
   String get settingsWorkspacePolicyLabel => 'Politika pracovního prostoru';
@@ -12874,7 +12915,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get providerAppsDescription =>
-      'Jak se tento server autentizuje jako on sám a přes co se přihlašuje člověk. Práce na pozadí — webhooky, polling, synchronizace — běží na aplikaci, nikdy na tokenu člověka.';
+      'Workspacy dědí tuto GitHub App, pokud si nevyberou jinou App nebo osobní přístupový token. Práce na pozadí — webhooky, polling, sync — běží na app, nikdy na tokenu osoby.';
 
   @override
   String get providerAppId => 'ID aplikace';
@@ -13263,14 +13304,14 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get providerAppsGroupServerDescription =>
-      'Umožní práci na pozadí dosáhnout repozitářů bez člověka za požadavkem: webhooky, polling pull requestů, synchronizace ticketů.';
+      'Pro workspacy, které dědí GitHub App této instalace. Workspace s vlastní App nebo PAT se nastavuje v Workspace → Obecné.';
 
   @override
   String get providerAppsGroupPrConversations => 'Konverzace pull requestů';
 
   @override
   String get providerAppsGroupPrConversationsDescription =>
-      'Jak můžou vývojáři mluvit s tímto serverem přímo na GitHub. Funguje bez webhooku nebo veřejného URL — server polluje.';
+      'Jak vývojáři mluví s tímto serverem na GitHubu v děděných workspacích. Workspace s vlastní App má bota v Workspace → Obecné. Funguje bez webhooku a veřejné URL — server polluje.';
 
   @override
   String get providerAppBotLogin => 'Přihlášení bota';
@@ -14667,4 +14708,49 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get rigClipboardAlwaysCopyDescription =>
       'Vložit obsah schránky z libovolného kontejneru do tohoto zařízení bez dotazu.';
+
+  @override
+  String get workspaceGitHubIdentity => 'Identita GitHub';
+
+  @override
+  String get workspaceGitHubIdentityDescription =>
+      'Jak se v tomto workspace ověřuje práce na GitHubu na pozadí. Zdění App této instalace, jiná App, nebo jen osobní přístupový token.';
+
+  @override
+  String get workspaceGitHubModeInherit => 'Použít GitHub App této instalace';
+
+  @override
+  String get workspaceGitHubModeApp => 'Použít jinou GitHub App';
+
+  @override
+  String get workspaceGitHubModePat => 'Pouze osobní přístupový token';
+
+  @override
+  String get workspaceGitHubInheritHint =>
+      'Používá GitHub App v Server → Aplikace poskytovatelů.';
+
+  @override
+  String get workspaceGitHubAppHint =>
+      'Bot a identita pollingu tohoto workspace. Členové se na You přihlašují přes tuto App.';
+
+  @override
+  String get workspaceGitHubPatLabel => 'Token na pozadí';
+
+  @override
+  String get workspaceGitHubPatDescription =>
+      'Pro polling a agenty v tomto workspace. Nejde o profilový token člena.';
+
+  @override
+  String get workspaceGitHubHasPat => 'Token na pozadí je uložen.';
+
+  @override
+  String get workspaceGitHubNoPat => 'Žádný token na pozadí není uložen.';
+
+  @override
+  String get profileOverlayHint =>
+      'Tato pole jste vy v tomto workspace. Prázdná pole zdědí jméno a e-mail účtu. Přepnutí workspace přepne tuto vrstvu.';
+
+  @override
+  String get forgeConnectionsThisWorkspace =>
+      'Přihlaste se nebo vložte token pro tento workspace.';
 }

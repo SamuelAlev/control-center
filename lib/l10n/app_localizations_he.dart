@@ -1125,7 +1125,7 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get calendarSettingsDescription =>
-      'חבר חשבון Google כדי לסנכרן אירועים לסביבת עבודה זו.';
+      'חברו חשבון Google כדי לסנכרן אירועים למרחב הזה. לוחות השנה האלה הם שלך כאן.';
 
   @override
   String get calendarConnecting => 'מתחבר…';
@@ -6970,7 +6970,7 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get connectGitHubHint =>
-      'היכנסו ל-GitHub או הוסיפו אסימון גישה תחת הגדרות ← אתם ← פרופיל וזהות ← אחסון קוד';
+      'היכנסו ל-GitHub או הוסיפו אסימון גישה תחת הגדרות ← סביבת עבודה ← פרופיל וזהות ← אחסון קוד';
 
   @override
   String get connectGitHubToLoadPrs => 'חברו את GitHub כדי לטעון בקשות משיכה';
@@ -7467,6 +7467,43 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get preview => 'תצוגה מקדימה';
+
+  @override
+  String get imageDiffBefore => 'לפני';
+
+  @override
+  String get imageDiffAfter => 'אחרי';
+
+  @override
+  String get imageDiffModeTwoUp => 'זה לצד זה';
+
+  @override
+  String get imageDiffModeSwipe => 'החלקה';
+
+  @override
+  String get imageDiffModeDifference => 'הפרש';
+
+  @override
+  String imageDiffChangedPercent(String percent) {
+    return '$percent% השתנה';
+  }
+
+  @override
+  String get imageDiffPictures => 'תמונות';
+
+  @override
+  String get imageDiffSource => 'מקור';
+
+  @override
+  String get imageDiffDeleted => 'נמחק';
+
+  @override
+  String get imageDiffAdded => 'נוסף';
+
+  @override
+  String imageDiffDimensions(int width, int height) {
+    return 'ר: ${width}px | ג: ${height}px';
+  }
 
   @override
   String get outdated => 'לא עדכנית';
@@ -9527,7 +9564,7 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get profileSectionDescription =>
-      'כך אתם מופיעים בפני חברי הצוות ובחתימת המחבר של קומיטים ב-Git.';
+      'איך אתה מופיע לצוות ובמחבר commit של git במרחב הזה. שדות ריקים יורשים שם ואימייל מהחשבון.';
 
   @override
   String get displayNameLabel => 'שם תצוגה';
@@ -12143,7 +12180,7 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get settingsProfileDescription =>
-      'השם, האימייל וזהות ה-Git שמוטבעת על קומיטים שנוצרים עבורכם.';
+      'השם, האימייל וזהות git שלך במרחב הזה. החלפת מרחב מחליפה את השכבה; הכינוי, הכניסה והמכשירים נשארים בחשבון.';
 
   @override
   String get settingsServerConnectionDescription =>
@@ -12159,6 +12196,10 @@ class AppLocalizationsHe extends AppLocalizations {
   @override
   String get settingsWorkspaceGeneralDescription =>
       'זהות, מדיניות ומוסכמות המשותפות לכולם בסביבת העבודה הזו.';
+
+  @override
+  String get settingsWorkspaceMeetingsDescription =>
+      'תבניות הערות וקולות שמורים לפגישות בסביבת העבודה הזו.';
 
   @override
   String get settingsWorkspacePolicyLabel => 'מדיניות סביבת העבודה';
@@ -12731,7 +12772,7 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get providerAppsDescription =>
-      'איך השרת הזה מזדהה בשם עצמו, ודרך מה אנשים נכנסים. עבודת רקע — webhooks, תשאול, סנכרון — רצה על האפליקציה, לעולם לא על אסימון גישה של אדם.';
+      'מרחבי עבודה יורשים את GitHub App הזה אלא אם בחרו App אחר או אסימון גישה אישי. עבודת רקע — webhooks, סריקה, סנכרון — רצה על האפליקציה, לא על אסימון של אדם.';
 
   @override
   String get providerAppId => 'מזהה אפליקציה';
@@ -13116,14 +13157,14 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get providerAppsGroupServerDescription =>
-      'מאפשר לעבודת רקע להגיע למאגרים בלי אדם מאחורי הבקשה: webhooks, תשאול בקשות משיכה, סנכרון כרטיסים.';
+      'למרחבים שיורשים את GitHub App של ההתקנה. מרחב עם App או PAT משלו מוגדר תחת מרחב עבודה → כללי.';
 
   @override
   String get providerAppsGroupPrConversations => 'שיחות בבקשות משיכה';
 
   @override
   String get providerAppsGroupPrConversationsDescription =>
-      'איך מפתחים יכולים לדבר עם השרת הזה ישירות ב-GitHub. עובד בלי webhook או כתובת ציבורית — השרת מתשאל.';
+      'איך מפתחים מדברים עם השרת ב-GitHub במרחבים יורשים. למרחב עם App משלו יש בוט תחת מרחב עבודה → כללי. בלי webhook או כתובת ציבורית — השרת סורק.';
 
   @override
   String get providerAppBotLogin => 'שם המשתמש של הבוט';
@@ -14510,4 +14551,49 @@ class AppLocalizationsHe extends AppLocalizations {
   @override
   String get rigClipboardAlwaysCopyDescription =>
       'הצבת תוכן לוח מכל סביבה במכשיר הזה ללא בקשה.';
+
+  @override
+  String get workspaceGitHubIdentity => 'זהות GitHub';
+
+  @override
+  String get workspaceGitHubIdentityDescription =>
+      'איך עבודת GitHub ברקע מאומתת במרחב הזה. ירושת ה-App של ההתקנה, App אחר, או אסימון גישה אישי בלבד.';
+
+  @override
+  String get workspaceGitHubModeInherit => 'להשתמש ב-GitHub App של ההתקנה הזו';
+
+  @override
+  String get workspaceGitHubModeApp => 'להשתמש ב-GitHub App אחר';
+
+  @override
+  String get workspaceGitHubModePat => 'אסימון גישה אישי בלבד';
+
+  @override
+  String get workspaceGitHubInheritHint =>
+      'משתמש ב-GitHub App בשרת → אפליקציות ספק.';
+
+  @override
+  String get workspaceGitHubAppHint =>
+      'זהות הבוט והסריקה של המרחב. חברים נכנסים ב\"אתה\" דרך ה-App הזה.';
+
+  @override
+  String get workspaceGitHubPatLabel => 'אסימון רקע';
+
+  @override
+  String get workspaceGitHubPatDescription =>
+      'לסריקה ולסוכנים במרחב הזה. לא אסימון הפרופיל של חבר.';
+
+  @override
+  String get workspaceGitHubHasPat => 'אסימון רקע שמור.';
+
+  @override
+  String get workspaceGitHubNoPat => 'אין אסימון רקע שמור.';
+
+  @override
+  String get profileOverlayHint =>
+      'השדות האלה הם אתה במרחב הזה. שדות ריקים יורשים שם ואימייל מהחשבון. החלפת מרחב מחליפה את השכבה.';
+
+  @override
+  String get forgeConnectionsThisWorkspace =>
+      'היכנסו או הדביקו אסימון למרחב העבודה הזה.';
 }

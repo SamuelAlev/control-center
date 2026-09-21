@@ -512,7 +512,7 @@
   "calendarRsvpFailed": "อัปเดตคำตอบไม่ได้",
   "calendarAddAccount": "เพิ่มบัญชีปฏิทิน",
   "calendarSettingsTitle": "Google Calendar",
-  "calendarSettingsDescription": "เชื่อมต่อบัญชี Google เพื่อซิงค์เหตุการณ์เข้าเวิร์กสเปซนี้",
+  "calendarSettingsDescription": "เชื่อมบัญชี Google เพื่อซิงค์เหตุการณ์เข้าพื้นที่นี้ ปฏิทินเหล่านี้เป็นของคุณที่นี่",
   "calendarConnecting": "กำลังเชื่อมต่อ…",
   "calendarSyncNow": "ซิงค์ตอนนี้",
   "calendarNoWorkspace": "เลือกเวิร์กสเปซเพื่อดูปฏิทิน",
@@ -4108,7 +4108,7 @@
   "agentQuestionSkippedLabel": "ข้ามแล้ว",
   "agentQuestionFreeformOptionHint": "อธิบายด้วยคำของคุณเอง…",
   "reviewRequested": "ขอรีวิวแล้ว",
-  "connectGitHubHint": "ลงชื่อเข้าใช้ GitHub หรือเพิ่มโทเค็นที่ การตั้งค่า → คุณ → โปรไฟล์และตัวตน → โฮสต์โค้ด",
+  "connectGitHubHint": "ลงชื่อเข้าใช้ GitHub หรือเพิ่มโทเค็นที่ การตั้งค่า → เวิร์กสเปซ → โปรไฟล์และตัวตน → โฮสต์โค้ด",
   "connectGitHubToLoadPrs": "เชื่อมต่อ GitHub เพื่อโหลด pull request",
   "noRepositoriesConfigured": "ยังไม่ได้ตั้งค่ารีโพสิทอรี",
   "openedAgo": "เปิดเมื่อ {age}",
@@ -5817,7 +5817,7 @@
   },
   "deviceNeverSeen": "ไม่เคยเชื่อมต่อ",
   "profileSectionLabel": "โปรไฟล์",
-  "profileSectionDescription": "คุณปรากฏต่อเพื่อนร่วมงานและในผู้เขียนคอมมิต git อย่างไร",
+  "profileSectionDescription": "คุณปรากฏต่อทีมและในผู้แต่งคอมมิต git ในพื้นที่นี้อย่างไร ช่องว่างสืบทอดชื่อและอีเมลของบัญชี",
   "displayNameLabel": "ชื่อที่แสดง",
   "emailLabel": "อีเมล",
   "gitAuthorNameLabel": "ชื่อผู้เขียน Git",
@@ -7652,11 +7652,12 @@
   "settingsScopeBadgeDevice": "อุปกรณ์นี้",
   "settingsScopeBadgeWorkspace": "เวิร์กสเปซ",
   "settingsScopeBadgeServer": "เซิร์ฟเวอร์",
-  "settingsProfileDescription": "ชื่อ อีเมล และตัวตน git ที่ประทับบนคอมมิตที่ทำเพื่อคุณ",
+  "settingsProfileDescription": "ชื่อ อีเมล และตัวตน git ของคุณในพื้นที่นี้ การเปลี่ยนพื้นที่เปลี่ยนเลเยอร์นี้ แฮนเดิล การเข้าสู่ระบบ และอุปกรณ์ยังอยู่ที่บัญชี",
   "settingsServerConnectionDescription": "เซิร์ฟเวอร์ที่ไคลเอนต์นี้คุยด้วย และวิธีที่เซิร์ฟเวอร์นี้ถูกแชร์ (mDNS, ทันเนล, รีเลย์)",
   "settingsAboutDescription": "ตัวตนของบิลด์และอัปเดต",
   "settingsDiagnosticsDescription": "การแยก การจัดทำดัชนี การซิงค์ การบันทึก และรายงานข้อขัดข้องของการติดตั้งนี้",
   "settingsWorkspaceGeneralDescription": "ตัวตน นโยบาย และธรรมเนียมที่ทุกคนในเวิร์กสเปซนี้ใช้ร่วมกัน",
+  "settingsWorkspaceMeetingsDescription": "แม่แบบบันทึกและเสียงที่บันทึกไว้สำหรับการประชุมในเวิร์กสเปซนี้",
   "settingsWorkspacePolicyLabel": "นโยบายเวิร์กสเปซ",
   "settingsWorkspacePolicyDescription": "มีผลกับทุกสมาชิกและทุกเอเจนต์ในเวิร์กสเปซนี้",
   "settingsSecretGlobsLabel": "การยกเว้นพาธความลับ",
@@ -8020,7 +8021,7 @@
   "ticketProviderLocal": "ในเครื่อง",
   "addKey": "เพิ่มคีย์",
   "providerApps": "แอปผู้ให้บริการ",
-  "providerAppsDescription": "วิธีที่เซิร์ฟเวอร์นี้ยืนยันตัวตนในฐานะตัวเอง และสิ่งที่คนลงชื่อเข้าใช้ผ่าน งานเบื้องหลัง — webhook, การโพล, ซิงค์ — รันบนแอป ไม่ใช่โทเค็นของบุคคล",
+  "providerAppsDescription": "พื้นที่ทำงานสืบทอด GitHub App นี้ เว้นแต่เลือก App อื่นหรือโทเค็นเข้าถึงส่วนบุคคล งานเบื้องหลัง — เว็บฮุค การสำรวจ การซิงค์ — ทำงานบนแอป ไม่ใช่โทเค็นของบุคคล",
   "providerAppId": "App id",
   "providerPrivateKey": "Private key",
   "providerClientId": "Client id",
@@ -8169,9 +8170,9 @@
   "shortTaskDescription": "รันงานเบื้องหลังเร็ว เช่น ชื่อและสรุป โมเดลเล็กกว่าเหมาะที่นี่",
   "settingsStateFailed": "ล้มเหลว",
   "providerAppsGroupServer": "ทำหน้าที่เป็นเซิร์ฟเวอร์",
-  "providerAppsGroupServerDescription": "ให้งานเบื้องหลังเข้าถึงรีโพสิทอรีโดยไม่มีคนอยู่หลังคำขอ: webhook การโพล pull request ซิงค์ตั๋วงาน",
+  "providerAppsGroupServerDescription": "สำหรับพื้นที่ที่สืบทอด GitHub App ของการติดตั้งนี้ พื้นที่ที่มี App หรือ PAT ของตนเองตั้งค่าที่ พื้นที่ทำงาน → ทั่วไป",
   "providerAppsGroupPrConversations": "การสนทนา pull request",
-  "providerAppsGroupPrConversationsDescription": "วิธีที่นักพัฒนาคุยกับเซิร์ฟเวอร์นี้โดยตรงบน GitHub ใช้ได้โดยไม่มี webhook หรือ URL สาธารณะ — เซิร์ฟเวอร์โพล",
+  "providerAppsGroupPrConversationsDescription": "วิธีที่นักพัฒนาคุยกับเซิร์ฟเวอร์นี้บน GitHub ในพื้นที่ที่สืบทอด พื้นที่ที่มี App ของตนเองมีบอทที่ พื้นที่ทำงาน → ทั่วไป ไม่ต้องมีเว็บฮุคหรือ URL สาธารณะ — เซิร์ฟเวอร์สำรวจ",
   "providerAppBotLogin": "ล็อกอินบอท",
   "providerAppBotLoginEmpty": "ทดสอบการเชื่อมต่อเพื่อแก้ล็อกอินบอท",
   "providerAppAskOnGitHub": "ถามบน GitHub",
@@ -9001,5 +9002,75 @@
   "rigClipboardAlwaysPasteTitle": "อนุญาตให้วางลงในสภาพแวดล้อมเสมอ",
   "rigClipboardAlwaysPasteDescription": "ส่งคลิปบอร์ดของอุปกรณ์นี้ไปยังสภาพแวดล้อมใดก็ได้โดยไม่ต้องถาม",
   "rigClipboardAlwaysCopyTitle": "อนุญาตให้คัดลอกจากสภาพแวดล้อมเสมอ",
-  "rigClipboardAlwaysCopyDescription": "วางเนื้อหาคลิปบอร์ดจากสภาพแวดล้อมใดก็ได้บนอุปกรณ์นี้โดยไม่ต้องถาม"
+  "rigClipboardAlwaysCopyDescription": "วางเนื้อหาคลิปบอร์ดจากสภาพแวดล้อมใดก็ได้บนอุปกรณ์นี้โดยไม่ต้องถาม",
+  "imageDiffBefore": "ก่อน",
+  "@imageDiffBefore":   {
+    "description": "Label for the base (before) side of a PR image diff"
+  },
+  "imageDiffAfter": "หลัง",
+  "@imageDiffAfter":   {
+    "description": "Label for the head (after) side of a PR image diff"
+  },
+  "imageDiffModeTwoUp": "เทียบคู่",
+  "@imageDiffModeTwoUp":   {
+    "description": "Side-by-side comparison mode for a PR image diff"
+  },
+  "imageDiffModeSwipe": "ปัด",
+  "@imageDiffModeSwipe":   {
+    "description": "Swipe-divider comparison mode for a PR image diff"
+  },
+  "imageDiffModeDifference": "ส่วนต่าง",
+  "@imageDiffModeDifference":   {
+    "description": "Pixel overlay comparison mode for a PR image diff"
+  },
+  "imageDiffChangedPercent": "เปลี่ยน {percent}%",
+  "@imageDiffChangedPercent":   {
+    "description": "Caption showing how much of a PR image pair differs",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "imageDiffPictures": "รูปภาพ",
+  "@imageDiffPictures":   {
+    "description": "Header toggle to show SVG as pictures instead of XML hunks"
+  },
+  "imageDiffSource": "ต้นฉบับ",
+  "@imageDiffSource":   {
+    "description": "Header toggle to show an SVG file's XML source diff"
+  },
+  "imageDiffDeleted": "ลบแล้ว",
+  "@imageDiffDeleted": {
+    "description": "Label for the removed (before) side of a PR image asset comparison"
+  },
+  "imageDiffAdded": "เพิ่มแล้ว",
+  "@imageDiffAdded": {
+    "description": "Label for the added (after) side of a PR image asset comparison"
+  },
+  "imageDiffDimensions": "ก: {width}px | ส: {height}px",
+  "@imageDiffDimensions": {
+    "description": "Intrinsic pixel size caption under a PR image-diff asset",
+    "placeholders": {
+      "width": {
+        "type": "int"
+      },
+      "height": {
+        "type": "int"
+      }
+    }
+  },
+  "workspaceGitHubIdentity": "ตัวตน GitHub",
+  "workspaceGitHubIdentityDescription": "วิธีที่งาน GitHub เบื้องหลังยืนยันตัวตนในพื้นที่ทำงานนี้ สืบทอด App ของการติดตั้ง ใช้ App อื่น หรือโทเค็นเข้าถึงส่วนบุคคลเท่านั้น",
+  "workspaceGitHubModeInherit": "ใช้ GitHub App ของการติดตั้งนี้",
+  "workspaceGitHubModeApp": "ใช้ GitHub App อื่น",
+  "workspaceGitHubModePat": "โทเค็นเข้าถึงส่วนบุคคลเท่านั้น",
+  "workspaceGitHubInheritHint": "ใช้ GitHub App ที่ เซิร์ฟเวอร์ → แอปผู้ให้บริการ",
+  "workspaceGitHubAppHint": "ตัวตนบอทและการสำรวจของพื้นที่นี้ สมาชิกเข้าสู่ระบบที่ คุณ ผ่าน App นี้",
+  "workspaceGitHubPatLabel": "โทเค็นเบื้องหลัง",
+  "workspaceGitHubPatDescription": "สำหรับการสำรวจและเอเจนต์ในพื้นที่นี้ ไม่ใช่โทเค็นโปรไฟล์ของสมาชิก",
+  "workspaceGitHubHasPat": "มีโทเค็นเบื้องหลังถูกเก็บไว้",
+  "workspaceGitHubNoPat": "ไม่มีโทเค็นเบื้องหลัง",
+  "profileOverlayHint": "ช่องเหล่านี้คือคุณในพื้นที่ทำงานนี้ ช่องว่างสืบทอดชื่อและอีเมลของบัญชี การเปลี่ยนพื้นที่เปลี่ยนเลเยอร์นี้",
+  "forgeConnectionsThisWorkspace": "เข้าสู่ระบบหรือวางโทเค็นสำหรับพื้นที่ทำงานนี้"
 }

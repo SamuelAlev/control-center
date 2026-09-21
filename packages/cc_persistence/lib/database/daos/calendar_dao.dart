@@ -43,16 +43,19 @@ class CalendarDao extends DatabaseAccessor<WorkspaceDatabase>
           .watch();
 
   /// Inserts or updates an account, reusing the existing row id when one
-  /// already exists for `(workspaceId, accountEmail)` — so a workspace can hold
-  /// several Google accounts and reconnecting one updates it in place.
+  /// already exists for `(workspaceId, userId, accountEmail)` — so a member
+  /// can hold several Google accounts and reconnecting one updates it in
+  /// place.
   Future<void> upsertAccount(CalendarAccountsTableCompanion account) async {
     await transaction(() async {
       final workspaceId = account.workspaceId.value;
       final accountEmail = account.accountEmail.value;
+      final userId = account.userId.present ? account.userId.value : '';
       final existing =
           await (select(calendarAccountsTable)..where(
                 (t) =>
                     t.workspaceId.equals(workspaceId) &
+                    t.userId.equals(userId) &
                     t.accountEmail.equals(accountEmail),
               ))
               .getSingleOrNull();

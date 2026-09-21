@@ -115,4 +115,32 @@ void main() {
     expect((await db.userDao.getById('u-1'))!.onboardingFinishedAt, isNull);
     expect(db.schemaVersion, greaterThanOrEqualTo(2));
   });
+
+  group('v3 -> v4: workspaces GitHub identity', () {
+    test('adds github_auth_mode and github_app_id', () async {
+      final seeded = GlobalDatabase.forTesting(NativeDatabase(file));
+      await seeded.workspaceRegistryDao.upsertWorkspace(
+        WorkspacesTableCompanion.insert(id: 'ws-1', name: 'Alpha'),
+      );
+      await seeded.close();
+      sqlite3.sqlite3.open(file.path)
+        ..execute('ALTER TABLE workspaces DROP COLUMN github_auth_mode')
+        ..execute('ALTER TABLE workspaces DROP COLUMN github_app_id')
+        ..execute('PRAGMA user_version = 3')
+        ..close();
+
+      final migrated = open();
+      final columns =
+          (await migrated
+                  .customSelect("PRAGMA table_info('workspaces')")
+                  .get())
+              .map((r) => r.read<String>('name'))
+              .toSet();
+      expect(columns, containsAll({'github_auth_mode', 'github_app_id'}));
+      final row = await migrated.workspaceRegistryDao.getById('ws-1');
+      expect(row, isNotNull);
+      expect(row!.githubAuthMode, 'inherit');
+      expect(row.githubAppId, '');
+    });
+  });
 }

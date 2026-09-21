@@ -1136,7 +1136,7 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get calendarSettingsDescription =>
-      'Csatlakoztasson egy Google-fiókot az események szinkronizálásához ebbe a munkaterületbe.';
+      'Csatlakoztass Google-fiókot az események szinkronizálásához ebbe a munkaterületbe. Ezek a naptárak itt a tieid.';
 
   @override
   String get calendarConnecting => 'Csatlakozás…';
@@ -7024,7 +7024,7 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get connectGitHubHint =>
-      'Jelentkezzen be a GitHubra, vagy adjon hozzá tokent: Beállítások → Ön → Profil és identitás → Kódtárhely';
+      'Jelentkezzen be a GitHubra, vagy adjon hozzá tokent: Beállítások → Munkaterület → Profil és identitás → Kódtárhely';
 
   @override
   String get connectGitHubToLoadPrs =>
@@ -7509,6 +7509,43 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get preview => 'Előnézet';
+
+  @override
+  String get imageDiffBefore => 'Előtte';
+
+  @override
+  String get imageDiffAfter => 'Utána';
+
+  @override
+  String get imageDiffModeTwoUp => 'Kétoszlopos';
+
+  @override
+  String get imageDiffModeSwipe => 'Csúsztatás';
+
+  @override
+  String get imageDiffModeDifference => 'Eltérés';
+
+  @override
+  String imageDiffChangedPercent(String percent) {
+    return '$percent% változott';
+  }
+
+  @override
+  String get imageDiffPictures => 'Képek';
+
+  @override
+  String get imageDiffSource => 'Forrás';
+
+  @override
+  String get imageDiffDeleted => 'Törölve';
+
+  @override
+  String get imageDiffAdded => 'Hozzáadva';
+
+  @override
+  String imageDiffDimensions(int width, int height) {
+    return 'Sz: ${width}px | M: ${height}px';
+  }
 
   @override
   String get outdated => 'Elavult';
@@ -9592,7 +9629,7 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get profileSectionDescription =>
-      'Hogyan jelenik meg a csapattársaknak és a git commit szerzőségében.';
+      'Hogyan lát a csapat, és hogyan jelenik meg a git commit szerzősége ebben a munkaterületen. Az üres mezők öröklik a fiók nevét és e-mailjét.';
 
   @override
   String get displayNameLabel => 'Megjelenített név';
@@ -12173,7 +12210,7 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get settingsProfileDescription =>
-      'Az Ön neve, e-mailje és a git-identitás, amely az Ön nevében készült commitokra kerül.';
+      'Neved, e-mailed és git-identitásod ebben a munkaterületen. Váltáskor ez a réteg is vált; a kezelőnév, bejelentkezés és eszközök a fiókon maradnak.';
 
   @override
   String get settingsServerConnectionDescription =>
@@ -12189,6 +12226,10 @@ class AppLocalizationsHu extends AppLocalizations {
   @override
   String get settingsWorkspaceGeneralDescription =>
       'Identitás, szabályzat és konvenciók, amelyeket a munkaterület minden tagja megoszt.';
+
+  @override
+  String get settingsWorkspaceMeetingsDescription =>
+      'Jegyzetsablonok és mentett hangok a munkaterület megbeszéléseihez.';
 
   @override
   String get settingsWorkspacePolicyLabel => 'Munkaterület-szabályzat';
@@ -12771,7 +12812,7 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get providerAppsDescription =>
-      'Hogyan hitelesíti magát ez a szerver, és min keresztül jelentkezik be egy ember. A háttérmunka — webhookok, lekérdezés, szinkron — az alkalmazáson fut, soha nem egy ember tokenjén.';
+      'A munkaterületek öröklik ezt a GitHub Appot, hacsak nem másik Appot vagy személyes tokent választanak. A háttérmunka — webhookok, lekérdezés, szinkron — az app-on fut, soha egy személy tokenjén.';
 
   @override
   String get providerAppId => 'Alkalmazás-ID';
@@ -13163,14 +13204,14 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get providerAppsGroupServerDescription =>
-      'Lehetővé teszi, hogy a háttérmunka ember nélkül érje el a tárolókat: webhookok, pull request lekérdezés, jegyszinkron.';
+      'Azok a munkaterületek, amelyek öröklik az installáció GitHub Appját. Saját App vagy PAT a Munkaterület → Általános alatt állítható.';
 
   @override
   String get providerAppsGroupPrConversations => 'Pull request beszélgetések';
 
   @override
   String get providerAppsGroupPrConversationsDescription =>
-      'Hogyan beszélhetnek a fejlesztők közvetlenül ezzel a szerverrel a GitHubon. Webhook vagy nyilvános URL nélkül is működik — a szerver lekérdez.';
+      'Hogyan beszélnek a fejlesztők a szerverrel GitHubon az öröklő munkaterületeken. Saját App-os munkaterület botja a Munkaterület → Általános alatt van. Webhook és nyilvános URL nélkül — a szerver lekérdez.';
 
   @override
   String get providerAppBotLogin => 'Bot bejelentkezési név';
@@ -14562,4 +14603,50 @@ class AppLocalizationsHu extends AppLocalizations {
   @override
   String get rigClipboardAlwaysCopyDescription =>
       'Vágólaptartalom elhelyezése bármely környezetből ezen az eszközön rákérdezés nélkül.';
+
+  @override
+  String get workspaceGitHubIdentity => 'GitHub-azonosító';
+
+  @override
+  String get workspaceGitHubIdentityDescription =>
+      'Hogyan hitelesül a háttérbeli GitHub-munka ebben a munkaterületen. Az installáció Appjának öröklése, másik App, vagy csak személyes hozzáférési token.';
+
+  @override
+  String get workspaceGitHubModeInherit =>
+      'Az installáció GitHub Appjának használata';
+
+  @override
+  String get workspaceGitHubModeApp => 'Másik GitHub App használata';
+
+  @override
+  String get workspaceGitHubModePat => 'Csak személyes hozzáférési token';
+
+  @override
+  String get workspaceGitHubInheritHint =>
+      'A GitHub Appot a Szerver → Szolgáltatói alkalmazások alatt használja.';
+
+  @override
+  String get workspaceGitHubAppHint =>
+      'A munkaterület bot- és lekérdezési identitása. A tagok a Te felületen ezen az App-on keresztül jelentkeznek be.';
+
+  @override
+  String get workspaceGitHubPatLabel => 'Háttértoken';
+
+  @override
+  String get workspaceGitHubPatDescription =>
+      'Lekérdezéshez és ügynökökhöz ebben a munkaterületen. Nem egy tag profiltokenje.';
+
+  @override
+  String get workspaceGitHubHasPat => 'Háttértoken van tárolva.';
+
+  @override
+  String get workspaceGitHubNoPat => 'Nincs háttértoken tárolva.';
+
+  @override
+  String get profileOverlayHint =>
+      'Ezek a mezők te vagy ebben a munkaterületen. Az üresek öröklik a fiók nevét és e-mailjét. Munkaterület váltása ezt a réteget is váltja.';
+
+  @override
+  String get forgeConnectionsThisWorkspace =>
+      'Jelentkezz be, vagy illessz be tokent ehhez a munkaterülethez.';
 }

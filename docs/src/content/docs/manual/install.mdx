@@ -111,10 +111,10 @@ Model lists are served live by each connected provider; [models.dev](https://mod
 
 A GitHub credential is **yours and lives on the server**, keyed by your user id — not in the client OS keychain. Every device you sign in from uses the same one, and no other member can read it.
 
-If the server has a GitHub App registered ([Create the GitHub App](/manual/guides/github-app/)), **Settings → You → Profile & identity → Code hosting** offers **Sign in with GitHub** (a device flow the server runs). Otherwise paste a personal access token with:
+If the server has a GitHub App registered ([Create the GitHub App](/manual/guides/github-app/)), **Settings → Workspace → Profile & identity → Code hosting** offers **Sign in with GitHub** (a device flow the server runs). Otherwise paste a personal access token:
 
-- `repo`: repository and pull-request access
-- `read:org`: organization repos, team membership, and reviewer routing
+- Classic: `repo` and `read:org`
+- Fine-grained: **Contents** and **Pull requests** (read and write), **Checks** and **Actions** (read)
 
 Create one at [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens). The server probes the token for the account name as it is stored, so the row can say "signed in as …"; a failed probe still saves the token, and a typo or missing scope shows up as a failed request later.
 

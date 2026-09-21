@@ -67,6 +67,26 @@ void main() {
     });
   });
 
+  group('getFileBytes', () {
+    test('GETs the contents endpoint as raw bytes', () async {
+      adapter.nextBody(Uint8List.fromList([0x89, 0x50, 0x4e, 0x47]));
+      final bytes = await client.getFileBytes('o', 'r', 'shot.png', 'abc123');
+      expect(bytes, [0x89, 0x50, 0x4e, 0x47]);
+      final req = adapter.requests.single;
+      expect(req.path, '/repos/o/r/contents/shot.png');
+      expect(req.queryParameters['ref'], 'abc123');
+      expect(req.responseType, ResponseType.bytes);
+      expect((req.headers['Accept'] as String?)?.contains('raw'), isTrue);
+    });
+
+    test('rejects empty owner/repo', () {
+      expect(
+        () => client.getFileBytes('', 'r', 'p', 'ref'),
+        throwsA(isA<ArgumentError>()),
+      );
+    });
+  });
+
   group('getLatestCommitSha', () {
     test('returns the first commit SHA when a list is returned', () async {
       adapter.nextBody([
@@ -180,6 +200,50 @@ void main() {
       adapter.nextBody('x');
       expect(await client.getUserByLogin('sam'), isNull);
     });
+  });
+
+  group('getAuthenticatedRepoPermission', () {
+    test('maps admin/push/pull from the repo payload', () async {
+      adapter.nextBody({
+        'permissions': {'admin': true, 'push': true, 'pull': true},
+      });
+      expect(await client.getAuthenticatedRepoPermission('o', 'r'), 'admin');
+      expect(adapter.requests.single.path, '/repos/o/r');
+    });
+
+    test('maps push without admin as write', () async {
+      adapter.nextBody({
+        'permissions': {'admin': false, 'push': true, 'pull': true},
+      });
+      expect(await client.getAuthenticatedRepoPermission('o', 'r'), 'write');
+    });
+
+    test('maps maintain as write', () async {
+      adapter.nextBody({
+        'permissions': {'admin': false, 'maintain': true, 'pull': true},
+      });
+      expect(await client.getAuthenticatedRepoPermission('o', 'r'), 'write');
+    });
+
+    test('maps pull-only as read', () async {
+      adapter.nextBody({
+        'permissions': {'admin': false, 'push': false, 'pull': true},
+      });
+      expect(await client.getAuthenticatedRepoPermission('o', 'r'), 'read');
+    });
+
+    test('falls back to role_name when permissions is absent', () async {
+      adapter.nextBody({'role_name': 'write'});
+      expect(await client.getAuthenticatedRepoPermission('o', 'r'), 'write');
+    });
+
+    test(
+      'returns none when neither permissions nor role_name is present',
+      () async {
+        adapter.nextBody(<String, dynamic>{});
+        expect(await client.getAuthenticatedRepoPermission('o', 'r'), 'none');
+      },
+    );
   });
 
   group('getCollaboratorPermission', () {
@@ -298,6 +362,23 @@ class FakeAdapter implements HttpClientAdapter {
     if (err != null) {
       _throwNext = null;
       throw err;
+    }
+    if (options.responseType == ResponseType.bytes) {
+      final List<int> bytes;
+      if (_nextBody is List<int>) {
+        bytes = _nextBody as List<int>;
+      } else if (_bodyIsString) {
+        bytes = utf8.encode(_nextBody as String);
+      } else {
+        bytes = utf8.encode(jsonEncode(_nextBody));
+      }
+      return ResponseBody.fromBytes(
+        bytes,
+        200,
+        headers: const {
+          Headers.contentTypeHeader: ['application/octet-stream'],
+        },
+      );
     }
     // getFileContent uses ResponseType.plain — return the raw string body.
     if (_bodyIsString) {

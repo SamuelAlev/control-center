@@ -55,8 +55,17 @@ class RemoteIdentityRepository {
   final RemoteRpcClient _client;
 
   /// The session's resolved identity.
-  Future<IdentityMe> me() async =>
-      IdentityMe.fromJson(await _client.call('identity.me', const {}));
+  ///
+  /// When [workspaceId] is set the server overlays that workspace's member
+  /// profile (name, email, git author) onto the global user. Omitting it
+  /// returns the account row as-is — onboarding and signed-out have no
+  /// workspace to overlay.
+  Future<IdentityMe> me({String? workspaceId}) async {
+    final args = workspaceId == null || workspaceId.isEmpty
+        ? const <String, dynamic>{}
+        : <String, dynamic>{'workspace_id': workspaceId};
+    return IdentityMe.fromJson(await _client.call('identity.me', args));
+  }
 
   /// Users visible to the caller (self + co-members; the owner sees all).
   Future<List<UserDto>> listUsers() async {
@@ -82,6 +91,27 @@ class RemoteIdentityRepository {
       'avatar_ref': ?avatarRef,
       'git_author_name': ?gitAuthorName,
       'git_author_email': ?gitAuthorEmail,
+    });
+    return UserDto.fromJson((data['user'] as Map).cast<String, dynamic>());
+  }
+
+  /// Updates the caller's profile overlay in the bound workspace.
+  ///
+  /// Empty strings inherit the global account row. Handle, SSO and devices
+  /// stay on the account.
+  Future<UserDto> updateWorkspaceProfile({
+    required String workspaceId,
+    required String displayName,
+    required String email,
+    required String gitAuthorName,
+    required String gitAuthorEmail,
+  }) async {
+    final data = await _client.call('identity.updateWorkspaceProfile', {
+      'workspace_id': workspaceId,
+      'display_name': displayName,
+      'email': email,
+      'git_author_name': gitAuthorName,
+      'git_author_email': gitAuthorEmail,
     });
     return UserDto.fromJson((data['user'] as Map).cast<String, dynamic>());
   }

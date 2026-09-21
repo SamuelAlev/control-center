@@ -1111,7 +1111,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get calendarSettingsDescription =>
-      'Google 계정을 연결해 이 워크스페이스로 일정을 동기화하세요.';
+      'Google 계정을 연결해 이 작업 공간으로 일정을 동기화합니다. 이 캘린더는 여기에서 당신 것입니다.';
 
   @override
   String get calendarConnecting => '연결 중…';
@@ -6838,7 +6838,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get connectGitHubHint =>
-      'GitHub에 로그인하거나 설정 → 나 → 프로필 및 신원 → 코드 호스팅에서 토큰을 추가하세요';
+      'GitHub에 로그인하거나 설정 → 워크스페이스 → 프로필 및 신원 → 코드 호스팅에서 토큰을 추가하세요';
 
   @override
   String get connectGitHubToLoadPrs => '풀 리퀘스트를 불러오려면 GitHub를 연결하세요';
@@ -7318,6 +7318,43 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get preview => '미리보기';
+
+  @override
+  String get imageDiffBefore => '이전';
+
+  @override
+  String get imageDiffAfter => '이후';
+
+  @override
+  String get imageDiffModeTwoUp => '나란히';
+
+  @override
+  String get imageDiffModeSwipe => '밀기';
+
+  @override
+  String get imageDiffModeDifference => '차이';
+
+  @override
+  String imageDiffChangedPercent(String percent) {
+    return '$percent% 변경됨';
+  }
+
+  @override
+  String get imageDiffPictures => '그림';
+
+  @override
+  String get imageDiffSource => '소스';
+
+  @override
+  String get imageDiffDeleted => '삭제됨';
+
+  @override
+  String get imageDiffAdded => '추가됨';
+
+  @override
+  String imageDiffDimensions(int width, int height) {
+    return 'W: ${width}px | H: ${height}px';
+  }
 
   @override
   String get outdated => '오래됨';
@@ -9344,7 +9381,8 @@ class AppLocalizationsKo extends AppLocalizations {
   String get profileSectionLabel => '프로필';
 
   @override
-  String get profileSectionDescription => '팀원에게 보이는 이름과 Git 커밋 작성자 정보입니다.';
+  String get profileSectionDescription =>
+      '이 작업 공간에서 팀과 git 커밋 작성자에 어떻게 보이는지입니다. 빈 필드는 계정의 이름과 이메일을 상속합니다.';
 
   @override
   String get displayNameLabel => '표시 이름';
@@ -11884,7 +11922,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get settingsProfileDescription =>
-      '이름, 이메일, 그리고 대신 만든 커밋에 찍히는 git 신원입니다.';
+      '이 작업 공간에서의 이름, 이메일, git 신원입니다. 작업 공간을 바꾸면 이 오버레이도 바뀝니다. 핸들, 로그인, 기기는 계정에 남습니다.';
 
   @override
   String get settingsServerConnectionDescription =>
@@ -11900,6 +11938,10 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get settingsWorkspaceGeneralDescription =>
       '이 워크스페이스의 모든 구성원이 공유하는 신원, 정책, 규칙입니다.';
+
+  @override
+  String get settingsWorkspaceMeetingsDescription =>
+      '이 워크스페이스의 회의에 쓰이는 노트 템플릿과 저장된 음성입니다.';
 
   @override
   String get settingsWorkspacePolicyLabel => '워크스페이스 정책';
@@ -12452,7 +12494,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get providerAppsDescription =>
-      '이 서버가 자체적으로 인증하는 방식과, 사용자가 로그인하는 경로입니다. 웹훅, 폴링, 동기화 같은 백그라운드 작업은 앱에서 실행되며, 개인 토큰으로는 실행되지 않습니다.';
+      '작업 공간은 다른 App이나 개인 액세스 토큰을 고르지 않으면 이 GitHub App을 상속합니다. 웹훅, 폴링, 동기화 같은 백그라운드 작업은 앱에서 실행되며 개인 토큰에서는 실행되지 않습니다.';
 
   @override
   String get providerAppId => '앱 ID';
@@ -12823,14 +12865,14 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get providerAppsGroupServerDescription =>
-      '요청 뒤에 사람이 없어도 백그라운드 작업이 저장소에 도달할 수 있습니다. 웹훅, 풀 리퀘스트 폴링, 티켓 동기화.';
+      '이 설치의 GitHub App을 상속하는 작업 공간이 사용합니다. 자체 App이나 PAT는 작업 공간 → 일반에서 설정합니다.';
 
   @override
   String get providerAppsGroupPrConversations => '풀 리퀘스트 대화';
 
   @override
   String get providerAppsGroupPrConversationsDescription =>
-      '개발자가 GitHub에서 이 서버와 직접 대화하는 방식입니다. 웹훅이나 공개 URL 없이 동작하며, 서버가 폴링합니다.';
+      '상속 작업 공간에서 개발자가 GitHub로 이 서버와 대화하는 방법입니다. 자체 App이 있는 작업 공간은 작업 공간 → 일반에 봇이 있습니다. 웹훅이나 공개 URL 없이 서버가 폴링합니다.';
 
   @override
   String get providerAppBotLogin => '봇 로그인';
@@ -14186,4 +14228,47 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get rigClipboardAlwaysCopyDescription =>
       '확인 없이 모든 환경의 클립보드 내용을 이 기기에 넣습니다.';
+
+  @override
+  String get workspaceGitHubIdentity => 'GitHub 신원';
+
+  @override
+  String get workspaceGitHubIdentityDescription =>
+      '이 작업 공간의 백그라운드 GitHub 작업이 인증하는 방식입니다. 이 설치의 App을 상속하거나, 다른 App, 또는 개인 액세스 토큰만 사용합니다.';
+
+  @override
+  String get workspaceGitHubModeInherit => '이 설치의 GitHub App 사용';
+
+  @override
+  String get workspaceGitHubModeApp => '다른 GitHub App 사용';
+
+  @override
+  String get workspaceGitHubModePat => '개인 액세스 토큰만';
+
+  @override
+  String get workspaceGitHubInheritHint => '서버 → 제공자 앱의 GitHub App을 사용합니다.';
+
+  @override
+  String get workspaceGitHubAppHint =>
+      '이 작업 공간의 봇 및 폴링 신원입니다. 구성원은 나에서 이 App으로 로그인합니다.';
+
+  @override
+  String get workspaceGitHubPatLabel => '백그라운드 토큰';
+
+  @override
+  String get workspaceGitHubPatDescription =>
+      '이 작업 공간의 폴링과 에이전트용입니다. 구성원의 프로필 토큰이 아닙니다.';
+
+  @override
+  String get workspaceGitHubHasPat => '백그라운드 토큰이 저장되어 있습니다.';
+
+  @override
+  String get workspaceGitHubNoPat => '저장된 백그라운드 토큰이 없습니다.';
+
+  @override
+  String get profileOverlayHint =>
+      '이 필드는 이 작업 공간에서의 당신입니다. 빈 필드는 계정의 이름과 이메일을 상속합니다. 작업 공간을 바꾸면 이 오버레이도 바뀝니다.';
+
+  @override
+  String get forgeConnectionsThisWorkspace => '이 작업 공간용으로 로그인하거나 토큰을 붙여넣으세요.';
 }

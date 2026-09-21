@@ -504,7 +504,7 @@
   "calendarRsvpFailed": "Nie udało się zaktualizować odpowiedzi",
   "calendarAddAccount": "Dodaj konto kalendarza",
   "calendarSettingsTitle": "Kalendarz Google",
-  "calendarSettingsDescription": "Połącz konto Google, aby synchronizować wydarzenia do tego obszaru roboczego.",
+  "calendarSettingsDescription": "Połącz konto Google, aby synchronizować wydarzenia do tej przestrzeni. Te kalendarze są tutaj twoje.",
   "calendarConnecting": "Łączenie…",
   "calendarSyncNow": "Synchronizuj teraz",
   "calendarNoWorkspace": "Wybierz obszar roboczy, aby wyświetlić jego kalendarz",
@@ -3949,7 +3949,7 @@
   "agentQuestionSkippedLabel": "Pominięto",
   "agentQuestionFreeformOptionHint": "Opisz własnymi słowami…",
   "reviewRequested": "Poproszono o recenzję",
-  "connectGitHubHint": "Zaloguj się do GitHub lub dodaj token w Ustawienia → Ty → Profil i tożsamość → Hosting kodu",
+  "connectGitHubHint": "Zaloguj się do GitHub lub dodaj token w Ustawienia → Obszar roboczy → Profil i tożsamość → Hosting kodu",
   "connectGitHubToLoadPrs": "Połącz GitHub, aby wczytać pull requesty",
   "noRepositoriesConfigured": "Nie skonfigurowano repozytoriów",
   "openedAgo": "Otwarto {age}",
@@ -5499,7 +5499,7 @@
   },
   "deviceNeverSeen": "Nigdy nie połączone",
   "profileSectionLabel": "Profil",
-  "profileSectionDescription": "Jak widzą Cię współpracownicy i w autorstwie commitów gita.",
+  "profileSectionDescription": "Jak wyglądasz dla zespołu i w autorstwie commitów git w tej przestrzeni. Puste pola dziedziczą nazwę i e-mail konta.",
   "displayNameLabel": "Nazwa wyświetlana",
   "emailLabel": "Adres e-mail",
   "gitAuthorNameLabel": "Nazwa autora w gicie",
@@ -7270,11 +7270,12 @@
   "settingsScopeBadgeDevice": "TO URZĄDZENIE",
   "settingsScopeBadgeWorkspace": "OBSZAR ROBOCZY",
   "settingsScopeBadgeServer": "SERWER",
-  "settingsProfileDescription": "Twoje imię, e-mail i tożsamość gita odbijana na tworzonych dla Ciebie commitach.",
+  "settingsProfileDescription": "Twoja nazwa, e-mail i tożsamość git w tej przestrzeni. Zmiana przestrzeni zmienia tę nakładkę; identyfikator, logowanie i urządzenia zostają na koncie.",
   "settingsServerConnectionDescription": "Z jakim serwerem rozmawia ten klient i jak serwer jest udostępniany (mDNS, tunele, relay).",
   "settingsAboutDescription": "Tożsamość builda i aktualizacje.",
   "settingsDiagnosticsDescription": "Izolacja, indeksowanie, synchronizacja, logowanie i zgłaszanie awarii dla tej instalacji.",
   "settingsWorkspaceGeneralDescription": "Tożsamość, zasady i konwencje wspólne dla wszystkich w tym obszarze roboczym.",
+  "settingsWorkspaceMeetingsDescription": "Szablony notatek i zapisane głosy na spotkania w tym obszarze roboczym.",
   "settingsWorkspacePolicyLabel": "Zasady obszaru roboczego",
   "settingsWorkspacePolicyDescription": "Dotyczy każdego członka i każdego agenta w tym obszarze roboczym.",
   "settingsSecretGlobsLabel": "Wykluczenia ścieżek sekretów",
@@ -7608,7 +7609,7 @@
   "ticketProviderLocal": "Lokalnie",
   "addKey": "Dodaj klucz",
   "providerApps": "Aplikacje dostawców",
-  "providerAppsDescription": "Jak ten serwer uwierzytelnia się jako on sam i przez co loguje się człowiek. Praca w tle — webhooki, odpytywanie, synchronizacja — działa na aplikacji, nigdy na tokenie osoby.",
+  "providerAppsDescription": "Przestrzenie dziedziczą tę GitHub App, chyba że wybiorą inną App albo osobisty token dostępu. Praca w tle — webhooki, odpytywanie, sync — działa na aplikacji, nigdy na tokenie osoby.",
   "providerAppId": "Identyfikator aplikacji",
   "providerPrivateKey": "Klucz prywatny",
   "providerClientId": "Identyfikator klienta",
@@ -7757,9 +7758,9 @@
   "shortTaskDescription": "Obsługuje szybką pracę w tle, jak tytuły i streszczenia. Mniejszy model pasuje tutaj.",
   "settingsStateFailed": "Niepowodzenie",
   "providerAppsGroupServer": "Działanie jako serwer",
-  "providerAppsGroupServerDescription": "Pozwala pracy w tle sięgać repozytoriów bez człowieka za żądaniem: webhooki, odpytywanie pull requestów, synchronizacja zgłoszeń.",
+  "providerAppsGroupServerDescription": "Dla przestrzeni dziedziczących GitHub App tej instalacji. Przestrzeń z własną App lub PAT ustawia się w Przestrzeń → Ogólne.",
   "providerAppsGroupPrConversations": "Rozmowy przy pull requestach",
-  "providerAppsGroupPrConversationsDescription": "Jak deweloperzy mogą rozmawiać z tym serwerem wprost na GitHubie. Działa bez webhooka i publicznego adresu URL — serwer odpytuje.",
+  "providerAppsGroupPrConversationsDescription": "Jak deweloperzy rozmawiają z tym serwerem na GitHubie w przestrzeniach dziedziczących. Przestrzeń z własną App ma bota w Przestrzeń → Ogólne. Działa bez webhooka i publicznego URL — serwer odpytuje.",
   "providerAppBotLogin": "Login bota",
   "providerAppBotLoginEmpty": "Przetestuj połączenie, aby ustalić login bota.",
   "providerAppAskOnGitHub": "Pytanie na GitHubie",
@@ -8589,5 +8590,75 @@
   "rigClipboardAlwaysPasteTitle": "Zawsze zezwalaj na wklejanie do środowisk",
   "rigClipboardAlwaysPasteDescription": "Wysyłaj schowek tego urządzenia do dowolnego środowiska bez pytania.",
   "rigClipboardAlwaysCopyTitle": "Zawsze zezwalaj na kopiowanie ze środowisk",
-  "rigClipboardAlwaysCopyDescription": "Umieszczaj zawartość schowka z dowolnego środowiska na tym urządzeniu bez pytania."
+  "rigClipboardAlwaysCopyDescription": "Umieszczaj zawartość schowka z dowolnego środowiska na tym urządzeniu bez pytania.",
+  "imageDiffBefore": "Przed",
+  "@imageDiffBefore":   {
+    "description": "Label for the base (before) side of a PR image diff"
+  },
+  "imageDiffAfter": "Po",
+  "@imageDiffAfter":   {
+    "description": "Label for the head (after) side of a PR image diff"
+  },
+  "imageDiffModeTwoUp": "Obok siebie",
+  "@imageDiffModeTwoUp":   {
+    "description": "Side-by-side comparison mode for a PR image diff"
+  },
+  "imageDiffModeSwipe": "Przesuń",
+  "@imageDiffModeSwipe":   {
+    "description": "Swipe-divider comparison mode for a PR image diff"
+  },
+  "imageDiffModeDifference": "Różnica",
+  "@imageDiffModeDifference":   {
+    "description": "Pixel overlay comparison mode for a PR image diff"
+  },
+  "imageDiffChangedPercent": "zmieniono {percent}%",
+  "@imageDiffChangedPercent":   {
+    "description": "Caption showing how much of a PR image pair differs",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "imageDiffPictures": "Obrazy",
+  "@imageDiffPictures":   {
+    "description": "Header toggle to show SVG as pictures instead of XML hunks"
+  },
+  "imageDiffSource": "Źródło",
+  "@imageDiffSource":   {
+    "description": "Header toggle to show an SVG file's XML source diff"
+  },
+  "imageDiffDeleted": "Usunięto",
+  "@imageDiffDeleted": {
+    "description": "Label for the removed (before) side of a PR image asset comparison"
+  },
+  "imageDiffAdded": "Dodano",
+  "@imageDiffAdded": {
+    "description": "Label for the added (after) side of a PR image asset comparison"
+  },
+  "imageDiffDimensions": "S: {width}px | W: {height}px",
+  "@imageDiffDimensions": {
+    "description": "Intrinsic pixel size caption under a PR image-diff asset",
+    "placeholders": {
+      "width": {
+        "type": "int"
+      },
+      "height": {
+        "type": "int"
+      }
+    }
+  },
+  "workspaceGitHubIdentity": "Tożsamość GitHub",
+  "workspaceGitHubIdentityDescription": "Jak uwierzytelnia się praca w tle na GitHubie w tej przestrzeni. Dziedziczenie App tej instalacji, inna App albo tylko osobisty token dostępu.",
+  "workspaceGitHubModeInherit": "Użyj GitHub App tej instalacji",
+  "workspaceGitHubModeApp": "Użyj innej GitHub App",
+  "workspaceGitHubModePat": "Tylko osobisty token dostępu",
+  "workspaceGitHubInheritHint": "Używa GitHub App w Serwer → Aplikacje dostawców.",
+  "workspaceGitHubAppHint": "Tożsamość bota i odpytywania tej przestrzeni. Członkowie logują się w Ty przez tę App.",
+  "workspaceGitHubPatLabel": "Token w tle",
+  "workspaceGitHubPatDescription": "Do odpytywania i agentów w tej przestrzeni. To nie token profilu członka.",
+  "workspaceGitHubHasPat": "Token w tle jest zapisany.",
+  "workspaceGitHubNoPat": "Brak zapisanego tokenu w tle.",
+  "profileOverlayHint": "Te pola to ty w tej przestrzeni. Puste pola dziedziczą nazwę i e-mail konta. Zmiana przestrzeni zmienia tę nakładkę.",
+  "forgeConnectionsThisWorkspace": "Zaloguj się albo wklej token dla tej przestrzeni."
 }

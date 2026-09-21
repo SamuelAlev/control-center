@@ -65,6 +65,7 @@ void main() {
       final result = differ.compare(a, b);
       expect(result.changedPercent, 100);
       expect(result.identical, isFalse);
+      expect(result.overlayPng, isNull);
     });
 
     test('reports 100% when heights differ', () {
@@ -72,6 +73,7 @@ void main() {
       final b = png(2, 4, (_, _) => 0xff0000ff);
       final result = differ.compare(a, b);
       expect(result.changedPercent, 100);
+      expect(result.overlayPng, isNull);
     });
   });
 
@@ -147,6 +149,48 @@ void main() {
       });
       final result = strict.compare(base, head);
       expect(result.changedPercent, 100);
+    });
+  });
+
+  group('ImageDiffer.compare — JPEG and other rasters', () {
+    test('byte-identical JPEGs report 0% and identical', () {
+      final image = img.Image(width: 4, height: 4);
+      for (var y = 0; y < 4; y++) {
+        for (var x = 0; x < 4; x++) {
+          image.setPixelRgba(x, y, 255, 0, 0, 255);
+        }
+      }
+      final jpeg = Uint8List.fromList(img.encodeJpg(image, quality: 100));
+      final result = differ.compare(jpeg, jpeg);
+      expect(result.changedPercent, 0);
+      expect(result.identical, isTrue);
+      expect(result.overlayPng, isNull);
+    });
+  });
+
+  group('ImageDiffer.compare — pixel cap', () {
+    test('downscales both sides before walking pixels', () {
+      final a = png(8, 8, (_, _) => 0xff0000ff);
+      final b = png(8, 8, (_, _) => 0xff00ff00);
+      final result = const ImageDiffer(maxPixels: 16).compare(a, b);
+      expect(result.identical, isFalse);
+      expect(result.overlayPng, isNotNull);
+      final overlay = img.decodePng(result.overlayPng!);
+      expect(overlay, isNotNull);
+      expect(overlay!.width, 4);
+      expect(overlay.height, 4);
+    });
+  });
+
+  group('ImageDiffer.compareAsync', () {
+    test('matches compare off the caller isolate', () async {
+      final a = png(4, 4, (_, _) => 0xff0000ff);
+      final b = png(4, 4, (_, _) => 0xff00ff00);
+      final sync = differ.compare(a, b);
+      final async = await differ.compareAsync(a, b);
+      expect(async.changedPercent, sync.changedPercent);
+      expect(async.identical, sync.identical);
+      expect(async.overlayPng, isNotNull);
     });
   });
 }

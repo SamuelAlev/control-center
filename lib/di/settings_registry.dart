@@ -2,6 +2,7 @@ import 'package:control_center/features/agents/presentation/settings_contributio
 import 'package:control_center/features/calendar/presentation/settings_contributions.dart';
 import 'package:control_center/features/chat_bridges/presentation/settings_contributions.dart';
 import 'package:control_center/features/forge/presentation/settings_contributions.dart';
+import 'package:control_center/features/meetings/presentation/settings_contributions.dart';
 import 'package:control_center/features/memory/presentation/settings_contributions.dart';
 import 'package:control_center/features/messaging/presentation/settings_contributions.dart';
 import 'package:control_center/features/newsfeed/presentation/settings_contributions.dart';
@@ -43,6 +44,7 @@ final settingsRegistryProvider = Provider<SettingsRegistry>(
     ],
     bodies: [
       ...agentsSettingsBodies,
+      ...meetingsSettingsBodies,
       ...newsfeedSettingsBodies,
       ...remoteControlSettingsBodies,
       ...reposSettingsBodies,

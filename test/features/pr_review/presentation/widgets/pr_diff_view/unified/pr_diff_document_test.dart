@@ -442,4 +442,17 @@ void main() {
       expect(doc.indexOfFile('missing.dart'), -1);
     });
   });
+
+  group('PrDiffDocument image preview default', () {
+    test('image files start previewing', () {
+      final doc = _doc()..setFiles([_file('shot.png', '')]);
+      expect(doc.isPreviewing(0), isTrue);
+      expect(doc.isExpanded(0), isTrue);
+    });
+
+    test('text files do not start previewing', () {
+      final doc = _doc()..setFiles([_file('a.dart', _realPatch)]);
+      expect(doc.isPreviewing(0), isFalse);
+    });
+  });
 }

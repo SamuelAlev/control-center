@@ -8,7 +8,8 @@ import 'package:cc_host/cc_host.dart';
 import 'package:cc_server_core/src/pr_review/open_pr_polling_service.dart';
 
 /// Builds a [ForgePrClient] for one repo coordinate on one forge.
-typedef ForgePrClientForRepo = ForgePrClient Function(Repo repo);
+typedef ForgePrClientForRepo =
+    ForgePrClient Function(Repo repo, {String? workspaceId});
 
 /// An [OpenPrFetchPort] for any forge, driven per repo through its
 /// [ForgePrClient].
@@ -30,18 +31,27 @@ class ForgeClientOpenPrFetchAdapter implements OpenPrFetchPort {
   /// freezes a repo's queue until something else invalidates it. The cost of
   /// being honest is one extra list call per poll.
   @override
-  Future<({bool changed, String? etag})> probeRepo(Repo repo, String? etag) =>
-      Future.value((changed: true, etag: null));
+  Future<({bool changed, String? etag})> probeRepo(
+    Repo repo,
+    String? etag, {
+    String? workspaceId,
+  }) => Future.value((changed: true, etag: null));
 
   @override
-  Future<OpenPrFetchResult> fetchGroups(List<Repo> repos) async {
+  Future<OpenPrFetchResult> fetchGroups(
+    List<Repo> repos, {
+    String? workspaceId,
+  }) async {
     final groups = <OpenPrGroup>[];
     final resolved = <String>{};
 
     await Future.wait(
       repos.map((repo) async {
         try {
-          final page = await _clientFor(repo).listOpenPullRequests();
+          final page = await _clientFor(
+            repo,
+            workspaceId: workspaceId,
+          ).listOpenPullRequests();
           // Recorded before the empty check: a repo with a genuinely empty
           // queue is still an answer, and the poller relies on that difference
           // to tell "no open PRs" from "the forge did not respond".
@@ -65,13 +75,18 @@ class ForgeClientOpenPrFetchAdapter implements OpenPrFetchPort {
   /// status-only pass has nothing extra to fetch.
   @override
   Future<Map<String, Map<int, PrStatusOverlay>>> fetchChecks(
-    List<Repo> repos,
-  ) => Future.value(const {});
+    List<Repo> repos, {
+    String? workspaceId,
+  }) => Future.value(const {});
 
   @override
-  Future<bool?> wasMerged(Repo repo, int prNumber) async {
+  Future<bool?> wasMerged(
+    Repo repo,
+    int prNumber, {
+    String? workspaceId,
+  }) async {
     try {
-      return await _clientFor(repo).wasMerged(prNumber);
+      return await _clientFor(repo, workspaceId: workspaceId).wasMerged(prNumber);
     } on Object {
       return null;
     }
@@ -83,17 +98,25 @@ class ForgeClientOpenPrFetchAdapter implements OpenPrFetchPort {
   // notification goes out without a name, and a failed-checks notification
   // without the check name. All three degrade the copy, never the correctness.
   @override
-  Future<PrMergeableState> mergeState(Repo repo, int prNumber) =>
-      Future.value(PrMergeableState.unknown);
+  Future<PrMergeableState> mergeState(
+    Repo repo,
+    int prNumber, {
+    String? workspaceId,
+  }) => Future.value(PrMergeableState.unknown);
 
   @override
-  Future<String?> latestApprover(Repo repo, int prNumber) => Future.value(null);
+  Future<String?> latestApprover(
+    Repo repo,
+    int prNumber, {
+    String? workspaceId,
+  }) => Future.value(null);
 
   @override
   Future<({String name, String? url})?> firstFailingCheck(
     Repo repo,
-    int prNumber,
-  ) => Future.value(null);
+    int prNumber, {
+    String? workspaceId,
+  }) => Future.value(null);
 }
 
 /// The [OpenPrFetchPort] the workspace poller actually runs on: a fan-out over
@@ -130,17 +153,21 @@ class MultiForgeOpenPrFetchAdapter implements OpenPrFetchPort {
   @override
   Future<({bool changed, String? etag})> probeRepo(
     Repo repo,
-    String? etag,
-  ) async {
+    String? etag, {
+    String? workspaceId,
+  }) async {
     final delegate = _delegateFor(repo);
     if (delegate == null) {
       return (changed: false, etag: null);
     }
-    return delegate.probeRepo(repo, etag);
+    return delegate.probeRepo(repo, etag, workspaceId: workspaceId);
   }
 
   @override
-  Future<OpenPrFetchResult> fetchGroups(List<Repo> repos) async {
+  Future<OpenPrFetchResult> fetchGroups(
+    List<Repo> repos, {
+    String? workspaceId,
+  }) async {
     final grouped = _byForge(repos);
     final groups = <OpenPrGroup>[];
     final resolved = <String>{};
@@ -152,7 +179,10 @@ class MultiForgeOpenPrFetchAdapter implements OpenPrFetchPort {
           return;
         }
         try {
-          final result = await delegate.fetchGroups(entry.value);
+          final result = await delegate.fetchGroups(
+            entry.value,
+            workspaceId: workspaceId,
+          );
           groups.addAll(result.groups);
           resolved.addAll(result.resolvedRepoIds);
         } on Object catch (e) {
@@ -171,8 +201,9 @@ class MultiForgeOpenPrFetchAdapter implements OpenPrFetchPort {
 
   @override
   Future<Map<String, Map<int, PrStatusOverlay>>> fetchChecks(
-    List<Repo> repos,
-  ) async {
+    List<Repo> repos, {
+    String? workspaceId,
+  }) async {
     final grouped = _byForge(repos);
     final merged = <String, Map<int, PrStatusOverlay>>{};
 
@@ -183,7 +214,9 @@ class MultiForgeOpenPrFetchAdapter implements OpenPrFetchPort {
           return;
         }
         try {
-          merged.addAll(await delegate.fetchChecks(entry.value));
+          merged.addAll(
+            await delegate.fetchChecks(entry.value, workspaceId: workspaceId),
+          );
         } on Object catch (e) {
           CcHostLog.warning(
             'open_pr_poll: ${entry.key.displayName} checks pass failed: $e',
@@ -196,32 +229,48 @@ class MultiForgeOpenPrFetchAdapter implements OpenPrFetchPort {
   }
 
   @override
-  Future<bool?> wasMerged(Repo repo, int prNumber) async {
+  Future<bool?> wasMerged(
+    Repo repo,
+    int prNumber, {
+    String? workspaceId,
+  }) async {
     final delegate = _delegateFor(repo);
     if (delegate == null) {
       return null;
     }
-    return delegate.wasMerged(repo, prNumber);
+    return delegate.wasMerged(repo, prNumber, workspaceId: workspaceId);
   }
 
   @override
-  Future<PrMergeableState> mergeState(Repo repo, int prNumber) async {
+  Future<PrMergeableState> mergeState(
+    Repo repo,
+    int prNumber, {
+    String? workspaceId,
+  }) async {
     final delegate = _delegateFor(repo);
     if (delegate == null) {
       return PrMergeableState.unknown;
     }
-    return delegate.mergeState(repo, prNumber);
+    return delegate.mergeState(repo, prNumber, workspaceId: workspaceId);
   }
 
   @override
-  Future<String?> latestApprover(Repo repo, int prNumber) async =>
-      _delegateFor(repo)?.latestApprover(repo, prNumber);
+  Future<String?> latestApprover(
+    Repo repo,
+    int prNumber, {
+    String? workspaceId,
+  }) async => _delegateFor(
+    repo,
+  )?.latestApprover(repo, prNumber, workspaceId: workspaceId);
 
   @override
   Future<({String name, String? url})?> firstFailingCheck(
     Repo repo,
-    int prNumber,
-  ) async => _delegateFor(repo)?.firstFailingCheck(repo, prNumber);
+    int prNumber, {
+    String? workspaceId,
+  }) async => _delegateFor(
+    repo,
+  )?.firstFailingCheck(repo, prNumber, workspaceId: workspaceId);
 }
 
 /// Merged-history search across every forge in a workspace.
@@ -243,8 +292,17 @@ class MultiForgeMergedHistory {
     required this._viewerLoginFor,
   });
 
-  final ForgePrClient Function(Repo repo, {String? actingUserId}) _clientFor;
-  final Future<String> Function(ForgeHost forge, {String? userId})
+  final ForgePrClient Function(
+    Repo repo, {
+    String? actingUserId,
+    String? workspaceId,
+  })
+  _clientFor;
+  final Future<String> Function(
+    ForgeHost forge, {
+    String? userId,
+    String? workspaceId,
+  })
   _viewerLoginFor;
 
   /// [userId]'s recently merged pull requests across [repos], grouped by
@@ -264,13 +322,18 @@ class MultiForgeMergedHistory {
     await Future.wait(
       repos.map((repo) async {
         try {
-          final login = await _viewerLoginFor(repo.forge, userId: userId);
+          final login = await _viewerLoginFor(
+            repo.forge,
+            userId: userId,
+            workspaceId: workspaceId,
+          );
           if (login.isEmpty) {
             return;
           }
           final prs = await _clientFor(
             repo,
             actingUserId: userId,
+            workspaceId: workspaceId,
           ).listMergedByAuthor(login);
           if (prs.isNotEmpty) {
             groups.add((repo: repo, prs: prs, hasMore: false));

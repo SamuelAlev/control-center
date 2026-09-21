@@ -13,6 +13,7 @@ import 'package:cc_domain/core/domain/value_objects/principal.dart';
 import 'package:cc_domain/core/domain/value_objects/retry_meta.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_update.dart';
+import 'package:cc_domain/core/domain/value_objects/github_auth_mode.dart';
 import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
 import 'package:test/test.dart';
 
@@ -158,6 +159,17 @@ void main() {
       }
       expect(WorkspaceRole.fromWire(null), isNull);
       expect(WorkspaceRole.fromWire('bogus'), isNull);
+    });
+  });
+
+  group('GithubAuthMode', () {
+    test('fromWire round-trips; unknown or empty is inherit', () {
+      for (final mode in GithubAuthMode.values) {
+        expect(GithubAuthMode.fromWire(mode.wireName), mode);
+      }
+      expect(GithubAuthMode.fromWire(null), GithubAuthMode.inherit);
+      expect(GithubAuthMode.fromWire(''), GithubAuthMode.inherit);
+      expect(GithubAuthMode.fromWire('bogus'), GithubAuthMode.inherit);
     });
   });
 

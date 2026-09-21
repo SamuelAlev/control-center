@@ -20,6 +20,10 @@ import 'package:flutter/widgets.dart';
 /// on it in both brightnesses, unlike the raw `accent` signal) carrying
 /// `accentOn` ink at bold weight. Unselected rows use `textSecondary`.
 ///
+/// That brand fill fades in via opacity. Color.lerp from a translucent ink
+/// wash (`hover` / `hoverStrong`, the fg RGB at 5–8% alpha) into
+/// `bgBrandSolid` bottoms out at a dark brown at t≈0.5 — the flash on click.
+///
 /// Anything the caller hands to [badge] rides that fill, so an accent-tinted
 /// badge would disappear into it: a badge must invert on the selected row
 /// (`accentOn` pill, `bgBrandSolid` content). Callers already know [selected],
@@ -85,14 +89,11 @@ class CcSidebarItem extends StatelessWidget implements CcFluidHoverTarget {
   @override
   bool get fluidHoverEnabled => onPressed != null;
 
-  Color _background(
+  Color _hoverFill(
     DesignSystemTokens t,
     Set<WidgetState> states, {
     required bool fluidActive,
   }) {
-    if (selected) {
-      return t.bgBrandSolid;
-    }
     if (states.contains(WidgetState.pressed)) {
       return t.hoverStrong;
     }
@@ -106,18 +107,18 @@ class CcSidebarItem extends StatelessWidget implements CcFluidHoverTarget {
 
   Widget _buildBody(
     DesignSystemTokens t,
-    Color background, {
+    Color hoverFill, {
     required bool collapsed,
     required bool transitioning,
     required Duration duration,
   }) {
     final fg = selected ? t.accentOn : t.textSecondary;
     const iconSize = 18.0;
-    // The fill lerps over CcMotion.fast (the AnimatedContainer below); the
-    // foreground must travel WITH it. A white label snapped on while the fill
-    // is still its light mid-lerp self reads as white-on-white (and the
-    // deselect reverse as dark-ink-on-orange). Same duration and curve, so
-    // fill and ink stay in lockstep.
+    // The brand fill fades in via opacity over CcMotion.fast (see the
+    // overlay below); the foreground must travel WITH it. A white label
+    // snapped on while the fill is still fading in reads as white-on-wash
+    // (and the deselect reverse as dark-ink-on-orange). Same duration and
+    // curve, so fill and ink stay in lockstep.
     return TweenAnimationBuilder<Color?>(
       duration: duration,
       curve: CcMotion.standard,
@@ -128,137 +129,152 @@ class CcSidebarItem extends StatelessWidget implements CcFluidHoverTarget {
             iconBuilder?.call(contentColor, iconSize) ??
             Icon(icon, size: iconSize, color: contentColor);
 
+        final Widget content = collapsed
+            ? Center(child: leadingIcon)
+            : Row(
+                children: [
+                  leadingIcon,
+                  const SizedBox(width: AppSpacing.sm),
+                  // The label fades while the sidebar's width animates
+                  // (kept in the layout so the row geometry never
+                  // changes), which is what makes the toggle read as
+                  // labels appearing/disappearing instead of anything
+                  // moving.
+                  //
+                  // Stretched tight either way — the hug of the
+                  // beside-label variant happens INSIDE the paragraph, not
+                  // through flex: a loose flex label cannot pull a
+                  // following sibling along its actual text width (the flex
+                  // algorithm seats that sibling at the end of the label's
+                  // SLOT, which lands back on the trailing edge).
+                  Flexible(
+                    fit: FlexFit.tight,
+                    child: AnimatedOpacity(
+                      opacity: transitioning ? 0 : 1,
+                      duration: duration,
+                      curve: CcMotion.standard,
+                      child: badgeBesideLabel && badge != null && !transitioning
+                          // The badge rides the text's own layout as a
+                          // trailing WidgetSpan: a short label leaves the
+                          // rest of the row empty (the badge hugs the words
+                          // with a small gap) and a long label ellipsizes
+                          // BEFORE the span instead of overflowing it.
+                          ? Text.rich(
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              TextSpan(
+                                text: label,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  height: 1.4,
+                                  fontWeight: selected
+                                      ? FontWeight.w700
+                                      : CcTypography.regularWeight,
+                                  color: contentColor,
+                                ),
+                                children: [
+                                  WidgetSpan(
+                                    alignment: PlaceholderAlignment.middle,
+                                    child: Padding(
+                                      padding: const EdgeInsetsDirectional.only(
+                                        start: AppSpacing.sm,
+                                      ),
+                                      child: badge!,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : Text(
+                              label,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 14,
+                                height: 1.4,
+                                // The selected label goes BOLD on the soft
+                                // tint — weight plus ink carry the current
+                                // destination.
+                                fontWeight: selected
+                                    ? FontWeight.w700
+                                    : CcTypography.regularWeight,
+                                color: contentColor,
+                              ),
+                            ),
+                    ),
+                  ),
+                  // A trailing count badge sits outside the paragraph so it
+                  // stays pinned to the row's right edge. Both badge flavors
+                  // leave the layout entirely during the width animation: as
+                  // the row narrows they would overflow otherwise.
+                  if (!badgeBesideLabel && badge != null && !transitioning) ...[
+                    const SizedBox(width: AppSpacing.sm),
+                    badge!,
+                  ],
+                ],
+              );
+
+        // Hover wash lives on the AnimatedContainer (same-RGB alpha lerp).
+        // The selected brand fill is a sibling overlay that fades in via
+        // opacity — never Color.lerped into that wash. Padding sits on the
+        // content, not the container, so the overlay is full-bleed. The 1px
+        // accent border is a foregroundDecoration so it still rims the
+        // orange (invisible in light, a brighter edge in dark).
         final Widget container = AnimatedContainer(
           duration: duration,
           curve: CcMotion.standard,
           // The expanded row height is fixed at 32px (design rule); the 18px
           // icon and label center vertically inside it.
           height: collapsed ? null : kCcSidebarItemExtent,
-          // The 10px left inset aligns the icon's left edge with the group
-          // header's text (8px sidebar inset + 1px reserved border + 9px
-          // padding = the header's 8 + 10). It also puts the icon's center at
-          // x=27 from the sidebar edge — the exact spot the rail's centered
-          // 32px square puts it (rail width 54, content center 27) — so
-          // toggling the sidebar moves nothing (27 − 8 sidebar inset − 9
-          // half-icon = 10).
-          padding: collapsed
-              ? EdgeInsets.zero
-              // Start 9 + the 1px reserved border (which insets the child) =
-              // the visual 10px inset: the icon's leading edge lands exactly
-              // where CcSidebarGroup's header padding (10) starts the section
-              // title, and its center on the x=27 line the collapsed rail's
-              // squares center on, so toggling the rail never moves the icon.
-              // While the width animates the trailing inset drops to 0: the
-              // row keeps its expanded geometry (labels fading) down to the
-              // rail's 38px content width without the fixed icon + gap +
-              // padding overflowing it (18 + 8 + 9 + 2 borders = 37 ≤ 38).
-              : EdgeInsetsDirectional.only(
-                  start: 9,
-                  end: transitioning ? 0 : 10,
-                ),
           decoration: BoxDecoration(
-            color: background,
+            color: hoverFill,
             borderRadius: AppRadii.brSm,
-            // A 1px border is reserved on every row (alpha-0 when idle) so
-            // the layout never shifts when [selected] toggles the brand
-            // border on. It reads as the solid pill's edge: invisible in
-            // light (where `accent` and `bgBrandSolid` are the same burnt
-            // orange), a brighter rim in dark. Alpha-0 of the SAME accent
-            // when idle, so the toggle lerps only alpha instead of travelling
-            // through a gray mid-point.
+          ),
+          foregroundDecoration: BoxDecoration(
             border: Border.all(
               color: selected ? t.accent : t.accent.withValues(alpha: 0),
               width: 1,
             ),
+            borderRadius: AppRadii.brSm,
           ),
-          child: collapsed
-              ? Center(child: leadingIcon)
-              : Row(
-                  children: [
-                    leadingIcon,
-                    const SizedBox(width: AppSpacing.sm),
-                    // The label fades while the sidebar's width animates
-                    // (kept in the layout so the row geometry never
-                    // changes), which is what makes the toggle read as
-                    // labels appearing/disappearing instead of anything
-                    // moving.
-                    //
-                    // Stretched tight either way — the hug of the
-                    // beside-label variant happens INSIDE the paragraph, not
-                    // through flex: a loose flex label cannot pull a
-                    // following sibling along its actual text width (the flex
-                    // algorithm seats that sibling at the end of the label's
-                    // SLOT, which lands back on the trailing edge).
-                    Flexible(
-                      fit: FlexFit.tight,
-                      child: AnimatedOpacity(
-                        opacity: transitioning ? 0 : 1,
-                        duration: duration,
-                        curve: CcMotion.standard,
-                        child:
-                            badgeBesideLabel && badge != null && !transitioning
-                            // The badge rides the text's own layout as a
-                            // trailing WidgetSpan: a short label leaves the
-                            // rest of the row empty (the badge hugs the words
-                            // with a small gap) and a long label ellipsizes
-                            // BEFORE the span instead of overflowing it.
-                            ? Text.rich(
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                TextSpan(
-                                  text: label,
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    height: 1.4,
-                                    fontWeight: selected
-                                        ? FontWeight.w700
-                                        : CcTypography.regularWeight,
-                                    color: contentColor,
-                                  ),
-                                  children: [
-                                    WidgetSpan(
-                                      alignment: PlaceholderAlignment.middle,
-                                      child: Padding(
-                                        padding:
-                                            const EdgeInsetsDirectional.only(
-                                              start: AppSpacing.sm,
-                                            ),
-                                        child: badge!,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              )
-                            : Text(
-                                label,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  height: 1.4,
-                                  // The selected label goes BOLD on the soft
-                                  // tint — weight plus ink carry the current
-                                  // destination.
-                                  fontWeight: selected
-                                      ? FontWeight.w700
-                                      : CcTypography.regularWeight,
-                                  color: contentColor,
-                                ),
-                              ),
-                      ),
-                    ),
-                    // A trailing count badge sits outside the paragraph so it
-                    // stays pinned to the row's right edge. Both badge flavors
-                    // leave the layout entirely during the width animation: as
-                    // the row narrows they would overflow otherwise.
-                    if (!badgeBesideLabel &&
-                        badge != null &&
-                        !transitioning) ...[
-                      const SizedBox(width: AppSpacing.sm),
-                      badge!,
-                    ],
-                  ],
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              IgnorePointer(
+                child: AnimatedOpacity(
+                  opacity: selected ? 1 : 0,
+                  duration: duration,
+                  curve: CcMotion.standard,
+                  child: ColoredBox(color: t.bgBrandSolid),
                 ),
+              ),
+              Padding(
+                // The 10px left inset aligns the icon's left edge with the
+                // group header's text (8px sidebar inset + 1px reserved
+                // border + 9px padding = the header's 8 + 10). It also puts
+                // the icon's center at x=27 from the sidebar edge — the
+                // exact spot the rail's centered 32px square puts it (rail
+                // width 54, content center 27) — so toggling the sidebar
+                // moves nothing (27 − 8 sidebar inset − 9 half-icon = 10).
+                //
+                // Start 9 + the 1px reserved border = the visual 10px
+                // inset: the icon's leading edge lands exactly where
+                // CcSidebarGroup's header padding (10) starts the section
+                // title. While the width animates the trailing inset drops
+                // to 0: the row keeps its expanded geometry (labels fading)
+                // down to the rail's 38px content width without the fixed
+                // icon + gap + padding overflowing it
+                // (18 + 8 + 9 + 2 borders = 37 ≤ 38).
+                padding: collapsed
+                    ? EdgeInsets.zero
+                    : EdgeInsetsDirectional.only(
+                        start: 9,
+                        end: transitioning ? 0 : 10,
+                      ),
+                child: content,
+              ),
+            ],
+          ),
         );
 
         if (!collapsed) {
@@ -300,7 +316,7 @@ class CcSidebarItem extends StatelessWidget implements CcFluidHoverTarget {
     if (onPressed == null) {
       result = _buildBody(
         t,
-        selected ? t.bgBrandSolid : t.hover.withValues(alpha: 0),
+        t.hover.withValues(alpha: 0),
         collapsed: collapsed,
         transitioning: transitioning,
         duration: duration,
@@ -315,7 +331,7 @@ class CcSidebarItem extends StatelessWidget implements CcFluidHoverTarget {
         focusRingColor: selected ? t.accentOn : null,
         builder: (context, states) => _buildBody(
           t,
-          _background(
+          _hoverFill(
             t,
             states,
             fluidActive: CcFluidHover.isItemActive(context),

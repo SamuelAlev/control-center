@@ -542,7 +542,7 @@ CcBreadcrumbItem _settingsRoot(
   AppLocalizations l10n,
 ) => CcBreadcrumbItem(
   onPress: () =>
-      context.go(settingsProfileRoute(state.pathParameters['workspaceId']!)),
+      context.go(settingsAppearanceRoute(state.pathParameters['workspaceId']!)),
   child: Text(l10n.settingsLabel),
 );
 

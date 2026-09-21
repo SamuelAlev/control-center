@@ -3,6 +3,7 @@ import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_user.dart';
 import 'package:control_center/core/theme/font_settings.dart';
 import 'package:control_center/features/pr_review/presentation/utils/diff_isolate_worker.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/file_header.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_diff_sliver.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_diff_view.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_inline_comments/comment_thread_widget.dart';
@@ -57,7 +58,19 @@ PrCodeReviewComment _comment({
   isResolved: isResolved,
 );
 
-Widget _wrap(List<PrCodeReviewComment> comments) {
+final _nextFile = PrFile(
+  filename: 'lib/next.dart',
+  status: PrFileStatus.modified,
+  additions: 1,
+  deletions: 0,
+  patch: '@@ -1,0 +1,1 @@\n+hello\n',
+);
+
+Widget _wrap(
+  List<PrCodeReviewComment> comments, {
+  GlobalKey<UnifiedDiffViewState>? viewKey,
+  List<PrFile>? files,
+}) {
   return ProviderScope(
     overrides: [
       codeFontFamilyProvider.overrideWithValue('Fira Code'),
@@ -68,7 +81,8 @@ Widget _wrap(List<PrCodeReviewComment> comments) {
         builder: (context, ref, _) => CustomScrollView(
           slivers: [
             UnifiedDiffView(
-              files: [_file],
+              key: viewKey,
+              files: files ?? [_file],
               serverComments: comments,
               inlineCommentsController: ref.watch(
                 prInlineCommentsControllerProvider(_prRef).notifier,
@@ -213,6 +227,49 @@ void main() {
 
       expect(find.text('Reply…'), findsOneWidget);
     });
+
+    testWidgets(
+      'opening reply reserves composer height without a later rebuild',
+      (tester) async {
+        tester.view.physicalSize = const Size(1400, 2400);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+
+        final viewKey = GlobalKey<UnifiedDiffViewState>();
+        await tester.pumpWidget(
+          _wrap(
+            [_comment(body: 'Why this cast?')],
+            viewKey: viewKey,
+            files: [_file, _nextFile],
+          ),
+        );
+        await _settle(tester);
+
+        expect(find.text('Reply…'), findsOneWidget);
+        final beforeNext = viewKey.currentState!.debugDocument.offsetOfFile(1);
+
+        await tester.tap(find.text('Reply…'));
+        // HeightReporter reports on the expansion layout; the host defers
+        // the Fenwick update to the next frame. No highlight click.
+        await _settle(tester);
+
+        expect(find.byIcon(AppIcons.arrowUp), findsOneWidget);
+        final afterNext = viewKey.currentState!.debugDocument.offsetOfFile(1);
+        expect(
+          afterNext,
+          greaterThan(beforeNext + 40),
+          reason: 'the next file must move down for the reply composer',
+        );
+
+        final threadRect = tester.getRect(find.byType(PrInlineThreadBlock));
+        final nextHeader = tester.getRect(find.byType(FastFileHeader).at(1));
+        expect(
+          threadRect.bottom,
+          lessThanOrEqualTo(nextHeader.top + 0.5),
+          reason: 'the composer must not paint under the next file header',
+        );
+      },
+    );
 
     testWidgets('the collapsed row height stays one line', (tester) async {
       tester.view.physicalSize = const Size(1400, 2400);

@@ -504,7 +504,7 @@
   "calendarRsvpFailed": "回答を更新できませんでした",
   "calendarAddAccount": "カレンダーアカウントを追加",
   "calendarSettingsTitle": "Google Calendar",
-  "calendarSettingsDescription": "Googleアカウントを接続して、このワークスペースに予定を同期します。",
+  "calendarSettingsDescription": "Google アカウントを接続して、このワークスペースに予定を同期します。これらのカレンダーはここであなたのものです。",
   "calendarConnecting": "接続中…",
   "calendarSyncNow": "今すぐ同期",
   "calendarNoWorkspace": "カレンダーを表示するワークスペースを選択してください",
@@ -3949,7 +3949,7 @@
   "agentQuestionSkippedLabel": "スキップ済み",
   "agentQuestionFreeformOptionHint": "自分の言葉で書いてください…",
   "reviewRequested": "レビュー依頼済み",
-  "connectGitHubHint": "GitHub にサインインするか、設定 → あなた → プロフィールと ID → コードホスティング でトークンを追加してください",
+  "connectGitHubHint": "GitHub にサインインするか、設定 → ワークスペース → プロフィールと ID → コードホスティング でトークンを追加してください",
   "connectGitHubToLoadPrs": "プルリクエストを読み込むには GitHub を接続してください",
   "noRepositoriesConfigured": "リポジトリが設定されていません",
   "openedAgo": "{age}にオープン",
@@ -5499,7 +5499,7 @@
   },
   "deviceNeverSeen": "未接続",
   "profileSectionLabel": "プロフィール",
-  "profileSectionDescription": "チームメイトへの見え方と、gitコミットの作成者情報。",
+  "profileSectionDescription": "このワークスペースでチームと git コミット作者にどう見えるかです。空欄はアカウントの名前とメールを継承します。",
   "displayNameLabel": "表示名",
   "emailLabel": "メールアドレス",
   "gitAuthorNameLabel": "Git作成者名",
@@ -7270,11 +7270,12 @@
   "settingsScopeBadgeDevice": "このデバイス",
   "settingsScopeBadgeWorkspace": "ワークスペース",
   "settingsScopeBadgeServer": "サーバー",
-  "settingsProfileDescription": "氏名、メールアドレス、あなたの代わりに作成されるコミットに付くgit識別情報です。",
+  "settingsProfileDescription": "このワークスペースでの名前、メール、git の身元です。ワークスペースを切り替えるとこのオーバーレイも切り替わります。ハンドル、サインイン、デバイスはアカウントに残ります。",
   "settingsServerConnectionDescription": "このクライアントが通信するサーバーと、このサーバーの共有方法（mDNS、トンネル、リレー）です。",
   "settingsAboutDescription": "ビルド識別情報と更新。",
   "settingsDiagnosticsDescription": "このインストールの隔離、インデックス、同期、ロギング、クラッシュレポートです。",
   "settingsWorkspaceGeneralDescription": "このワークスペースの全メンバーで共有される識別情報、ポリシー、規約です。",
+  "settingsWorkspaceMeetingsDescription": "このワークスペースのミーティング用のノートテンプレートと保存済みの声です。",
   "settingsWorkspacePolicyLabel": "ワークスペースポリシー",
   "settingsWorkspacePolicyDescription": "このワークスペースのすべてのメンバーとエージェントに適用されます。",
   "settingsSecretGlobsLabel": "シークレットパスの除外",
@@ -7608,7 +7609,7 @@
   "ticketProviderLocal": "ローカル",
   "addKey": "キーを追加",
   "providerApps": "プロバイダーアプリ",
-  "providerAppsDescription": "このサーバーが自身として認証する方法と、個人がサインインする経路です。バックグラウンド処理（ウェブフック、ポーリング、同期）は個人のトークンではなくアプリで実行されます。",
+  "providerAppsDescription": "ワークスペースはこの GitHub App を継承します。別の App か個人アクセストークンを選んだ場合を除きます。Webhook、ポーリング、同期などのバックグラウンド作業は App 上で動き、個人のトークンでは動きません。",
   "providerAppId": "アプリID",
   "providerPrivateKey": "秘密鍵",
   "providerClientId": "クライアントID",
@@ -7757,9 +7758,9 @@
   "shortTaskDescription": "タイトルや要約などの短いバックグラウンド作業を実行します。小さいモデルが適しています。",
   "settingsStateFailed": "失敗",
   "providerAppsGroupServer": "サーバーとして動作",
-  "providerAppsGroupServerDescription": "リクエストの背後に人がいなくても、バックグラウンド処理がリポジトリへ到達できるようにします。ウェブフック、プルリクエストのポーリング、チケット同期などです。",
+  "providerAppsGroupServerDescription": "このインストールの GitHub App を継承するワークスペースが使います。独自の App や PAT はワークスペース → 一般で設定します。",
   "providerAppsGroupPrConversations": "プルリクエストでの会話",
-  "providerAppsGroupPrConversationsDescription": "開発者がGitHub上でこのサーバーと直接対話する方法です。ウェブフックも公開URLも不要で、サーバーがポーリングします。",
+  "providerAppsGroupPrConversationsDescription": "継承ワークスペースで GitHub 上からこのサーバーに話しかける方法です。独自 App のワークスペースはワークスペース → 一般にボットがあります。Webhook も公開 URL も不要で、サーバーがポーリングします。",
   "providerAppBotLogin": "ボットログイン",
   "providerAppBotLoginEmpty": "ボットログインを解決するには、接続をテストしてください。",
   "providerAppAskOnGitHub": "GitHubで依頼する",
@@ -8589,5 +8590,75 @@
   "rigClipboardAlwaysPasteTitle": "環境への貼り付けを常に許可",
   "rigClipboardAlwaysPasteDescription": "このデバイスのクリップボードを確認なしで任意の環境に送信します。",
   "rigClipboardAlwaysCopyTitle": "環境からのコピーを常に許可",
-  "rigClipboardAlwaysCopyDescription": "任意の環境からのクリップボード内容を確認なしでこのデバイスに配置します。"
+  "rigClipboardAlwaysCopyDescription": "任意の環境からのクリップボード内容を確認なしでこのデバイスに配置します。",
+  "imageDiffBefore": "変更前",
+  "@imageDiffBefore":   {
+    "description": "Label for the base (before) side of a PR image diff"
+  },
+  "imageDiffAfter": "変更後",
+  "@imageDiffAfter":   {
+    "description": "Label for the head (after) side of a PR image diff"
+  },
+  "imageDiffModeTwoUp": "2 画面",
+  "@imageDiffModeTwoUp":   {
+    "description": "Side-by-side comparison mode for a PR image diff"
+  },
+  "imageDiffModeSwipe": "スワイプ",
+  "@imageDiffModeSwipe":   {
+    "description": "Swipe-divider comparison mode for a PR image diff"
+  },
+  "imageDiffModeDifference": "差分",
+  "@imageDiffModeDifference":   {
+    "description": "Pixel overlay comparison mode for a PR image diff"
+  },
+  "imageDiffChangedPercent": "{percent}% 変更",
+  "@imageDiffChangedPercent":   {
+    "description": "Caption showing how much of a PR image pair differs",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "imageDiffPictures": "画像",
+  "@imageDiffPictures":   {
+    "description": "Header toggle to show SVG as pictures instead of XML hunks"
+  },
+  "imageDiffSource": "ソース",
+  "@imageDiffSource":   {
+    "description": "Header toggle to show an SVG file's XML source diff"
+  },
+  "imageDiffDeleted": "削除",
+  "@imageDiffDeleted": {
+    "description": "Label for the removed (before) side of a PR image asset comparison"
+  },
+  "imageDiffAdded": "追加",
+  "@imageDiffAdded": {
+    "description": "Label for the added (after) side of a PR image asset comparison"
+  },
+  "imageDiffDimensions": "W: {width}px | H: {height}px",
+  "@imageDiffDimensions": {
+    "description": "Intrinsic pixel size caption under a PR image-diff asset",
+    "placeholders": {
+      "width": {
+        "type": "int"
+      },
+      "height": {
+        "type": "int"
+      }
+    }
+  },
+  "workspaceGitHubIdentity": "GitHub の身元",
+  "workspaceGitHubIdentityDescription": "このワークスペースのバックグラウンド GitHub 作業の認証方法です。このインストールの App を継承するか、別の App、または個人アクセストークンのみです。",
+  "workspaceGitHubModeInherit": "このインストールの GitHub App を使う",
+  "workspaceGitHubModeApp": "別の GitHub App を使う",
+  "workspaceGitHubModePat": "個人アクセストークンのみ",
+  "workspaceGitHubInheritHint": "サーバー → プロバイダーアプリの GitHub App を使います。",
+  "workspaceGitHubAppHint": "このワークスペースのボットとポーリングの身元です。メンバーは「あなた」でこの App からサインインします。",
+  "workspaceGitHubPatLabel": "バックグラウンドトークン",
+  "workspaceGitHubPatDescription": "このワークスペースのポーリングとエージェント用です。メンバーのプロフィールトークンではありません。",
+  "workspaceGitHubHasPat": "バックグラウンドトークンが保存されています。",
+  "workspaceGitHubNoPat": "バックグラウンドトークンはありません。",
+  "profileOverlayHint": "これらの項目はこのワークスペースでのあなたです。空欄はアカウントの名前とメールを継承します。ワークスペースを切り替えるとこのオーバーレイも切り替わります。",
+  "forgeConnectionsThisWorkspace": "このワークスペース用にサインインするかトークンを貼り付けます。"
 }

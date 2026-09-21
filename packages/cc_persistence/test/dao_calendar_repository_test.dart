@@ -32,12 +32,14 @@ void main() {
     String ws, {
     String email = 'ada@example.com',
     String providerId = 'google',
+    String userId = '',
     String? displayName,
     DateTime? lastSyncedAt,
     DateTime? authExpiredAt,
   }) => CalendarAccount(
     id: id,
     workspaceId: ws,
+    userId: userId,
     providerId: providerId,
     accountEmail: email,
     displayName: displayName,
@@ -61,6 +63,22 @@ void main() {
       await repo.upsertAccount(account('acc-2', 'w-2'));
       expect((await repo.getAccounts('w-1')).single.id, 'acc-1');
       expect((await repo.getAccounts('w-2')).single.id, 'acc-2');
+    });
+
+    test('two members can connect the same Google email in one workspace',
+        () async {
+      await repo.upsertAccount(
+        account('acc-alice', 'w-1', userId: 'alice', email: 'shared@x.com'),
+      );
+      await repo.upsertAccount(
+        account('acc-bob', 'w-1', userId: 'bob', email: 'shared@x.com'),
+      );
+      await repo.upsertAccount(
+        account('acc-other', 'w-2', userId: 'alice', email: 'shared@x.com'),
+      );
+      final inW1 = await repo.getAccounts('w-1');
+      expect(inW1.map((a) => a.userId).toSet(), {'alice', 'bob'});
+      expect((await repo.getAccounts('w-2')).single.userId, 'alice');
     });
 
     test('upsertAccount replaces on the same id', () async {

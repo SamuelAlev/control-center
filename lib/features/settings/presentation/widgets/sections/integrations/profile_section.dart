@@ -1,6 +1,7 @@
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/identity/providers/identity_providers.dart';
+import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/widgets/section_card.dart';
 import 'package:flutter/widgets.dart';
@@ -20,7 +21,7 @@ class ProfileSection extends ConsumerWidget {
 
     return SectionCard(
       label: l10n.profileSectionLabel,
-      subtitle: Text(l10n.profileSectionDescription),
+      subtitle: Text(l10n.profileOverlayHint),
       child: identityAsync.when(
         loading: () => const Padding(
           padding: EdgeInsets.all(AppSpacing.md),
@@ -30,9 +31,14 @@ class ProfileSection extends ConsumerWidget {
           l10n.failedWithError('$e'),
           style: CcTypography.bodySm.copyWith(color: t.textErrorPrimary),
         ),
-        // Key by user id so a different signed-in user re-seeds the fields,
-        // while refreshes of the same user keep any in-progress edits.
-        data: (me) => _ProfileForm(key: ValueKey(me.user.id), user: me.user),
+        // Key by workspace + user so switching workspace reseeds the overlay
+        // fields, while refreshes of the same overlay keep in-progress edits.
+        data: (me) => _ProfileForm(
+          key: ValueKey(
+            '${ref.watch(activeWorkspaceIdProvider)}:${me.user.id}',
+          ),
+          user: me.user,
+        ),
       ),
     );
   }
@@ -75,14 +81,24 @@ class _ProfileFormState extends ConsumerState<_ProfileForm> {
     final l10n = AppLocalizations.of(context);
     setState(() => _busy = true);
     try {
-      await ref
-          .read(identityRepositoryProvider)
-          .updateProfile(
-            displayName: _displayName.text.trim(),
-            email: _email.text.trim(),
-            gitAuthorName: _gitAuthorName.text.trim(),
-            gitAuthorEmail: _gitAuthorEmail.text.trim(),
-          );
+      final workspaceId = ref.read(activeWorkspaceIdProvider);
+      final repo = ref.read(identityRepositoryProvider);
+      if (workspaceId != null) {
+        await repo.updateWorkspaceProfile(
+          workspaceId: workspaceId,
+          displayName: _displayName.text.trim(),
+          email: _email.text.trim(),
+          gitAuthorName: _gitAuthorName.text.trim(),
+          gitAuthorEmail: _gitAuthorEmail.text.trim(),
+        );
+      } else {
+        await repo.updateProfile(
+          displayName: _displayName.text.trim(),
+          email: _email.text.trim(),
+          gitAuthorName: _gitAuthorName.text.trim(),
+          gitAuthorEmail: _gitAuthorEmail.text.trim(),
+        );
+      }
       ref.invalidate(currentIdentityProvider);
       if (!mounted) {
         return;

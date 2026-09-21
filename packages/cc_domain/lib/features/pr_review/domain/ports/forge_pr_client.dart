@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/check_run.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/commit_status.dart';
@@ -362,6 +364,12 @@ abstract interface class ForgePrClient {
 
   /// Raw file content at [ref].
   Future<String> getFileContent(String path, String ref, {Object? cancelToken});
+
+  /// Raw file bytes at [ref] (a commit SHA, branch or tag — never a blob SHA).
+  ///
+  /// Used for image/SVG diffs. Same endpoints as [getFileContent] with a
+  /// bytes response type so rasters are not decoded as UTF-8.
+  Future<Uint8List> getFileBytes(String path, String ref, {Object? cancelToken});
 
   /// Per-file viewed state for the current viewer, keyed by path.
   /// Capability: `viewedStateSync`.

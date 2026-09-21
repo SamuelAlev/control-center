@@ -310,7 +310,10 @@ class SandboxDispatchDeps {
   /// build the commit co-author trailer. Called with the run's
   /// `requestedByUserId` (null resolves to the server owner). Injected at the
   /// composition root, which owns the user repository; null skips the trailer.
-  final Future<({String name, String email})?> Function(String? userId)?
+  final Future<({String name, String email})?> Function(
+    String? userId, {
+    String? workspaceId,
+  })?
   resolveGitIdentity;
 
   /// Inspects a run's working directory for its `origin` forge coordinates so

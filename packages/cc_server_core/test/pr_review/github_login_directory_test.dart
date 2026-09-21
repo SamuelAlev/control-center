@@ -29,8 +29,11 @@ class _FakeCredentialsStore implements UserCredentialsStore {
   final Map<String, ProviderToken?> tokens;
 
   @override
-  Future<ProviderToken?> forgeToken(String userId, ForgeHost forge) async =>
-      tokens[userId];
+  Future<ProviderToken?> forgeToken(
+    String userId,
+    ForgeHost forge, {
+    String? workspaceId,
+  }) async => tokens[userId];
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);

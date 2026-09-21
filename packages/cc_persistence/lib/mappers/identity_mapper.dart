@@ -47,6 +47,10 @@ class IdentityMapper {
         roleWire: row.role,
         invitedBy: row.invitedBy,
         joinedAt: row.joinedAt,
+        displayName: row.displayName,
+        email: row.email,
+        gitAuthorName: row.gitAuthorName,
+        gitAuthorEmail: row.gitAuthorEmail,
       );
 
   /// Converts a database invite row to a domain [WorkspaceInvite].

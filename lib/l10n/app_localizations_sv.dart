@@ -1137,7 +1137,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get calendarSettingsDescription =>
-      'Anslut ett Google-konto för att synka händelser till den här arbetsytan.';
+      'Anslut ett Google-konto för att synka händelser till det här arbetsområdet. De här kalendrarna är dina här.';
 
   @override
   String get calendarConnecting => 'Ansluter…';
@@ -6998,7 +6998,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get connectGitHubHint =>
-      'Logga in på GitHub eller lägg till en token i Inställningar → Du → Profil och identitet → Kodvärd';
+      'Logga in på GitHub eller lägg till en token i Inställningar → Arbetsyta → Profil och identitet → Kodvärd';
 
   @override
   String get connectGitHubToLoadPrs =>
@@ -7482,6 +7482,43 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get preview => 'Förhandsgranska';
+
+  @override
+  String get imageDiffBefore => 'Före';
+
+  @override
+  String get imageDiffAfter => 'Efter';
+
+  @override
+  String get imageDiffModeTwoUp => 'Sida vid sida';
+
+  @override
+  String get imageDiffModeSwipe => 'Svep';
+
+  @override
+  String get imageDiffModeDifference => 'Skillnad';
+
+  @override
+  String imageDiffChangedPercent(String percent) {
+    return '$percent % ändrat';
+  }
+
+  @override
+  String get imageDiffPictures => 'Bilder';
+
+  @override
+  String get imageDiffSource => 'Källa';
+
+  @override
+  String get imageDiffDeleted => 'Borttaget';
+
+  @override
+  String get imageDiffAdded => 'Tillagt';
+
+  @override
+  String imageDiffDimensions(int width, int height) {
+    return 'B: ${width}px | H: ${height}px';
+  }
 
   @override
   String get outdated => 'Inaktuell';
@@ -9556,7 +9593,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get profileSectionDescription =>
-      'Hur du syns för kollegor och i git commit-författarskap.';
+      'Hur du syns för teamet och i git-commit-författarskap i det här arbetsområdet. Tomma fält ärver kontots namn och e-post.';
 
   @override
   String get displayNameLabel => 'Visningsnamn';
@@ -12133,7 +12170,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get settingsProfileDescription =>
-      'Ditt namn, e-post och git-identiteten som stämplas på commits som görs åt dig.';
+      'Ditt namn, e-post och git-identitet i det här arbetsområdet. Att byta arbetsområde byter det här överlägget; handle, inloggning och enheter stannar på kontot.';
 
   @override
   String get settingsServerConnectionDescription =>
@@ -12149,6 +12186,10 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get settingsWorkspaceGeneralDescription =>
       'Identitet, policy och konventioner som delas av alla i den här arbetsytan.';
+
+  @override
+  String get settingsWorkspaceMeetingsDescription =>
+      'Anteckningsmallar och sparade röster för möten i den här arbetsytan.';
 
   @override
   String get settingsWorkspacePolicyLabel => 'Arbetsytepolicy';
@@ -12731,7 +12772,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get providerAppsDescription =>
-      'Hur den här servern autentiserar som sig själv, och vad en person loggar in genom. Bakgrundsarbete – webhooks, polling, synk – körs på appen, aldrig på en persons token.';
+      'Arbetsområden ärver den här GitHub App:en om de inte väljer en annan App eller en personlig åtkomsttoken. Bakgrundsarbete — webhooks, polling, synk — körs på appen, aldrig på en persons token.';
 
   @override
   String get providerAppId => 'App-ID';
@@ -13121,14 +13162,14 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get providerAppsGroupServerDescription =>
-      'Låter bakgrundsarbete nå arkiv utan en människa bakom förfrågan: webhooks, pull request-polling, ärendesynk.';
+      'För arbetsområden som ärver den här installationens GitHub App. Ett arbetsområde med egen App eller PAT ställs in under Arbetsområde → Allmänt.';
 
   @override
   String get providerAppsGroupPrConversations => 'Pull request-samtal';
 
   @override
   String get providerAppsGroupPrConversationsDescription =>
-      'Hur utvecklare kan prata med den här servern direkt på GitHub. Fungerar utan webhook eller publik URL – servern pollar.';
+      'Hur utvecklare pratar med den här servern på GitHub i ärvande arbetsområden. Ett arbetsområde med egen App har sin bot under Arbetsområde → Allmänt. Fungerar utan webhook eller offentlig URL — servern pollar.';
 
   @override
   String get providerAppBotLogin => 'Bot-inloggning';
@@ -14514,4 +14555,50 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get rigClipboardAlwaysCopyDescription =>
       'Lägg urklippsinnehåll från valfri miljö på den här enheten utan att fråga.';
+
+  @override
+  String get workspaceGitHubIdentity => 'GitHub-identitet';
+
+  @override
+  String get workspaceGitHubIdentityDescription =>
+      'Hur bakgrundsarbete mot GitHub autentiserar i det här arbetsområdet. Ärva installationens App, använda en annan App eller bara en personlig åtkomsttoken.';
+
+  @override
+  String get workspaceGitHubModeInherit =>
+      'Använd den här installationens GitHub App';
+
+  @override
+  String get workspaceGitHubModeApp => 'Använd en annan GitHub App';
+
+  @override
+  String get workspaceGitHubModePat => 'Endast personlig åtkomsttoken';
+
+  @override
+  String get workspaceGitHubInheritHint =>
+      'Använder GitHub App under Server → Leverantörsappar.';
+
+  @override
+  String get workspaceGitHubAppHint =>
+      'Bot- och pollingidentitet för det här arbetsområdet. Medlemmar loggar in under Du via den här App:en.';
+
+  @override
+  String get workspaceGitHubPatLabel => 'Bakgrundstoken';
+
+  @override
+  String get workspaceGitHubPatDescription =>
+      'För polling och agenter i det här arbetsområdet. Inte en medlems profiltoken.';
+
+  @override
+  String get workspaceGitHubHasPat => 'En bakgrundstoken är sparad.';
+
+  @override
+  String get workspaceGitHubNoPat => 'Ingen bakgrundstoken sparad.';
+
+  @override
+  String get profileOverlayHint =>
+      'De här fälten är du i det här arbetsområdet. Tomma fält ärver kontots namn och e-post. Att byta arbetsområde byter det här överlägget.';
+
+  @override
+  String get forgeConnectionsThisWorkspace =>
+      'Logga in eller klistra in en token för det här arbetsområdet.';
 }

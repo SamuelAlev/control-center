@@ -161,6 +161,8 @@ class DaoWorkspaceMembershipRepository
           role: Value(member.role.wireName),
           invitedBy: Value(member.invitedBy),
           joinedAt: Value(member.joinedAt),
+          // Overlay columns stay Value.absent() so a role upsert cannot wipe
+          // the member's workspace profile.
         ),
       );
 
@@ -178,6 +180,39 @@ class DaoWorkspaceMembershipRepository
   @override
   Future<void> remove(String workspaceId, String userId) =>
       _dao(workspaceId).remove(workspaceId, userId);
+
+  @override
+  Future<void> updateProfileOverlay(
+    String workspaceId,
+    String userId, {
+    String? displayName,
+    bool clearDisplayName = false,
+    String? email,
+    bool clearEmail = false,
+    String? gitAuthorName,
+    bool clearGitAuthorName = false,
+    String? gitAuthorEmail,
+    bool clearGitAuthorEmail = false,
+  }) {
+    Value<String?> field(String? value, bool clear) {
+      if (clear) {
+        return const Value(null);
+      }
+      if (value == null) {
+        return const Value.absent();
+      }
+      return Value(value);
+    }
+
+    return _dao(workspaceId).updateProfileOverlay(
+      workspaceId,
+      userId,
+      displayName: field(displayName, clearDisplayName),
+      email: field(email, clearEmail),
+      gitAuthorName: field(gitAuthorName, clearGitAuthorName),
+      gitAuthorEmail: field(gitAuthorEmail, clearGitAuthorEmail),
+    );
+  }
 
   @override
   Future<Map<String, RepoGrantLevel>> getRepoGrants(

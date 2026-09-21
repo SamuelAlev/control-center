@@ -12,7 +12,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// Settings section that manages persistent, cross-meeting voice profiles: the
 /// named voiceprints used to auto-recognize a speaker in future meetings.
 /// Profiles are created from the meeting transcript ("Save voice profile" after
-/// naming a speaker); here the user can rename or delete them.
+/// naming a speaker); on Settings → Workspace → Meetings the user can rename
+/// or delete them.
 class VoiceProfilesSection extends ConsumerWidget {
   /// Creates a [VoiceProfilesSection].
   const VoiceProfilesSection({super.key});

@@ -144,8 +144,10 @@ class RepoIdeDataService {
   /// [_githubToken]'s `actingUserId` names the human whose click drove the
   /// operation, so their push is authored on GitHub as THEM (per-actor lane);
   /// omitted, it resolves the server chain (app → owner → environment), which
-  /// is only right for work with no human behind it.
-  final Future<String?> Function({String? actingUserId})? _githubToken;
+  /// is only right for work with no human behind it. [workspaceId] selects
+  /// that workspace's GitHub overlay rather than another workspace's token.
+  final Future<String?> Function({String? actingUserId, String? workspaceId})?
+  _githubToken;
 
   /// Reads no more than this many bytes when sniffing a file for a NUL byte.
   static const _binarySniffBytes = 8000;
@@ -1371,7 +1373,10 @@ class RepoIdeDataService {
     final branch = (pushBranch?.trim().isNotEmpty ?? false)
         ? pushBranch!.trim()
         : worktree.branch;
-    final token = await _githubToken?.call(actingUserId: actingUserId);
+    final token = await _githubToken?.call(
+      actingUserId: actingUserId,
+      workspaceId: workspaceId,
+    );
     var env = <String, String>{};
     if (token != null && token.isNotEmpty) {
       final b64 = base64Encode(utf8.encode('x-access-token:$token'));
@@ -1496,7 +1501,10 @@ class RepoIdeDataService {
 
     // The ACTING USER's credential, so publishing the branch is attributed on
     // GitHub to the human who clicked, not to the server's App.
-    final token = await _githubToken?.call(actingUserId: actingUserId);
+    final token = await _githubToken?.call(
+      actingUserId: actingUserId,
+      workspaceId: workspaceId,
+    );
     var env = <String, String>{};
     if (token != null && token.isNotEmpty) {
       final b64 = base64Encode(utf8.encode('x-access-token:$token'));
@@ -1574,7 +1582,7 @@ class RepoIdeDataService {
     // Fetching a PR head-ref needs auth — bail (never hit the network) without a
     // token. The token rides in the git auth header env (never argv, so
     // invisible to `ps`), mirroring commitAndPush / the rift isolation adapter.
-    final token = await _githubToken?.call();
+    final token = await _githubToken?.call(workspaceId: workspaceId);
     if (token == null || token.isEmpty) {
       return {'ok': false, 'error': 'GitHub authentication required'};
     }

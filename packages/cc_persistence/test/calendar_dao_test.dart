@@ -453,6 +453,28 @@ void main() {
       });
     });
 
+    test('upsertAccount isolates two members who share an email', () async {
+      await db.calendarDao.upsertAccount(
+        CalendarAccountsTableCompanion.insert(
+          id: 'acc-alice',
+          workspaceId: 'ws-A',
+          userId: const Value('alice'),
+          accountEmail: 'shared@x.com',
+        ),
+      );
+      await db.calendarDao.upsertAccount(
+        CalendarAccountsTableCompanion.insert(
+          id: 'acc-bob',
+          workspaceId: 'ws-A',
+          userId: const Value('bob'),
+          accountEmail: 'shared@x.com',
+        ),
+      );
+      final accounts = await db.calendarDao.getAccounts('ws-A');
+      expect(accounts, hasLength(2));
+      expect(accounts.map((a) => a.userId).toSet(), {'alice', 'bob'});
+    });
+
     test(
       'linkMeetingToEvent relinking the same meeting updates in place',
       () async {

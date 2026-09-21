@@ -157,14 +157,15 @@ String newsfeedArticleRoute(String workspaceId, String articleId) =>
 // guard and "return to where you were" keep their existing contract. The scope
 // segment, not the prefix, is what states the blast radius.
 
-/// Settings root (redirects to the You → profile landing).
+/// Settings root (redirects to You → Appearance).
 String settingsRoute(String workspaceId) => '/workspaces/$workspaceId/settings';
 
-/// Settings → You → Profile & identity. The settings landing.
+/// Settings → Workspace → Profile & identity.
 String settingsProfileRoute(String workspaceId) =>
-    '/workspaces/$workspaceId/settings/you/profile';
+    '/workspaces/$workspaceId/settings/workspace/profile';
 
 /// Settings → You → Appearance (theme, language, typography, editor theme).
+/// The settings landing.
 String settingsAppearanceRoute(String workspaceId) =>
     '/workspaces/$workspaceId/settings/you/appearance';
 
@@ -194,6 +195,10 @@ String settingsNewsfeedRoute(String workspaceId) =>
 /// concurrency, branch naming, sync health, chat bridges, danger zone).
 String settingsWorkspaceGeneralRoute(String workspaceId) =>
     '/workspaces/$workspaceId/settings/workspace/general';
+
+/// Settings → Workspace → Meetings (note templates and saved voice profiles).
+String settingsMeetingsRoute(String workspaceId) =>
+    '/workspaces/$workspaceId/settings/workspace/meetings';
 
 /// Settings → Workspace → Members & roles (roster, invites, audit trail).
 String settingsMembersRoute(String workspaceId) =>
@@ -382,4 +387,3 @@ extension WorkspaceRouteContext on BuildContext {
   String? get currentWorkspaceId =>
       GoRouterState.of(this).pathParameters['workspaceId'];
 }
-

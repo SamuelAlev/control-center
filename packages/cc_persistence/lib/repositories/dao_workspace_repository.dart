@@ -60,6 +60,8 @@ class DaoWorkspaceRepository implements WorkspaceRepository {
         updatedAt: drift.Value(workspace.updatedAt),
         reviewConcurrency: drift.Value(workspace.reviewConcurrency),
         autoPublishReview: drift.Value(workspace.autoPublishReview),
+        githubAuthMode: drift.Value(workspace.githubAuthMode.wireName),
+        githubAppId: drift.Value(workspace.githubAppId),
         deletedAt: drift.Value(workspace.deletedAt),
       ),
     );

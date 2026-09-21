@@ -5,6 +5,10 @@ import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
 /// Users are global; membership (and therefore access) is workspace-scoped.
 /// The pair `(workspaceId, userId)` is unique — a user holds exactly one role
 /// per workspace.
+///
+/// Profile overlay columns (`displayName`, `email`, `gitAuthor*`) are this
+/// member **in this workspace**. Null inherits the global `User` row. Handle,
+/// SSO and onboarding stay on `User`.
 class WorkspaceMember {
   /// Creates a [WorkspaceMember].
   WorkspaceMember({
@@ -15,6 +19,10 @@ class WorkspaceMember {
     this.invitedBy,
     required this.joinedAt,
     String? roleWire,
+    this.displayName,
+    this.email,
+    this.gitAuthorName,
+    this.gitAuthorEmail,
   }) : roleWire = roleWire ?? role.wireName {
     if (id.isEmpty) {
       throw ArgumentError('WorkspaceMember id must not be empty');
@@ -57,6 +65,18 @@ class WorkspaceMember {
   /// When the membership was created.
   final DateTime joinedAt;
 
+  /// Display name in this workspace. Null inherits the global user row.
+  final String? displayName;
+
+  /// Email in this workspace. Null inherits the global user row.
+  final String? email;
+
+  /// Git author name in this workspace. Null inherits the global user row.
+  final String? gitAuthorName;
+
+  /// Git author email in this workspace. Null inherits the global user row.
+  final String? gitAuthorEmail;
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -68,11 +88,26 @@ class WorkspaceMember {
           role == other.role &&
           roleWire == other.roleWire &&
           invitedBy == other.invitedBy &&
-          joinedAt == other.joinedAt;
+          joinedAt == other.joinedAt &&
+          displayName == other.displayName &&
+          email == other.email &&
+          gitAuthorName == other.gitAuthorName &&
+          gitAuthorEmail == other.gitAuthorEmail;
 
   @override
-  int get hashCode =>
-      Object.hash(id, workspaceId, userId, role, roleWire, invitedBy, joinedAt);
+  int get hashCode => Object.hash(
+    id,
+    workspaceId,
+    userId,
+    role,
+    roleWire,
+    invitedBy,
+    joinedAt,
+    displayName,
+    email,
+    gitAuthorName,
+    gitAuthorEmail,
+  );
 
   /// Returns a copy with optional overrides.
   WorkspaceMember copyWith({
@@ -83,6 +118,14 @@ class WorkspaceMember {
     String? roleWire,
     String? invitedBy,
     DateTime? joinedAt,
+    String? displayName,
+    bool clearDisplayName = false,
+    String? email,
+    bool clearEmail = false,
+    String? gitAuthorName,
+    bool clearGitAuthorName = false,
+    String? gitAuthorEmail,
+    bool clearGitAuthorEmail = false,
   }) {
     return WorkspaceMember(
       id: id ?? this.id,
@@ -94,6 +137,14 @@ class WorkspaceMember {
       roleWire: roleWire ?? (role != null ? role.wireName : this.roleWire),
       invitedBy: invitedBy ?? this.invitedBy,
       joinedAt: joinedAt ?? this.joinedAt,
+      displayName: clearDisplayName ? null : (displayName ?? this.displayName),
+      email: clearEmail ? null : (email ?? this.email),
+      gitAuthorName: clearGitAuthorName
+          ? null
+          : (gitAuthorName ?? this.gitAuthorName),
+      gitAuthorEmail: clearGitAuthorEmail
+          ? null
+          : (gitAuthorEmail ?? this.gitAuthorEmail),
     );
   }
 }

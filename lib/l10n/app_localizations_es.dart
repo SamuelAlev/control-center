@@ -1142,7 +1142,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get calendarSettingsDescription =>
-      'Conecta una cuenta de Google para sincronizar los eventos en este espacio de trabajo.';
+      'Conecta una cuenta de Google para sincronizar eventos en este espacio de trabajo. Estos calendarios son tuyos aquí.';
 
   @override
   String get calendarConnecting => 'Conectando…';
@@ -7044,7 +7044,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get connectGitHubHint =>
-      'Inicia sesión en GitHub o añade un token en Ajustes → Tú → Perfil e identidad → Alojamiento de código';
+      'Inicia sesión en GitHub o añade un token en Ajustes → Espacio de trabajo → Perfil e identidad → Alojamiento de código';
 
   @override
   String get connectGitHubToLoadPrs =>
@@ -7529,6 +7529,43 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get preview => 'Vista previa';
+
+  @override
+  String get imageDiffBefore => 'Antes';
+
+  @override
+  String get imageDiffAfter => 'Después';
+
+  @override
+  String get imageDiffModeTwoUp => 'Dos columnas';
+
+  @override
+  String get imageDiffModeSwipe => 'Deslizar';
+
+  @override
+  String get imageDiffModeDifference => 'Diferencia';
+
+  @override
+  String imageDiffChangedPercent(String percent) {
+    return '$percent% cambiado';
+  }
+
+  @override
+  String get imageDiffPictures => 'Imágenes';
+
+  @override
+  String get imageDiffSource => 'Fuente';
+
+  @override
+  String get imageDiffDeleted => 'Eliminado';
+
+  @override
+  String get imageDiffAdded => 'Añadido';
+
+  @override
+  String imageDiffDimensions(int width, int height) {
+    return 'An.: ${width}px | Al.: ${height}px';
+  }
 
   @override
   String get outdated => 'Obsoleto';
@@ -9616,7 +9653,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get profileSectionDescription =>
-      'Cómo apareces ante tu equipo y en la autoría de los commits de git.';
+      'Cómo te ven el equipo y la autoría de commits git en este espacio. Los campos vacíos heredan el nombre y el correo de tu cuenta.';
 
   @override
   String get displayNameLabel => 'Nombre visible';
@@ -12199,7 +12236,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get settingsProfileDescription =>
-      'Tu nombre, correo e identidad de git que se estampa en los commits hechos en tu nombre.';
+      'Tu nombre, correo e identidad git en este espacio de trabajo. Cambiar de espacio cambia esta superposición; el identificador, el inicio de sesión y los dispositivos siguen en la cuenta.';
 
   @override
   String get settingsServerConnectionDescription =>
@@ -12216,6 +12253,10 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get settingsWorkspaceGeneralDescription =>
       'Identidad, políticas y convenciones que comparten todos en este espacio de trabajo.';
+
+  @override
+  String get settingsWorkspaceMeetingsDescription =>
+      'Plantillas de notas y voces guardadas para las reuniones de este espacio de trabajo.';
 
   @override
   String get settingsWorkspacePolicyLabel => 'Política del espacio de trabajo';
@@ -12800,7 +12841,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get providerAppsDescription =>
-      'Cómo se autentica este servidor a sí mismo y con qué inicia sesión una persona. El trabajo en segundo plano — webhooks, sondeos, sincronización — usa la app, nunca el token de una persona.';
+      'Los espacios de trabajo heredan esta GitHub App salvo que elijan otra App o un token de acceso personal. El trabajo en segundo plano — webhooks, sondeo, sync — corre en la app, nunca en el token de una persona.';
 
   @override
   String get providerAppId => 'Id de la app';
@@ -13191,7 +13232,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get providerAppsGroupServerDescription =>
-      'Permite que el trabajo en segundo plano llegue a los repositorios sin una persona detrás: webhooks, sondeo de pull requests, sincronización de tickets.';
+      'Lo usan los espacios que heredan la GitHub App de esta instalación. Un espacio con su propia App o un PAT se configura en Espacio de trabajo → General.';
 
   @override
   String get providerAppsGroupPrConversations =>
@@ -13199,7 +13240,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get providerAppsGroupPrConversationsDescription =>
-      'Cómo pueden los desarrolladores hablar con este servidor directamente en GitHub. Funciona sin webhook y sin URL pública — el servidor sondea periódicamente.';
+      'Cómo hablen los desarrolladores con este servidor en GitHub en espacios heredados. Un espacio con su propia App tiene su bot en Espacio de trabajo → General. Funciona sin webhook ni URL pública: el servidor sondea.';
 
   @override
   String get providerAppBotLogin => 'Login del bot';
@@ -14594,6 +14635,52 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get rigClipboardAlwaysCopyDescription =>
       'Colocar contenido del portapapeles de cualquier entorno en este dispositivo sin preguntar.';
+
+  @override
+  String get workspaceGitHubIdentity => 'Identidad de GitHub';
+
+  @override
+  String get workspaceGitHubIdentityDescription =>
+      'Cómo se autentica el trabajo de GitHub en segundo plano en este espacio. Heredar la App de la instalación, usar otra App o solo un token de acceso personal.';
+
+  @override
+  String get workspaceGitHubModeInherit =>
+      'Usar la GitHub App de esta instalación';
+
+  @override
+  String get workspaceGitHubModeApp => 'Usar otra GitHub App';
+
+  @override
+  String get workspaceGitHubModePat => 'Solo token de acceso personal';
+
+  @override
+  String get workspaceGitHubInheritHint =>
+      'Usa la GitHub App en Servidor → Apps de proveedor.';
+
+  @override
+  String get workspaceGitHubAppHint =>
+      'Identidad de bot y sondeo de este espacio. Los miembros inician sesión en Tú a través de esta App.';
+
+  @override
+  String get workspaceGitHubPatLabel => 'Token de segundo plano';
+
+  @override
+  String get workspaceGitHubPatDescription =>
+      'Para sondeo y agentes en este espacio. No es el token de perfil de un miembro.';
+
+  @override
+  String get workspaceGitHubHasPat => 'Hay un token de segundo plano guardado.';
+
+  @override
+  String get workspaceGitHubNoPat => 'No hay token de segundo plano.';
+
+  @override
+  String get profileOverlayHint =>
+      'Estos campos eres tú en este espacio. Los vacíos heredan el nombre y el correo de tu cuenta. Cambiar de espacio cambia esta superposición.';
+
+  @override
+  String get forgeConnectionsThisWorkspace =>
+      'Inicia sesión o pega un token para este espacio de trabajo.';
 }
 
 /// The translations for Spanish Castilian, as used in Mexico (`es_MX`).

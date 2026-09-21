@@ -504,7 +504,7 @@
   "calendarRsvpFailed": "Nu s-a putut actualiza răspunsul",
   "calendarAddAccount": "Adaugă un cont de calendar",
   "calendarSettingsTitle": "Google Calendar",
-  "calendarSettingsDescription": "Conectează un cont Google ca să sincronizezi evenimentele în acest spațiu de lucru.",
+  "calendarSettingsDescription": "Conectează un cont Google pentru a sincroniza evenimentele în acest spațiu. Aceste calendare sunt ale tale aici.",
   "calendarConnecting": "Se conectează…",
   "calendarSyncNow": "Sincronizează acum",
   "calendarNoWorkspace": "Selectează un spațiu de lucru ca să-i vezi calendarul",
@@ -3949,7 +3949,7 @@
   "agentQuestionSkippedLabel": "Omisă",
   "agentQuestionFreeformOptionHint": "Descrie în cuvintele tale…",
   "reviewRequested": "Revizuire solicitată",
-  "connectGitHubHint": "Autentifică-te pe GitHub sau adaugă un token în Setări → Tu → Profil și identitate → Găzduire cod",
+  "connectGitHubHint": "Autentifică-te pe GitHub sau adaugă un token în Setări → Spațiu de lucru → Profil și identitate → Găzduire cod",
   "connectGitHubToLoadPrs": "Conectează GitHub ca să încarci pull request-uri",
   "noRepositoriesConfigured": "Niciun depozit configurat",
   "openedAgo": "Deschis {age}",
@@ -5499,7 +5499,7 @@
   },
   "deviceNeverSeen": "Niciodată conectat",
   "profileSectionLabel": "Profil",
-  "profileSectionDescription": "Cum apari față de colegi și în autoratul commit-urilor git.",
+  "profileSectionDescription": "Cum apari echipei și în autoratul commit-urilor git în acest spațiu. Câmpurile goale moștenesc numele și e-mailul contului.",
   "displayNameLabel": "Nume afișat",
   "emailLabel": "Email",
   "gitAuthorNameLabel": "Nume autor Git",
@@ -7270,11 +7270,12 @@
   "settingsScopeBadgeDevice": "ACEST DISPOZITIV",
   "settingsScopeBadgeWorkspace": "SPAȚIU DE LUCRU",
   "settingsScopeBadgeServer": "SERVER",
-  "settingsProfileDescription": "Numele, emailul și identitatea git stampilată pe commit-urile făcute pentru tine.",
+  "settingsProfileDescription": "Numele, e-mailul și identitatea git în acest spațiu. Schimbarea spațiului schimbă această suprapunere; identificatorul, autentificarea și dispozitivele rămân pe cont.",
   "settingsServerConnectionDescription": "La ce server vorbește acest client și cum este partajat acest server (mDNS, tuneluri, releu).",
   "settingsAboutDescription": "Identitatea build-ului și actualizări.",
   "settingsDiagnosticsDescription": "Izolare, indexare, sincronizare, jurnalizare și rapoarte de crash pentru această instalare.",
   "settingsWorkspaceGeneralDescription": "Identitate, politică și convenții partajate de toți din acest spațiu de lucru.",
+  "settingsWorkspaceMeetingsDescription": "Șabloane de note și voci salvate pentru întâlnirile din acest spațiu de lucru.",
   "settingsWorkspacePolicyLabel": "Politică spațiu de lucru",
   "settingsWorkspacePolicyDescription": "Se aplică fiecărui membru și fiecărui agent din acest spațiu de lucru.",
   "settingsSecretGlobsLabel": "Excluderi de căi secrete",
@@ -7608,7 +7609,7 @@
   "ticketProviderLocal": "Local",
   "addKey": "Adaugă cheie",
   "providerApps": "Aplicații provider",
-  "providerAppsDescription": "Cum se autentifică acest server ca el însuși și prin ce se autentifică o persoană. Munca de fundal — webhook-uri, polling, sincronizare — rulează pe aplicație, niciodată pe tokenul unei persoane.",
+  "providerAppsDescription": "Spațiile moștenesc acest GitHub App decât dacă aleg alt App sau un token de acces personal. Munca din fundal — webhook-uri, interogare, sync — rulează pe app, niciodată pe tokenul unei persoane.",
   "providerAppId": "App id",
   "providerPrivateKey": "Cheie privată",
   "providerClientId": "Client id",
@@ -7757,9 +7758,9 @@
   "shortTaskDescription": "Rulează lucrul rapid de fundal, precum titluri și rezumate. Un model mai mic aparține aici.",
   "settingsStateFailed": "Eșuat",
   "providerAppsGroupServer": "Acționează ca serverul",
-  "providerAppsGroupServerDescription": "Permite muncii de fundal să atingă depozite fără un om în spatele cererii: webhook-uri, polling de pull request-uri, sincronizare tichete.",
+  "providerAppsGroupServerDescription": "Pentru spațiile care moștenesc GitHub App-ul acestei instalații. Un spațiu cu App sau PAT propriu se configurează în Spațiu de lucru → General.",
   "providerAppsGroupPrConversations": "Conversații de pull request",
-  "providerAppsGroupPrConversationsDescription": "Cum pot vorbi dezvoltatorii cu acest server direct pe GitHub. Funcționează fără webhook sau URL public — serverul face polling.",
+  "providerAppsGroupPrConversationsDescription": "Cum vorbesc dezvoltatorii cu acest server pe GitHub în spațiile moștenite. Un spațiu cu App propriu își are botul în Spațiu de lucru → General. Funcționează fără webhook sau URL public — serverul interoghează.",
   "providerAppBotLogin": "Login bot",
   "providerAppBotLoginEmpty": "Testează conexiunea ca să rezolvi loginul botului.",
   "providerAppAskOnGitHub": "Întrebări pe GitHub",
@@ -8589,5 +8590,75 @@
   "rigClipboardAlwaysPasteTitle": "Permiteți întotdeauna lipirea în medii",
   "rigClipboardAlwaysPasteDescription": "Trimiteți clipboardul acestui dispozitiv către orice mediu fără confirmare.",
   "rigClipboardAlwaysCopyTitle": "Permiteți întotdeauna copierea din medii",
-  "rigClipboardAlwaysCopyDescription": "Puneți conținutul clipboardului din orice mediu pe acest dispozitiv fără confirmare."
+  "rigClipboardAlwaysCopyDescription": "Puneți conținutul clipboardului din orice mediu pe acest dispozitiv fără confirmare.",
+  "imageDiffBefore": "Înainte",
+  "@imageDiffBefore":   {
+    "description": "Label for the base (before) side of a PR image diff"
+  },
+  "imageDiffAfter": "După",
+  "@imageDiffAfter":   {
+    "description": "Label for the head (after) side of a PR image diff"
+  },
+  "imageDiffModeTwoUp": "Una lângă alta",
+  "@imageDiffModeTwoUp":   {
+    "description": "Side-by-side comparison mode for a PR image diff"
+  },
+  "imageDiffModeSwipe": "Glisează",
+  "@imageDiffModeSwipe":   {
+    "description": "Swipe-divider comparison mode for a PR image diff"
+  },
+  "imageDiffModeDifference": "Diferență",
+  "@imageDiffModeDifference":   {
+    "description": "Pixel overlay comparison mode for a PR image diff"
+  },
+  "imageDiffChangedPercent": "{percent}% modificat",
+  "@imageDiffChangedPercent":   {
+    "description": "Caption showing how much of a PR image pair differs",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "imageDiffPictures": "Imagini",
+  "@imageDiffPictures":   {
+    "description": "Header toggle to show SVG as pictures instead of XML hunks"
+  },
+  "imageDiffSource": "Sursă",
+  "@imageDiffSource":   {
+    "description": "Header toggle to show an SVG file's XML source diff"
+  },
+  "imageDiffDeleted": "Șters",
+  "@imageDiffDeleted": {
+    "description": "Label for the removed (before) side of a PR image asset comparison"
+  },
+  "imageDiffAdded": "Adăugat",
+  "@imageDiffAdded": {
+    "description": "Label for the added (after) side of a PR image asset comparison"
+  },
+  "imageDiffDimensions": "L: {width}px | Î: {height}px",
+  "@imageDiffDimensions": {
+    "description": "Intrinsic pixel size caption under a PR image-diff asset",
+    "placeholders": {
+      "width": {
+        "type": "int"
+      },
+      "height": {
+        "type": "int"
+      }
+    }
+  },
+  "workspaceGitHubIdentity": "Identitate GitHub",
+  "workspaceGitHubIdentityDescription": "Cum se autentifică munca GitHub din fundal în acest spațiu de lucru. Moștenește App-ul instalației, folosește alt App sau doar un token de acces personal.",
+  "workspaceGitHubModeInherit": "Folosește GitHub App-ul acestei instalații",
+  "workspaceGitHubModeApp": "Folosește un alt GitHub App",
+  "workspaceGitHubModePat": "Doar token de acces personal",
+  "workspaceGitHubInheritHint": "Folosește GitHub App-ul din Server → Aplicații furnizor.",
+  "workspaceGitHubAppHint": "Identitatea de bot și de interogare a acestui spațiu. Membrii se autentifică în Tu prin acest App.",
+  "workspaceGitHubPatLabel": "Token de fundal",
+  "workspaceGitHubPatDescription": "Pentru interogare și agenți în acest spațiu. Nu este tokenul de profil al unui membru.",
+  "workspaceGitHubHasPat": "Un token de fundal este stocat.",
+  "workspaceGitHubNoPat": "Niciun token de fundal stocat.",
+  "profileOverlayHint": "Aceste câmpuri ești tu în acest spațiu. Câmpurile goale moștenesc numele și e-mailul contului. Schimbarea spațiului schimbă această suprapunere.",
+  "forgeConnectionsThisWorkspace": "Autentifică-te sau lipește un token pentru acest spațiu de lucru."
 }

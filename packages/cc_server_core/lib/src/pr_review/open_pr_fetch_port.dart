@@ -31,20 +31,30 @@ abstract interface class OpenPrFetchPort {
   /// Conditional (ETag) probe of [repo]'s open-PR list. `changed: false` means
   /// GitHub answered 304 — free against the rate limit — and the list is
   /// byte-identical since [etag].
-  Future<({bool changed, String? etag})> probeRepo(Repo repo, String? etag);
+  Future<({bool changed, String? etag})> probeRepo(
+    Repo repo,
+    String? etag, {
+    String? workspaceId,
+  });
 
   /// The full enriched open-PR groups (first page per repo, checks overlaid),
   /// with the ids of the repos GitHub actually answered for.
-  Future<OpenPrFetchResult> fetchGroups(List<Repo> repos);
+  Future<OpenPrFetchResult> fetchGroups(
+    List<Repo> repos, {
+    String? workspaceId,
+  });
 
   /// The check-rollup + review-decision overlay per repo id, per PR number,
   /// for the first page of open PRs — the cheap status-only pass between full
   /// fetches.
-  Future<Map<String, Map<int, PrStatusOverlay>>> fetchChecks(List<Repo> repos);
+  Future<Map<String, Map<int, PrStatusOverlay>>> fetchChecks(
+    List<Repo> repos, {
+    String? workspaceId,
+  });
 
   /// Whether a PR that vanished from the open list was merged (true), closed
   /// unmerged (false), or couldn't be resolved (null).
-  Future<bool?> wasMerged(Repo repo, int prNumber);
+  Future<bool?> wasMerged(Repo repo, int prNumber, {String? workspaceId});
 
   /// The forge's own mergeable verdict for ONE pull request.
   ///
@@ -56,12 +66,20 @@ abstract interface class OpenPrFetchPort {
   ///
   /// [PrMergeableState.unknown] is a legitimate answer (the forge computes it
   /// lazily too) and means "not confirmed" — never "not mergeable".
-  Future<PrMergeableState> mergeState(Repo repo, int prNumber);
+  Future<PrMergeableState> mergeState(
+    Repo repo,
+    int prNumber, {
+    String? workspaceId,
+  });
 
   /// The login of the most recent approving review, or null when it cannot be
   /// determined. Used only to put a name on an approval whose reviewer could
   /// not be read off the requested-reviewer diff.
-  Future<String?> latestApprover(Repo repo, int prNumber);
+  Future<String?> latestApprover(
+    Repo repo,
+    int prNumber, {
+    String? workspaceId,
+  });
 
   /// The first failing check on a pull request, so a "checks failed"
   /// notification can name it. Null when none can be read — the rollup already
@@ -69,6 +87,7 @@ abstract interface class OpenPrFetchPort {
   /// precondition for sending it.
   Future<({String name, String? url})?> firstFailingCheck(
     Repo repo,
-    int prNumber,
-  );
+    int prNumber, {
+    String? workspaceId,
+  });
 }

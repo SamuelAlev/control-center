@@ -466,11 +466,9 @@ class _SidebarFooter extends ConsumerWidget {
               icon: AppIcons.settings,
               label: l10n.navSettings,
               selected: logical.startsWith('/settings'),
-              // The settings landing is Profile & identity, the first item in
-              // the sub-sidebar — not whichever page the sidebar happened to
-              // name.
+              // The settings landing is Appearance, the first item in You.
               onPressed: () =>
-                  GoRouter.of(context).go(settingsProfileRoute(workspaceId)),
+                  GoRouter.of(context).go(settingsAppearanceRoute(workspaceId)),
             ),
           ],
         ),

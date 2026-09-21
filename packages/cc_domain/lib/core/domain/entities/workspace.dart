@@ -1,3 +1,7 @@
+import 'package:cc_domain/core/domain/value_objects/github_auth_mode.dart';
+
+export 'package:cc_domain/core/domain/value_objects/github_auth_mode.dart';
+
 /// A workspace is a user-named container with an optional logo.
 ///
 /// Repositories targeted by a workspace are looked up separately via the
@@ -15,6 +19,8 @@ class Workspace {
     required this.updatedAt,
     this.reviewConcurrency = 3,
     this.autoPublishReview = false,
+    this.githubAuthMode = GithubAuthMode.inherit,
+    this.githubAppId = '',
     this.deletedAt,
   }) {
     if (name.isEmpty) {
@@ -57,6 +63,13 @@ class Workspace {
   /// Opt-in (off by default); publishing is otherwise user-gated.
   final bool autoPublishReview;
 
+  /// How this workspace authenticates to GitHub for background work.
+  final GithubAuthMode githubAuthMode;
+
+  /// Numeric GitHub App id when [githubAuthMode] is [GithubAuthMode.app].
+  /// Empty otherwise. The private key lives in the secrets file, never here.
+  final String githubAppId;
+
   /// Soft-delete timestamp. Non-null when workspace has been deleted.
   final DateTime? deletedAt;
 
@@ -80,6 +93,8 @@ class Workspace {
           updatedAt == other.updatedAt &&
           reviewConcurrency == other.reviewConcurrency &&
           autoPublishReview == other.autoPublishReview &&
+          githubAuthMode == other.githubAuthMode &&
+          githubAppId == other.githubAppId &&
           deletedAt == other.deletedAt;
 
   @override
@@ -93,6 +108,8 @@ class Workspace {
     updatedAt,
     reviewConcurrency,
     autoPublishReview,
+    githubAuthMode,
+    githubAppId,
     deletedAt,
   );
 
@@ -108,6 +125,8 @@ class Workspace {
     DateTime? updatedAt,
     int? reviewConcurrency,
     bool? autoPublishReview,
+    GithubAuthMode? githubAuthMode,
+    String? githubAppId,
     DateTime? deletedAt,
   }) {
     return Workspace(
@@ -120,6 +139,8 @@ class Workspace {
       updatedAt: updatedAt ?? this.updatedAt,
       reviewConcurrency: reviewConcurrency ?? this.reviewConcurrency,
       autoPublishReview: autoPublishReview ?? this.autoPublishReview,
+      githubAuthMode: githubAuthMode ?? this.githubAuthMode,
+      githubAppId: githubAppId ?? this.githubAppId,
       deletedAt: deletedAt ?? this.deletedAt,
     );
   }

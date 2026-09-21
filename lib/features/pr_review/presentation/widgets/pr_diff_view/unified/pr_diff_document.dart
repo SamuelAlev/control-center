@@ -90,9 +90,10 @@ class _FileLayout {
   /// Whether the file's body is shown. Collapsed files occupy only the header.
   bool expanded;
 
-  /// Whether the file's body renders a Markdown preview instead of the diff.
-  /// Only meaningful while [expanded]. A previewing file paints no code rows;
-  /// its body is a single measured slot whose height is [previewHeight].
+  /// Whether the file's body renders a Markdown or image preview instead of
+  /// the diff. Only meaningful while [expanded]. A previewing file paints no
+  /// code rows; its body is a single measured slot whose height is
+  /// [previewHeight]. Image files start previewing.
   bool previewing = false;
 
   /// Reserved height of the Markdown preview body (header + this + separator).
@@ -387,9 +388,11 @@ class PrDiffDocument {
         final estimated = _estimateLines(f);
         _layouts.add(
           _FileLayout(
-            estimatedLines: estimated,
-            expanded: !_isDependencyLockFile(f.filename),
-          ),
+              estimatedLines: estimated,
+              expanded: !_isDependencyLockFile(f.filename),
+            )
+            ..previewing = f.isImage
+            ..previewHeight = f.isImage ? 160 : 240,
         );
       }
     }
@@ -411,9 +414,9 @@ class PrDiffDocument {
       return headerHeight + fileSeparator;
     }
     if (l.previewing) {
-      // A previewing file paints no code rows and hides comments; its body is
-      // the measured Markdown preview slot.
-      return headerHeight + l.previewHeight + fileSeparator;
+      // A previewing file paints no code rows. Its body is the measured
+      // preview slot (Markdown or image), plus any file-level composer.
+      return headerHeight + l.previewHeight + l.commentTotal + fileSeparator;
     }
     // effectiveVisualRows == lineCount in scroll mode (byte-identical to the
     // pre-wrap formula); the wrapped row count in wrap mode.

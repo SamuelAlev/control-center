@@ -42,6 +42,16 @@ class WorkspacesTable extends Table {
   BoolColumn get autoPublishReview =>
       boolean().withDefault(const Constant(false))();
 
+  /// How this workspace authenticates to GitHub for background work
+  /// (`inherit` / `app` / `pat`). Typed because the server reads it on the
+  /// credential path — not an opaque `workspace_settings` string.
+  TextColumn get githubAuthMode =>
+      text().withDefault(const Constant('inherit'))();
+
+  /// Numeric GitHub App id when [githubAuthMode] is `app`. Empty otherwise.
+  /// The private key is never a column; it lives in `secrets.json`.
+  TextColumn get githubAppId => text().withDefault(const Constant(''))();
+
   /// The operator's manual order for the workspace switcher / manager
   /// (drag-to-reorder in "manage workspaces"). Lower sorts first;
   /// [createdAt] is the stable tiebreak. Mirrors `repos.position` — one manual

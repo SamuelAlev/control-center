@@ -504,7 +504,7 @@
   "calendarRsvpFailed": "Kunne ikke oppdatere svaret ditt",
   "calendarAddAccount": "Legg til kalenderkonto",
   "calendarSettingsTitle": "Google Calendar",
-  "calendarSettingsDescription": "Koble til en Google-konto for å synkronisere hendelser inn i dette arbeidsområdet.",
+  "calendarSettingsDescription": "Koble en Google-konto for å synkronisere hendelser inn i dette arbeidsområdet. Disse kalenderne er dine her.",
   "calendarConnecting": "Kobler til…",
   "calendarSyncNow": "Synkroniser nå",
   "calendarNoWorkspace": "Velg et arbeidsområde for å se kalenderen",
@@ -3949,7 +3949,7 @@
   "agentQuestionSkippedLabel": "Hoppet over",
   "agentQuestionFreeformOptionHint": "Beskriv med egne ord…",
   "reviewRequested": "Gjennomgang forespurt",
-  "connectGitHubHint": "Logg inn på GitHub eller legg til et token i Innstillinger → Deg → Profil og identitet → Kodevert",
+  "connectGitHubHint": "Logg inn på GitHub eller legg til et token i Innstillinger → Arbeidsområde → Profil og identitet → Kodevert",
   "connectGitHubToLoadPrs": "Koble til GitHub for å laste pull requests",
   "noRepositoriesConfigured": "Ingen arkiv konfigurert",
   "openedAgo": "Åpnet {age}",
@@ -5499,7 +5499,7 @@
   },
   "deviceNeverSeen": "Aldri tilkoblet",
   "profileSectionLabel": "Profil",
-  "profileSectionDescription": "Hvordan du vises for lagkamerater og i git-commit-forfatterskap.",
+  "profileSectionDescription": "Hvordan du vises for teamet og i git-commit-forfatterskap i dette arbeidsområdet. Tomme felt arver kontonavn og e-post.",
   "displayNameLabel": "Visningsnavn",
   "emailLabel": "E-post",
   "gitAuthorNameLabel": "Git-forfatternavn",
@@ -7270,11 +7270,12 @@
   "settingsScopeBadgeDevice": "DENNE ENHETEN",
   "settingsScopeBadgeWorkspace": "ARBEIDSOMRÅDE",
   "settingsScopeBadgeServer": "SERVER",
-  "settingsProfileDescription": "Navnet ditt, e-post og git-identiteten som stemples på committer gjort for deg.",
+  "settingsProfileDescription": "Navn, e-post og git-identitet i dette arbeidsområdet. Å bytte arbeidsområde bytter dette overlegget; kallenavn, innlogging og enheter blir på kontoen.",
   "settingsServerConnectionDescription": "Hvilken server denne klienten snakker med, og hvordan denne serveren deles (mDNS, tunneler, relé).",
   "settingsAboutDescription": "Byggidentitet og oppdateringer.",
   "settingsDiagnosticsDescription": "Isolering, indeksering, synkronisering, logging og krasjrapportering for denne installasjonen.",
   "settingsWorkspaceGeneralDescription": "Identitet, policy og konvensjoner delt av alle i dette arbeidsområdet.",
+  "settingsWorkspaceMeetingsDescription": "Notatmaler og lagrede stemmer for møter i dette arbeidsområdet.",
   "settingsWorkspacePolicyLabel": "Arbeidsområdepolicy",
   "settingsWorkspacePolicyDescription": "Gjelder for hvert medlem og hver agent i dette arbeidsområdet.",
   "settingsSecretGlobsLabel": "Hemmelige stiutelatelser",
@@ -7608,7 +7609,7 @@
   "ticketProviderLocal": "Lokal",
   "addKey": "Legg til nøkkel",
   "providerApps": "Leverandørapper",
-  "providerAppsDescription": "Hvordan denne serveren autentiserer som seg selv, og hva en person logger inn gjennom. Bakgrunnsarbeid — webhooks, polling, synkronisering — kjører på appen, aldri på en persons token.",
+  "providerAppsDescription": "Arbeidsområder arver denne GitHub-appen med mindre de velger en annen app eller et personlig tilgangstoken. Bakgrunnsarbeid — webhooks, polling, synk — kjører på appen, aldri på noens token.",
   "providerAppId": "App-id",
   "providerPrivateKey": "Privat nøkkel",
   "providerClientId": "Client id",
@@ -7757,9 +7758,9 @@
   "shortTaskDescription": "Kjører raskt bakgrunnsarbeid som titler og sammendrag. En mindre modell hører hjemme her.",
   "settingsStateFailed": "Mislyktes",
   "providerAppsGroupServer": "Opptre som serveren",
-  "providerAppsGroupServerDescription": "Lar bakgrunnsarbeid nå arkiv uten et menneske bak forespørselen: webhooks, pull request-polling, sakssynkronisering.",
+  "providerAppsGroupServerDescription": "For arbeidsområder som arver GitHub-appen til denne installasjonen. Et arbeidsområde med egen app eller PAT settes opp under Arbeidsområde → Generelt.",
   "providerAppsGroupPrConversations": "Pull request-samtaler",
-  "providerAppsGroupPrConversationsDescription": "Hvordan utviklere kan snakke med denne serveren direkte på GitHub. Virker uten webhook eller offentlig URL — serveren poller.",
+  "providerAppsGroupPrConversationsDescription": "Hvordan utviklere snakker med denne serveren på GitHub i arvede arbeidsområder. Et arbeidsområde med egen app har sin bot under Arbeidsområde → Generelt. Fungerer uten webhook eller offentlig URL — serveren poller.",
   "providerAppBotLogin": "Bot-innlogging",
   "providerAppBotLoginEmpty": "Test tilkoblingen for å løse bot-innloggingen.",
   "providerAppAskOnGitHub": "Spørre på GitHub",
@@ -8589,5 +8590,75 @@
   "rigClipboardAlwaysPasteTitle": "Tillat alltid innliming i miljøer",
   "rigClipboardAlwaysPasteDescription": "Send utklippstavlen på denne enheten til et hvilket som helst miljø uten å spørre.",
   "rigClipboardAlwaysCopyTitle": "Tillat alltid kopiering fra miljøer",
-  "rigClipboardAlwaysCopyDescription": "Legg innhold fra utklippstavlen i et hvilket som helst miljø på denne enheten uten å spørre."
+  "rigClipboardAlwaysCopyDescription": "Legg innhold fra utklippstavlen i et hvilket som helst miljø på denne enheten uten å spørre.",
+  "imageDiffBefore": "Før",
+  "@imageDiffBefore":   {
+    "description": "Label for the base (before) side of a PR image diff"
+  },
+  "imageDiffAfter": "Etter",
+  "@imageDiffAfter":   {
+    "description": "Label for the head (after) side of a PR image diff"
+  },
+  "imageDiffModeTwoUp": "Side om side",
+  "@imageDiffModeTwoUp":   {
+    "description": "Side-by-side comparison mode for a PR image diff"
+  },
+  "imageDiffModeSwipe": "Sveip",
+  "@imageDiffModeSwipe":   {
+    "description": "Swipe-divider comparison mode for a PR image diff"
+  },
+  "imageDiffModeDifference": "Differanse",
+  "@imageDiffModeDifference":   {
+    "description": "Pixel overlay comparison mode for a PR image diff"
+  },
+  "imageDiffChangedPercent": "{percent} % endret",
+  "@imageDiffChangedPercent":   {
+    "description": "Caption showing how much of a PR image pair differs",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "imageDiffPictures": "Bilder",
+  "@imageDiffPictures":   {
+    "description": "Header toggle to show SVG as pictures instead of XML hunks"
+  },
+  "imageDiffSource": "Kilde",
+  "@imageDiffSource":   {
+    "description": "Header toggle to show an SVG file's XML source diff"
+  },
+  "imageDiffDeleted": "Slettet",
+  "@imageDiffDeleted": {
+    "description": "Label for the removed (before) side of a PR image asset comparison"
+  },
+  "imageDiffAdded": "Lagt til",
+  "@imageDiffAdded": {
+    "description": "Label for the added (after) side of a PR image asset comparison"
+  },
+  "imageDiffDimensions": "B: {width}px | H: {height}px",
+  "@imageDiffDimensions": {
+    "description": "Intrinsic pixel size caption under a PR image-diff asset",
+    "placeholders": {
+      "width": {
+        "type": "int"
+      },
+      "height": {
+        "type": "int"
+      }
+    }
+  },
+  "workspaceGitHubIdentity": "GitHub-identitet",
+  "workspaceGitHubIdentityDescription": "Hvordan bakgrunnsarbeid mot GitHub autentiserer i dette arbeidsområdet. Arv installasjonens App, bruk en annen App, eller bare et personlig tilgangstoken.",
+  "workspaceGitHubModeInherit": "Bruk GitHub-appen til denne installasjonen",
+  "workspaceGitHubModeApp": "Bruk en annen GitHub-app",
+  "workspaceGitHubModePat": "Bare personlig tilgangstoken",
+  "workspaceGitHubInheritHint": "Bruker GitHub-appen under Server → Leverandørapper.",
+  "workspaceGitHubAppHint": "Bot- og polling-identitet for dette arbeidsområdet. Medlemmer logger inn under Deg via denne appen.",
+  "workspaceGitHubPatLabel": "Bakgrunnstoken",
+  "workspaceGitHubPatDescription": "Til polling og agenter i dette arbeidsområdet. Ikke et medlems profiltoken.",
+  "workspaceGitHubHasPat": "Et bakgrunnstoken er lagret.",
+  "workspaceGitHubNoPat": "Ingen bakgrunnstoken er lagret.",
+  "profileOverlayHint": "Disse feltene er deg i dette arbeidsområdet. Tomme felt arver kontonavn og e-post. Å bytte arbeidsområde bytter dette overlegget.",
+  "forgeConnectionsThisWorkspace": "Logg inn eller lim inn et token for dette arbeidsområdet."
 }

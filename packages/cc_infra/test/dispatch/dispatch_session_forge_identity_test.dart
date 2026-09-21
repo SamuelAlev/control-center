@@ -63,6 +63,7 @@ class _RecordingBroker implements CredentialBrokerPort {
     String? repoOwner,
     String? repoName,
     String? actingUserId,
+    String? workspaceId,
   }) async {
     mints.add((repoOwner: repoOwner, repoName: repoName));
     return const ScopedCredentials(

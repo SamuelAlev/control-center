@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:cc_domain/core/domain/entities/github_user.dart';
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
@@ -20,6 +21,7 @@ import 'package:cc_domain/features/pr_review/domain/entities/workflow_graph.dart
 import 'package:cc_domain/features/pr_review/domain/repositories/pr_review_repository.dart';
 import 'package:cc_domain/features/pr_review/domain/services/pr_change_signals.dart';
 import 'package:cc_domain/features/pr_review/domain/sources/pr_diff_source.dart';
+import 'package:cc_domain/features/pr_review/domain/value_objects/image_diff_resolution.dart';
 import 'package:cc_domain/features/pr_review/domain/value_objects/pending_review_comment.dart';
 import 'package:cc_infra/cc_infra.dart';
 import 'package:cc_persistence/cc_persistence.dart';
@@ -249,6 +251,18 @@ class FakeGitHubContentClient extends GitHubContentClient {
     String ref, {
     CancelToken? cancelToken,
   }) async => fileContents['$owner/$repo/$path|$ref'] ?? '';
+
+  /// Bytes keyed like [fileContents].
+  final Map<String, Uint8List> fileBytes = {};
+
+  @override
+  Future<Uint8List> getFileBytes(
+    String owner,
+    String repo,
+    String path,
+    String ref, {
+    CancelToken? cancelToken,
+  }) async => fileBytes['$owner/$repo/$path|$ref'] ?? Uint8List(0);
 }
 
 /// GraphQL surface whose review-reaction listing is set per test. Everything
@@ -436,6 +450,15 @@ class FakePrReviewRepository implements PrReviewRepository {
 
   void setFileContent(String path, String ref, String content) =>
       _fileContents['$path|$ref'] = content;
+
+  @override
+  Future<ImageDiffResolution> resolveImageDiff({
+    required String path,
+    String? previousPath,
+    required String baseRef,
+    required String headRef,
+    required PrFileStatus status,
+  }) async => ImageDiffResolution.empty;
 
   // -- Commits -----------------------------------------------------------
   @override

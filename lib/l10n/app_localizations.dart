@@ -2139,7 +2139,7 @@ abstract class AppLocalizations {
   /// No description provided for @calendarSettingsDescription.
   ///
   /// In en, this message translates to:
-  /// **'Connect a Google account to sync events into this workspace.'**
+  /// **'Connect a Google account to sync events into this workspace. These calendars are yours here.'**
   String get calendarSettingsDescription;
 
   /// No description provided for @calendarConnecting.
@@ -12172,7 +12172,7 @@ abstract class AppLocalizations {
   /// No description provided for @connectGitHubHint.
   ///
   /// In en, this message translates to:
-  /// **'Sign in to GitHub or add a token in Settings → You → Profile & identity → Code hosting'**
+  /// **'Sign in to GitHub or add a token in Settings → Workspace → Profile & identity → Code hosting'**
   String get connectGitHubHint;
 
   /// No description provided for @connectGitHubToLoadPrs.
@@ -12868,6 +12868,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Preview'**
   String get preview;
+
+  /// Label for the base (before) side of a PR image diff
+  ///
+  /// In en, this message translates to:
+  /// **'Before'**
+  String get imageDiffBefore;
+
+  /// Label for the head (after) side of a PR image diff
+  ///
+  /// In en, this message translates to:
+  /// **'After'**
+  String get imageDiffAfter;
+
+  /// Side-by-side comparison mode for a PR image diff
+  ///
+  /// In en, this message translates to:
+  /// **'2-up'**
+  String get imageDiffModeTwoUp;
+
+  /// Swipe-divider comparison mode for a PR image diff
+  ///
+  /// In en, this message translates to:
+  /// **'Swipe'**
+  String get imageDiffModeSwipe;
+
+  /// Pixel overlay comparison mode for a PR image diff
+  ///
+  /// In en, this message translates to:
+  /// **'Difference'**
+  String get imageDiffModeDifference;
+
+  /// Caption showing how much of a PR image pair differs
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}% changed'**
+  String imageDiffChangedPercent(String percent);
+
+  /// Header toggle to show SVG as pictures instead of XML hunks
+  ///
+  /// In en, this message translates to:
+  /// **'Pictures'**
+  String get imageDiffPictures;
+
+  /// Header toggle to show an SVG file's XML source diff
+  ///
+  /// In en, this message translates to:
+  /// **'Source'**
+  String get imageDiffSource;
+
+  /// Label for the removed (before) side of a PR image asset comparison
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted'**
+  String get imageDiffDeleted;
+
+  /// Label for the added (after) side of a PR image asset comparison
+  ///
+  /// In en, this message translates to:
+  /// **'Added'**
+  String get imageDiffAdded;
+
+  /// Intrinsic pixel size caption under a PR image-diff asset
+  ///
+  /// In en, this message translates to:
+  /// **'W: {width}px | H: {height}px'**
+  String imageDiffDimensions(int width, int height);
 
   /// Badge marking a PR review comment whose diff line no longer exists
   ///
@@ -16472,7 +16538,7 @@ abstract class AppLocalizations {
   /// No description provided for @profileSectionDescription.
   ///
   /// In en, this message translates to:
-  /// **'How you appear to teammates and in git commit authorship.'**
+  /// **'How you appear to teammates and in git commit authorship in this workspace. Empty fields inherit your account name and email.'**
   String get profileSectionDescription;
 
   /// No description provided for @displayNameLabel.
@@ -20671,7 +20737,7 @@ abstract class AppLocalizations {
   /// Locale string for settingsProfileDescription
   ///
   /// In en, this message translates to:
-  /// **'Your name, email and the git identity stamped on commits made for you.'**
+  /// **'Your name, email and git identity in this workspace. Switching workspace switches this overlay; handle, sign-in and devices stay on your account.'**
   String get settingsProfileDescription;
 
   /// Locale string for settingsServerConnectionDescription
@@ -20697,6 +20763,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Identity, policy and conventions shared by everyone in this workspace.'**
   String get settingsWorkspaceGeneralDescription;
+
+  /// Locale string for settingsWorkspaceMeetingsDescription
+  ///
+  /// In en, this message translates to:
+  /// **'Note templates and saved voices for meetings in this workspace.'**
+  String get settingsWorkspaceMeetingsDescription;
 
   /// Locale string for settingsWorkspacePolicyLabel
   ///
@@ -21655,7 +21727,7 @@ abstract class AppLocalizations {
   /// Subtitle of the provider apps card
   ///
   /// In en, this message translates to:
-  /// **'How this server authenticates as itself, and what a person signs in through. Background work — webhooks, polling, sync — runs on the app, never on a person\'s token.'**
+  /// **'Workspaces inherit this GitHub App unless they pick a different App or a personal access token. Background work — webhooks, polling, sync — runs on the app, never on a person\'s token.'**
   String get providerAppsDescription;
 
   /// The GitHub App's numeric id
@@ -22339,7 +22411,7 @@ abstract class AppLocalizations {
   /// No description provided for @providerAppsGroupServerDescription.
   ///
   /// In en, this message translates to:
-  /// **'Lets background work reach repositories with no human behind the request: webhooks, pull-request polling, ticket sync.'**
+  /// **'Used by workspaces that inherit this install\'s GitHub App. A workspace with its own App or a PAT configures that under Workspace → General.'**
   String get providerAppsGroupServerDescription;
 
   /// Settings group: how developers talk to the server on GitHub PRs
@@ -22351,7 +22423,7 @@ abstract class AppLocalizations {
   /// Settings group description for the PR-conversations group
   ///
   /// In en, this message translates to:
-  /// **'How developers can talk to this server directly on GitHub. Works with no webhook or public URL — the server polls.'**
+  /// **'How developers can talk to this server on GitHub in inherit workspaces. A workspace with its own App has its own bot under Workspace → General. Works with no webhook or public URL — the server polls.'**
   String get providerAppsGroupPrConversationsDescription;
 
   /// The GitHub App bot account login, shown copyable in settings
@@ -24591,6 +24663,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Put clipboard content from any enclosure on this device without asking.'**
   String get rigClipboardAlwaysCopyDescription;
+
+  /// Workspace settings card: how this workspace authenticates to GitHub
+  ///
+  /// In en, this message translates to:
+  /// **'GitHub identity'**
+  String get workspaceGitHubIdentity;
+
+  /// Subtitle of the workspace GitHub identity card
+  ///
+  /// In en, this message translates to:
+  /// **'How background GitHub work in this workspace authenticates. Inherit this install\'s App, use a different App, or a personal access token only.'**
+  String get workspaceGitHubIdentityDescription;
+
+  /// Workspace GitHub auth mode: inherit the server App
+  ///
+  /// In en, this message translates to:
+  /// **'Use this install\'s GitHub App'**
+  String get workspaceGitHubModeInherit;
+
+  /// Workspace GitHub auth mode: a dedicated App
+  ///
+  /// In en, this message translates to:
+  /// **'Use a different GitHub App'**
+  String get workspaceGitHubModeApp;
+
+  /// Workspace GitHub auth mode: PAT, no App
+  ///
+  /// In en, this message translates to:
+  /// **'Personal access token only'**
+  String get workspaceGitHubModePat;
+
+  /// Hint when the workspace inherits the install GitHub App
+  ///
+  /// In en, this message translates to:
+  /// **'Uses the GitHub App on Server → Provider apps.'**
+  String get workspaceGitHubInheritHint;
+
+  /// Hint when the workspace uses its own GitHub App
+  ///
+  /// In en, this message translates to:
+  /// **'This workspace\'s bot and polling identity. Members sign in on You through this App.'**
+  String get workspaceGitHubAppHint;
+
+  /// Label for the workspace GitHub PAT field
+  ///
+  /// In en, this message translates to:
+  /// **'Background token'**
+  String get workspaceGitHubPatLabel;
+
+  /// Hint for PAT-only GitHub identity
+  ///
+  /// In en, this message translates to:
+  /// **'Used for polling and agents in this workspace. Not a member\'s profile token.'**
+  String get workspaceGitHubPatDescription;
+
+  /// Presence copy when a workspace GitHub PAT is set
+  ///
+  /// In en, this message translates to:
+  /// **'A background token is stored.'**
+  String get workspaceGitHubHasPat;
+
+  /// Presence copy when no workspace GitHub PAT is set
+  ///
+  /// In en, this message translates to:
+  /// **'No background token stored.'**
+  String get workspaceGitHubNoPat;
+
+  /// Profile card subtitle: workspace overlay, not a second account
+  ///
+  /// In en, this message translates to:
+  /// **'These fields are you in this workspace. Empty fields inherit your account name and email. Switching workspace switches this overlay.'**
+  String get profileOverlayHint;
+
+  /// Code hosting card subtitle on Workspace → Profile
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in or paste a token for this workspace.'**
+  String get forgeConnectionsThisWorkspace;
 }
 
 class _AppLocalizationsDelegate

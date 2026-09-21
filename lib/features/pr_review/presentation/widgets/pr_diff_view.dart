@@ -6,6 +6,7 @@ import 'package:cc_domain/features/pr_review/domain/entities/pr_inline_thread.da
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/pr_diff_toolbar.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/diff_goto.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/image_diff_body.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_diff_view.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_keyboard_hints.dart';
 import 'package:control_center/features/pr_review/providers/pr_inline_comments_provider.dart';
@@ -41,6 +42,9 @@ class PrDiffView extends ConsumerStatefulWidget {
     this.workspaceId,
     this.repoId,
     this.spaceId,
+    this.resolveImageDiff,
+    this.imageDiffBaseRef,
+    this.imageDiffHeadRef,
   });
 
   /// Files changed in the PR, in display order.
@@ -111,6 +115,15 @@ class PrDiffView extends ConsumerStatefulWidget {
 
   /// PR/space id used to pick the worktree code-graph partition.
   final String? spaceId;
+
+  /// Resolves blob refs for image/SVG files. Null hides pictures until wired.
+  final ImageDiffResolver? resolveImageDiff;
+
+  /// Commit SHA for the before side of an image diff (PR base for v1).
+  final String? imageDiffBaseRef;
+
+  /// Commit SHA for the after side of an image diff (selected commit or head).
+  final String? imageDiffHeadRef;
 
   @override
   ConsumerState<PrDiffView> createState() => PrDiffViewState();
@@ -281,6 +294,9 @@ class PrDiffViewState extends ConsumerState<PrDiffView> {
           workspaceId: widget.workspaceId,
           repoId: widget.repoId,
           spaceId: widget.spaceId,
+          resolveImageDiff: widget.resolveImageDiff,
+          imageDiffBaseRef: widget.imageDiffBaseRef,
+          imageDiffHeadRef: widget.imageDiffHeadRef,
         ),
         SliverToBoxAdapter(
           child: Padding(

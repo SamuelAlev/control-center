@@ -188,4 +188,42 @@ void main() {
     expect(boxes.every((b) => b.value), isTrue, reason: 'both stay attached');
     expect(boxes.every((b) => b.onChanged != null), isTrue);
   });
+
+  testWidgets('a lapsed-but-usable login still says the sign-in expired', (
+    tester,
+  ) async {
+    // The CLI renews this on the next run, so the row stays selectable —
+    // hiding the reason is what made the roster disagree with the flyout.
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: _overrides(
+          scope: _scope,
+          pool: const AccountPool(accountIds: ['c0', 'c1']),
+        ),
+        child: _wrap(
+          const AccountPoolEditor(
+            scope: _scope,
+            candidates: [
+              AccountPoolCandidate(id: 'c0', label: 'Account 0'),
+              AccountPoolCandidate(
+                id: 'c1',
+                label: 'Account 1',
+                unavailable: false,
+                unavailableReason: 'Sign-in expired, renews on the next run',
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(
+      find.textContaining('Sign-in expired, renews on the next run'),
+      findsOneWidget,
+    );
+    final boxes = tester.widgetList<CcCheckbox>(find.byType(CcCheckbox));
+    expect(boxes.every((b) => b.value), isTrue);
+  });
 }

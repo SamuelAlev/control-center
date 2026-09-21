@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:cc_infra/src/network/gitlab/models/gitlab_approval.dart';
 import 'package:cc_infra/src/network/gitlab/models/gitlab_award_emoji.dart';
@@ -954,6 +955,27 @@ class GitLabApiClient {
       cancelToken: cancelToken,
     );
     return response.data?.toString() ?? '';
+  }
+
+  /// The raw bytes of [filePath] at [ref]. Same route as [getRawFile] with a
+  /// bytes response so rasters are not decoded as UTF-8.
+  Future<Uint8List> getRawFileBytes(
+    String projectId,
+    String filePath,
+    String ref, {
+    CancelToken? cancelToken,
+  }) async {
+    final response = await _dio.get<List<int>>(
+      '/projects/$projectId/repository/files/${encodeFilePath(filePath)}/raw',
+      queryParameters: <String, dynamic>{'ref': ref},
+      options: Options(responseType: ResponseType.bytes),
+      cancelToken: cancelToken,
+    );
+    final data = response.data;
+    if (data == null || data.isEmpty) {
+      return Uint8List(0);
+    }
+    return data is Uint8List ? data : Uint8List.fromList(data);
   }
 
   /// Uploads [bytes] to project [projectId] and returns the project-relative

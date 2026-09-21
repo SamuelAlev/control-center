@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/check_run.dart';
@@ -439,6 +440,18 @@ class GitLabForgePrClient implements ForgePrClient {
     String ref, {
     Object? cancelToken,
   }) => _client.getRawFile(
+    _projectId,
+    path,
+    ref,
+    cancelToken: _token(cancelToken),
+  );
+
+  @override
+  Future<Uint8List> getFileBytes(
+    String path,
+    String ref, {
+    Object? cancelToken,
+  }) => _client.getRawFileBytes(
     _projectId,
     path,
     ref,

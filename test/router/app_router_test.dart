@@ -54,7 +54,11 @@ GoRouter buildRouter({OnboardingGate gate = OnboardingGate.complete}) {
       GoRoute(
         path: settingsRoute(workspaceIdParam),
         redirect: (_, state) =>
-            settingsProfileRoute(state.pathParameters['workspaceId']!),
+            settingsAppearanceRoute(state.pathParameters['workspaceId']!),
+      ),
+      GoRoute(
+        path: settingsProfileRoute(workspaceIdParam),
+        builder: (_, _) => const SizedBox(),
       ),
       GoRoute(
         path: newsfeedRoute(workspaceIdParam),
@@ -88,6 +92,10 @@ GoRouter buildRouter({OnboardingGate gate = OnboardingGate.complete}) {
         path: settingsSkillsRoute(workspaceIdParam),
         builder: (_, _) => const SizedBox(),
       ),
+      GoRoute(
+        path: settingsMeetingsRoute(workspaceIdParam),
+        builder: (_, _) => const SizedBox(),
+      ),
     ],
   );
 }
@@ -115,7 +123,11 @@ GoRouter buildFullRouter({OnboardingGate gate = OnboardingGate.complete}) {
       GoRoute(
         path: settingsRoute(workspaceIdParam),
         redirect: (_, state) =>
-            settingsProfileRoute(state.pathParameters['workspaceId']!),
+            settingsAppearanceRoute(state.pathParameters['workspaceId']!),
+      ),
+      GoRoute(
+        path: settingsProfileRoute(workspaceIdParam),
+        builder: (_, _) => const SizedBox(),
       ),
       GoRoute(
         path: settingsAppearanceRoute(workspaceIdParam),
@@ -297,7 +309,9 @@ void main() {
   });
 
   group('Settings redirect', () {
-    testWidgets('/settings redirects to the You landing page', (tester) async {
+    testWidgets('/settings redirects to the appearance landing page', (
+      tester,
+    ) async {
       final router = buildRouter();
       addTearDown(router.dispose);
 
@@ -309,7 +323,7 @@ void main() {
 
       final location = router.routerDelegate.currentConfiguration.uri
           .toString();
-      expect(location, settingsProfileRoute('ws-1'));
+      expect(location, settingsAppearanceRoute('ws-1'));
     });
   });
 
@@ -456,6 +470,21 @@ void main() {
       final location = router.routerDelegate.currentConfiguration.uri
           .toString();
       expect(location, contains(settingsSkillsRoute('ws-1')));
+    });
+
+    testWidgets('/settings/meetings navigates correctly', (tester) async {
+      final router = buildRouter();
+      addTearDown(router.dispose);
+
+      await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+      await tester.pump();
+
+      router.go(settingsMeetingsRoute('ws-1'));
+      await tester.pump();
+
+      final location = router.routerDelegate.currentConfiguration.uri
+          .toString();
+      expect(location, contains(settingsMeetingsRoute('ws-1')));
     });
 
     testWidgets('/spaces navigates correctly', (tester) async {
@@ -706,7 +735,9 @@ void main() {
       expect(location, contains('/pull-requests'));
     });
 
-    testWidgets('/settings redirects to the You landing page', (tester) async {
+    testWidgets('/settings redirects to the appearance landing page', (
+      tester,
+    ) async {
       final router = GoRouter(
         navigatorKey: GlobalKey<NavigatorState>(),
         initialLocation: inboxRoute('ws-1'),
@@ -718,7 +749,11 @@ void main() {
           GoRoute(
             path: settingsRoute(workspaceIdParam),
             redirect: (_, state) =>
-                settingsProfileRoute(state.pathParameters['workspaceId']!),
+                settingsAppearanceRoute(state.pathParameters['workspaceId']!),
+          ),
+          GoRoute(
+            path: settingsProfileRoute(workspaceIdParam),
+            builder: (_, _) => const SizedBox(),
           ),
           GoRoute(
             path: settingsAppearanceRoute(workspaceIdParam),
@@ -736,7 +771,7 @@ void main() {
 
       final location = router.routerDelegate.currentConfiguration.uri
           .toString();
-      expect(location, contains(settingsProfileRoute('ws-1')));
+      expect(location, contains(settingsAppearanceRoute('ws-1')));
     });
   });
 
@@ -760,6 +795,7 @@ void main() {
         settingsAgentsRoute('ws-1'),
         settingsReposRoute('ws-1'),
         settingsSkillsRoute('ws-1'),
+        settingsMeetingsRoute('ws-1'),
         spacesRoute('ws-1'),
       ];
 

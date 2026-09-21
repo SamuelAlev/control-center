@@ -1,13 +1,16 @@
 import 'dart:io';
 
 import 'package:cc_domain/cc_domain.dart' show AuthException;
+import 'package:cc_domain/core/domain/entities/workspace.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_connection.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
+import 'package:cc_domain/core/domain/value_objects/github_auth_mode.dart';
 import 'package:cc_server_core/src/file_secrets_store.dart';
 import 'package:cc_server_core/src/identity/provider_app_settings.dart';
 import 'package:cc_server_core/src/identity/provider_oauth_service.dart';
 import 'package:cc_server_core/src/identity/provider_token.dart';
 import 'package:cc_server_core/src/identity/user_credentials_store.dart';
+import 'package:cc_server_core/src/identity/workspace_github_app_settings.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -315,6 +318,68 @@ void main() {
         const ProviderToken(accessToken: 'stale', refreshToken: 'r'),
       );
       expect(refreshed, isNull);
+    });
+  });
+
+  group('per-workspace GitHub App', () {
+    Workspace workspace({
+      required String id,
+      GithubAuthMode mode = GithubAuthMode.inherit,
+      String appId = '',
+    }) {
+      final now = DateTime.utc(2024);
+      return Workspace(
+        id: id,
+        name: id,
+        createdAt: now,
+        updatedAt: now,
+        githubAuthMode: mode,
+        githubAppId: appId,
+      );
+    }
+
+    test('oauth.begin in an app workspace uses that App client id', () async {
+      oauth.workspaceApps = WorkspaceGitHubAppSettings(
+        secrets: secrets,
+        install: apps,
+      );
+      oauth.workspaceLookup = (id) async => workspace(
+        id: id,
+        mode: GithubAuthMode.app,
+        appId: '999',
+      );
+      await secrets.writePsk(
+        WorkspaceGitHubAppSettings.clientIdSecret('ws-app'),
+        'ws-client-id',
+      );
+
+      final url = await oauth.beginLogin(
+        provider: ProviderApp.github,
+        userId: alice,
+        redirectUri: redirect,
+        workspaceId: 'ws-app',
+      );
+      expect(url.queryParameters['client_id'], 'ws-client-id');
+    });
+
+    test('a PAT-only workspace cannot run GitHub sign-in', () async {
+      oauth.workspaceApps = WorkspaceGitHubAppSettings(
+        secrets: secrets,
+        install: apps,
+      );
+      oauth.workspaceLookup = (id) async =>
+          workspace(id: id, mode: GithubAuthMode.pat);
+
+      expect(await oauth.availableProviders(workspaceId: 'ws-pat'), isEmpty);
+      expect(
+        () => oauth.beginLogin(
+          provider: ProviderApp.github,
+          userId: alice,
+          redirectUri: redirect,
+          workspaceId: 'ws-pat',
+        ),
+        throwsA(isA<AuthException>()),
+      );
     });
   });
 }

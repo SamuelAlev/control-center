@@ -1109,7 +1109,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get calendarSettingsDescription =>
-      'Googleアカウントを接続して、このワークスペースに予定を同期します。';
+      'Google アカウントを接続して、このワークスペースに予定を同期します。これらのカレンダーはここであなたのものです。';
 
   @override
   String get calendarConnecting => '接続中…';
@@ -6840,7 +6840,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get connectGitHubHint =>
-      'GitHub にサインインするか、設定 → あなた → プロフィールと ID → コードホスティング でトークンを追加してください';
+      'GitHub にサインインするか、設定 → ワークスペース → プロフィールと ID → コードホスティング でトークンを追加してください';
 
   @override
   String get connectGitHubToLoadPrs => 'プルリクエストを読み込むには GitHub を接続してください';
@@ -7319,6 +7319,43 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get preview => 'プレビュー';
+
+  @override
+  String get imageDiffBefore => '変更前';
+
+  @override
+  String get imageDiffAfter => '変更後';
+
+  @override
+  String get imageDiffModeTwoUp => '2 画面';
+
+  @override
+  String get imageDiffModeSwipe => 'スワイプ';
+
+  @override
+  String get imageDiffModeDifference => '差分';
+
+  @override
+  String imageDiffChangedPercent(String percent) {
+    return '$percent% 変更';
+  }
+
+  @override
+  String get imageDiffPictures => '画像';
+
+  @override
+  String get imageDiffSource => 'ソース';
+
+  @override
+  String get imageDiffDeleted => '削除';
+
+  @override
+  String get imageDiffAdded => '追加';
+
+  @override
+  String imageDiffDimensions(int width, int height) {
+    return 'W: ${width}px | H: ${height}px';
+  }
 
   @override
   String get outdated => '古い';
@@ -9345,7 +9382,8 @@ class AppLocalizationsJa extends AppLocalizations {
   String get profileSectionLabel => 'プロフィール';
 
   @override
-  String get profileSectionDescription => 'チームメイトへの見え方と、gitコミットの作成者情報。';
+  String get profileSectionDescription =>
+      'このワークスペースでチームと git コミット作者にどう見えるかです。空欄はアカウントの名前とメールを継承します。';
 
   @override
   String get displayNameLabel => '表示名';
@@ -11886,7 +11924,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get settingsProfileDescription =>
-      '氏名、メールアドレス、あなたの代わりに作成されるコミットに付くgit識別情報です。';
+      'このワークスペースでの名前、メール、git の身元です。ワークスペースを切り替えるとこのオーバーレイも切り替わります。ハンドル、サインイン、デバイスはアカウントに残ります。';
 
   @override
   String get settingsServerConnectionDescription =>
@@ -11902,6 +11940,10 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get settingsWorkspaceGeneralDescription =>
       'このワークスペースの全メンバーで共有される識別情報、ポリシー、規約です。';
+
+  @override
+  String get settingsWorkspaceMeetingsDescription =>
+      'このワークスペースのミーティング用のノートテンプレートと保存済みの声です。';
 
   @override
   String get settingsWorkspacePolicyLabel => 'ワークスペースポリシー';
@@ -12455,7 +12497,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get providerAppsDescription =>
-      'このサーバーが自身として認証する方法と、個人がサインインする経路です。バックグラウンド処理（ウェブフック、ポーリング、同期）は個人のトークンではなくアプリで実行されます。';
+      'ワークスペースはこの GitHub App を継承します。別の App か個人アクセストークンを選んだ場合を除きます。Webhook、ポーリング、同期などのバックグラウンド作業は App 上で動き、個人のトークンでは動きません。';
 
   @override
   String get providerAppId => 'アプリID';
@@ -12827,14 +12869,14 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get providerAppsGroupServerDescription =>
-      'リクエストの背後に人がいなくても、バックグラウンド処理がリポジトリへ到達できるようにします。ウェブフック、プルリクエストのポーリング、チケット同期などです。';
+      'このインストールの GitHub App を継承するワークスペースが使います。独自の App や PAT はワークスペース → 一般で設定します。';
 
   @override
   String get providerAppsGroupPrConversations => 'プルリクエストでの会話';
 
   @override
   String get providerAppsGroupPrConversationsDescription =>
-      '開発者がGitHub上でこのサーバーと直接対話する方法です。ウェブフックも公開URLも不要で、サーバーがポーリングします。';
+      '継承ワークスペースで GitHub 上からこのサーバーに話しかける方法です。独自 App のワークスペースはワークスペース → 一般にボットがあります。Webhook も公開 URL も不要で、サーバーがポーリングします。';
 
   @override
   String get providerAppBotLogin => 'ボットログイン';
@@ -14191,4 +14233,48 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get rigClipboardAlwaysCopyDescription =>
       '任意の環境からのクリップボード内容を確認なしでこのデバイスに配置します。';
+
+  @override
+  String get workspaceGitHubIdentity => 'GitHub の身元';
+
+  @override
+  String get workspaceGitHubIdentityDescription =>
+      'このワークスペースのバックグラウンド GitHub 作業の認証方法です。このインストールの App を継承するか、別の App、または個人アクセストークンのみです。';
+
+  @override
+  String get workspaceGitHubModeInherit => 'このインストールの GitHub App を使う';
+
+  @override
+  String get workspaceGitHubModeApp => '別の GitHub App を使う';
+
+  @override
+  String get workspaceGitHubModePat => '個人アクセストークンのみ';
+
+  @override
+  String get workspaceGitHubInheritHint =>
+      'サーバー → プロバイダーアプリの GitHub App を使います。';
+
+  @override
+  String get workspaceGitHubAppHint =>
+      'このワークスペースのボットとポーリングの身元です。メンバーは「あなた」でこの App からサインインします。';
+
+  @override
+  String get workspaceGitHubPatLabel => 'バックグラウンドトークン';
+
+  @override
+  String get workspaceGitHubPatDescription =>
+      'このワークスペースのポーリングとエージェント用です。メンバーのプロフィールトークンではありません。';
+
+  @override
+  String get workspaceGitHubHasPat => 'バックグラウンドトークンが保存されています。';
+
+  @override
+  String get workspaceGitHubNoPat => 'バックグラウンドトークンはありません。';
+
+  @override
+  String get profileOverlayHint =>
+      'これらの項目はこのワークスペースでのあなたです。空欄はアカウントの名前とメールを継承します。ワークスペースを切り替えるとこのオーバーレイも切り替わります。';
+
+  @override
+  String get forgeConnectionsThisWorkspace => 'このワークスペース用にサインインするかトークンを貼り付けます。';
 }

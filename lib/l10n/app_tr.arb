@@ -504,7 +504,7 @@
   "calendarRsvpFailed": "Yanıtınız güncellenemedi",
   "calendarAddAccount": "Takvim hesabı ekle",
   "calendarSettingsTitle": "Google Calendar",
-  "calendarSettingsDescription": "Etkinlikleri bu çalışma alanına eşitlemek için bir Google hesabı bağlayın.",
+  "calendarSettingsDescription": "Etkinlikleri bu çalışma alanına eşitlemek için bir Google hesabı bağlayın. Bu takvimler burada size aittir.",
   "calendarConnecting": "Bağlanıyor…",
   "calendarSyncNow": "Şimdi eşitle",
   "calendarNoWorkspace": "Takvimini görmek için bir çalışma alanı seçin",
@@ -3949,7 +3949,7 @@
   "agentQuestionSkippedLabel": "Atlandı",
   "agentQuestionFreeformOptionHint": "Kendi sözlerinizle anlatın…",
   "reviewRequested": "İnceleme istendi",
-  "connectGitHubHint": "GitHub’a giriş yapın veya Ayarlar → Siz → Profil ve kimlik → Kod barındırma bölümüne bir token ekleyin",
+  "connectGitHubHint": "GitHub’a giriş yapın veya Ayarlar → Çalışma alanı → Profil ve kimlik → Kod barındırma bölümüne bir token ekleyin",
   "connectGitHubToLoadPrs": "Pull request’leri yüklemek için GitHub’ı bağlayın",
   "noRepositoriesConfigured": "Yapılandırılmış depo yok",
   "openedAgo": "{age} açıldı",
@@ -5499,7 +5499,7 @@
   },
   "deviceNeverSeen": "Hiç bağlanmadı",
   "profileSectionLabel": "Profil",
-  "profileSectionDescription": "Takım arkadaşlarınıza ve git commit yazarlığına nasıl göründüğünüz.",
+  "profileSectionDescription": "Bu çalışma alanında ekibe ve git commit yazarlığına nasıl göründüğünüz. Boş alanlar hesap adı ve e-postasını miras alır.",
   "displayNameLabel": "Görünen ad",
   "emailLabel": "E-posta",
   "gitAuthorNameLabel": "Git yazar adı",
@@ -7270,11 +7270,12 @@
   "settingsScopeBadgeDevice": "BU CİHAZ",
   "settingsScopeBadgeWorkspace": "ÇALIŞMA ALANI",
   "settingsScopeBadgeServer": "SUNUCU",
-  "settingsProfileDescription": "Adınız, e-postanız ve sizin adınıza yapılan commit’lere damgalanan git kimliği.",
+  "settingsProfileDescription": "Bu çalışma alanındaki adınız, e-postanız ve git kimliğiniz. Çalışma alanı değiştirmek bu katmanı değiştirir; kullanıcı adı, oturum açma ve cihazlar hesapta kalır.",
   "settingsServerConnectionDescription": "Bu istemcinin konuştuğu sunucu ve bu sunucunun nasıl paylaşıldığı (mDNS, tüneller, röle).",
   "settingsAboutDescription": "Derleme kimliği ve güncellemeler.",
   "settingsDiagnosticsDescription": "Bu kurulum için yalıtım, dizinleme, eşitleme, günlükleme ve çökme raporlama.",
   "settingsWorkspaceGeneralDescription": "Bu çalışma alanındaki herkesin paylaştığı kimlik, ilke ve kurallar.",
+  "settingsWorkspaceMeetingsDescription": "Bu çalışma alanındaki toplantılar için not şablonları ve kayıtlı sesler.",
   "settingsWorkspacePolicyLabel": "Çalışma alanı ilkesi",
   "settingsWorkspacePolicyDescription": "Bu çalışma alanındaki her üyeye ve her ajana uygulanır.",
   "settingsSecretGlobsLabel": "Gizli yol dışlamaları",
@@ -7608,7 +7609,7 @@
   "ticketProviderLocal": "Yerel",
   "addKey": "Anahtar ekle",
   "providerApps": "Sağlayıcı uygulamaları",
-  "providerAppsDescription": "Bu sunucunun kendisi olarak nasıl kimlik doğruladığı ve kişilerin nereden oturum açtığı. Arka plan işleri — webhook’lar, yoklama, senkronizasyon — uygulamada çalışır, kişinin token’ında değil.",
+  "providerAppsDescription": "Çalışma alanları başka bir App veya kişisel erişim belirteci seçmedikçe bu GitHub App'i miras alır. Arka plan işi — webhook'lar, yoklama, eşitleme — uygulamada çalışır, birinin belirtecinde değil.",
   "providerAppId": "Uygulama id",
   "providerPrivateKey": "Özel anahtar",
   "providerClientId": "İstemci id",
@@ -7757,9 +7758,9 @@
   "shortTaskDescription": "Başlık ve özet gibi hızlı arka plan işlerini çalıştırır. Daha küçük bir model buraya aittir.",
   "settingsStateFailed": "Başarısız",
   "providerAppsGroupServer": "Sunucu olarak hareket etme",
-  "providerAppsGroupServerDescription": "Arka plan işlerinin, isteğin arkasında bir insan olmadan depolara ulaşmasını sağlar: webhook'lar, pull request yoklaması, bilet senkronizasyonu.",
+  "providerAppsGroupServerDescription": "Bu kurulumun GitHub App'ini miras alan çalışma alanları için. Kendi App'i veya PAT'ı olan bir çalışma alanı Çalışma alanı → Genel altında ayarlanır.",
   "providerAppsGroupPrConversations": "Pull request konuşmaları",
-  "providerAppsGroupPrConversationsDescription": "Geliştiricilerin GitHub üzerinde bu sunucuyla doğrudan nasıl konuşabileceği. Webhook veya genel URL olmadan çalışır — sunucu yoklama yapar.",
+  "providerAppsGroupPrConversationsDescription": "Miras alan çalışma alanlarında geliştiricilerin GitHub'da bu sunucuyla nasıl konuştuğu. Kendi App'i olan bir çalışma alanının botu Çalışma alanı → Genel altındadır. Webhook veya genel URL olmadan çalışır — sunucu yoklar.",
   "providerAppBotLogin": "Bot girişi",
   "providerAppBotLoginEmpty": "Bot girişini çözümlemek için bağlantıyı test edin.",
   "providerAppAskOnGitHub": "GitHub'da sorma",
@@ -8589,5 +8590,75 @@
   "rigClipboardAlwaysPasteTitle": "Ortamlara yapıştırmaya her zaman izin ver",
   "rigClipboardAlwaysPasteDescription": "Bu cihazın panosunu sormadan herhangi bir ortama gönder.",
   "rigClipboardAlwaysCopyTitle": "Ortamdan kopyalamaya her zaman izin ver",
-  "rigClipboardAlwaysCopyDescription": "Herhangi bir ortamdan pano içeriğini sormadan bu cihaza koy."
+  "rigClipboardAlwaysCopyDescription": "Herhangi bir ortamdan pano içeriğini sormadan bu cihaza koy.",
+  "imageDiffBefore": "Önce",
+  "@imageDiffBefore":   {
+    "description": "Label for the base (before) side of a PR image diff"
+  },
+  "imageDiffAfter": "Sonra",
+  "@imageDiffAfter":   {
+    "description": "Label for the head (after) side of a PR image diff"
+  },
+  "imageDiffModeTwoUp": "Yan yana",
+  "@imageDiffModeTwoUp":   {
+    "description": "Side-by-side comparison mode for a PR image diff"
+  },
+  "imageDiffModeSwipe": "Kaydır",
+  "@imageDiffModeSwipe":   {
+    "description": "Swipe-divider comparison mode for a PR image diff"
+  },
+  "imageDiffModeDifference": "Fark",
+  "@imageDiffModeDifference":   {
+    "description": "Pixel overlay comparison mode for a PR image diff"
+  },
+  "imageDiffChangedPercent": "%{percent} değişti",
+  "@imageDiffChangedPercent":   {
+    "description": "Caption showing how much of a PR image pair differs",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "imageDiffPictures": "Görseller",
+  "@imageDiffPictures":   {
+    "description": "Header toggle to show SVG as pictures instead of XML hunks"
+  },
+  "imageDiffSource": "Kaynak",
+  "@imageDiffSource":   {
+    "description": "Header toggle to show an SVG file's XML source diff"
+  },
+  "imageDiffDeleted": "Silindi",
+  "@imageDiffDeleted": {
+    "description": "Label for the removed (before) side of a PR image asset comparison"
+  },
+  "imageDiffAdded": "Eklendi",
+  "@imageDiffAdded": {
+    "description": "Label for the added (after) side of a PR image asset comparison"
+  },
+  "imageDiffDimensions": "G: {width}px | Y: {height}px",
+  "@imageDiffDimensions": {
+    "description": "Intrinsic pixel size caption under a PR image-diff asset",
+    "placeholders": {
+      "width": {
+        "type": "int"
+      },
+      "height": {
+        "type": "int"
+      }
+    }
+  },
+  "workspaceGitHubIdentity": "GitHub kimliği",
+  "workspaceGitHubIdentityDescription": "Bu çalışma alanında arka plan GitHub işinin nasıl kimlik doğruladığı. Kurulumun App'ini miras al, başka bir App kullan veya yalnızca kişisel erişim belirteci.",
+  "workspaceGitHubModeInherit": "Bu kurulumun GitHub App'ini kullan",
+  "workspaceGitHubModeApp": "Farklı bir GitHub App kullan",
+  "workspaceGitHubModePat": "Yalnızca kişisel erişim belirteci",
+  "workspaceGitHubInheritHint": "Sunucu → Sağlayıcı uygulamaları altındaki GitHub App'i kullanır.",
+  "workspaceGitHubAppHint": "Bu çalışma alanının bot ve yoklama kimliği. Üyeler Siz'de bu App ile oturum açar.",
+  "workspaceGitHubPatLabel": "Arka plan belirteci",
+  "workspaceGitHubPatDescription": "Bu çalışma alanındaki yoklama ve ajanlar için. Bir üyenin profil belirteci değildir.",
+  "workspaceGitHubHasPat": "Arka plan belirteci saklanıyor.",
+  "workspaceGitHubNoPat": "Saklanan arka plan belirteci yok.",
+  "profileOverlayHint": "Bu alanlar bu çalışma alanındaki sizsiniz. Boş alanlar hesap adı ve e-postasını miras alır. Çalışma alanı değiştirmek bu katmanı değiştirir.",
+  "forgeConnectionsThisWorkspace": "Bu çalışma alanı için oturum açın veya bir belirteç yapıştırın."
 }

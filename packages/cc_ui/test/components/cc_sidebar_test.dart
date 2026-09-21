@@ -76,9 +76,11 @@ void main() {
     // The selected row is a SOLID brand fill — the design system's selected
     // state — with no chip, hairline or indicator bar. `bgBrandSolid`, not the
     // raw `accent` signal: white clears 4.5:1 on it in both brightnesses.
-    final selected = tester.widgetList<Container>(find.byType(Container)).where(
-      (c) => (c.decoration as BoxDecoration?)?.color == t.bgBrandSolid,
-    );
+    // The fill is an opacity overlay (not Color.lerped onto the hover wash),
+    // so it lands on a ColoredBox rather than the row's AnimatedContainer.
+    final selected = tester
+        .widgetList<ColoredBox>(find.byType(ColoredBox))
+        .where((c) => c.color == t.bgBrandSolid);
     expect(selected, isNotEmpty);
     // … and its content rides that fill in `accentOn` ink at BOLD weight.
     final style = tester.widget<Text>(find.text('Dashboard')).style;

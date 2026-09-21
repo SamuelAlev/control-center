@@ -109,12 +109,6 @@ const List<SettingsNavGroup> kSettingsNav = [
     label: _youLabel,
     items: [
       SettingsNavItem(
-        id: 'you.profile',
-        icon: AppIcons.userCheck,
-        label: _profileLabel,
-        route: settingsProfileRoute,
-      ),
-      SettingsNavItem(
         id: 'you.appearance',
         icon: AppIcons.paintbrushVertical,
         label: _appearanceLabel,
@@ -157,10 +151,22 @@ const List<SettingsNavGroup> kSettingsNav = [
     label: _workspaceLabel,
     items: [
       SettingsNavItem(
+        id: 'workspace.profile',
+        icon: AppIcons.userCheck,
+        label: _profileLabel,
+        route: settingsProfileRoute,
+      ),
+      SettingsNavItem(
         id: 'workspace.general',
         icon: AppIcons.slidersHorizontal,
         label: _generalLabel,
         route: settingsWorkspaceGeneralRoute,
+      ),
+      SettingsNavItem(
+        id: 'workspace.meetings',
+        icon: AppIcons.video,
+        label: _meetingsLabel,
+        route: settingsMeetingsRoute,
       ),
       SettingsNavItem(
         id: 'workspace.members',
@@ -284,7 +290,6 @@ List<SettingsNavItem> get kSettingsNavItems => [
   for (final group in kSettingsNav) ...group.items,
 ];
 
-
 // Tear-offs, so the nav model stays a `const` list. A closure would make each
 // entry non-const and the whole structure rebuild per frame.
 String _youLabel(AppLocalizations l) => l.settingsScopeYou;
@@ -300,6 +305,7 @@ String _devicesLabel(AppLocalizations l) => l.settingsYourDevices;
 String _newsfeedLabel(AppLocalizations l) => l.newsfeedLabel;
 
 String _generalLabel(AppLocalizations l) => l.settingsWorkspaceGeneral;
+String _meetingsLabel(AppLocalizations l) => l.navMeetings;
 String _membersLabel(AppLocalizations l) => l.membersNav;
 String _agentsLabel(AppLocalizations l) => l.agents;
 String _repositoriesLabel(AppLocalizations l) => l.repositories;

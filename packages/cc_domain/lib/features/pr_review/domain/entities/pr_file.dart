@@ -153,6 +153,31 @@ class PrFile {
     return e == 'md' || e == 'markdown';
   }
 
+  /// Raster or SVG image, eligible for a before/after slot in the Diff tab.
+  /// Empty patch plus this flag is the detector — do not treat a withheld
+  /// text patch (`additions + deletions > 0`) as an image.
+  bool get isImage {
+    const exts = {'png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp', 'ico'};
+    return exts.contains(extension);
+  }
+
+  /// SVG source that can toggle between pictures and XML hunks.
+  bool get isSvg => extension == 'svg';
+
+  /// MIME type of [filename] when [isImage], else `application/octet-stream`.
+  String get imageMediaType {
+    return switch (extension) {
+      'png' => 'image/png',
+      'jpg' || 'jpeg' => 'image/jpeg',
+      'gif' => 'image/gif',
+      'webp' => 'image/webp',
+      'svg' => 'image/svg+xml',
+      'bmp' => 'image/bmp',
+      'ico' => 'image/x-icon',
+      _ => 'application/octet-stream',
+    };
+  }
+
   /// Returns a copy of this [PrFile] with the given fields replaced.
   PrFile copyWith({String? patch, PrFileViewedState? viewerViewedState}) {
     return PrFile(

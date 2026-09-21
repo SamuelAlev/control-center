@@ -80,6 +80,9 @@ void main() {
         'owner_user_id': 'u1',
         'secret_exclude_globs': ['a', 'b'],
         'review_concurrency': 4,
+        'auto_publish_review': true,
+        'github_auth_mode': 'app',
+        'github_app_id': '12345',
         'deleted_at': '2025-01-02T00:00:00',
         'created_at': '2025-01-01T00:00:00',
         'updated_at': '2025-01-03T00:00:00',
@@ -91,6 +94,9 @@ void main() {
       expect(dto.ownerUserId, 'u1');
       expect(dto.secretExcludeGlobs, ['a', 'b']);
       expect(dto.reviewConcurrency, 4);
+      expect(dto.autoPublishReview, isTrue);
+      expect(dto.githubAuthMode, 'app');
+      expect(dto.githubAppId, '12345');
       expect(dto.deletedAt, DateTime(2025, 1, 2));
       expect(dto.createdAt, DateTime(2025, 1, 1));
       expect(dto.updatedAt, DateTime(2025, 1, 3));
@@ -98,6 +104,8 @@ void main() {
       expect(out['id'], 'w1');
       expect(out['secret_exclude_globs'], ['a', 'b']);
       expect(out['review_concurrency'], 4);
+      expect(out['github_auth_mode'], 'app');
+      expect(out['github_app_id'], '12345');
       expect(out['deleted_at'], '2025-01-02T00:00:00.000');
     });
 
@@ -1518,6 +1526,7 @@ void main() {
     test('round-trip', () {
       final dto = CalendarAccountDto.fromJson({
         'id': 'i',
+        'user_id': 'u-1',
         'provider_id': 'google',
         'account_email': 'e',
         'display_name': 'd',
@@ -1525,7 +1534,9 @@ void main() {
         'auth_expired_at': 'a',
       });
       expect(dto.providerId, 'google');
+      expect(dto.userId, 'u-1');
       expect(CalendarAccountDto.fromJson({'id': 'i'}).providerId, 'google');
+      expect(CalendarAccountDto.fromJson({'id': 'i'}).userId, '');
     });
   });
 
@@ -2476,6 +2487,7 @@ void main() {
         authExpiredAt: '2025-01-02T00:00:00.000',
       ).toJson();
       expect(out['display_name'], 'd');
+      expect(out['user_id'], '');
       expect(out['last_synced_at'], '2025-01-01T00:00:00.000');
       expect(out['auth_expired_at'], '2025-01-02T00:00:00.000');
     });

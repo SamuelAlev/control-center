@@ -34,13 +34,18 @@ class GitHubFineGrainedTokenBroker implements CredentialBrokerPort {
   /// the server's whole reach rather than access bounded by their own.
   GitHubFineGrainedTokenBroker(
     this._credentials, {
-    this._app,
+    Future<GitHubAppClient?> Function({String? workspaceId})? app,
     this._serverOwnerUserId,
-  });
+    this._workspacePat,
+  }) : _app = app;
 
   final CredentialsRepository _credentials;
-  final Future<GitHubAppClient?> Function()? _app;
+  final Future<GitHubAppClient?> Function({String? workspaceId})? _app;
   final Future<String?> Function()? _serverOwnerUserId;
+
+  /// Workspace background PAT. Allowed as the fallback for member-driven
+  /// runs in that workspace; the install owner's personal PAT is not.
+  final Future<String?> Function(String workspaceId)? _workspacePat;
 
   final Set<String> _active = <String>{};
 
@@ -54,6 +59,7 @@ class GitHubFineGrainedTokenBroker implements CredentialBrokerPort {
     String? repoOwner,
     String? repoName,
     String? actingUserId,
+    String? workspaceId,
   }) async {
     final creds = await _credentials.loadCredentials();
     final env = <String, String>{};
@@ -65,7 +71,7 @@ class GitHubFineGrainedTokenBroker implements CredentialBrokerPort {
 
     if (capabilities.canCallGitHubApi || capabilities.canPushToRepo) {
       final push = capabilities.canPushToRepo;
-      final client = await _app?.call();
+      final client = await _app?.call(workspaceId: workspaceId);
       var minted = false;
       // Both halves are required: the OWNER picks the installation, the NAME
       // scopes the token to one repository inside it.
@@ -107,7 +113,18 @@ class GitHubFineGrainedTokenBroker implements CredentialBrokerPort {
           );
         }
       }
-      if (!minted && creds.githubToken.isNotEmpty) {
+      if (!minted) {
+        final workspacePat = workspaceId == null || workspaceId.isEmpty
+            ? null
+            : await _workspacePat?.call(workspaceId);
+        if (workspacePat != null && workspacePat.isNotEmpty) {
+          env['GH_TOKEN'] = workspacePat;
+          env['GITHUB_TOKEN'] = workspacePat;
+          notes.add(
+            'Fallback: workspace background PAT (installation-token mint '
+            'unavailable).',
+          );
+        } else if (creds.githubToken.isNotEmpty) {
         // The raw PAT is the SERVER's credential, not this member's.
         //
         // Falling back to it for a run acting on someone else's behalf would
@@ -138,6 +155,7 @@ class GitHubFineGrainedTokenBroker implements CredentialBrokerPort {
                 ? 'Fallback: raw PAT (no GitHub App configured).'
                 : 'Fallback: raw PAT (installation-token mint unavailable).',
           );
+        }
         }
       }
     }

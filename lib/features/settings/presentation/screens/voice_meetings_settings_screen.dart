@@ -8,7 +8,8 @@ import 'package:flutter/widgets.dart';
 /// connected `cc_server` hosts. Strictly server-scoped — the models are
 /// host-owned assets, downloaded to and run on the server. The input-side
 /// settings (microphone, dictation, meeting detection) live under You → Voice
-/// input; meeting-note templates live under Workspace → General.
+/// input; meeting-note templates and saved voices live under Workspace →
+/// Meetings.
 class VoiceMeetingsSettingsScreen extends StatelessWidget {
   /// Creates a [VoiceMeetingsSettingsScreen].
   const VoiceMeetingsSettingsScreen({super.key});

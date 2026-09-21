@@ -12,7 +12,7 @@
   "meetingAutoDetectDescription": "Surveille le calendrier et les applis de visioconférence, et propose d'enregistrer au début d'une réunion.",
   "emailLabel": "Courriel",
   "gitAuthorEmailLabel": "Courriel d'auteur git",
-  "settingsProfileDescription": "Votre nom, votre courriel et l'identité git apposée sur les commits faits en votre nom.",
+  "settingsProfileDescription": "Votre nom, votre courriel et l'identité git dans cet espace de travail. Changer d'espace change cette superposition; le pseudonyme, la connexion et les appareils restent sur votre compte.",
   "ssoEmailAttributeLabel": "Attribut courriel",
   "chatLinkMethodEmail": "{externalUserId} · associé par courriel",
   "@chatLinkMethodEmail": {

@@ -53,10 +53,15 @@ final forgeConnectionsProvider = FutureProvider<List<ForgeConnection>>((
     ];
   }
 
+  // Switching workspace must re-read: GitHub OAuth in A and a PAT in B are
+  // different overlays. Watching the id also keeps the RPC args honest if
+  // the client's injected `activeWorkspaceId` has not caught up yet.
+  final workspaceId = ref.watch(activeWorkspaceIdProvider);
+
   try {
     final data = await ref
         .watch(rpcClientProvider)
-        .call('forge.listConnections', const {});
+        .call('forge.listConnections', overlayWorkspaceArgs(workspaceId));
     final raw = data['connections'];
     if (raw is! List) {
       retryLater();
@@ -220,18 +225,25 @@ Future<ForgeConnection> setForgeToken(
   ForgeHost forge,
   String token,
 ) async {
+  final workspaceId = ref.read(activeWorkspaceIdProvider);
   final data = await ref.read(rpcClientProvider).call(
     'credentials.setForgeToken',
-    {'forge': forge.wire, 'token': token},
+    {
+      'forge': forge.wire,
+      'token': token,
+      ...overlayWorkspaceArgs(workspaceId),
+    },
   );
   ref.invalidate(forgeConnectionsProvider);
   return ForgeConnection.fromJson(data);
 }
 
-/// Clears [forge]'s stored credential.
+/// Clears [forge]'s stored credential in this workspace.
 Future<void> clearForgeToken(WidgetRef ref, ForgeHost forge) async {
+  final workspaceId = ref.read(activeWorkspaceIdProvider);
   await ref.read(rpcClientProvider).call('credentials.clearForgeToken', {
     'forge': forge.wire,
+    ...overlayWorkspaceArgs(workspaceId),
   });
   ref.invalidate(forgeConnectionsProvider);
 }

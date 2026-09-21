@@ -311,9 +311,12 @@ class _PrActivityTimelineState extends ConsumerState<PrActivityTimeline> {
         return _TimelineTile(
           key: ValueKey<String>(_activityRowKey(row)),
           isLast: i == rows.length,
+          hasLeading: row is _EntryRow,
           leading: switch (row) {
             _EntryRow(:final entry) => _leadingFor(entry),
-            _ => const SizedBox(width: 24, height: 24),
+            // Width-only spacer: conversation rows keep the gutter column
+            // so cards align with event copy, but they have no bubble.
+            _ => const SizedBox(width: _kGutterSize),
           },
           child: switch (row) {
             _EntryRow(:final entry) => switch (entry) {
@@ -422,7 +425,7 @@ class _Avatar extends StatelessWidget {
     return GitHubUserAvatar(
       login: login,
       avatarUrl: user?.avatarUrl ?? '',
-      size: 24,
+      size: _kGutterSize,
     );
   }
 }
@@ -438,27 +441,40 @@ class _TimelineTile extends StatelessWidget {
   const _TimelineTile({
     super.key,
     required this.isLast,
+    required this.hasLeading,
     required this.leading,
     required this.child,
   });
 
   final bool isLast;
+
+  /// Whether [leading] is a real bubble. Conversation / reply rows keep the
+  /// gutter width for alignment but have no bubble, so the rail has to run
+  /// the full height — starting it at 24px left a gap above every card.
+  final bool hasLeading;
   final Widget leading;
   final Widget child;
 
   @override
   Widget build(BuildContext context) {
     final t = context.designSystem ?? DesignSystemTokens.light();
+    // Last bubble: no trail into empty space. Last conversation card: the
+    // rail still has to run along the card, or it dies at the file header.
+    final showRail = !isLast || !hasLeading;
     return Stack(
+      clipBehavior: Clip.none,
       children: [
-        // Connector line, centered under the 24px bubble, spanning from the
-        // bubble's bottom to the tile's bottom (where the next bubble starts).
-        if (!isLast)
+        if (showRail)
           PositionedDirectional(
-            start: 24 / 2 - 0.75,
-            top: 24,
-            bottom: 0,
-            child: Container(width: 1.5, color: t.borderSecondary),
+            key: _kConnectorKey,
+            start: _kGutterSize / 2 - _kConnectorWidth / 2,
+            top: hasLeading ? _kGutterSize : 0,
+            // 1px past the tile seals hairline gaps between sliver children.
+            bottom: isLast ? 0 : -1,
+            child: ColoredBox(
+              color: t.borderSecondary,
+              child: const SizedBox(width: _kConnectorWidth),
+            ),
           ),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -492,8 +508,8 @@ class _GutterIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = context.designSystem ?? DesignSystemTokens.light();
     return Container(
-      width: 24,
-      height: 24,
+      width: _kGutterSize,
+      height: _kGutterSize,
       decoration: BoxDecoration(
         color: t.bgSecondary,
         shape: BoxShape.circle,
@@ -1591,6 +1607,13 @@ class _ThreadRow extends _FeedRow {
   const _ThreadRow(this.thread);
   final ServerReviewThread thread;
 }
+
+/// Gutter bubble / rail column.
+const double _kGutterSize = 24;
+const double _kConnectorWidth = 1.5;
+
+/// Keyed so tests can assert the rail starts at 0 on conversation rows.
+const ValueKey<String> _kConnectorKey = ValueKey<String>('timeline-connector');
 
 /// Tile chrome: 3px optical pad + 16px gap under each entry.
 const double _kTileChrome = 19;

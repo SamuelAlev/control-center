@@ -6,8 +6,8 @@ import 'package:control_center/features/settings/presentation/widgets/sections/g
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:flutter/widgets.dart';
 
-/// Settings → Appearance: theme, language and typography. The settings
-/// landing page (first item in the "General" group).
+/// Settings → You → Appearance: theme, language and typography. The settings
+/// landing page (first item in You).
 class AppearanceSettingsScreen extends StatelessWidget {
   /// Creates an [AppearanceSettingsScreen].
   const AppearanceSettingsScreen({super.key});

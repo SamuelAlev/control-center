@@ -504,7 +504,7 @@
   "calendarRsvpFailed": "Nem sikerült frissíteni a válaszát",
   "calendarAddAccount": "Naptárfiók hozzáadása",
   "calendarSettingsTitle": "Google Calendar",
-  "calendarSettingsDescription": "Csatlakoztasson egy Google-fiókot az események szinkronizálásához ebbe a munkaterületbe.",
+  "calendarSettingsDescription": "Csatlakoztass Google-fiókot az események szinkronizálásához ebbe a munkaterületbe. Ezek a naptárak itt a tieid.",
   "calendarConnecting": "Csatlakozás…",
   "calendarSyncNow": "Szinkronizálás most",
   "calendarNoWorkspace": "Válasszon munkaterületet a naptár megtekintéséhez",
@@ -3949,7 +3949,7 @@
   "agentQuestionSkippedLabel": "Kihagyva",
   "agentQuestionFreeformOptionHint": "Írja le saját szavaival…",
   "reviewRequested": "Átnézést kértek",
-  "connectGitHubHint": "Jelentkezzen be a GitHubra, vagy adjon hozzá tokent: Beállítások → Ön → Profil és identitás → Kódtárhely",
+  "connectGitHubHint": "Jelentkezzen be a GitHubra, vagy adjon hozzá tokent: Beállítások → Munkaterület → Profil és identitás → Kódtárhely",
   "connectGitHubToLoadPrs": "Csatlakoztassa a GitHubot a pull requestek betöltéséhez",
   "noRepositoriesConfigured": "Nincsenek beállított tárolók",
   "openedAgo": "Megnyitva {age}",
@@ -5499,7 +5499,7 @@
   },
   "deviceNeverSeen": "Soha nem csatlakozott",
   "profileSectionLabel": "Profil",
-  "profileSectionDescription": "Hogyan jelenik meg a csapattársaknak és a git commit szerzőségében.",
+  "profileSectionDescription": "Hogyan lát a csapat, és hogyan jelenik meg a git commit szerzősége ebben a munkaterületen. Az üres mezők öröklik a fiók nevét és e-mailjét.",
   "displayNameLabel": "Megjelenített név",
   "emailLabel": "E-mail",
   "gitAuthorNameLabel": "Git szerző neve",
@@ -7270,11 +7270,12 @@
   "settingsScopeBadgeDevice": "EZ AZ ESZKÖZ",
   "settingsScopeBadgeWorkspace": "MUNKATERÜLET",
   "settingsScopeBadgeServer": "SZERVER",
-  "settingsProfileDescription": "Az Ön neve, e-mailje és a git-identitás, amely az Ön nevében készült commitokra kerül.",
+  "settingsProfileDescription": "Neved, e-mailed és git-identitásod ebben a munkaterületen. Váltáskor ez a réteg is vált; a kezelőnév, bejelentkezés és eszközök a fiókon maradnak.",
   "settingsServerConnectionDescription": "Melyik szerverrel beszél ez a kliens, és hogyan van ez a szerver megosztva (mDNS, alagutak, relé).",
   "settingsAboutDescription": "Build-identitás és frissítések.",
   "settingsDiagnosticsDescription": "Elszigetelés, indexelés, szinkronizálás, naplózás és összeomlásjelentés ehhez a telepítéshez.",
   "settingsWorkspaceGeneralDescription": "Identitás, szabályzat és konvenciók, amelyeket a munkaterület minden tagja megoszt.",
+  "settingsWorkspaceMeetingsDescription": "Jegyzetsablonok és mentett hangok a munkaterület megbeszéléseihez.",
   "settingsWorkspacePolicyLabel": "Munkaterület-szabályzat",
   "settingsWorkspacePolicyDescription": "A munkaterület minden tagjára és minden ügynökére vonatkozik.",
   "settingsSecretGlobsLabel": "Titkos útvonalak kizárása",
@@ -7608,7 +7609,7 @@
   "ticketProviderLocal": "Helyi",
   "addKey": "Kulcs hozzáadása",
   "providerApps": "Szolgáltatói alkalmazások",
-  "providerAppsDescription": "Hogyan hitelesíti magát ez a szerver, és min keresztül jelentkezik be egy ember. A háttérmunka — webhookok, lekérdezés, szinkron — az alkalmazáson fut, soha nem egy ember tokenjén.",
+  "providerAppsDescription": "A munkaterületek öröklik ezt a GitHub Appot, hacsak nem másik Appot vagy személyes tokent választanak. A háttérmunka — webhookok, lekérdezés, szinkron — az app-on fut, soha egy személy tokenjén.",
   "providerAppId": "Alkalmazás-ID",
   "providerPrivateKey": "Privát kulcs",
   "providerClientId": "Kliens-ID",
@@ -7757,9 +7758,9 @@
   "shortTaskDescription": "Gyors háttérmunkát futtat, például címeket és összefoglalókat. Ide egy kisebb modell tartozik.",
   "settingsStateFailed": "Sikertelen",
   "providerAppsGroupServer": "A szerverként viselkedés",
-  "providerAppsGroupServerDescription": "Lehetővé teszi, hogy a háttérmunka ember nélkül érje el a tárolókat: webhookok, pull request lekérdezés, jegyszinkron.",
+  "providerAppsGroupServerDescription": "Azok a munkaterületek, amelyek öröklik az installáció GitHub Appját. Saját App vagy PAT a Munkaterület → Általános alatt állítható.",
   "providerAppsGroupPrConversations": "Pull request beszélgetések",
-  "providerAppsGroupPrConversationsDescription": "Hogyan beszélhetnek a fejlesztők közvetlenül ezzel a szerverrel a GitHubon. Webhook vagy nyilvános URL nélkül is működik — a szerver lekérdez.",
+  "providerAppsGroupPrConversationsDescription": "Hogyan beszélnek a fejlesztők a szerverrel GitHubon az öröklő munkaterületeken. Saját App-os munkaterület botja a Munkaterület → Általános alatt van. Webhook és nyilvános URL nélkül — a szerver lekérdez.",
   "providerAppBotLogin": "Bot bejelentkezési név",
   "providerAppBotLoginEmpty": "Tesztelje a kapcsolatot a bot bejelentkezési nevének feloldásához.",
   "providerAppAskOnGitHub": "Kérés a GitHubon",
@@ -8589,5 +8590,75 @@
   "rigClipboardAlwaysPasteTitle": "Beillesztés mindig engedélyezése környezetekbe",
   "rigClipboardAlwaysPasteDescription": "Az eszköz vágólapjának elküldése bármely környezetbe rákérdezés nélkül.",
   "rigClipboardAlwaysCopyTitle": "Másolás mindig engedélyezése környezetekből",
-  "rigClipboardAlwaysCopyDescription": "Vágólaptartalom elhelyezése bármely környezetből ezen az eszközön rákérdezés nélkül."
+  "rigClipboardAlwaysCopyDescription": "Vágólaptartalom elhelyezése bármely környezetből ezen az eszközön rákérdezés nélkül.",
+  "imageDiffBefore": "Előtte",
+  "@imageDiffBefore":   {
+    "description": "Label for the base (before) side of a PR image diff"
+  },
+  "imageDiffAfter": "Utána",
+  "@imageDiffAfter":   {
+    "description": "Label for the head (after) side of a PR image diff"
+  },
+  "imageDiffModeTwoUp": "Kétoszlopos",
+  "@imageDiffModeTwoUp":   {
+    "description": "Side-by-side comparison mode for a PR image diff"
+  },
+  "imageDiffModeSwipe": "Csúsztatás",
+  "@imageDiffModeSwipe":   {
+    "description": "Swipe-divider comparison mode for a PR image diff"
+  },
+  "imageDiffModeDifference": "Eltérés",
+  "@imageDiffModeDifference":   {
+    "description": "Pixel overlay comparison mode for a PR image diff"
+  },
+  "imageDiffChangedPercent": "{percent}% változott",
+  "@imageDiffChangedPercent":   {
+    "description": "Caption showing how much of a PR image pair differs",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "imageDiffPictures": "Képek",
+  "@imageDiffPictures":   {
+    "description": "Header toggle to show SVG as pictures instead of XML hunks"
+  },
+  "imageDiffSource": "Forrás",
+  "@imageDiffSource":   {
+    "description": "Header toggle to show an SVG file's XML source diff"
+  },
+  "imageDiffDeleted": "Törölve",
+  "@imageDiffDeleted": {
+    "description": "Label for the removed (before) side of a PR image asset comparison"
+  },
+  "imageDiffAdded": "Hozzáadva",
+  "@imageDiffAdded": {
+    "description": "Label for the added (after) side of a PR image asset comparison"
+  },
+  "imageDiffDimensions": "Sz: {width}px | M: {height}px",
+  "@imageDiffDimensions": {
+    "description": "Intrinsic pixel size caption under a PR image-diff asset",
+    "placeholders": {
+      "width": {
+        "type": "int"
+      },
+      "height": {
+        "type": "int"
+      }
+    }
+  },
+  "workspaceGitHubIdentity": "GitHub-azonosító",
+  "workspaceGitHubIdentityDescription": "Hogyan hitelesül a háttérbeli GitHub-munka ebben a munkaterületen. Az installáció Appjának öröklése, másik App, vagy csak személyes hozzáférési token.",
+  "workspaceGitHubModeInherit": "Az installáció GitHub Appjának használata",
+  "workspaceGitHubModeApp": "Másik GitHub App használata",
+  "workspaceGitHubModePat": "Csak személyes hozzáférési token",
+  "workspaceGitHubInheritHint": "A GitHub Appot a Szerver → Szolgáltatói alkalmazások alatt használja.",
+  "workspaceGitHubAppHint": "A munkaterület bot- és lekérdezési identitása. A tagok a Te felületen ezen az App-on keresztül jelentkeznek be.",
+  "workspaceGitHubPatLabel": "Háttértoken",
+  "workspaceGitHubPatDescription": "Lekérdezéshez és ügynökökhöz ebben a munkaterületen. Nem egy tag profiltokenje.",
+  "workspaceGitHubHasPat": "Háttértoken van tárolva.",
+  "workspaceGitHubNoPat": "Nincs háttértoken tárolva.",
+  "profileOverlayHint": "Ezek a mezők te vagy ebben a munkaterületen. Az üresek öröklik a fiók nevét és e-mailjét. Munkaterület váltása ezt a réteget is váltja.",
+  "forgeConnectionsThisWorkspace": "Jelentkezz be, vagy illessz be tokent ehhez a munkaterülethez."
 }

@@ -42,33 +42,51 @@ class PrChatTab extends ConsumerWidget {
           ],
         ),
       ),
-      error: (e, _) => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(AppIcons.triangleAlert, size: 32, color: t.textErrorPrimary),
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                l10n.failedWithError('$e'),
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: t.fgSecondary,
-                  decoration: TextDecoration.none,
+      error: (e, _) {
+        if (e is PrSpaceUnavailable) {
+          return Center(
+            child: Text(
+              l10n.selectConversation,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: t.fgSecondary,
+                decoration: TextDecoration.none,
+              ),
+            ),
+          );
+        }
+        return Center(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  AppIcons.triangleAlert,
+                  size: 32,
+                  color: t.textErrorPrimary,
                 ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              CcButton(
-                variant: CcButtonVariant.secondary,
-                size: CcButtonSize.sm,
-                onPressed: () => ref.invalidate(prSpaceProvider(pr)),
-                child: Text(l10n.retry),
-              ),
-            ],
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  l10n.failedWithError('$e'),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: t.fgSecondary,
+                    decoration: TextDecoration.none,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                CcButton(
+                  variant: CcButtonVariant.secondary,
+                  size: CcButtonSize.sm,
+                  onPressed: () => ref.invalidate(prSpaceProvider(pr)),
+                  child: Text(l10n.retry),
+                ),
+              ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
       // Commit & push now lives in its own Source Control tab, not under chat.
       data: (spaceId) => ConversationPane(spaceId: spaceId),
     );

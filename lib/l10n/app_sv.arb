@@ -504,7 +504,7 @@
   "calendarRsvpFailed": "Kunde inte uppdatera ditt svar",
   "calendarAddAccount": "Lägg till kalenderkonto",
   "calendarSettingsTitle": "Google Calendar",
-  "calendarSettingsDescription": "Anslut ett Google-konto för att synka händelser till den här arbetsytan.",
+  "calendarSettingsDescription": "Anslut ett Google-konto för att synka händelser till det här arbetsområdet. De här kalendrarna är dina här.",
   "calendarConnecting": "Ansluter…",
   "calendarSyncNow": "Synka nu",
   "calendarNoWorkspace": "Välj en arbetsyta för att se dess kalender",
@@ -3949,7 +3949,7 @@
   "agentQuestionSkippedLabel": "Överhoppad",
   "agentQuestionFreeformOptionHint": "Beskriv med egna ord…",
   "reviewRequested": "Granskning begärd",
-  "connectGitHubHint": "Logga in på GitHub eller lägg till en token i Inställningar → Du → Profil och identitet → Kodvärd",
+  "connectGitHubHint": "Logga in på GitHub eller lägg till en token i Inställningar → Arbetsyta → Profil och identitet → Kodvärd",
   "connectGitHubToLoadPrs": "Anslut GitHub för att läsa in pull requests",
   "noRepositoriesConfigured": "Inga arkiv konfigurerade",
   "openedAgo": "Öppnad {age}",
@@ -5499,7 +5499,7 @@
   },
   "deviceNeverSeen": "Aldrig ansluten",
   "profileSectionLabel": "Profil",
-  "profileSectionDescription": "Hur du syns för kollegor och i git commit-författarskap.",
+  "profileSectionDescription": "Hur du syns för teamet och i git-commit-författarskap i det här arbetsområdet. Tomma fält ärver kontots namn och e-post.",
   "displayNameLabel": "Visningsnamn",
   "emailLabel": "E-post",
   "gitAuthorNameLabel": "Git-författarnamn",
@@ -7270,11 +7270,12 @@
   "settingsScopeBadgeDevice": "DEN HÄR ENHETEN",
   "settingsScopeBadgeWorkspace": "ARBETSYTA",
   "settingsScopeBadgeServer": "SERVER",
-  "settingsProfileDescription": "Ditt namn, e-post och git-identiteten som stämplas på commits som görs åt dig.",
+  "settingsProfileDescription": "Ditt namn, e-post och git-identitet i det här arbetsområdet. Att byta arbetsområde byter det här överlägget; handle, inloggning och enheter stannar på kontot.",
   "settingsServerConnectionDescription": "Vilken server den här klienten pratar med, och hur den här servern delas (mDNS, tunnlar, relä).",
   "settingsAboutDescription": "Byggidentitet och uppdateringar.",
   "settingsDiagnosticsDescription": "Isolering, indexering, synkning, loggning och kraschrapportering för den här installationen.",
   "settingsWorkspaceGeneralDescription": "Identitet, policy och konventioner som delas av alla i den här arbetsytan.",
+  "settingsWorkspaceMeetingsDescription": "Anteckningsmallar och sparade röster för möten i den här arbetsytan.",
   "settingsWorkspacePolicyLabel": "Arbetsytepolicy",
   "settingsWorkspacePolicyDescription": "Gäller varje medlem och varje agent i den här arbetsytan.",
   "settingsSecretGlobsLabel": "Uteslutningar för hemliga sökvägar",
@@ -7608,7 +7609,7 @@
   "ticketProviderLocal": "Lokal",
   "addKey": "Lägg till nyckel",
   "providerApps": "Leverantörsappar",
-  "providerAppsDescription": "Hur den här servern autentiserar som sig själv, och vad en person loggar in genom. Bakgrundsarbete – webhooks, polling, synk – körs på appen, aldrig på en persons token.",
+  "providerAppsDescription": "Arbetsområden ärver den här GitHub App:en om de inte väljer en annan App eller en personlig åtkomsttoken. Bakgrundsarbete — webhooks, polling, synk — körs på appen, aldrig på en persons token.",
   "providerAppId": "App-ID",
   "providerPrivateKey": "Privat nyckel",
   "providerClientId": "Klient-ID",
@@ -7757,9 +7758,9 @@
   "shortTaskDescription": "Kör snabbt bakgrundsarbete som titlar och sammanfattningar. En mindre modell hör hemma här.",
   "settingsStateFailed": "Misslyckades",
   "providerAppsGroupServer": "Agerar som servern",
-  "providerAppsGroupServerDescription": "Låter bakgrundsarbete nå arkiv utan en människa bakom förfrågan: webhooks, pull request-polling, ärendesynk.",
+  "providerAppsGroupServerDescription": "För arbetsområden som ärver den här installationens GitHub App. Ett arbetsområde med egen App eller PAT ställs in under Arbetsområde → Allmänt.",
   "providerAppsGroupPrConversations": "Pull request-samtal",
-  "providerAppsGroupPrConversationsDescription": "Hur utvecklare kan prata med den här servern direkt på GitHub. Fungerar utan webhook eller publik URL – servern pollar.",
+  "providerAppsGroupPrConversationsDescription": "Hur utvecklare pratar med den här servern på GitHub i ärvande arbetsområden. Ett arbetsområde med egen App har sin bot under Arbetsområde → Allmänt. Fungerar utan webhook eller offentlig URL — servern pollar.",
   "providerAppBotLogin": "Bot-inloggning",
   "providerAppBotLoginEmpty": "Testa anslutningen för att lösa bot-inloggningen.",
   "providerAppAskOnGitHub": "Fråga på GitHub",
@@ -8589,5 +8590,75 @@
   "rigClipboardAlwaysPasteTitle": "Tillåt alltid inklistring i miljöer",
   "rigClipboardAlwaysPasteDescription": "Skicka urklipp från den här enheten till valfri miljö utan att fråga.",
   "rigClipboardAlwaysCopyTitle": "Tillåt alltid kopiering från miljöer",
-  "rigClipboardAlwaysCopyDescription": "Lägg urklippsinnehåll från valfri miljö på den här enheten utan att fråga."
+  "rigClipboardAlwaysCopyDescription": "Lägg urklippsinnehåll från valfri miljö på den här enheten utan att fråga.",
+  "imageDiffBefore": "Före",
+  "@imageDiffBefore":   {
+    "description": "Label for the base (before) side of a PR image diff"
+  },
+  "imageDiffAfter": "Efter",
+  "@imageDiffAfter":   {
+    "description": "Label for the head (after) side of a PR image diff"
+  },
+  "imageDiffModeTwoUp": "Sida vid sida",
+  "@imageDiffModeTwoUp":   {
+    "description": "Side-by-side comparison mode for a PR image diff"
+  },
+  "imageDiffModeSwipe": "Svep",
+  "@imageDiffModeSwipe":   {
+    "description": "Swipe-divider comparison mode for a PR image diff"
+  },
+  "imageDiffModeDifference": "Skillnad",
+  "@imageDiffModeDifference":   {
+    "description": "Pixel overlay comparison mode for a PR image diff"
+  },
+  "imageDiffChangedPercent": "{percent} % ändrat",
+  "@imageDiffChangedPercent":   {
+    "description": "Caption showing how much of a PR image pair differs",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "imageDiffPictures": "Bilder",
+  "@imageDiffPictures":   {
+    "description": "Header toggle to show SVG as pictures instead of XML hunks"
+  },
+  "imageDiffSource": "Källa",
+  "@imageDiffSource":   {
+    "description": "Header toggle to show an SVG file's XML source diff"
+  },
+  "imageDiffDeleted": "Borttaget",
+  "@imageDiffDeleted": {
+    "description": "Label for the removed (before) side of a PR image asset comparison"
+  },
+  "imageDiffAdded": "Tillagt",
+  "@imageDiffAdded": {
+    "description": "Label for the added (after) side of a PR image asset comparison"
+  },
+  "imageDiffDimensions": "B: {width}px | H: {height}px",
+  "@imageDiffDimensions": {
+    "description": "Intrinsic pixel size caption under a PR image-diff asset",
+    "placeholders": {
+      "width": {
+        "type": "int"
+      },
+      "height": {
+        "type": "int"
+      }
+    }
+  },
+  "workspaceGitHubIdentity": "GitHub-identitet",
+  "workspaceGitHubIdentityDescription": "Hur bakgrundsarbete mot GitHub autentiserar i det här arbetsområdet. Ärva installationens App, använda en annan App eller bara en personlig åtkomsttoken.",
+  "workspaceGitHubModeInherit": "Använd den här installationens GitHub App",
+  "workspaceGitHubModeApp": "Använd en annan GitHub App",
+  "workspaceGitHubModePat": "Endast personlig åtkomsttoken",
+  "workspaceGitHubInheritHint": "Använder GitHub App under Server → Leverantörsappar.",
+  "workspaceGitHubAppHint": "Bot- och pollingidentitet för det här arbetsområdet. Medlemmar loggar in under Du via den här App:en.",
+  "workspaceGitHubPatLabel": "Bakgrundstoken",
+  "workspaceGitHubPatDescription": "För polling och agenter i det här arbetsområdet. Inte en medlems profiltoken.",
+  "workspaceGitHubHasPat": "En bakgrundstoken är sparad.",
+  "workspaceGitHubNoPat": "Ingen bakgrundstoken sparad.",
+  "profileOverlayHint": "De här fälten är du i det här arbetsområdet. Tomma fält ärver kontots namn och e-post. Att byta arbetsområde byter det här överlägget.",
+  "forgeConnectionsThisWorkspace": "Logga in eller klistra in en token för det här arbetsområdet."
 }

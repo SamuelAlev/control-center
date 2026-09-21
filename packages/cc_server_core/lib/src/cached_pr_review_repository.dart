@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/events/pr_events.dart';
@@ -25,6 +27,7 @@ import 'package:cc_domain/features/pr_review/domain/repositories/pr_review_repos
 import 'package:cc_domain/features/pr_review/domain/services/diff_parser.dart';
 import 'package:cc_domain/features/pr_review/domain/services/pr_change_signals.dart';
 import 'package:cc_domain/features/pr_review/domain/sources/pr_diff_source.dart';
+import 'package:cc_domain/features/pr_review/domain/value_objects/image_diff_resolution.dart';
 import 'package:cc_domain/features/pr_review/domain/value_objects/pending_review_comment.dart';
 import 'package:cc_infra/cc_infra.dart';
 import 'package:cc_persistence/database/daos/cache_dao.dart';
@@ -38,6 +41,7 @@ class _Kind {
   static const prDiff = 'prDiff';
   static const prFiles = 'prFiles';
   static const prFileContent = 'prFileContent';
+  static const prImageDiff = 'prImageDiff';
   static const prCommits = 'prCommits';
   static const prCommitFiles = 'prCommitFiles';
   static const prReviews = 'prReviews';
@@ -119,9 +123,12 @@ class CachedPrReviewRepository implements PrReviewRepository {
     required this._localDiffSource,
     this._localCheckoutPath,
     this._eventBus,
+    this._blobStore,
+    ImageDiffer? imageDiffer,
     PrChangeSignals? changeSignals,
   }) : _client = forgeClient,
-       _signals = changeSignals;
+       _signals = changeSignals,
+       _imageDiffer = imageDiffer ?? const ImageDiffer();
 
   final WorkspaceDatabase _db;
 
@@ -140,6 +147,8 @@ class CachedPrReviewRepository implements PrReviewRepository {
   final PrDiffSource _localDiffSource;
   final String? _localCheckoutPath;
   final DomainEventBus? _eventBus;
+  final BlobStore? _blobStore;
+  final ImageDiffer _imageDiffer;
 
   /// Live-update bus: when present, every `watch*` stream stays open after its
   /// initial SWR pass and re-validates whenever a [PrChangeSignal] for its PR
@@ -1307,6 +1316,158 @@ class CachedPrReviewRepository implements PrReviewRepository {
       fetch: (token) => _client.getFileContent(path, ref, cancelToken: token),
       encode: (fresh) => fresh,
     );
+  }
+
+  @override
+  Future<ImageDiffResolution> resolveImageDiff({
+    required String path,
+    String? previousPath,
+    required String baseRef,
+    required String headRef,
+    required PrFileStatus status,
+  }) async {
+    final store = _blobStore;
+    if (store == null) {
+      return ImageDiffResolution.empty;
+    }
+    final key =
+        '$_repoFullName|$path|${previousPath ?? ''}|$baseRef|$headRef|${status.name}';
+    final cached = await _cache.read(_workspaceId, _Kind.prImageDiff, key);
+    if (cached != null && cached.isNotEmpty) {
+      final map = await _decodeJsonMap(cached);
+      if (map != null) {
+        return ImageDiffResolution.fromJson(map);
+      }
+    }
+    final result = await _resolveImageDiffUncached(
+      path: path,
+      previousPath: previousPath,
+      baseRef: baseRef,
+      headRef: headRef,
+      status: status,
+      store: store,
+    );
+    await _cache.put(
+      _workspaceId,
+      _Kind.prImageDiff,
+      key,
+      jsonEncode(result.toJson()),
+    );
+    return result;
+  }
+
+  Future<ImageDiffResolution> _resolveImageDiffUncached({
+    required String path,
+    String? previousPath,
+    required String baseRef,
+    required String headRef,
+    required PrFileStatus status,
+    required BlobStore store,
+  }) async {
+    final mediaType = _mediaTypeFor(path);
+    final isSvg = path.toLowerCase().endsWith('.svg');
+    final basePath = (previousPath != null && previousPath.isNotEmpty)
+        ? previousPath
+        : path;
+
+    final baseBytes = status == PrFileStatus.added
+        ? null
+        : await _tryGetBytes(basePath, baseRef);
+    final headBytes = status == PrFileStatus.removed
+        ? null
+        : await _tryGetBytes(path, headRef);
+
+    final baseStored = baseBytes == null
+        ? null
+        : await store.put(_workspaceId, baseBytes, mediaType: mediaType);
+    final headStored = headBytes == null
+        ? null
+        : await store.put(_workspaceId, headBytes, mediaType: mediaType);
+
+    var overlayRef = null as String?;
+    var changedPercent = 0.0;
+    var isIdentical = _bothMissingOrEqual(baseBytes, headBytes);
+
+    if (!isSvg &&
+        baseBytes != null &&
+        headBytes != null &&
+        !_bytesEqual(baseBytes, headBytes)) {
+      final diff = await _imageDiffer.compareAsync(baseBytes, headBytes);
+      changedPercent = diff.changedPercent;
+      isIdentical = diff.identical;
+      final overlay = diff.overlayPng;
+      if (overlay != null) {
+        final stored = await store.put(
+          _workspaceId,
+          overlay,
+          mediaType: 'image/png',
+        );
+        overlayRef = stored?.ref;
+      }
+    }
+
+    return ImageDiffResolution(
+      baseRef: baseStored?.ref,
+      headRef: headStored?.ref,
+      overlayRef: overlayRef,
+      mediaType: mediaType,
+      changedPercent: changedPercent,
+      isIdentical: isIdentical,
+    );
+  }
+
+  Future<Uint8List?> _tryGetBytes(String path, String ref) async {
+    if (path.isEmpty || ref.isEmpty) {
+      return null;
+    }
+    try {
+      final bytes = await _client.getFileBytes(path, ref);
+      return bytes.isEmpty ? null : bytes;
+    } on Object catch (error) {
+      if (_isCancellation(error)) {
+        rethrow;
+      }
+      return null;
+    }
+  }
+
+  static bool _bothMissingOrEqual(Uint8List? a, Uint8List? b) {
+    if (a == null && b == null) {
+      return true;
+    }
+    if (a == null || b == null) {
+      return false;
+    }
+    return _bytesEqual(a, b);
+  }
+
+  static bool _bytesEqual(Uint8List a, Uint8List b) {
+    if (a.length != b.length) {
+      return false;
+    }
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  static String _mediaTypeFor(String path) {
+    final dot = path.lastIndexOf('.');
+    if (dot == -1 || dot == path.length - 1) {
+      return 'application/octet-stream';
+    }
+    return switch (path.substring(dot + 1).toLowerCase()) {
+      'png' => 'image/png',
+      'jpg' || 'jpeg' => 'image/jpeg',
+      'gif' => 'image/gif',
+      'webp' => 'image/webp',
+      'svg' => 'image/svg+xml',
+      'bmp' => 'image/bmp',
+      'ico' => 'image/x-icon',
+      _ => 'application/octet-stream',
+    };
   }
 
   /// Watches the list of commits for a PR, served from cache with SWR revalidation.

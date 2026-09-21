@@ -32,6 +32,18 @@ class WorkspaceMembersTable extends Table {
   /// When the membership was created.
   DateTimeColumn get joinedAt => dateTime().withDefault(currentDateAndTime)();
 
+  /// Display name in this workspace. Null inherits the global user row.
+  TextColumn get displayName => text().nullable()();
+
+  /// Email in this workspace. Null inherits the global user row.
+  TextColumn get email => text().nullable()();
+
+  /// Git author name in this workspace. Null inherits the global user row.
+  TextColumn get gitAuthorName => text().nullable()();
+
+  /// Git author email in this workspace. Null inherits the global user row.
+  TextColumn get gitAuthorEmail => text().nullable()();
+
   @override
   String get tableName => 'workspace_members';
 

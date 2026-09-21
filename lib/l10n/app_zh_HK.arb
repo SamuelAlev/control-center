@@ -30,7 +30,7 @@
   "ticketSelectPrompt": "選擇一張工單以查看詳細信息",
   "showDetails": "顯示詳細信息",
   "inviteLoopbackWarningBody": "其他機器上的協作者將無法連上這部伺服器。請啟用通道（設定 → 整合 → 分享此伺服器），或繫結到你的網絡，讓外部使用者可以連線。",
-  "profileSectionDescription": "你在隊友眼中的名稱，以及 git 提交作者信息中的身分。",
+  "profileSectionDescription": "你在此工作區中對隊友與 git 提交作者資訊的身分。空白欄位繼承帳戶名稱和電郵。",
   "inboxSeverityInfo": "信息",
   "settingsAboutDescription": "建置信息與更新。",
   "ssoGroupHandoff": "你的身分識別供應商需要的信息",

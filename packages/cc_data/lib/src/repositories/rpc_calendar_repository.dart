@@ -78,6 +78,7 @@ class RpcCalendarRepository implements CalendarRepository {
   ) => CalendarAccount(
     id: d.id,
     workspaceId: workspaceId,
+    userId: d.userId,
     providerId: d.providerId,
     accountEmail: d.accountEmail,
     displayName: d.displayName,

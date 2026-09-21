@@ -504,7 +504,7 @@
   "calendarRsvpFailed": "Tidak dapat mengemas kini jawapan anda",
   "calendarAddAccount": "Tambah akaun kalendar",
   "calendarSettingsTitle": "Google Calendar",
-  "calendarSettingsDescription": "Sambungkan akaun Google untuk menyegerakkan acara ke ruang kerja ini.",
+  "calendarSettingsDescription": "Sambungkan akaun Google untuk menyegerakkan acara ke ruang kerja ini. Kalendar ini milik anda di sini.",
   "calendarConnecting": "Menyambung…",
   "calendarSyncNow": "Segerak sekarang",
   "calendarNoWorkspace": "Pilih ruang kerja untuk melihat kalendarnya",
@@ -3949,7 +3949,7 @@
   "agentQuestionSkippedLabel": "Dilangkau",
   "agentQuestionFreeformOptionHint": "Terangkan dengan kata-kata anda…",
   "reviewRequested": "Semakan diminta",
-  "connectGitHubHint": "Log masuk ke GitHub atau tambah token dalam Tetapan → Anda → Profil & identiti → Hos kod",
+  "connectGitHubHint": "Log masuk ke GitHub atau tambah token dalam Tetapan → Ruang kerja → Profil & identiti → Hos kod",
   "connectGitHubToLoadPrs": "Sambung GitHub untuk memuatkan pull request",
   "noRepositoriesConfigured": "Tiada repositori dikonfigurasikan",
   "openedAgo": "Dibuka {age}",
@@ -5499,7 +5499,7 @@
   },
   "deviceNeverSeen": "Tidak pernah disambungkan",
   "profileSectionLabel": "Profil",
-  "profileSectionDescription": "Bagaimana anda kelihatan kepada rakan sepasukan dan dalam kepengarangan commit git.",
+  "profileSectionDescription": "Bagaimana anda kelihatan kepada pasukan dan dalam pengarang commit git dalam ruang kerja ini. Medan kosong mewarisi nama dan e-mel akaun.",
   "displayNameLabel": "Nama paparan",
   "emailLabel": "E-mel",
   "gitAuthorNameLabel": "Nama pengarang Git",
@@ -7270,11 +7270,12 @@
   "settingsScopeBadgeDevice": "PERANTI INI",
   "settingsScopeBadgeWorkspace": "RUANG KERJA",
   "settingsScopeBadgeServer": "PELAYAN",
-  "settingsProfileDescription": "Nama, e-mel anda dan identiti git yang distem pada commit yang dibuat untuk anda.",
+  "settingsProfileDescription": "Nama, e-mel dan identiti git anda dalam ruang kerja ini. Menukar ruang menukar overlay ini; handle, log masuk dan peranti kekal pada akaun.",
   "settingsServerConnectionDescription": "Pelayan mana yang klien ini bercakap dengannya, dan bagaimana pelayan ini dikongsi (mDNS, terowong, geganti).",
   "settingsAboutDescription": "Identiti binaan dan kemas kini.",
   "settingsDiagnosticsDescription": "Pengasingan, pengindeksan, penyegerakan, pengelogan dan pelaporan ranap untuk pemasangan ini.",
   "settingsWorkspaceGeneralDescription": "Identiti, polisi dan konvensyen yang dikongsi oleh semua orang dalam ruang kerja ini.",
+  "settingsWorkspaceMeetingsDescription": "Templat nota dan suara tersimpan untuk mesyuarat dalam ruang kerja ini.",
   "settingsWorkspacePolicyLabel": "Polisi ruang kerja",
   "settingsWorkspacePolicyDescription": "Digunakan pada setiap ahli dan setiap ejen dalam ruang kerja ini.",
   "settingsSecretGlobsLabel": "Pengecualian laluan rahsia",
@@ -7608,7 +7609,7 @@
   "ticketProviderLocal": "Setempat",
   "addKey": "Tambah kunci",
   "providerApps": "Apl penyedia",
-  "providerAppsDescription": "Bagaimana pelayan ini mengesahkan sebagai dirinya, dan apa yang seseorang log masuk melaluinya. Kerja latar belakang — webhook, pengundian, segerak — berjalan pada apl, tidak pernah pada token seseorang.",
+  "providerAppsDescription": "Ruang kerja mewarisi GitHub App ini kecuali mereka memilih App lain atau token akses peribadi. Kerja latar belakang — webhook, pengundian, segerak — berjalan pada app, bukan token seseorang.",
   "providerAppId": "ID apl",
   "providerPrivateKey": "Kunci peribadi",
   "providerClientId": "ID klien",
@@ -7757,9 +7758,9 @@
   "shortTaskDescription": "Menjalankan kerja latar belakang pantas seperti tajuk dan ringkasan. Model yang lebih kecil sesuai di sini.",
   "settingsStateFailed": "Gagal",
   "providerAppsGroupServer": "Bertindak sebagai pelayan",
-  "providerAppsGroupServerDescription": "Membolehkan kerja latar belakang mencapai repositori tanpa manusia di sebalik permintaan: webhook, pengundian pull request, segerak tiket.",
+  "providerAppsGroupServerDescription": "Untuk ruang kerja yang mewarisi GitHub App pemasangan ini. Ruang dengan App atau PAT sendiri dikonfigurasi di Ruang kerja → Umum.",
   "providerAppsGroupPrConversations": "Perbualan pull request",
-  "providerAppsGroupPrConversationsDescription": "Bagaimana pembangun boleh bercakap dengan pelayan ini secara langsung di GitHub. Berfungsi tanpa webhook atau URL awam — pelayan mengundi.",
+  "providerAppsGroupPrConversationsDescription": "Cara pembangun bercakap dengan pelayan ini di GitHub dalam ruang yang mewarisi. Ruang dengan App sendiri mempunyai bot di Ruang kerja → Umum. Tanpa webhook atau URL awam — pelayan mengundi.",
   "providerAppBotLogin": "Log masuk bot",
   "providerAppBotLoginEmpty": "Uji sambungan untuk menyelesaikan log masuk bot.",
   "providerAppAskOnGitHub": "Bertanya di GitHub",
@@ -8589,5 +8590,75 @@
   "rigClipboardAlwaysPasteTitle": "Sentiasa benarkan tampal ke persekitaran",
   "rigClipboardAlwaysPasteDescription": "Hantar papan klip peranti ini ke mana-mana persekitaran tanpa bertanya.",
   "rigClipboardAlwaysCopyTitle": "Sentiasa benarkan salin daripada persekitaran",
-  "rigClipboardAlwaysCopyDescription": "Letakkan kandungan papan klip daripada mana-mana persekitaran pada peranti ini tanpa bertanya."
+  "rigClipboardAlwaysCopyDescription": "Letakkan kandungan papan klip daripada mana-mana persekitaran pada peranti ini tanpa bertanya.",
+  "imageDiffBefore": "Sebelum",
+  "@imageDiffBefore":   {
+    "description": "Label for the base (before) side of a PR image diff"
+  },
+  "imageDiffAfter": "Selepas",
+  "@imageDiffAfter":   {
+    "description": "Label for the head (after) side of a PR image diff"
+  },
+  "imageDiffModeTwoUp": "Bersebelahan",
+  "@imageDiffModeTwoUp":   {
+    "description": "Side-by-side comparison mode for a PR image diff"
+  },
+  "imageDiffModeSwipe": "Leret",
+  "@imageDiffModeSwipe":   {
+    "description": "Swipe-divider comparison mode for a PR image diff"
+  },
+  "imageDiffModeDifference": "Perbezaan",
+  "@imageDiffModeDifference":   {
+    "description": "Pixel overlay comparison mode for a PR image diff"
+  },
+  "imageDiffChangedPercent": "{percent}% berubah",
+  "@imageDiffChangedPercent":   {
+    "description": "Caption showing how much of a PR image pair differs",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "imageDiffPictures": "Gambar",
+  "@imageDiffPictures":   {
+    "description": "Header toggle to show SVG as pictures instead of XML hunks"
+  },
+  "imageDiffSource": "Sumber",
+  "@imageDiffSource":   {
+    "description": "Header toggle to show an SVG file's XML source diff"
+  },
+  "imageDiffDeleted": "Dipadam",
+  "@imageDiffDeleted": {
+    "description": "Label for the removed (before) side of a PR image asset comparison"
+  },
+  "imageDiffAdded": "Ditambah",
+  "@imageDiffAdded": {
+    "description": "Label for the added (after) side of a PR image asset comparison"
+  },
+  "imageDiffDimensions": "L: {width}px | T: {height}px",
+  "@imageDiffDimensions": {
+    "description": "Intrinsic pixel size caption under a PR image-diff asset",
+    "placeholders": {
+      "width": {
+        "type": "int"
+      },
+      "height": {
+        "type": "int"
+      }
+    }
+  },
+  "workspaceGitHubIdentity": "Identiti GitHub",
+  "workspaceGitHubIdentityDescription": "Cara kerja GitHub latar belakang mengesahkan dalam ruang kerja ini. Mewarisi App pemasangan, App lain, atau token akses peribadi sahaja.",
+  "workspaceGitHubModeInherit": "Guna GitHub App pemasangan ini",
+  "workspaceGitHubModeApp": "Guna GitHub App lain",
+  "workspaceGitHubModePat": "Token akses peribadi sahaja",
+  "workspaceGitHubInheritHint": "Menggunakan GitHub App di Pelayan → Aplikasi pembekal.",
+  "workspaceGitHubAppHint": "Identiti bot dan pengundian ruang kerja ini. Ahli log masuk di Anda melalui App ini.",
+  "workspaceGitHubPatLabel": "Token latar belakang",
+  "workspaceGitHubPatDescription": "Untuk pengundian dan ejen dalam ruang kerja ini. Bukan token profil ahli.",
+  "workspaceGitHubHasPat": "Token latar belakang disimpan.",
+  "workspaceGitHubNoPat": "Tiada token latar belakang disimpan.",
+  "profileOverlayHint": "Medan ini ialah anda dalam ruang kerja ini. Medan kosong mewarisi nama dan e-mel akaun. Menukar ruang kerja menukar overlay ini.",
+  "forgeConnectionsThisWorkspace": "Log masuk atau tampal token untuk ruang kerja ini."
 }

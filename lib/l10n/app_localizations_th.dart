@@ -1126,7 +1126,7 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get calendarSettingsDescription =>
-      'เชื่อมต่อบัญชี Google เพื่อซิงค์เหตุการณ์เข้าเวิร์กสเปซนี้';
+      'เชื่อมบัญชี Google เพื่อซิงค์เหตุการณ์เข้าพื้นที่นี้ ปฏิทินเหล่านี้เป็นของคุณที่นี่';
 
   @override
   String get calendarConnecting => 'กำลังเชื่อมต่อ…';
@@ -6929,7 +6929,7 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get connectGitHubHint =>
-      'ลงชื่อเข้าใช้ GitHub หรือเพิ่มโทเค็นที่ การตั้งค่า → คุณ → โปรไฟล์และตัวตน → โฮสต์โค้ด';
+      'ลงชื่อเข้าใช้ GitHub หรือเพิ่มโทเค็นที่ การตั้งค่า → เวิร์กสเปซ → โปรไฟล์และตัวตน → โฮสต์โค้ด';
 
   @override
   String get connectGitHubToLoadPrs =>
@@ -7410,6 +7410,43 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get preview => 'ตัวอย่าง';
+
+  @override
+  String get imageDiffBefore => 'ก่อน';
+
+  @override
+  String get imageDiffAfter => 'หลัง';
+
+  @override
+  String get imageDiffModeTwoUp => 'เทียบคู่';
+
+  @override
+  String get imageDiffModeSwipe => 'ปัด';
+
+  @override
+  String get imageDiffModeDifference => 'ส่วนต่าง';
+
+  @override
+  String imageDiffChangedPercent(String percent) {
+    return 'เปลี่ยน $percent%';
+  }
+
+  @override
+  String get imageDiffPictures => 'รูปภาพ';
+
+  @override
+  String get imageDiffSource => 'ต้นฉบับ';
+
+  @override
+  String get imageDiffDeleted => 'ลบแล้ว';
+
+  @override
+  String get imageDiffAdded => 'เพิ่มแล้ว';
+
+  @override
+  String imageDiffDimensions(int width, int height) {
+    return 'ก: ${width}px | ส: ${height}px';
+  }
 
   @override
   String get outdated => 'ล้าสมัย';
@@ -9463,7 +9500,7 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get profileSectionDescription =>
-      'คุณปรากฏต่อเพื่อนร่วมงานและในผู้เขียนคอมมิต git อย่างไร';
+      'คุณปรากฏต่อทีมและในผู้แต่งคอมมิต git ในพื้นที่นี้อย่างไร ช่องว่างสืบทอดชื่อและอีเมลของบัญชี';
 
   @override
   String get displayNameLabel => 'ชื่อที่แสดง';
@@ -12022,7 +12059,7 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get settingsProfileDescription =>
-      'ชื่อ อีเมล และตัวตน git ที่ประทับบนคอมมิตที่ทำเพื่อคุณ';
+      'ชื่อ อีเมล และตัวตน git ของคุณในพื้นที่นี้ การเปลี่ยนพื้นที่เปลี่ยนเลเยอร์นี้ แฮนเดิล การเข้าสู่ระบบ และอุปกรณ์ยังอยู่ที่บัญชี';
 
   @override
   String get settingsServerConnectionDescription =>
@@ -12038,6 +12075,10 @@ class AppLocalizationsTh extends AppLocalizations {
   @override
   String get settingsWorkspaceGeneralDescription =>
       'ตัวตน นโยบาย และธรรมเนียมที่ทุกคนในเวิร์กสเปซนี้ใช้ร่วมกัน';
+
+  @override
+  String get settingsWorkspaceMeetingsDescription =>
+      'แม่แบบบันทึกและเสียงที่บันทึกไว้สำหรับการประชุมในเวิร์กสเปซนี้';
 
   @override
   String get settingsWorkspacePolicyLabel => 'นโยบายเวิร์กสเปซ';
@@ -12613,7 +12654,7 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get providerAppsDescription =>
-      'วิธีที่เซิร์ฟเวอร์นี้ยืนยันตัวตนในฐานะตัวเอง และสิ่งที่คนลงชื่อเข้าใช้ผ่าน งานเบื้องหลัง — webhook, การโพล, ซิงค์ — รันบนแอป ไม่ใช่โทเค็นของบุคคล';
+      'พื้นที่ทำงานสืบทอด GitHub App นี้ เว้นแต่เลือก App อื่นหรือโทเค็นเข้าถึงส่วนบุคคล งานเบื้องหลัง — เว็บฮุค การสำรวจ การซิงค์ — ทำงานบนแอป ไม่ใช่โทเค็นของบุคคล';
 
   @override
   String get providerAppId => 'App id';
@@ -12998,14 +13039,14 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get providerAppsGroupServerDescription =>
-      'ให้งานเบื้องหลังเข้าถึงรีโพสิทอรีโดยไม่มีคนอยู่หลังคำขอ: webhook การโพล pull request ซิงค์ตั๋วงาน';
+      'สำหรับพื้นที่ที่สืบทอด GitHub App ของการติดตั้งนี้ พื้นที่ที่มี App หรือ PAT ของตนเองตั้งค่าที่ พื้นที่ทำงาน → ทั่วไป';
 
   @override
   String get providerAppsGroupPrConversations => 'การสนทนา pull request';
 
   @override
   String get providerAppsGroupPrConversationsDescription =>
-      'วิธีที่นักพัฒนาคุยกับเซิร์ฟเวอร์นี้โดยตรงบน GitHub ใช้ได้โดยไม่มี webhook หรือ URL สาธารณะ — เซิร์ฟเวอร์โพล';
+      'วิธีที่นักพัฒนาคุยกับเซิร์ฟเวอร์นี้บน GitHub ในพื้นที่ที่สืบทอด พื้นที่ที่มี App ของตนเองมีบอทที่ พื้นที่ทำงาน → ทั่วไป ไม่ต้องมีเว็บฮุคหรือ URL สาธารณะ — เซิร์ฟเวอร์สำรวจ';
 
   @override
   String get providerAppBotLogin => 'ล็อกอินบอท';
@@ -14376,4 +14417,49 @@ class AppLocalizationsTh extends AppLocalizations {
   @override
   String get rigClipboardAlwaysCopyDescription =>
       'วางเนื้อหาคลิปบอร์ดจากสภาพแวดล้อมใดก็ได้บนอุปกรณ์นี้โดยไม่ต้องถาม';
+
+  @override
+  String get workspaceGitHubIdentity => 'ตัวตน GitHub';
+
+  @override
+  String get workspaceGitHubIdentityDescription =>
+      'วิธีที่งาน GitHub เบื้องหลังยืนยันตัวตนในพื้นที่ทำงานนี้ สืบทอด App ของการติดตั้ง ใช้ App อื่น หรือโทเค็นเข้าถึงส่วนบุคคลเท่านั้น';
+
+  @override
+  String get workspaceGitHubModeInherit => 'ใช้ GitHub App ของการติดตั้งนี้';
+
+  @override
+  String get workspaceGitHubModeApp => 'ใช้ GitHub App อื่น';
+
+  @override
+  String get workspaceGitHubModePat => 'โทเค็นเข้าถึงส่วนบุคคลเท่านั้น';
+
+  @override
+  String get workspaceGitHubInheritHint =>
+      'ใช้ GitHub App ที่ เซิร์ฟเวอร์ → แอปผู้ให้บริการ';
+
+  @override
+  String get workspaceGitHubAppHint =>
+      'ตัวตนบอทและการสำรวจของพื้นที่นี้ สมาชิกเข้าสู่ระบบที่ คุณ ผ่าน App นี้';
+
+  @override
+  String get workspaceGitHubPatLabel => 'โทเค็นเบื้องหลัง';
+
+  @override
+  String get workspaceGitHubPatDescription =>
+      'สำหรับการสำรวจและเอเจนต์ในพื้นที่นี้ ไม่ใช่โทเค็นโปรไฟล์ของสมาชิก';
+
+  @override
+  String get workspaceGitHubHasPat => 'มีโทเค็นเบื้องหลังถูกเก็บไว้';
+
+  @override
+  String get workspaceGitHubNoPat => 'ไม่มีโทเค็นเบื้องหลัง';
+
+  @override
+  String get profileOverlayHint =>
+      'ช่องเหล่านี้คือคุณในพื้นที่ทำงานนี้ ช่องว่างสืบทอดชื่อและอีเมลของบัญชี การเปลี่ยนพื้นที่เปลี่ยนเลเยอร์นี้';
+
+  @override
+  String get forgeConnectionsThisWorkspace =>
+      'เข้าสู่ระบบหรือวางโทเค็นสำหรับพื้นที่ทำงานนี้';
 }

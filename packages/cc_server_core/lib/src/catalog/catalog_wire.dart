@@ -1209,6 +1209,10 @@ Map<String, dynamic> workspaceMemberToWire(WorkspaceMember m) =>
       roleWire: m.roleWire,
       invitedBy: m.invitedBy,
       joinedAt: m.joinedAt,
+      displayName: m.displayName,
+      email: m.email,
+      gitAuthorName: m.gitAuthorName,
+      gitAuthorEmail: m.gitAuthorEmail,
     ).toJson();
 
 /// Maps a [WorkspaceInvite] to the `WorkspaceInviteDto` wire shape (metadata
@@ -1420,6 +1424,8 @@ Map<String, dynamic> workspaceToWire(Workspace w) => {
   'secret_exclude_globs': w.secretExcludeGlobs,
   'review_concurrency': w.reviewConcurrency,
   'auto_publish_review': w.autoPublishReview,
+  'github_auth_mode': w.githubAuthMode.wireName,
+  'github_app_id': w.githubAppId,
   'deleted_at': ?w.deletedAt?.toIso8601String(),
   'created_at': w.createdAt.toIso8601String(),
   'updated_at': w.updatedAt.toIso8601String(),
@@ -1443,6 +1449,8 @@ Workspace workspaceFromWire(Map<String, dynamic> w) {
     autoPublishReview: w['auto_publish_review'] is bool
         ? w['auto_publish_review'] as bool
         : false,
+    githubAuthMode: GithubAuthMode.fromWire(w['github_auth_mode'] as String?),
+    githubAppId: w['github_app_id'] as String? ?? '',
     deletedAt: w['deleted_at'] is String
         ? DateTime.parse(w['deleted_at'] as String)
         : null,
@@ -1903,6 +1911,7 @@ Map<String, dynamic> calendarEventToWire(CalendarEvent e) => {
 /// tokens — only the non-secret display/sync metadata).
 Map<String, dynamic> calendarAccountToWire(CalendarAccount a) => {
   'id': a.id,
+  'user_id': a.userId,
   'provider_id': a.providerId,
   'account_email': a.accountEmail,
   'display_name': ?a.displayName,
@@ -2784,8 +2793,9 @@ typedef CommitPreviewFetcher =
 /// shows a "connect GitHub on the server" state instead of an empty list.
 typedef OpenPrListFetcher =
     Future<List<({Repo repo, List<PullRequest> prs, bool hasMore})>> Function(
-      List<Repo> repos,
-    );
+      List<Repo> repos, {
+      String? workspaceId,
+    });
 
 /// Returns the SERVER's authenticated GitHub user (`{login, avatar_url, name}`
 /// wire map) or null. Lets a thin client resolve the current user (its `login`
@@ -2899,7 +2909,13 @@ typedef GitHubReadFetchers = ({
   /// [actingUserId]'s own permission on `owner/repo` (admin/write/read/none),
   /// resolved on THEIR credential — the answer gates that person's merge/edit
   /// affordances, so the server's own access is the wrong thing to report.
-  Future<String> Function(String owner, String repo, String actingUserId)
+  /// [workspaceId] selects that workspace's GitHub overlay token.
+  Future<String> Function(
+    String owner,
+    String repo,
+    String actingUserId, {
+    String? workspaceId,
+  })
   repoPermission,
 
   /// A GitHub user profile as a `GitHubUserProfile.toJson()` wire map, or null,
@@ -3274,7 +3290,6 @@ typedef ReviewDispatchFn =
       // per-user credential selection). Null attributes to the server owner.
       String? requestedByUserId,
     });
-
 
 /// Sentinel scope id meaning "this remember has nowhere it may be written".
 const String unscopedRemember = '\u0000none';

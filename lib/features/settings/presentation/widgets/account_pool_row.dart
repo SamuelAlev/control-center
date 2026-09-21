@@ -48,8 +48,9 @@ class AccountPoolRow extends StatelessWidget {
     final detail = [
       if (candidate.detail != null && candidate.detail!.isNotEmpty)
         candidate.detail!,
-      if (candidate.unavailable && candidate.unavailableReason != null)
-        candidate.unavailableReason!,
+      // A reason can apply to an account that is still selectable (a lapsed
+      // sign-in the CLI will renew). Hide it only when there is nothing to say.
+      if (candidate.unavailableReason != null) candidate.unavailableReason!,
     ].join(' · ');
 
     return Padding(

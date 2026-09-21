@@ -504,7 +504,7 @@
   "calendarRsvpFailed": "לא ניתן לעדכן את התשובה שלך",
   "calendarAddAccount": "הוסף חשבון לוח שנה",
   "calendarSettingsTitle": "Google Calendar",
-  "calendarSettingsDescription": "חבר חשבון Google כדי לסנכרן אירועים לסביבת עבודה זו.",
+  "calendarSettingsDescription": "חברו חשבון Google כדי לסנכרן אירועים למרחב הזה. לוחות השנה האלה הם שלך כאן.",
   "calendarConnecting": "מתחבר…",
   "calendarSyncNow": "סנכרן עכשיו",
   "calendarNoWorkspace": "בחר סביבת עבודה כדי לצפות בלוח השנה שלה",
@@ -3949,7 +3949,7 @@
   "agentQuestionSkippedLabel": "דולגה",
   "agentQuestionFreeformOptionHint": "תארו במילים שלכם…",
   "reviewRequested": "התבקשה סקירה",
-  "connectGitHubHint": "היכנסו ל-GitHub או הוסיפו אסימון גישה תחת הגדרות ← אתם ← פרופיל וזהות ← אחסון קוד",
+  "connectGitHubHint": "היכנסו ל-GitHub או הוסיפו אסימון גישה תחת הגדרות ← סביבת עבודה ← פרופיל וזהות ← אחסון קוד",
   "connectGitHubToLoadPrs": "חברו את GitHub כדי לטעון בקשות משיכה",
   "noRepositoriesConfigured": "לא הוגדרו מאגרים",
   "openedAgo": "נפתחה {age}",
@@ -5499,7 +5499,7 @@
   },
   "deviceNeverSeen": "מעולם לא התחבר",
   "profileSectionLabel": "פרופיל",
-  "profileSectionDescription": "כך אתם מופיעים בפני חברי הצוות ובחתימת המחבר של קומיטים ב-Git.",
+  "profileSectionDescription": "איך אתה מופיע לצוות ובמחבר commit של git במרחב הזה. שדות ריקים יורשים שם ואימייל מהחשבון.",
   "displayNameLabel": "שם תצוגה",
   "emailLabel": "אימייל",
   "gitAuthorNameLabel": "שם המחבר ב-Git",
@@ -7270,11 +7270,12 @@
   "settingsScopeBadgeDevice": "המכשיר הזה",
   "settingsScopeBadgeWorkspace": "סביבת עבודה",
   "settingsScopeBadgeServer": "שרת",
-  "settingsProfileDescription": "השם, האימייל וזהות ה-Git שמוטבעת על קומיטים שנוצרים עבורכם.",
+  "settingsProfileDescription": "השם, האימייל וזהות git שלך במרחב הזה. החלפת מרחב מחליפה את השכבה; הכינוי, הכניסה והמכשירים נשארים בחשבון.",
   "settingsServerConnectionDescription": "עם איזה שרת הלקוח הזה מדבר, ואיך השרת משותף (mDNS, מנהרות, ממסר).",
   "settingsAboutDescription": "זהות הגרסה ועדכונים.",
   "settingsDiagnosticsDescription": "בידוד, אינדוקס, סנכרון, רישום לוגים ודיווחי קריסות להתקנה הזו.",
   "settingsWorkspaceGeneralDescription": "זהות, מדיניות ומוסכמות המשותפות לכולם בסביבת העבודה הזו.",
+  "settingsWorkspaceMeetingsDescription": "תבניות הערות וקולות שמורים לפגישות בסביבת העבודה הזו.",
   "settingsWorkspacePolicyLabel": "מדיניות סביבת העבודה",
   "settingsWorkspacePolicyDescription": "חלה על כל חבר וכל סוכן בסביבת העבודה הזו.",
   "settingsSecretGlobsLabel": "החרגת נתיבים סודיים",
@@ -7608,7 +7609,7 @@
   "ticketProviderLocal": "מקומי",
   "addKey": "הוספת מפתח",
   "providerApps": "אפליקציות ספק",
-  "providerAppsDescription": "איך השרת הזה מזדהה בשם עצמו, ודרך מה אנשים נכנסים. עבודת רקע — webhooks, תשאול, סנכרון — רצה על האפליקציה, לעולם לא על אסימון גישה של אדם.",
+  "providerAppsDescription": "מרחבי עבודה יורשים את GitHub App הזה אלא אם בחרו App אחר או אסימון גישה אישי. עבודת רקע — webhooks, סריקה, סנכרון — רצה על האפליקציה, לא על אסימון של אדם.",
   "providerAppId": "מזהה אפליקציה",
   "providerPrivateKey": "מפתח פרטי",
   "providerClientId": "מזהה לקוח",
@@ -7757,9 +7758,9 @@
   "shortTaskDescription": "מריץ עבודות רקע מהירות כמו כותרות ותקצירים. מודל קטן יותר מתאים לכאן.",
   "settingsStateFailed": "נכשל",
   "providerAppsGroupServer": "פעולה בשם השרת",
-  "providerAppsGroupServerDescription": "מאפשר לעבודת רקע להגיע למאגרים בלי אדם מאחורי הבקשה: webhooks, תשאול בקשות משיכה, סנכרון כרטיסים.",
+  "providerAppsGroupServerDescription": "למרחבים שיורשים את GitHub App של ההתקנה. מרחב עם App או PAT משלו מוגדר תחת מרחב עבודה → כללי.",
   "providerAppsGroupPrConversations": "שיחות בבקשות משיכה",
-  "providerAppsGroupPrConversationsDescription": "איך מפתחים יכולים לדבר עם השרת הזה ישירות ב-GitHub. עובד בלי webhook או כתובת ציבורית — השרת מתשאל.",
+  "providerAppsGroupPrConversationsDescription": "איך מפתחים מדברים עם השרת ב-GitHub במרחבים יורשים. למרחב עם App משלו יש בוט תחת מרחב עבודה → כללי. בלי webhook או כתובת ציבורית — השרת סורק.",
   "providerAppBotLogin": "שם המשתמש של הבוט",
   "providerAppBotLoginEmpty": "בדקו את החיבור כדי לברר את שם המשתמש של הבוט.",
   "providerAppAskOnGitHub": "פנייה ב-GitHub",
@@ -8589,5 +8590,75 @@
   "rigClipboardAlwaysPasteTitle": "לאפשר תמיד הדבקה לסביבות",
   "rigClipboardAlwaysPasteDescription": "שליחת הלוח של המכשיר הזה לכל סביבה ללא בקשה.",
   "rigClipboardAlwaysCopyTitle": "לאפשר תמיד העתקה מסביבות",
-  "rigClipboardAlwaysCopyDescription": "הצבת תוכן לוח מכל סביבה במכשיר הזה ללא בקשה."
+  "rigClipboardAlwaysCopyDescription": "הצבת תוכן לוח מכל סביבה במכשיר הזה ללא בקשה.",
+  "imageDiffBefore": "לפני",
+  "@imageDiffBefore":   {
+    "description": "Label for the base (before) side of a PR image diff"
+  },
+  "imageDiffAfter": "אחרי",
+  "@imageDiffAfter":   {
+    "description": "Label for the head (after) side of a PR image diff"
+  },
+  "imageDiffModeTwoUp": "זה לצד זה",
+  "@imageDiffModeTwoUp":   {
+    "description": "Side-by-side comparison mode for a PR image diff"
+  },
+  "imageDiffModeSwipe": "החלקה",
+  "@imageDiffModeSwipe":   {
+    "description": "Swipe-divider comparison mode for a PR image diff"
+  },
+  "imageDiffModeDifference": "הפרש",
+  "@imageDiffModeDifference":   {
+    "description": "Pixel overlay comparison mode for a PR image diff"
+  },
+  "imageDiffChangedPercent": "{percent}% השתנה",
+  "@imageDiffChangedPercent":   {
+    "description": "Caption showing how much of a PR image pair differs",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "imageDiffPictures": "תמונות",
+  "@imageDiffPictures":   {
+    "description": "Header toggle to show SVG as pictures instead of XML hunks"
+  },
+  "imageDiffSource": "מקור",
+  "@imageDiffSource":   {
+    "description": "Header toggle to show an SVG file's XML source diff"
+  },
+  "imageDiffDeleted": "נמחק",
+  "@imageDiffDeleted": {
+    "description": "Label for the removed (before) side of a PR image asset comparison"
+  },
+  "imageDiffAdded": "נוסף",
+  "@imageDiffAdded": {
+    "description": "Label for the added (after) side of a PR image asset comparison"
+  },
+  "imageDiffDimensions": "ר: {width}px | ג: {height}px",
+  "@imageDiffDimensions": {
+    "description": "Intrinsic pixel size caption under a PR image-diff asset",
+    "placeholders": {
+      "width": {
+        "type": "int"
+      },
+      "height": {
+        "type": "int"
+      }
+    }
+  },
+  "workspaceGitHubIdentity": "זהות GitHub",
+  "workspaceGitHubIdentityDescription": "איך עבודת GitHub ברקע מאומתת במרחב הזה. ירושת ה-App של ההתקנה, App אחר, או אסימון גישה אישי בלבד.",
+  "workspaceGitHubModeInherit": "להשתמש ב-GitHub App של ההתקנה הזו",
+  "workspaceGitHubModeApp": "להשתמש ב-GitHub App אחר",
+  "workspaceGitHubModePat": "אסימון גישה אישי בלבד",
+  "workspaceGitHubInheritHint": "משתמש ב-GitHub App בשרת → אפליקציות ספק.",
+  "workspaceGitHubAppHint": "זהות הבוט והסריקה של המרחב. חברים נכנסים ב\"אתה\" דרך ה-App הזה.",
+  "workspaceGitHubPatLabel": "אסימון רקע",
+  "workspaceGitHubPatDescription": "לסריקה ולסוכנים במרחב הזה. לא אסימון הפרופיל של חבר.",
+  "workspaceGitHubHasPat": "אסימון רקע שמור.",
+  "workspaceGitHubNoPat": "אין אסימון רקע שמור.",
+  "profileOverlayHint": "השדות האלה הם אתה במרחב הזה. שדות ריקים יורשים שם ואימייל מהחשבון. החלפת מרחב מחליפה את השכבה.",
+  "forgeConnectionsThisWorkspace": "היכנסו או הדביקו אסימון למרחב העבודה הזה."
 }

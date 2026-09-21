@@ -48,6 +48,7 @@ class _NoopBroker implements CredentialBrokerPort {
     String? repoOwner,
     String? repoName,
     String? actingUserId,
+    String? workspaceId,
   }) async => const ScopedCredentials(handle: 'h', environment: {});
 
   @override

@@ -65,6 +65,28 @@ class WorkspaceMemberDao extends DatabaseAccessor<WorkspaceDatabase>
           ))
           .write(WorkspaceMembersTableCompanion(role: Value(role)));
 
+  /// Writes this member's profile overlay. [Value.absent] leaves a field
+  /// alone; [Value(null)] inherits the global user row again.
+  Future<int> updateProfileOverlay(
+    String workspaceId,
+    String userId, {
+    Value<String?> displayName = const Value.absent(),
+    Value<String?> email = const Value.absent(),
+    Value<String?> gitAuthorName = const Value.absent(),
+    Value<String?> gitAuthorEmail = const Value.absent(),
+  }) =>
+      (update(workspaceMembersTable)..where(
+            (t) => t.workspaceId.equals(workspaceId) & t.userId.equals(userId),
+          ))
+          .write(
+            WorkspaceMembersTableCompanion(
+              displayName: displayName,
+              email: email,
+              gitAuthorName: gitAuthorName,
+              gitAuthorEmail: gitAuthorEmail,
+            ),
+          );
+
   /// Removes [userId] from [workspaceId], along with their repo grants.
   Future<void> remove(String workspaceId, String userId) async {
     await (delete(workspaceMemberRepoGrantsTable)..where(

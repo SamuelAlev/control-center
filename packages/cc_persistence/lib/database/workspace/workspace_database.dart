@@ -446,7 +446,7 @@ class WorkspaceDatabase extends _$WorkspaceDatabase {
   /// The current workspace schema version, as a const so non-database code
   /// (the server's /healthz build/compat block) can report it without
   /// instantiating a database. Keep in lockstep with [schemaVersion].
-  static const int currentSchemaVersion = 9;
+  static const int currentSchemaVersion = 10;
 
   @override
   int get schemaVersion => currentSchemaVersion;
@@ -638,6 +638,46 @@ class WorkspaceDatabase extends _$WorkspaceDatabase {
         await _createIndexIfMissing(m, idxTodosWorkspaceId);
         await _createIndexIfMissing(m, idxTodosConversation);
         await _createIndexIfMissing(m, idxConversationGoalsWorkspaceId);
+      },
+    ),
+    // v9 → v10: Workspace → Profile is this workspace's overlay. Membership carries
+    // optional display name / email / git author (null inherits the global
+    // User). Calendar accounts gain userId so connecting Google on You is
+    // that member's calendars here, not a shared pool.
+    MigrationStep(
+      9,
+      10,
+      (m) async {
+        await _addColumnIfMissing(
+          m,
+          workspaceMembersTable,
+          workspaceMembersTable.displayName,
+        );
+        await _addColumnIfMissing(
+          m,
+          workspaceMembersTable,
+          workspaceMembersTable.email,
+        );
+        await _addColumnIfMissing(
+          m,
+          workspaceMembersTable,
+          workspaceMembersTable.gitAuthorName,
+        );
+        await _addColumnIfMissing(
+          m,
+          workspaceMembersTable,
+          workspaceMembersTable.gitAuthorEmail,
+        );
+        await _addColumnIfMissing(
+          m,
+          calendarAccountsTable,
+          calendarAccountsTable.userId,
+        );
+        await m.database.customStatement(
+          'DROP INDEX IF EXISTS uq_calendar_accounts_ws_email',
+        );
+        await _createIndexIfMissing(m, idxCalendarAccountsUserId);
+        await _createIndexIfMissing(m, uqCalendarAccountsWsUserEmail);
       },
     ),
   ];

@@ -149,12 +149,18 @@ class FilesTab extends ConsumerWidget {
     // value is yielded before the internal listener attaches, `.future`
     // never sees it and hangs forever. `.first` on the stream is reliable.
     final repo = ref.read(prRepositoryProvider(prRef));
+    final workspaceId = ref.watch(activeWorkspaceIdProvider);
+    final selectedShas = scope.selectedShas;
+    final imageHeadRef = selectedShas.length == 1
+        ? selectedShas.first
+        : pr.headSha;
     final fetcher = pr.headSha.isEmpty || repo == null
         ? null
         : (String path) => repo
               .watchFileContent(path, pr.headSha)
               .first
               .timeout(const Duration(seconds: 15));
+    final resolveImageDiff = repo?.resolveImageDiff;
     final inlineCommentsController = ref.read(
       prInlineCommentsControllerProvider(prRef).notifier,
     );
@@ -167,7 +173,6 @@ class FilesTab extends ConsumerWidget {
     // keyboard handler fires during a tab/route transition) and `ref.read`
     // from an unmounted element throws.
     final scopeNotifier = ref.read(prDiffScopeProvider.notifier);
-    final workspaceId = ref.watch(activeWorkspaceIdProvider);
     final repoId = prRepoIdFor(ref, pr);
     final spaceId = ref.watch(prSpaceProvider(pr)).value;
 
@@ -190,6 +195,9 @@ class FilesTab extends ConsumerWidget {
       workspaceId: workspaceId,
       repoId: repoId,
       spaceId: spaceId,
+      resolveImageDiff: resolveImageDiff,
+      imageDiffBaseRef: pr.baseSha,
+      imageDiffHeadRef: imageHeadRef,
       onToggleViewed: ({required path, required viewed}) {
         if (pr.externalId.isEmpty) {
           return;

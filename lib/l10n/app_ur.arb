@@ -504,7 +504,7 @@
   "calendarRsvpFailed": "آپ کا جواب اپ ڈیٹ نہیں ہو سکا",
   "calendarAddAccount": "کیلنڈر اکاؤنٹ شامل کریں",
   "calendarSettingsTitle": "Google Calendar",
-  "calendarSettingsDescription": "اس ورک اسپیس میں ایونٹس سنک کرنے کے لیے Google اکاؤنٹ منسلک کریں۔",
+  "calendarSettingsDescription": "اس ورک اسپیس میں ایونٹس ہم آہنگ کرنے کے لیے Google اکاؤنٹ جوڑیں۔ یہ کیلنڈرز یہاں آپ کے ہیں۔",
   "calendarConnecting": "منسلک ہو رہا ہے…",
   "calendarSyncNow": "اب سنک کریں",
   "calendarNoWorkspace": "اس کا کیلنڈر دیکھنے کے لیے ورک اسپیس منتخب کریں",
@@ -3949,7 +3949,7 @@
   "agentQuestionSkippedLabel": "چھوڑ دیا گیا",
   "agentQuestionFreeformOptionHint": "اپنے الفاظ میں بیان کریں…",
   "reviewRequested": "ریویو کی درخواست",
-  "connectGitHubHint": "GitHub میں سائن اِن کریں یا ترتیبات ← آپ ← پروفائل اور شناخت ← کوڈ ہوسٹنگ میں ٹوکن شامل کریں",
+  "connectGitHubHint": "GitHub میں سائن اِن کریں یا ترتیبات ← ورک اسپیس ← پروفائل اور شناخت ← کوڈ ہوسٹنگ میں ٹوکن شامل کریں",
   "connectGitHubToLoadPrs": "pull requests لوڈ کرنے کے لیے GitHub منسلک کریں",
   "noRepositoriesConfigured": "کوئی ریپوزٹری کنفیگر نہیں",
   "openedAgo": "{age} کھلا",
@@ -5499,7 +5499,7 @@
   },
   "deviceNeverSeen": "کبھی منسلک نہیں",
   "profileSectionLabel": "پروفائل",
-  "profileSectionDescription": "آپ ٹیم ساتھیوں اور git کمیٹ تصنیف میں کیسے دکھتے ہیں۔",
+  "profileSectionDescription": "اس ورک اسپیس میں ٹیم اور git کمیٹ تصنیف میں آپ کیسے نظر آتے ہیں۔ خالی فیلڈز اکاؤنٹ کا نام اور ای میل وراثت میں لیتی ہیں۔",
   "displayNameLabel": "ڈسپلے نام",
   "emailLabel": "ای میل",
   "gitAuthorNameLabel": "Git مصنف نام",
@@ -7270,11 +7270,12 @@
   "settingsScopeBadgeDevice": "یہ ڈیوائس",
   "settingsScopeBadgeWorkspace": "ورک اسپیس",
   "settingsScopeBadgeServer": "سرور",
-  "settingsProfileDescription": "آپ کا نام، ای میل اور git شناخت جو آپ کے لیے کمیٹس پر لگتی ہے۔",
+  "settingsProfileDescription": "اس ورک اسپیس میں آپ کا نام، ای میل اور git شناخت۔ ورک اسپیس بدلنا یہ تہہ بدلتا ہے؛ ہینڈل، سائن ان اور آلات اکاؤنٹ پر رہتے ہیں۔",
   "settingsServerConnectionDescription": "یہ کلائنٹ کس سرور سے بات کرتا ہے، اور یہ سرور کیسے شیئر ہوتا ہے (mDNS، ٹنلز، ریلے)۔",
   "settingsAboutDescription": "بلڈ شناخت اور اپ ڈیٹس۔",
   "settingsDiagnosticsDescription": "اس انسٹال کے لیے علیحدگی، انڈیکسنگ، سنک، لاگنگ اور کریش رپورٹنگ۔",
   "settingsWorkspaceGeneralDescription": "شناخت، پالیسی اور روایات جو اس ورک اسپیس کے سب شیئر کرتے ہیں۔",
+  "settingsWorkspaceMeetingsDescription": "اس ورک اسپیس کی میٹنگز کے لیے نوٹ ٹیمپلیٹس اور محفوظ شدہ آوازیں۔",
   "settingsWorkspacePolicyLabel": "ورک اسپیس پالیسی",
   "settingsWorkspacePolicyDescription": "اس ورک اسپیس کے ہر رکن اور ہر ایجنٹ پر لاگو۔",
   "settingsSecretGlobsLabel": "خفیہ پاتھ اخراجات",
@@ -7608,7 +7609,7 @@
   "ticketProviderLocal": "مقامی",
   "addKey": "کلید شامل کریں",
   "providerApps": "فراہم کنندہ ایپس",
-  "providerAppsDescription": "یہ سرور خود کیسے تصدیق کرتا ہے، اور شخص کس سے سائن اِن کرتا ہے۔ پس منظر کام — ویب ہکس، پولنگ، سنک — ایپ پر چلتا ہے، کسی کے ٹوکن پر نہیں۔",
+  "providerAppsDescription": "ورک اسپیسز یہ GitHub App وراثت میں لیتے ہیں جب تک وہ دوسرا App یا ذاتی رسائی ٹوکن نہ چنیں۔ پس منظر کام — ویب ہکس، پولنگ، ہم آہنگی — ایپ پر چلتا ہے، کسی شخص کے ٹوکن پر نہیں۔",
   "providerAppId": "App id",
   "providerPrivateKey": "پرائیویٹ کلید",
   "providerClientId": "Client id",
@@ -7757,9 +7758,9 @@
   "shortTaskDescription": "عنوانات اور خلاصوں جیسا فوری پس منظر کام چلاتا ہے۔ چھوٹا ماڈل یہاں ہے۔",
   "settingsStateFailed": "ناکام",
   "providerAppsGroupServer": "سرور کے طور پر عمل",
-  "providerAppsGroupServerDescription": "پس منظر کام کو بغیر انسان کے ریپوزٹریز تک پہنچاتا ہے: ویب ہکس، pull request پولنگ، ٹکٹ سنک۔",
+  "providerAppsGroupServerDescription": "ان ورک اسپیسز کے لیے جو اس تنصیب کا GitHub App وراثت میں لیتے ہیں۔ اپنے App یا PAT والی ورک اسپیس ورک اسپیس → عمومی میں ترتیب پاتی ہے۔",
   "providerAppsGroupPrConversations": "Pull request گفتگوئیں",
-  "providerAppsGroupPrConversationsDescription": "ڈویلپرز GitHub پر اس سرور سے براہِ راست کیسے بات کر سکتے ہیں۔ ویب ہک یا پبلک URL کے بغیر کام کرتا ہے — سرور پول کرتا ہے۔",
+  "providerAppsGroupPrConversationsDescription": "وراثت والی ورک اسپیسز میں ڈویلپرز GitHub پر اس سرور سے کیسے بات کرتے ہیں۔ اپنے App والی ورک اسپیس کا بوٹ ورک اسپیس → عمومی میں ہے۔ ویب ہک یا عوامی URL کے بغیر — سرور پول کرتا ہے۔",
   "providerAppBotLogin": "بوٹ لاگ اِن",
   "providerAppBotLoginEmpty": "بوٹ لاگ اِن حل کرنے کے لیے کنکشن ٹیسٹ کریں۔",
   "providerAppAskOnGitHub": "GitHub پر پوچھنا",
@@ -8589,5 +8590,75 @@
   "rigClipboardAlwaysPasteTitle": "ماحولوں میں پیسٹ کرنے کی ہمیشہ اجازت دیں",
   "rigClipboardAlwaysPasteDescription": "اس آلے کا کلپ بورڈ پوچھے بغیر کسی بھی ماحول کو بھیجیں۔",
   "rigClipboardAlwaysCopyTitle": "ماحولوں سے کاپی کرنے کی ہمیشہ اجازت دیں",
-  "rigClipboardAlwaysCopyDescription": "کسی بھی ماحول سے کلپ بورڈ کا مواد پوچھے بغیر اس آلے پر رکھیں۔"
+  "rigClipboardAlwaysCopyDescription": "کسی بھی ماحول سے کلپ بورڈ کا مواد پوچھے بغیر اس آلے پر رکھیں۔",
+  "imageDiffBefore": "پہلے",
+  "@imageDiffBefore":   {
+    "description": "Label for the base (before) side of a PR image diff"
+  },
+  "imageDiffAfter": "بعد",
+  "@imageDiffAfter":   {
+    "description": "Label for the head (after) side of a PR image diff"
+  },
+  "imageDiffModeTwoUp": "دو کالم",
+  "@imageDiffModeTwoUp":   {
+    "description": "Side-by-side comparison mode for a PR image diff"
+  },
+  "imageDiffModeSwipe": "سوائپ",
+  "@imageDiffModeSwipe":   {
+    "description": "Swipe-divider comparison mode for a PR image diff"
+  },
+  "imageDiffModeDifference": "فرق",
+  "@imageDiffModeDifference":   {
+    "description": "Pixel overlay comparison mode for a PR image diff"
+  },
+  "imageDiffChangedPercent": "{percent}٪ تبدیل",
+  "@imageDiffChangedPercent":   {
+    "description": "Caption showing how much of a PR image pair differs",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "imageDiffPictures": "تصاویر",
+  "@imageDiffPictures":   {
+    "description": "Header toggle to show SVG as pictures instead of XML hunks"
+  },
+  "imageDiffSource": "ماخذ",
+  "@imageDiffSource":   {
+    "description": "Header toggle to show an SVG file's XML source diff"
+  },
+  "imageDiffDeleted": "حذف شدہ",
+  "@imageDiffDeleted": {
+    "description": "Label for the removed (before) side of a PR image asset comparison"
+  },
+  "imageDiffAdded": "شامل کیا گیا",
+  "@imageDiffAdded": {
+    "description": "Label for the added (after) side of a PR image asset comparison"
+  },
+  "imageDiffDimensions": "چ: {width}px | ا: {height}px",
+  "@imageDiffDimensions": {
+    "description": "Intrinsic pixel size caption under a PR image-diff asset",
+    "placeholders": {
+      "width": {
+        "type": "int"
+      },
+      "height": {
+        "type": "int"
+      }
+    }
+  },
+  "workspaceGitHubIdentity": "GitHub شناخت",
+  "workspaceGitHubIdentityDescription": "اس ورک اسپیس میں پس منظر GitHub کام کی تصدیق کیسے ہوتی ہے۔ تنصیب کا App وراثت میں لیں، دوسرا App استعمال کریں، یا صرف ذاتی رسائی ٹوکن۔",
+  "workspaceGitHubModeInherit": "اس تنصیب کا GitHub App استعمال کریں",
+  "workspaceGitHubModeApp": "کوئی اور GitHub App استعمال کریں",
+  "workspaceGitHubModePat": "صرف ذاتی رسائی ٹوکن",
+  "workspaceGitHubInheritHint": "سرور → فراہم کنندہ ایپس کا GitHub App استعمال کرتا ہے۔",
+  "workspaceGitHubAppHint": "اس ورک اسپیس کی بوٹ اور پولنگ شناخت۔ اراکین آپ میں اس App کے ذریعے سائن ان کرتے ہیں۔",
+  "workspaceGitHubPatLabel": "پس منظر ٹوکن",
+  "workspaceGitHubPatDescription": "اس ورک اسپیس میں پولنگ اور ایجنٹس کے لیے۔ رکن کا پروفائل ٹوکن نہیں۔",
+  "workspaceGitHubHasPat": "پس منظر ٹوکن محفوظ ہے۔",
+  "workspaceGitHubNoPat": "کوئی پس منظر ٹوکن محفوظ نہیں۔",
+  "profileOverlayHint": "یہ فیلڈز اس ورک اسپیس میں آپ ہیں۔ خالی فیلڈز اکاؤنٹ کا نام اور ای میل وراثت میں لیتی ہیں۔ ورک اسپیس بدلنا یہ تہہ بدلتا ہے۔",
+  "forgeConnectionsThisWorkspace": "اس ورک اسپیس کے لیے سائن ان کریں یا ٹوکن چسپاں کریں۔"
 }

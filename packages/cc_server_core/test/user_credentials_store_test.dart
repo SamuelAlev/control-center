@@ -163,4 +163,40 @@ void main() {
     });
   });
 
+  group('workspace overlay', () {
+    test('a workspace overlay does not overwrite the global slot', () async {
+      await store.setForgeToken(
+        alice,
+        ForgeHost.github,
+        const ProviderToken(accessToken: 'global'),
+      );
+      await store.setForgeToken(
+        alice,
+        ForgeHost.github,
+        const ProviderToken(accessToken: 'ws-a'),
+        workspaceId: 'ws-a',
+      );
+
+      expect(
+        (await store.forgeToken(alice, ForgeHost.github))?.accessToken,
+        'global',
+      );
+      expect(
+        (await store.forgeToken(
+          alice,
+          ForgeHost.github,
+          workspaceId: 'ws-a',
+        ))?.accessToken,
+        'ws-a',
+      );
+      expect(
+        UserCredentialsStore.forgeKey(
+          ForgeHost.github,
+          alice,
+          workspaceId: 'ws-a',
+        ),
+        'user_forge_github_${alice}_ws-a',
+      );
+    });
+  });
 }

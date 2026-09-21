@@ -24,6 +24,8 @@ class FastFileHeader extends StatefulWidget {
     this.canPreview = false,
     this.isPreview = false,
     this.onTogglePreview,
+    this.previewOffLabel,
+    this.previewOnLabel,
     this.onToggleViewed,
     this.onAddFileComment,
     this.onOpenInEditor,
@@ -49,6 +51,13 @@ class FastFileHeader extends StatefulWidget {
 
   /// Toggles between the diff and the Markdown preview (null hides the control).
   final VoidCallback? onTogglePreview;
+
+  /// Label for the off (source/diff) segment. Defaults to [AppLocalizations.diff].
+  final String? previewOffLabel;
+
+  /// Label for the on (pictures/preview) segment. Defaults to
+  /// [AppLocalizations.preview].
+  final String? previewOnLabel;
 
   /// Toggles expand/collapse.
   final VoidCallback onToggleExpanded;
@@ -174,11 +183,15 @@ class _FastFileHeaderState extends State<FastFileHeader> {
                   segments: [
                     CcSegment(
                       value: false,
-                      label: AppLocalizations.of(context).diff,
+                      label:
+                          widget.previewOffLabel ??
+                          AppLocalizations.of(context).diff,
                     ),
                     CcSegment(
                       value: true,
-                      label: AppLocalizations.of(context).preview,
+                      label:
+                          widget.previewOnLabel ??
+                          AppLocalizations.of(context).preview,
                     ),
                   ],
                 ),

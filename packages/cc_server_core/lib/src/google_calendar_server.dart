@@ -18,8 +18,17 @@ import 'package:dio/dio.dart';
 /// Builds the deterministic account id for a workspace + Google account email.
 /// Mirrors the client's `googleAccountId` so a row connected here is keyed the
 /// same way the rest of the system expects.
-String serverGoogleAccountId(String workspaceId, String email) =>
-    'google:$workspaceId:$email';
+/// Builds the deterministic account id for a workspace + Google account email.
+/// Embedding [userId] keeps two members who connect the same Google email
+/// on distinct rows and distinct secrets. Legacy ids omit the user (empty
+/// [userId]) and stay three-part so existing rows keep loading.
+String serverGoogleAccountId(
+  String workspaceId,
+  String email, {
+  String userId = '',
+}) => userId.isEmpty
+    ? 'google:$workspaceId:$email'
+    : 'google:$workspaceId:$userId:$email';
 
 /// Recovers the workspace id embedded in a [serverGoogleAccountId], or null if
 /// malformed. Workspace ids are UUIDs and emails contain no `:`, so the
@@ -502,12 +511,14 @@ Future<void> connectGoogleCalendar({
 class _PendingConnect {
   _PendingConnect({
     required this.workspaceId,
+    required this.userId,
     required this.auth,
     required this.code,
     this.usesBuiltinClient = false,
   });
 
   final String workspaceId;
+  final String userId;
   final GoogleDeviceAuthClient auth;
   final GoogleDeviceCode code;
 
@@ -617,6 +628,7 @@ class CalendarConnectService {
   /// echoed back to the caller.
   Future<CalendarConnectBegin> begin({
     required String workspaceId,
+    String userId = '',
     bool useBuiltin = false,
     String clientId = '',
     String clientSecret = '',
@@ -646,6 +658,7 @@ class CalendarConnectService {
     final handle = _newHandle();
     _pending[handle] = _PendingConnect(
       workspaceId: workspaceId,
+      userId: userId,
       auth: auth,
       code: code,
       usesBuiltinClient: useBuiltin,
@@ -696,7 +709,11 @@ class CalendarConnectService {
             code: 'no_account_email',
           );
         }
-        final accountId = serverGoogleAccountId(workspaceId, email);
+        final accountId = serverGoogleAccountId(
+          workspaceId,
+          email,
+          userId: pending.userId,
+        );
         // A built-in connect stores the marker, not the pair: the server's own
         // secret must not be duplicated into the credential file and the
         // refresh path re-resolves it so a rotated client keeps working.
@@ -708,6 +725,7 @@ class CalendarConnectService {
           CalendarAccount(
             id: accountId,
             workspaceId: workspaceId,
+            userId: pending.userId,
             providerId: 'google',
             accountEmail: email,
           ),
@@ -730,12 +748,25 @@ class CalendarConnectService {
   Future<void> disconnect({
     required String workspaceId,
     required String accountId,
+    String? userId,
   }) async {
     // Isolation: the account id embeds its workspace.
     if (_workspaceIdFromAccountId(accountId) != workspaceId) {
       throw const WorkspaceMismatchException(
         'That calendar account belongs to a different workspace.',
       );
+    }
+    if (userId != null && userId.isNotEmpty) {
+      final accounts = await _calendarRepository.getAccounts(workspaceId);
+      for (final account in accounts) {
+        if (account.id == accountId &&
+            account.userId.isNotEmpty &&
+            account.userId != userId) {
+          throw const AuthException(
+            'That calendar account belongs to a different user.',
+          );
+        }
+      }
     }
     await _calendarRepository.deleteAccount(workspaceId, accountId);
     await _store.clear(accountId);

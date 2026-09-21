@@ -69,7 +69,12 @@ class GitHubLoginDirectory {
     final members = await _members.getForWorkspace(workspaceId);
     final logins = <String, String>{};
     for (final member in members) {
-      final token = await _credentials.forgeToken(
+      var token = await _credentials.forgeToken(
+        member.userId,
+        ForgeHost.github,
+        workspaceId: workspaceId,
+      );
+      token ??= await _credentials.forgeToken(
         member.userId,
         ForgeHost.github,
       );

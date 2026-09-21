@@ -4,12 +4,14 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:cc_domain/cc_domain.dart' show AuthException;
+import 'package:cc_domain/core/domain/entities/workspace.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_connection.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_domain/features/ticketing/domain/entities/ticket_provider.dart';
 import 'package:cc_server_core/src/identity/provider_app_settings.dart';
 import 'package:cc_server_core/src/identity/provider_token.dart';
 import 'package:cc_server_core/src/identity/user_credentials_store.dart';
+import 'package:cc_server_core/src/identity/workspace_github_app_settings.dart';
 
 /// This server's callback URL for [provider], derived from an HTTP [origin]
 /// (`https://host:9030`).
@@ -114,12 +116,21 @@ class _OAuthWiring {
 /// re-reading its connection list.
 class ProviderOAuthService {
   /// Creates a [ProviderOAuthService].
+  ///
+  /// [workspaceApps] / [workspaceLookup] may be assigned after construction —
+  /// the workspace registry is assembled later on the boot path.
   ProviderOAuthService({
-    required this._apps,
-    required this._users,
+    required ProviderAppSettings apps,
+    required UserCredentialsStore users,
+    WorkspaceGitHubAppSettings? workspaceApps,
+    Future<Workspace?> Function(String workspaceId)? workspaceLookup,
     HttpClient? httpClient,
     DateTime Function()? now,
-  }) : _http = httpClient ?? (HttpClient()..connectionTimeout = _httpTimeout),
+  }) : _apps = apps,
+       _users = users,
+       workspaceApps = workspaceApps,
+       workspaceLookup = workspaceLookup,
+       _http = httpClient ?? (HttpClient()..connectionTimeout = _httpTimeout),
        _now = now ?? (() => DateTime.now().toUtc());
 
   /// Bound on every provider round-trip. A wedged provider must not pin the
@@ -138,12 +149,22 @@ class ProviderOAuthService {
 
   final ProviderAppSettings _apps;
   final UserCredentialsStore _users;
+  WorkspaceGitHubAppSettings? workspaceApps;
+  Future<Workspace?> Function(String workspaceId)? workspaceLookup;
   final HttpClient _http;
   final DateTime Function() _now;
   final _random = Random.secure();
 
   final _pending =
-      <String, ({String userId, ProviderApp provider, DateTime expiresAt})>{};
+      <
+        String,
+        ({
+          String userId,
+          ProviderApp provider,
+          DateTime expiresAt,
+          String? workspaceId,
+        })
+      >{};
 
   /// Live device-code polls, one per `(user, provider)`.
   final _devicePolls = <String, _DevicePoll>{};
@@ -171,14 +192,34 @@ class ProviderOAuthService {
   /// The providers this server can actually run a sign-in for — the ones whose
   /// app credentials are configured. The client shows a "sign in" button for
   /// exactly these and a "paste a token" affordance for the rest.
-  Future<List<ProviderApp>> availableProviders() async {
+  ///
+  /// A GitHub [workspaceId] uses that workspace's App (or the install App
+  /// when it inherits). PAT-only workspaces omit GitHub — device-flow OAuth
+  /// is installation-bounded and cannot see those orgs.
+  Future<List<ProviderApp>> availableProviders({String? workspaceId}) async {
     final available = <ProviderApp>[];
     for (final provider in ProviderApp.values) {
-      if ((await _apps.oauthCredentials(provider)) != null) {
+      if ((await _oauthCredentials(provider, workspaceId: workspaceId)) !=
+          null) {
         available.add(provider);
       }
     }
     return available;
+  }
+
+  Future<OAuthAppCredentials?> _oauthCredentials(
+    ProviderApp provider, {
+    String? workspaceId,
+  }) async {
+    if (provider == ProviderApp.github &&
+        workspaceId != null &&
+        workspaceId.isNotEmpty) {
+      final workspace = await workspaceLookup?.call(workspaceId);
+      if (workspace != null) {
+        return workspaceApps?.oauthCredentials(workspace);
+      }
+    }
+    return _apps.oauthCredentials(provider);
   }
 
   /// Starts a login for [userId] and returns the URL to open in their browser.
@@ -191,8 +232,12 @@ class ProviderOAuthService {
     required ProviderApp provider,
     required String userId,
     required Uri redirectUri,
+    String? workspaceId,
   }) async {
-    final credentials = await _apps.oauthCredentials(provider);
+    final credentials = await _oauthCredentials(
+      provider,
+      workspaceId: workspaceId,
+    );
     if (credentials == null) {
       throw AuthException(
         'This server has no ${provider.wire} app configured, so it cannot '
@@ -214,6 +259,7 @@ class ProviderOAuthService {
       userId: userId,
       provider: provider,
       expiresAt: _now().add(pendingTtl),
+      workspaceId: workspaceId,
     );
     final wiring = _wiring[provider]!;
     return wiring.authorize.replace(
@@ -251,13 +297,17 @@ class ProviderOAuthService {
   Future<DeviceLoginPrompt> beginDeviceLogin({
     required ProviderApp provider,
     required String userId,
+    String? workspaceId,
   }) async {
     final wiring = _wiring[provider]!;
     final deviceUrl = wiring.deviceCode;
     if (deviceUrl == null) {
       throw AuthException('${provider.wire} has no device sign-in.');
     }
-    final credentials = await _apps.oauthCredentials(provider);
+    final credentials = await _oauthCredentials(
+      provider,
+      workspaceId: workspaceId,
+    );
     if (credentials == null) {
       throw AuthException(
         'This server has no ${provider.wire} app configured, so it cannot '
@@ -286,7 +336,7 @@ class ProviderOAuthService {
     // One live device login per (user, provider): starting a second one means
     // the human abandoned the first, and two pollers would race to store two
     // different credentials for the same person.
-    final key = '$userId:${provider.wire}';
+    final key = '$userId:${provider.wire}:${workspaceId ?? ''}';
     _devicePolls.remove(key)?.cancel();
     final poll = _DevicePoll(
       deadline: _now().add(Duration(seconds: expiresIn)),
@@ -301,6 +351,7 @@ class ProviderOAuthService {
         userId: userId,
         credentials: credentials,
         deviceCode: deviceCode,
+        workspaceId: workspaceId,
       ),
     );
 
@@ -322,6 +373,7 @@ class ProviderOAuthService {
     required String userId,
     required OAuthAppCredentials credentials,
     required String deviceCode,
+    String? workspaceId,
   }) async {
     var interval = poll.interval;
     try {
@@ -381,7 +433,12 @@ class ProviderOAuthService {
         final account = await _wiring[provider]!
             .accountProbe(_http, access)
             .catchError((_) => '');
-        await _store(userId, provider, token.withAccount(account));
+        await _store(
+          userId,
+          provider,
+          token.withAccount(account),
+          workspaceId: workspaceId,
+        );
         return;
       }
     } finally {
@@ -419,7 +476,10 @@ class ProviderOAuthService {
       throw const AuthException('This sign-in took too long — try again.');
     }
 
-    final credentials = await _apps.oauthCredentials(pending.provider);
+    final credentials = await _oauthCredentials(
+      pending.provider,
+      workspaceId: pending.workspaceId,
+    );
     if (credentials == null) {
       throw const AuthException(
         'The app credentials changed while you were signing in.',
@@ -435,7 +495,12 @@ class ProviderOAuthService {
       _http,
       token.accessToken,
     );
-    await _store(pending.userId, pending.provider, token.withAccount(account));
+    await _store(
+      pending.userId,
+      pending.provider,
+      token.withAccount(account),
+      workspaceId: pending.workspaceId,
+    );
     return (provider: pending.provider, account: account);
   }
 
@@ -448,13 +513,17 @@ class ProviderOAuthService {
   Future<ProviderToken?> refresh(
     String userId,
     ForgeHost forge,
-    ProviderToken expired,
-  ) async {
+    ProviderToken expired, {
+    String? workspaceId,
+  }) async {
     final provider = _providerForForge(forge);
     if (provider == null || !expired.canRefresh) {
       return null;
     }
-    final credentials = await _apps.oauthCredentials(provider);
+    final credentials = await _oauthCredentials(
+      provider,
+      workspaceId: workspaceId,
+    );
     // Refreshing IS a confidential-client exchange even where signing in is
     // not: without a client secret an expiring token simply cannot be renewed,
     // and the caller drops it and asks for a fresh sign-in.
@@ -483,6 +552,7 @@ class ProviderOAuthService {
     required String userId,
     required ProviderApp provider,
     required String token,
+    String? workspaceId,
   }) async {
     final account = await _wiring[provider]!
         .accountProbe(_http, token)
@@ -495,6 +565,7 @@ class ProviderOAuthService {
         source: ForgeCredentialSource.settings,
         accountLogin: account,
       ),
+      workspaceId: workspaceId,
     );
     return account;
   }
@@ -505,11 +576,17 @@ class ProviderOAuthService {
   Future<void> _store(
     String userId,
     ProviderApp provider,
-    ProviderToken token,
-  ) async {
+    ProviderToken token, {
+    String? workspaceId,
+  }) async {
     switch (provider) {
       case ProviderApp.github:
-        await _users.setForgeToken(userId, ForgeHost.github, token);
+        await _users.setForgeToken(
+          userId,
+          ForgeHost.github,
+          token,
+          workspaceId: workspaceId,
+        );
       case ProviderApp.linear:
         await _users.setTicketToken(userId, TicketProvider.linear, token);
     }

@@ -51,6 +51,16 @@ void main() {
       expect(me.memberships.first.role, 'admin');
       expect(me.roleIn('ws-1'), 'admin');
       expect(me.roleIn('ws-other'), isNull);
+      expect(host.lastCall('identity.me')!.args, isEmpty);
+    });
+
+    test('me names the workspace overlay when one is active', () async {
+      host.callResults['identity.me'] = {
+        'user': {'id': 'u-1', 'display_name': 'Sam Here'},
+      };
+      final repo = RemoteIdentityRepository(client);
+      await repo.me(workspaceId: 'ws-b');
+      expect(host.lastCall('identity.me')!.args['workspace_id'], 'ws-b');
     });
 
     test('me tolerates a missing memberships array', () async {
@@ -182,6 +192,27 @@ void main() {
       expect(call.args['git_author_email'], 'sam@example.com');
       expect(call.args.containsKey('display_name'), isFalse);
       expect(call.args.containsKey('email'), isFalse);
+    });
+
+    test('updateWorkspaceProfile names the overlay op', () async {
+      host.callResults['identity.updateWorkspaceProfile'] = {
+        'user': {'id': 'u-1', 'display_name': 'Sam Here'},
+      };
+      final repo = RemoteIdentityRepository(client);
+      final user = await repo.updateWorkspaceProfile(
+        workspaceId: 'ws-b',
+        displayName: 'Sam Here',
+        email: '',
+        gitAuthorName: 'Sam A',
+        gitAuthorEmail: '',
+      );
+      final call = host.lastCall('identity.updateWorkspaceProfile')!;
+      expect(call.args['workspace_id'], 'ws-b');
+      expect(call.args['display_name'], 'Sam Here');
+      expect(call.args['email'], '');
+      expect(call.args['git_author_name'], 'Sam A');
+      expect(call.args['git_author_email'], '');
+      expect(user.displayName, 'Sam Here');
     });
   });
 

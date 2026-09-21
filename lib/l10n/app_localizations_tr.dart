@@ -1130,7 +1130,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get calendarSettingsDescription =>
-      'Etkinlikleri bu çalışma alanına eşitlemek için bir Google hesabı bağlayın.';
+      'Etkinlikleri bu çalışma alanına eşitlemek için bir Google hesabı bağlayın. Bu takvimler burada size aittir.';
 
   @override
   String get calendarConnecting => 'Bağlanıyor…';
@@ -6991,7 +6991,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get connectGitHubHint =>
-      'GitHub’a giriş yapın veya Ayarlar → Siz → Profil ve kimlik → Kod barındırma bölümüne bir token ekleyin';
+      'GitHub’a giriş yapın veya Ayarlar → Çalışma alanı → Profil ve kimlik → Kod barındırma bölümüne bir token ekleyin';
 
   @override
   String get connectGitHubToLoadPrs =>
@@ -7474,6 +7474,43 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get preview => 'Önizleme';
+
+  @override
+  String get imageDiffBefore => 'Önce';
+
+  @override
+  String get imageDiffAfter => 'Sonra';
+
+  @override
+  String get imageDiffModeTwoUp => 'Yan yana';
+
+  @override
+  String get imageDiffModeSwipe => 'Kaydır';
+
+  @override
+  String get imageDiffModeDifference => 'Fark';
+
+  @override
+  String imageDiffChangedPercent(String percent) {
+    return '%$percent değişti';
+  }
+
+  @override
+  String get imageDiffPictures => 'Görseller';
+
+  @override
+  String get imageDiffSource => 'Kaynak';
+
+  @override
+  String get imageDiffDeleted => 'Silindi';
+
+  @override
+  String get imageDiffAdded => 'Eklendi';
+
+  @override
+  String imageDiffDimensions(int width, int height) {
+    return 'G: ${width}px | Y: ${height}px';
+  }
 
   @override
   String get outdated => 'Eski';
@@ -9550,7 +9587,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get profileSectionDescription =>
-      'Takım arkadaşlarınıza ve git commit yazarlığına nasıl göründüğünüz.';
+      'Bu çalışma alanında ekibe ve git commit yazarlığına nasıl göründüğünüz. Boş alanlar hesap adı ve e-postasını miras alır.';
 
   @override
   String get displayNameLabel => 'Görünen ad';
@@ -12125,7 +12162,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get settingsProfileDescription =>
-      'Adınız, e-postanız ve sizin adınıza yapılan commit’lere damgalanan git kimliği.';
+      'Bu çalışma alanındaki adınız, e-postanız ve git kimliğiniz. Çalışma alanı değiştirmek bu katmanı değiştirir; kullanıcı adı, oturum açma ve cihazlar hesapta kalır.';
 
   @override
   String get settingsServerConnectionDescription =>
@@ -12141,6 +12178,10 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get settingsWorkspaceGeneralDescription =>
       'Bu çalışma alanındaki herkesin paylaştığı kimlik, ilke ve kurallar.';
+
+  @override
+  String get settingsWorkspaceMeetingsDescription =>
+      'Bu çalışma alanındaki toplantılar için not şablonları ve kayıtlı sesler.';
 
   @override
   String get settingsWorkspacePolicyLabel => 'Çalışma alanı ilkesi';
@@ -12722,7 +12763,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get providerAppsDescription =>
-      'Bu sunucunun kendisi olarak nasıl kimlik doğruladığı ve kişilerin nereden oturum açtığı. Arka plan işleri — webhook’lar, yoklama, senkronizasyon — uygulamada çalışır, kişinin token’ında değil.';
+      'Çalışma alanları başka bir App veya kişisel erişim belirteci seçmedikçe bu GitHub App\'i miras alır. Arka plan işi — webhook\'lar, yoklama, eşitleme — uygulamada çalışır, birinin belirtecinde değil.';
 
   @override
   String get providerAppId => 'Uygulama id';
@@ -13110,14 +13151,14 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get providerAppsGroupServerDescription =>
-      'Arka plan işlerinin, isteğin arkasında bir insan olmadan depolara ulaşmasını sağlar: webhook\'lar, pull request yoklaması, bilet senkronizasyonu.';
+      'Bu kurulumun GitHub App\'ini miras alan çalışma alanları için. Kendi App\'i veya PAT\'ı olan bir çalışma alanı Çalışma alanı → Genel altında ayarlanır.';
 
   @override
   String get providerAppsGroupPrConversations => 'Pull request konuşmaları';
 
   @override
   String get providerAppsGroupPrConversationsDescription =>
-      'Geliştiricilerin GitHub üzerinde bu sunucuyla doğrudan nasıl konuşabileceği. Webhook veya genel URL olmadan çalışır — sunucu yoklama yapar.';
+      'Miras alan çalışma alanlarında geliştiricilerin GitHub\'da bu sunucuyla nasıl konuştuğu. Kendi App\'i olan bir çalışma alanının botu Çalışma alanı → Genel altındadır. Webhook veya genel URL olmadan çalışır — sunucu yoklar.';
 
   @override
   String get providerAppBotLogin => 'Bot girişi';
@@ -14505,4 +14546,50 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get rigClipboardAlwaysCopyDescription =>
       'Herhangi bir ortamdan pano içeriğini sormadan bu cihaza koy.';
+
+  @override
+  String get workspaceGitHubIdentity => 'GitHub kimliği';
+
+  @override
+  String get workspaceGitHubIdentityDescription =>
+      'Bu çalışma alanında arka plan GitHub işinin nasıl kimlik doğruladığı. Kurulumun App\'ini miras al, başka bir App kullan veya yalnızca kişisel erişim belirteci.';
+
+  @override
+  String get workspaceGitHubModeInherit =>
+      'Bu kurulumun GitHub App\'ini kullan';
+
+  @override
+  String get workspaceGitHubModeApp => 'Farklı bir GitHub App kullan';
+
+  @override
+  String get workspaceGitHubModePat => 'Yalnızca kişisel erişim belirteci';
+
+  @override
+  String get workspaceGitHubInheritHint =>
+      'Sunucu → Sağlayıcı uygulamaları altındaki GitHub App\'i kullanır.';
+
+  @override
+  String get workspaceGitHubAppHint =>
+      'Bu çalışma alanının bot ve yoklama kimliği. Üyeler Siz\'de bu App ile oturum açar.';
+
+  @override
+  String get workspaceGitHubPatLabel => 'Arka plan belirteci';
+
+  @override
+  String get workspaceGitHubPatDescription =>
+      'Bu çalışma alanındaki yoklama ve ajanlar için. Bir üyenin profil belirteci değildir.';
+
+  @override
+  String get workspaceGitHubHasPat => 'Arka plan belirteci saklanıyor.';
+
+  @override
+  String get workspaceGitHubNoPat => 'Saklanan arka plan belirteci yok.';
+
+  @override
+  String get profileOverlayHint =>
+      'Bu alanlar bu çalışma alanındaki sizsiniz. Boş alanlar hesap adı ve e-postasını miras alır. Çalışma alanı değiştirmek bu katmanı değiştirir.';
+
+  @override
+  String get forgeConnectionsThisWorkspace =>
+      'Bu çalışma alanı için oturum açın veya bir belirteç yapıştırın.';
 }

@@ -36062,6 +36062,16 @@ class $CalendarAccountsTableTable extends CalendarAccountsTable
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
   static const VerificationMeta _providerIdMeta = const VerificationMeta(
     'providerId',
   );
@@ -36147,6 +36157,7 @@ class $CalendarAccountsTableTable extends CalendarAccountsTable
   List<GeneratedColumn> get $columns => [
     id,
     workspaceId,
+    userId,
     providerId,
     accountEmail,
     displayName,
@@ -36182,6 +36193,12 @@ class $CalendarAccountsTableTable extends CalendarAccountsTable
       );
     } else if (isInserting) {
       context.missing(_workspaceIdMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
     }
     if (data.containsKey('provider_id')) {
       context.handle(
@@ -36259,6 +36276,10 @@ class $CalendarAccountsTableTable extends CalendarAccountsTable
         DriftSqlType.string,
         data['${effectivePrefix}workspace_id'],
       )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
       providerId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}provider_id'],
@@ -36304,6 +36325,10 @@ class CalendarAccountsTableData extends DataClass
   /// Owning workspace.
   final String workspaceId;
 
+  /// The member who connected this account. Empty on rows predating
+  /// per-user calendar ownership (legacy workspace-pool accounts).
+  final String userId;
+
   /// Provider id (`google`).
   final String providerId;
 
@@ -36330,6 +36355,7 @@ class CalendarAccountsTableData extends DataClass
   const CalendarAccountsTableData({
     required this.id,
     required this.workspaceId,
+    required this.userId,
     required this.providerId,
     required this.accountEmail,
     this.displayName,
@@ -36343,6 +36369,7 @@ class CalendarAccountsTableData extends DataClass
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
     map['workspace_id'] = Variable<String>(workspaceId);
+    map['user_id'] = Variable<String>(userId);
     map['provider_id'] = Variable<String>(providerId);
     map['account_email'] = Variable<String>(accountEmail);
     if (!nullToAbsent || displayName != null) {
@@ -36363,6 +36390,7 @@ class CalendarAccountsTableData extends DataClass
     return CalendarAccountsTableCompanion(
       id: Value(id),
       workspaceId: Value(workspaceId),
+      userId: Value(userId),
       providerId: Value(providerId),
       accountEmail: Value(accountEmail),
       displayName: displayName == null && nullToAbsent
@@ -36387,6 +36415,7 @@ class CalendarAccountsTableData extends DataClass
     return CalendarAccountsTableData(
       id: serializer.fromJson<String>(json['id']),
       workspaceId: serializer.fromJson<String>(json['workspaceId']),
+      userId: serializer.fromJson<String>(json['userId']),
       providerId: serializer.fromJson<String>(json['providerId']),
       accountEmail: serializer.fromJson<String>(json['accountEmail']),
       displayName: serializer.fromJson<String?>(json['displayName']),
@@ -36402,6 +36431,7 @@ class CalendarAccountsTableData extends DataClass
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
       'workspaceId': serializer.toJson<String>(workspaceId),
+      'userId': serializer.toJson<String>(userId),
       'providerId': serializer.toJson<String>(providerId),
       'accountEmail': serializer.toJson<String>(accountEmail),
       'displayName': serializer.toJson<String?>(displayName),
@@ -36415,6 +36445,7 @@ class CalendarAccountsTableData extends DataClass
   CalendarAccountsTableData copyWith({
     String? id,
     String? workspaceId,
+    String? userId,
     String? providerId,
     String? accountEmail,
     Value<String?> displayName = const Value.absent(),
@@ -36425,6 +36456,7 @@ class CalendarAccountsTableData extends DataClass
   }) => CalendarAccountsTableData(
     id: id ?? this.id,
     workspaceId: workspaceId ?? this.workspaceId,
+    userId: userId ?? this.userId,
     providerId: providerId ?? this.providerId,
     accountEmail: accountEmail ?? this.accountEmail,
     displayName: displayName.present ? displayName.value : this.displayName,
@@ -36443,6 +36475,7 @@ class CalendarAccountsTableData extends DataClass
       workspaceId: data.workspaceId.present
           ? data.workspaceId.value
           : this.workspaceId,
+      userId: data.userId.present ? data.userId.value : this.userId,
       providerId: data.providerId.present
           ? data.providerId.value
           : this.providerId,
@@ -36468,6 +36501,7 @@ class CalendarAccountsTableData extends DataClass
     return (StringBuffer('CalendarAccountsTableData(')
           ..write('id: $id, ')
           ..write('workspaceId: $workspaceId, ')
+          ..write('userId: $userId, ')
           ..write('providerId: $providerId, ')
           ..write('accountEmail: $accountEmail, ')
           ..write('displayName: $displayName, ')
@@ -36483,6 +36517,7 @@ class CalendarAccountsTableData extends DataClass
   int get hashCode => Object.hash(
     id,
     workspaceId,
+    userId,
     providerId,
     accountEmail,
     displayName,
@@ -36497,6 +36532,7 @@ class CalendarAccountsTableData extends DataClass
       (other is CalendarAccountsTableData &&
           other.id == this.id &&
           other.workspaceId == this.workspaceId &&
+          other.userId == this.userId &&
           other.providerId == this.providerId &&
           other.accountEmail == this.accountEmail &&
           other.displayName == this.displayName &&
@@ -36510,6 +36546,7 @@ class CalendarAccountsTableCompanion
     extends UpdateCompanion<CalendarAccountsTableData> {
   final Value<String> id;
   final Value<String> workspaceId;
+  final Value<String> userId;
   final Value<String> providerId;
   final Value<String> accountEmail;
   final Value<String?> displayName;
@@ -36521,6 +36558,7 @@ class CalendarAccountsTableCompanion
   const CalendarAccountsTableCompanion({
     this.id = const Value.absent(),
     this.workspaceId = const Value.absent(),
+    this.userId = const Value.absent(),
     this.providerId = const Value.absent(),
     this.accountEmail = const Value.absent(),
     this.displayName = const Value.absent(),
@@ -36533,6 +36571,7 @@ class CalendarAccountsTableCompanion
   CalendarAccountsTableCompanion.insert({
     required String id,
     required String workspaceId,
+    this.userId = const Value.absent(),
     this.providerId = const Value.absent(),
     required String accountEmail,
     this.displayName = const Value.absent(),
@@ -36547,6 +36586,7 @@ class CalendarAccountsTableCompanion
   static Insertable<CalendarAccountsTableData> custom({
     Expression<String>? id,
     Expression<String>? workspaceId,
+    Expression<String>? userId,
     Expression<String>? providerId,
     Expression<String>? accountEmail,
     Expression<String>? displayName,
@@ -36559,6 +36599,7 @@ class CalendarAccountsTableCompanion
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (workspaceId != null) 'workspace_id': workspaceId,
+      if (userId != null) 'user_id': userId,
       if (providerId != null) 'provider_id': providerId,
       if (accountEmail != null) 'account_email': accountEmail,
       if (displayName != null) 'display_name': displayName,
@@ -36573,6 +36614,7 @@ class CalendarAccountsTableCompanion
   CalendarAccountsTableCompanion copyWith({
     Value<String>? id,
     Value<String>? workspaceId,
+    Value<String>? userId,
     Value<String>? providerId,
     Value<String>? accountEmail,
     Value<String?>? displayName,
@@ -36585,6 +36627,7 @@ class CalendarAccountsTableCompanion
     return CalendarAccountsTableCompanion(
       id: id ?? this.id,
       workspaceId: workspaceId ?? this.workspaceId,
+      userId: userId ?? this.userId,
       providerId: providerId ?? this.providerId,
       accountEmail: accountEmail ?? this.accountEmail,
       displayName: displayName ?? this.displayName,
@@ -36604,6 +36647,9 @@ class CalendarAccountsTableCompanion
     }
     if (workspaceId.present) {
       map['workspace_id'] = Variable<String>(workspaceId.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
     }
     if (providerId.present) {
       map['provider_id'] = Variable<String>(providerId.value);
@@ -36637,6 +36683,7 @@ class CalendarAccountsTableCompanion
     return (StringBuffer('CalendarAccountsTableCompanion(')
           ..write('id: $id, ')
           ..write('workspaceId: $workspaceId, ')
+          ..write('userId: $userId, ')
           ..write('providerId: $providerId, ')
           ..write('accountEmail: $accountEmail, ')
           ..write('displayName: $displayName, ')
@@ -57756,6 +57803,48 @@ class $WorkspaceMembersTableTable extends WorkspaceMembersTable
     requiredDuringInsert: false,
     defaultValue: currentDateAndTime,
   );
+  static const VerificationMeta _displayNameMeta = const VerificationMeta(
+    'displayName',
+  );
+  @override
+  late final GeneratedColumn<String> displayName = GeneratedColumn<String>(
+    'display_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _emailMeta = const VerificationMeta('email');
+  @override
+  late final GeneratedColumn<String> email = GeneratedColumn<String>(
+    'email',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _gitAuthorNameMeta = const VerificationMeta(
+    'gitAuthorName',
+  );
+  @override
+  late final GeneratedColumn<String> gitAuthorName = GeneratedColumn<String>(
+    'git_author_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _gitAuthorEmailMeta = const VerificationMeta(
+    'gitAuthorEmail',
+  );
+  @override
+  late final GeneratedColumn<String> gitAuthorEmail = GeneratedColumn<String>(
+    'git_author_email',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -57764,6 +57853,10 @@ class $WorkspaceMembersTableTable extends WorkspaceMembersTable
     role,
     invitedBy,
     joinedAt,
+    displayName,
+    email,
+    gitAuthorName,
+    gitAuthorEmail,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -57819,6 +57912,39 @@ class $WorkspaceMembersTableTable extends WorkspaceMembersTable
         joinedAt.isAcceptableOrUnknown(data['joined_at']!, _joinedAtMeta),
       );
     }
+    if (data.containsKey('display_name')) {
+      context.handle(
+        _displayNameMeta,
+        displayName.isAcceptableOrUnknown(
+          data['display_name']!,
+          _displayNameMeta,
+        ),
+      );
+    }
+    if (data.containsKey('email')) {
+      context.handle(
+        _emailMeta,
+        email.isAcceptableOrUnknown(data['email']!, _emailMeta),
+      );
+    }
+    if (data.containsKey('git_author_name')) {
+      context.handle(
+        _gitAuthorNameMeta,
+        gitAuthorName.isAcceptableOrUnknown(
+          data['git_author_name']!,
+          _gitAuthorNameMeta,
+        ),
+      );
+    }
+    if (data.containsKey('git_author_email')) {
+      context.handle(
+        _gitAuthorEmailMeta,
+        gitAuthorEmail.isAcceptableOrUnknown(
+          data['git_author_email']!,
+          _gitAuthorEmailMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -57855,6 +57981,22 @@ class $WorkspaceMembersTableTable extends WorkspaceMembersTable
         DriftSqlType.dateTime,
         data['${effectivePrefix}joined_at'],
       )!,
+      displayName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}display_name'],
+      ),
+      email: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}email'],
+      ),
+      gitAuthorName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}git_author_name'],
+      ),
+      gitAuthorEmail: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}git_author_email'],
+      ),
     );
   }
 
@@ -57883,6 +58025,18 @@ class WorkspaceMembersTableData extends DataClass
 
   /// When the membership was created.
   final DateTime joinedAt;
+
+  /// Display name in this workspace. Null inherits the global user row.
+  final String? displayName;
+
+  /// Email in this workspace. Null inherits the global user row.
+  final String? email;
+
+  /// Git author name in this workspace. Null inherits the global user row.
+  final String? gitAuthorName;
+
+  /// Git author email in this workspace. Null inherits the global user row.
+  final String? gitAuthorEmail;
   const WorkspaceMembersTableData({
     required this.id,
     required this.workspaceId,
@@ -57890,6 +58044,10 @@ class WorkspaceMembersTableData extends DataClass
     required this.role,
     this.invitedBy,
     required this.joinedAt,
+    this.displayName,
+    this.email,
+    this.gitAuthorName,
+    this.gitAuthorEmail,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -57902,6 +58060,18 @@ class WorkspaceMembersTableData extends DataClass
       map['invited_by'] = Variable<String>(invitedBy);
     }
     map['joined_at'] = Variable<DateTime>(joinedAt);
+    if (!nullToAbsent || displayName != null) {
+      map['display_name'] = Variable<String>(displayName);
+    }
+    if (!nullToAbsent || email != null) {
+      map['email'] = Variable<String>(email);
+    }
+    if (!nullToAbsent || gitAuthorName != null) {
+      map['git_author_name'] = Variable<String>(gitAuthorName);
+    }
+    if (!nullToAbsent || gitAuthorEmail != null) {
+      map['git_author_email'] = Variable<String>(gitAuthorEmail);
+    }
     return map;
   }
 
@@ -57915,6 +58085,18 @@ class WorkspaceMembersTableData extends DataClass
           ? const Value.absent()
           : Value(invitedBy),
       joinedAt: Value(joinedAt),
+      displayName: displayName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(displayName),
+      email: email == null && nullToAbsent
+          ? const Value.absent()
+          : Value(email),
+      gitAuthorName: gitAuthorName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(gitAuthorName),
+      gitAuthorEmail: gitAuthorEmail == null && nullToAbsent
+          ? const Value.absent()
+          : Value(gitAuthorEmail),
     );
   }
 
@@ -57930,6 +58112,10 @@ class WorkspaceMembersTableData extends DataClass
       role: serializer.fromJson<String>(json['role']),
       invitedBy: serializer.fromJson<String?>(json['invitedBy']),
       joinedAt: serializer.fromJson<DateTime>(json['joinedAt']),
+      displayName: serializer.fromJson<String?>(json['displayName']),
+      email: serializer.fromJson<String?>(json['email']),
+      gitAuthorName: serializer.fromJson<String?>(json['gitAuthorName']),
+      gitAuthorEmail: serializer.fromJson<String?>(json['gitAuthorEmail']),
     );
   }
   @override
@@ -57942,6 +58128,10 @@ class WorkspaceMembersTableData extends DataClass
       'role': serializer.toJson<String>(role),
       'invitedBy': serializer.toJson<String?>(invitedBy),
       'joinedAt': serializer.toJson<DateTime>(joinedAt),
+      'displayName': serializer.toJson<String?>(displayName),
+      'email': serializer.toJson<String?>(email),
+      'gitAuthorName': serializer.toJson<String?>(gitAuthorName),
+      'gitAuthorEmail': serializer.toJson<String?>(gitAuthorEmail),
     };
   }
 
@@ -57952,6 +58142,10 @@ class WorkspaceMembersTableData extends DataClass
     String? role,
     Value<String?> invitedBy = const Value.absent(),
     DateTime? joinedAt,
+    Value<String?> displayName = const Value.absent(),
+    Value<String?> email = const Value.absent(),
+    Value<String?> gitAuthorName = const Value.absent(),
+    Value<String?> gitAuthorEmail = const Value.absent(),
   }) => WorkspaceMembersTableData(
     id: id ?? this.id,
     workspaceId: workspaceId ?? this.workspaceId,
@@ -57959,6 +58153,14 @@ class WorkspaceMembersTableData extends DataClass
     role: role ?? this.role,
     invitedBy: invitedBy.present ? invitedBy.value : this.invitedBy,
     joinedAt: joinedAt ?? this.joinedAt,
+    displayName: displayName.present ? displayName.value : this.displayName,
+    email: email.present ? email.value : this.email,
+    gitAuthorName: gitAuthorName.present
+        ? gitAuthorName.value
+        : this.gitAuthorName,
+    gitAuthorEmail: gitAuthorEmail.present
+        ? gitAuthorEmail.value
+        : this.gitAuthorEmail,
   );
   WorkspaceMembersTableData copyWithCompanion(
     WorkspaceMembersTableCompanion data,
@@ -57972,6 +58174,16 @@ class WorkspaceMembersTableData extends DataClass
       role: data.role.present ? data.role.value : this.role,
       invitedBy: data.invitedBy.present ? data.invitedBy.value : this.invitedBy,
       joinedAt: data.joinedAt.present ? data.joinedAt.value : this.joinedAt,
+      displayName: data.displayName.present
+          ? data.displayName.value
+          : this.displayName,
+      email: data.email.present ? data.email.value : this.email,
+      gitAuthorName: data.gitAuthorName.present
+          ? data.gitAuthorName.value
+          : this.gitAuthorName,
+      gitAuthorEmail: data.gitAuthorEmail.present
+          ? data.gitAuthorEmail.value
+          : this.gitAuthorEmail,
     );
   }
 
@@ -57983,14 +58195,28 @@ class WorkspaceMembersTableData extends DataClass
           ..write('userId: $userId, ')
           ..write('role: $role, ')
           ..write('invitedBy: $invitedBy, ')
-          ..write('joinedAt: $joinedAt')
+          ..write('joinedAt: $joinedAt, ')
+          ..write('displayName: $displayName, ')
+          ..write('email: $email, ')
+          ..write('gitAuthorName: $gitAuthorName, ')
+          ..write('gitAuthorEmail: $gitAuthorEmail')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, workspaceId, userId, role, invitedBy, joinedAt);
+  int get hashCode => Object.hash(
+    id,
+    workspaceId,
+    userId,
+    role,
+    invitedBy,
+    joinedAt,
+    displayName,
+    email,
+    gitAuthorName,
+    gitAuthorEmail,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -58000,7 +58226,11 @@ class WorkspaceMembersTableData extends DataClass
           other.userId == this.userId &&
           other.role == this.role &&
           other.invitedBy == this.invitedBy &&
-          other.joinedAt == this.joinedAt);
+          other.joinedAt == this.joinedAt &&
+          other.displayName == this.displayName &&
+          other.email == this.email &&
+          other.gitAuthorName == this.gitAuthorName &&
+          other.gitAuthorEmail == this.gitAuthorEmail);
 }
 
 class WorkspaceMembersTableCompanion
@@ -58011,6 +58241,10 @@ class WorkspaceMembersTableCompanion
   final Value<String> role;
   final Value<String?> invitedBy;
   final Value<DateTime> joinedAt;
+  final Value<String?> displayName;
+  final Value<String?> email;
+  final Value<String?> gitAuthorName;
+  final Value<String?> gitAuthorEmail;
   final Value<int> rowid;
   const WorkspaceMembersTableCompanion({
     this.id = const Value.absent(),
@@ -58019,6 +58253,10 @@ class WorkspaceMembersTableCompanion
     this.role = const Value.absent(),
     this.invitedBy = const Value.absent(),
     this.joinedAt = const Value.absent(),
+    this.displayName = const Value.absent(),
+    this.email = const Value.absent(),
+    this.gitAuthorName = const Value.absent(),
+    this.gitAuthorEmail = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   WorkspaceMembersTableCompanion.insert({
@@ -58028,6 +58266,10 @@ class WorkspaceMembersTableCompanion
     this.role = const Value.absent(),
     this.invitedBy = const Value.absent(),
     this.joinedAt = const Value.absent(),
+    this.displayName = const Value.absent(),
+    this.email = const Value.absent(),
+    this.gitAuthorName = const Value.absent(),
+    this.gitAuthorEmail = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        workspaceId = Value(workspaceId),
@@ -58039,6 +58281,10 @@ class WorkspaceMembersTableCompanion
     Expression<String>? role,
     Expression<String>? invitedBy,
     Expression<DateTime>? joinedAt,
+    Expression<String>? displayName,
+    Expression<String>? email,
+    Expression<String>? gitAuthorName,
+    Expression<String>? gitAuthorEmail,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -58048,6 +58294,10 @@ class WorkspaceMembersTableCompanion
       if (role != null) 'role': role,
       if (invitedBy != null) 'invited_by': invitedBy,
       if (joinedAt != null) 'joined_at': joinedAt,
+      if (displayName != null) 'display_name': displayName,
+      if (email != null) 'email': email,
+      if (gitAuthorName != null) 'git_author_name': gitAuthorName,
+      if (gitAuthorEmail != null) 'git_author_email': gitAuthorEmail,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -58059,6 +58309,10 @@ class WorkspaceMembersTableCompanion
     Value<String>? role,
     Value<String?>? invitedBy,
     Value<DateTime>? joinedAt,
+    Value<String?>? displayName,
+    Value<String?>? email,
+    Value<String?>? gitAuthorName,
+    Value<String?>? gitAuthorEmail,
     Value<int>? rowid,
   }) {
     return WorkspaceMembersTableCompanion(
@@ -58068,6 +58322,10 @@ class WorkspaceMembersTableCompanion
       role: role ?? this.role,
       invitedBy: invitedBy ?? this.invitedBy,
       joinedAt: joinedAt ?? this.joinedAt,
+      displayName: displayName ?? this.displayName,
+      email: email ?? this.email,
+      gitAuthorName: gitAuthorName ?? this.gitAuthorName,
+      gitAuthorEmail: gitAuthorEmail ?? this.gitAuthorEmail,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -58093,6 +58351,18 @@ class WorkspaceMembersTableCompanion
     if (joinedAt.present) {
       map['joined_at'] = Variable<DateTime>(joinedAt.value);
     }
+    if (displayName.present) {
+      map['display_name'] = Variable<String>(displayName.value);
+    }
+    if (email.present) {
+      map['email'] = Variable<String>(email.value);
+    }
+    if (gitAuthorName.present) {
+      map['git_author_name'] = Variable<String>(gitAuthorName.value);
+    }
+    if (gitAuthorEmail.present) {
+      map['git_author_email'] = Variable<String>(gitAuthorEmail.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -58108,6 +58378,10 @@ class WorkspaceMembersTableCompanion
           ..write('role: $role, ')
           ..write('invitedBy: $invitedBy, ')
           ..write('joinedAt: $joinedAt, ')
+          ..write('displayName: $displayName, ')
+          ..write('email: $email, ')
+          ..write('gitAuthorName: $gitAuthorName, ')
+          ..write('gitAuthorEmail: $gitAuthorEmail, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -76207,9 +76481,13 @@ abstract class _$WorkspaceDatabase extends GeneratedDatabase {
     'idx_calendar_accounts_workspaceId',
     'CREATE INDEX idx_calendar_accounts_workspaceId ON calendar_accounts (workspace_id)',
   );
-  late final Index uqCalendarAccountsWsEmail = Index(
-    'uq_calendar_accounts_ws_email',
-    'CREATE UNIQUE INDEX uq_calendar_accounts_ws_email ON calendar_accounts (workspace_id, account_email)',
+  late final Index idxCalendarAccountsUserId = Index(
+    'idx_calendar_accounts_userId',
+    'CREATE INDEX idx_calendar_accounts_userId ON calendar_accounts (user_id)',
+  );
+  late final Index uqCalendarAccountsWsUserEmail = Index(
+    'uq_calendar_accounts_ws_user_email',
+    'CREATE UNIQUE INDEX uq_calendar_accounts_ws_user_email ON calendar_accounts (workspace_id, user_id, account_email)',
   );
   late final Index uqCalendarEventsAccountExternal = Index(
     'uq_calendar_events_account_external',
@@ -76992,7 +77270,8 @@ abstract class _$WorkspaceDatabase extends GeneratedDatabase {
     idxMeetingSpeakersMeetingId,
     idxMeetingSpeakersWorkspaceId,
     idxCalendarAccountsWorkspaceId,
-    uqCalendarAccountsWsEmail,
+    idxCalendarAccountsUserId,
+    uqCalendarAccountsWsUserEmail,
     uqCalendarEventsAccountExternal,
     idxCalendarEventsWsStart,
     idxCalendarSourcesWorkspaceId,
@@ -99718,6 +99997,7 @@ typedef $$CalendarAccountsTableTableCreateCompanionBuilder =
     CalendarAccountsTableCompanion Function({
       required String id,
       required String workspaceId,
+      Value<String> userId,
       Value<String> providerId,
       required String accountEmail,
       Value<String?> displayName,
@@ -99731,6 +100011,7 @@ typedef $$CalendarAccountsTableTableUpdateCompanionBuilder =
     CalendarAccountsTableCompanion Function({
       Value<String> id,
       Value<String> workspaceId,
+      Value<String> userId,
       Value<String> providerId,
       Value<String> accountEmail,
       Value<String?> displayName,
@@ -99820,6 +100101,11 @@ class $$CalendarAccountsTableTableFilterComposer
 
   ColumnFilters<String> get workspaceId => $composableBuilder(
     column: $table.workspaceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -99928,6 +100214,11 @@ class $$CalendarAccountsTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get providerId => $composableBuilder(
     column: $table.providerId,
     builder: (column) => ColumnOrderings(column),
@@ -99980,6 +100271,9 @@ class $$CalendarAccountsTableTableAnnotationComposer
     column: $table.workspaceId,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
 
   GeneratedColumn<String> get providerId => $composableBuilder(
     column: $table.providerId,
@@ -100109,6 +100403,7 @@ class $$CalendarAccountsTableTableTableManager
               ({
                 Value<String> id = const Value.absent(),
                 Value<String> workspaceId = const Value.absent(),
+                Value<String> userId = const Value.absent(),
                 Value<String> providerId = const Value.absent(),
                 Value<String> accountEmail = const Value.absent(),
                 Value<String?> displayName = const Value.absent(),
@@ -100120,6 +100415,7 @@ class $$CalendarAccountsTableTableTableManager
               }) => CalendarAccountsTableCompanion(
                 id: id,
                 workspaceId: workspaceId,
+                userId: userId,
                 providerId: providerId,
                 accountEmail: accountEmail,
                 displayName: displayName,
@@ -100133,6 +100429,7 @@ class $$CalendarAccountsTableTableTableManager
               ({
                 required String id,
                 required String workspaceId,
+                Value<String> userId = const Value.absent(),
                 Value<String> providerId = const Value.absent(),
                 required String accountEmail,
                 Value<String?> displayName = const Value.absent(),
@@ -100144,6 +100441,7 @@ class $$CalendarAccountsTableTableTableManager
               }) => CalendarAccountsTableCompanion.insert(
                 id: id,
                 workspaceId: workspaceId,
+                userId: userId,
                 providerId: providerId,
                 accountEmail: accountEmail,
                 displayName: displayName,
@@ -112162,6 +112460,10 @@ typedef $$WorkspaceMembersTableTableCreateCompanionBuilder =
       Value<String> role,
       Value<String?> invitedBy,
       Value<DateTime> joinedAt,
+      Value<String?> displayName,
+      Value<String?> email,
+      Value<String?> gitAuthorName,
+      Value<String?> gitAuthorEmail,
       Value<int> rowid,
     });
 typedef $$WorkspaceMembersTableTableUpdateCompanionBuilder =
@@ -112172,6 +112474,10 @@ typedef $$WorkspaceMembersTableTableUpdateCompanionBuilder =
       Value<String> role,
       Value<String?> invitedBy,
       Value<DateTime> joinedAt,
+      Value<String?> displayName,
+      Value<String?> email,
+      Value<String?> gitAuthorName,
+      Value<String?> gitAuthorEmail,
       Value<int> rowid,
     });
 
@@ -112211,6 +112517,26 @@ class $$WorkspaceMembersTableTableFilterComposer
 
   ColumnFilters<DateTime> get joinedAt => $composableBuilder(
     column: $table.joinedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get displayName => $composableBuilder(
+    column: $table.displayName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get email => $composableBuilder(
+    column: $table.email,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get gitAuthorName => $composableBuilder(
+    column: $table.gitAuthorName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get gitAuthorEmail => $composableBuilder(
+    column: $table.gitAuthorEmail,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -112253,6 +112579,26 @@ class $$WorkspaceMembersTableTableOrderingComposer
     column: $table.joinedAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get displayName => $composableBuilder(
+    column: $table.displayName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get email => $composableBuilder(
+    column: $table.email,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get gitAuthorName => $composableBuilder(
+    column: $table.gitAuthorName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get gitAuthorEmail => $composableBuilder(
+    column: $table.gitAuthorEmail,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$WorkspaceMembersTableTableAnnotationComposer
@@ -112283,6 +112629,24 @@ class $$WorkspaceMembersTableTableAnnotationComposer
 
   GeneratedColumn<DateTime> get joinedAt =>
       $composableBuilder(column: $table.joinedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get displayName => $composableBuilder(
+    column: $table.displayName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get email =>
+      $composableBuilder(column: $table.email, builder: (column) => column);
+
+  GeneratedColumn<String> get gitAuthorName => $composableBuilder(
+    column: $table.gitAuthorName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get gitAuthorEmail => $composableBuilder(
+    column: $table.gitAuthorEmail,
+    builder: (column) => column,
+  );
 }
 
 class $$WorkspaceMembersTableTableTableManager
@@ -112337,6 +112701,10 @@ class $$WorkspaceMembersTableTableTableManager
                 Value<String> role = const Value.absent(),
                 Value<String?> invitedBy = const Value.absent(),
                 Value<DateTime> joinedAt = const Value.absent(),
+                Value<String?> displayName = const Value.absent(),
+                Value<String?> email = const Value.absent(),
+                Value<String?> gitAuthorName = const Value.absent(),
+                Value<String?> gitAuthorEmail = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => WorkspaceMembersTableCompanion(
                 id: id,
@@ -112345,6 +112713,10 @@ class $$WorkspaceMembersTableTableTableManager
                 role: role,
                 invitedBy: invitedBy,
                 joinedAt: joinedAt,
+                displayName: displayName,
+                email: email,
+                gitAuthorName: gitAuthorName,
+                gitAuthorEmail: gitAuthorEmail,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -112355,6 +112727,10 @@ class $$WorkspaceMembersTableTableTableManager
                 Value<String> role = const Value.absent(),
                 Value<String?> invitedBy = const Value.absent(),
                 Value<DateTime> joinedAt = const Value.absent(),
+                Value<String?> displayName = const Value.absent(),
+                Value<String?> email = const Value.absent(),
+                Value<String?> gitAuthorName = const Value.absent(),
+                Value<String?> gitAuthorEmail = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => WorkspaceMembersTableCompanion.insert(
                 id: id,
@@ -112363,6 +112739,10 @@ class $$WorkspaceMembersTableTableTableManager
                 role: role,
                 invitedBy: invitedBy,
                 joinedAt: joinedAt,
+                displayName: displayName,
+                email: email,
+                gitAuthorName: gitAuthorName,
+                gitAuthorEmail: gitAuthorEmail,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

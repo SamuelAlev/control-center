@@ -24,6 +24,7 @@ import 'package:cc_domain/core/domain/value_objects/agent_role.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_domain/core/domain/value_objects/principal.dart';
 import 'package:cc_domain/core/domain/value_objects/repo_grant_level.dart';
+import 'package:cc_domain/core/domain/value_objects/github_auth_mode.dart';
 import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
 import 'package:cc_domain/core/logging/cc_domain_log.dart';
 import 'package:cc_domain/features/agents/domain/services/budget_policy_service.dart';
@@ -182,6 +183,8 @@ import 'package:cc_server_core/src/identity/scim_service.dart';
 import 'package:cc_server_core/src/identity/server_identity_store.dart';
 import 'package:cc_server_core/src/identity/sso_settings_service.dart';
 import 'package:cc_server_core/src/identity/user_credentials_store.dart';
+import 'package:cc_server_core/src/identity/workspace_github_app_settings.dart';
+import 'package:cc_server_core/src/identity/workspace_profile.dart';
 import 'package:cc_server_core/src/identity/workspace_invite_service.dart';
 import 'package:cc_server_core/src/local_rpc_server.dart';
 import 'package:cc_server_core/src/models/managed_model_control.dart';
@@ -226,7 +229,7 @@ import 'package:cc_server_core/src/sync/sync_feed_service.dart';
 import 'package:cc_server_core/src/ticket_sync_webhook_handler.dart';
 import 'package:cc_server_core/src/webhook_delivery_service.dart';
 import 'package:cc_server_core/src/write_ledger_adapter.dart';
-import 'package:dio/dio.dart' show InterceptorsWrapper;
+import 'package:dio/dio.dart' show Dio, InterceptorsWrapper;
 import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
 
@@ -591,6 +594,10 @@ Future<CcServer> runCcServer({
     settings: globalDb.serverSettingDao,
   );
   await providerApps.loadAndApply(env: serverEnv);
+  final workspaceGitHub = WorkspaceGitHubAppSettings(
+    secrets: secrets,
+    install: providerApps,
+  );
   final providerOAuth = ProviderOAuthService(
     apps: providerApps,
     users: userCredentials,
@@ -939,6 +946,8 @@ Future<CcServer> runCcServer({
     globalDb.workspaceRegistryDao,
     workspaceDbs,
   );
+  providerOAuth.workspaceApps = workspaceGitHub;
+  providerOAuth.workspaceLookup = workspaceRepository.getById;
   // `owner/name` → workspace ids, for the notification poller's per-repo
   // lookup (see [RepoWorkspaceIndex] for why it is an index and not a scan).
   final repoWorkspaceIndex = RepoWorkspaceIndex(workspaceRepository);
@@ -1015,6 +1024,8 @@ Future<CcServer> runCcServer({
     apps: providerApps,
     serverOwnerUserId: () async => ownerUserId,
   );
+  forgeCredentials.workspaceApps = workspaceGitHub;
+  forgeCredentials.workspaceLookup = workspaceRepository.getById;
   // Renews an expiring user credential in place rather than surfacing a 401.
   // Assigned after construction because each service needs the other: the
   // store reads the credential the OAuth service refreshes.
@@ -1122,14 +1133,25 @@ Future<CcServer> runCcServer({
   // without rebuilding anything. Bounded by the number of users who have made a
   // forge-touching call.
   final actorDioFactories = <String, ForgeDioFactory>{};
-  ForgeDioFactory forgeDioFactoryForActor(String? userId) {
-    if (userId == null || userId.isEmpty) {
+  ForgeDioFactory forgeDioFactoryForActor(
+    String? userId, {
+    String? workspaceId,
+  }) {
+    if ((userId == null || userId.isEmpty) &&
+        (workspaceId == null || workspaceId.isEmpty)) {
       return forgeDioFactory;
     }
+    final key = '${userId ?? ''}\u0000${workspaceId ?? ''}';
     return actorDioFactories.putIfAbsent(
-      userId,
+      key,
       () => ForgeDioFactory(
-        tokenLookup: (forge) => forgeCredentials.tokenForActor(forge, userId),
+        tokenLookup: (forge) => userId == null || userId.isEmpty
+            ? forgeCredentials.tokenFor(forge, workspaceId: workspaceId)
+            : forgeCredentials.tokenForActor(
+                forge,
+                userId,
+                workspaceId: workspaceId,
+              ),
         bitbucketUsername: () => forgeCredentials.bitbucketEmail,
       ),
     );
@@ -1153,17 +1175,21 @@ Future<CcServer> runCcServer({
   // users who have made a GitHub-touching call; the token is still read per
   // request inside the interceptor, so signing in applies to the next call.
   final actorGitHubClients = <String, GitHubApiClient>{};
-  GitHubApiClient githubClientForActor(String userId) =>
+  GitHubApiClient githubClientForActor(String userId, {String? workspaceId}) =>
       actorGitHubClients.putIfAbsent(
-        userId,
+        '$userId\u0000${workspaceId ?? ''}',
         () => GitHubApiClient(
-          forgeDioFactoryForActor(userId).of(ForgeHost.github),
+          forgeDioFactoryForActor(
+            userId,
+            workspaceId: workspaceId,
+          ).of(ForgeHost.github),
         ),
       );
 
   // One identity cache per acting user. The cache holds a login and an org →
   // teams map, which are that person's, so a single shared instance would hand
-  // one member's identity to another.
+  // one member's identity to another. Workspace overlays share a login with
+  // the global slot when they inherit, so the cache is still per user.
   final actorGitHubIdentities = <String, ViewerGitHubIdentityCache>{};
   ViewerGitHubIdentityCache githubIdentityForActor(String userId) =>
       actorGitHubIdentities.putIfAbsent(
@@ -1175,11 +1201,17 @@ Future<CcServer> runCcServer({
   // authenticated HTTP client, and [actingUserId] picks whose name the calls
   // carry. Omitting it is the background identity (app → owner → environment)
   // and is only correct for work with no human behind it.
-  ForgePrClient forgePrClientForRepo(Repo repo, {String? actingUserId}) =>
-      forgePrClientBuilder(
-        repo.forge,
-        forgeDioFactoryForActor(actingUserId).of(repo.forge),
-      )(owner: repo.remoteOwner, repo: repo.remoteName);
+  ForgePrClient forgePrClientForRepo(
+    Repo repo, {
+    String? actingUserId,
+    String? workspaceId,
+  }) => forgePrClientBuilder(
+    repo.forge,
+    forgeDioFactoryForActor(
+      actingUserId,
+      workspaceId: workspaceId,
+    ).of(repo.forge),
+  )(owner: repo.remoteOwner, repo: repo.remoteName);
 
   // Resolves the forge client for a repo coordinate in a workspace, by looking
   // the repo up and using ITS forge. This is what lets a publish land on
@@ -1656,23 +1688,41 @@ Future<CcServer> runCcServer({
   // GitHub adapter is per repo owner: a no-caller token is whichever
   // installation answered first, and GitHub 404s every other owner's repos.
   // Each client's credential covers that owner (then owner PAT, then env).
-  final ownerScopedGitHubClients = <String, GitHubApiClient>{};
-  GitHubApiClient githubClientForOwner(String owner) =>
-      ownerScopedGitHubClients.putIfAbsent(
-        owner.toLowerCase(),
-        () => GitHubApiClient(
-          ForgeDioFactory(
-            tokenLookup: (forge) =>
-                forgeCredentials.tokenForRepoOwner(forge, owner),
-          ).of(ForgeHost.github),
-        ),
+  final ownerScopedGitHubDios = <String, Dio>{};
+  Dio githubDioForOwner(String workspaceId, String owner) =>
+      ownerScopedGitHubDios.putIfAbsent(
+        '$workspaceId\u0000${owner.toLowerCase()}',
+        () => ForgeDioFactory(
+          tokenLookup: (forge) => forgeCredentials.tokenForRepoOwner(
+            forge,
+            owner,
+            workspaceId: workspaceId.isEmpty ? null : workspaceId,
+          ),
+        ).of(ForgeHost.github),
       );
+  final ownerScopedGitHubClients = <String, GitHubApiClient>{};
+  GitHubApiClient githubClientForOwner(String workspaceId, String owner) =>
+      ownerScopedGitHubClients.putIfAbsent(
+        '$workspaceId\u0000${owner.toLowerCase()}',
+        () => GitHubApiClient(githubDioForOwner(workspaceId, owner)),
+      );
+  Future<GitHubAppClient?> githubAppForWorkspace({String? workspaceId}) async {
+    if (workspaceId == null || workspaceId.isEmpty) {
+      return providerApps.githubApp();
+    }
+    final workspace = await workspaceRepository.getById(workspaceId);
+    if (workspace == null) {
+      return null;
+    }
+    return workspaceGitHub.githubApp(workspace);
+  }
+
   final openPrFetchAdapter = MultiForgeOpenPrFetchAdapter({
     for (final forge in ForgeHost.supported)
       forge: forge == ForgeHost.github
           ? GitHubOpenPrFetchAdapter(
               githubClientForOwner,
-              app: providerApps.githubApp,
+              app: githubAppForWorkspace,
             )
           : ForgeClientOpenPrFetchAdapter(forgePrClientForRepo),
   });
@@ -1792,21 +1842,24 @@ Future<CcServer> runCcServer({
   // clients whose interceptors read the credential per request, so this caches
   // plumbing and never a token.
   final actorForgeRegistries = <String, ForgeProviderRegistry>{};
-  ForgeProviderRegistry forgeRegistryForActor(String? userId) =>
-      actorForgeRegistries.putIfAbsent(
-        userId ?? '',
-        () =>
-            // A demo's PR surface is cache-backed and holds no client at all,
-            // so there is nothing to author writes as and nothing to dial.
-            demo?.forgeRegistryFor(userId) ??
-            buildForgeProviderRegistry(
-              workspaceDbs: workspaceDbs,
-              dioFactory: forgeDioFactoryForActor(userId),
-              localGitSource: localGitPrDiffSource,
-              eventBus: eventBus,
-              changeSignals: prChangeSignals,
-            ),
-      );
+  ForgeProviderRegistry forgeRegistryForActor(
+    String? userId, {
+    String? workspaceId,
+  }) => actorForgeRegistries.putIfAbsent(
+    '${userId ?? ''}\u0000${workspaceId ?? ''}',
+    () =>
+        // A demo's PR surface is cache-backed and holds no client at all,
+        // so there is nothing to author writes as and nothing to dial.
+        demo?.forgeRegistryFor(userId) ??
+        buildForgeProviderRegistry(
+          workspaceDbs: workspaceDbs,
+          dioFactory: forgeDioFactoryForActor(userId, workspaceId: workspaceId),
+          localGitSource: localGitPrDiffSource,
+          eventBus: eventBus,
+          changeSignals: prChangeSignals,
+          blobStore: blobStore,
+        ),
+  );
 
   _bootMark('wiring agent executor + tool surface');
   // ── Agent executor (pure-Dart) ──
@@ -1878,10 +1931,11 @@ Future<CcServer> runCcServer({
   // the broker falls back to the plain env-PAT path, as before.
   final CredentialBrokerPort credentialBroker = GitHubFineGrainedTokenBroker(
     serverCredentials,
-    app: providerApps.githubApp,
+    app: githubAppForWorkspace,
     // So the raw-PAT fallback is withheld from a run acting for a member who
     // is not the operator — that PAT is the server's credential, not theirs.
     serverOwnerUserId: () async => ownerUserId,
+    workspacePat: workspaceGitHub.backgroundPat,
   );
   // Server-owned LLM provider credential store (the "brain"): UI-saved API keys
   // and OAuth tokens persist to a 0600 JSON file under the data dir, with the
@@ -2116,18 +2170,13 @@ Future<CcServer> runCcServer({
     // identity for the commit co-author trailer. A null userId means no
     // acting human was threaded (programmatic dispatch) — attribute to the
     // server owner rather than dropping the credit.
-    resolveGitIdentity: (userId) async {
-      final user = await userRepository.getById(
-        userId == null || userId.isEmpty ? ownerUserId : userId,
-      );
-      if (user == null) {
-        return null;
-      }
-      return (
-        name: user.effectiveGitAuthorName,
-        email: user.effectiveGitAuthorEmail,
-      );
-    },
+    resolveGitIdentity: (userId, {workspaceId}) => resolveWorkspaceGitIdentity(
+      users: userRepository,
+      members: membershipRepository,
+      ownerUserId: ownerUserId,
+      userId: userId,
+      workspaceId: workspaceId,
+    ),
     // Resolves the run worktree's origin coordinates so the broker mints a
     // repo-scoped GitHub App installation token for exactly that repo. Agent
     // runs never carry a member's personal GitHub token: agent work is
@@ -4366,8 +4415,12 @@ Future<CcServer> runCcServer({
     // ACTOR lane — a push a human clicks is authored on GitHub as that human
     // (their own credential first, the server chain only when they have not
     // connected GitHub). With no acting user this is exactly `tokenFor`.
-    githubToken: ({actingUserId}) =>
-        forgeCredentials.tokenForActor(ForgeHost.github, actingUserId),
+    githubToken: ({actingUserId, workspaceId}) =>
+        forgeCredentials.tokenForActor(
+          ForgeHost.github,
+          actingUserId,
+          workspaceId: workspaceId,
+        ),
   );
 
   // ── Take-over / hand-back (PRD 16 §8) ──
@@ -4732,7 +4785,7 @@ Future<CcServer> runCcServer({
   // to (membership is the gate), and the run executes on their behalf.
   final prConversationGateway = AppBackedGitHubPrConversationGateway(
     app: providerApps.githubApp,
-    clientForOwner: githubClientForOwner,
+    clientForOwner: (owner) => githubClientForOwner('', owner),
     onWarning: CcHostLog.warning,
   );
   final githubLoginDirectory = GitHubLoginDirectory(
@@ -4817,6 +4870,73 @@ Future<CcServer> runCcServer({
               prNumber: association.prNumber,
             ),
           );
+        }
+      }
+      return out;
+    },
+    listIdentities: () async {
+      final workspaces = await workspaceRepository.watchAll().first;
+      final inheritIds = <String>{};
+      final byAppId = <String, Set<String>>{};
+      for (final workspace in workspaces) {
+        if (workspace.deletedAt != null) {
+          continue;
+        }
+        switch (workspace.githubAuthMode) {
+          case GithubAuthMode.inherit:
+            inheritIds.add(workspace.id);
+          case GithubAuthMode.pat:
+            continue;
+          case GithubAuthMode.app:
+            final appId = workspace.githubAppId.trim();
+            if (appId.isEmpty) {
+              continue;
+            }
+            (byAppId[appId] ??= {}).add(workspace.id);
+        }
+      }
+      Future<PrConversationAppIdentity?> identityFor({
+        required Set<String> workspaceIds,
+        required String sampleWorkspaceId,
+      }) async {
+        if (workspaceIds.isEmpty) {
+          return null;
+        }
+        final app = await githubAppForWorkspace(workspaceId: sampleWorkspaceId);
+        if (app == null) {
+          return null;
+        }
+        final botLogin = (await app.botInfo())?.botLogin ?? '';
+        if (botLogin.isEmpty) {
+          return null;
+        }
+        return PrConversationAppIdentity(
+          botLogin: botLogin,
+          workspaceIds: workspaceIds,
+          gateway: AppBackedGitHubPrConversationGateway(
+            app: () async => app,
+            clientForOwner: (owner) =>
+                githubClientForOwner(sampleWorkspaceId, owner),
+            onWarning: CcHostLog.warning,
+          ),
+        );
+      }
+
+      final out = <PrConversationAppIdentity>[];
+      final inherit = await identityFor(
+        workspaceIds: inheritIds,
+        sampleWorkspaceId: inheritIds.isEmpty ? '' : inheritIds.first,
+      );
+      if (inherit != null) {
+        out.add(inherit);
+      }
+      for (final entry in byAppId.entries) {
+        final identity = await identityFor(
+          workspaceIds: entry.value,
+          sampleWorkspaceId: entry.value.first,
+        );
+        if (identity != null) {
+          out.add(identity);
         }
       }
       return out;
@@ -5462,10 +5582,15 @@ Future<CcServer> runCcServer({
     providerOAuth: demo != null ? null : providerOAuth,
     // demo: no app identity to configure.
     providerApps: demo != null ? null : providerApps,
+    workspaceGitHubApps: demo != null ? null : workspaceGitHub,
     // demo: no forge credentials exist to read or write.
     forgeCredentials: demo != null ? null : forgeCredentials,
-    buildForgePrClient: (repo, actingUserId) =>
-        forgePrClientForRepo(repo, actingUserId: actingUserId),
+    buildForgePrClient: (repo, actingUserId, {workspaceId}) =>
+        forgePrClientForRepo(
+          repo,
+          actingUserId: actingUserId,
+          workspaceId: workspaceId,
+        ),
     // Sandbox detection: report THIS host's OS-native sandbox capabilities so a
     // connected web/thin client's Settings → Sandboxing reflects the server.
     // demo: no sandbox probing; nothing is sandboxed because nothing runs.
@@ -5500,8 +5625,11 @@ Future<CcServer> runCcServer({
     // The op serves whatever GitHub resolved (it persists nothing, so a
     // partial answer cannot overwrite the poller's snapshot — see
     // [OpenPrFetchResult]).
-    fetchOpenPrList: (repos) async =>
-        (await openPrFetchAdapter.fetchGroups(repos)).groups,
+    fetchOpenPrList: (repos, {workspaceId}) async =>
+        (await openPrFetchAdapter.fetchGroups(
+          repos,
+          workspaceId: workspaceId,
+        )).groups,
     // The open-PR poller: `pr.watchOpenForWorkspace` + `pr.refreshOpenForWorkspace`.
     // demo: a poller that never sweeps, so `pr.watchOpenForWorkspace` follows
     // the SEEDED snapshot instead of short-circuiting to a signed-out empty
@@ -5713,22 +5841,20 @@ Future<CcServer> runCcServer({
             // about one specific human — gating their merge/edit affordances
             // on the boot-time server login reported the wrong person's
             // access to every member.
-            repoPermission: (owner, repo, actingUserId) async {
+            repoPermission: (owner, repo, actingUserId, {workspaceId}) async {
               if (actingUserId.isEmpty) {
                 return 'none';
               }
               try {
-                final login =
-                    (await githubIdentityForActor(
-                      actingUserId,
-                    ).user())?.login ??
-                    '';
-                if (login.isEmpty) {
-                  return 'none';
-                }
+                // GET /repos permissions is what THIS token can do. The
+                // collaborators-permission endpoint needs a login (GET /user
+                // 403s a fine-grained PAT without Account → Profile) and
+                // often 403s the PAT even when Contents is read-write, which
+                // hid Merge.
                 return await githubClientForActor(
                   actingUserId,
-                ).content.getCollaboratorPermission(owner, repo, login);
+                  workspaceId: workspaceId,
+                ).content.getAuthenticatedRepoPermission(owner, repo);
               } on Object {
                 return 'none';
               }
@@ -6039,9 +6165,7 @@ Future<CcServer> runCcServer({
               throw ValidationException(text);
             }
             final decoded = jsonDecode(text);
-            return decoded is Map<String, dynamic>
-                ? decoded
-                : {'result': text};
+            return decoded is Map<String, dynamic> ? decoded : {'result': text};
           },
     // Review Studio (PRD 18): live cohorts / contract / visual / axis reads +
     // decision gates and the compute + blast-radius closures (host owns the
@@ -6430,20 +6554,6 @@ Future<CcServer> runCcServer({
       },
     ),
   );
-  final githubIssuesDio = createDio(baseUrl: 'https://api.github.com');
-  // Same rule for GitHub Issues: resolve the server's credential per call so
-  // an app installed (or a token pasted) later takes effect immediately.
-  githubIssuesDio.interceptors.add(
-    InterceptorsWrapper(
-      onRequest: (options, handler) async {
-        final token = await forgeCredentials.tokenFor(ForgeHost.github);
-        if (token != null && token.isNotEmpty) {
-          options.headers['Authorization'] = 'Bearer $token';
-        }
-        handler.next(options);
-      },
-    ),
-  );
   final jiraSyncDio = createDio(baseUrl: env['JIRA_BASE_URL'] ?? '');
   final jiraEmail = env['JIRA_EMAIL'] ?? '';
   final jiraToken = env['JIRA_API_TOKEN'] ?? '';
@@ -6478,7 +6588,10 @@ Future<CcServer> runCcServer({
   final ticketSyncEngine = TicketSyncEngine(
     adapters: [
       LinearTicketSyncAdapter(linearSyncDio),
-      GitHubIssuesTicketSyncAdapter(githubIssuesDio),
+      GitHubIssuesTicketSyncAdapter.resolving(
+        ({required String workspaceId, required String owner}) async =>
+            githubDioForOwner(workspaceId, owner),
+      ),
       JiraTicketSyncAdapter(jiraSyncDio),
       ClickUpTicketSyncAdapter(clickupSyncDio),
     ],

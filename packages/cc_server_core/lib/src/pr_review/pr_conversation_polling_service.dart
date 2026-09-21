@@ -42,6 +42,28 @@ class AssociatedPullRequest {
   }
 }
 
+/// One GitHub App identity the conversation poller fans out over.
+///
+/// Inherit workspaces share the install App. A workspace with its own App is
+/// a separate identity. PAT-only workspaces are omitted.
+class PrConversationAppIdentity {
+  /// Creates a [PrConversationAppIdentity].
+  const PrConversationAppIdentity({
+    required this.botLogin,
+    required this.workspaceIds,
+    required this.gateway,
+  });
+
+  /// The bot login (`<slug>[bot]`) commenters must @mention.
+  final String botLogin;
+
+  /// Workspaces that use this App. Mentions route only into these.
+  final Set<String> workspaceIds;
+
+  /// Gateway bound to this App.
+  final GitHubPrConversationGateway gateway;
+}
+
 /// Discovers, by polling, the GitHub PR conversations the server's bot is
 /// being invoked on, and hands each one to the bridge.
 ///
@@ -87,6 +109,7 @@ class PrConversationPollingService {
     this.maxCommentSweeps = 25,
     this.loadDedupeState,
     this.saveDedupeState,
+    this._listIdentities,
     DateTime Function()? now,
   }) : _now = now ?? DateTime.now;
 
@@ -94,6 +117,11 @@ class PrConversationPollingService {
   final GitHubPrConversationSink _bridge;
   final Future<List<String>> Function(String repoFullName) _workspacesForRepo;
   final Future<List<AssociatedPullRequest>> Function() _associatedPullRequests;
+
+  /// When set, the poller fans out per unique GitHub App instead of using
+  /// a single install-wide bot. PAT-only workspaces are omitted by the
+  /// supplier.
+  final Future<List<PrConversationAppIdentity>> Function()? _listIdentities;
 
   /// Floor for the polling cadence.
   final Duration minInterval;
@@ -180,36 +208,18 @@ class PrConversationPollingService {
     if (_disposed) {
       return;
     }
+    final identities = await _listIdentities?.call();
+    if (identities != null) {
+      await _pollIdentities(identities);
+      return;
+    }
     final botLogin = await _gateway.botLogin();
     if (botLogin.isEmpty) {
-      // No app identity: there is no bot login to mention and no bot account
-      // our comments would come from. Re-check at the idle cadence so an app
-      // configured later lights this up without a restart.
-      if (!_loggedIdle) {
-        _loggedIdle = true;
-        CcHostLog.info(
-          'pr_conversation: idle — no GitHub App identity, so there is no bot '
-          'login to converse with. Re-checking every '
-          '${idleInterval.inMinutes}m.',
-        );
-      }
-      _schedule(idleInterval);
+      _idleNoBot();
       return;
     }
     if (await _gateway.allInstallationsSuspended()) {
-      // Every installation is paused: minting 403s and comment fetches 404.
-      // A PAT that can still see the repos is a different path (open-PR
-      // polling keeps going when the probe succeeds). The conversation
-      // lane is the bot, which cannot talk until the install is resumed.
-      if (!_loggedSuspended) {
-        _loggedSuspended = true;
-        CcHostLog.info(
-          'pr_conversation: idle — GitHub App installation(s) suspended. '
-          'Resume the installation on GitHub or connect a token. '
-          'Re-checking every ${idleInterval.inMinutes}m.',
-        );
-      }
-      _schedule(idleInterval);
+      _idleSuspended();
       return;
     }
     _loggedIdle = false;
@@ -226,6 +236,72 @@ class PrConversationPollingService {
       CcHostLog.warning('pr_conversation: poll failed: $e');
       _schedule(minInterval * 2);
     }
+  }
+
+  Future<void> _pollIdentities(List<PrConversationAppIdentity> identities) async {
+    if (identities.isEmpty) {
+      _idleNoBot();
+      return;
+    }
+    var anyLive = false;
+    for (final identity in identities) {
+      if (identity.botLogin.isEmpty) {
+        continue;
+      }
+      if (await identity.gateway.allInstallationsSuspended()) {
+        continue;
+      }
+      anyLive = true;
+      try {
+        await _ensureDedupeLoaded();
+        final sweepStart = _now().toUtc();
+        final results = await identity.gateway.searchCandidates(
+          since: _windowStart(sweepStart),
+        );
+        await _handleSweep(
+          identity.botLogin,
+          results,
+          sweepStart,
+          gateway: identity.gateway,
+          allowedWorkspaces: identity.workspaceIds,
+        );
+      } on Object catch (e) {
+        CcHostLog.warning(
+          'pr_conversation: poll failed for @${identity.botLogin}: $e',
+        );
+      }
+    }
+    if (!anyLive) {
+      _idleSuspended();
+      return;
+    }
+    _loggedIdle = false;
+    _loggedSuspended = false;
+    _schedule(minInterval);
+  }
+
+  void _idleNoBot() {
+    if (!_loggedIdle) {
+      _loggedIdle = true;
+      CcHostLog.info(
+        'pr_conversation: idle — no GitHub App identity, so there is no bot '
+        'login to converse with. Re-checking every '
+        '${idleInterval.inMinutes}m.',
+      );
+    }
+    _schedule(idleInterval);
+  }
+
+  void _idleSuspended() {
+    if (!_loggedSuspended) {
+      _loggedSuspended = true;
+      CcHostLog.info(
+        'pr_conversation: idle — GitHub App installation(s) suspended. '
+        'Resume the installation on GitHub or connect a token. '
+        'Re-checking every ${idleInterval.inMinutes}m.',
+      );
+    }
+    _schedule(idleInterval);
   }
 
   /// The `updated:>` anchor for the mention lane: the watermark less the
@@ -249,11 +325,14 @@ class PrConversationPollingService {
       List<GitHubViewerPr> labeled,
     })
     results,
-    DateTime sweepStart,
-  ) async {
+    DateTime sweepStart, {
+    GitHubPrConversationGateway? gateway,
+    Set<String>? allowedWorkspaces,
+  }) async {
+    final lane = gateway ?? _gateway;
     final silent = _baseline && _firstRunEver;
     final suspended = {
-      for (final owner in await _gateway.suspendedOwners()) owner.toLowerCase(),
+      for (final owner in await lane.suspendedOwners()) owner.toLowerCase(),
     };
 
     // Route every search hit to the workspace that links its repo. The
@@ -263,6 +342,10 @@ class PrConversationPollingService {
     final targets = <String, _SweepTarget>{};
     for (final associated in await _associatedPullRequests()) {
       if (associated.owner.isEmpty || associated.name.isEmpty) {
+        continue;
+      }
+      if (allowedWorkspaces != null &&
+          !allowedWorkspaces.contains(associated.workspaceId)) {
         continue;
       }
       if (suspended.contains(associated.owner.toLowerCase())) {
@@ -294,6 +377,12 @@ class PrConversationPollingService {
             'pr_conversation: workspace resolution failed for '
             '${pr.repoFullName}: $e',
           );
+        }
+        if (allowedWorkspaces != null) {
+          workspaceIds = [
+            for (final id in workspaceIds)
+              if (allowedWorkspaces.contains(id)) id,
+          ];
         }
         if (workspaceIds.isEmpty) {
           // Unlinked: skip BEFORE recording anything, so linking the repo
@@ -364,7 +453,7 @@ class PrConversationPollingService {
       }
       swept++;
       try {
-        await _sweepPullRequestComments(botLogin, target);
+        await _sweepPullRequestComments(botLogin, target, lane);
       } on Object catch (e) {
         CcHostLog.warning(
           'pr_conversation: comment sweep failed for '
@@ -393,13 +482,14 @@ class PrConversationPollingService {
   Future<void> _sweepPullRequestComments(
     String botLogin,
     _SweepTarget target,
+    GitHubPrConversationGateway gateway,
   ) async {
-    final issueComments = await _gateway.listIssueComments(
+    final issueComments = await gateway.listIssueComments(
       target.owner,
       target.repo,
       target.prNumber,
     );
-    final reviewComments = await _gateway.listReviewComments(
+    final reviewComments = await gateway.listReviewComments(
       target.owner,
       target.repo,
       target.prNumber,

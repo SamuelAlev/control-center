@@ -59,9 +59,10 @@ class ComposerRequest {
   final String initialComment;
 }
 
-/// Reports its child's laid-out height once per frame via [onMeasured], so the
-/// document can reserve an exact gap for an inline composer (mirrors
-/// `MeasuredInlineThread` for non-thread children).
+/// Reports its child's laid-out height once per frame via [onMeasured].
+/// Prefer [HeightReporter] when the child can grow after the first layout
+/// (opening a reply, loading preview content) — this wrapper only remeasures
+/// when it itself rebuilds.
 class MeasuredHeight extends StatefulWidget {
   /// Creates a [MeasuredHeight] wrapper.
   const MeasuredHeight({

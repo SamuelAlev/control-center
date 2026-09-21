@@ -45,17 +45,19 @@ class CountRailItem extends StatelessWidget implements CcFluidHoverTarget {
           final hovered = states.contains(WidgetState.hovered);
           final fluidActive = CcFluidHover.isItemActive(context);
           // Translucent `hover` / `hoverStrong` as a box fill double-paints
-          // glyphs on SkWasm. Pre-blend onto the page canvas so the fill is
-          // opaque. Idle stays alpha-0 of the hover token so the first hover
-          // doesn't flash through transparent-black. Pointer hover is painted
-          // once by [CcFluidHover] when this row is the nearest target.
+          // glyphs on SkWasm. Pre-blend onto the page canvas so every fill
+          // is opaque. Idle is the canvas itself, not alpha-0 of the hover
+          // token: Color.lerp of that wash (fg RGB @ 0%) into the selected
+          // blend peaks at a dark gray at t≈0.5 — the click flash on the
+          // PR repo rail. Pointer hover is painted once by [CcFluidHover]
+          // when this row is the nearest target.
           final Color bg;
           if (selected) {
             bg = Color.alphaBlend(tokens.hoverStrong, tokens.canvas);
           } else if (hovered && !fluidActive) {
             bg = Color.alphaBlend(tokens.hover, tokens.canvas);
           } else {
-            bg = tokens.hover.withValues(alpha: 0);
+            bg = tokens.canvas;
           }
           return AnimatedContainer(
             duration: CcMotion.resolveFade(context, CcMotion.fast),

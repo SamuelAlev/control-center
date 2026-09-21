@@ -1,9 +1,11 @@
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/worktree_file_pane.dart';
 import 'package:control_center/features/pr_review/providers/pr_space_provider.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/shared/widgets/demo_unavailable.dart';
 import 'package:control_center/shared/widgets/inline_load_error.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -24,6 +26,10 @@ class PrFileTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    if (ref.watch(isDemoServerProvider)) {
+      return const DemoUnavailable(capability: DemoCapability.repos);
+    }
+
     final workspaceId = ref.watch(activeWorkspaceIdProvider);
     final repoId = prRepoIdFor(ref, pr);
     final spaceAsync = ref.watch(prSpaceProvider(pr));

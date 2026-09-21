@@ -14,7 +14,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
-/// Workspace → General: the active meeting-note template and the workspace's
+/// Workspace → Meetings: the active meeting-note template and the workspace's
 /// custom ones. Built-in presets are read-only; custom templates can be
 /// edited/removed.
 ///

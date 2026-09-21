@@ -66,22 +66,10 @@ class ClaudeAccountRow extends ConsumerWidget {
                         variant: CcBadgeVariant.neutral,
                       ),
                     ],
-                    // Status by badge AND word, never colour alone.
-                    //
-                    // An expired sign-in is called that rather than "signed
-                    // out": the two look identical to a run and could not be
-                    // less alike to the operator — one account was never
-                    // logged into, the other worked this morning and needs the
-                    // same login run again.
-                    //
-                    // Both halves are required. A past `expiresAt` on its own
-                    // is the NORMAL state of any account nobody used overnight
-                    // — the CLI renews it from the refresh token on the next
-                    // run — so the timestamp alone would paint a healthy roster
-                    // red every morning. The server is what knows the
-                    // difference (only it can see whether anything can renew
-                    // the credential) and it says so by reporting the account
-                    // signed out.
+                    // Warning badges are for a login a human has to repair.
+                    // A lapsed access token with a live refresh token is the
+                    // overnight state the CLI renews on the next run — same
+                    // copy as the usage flyout, muted, no badge.
                     if (!account.loggedIn && account.isCredentialExpired()) ...[
                       const SizedBox(width: 6),
                       CcBadge(
@@ -95,9 +83,6 @@ class ClaudeAccountRow extends ConsumerWidget {
                         variant: CcBadgeVariant.warning,
                       ),
                     ] else if (account.isRateLimited()) ...[
-                      // A cooling-off account is signed in and still unusable.
-                      // Without saying so, the operator reads a healthy row and
-                      // cannot explain why runs are landing elsewhere.
                       const SizedBox(width: 6),
                       CcBadge(
                         label: l10n.accountPoolCoolingOff(
@@ -115,6 +100,15 @@ class ClaudeAccountRow extends ConsumerWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(fontSize: 11, color: t.fgSecondary),
                 ),
+                if (account.loggedIn && account.isCredentialExpired()) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    l10n.subscriptionUsageSignInExpired,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 11, color: t.fgSecondary),
+                  ),
+                ],
               ],
             ),
           ),
@@ -158,14 +152,10 @@ class ClaudeAccountRow extends ConsumerWidget {
     );
   }
 
-  /// The row's second line: the account's identity, plus how much of its
-  /// tightest plan window is spent — the fact that decides which login to use.
+  /// Identity plus remaining quota. A lapsed-but-renewable sign-in is a
+  /// separate line so the plan and org stay readable beside it.
   String _subtitle(AppLocalizations l10n, SubscriptionWindow? window) {
     final account = view.account;
-    // The expiry outranks a quota reading: usage the account can no longer
-    // spend is not the fact worth the one line this row has. Same pairing as
-    // the badge — a past `expiresAt` only means the account is dead when the
-    // server also reports it signed out.
     final expiresAt = account.credentialExpiresAt;
     if (expiresAt != null &&
         !account.loggedIn &&

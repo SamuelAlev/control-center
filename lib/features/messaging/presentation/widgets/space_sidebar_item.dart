@@ -192,14 +192,14 @@ class SpaceSidebarItem extends ConsumerWidget implements CcFluidHoverTarget {
 }
 
 /// A space navigation row that reproduces [CcSidebarItem]'s exact look — the
-/// solid `bgBrandSolid` fill + reserved 1px `accent` border when [selected],
-/// with `accentOn` content, the same hover/pressed washes and padding — so
-/// spaces read as first-class sidebar items. It can't be a [CcSidebarItem]
-/// itself because that widget's icon-only API hosts no [leading] widget (an
-/// agent avatar / PR badge / spinner). Implements [CcFluidHoverTarget] so a
-/// [CcSidebarGroup] of space rows shares the same travelling hover wash as
-/// Workspace nav. (The 4px inter-item gap comes from the enclosing
-/// [CcSidebarGroup], same as [CcSidebarItem].)
+/// solid `bgBrandSolid` fill fading in via opacity + reserved 1px `accent`
+/// border when [selected], with `accentOn` content, the same hover/pressed
+/// washes and padding — so spaces read as first-class sidebar items. It can't
+/// be a [CcSidebarItem] itself because that widget's icon-only API hosts no
+/// [leading] widget (an agent avatar / PR badge / spinner). Implements
+/// [CcFluidHoverTarget] so a [CcSidebarGroup] of space rows shares the same
+/// travelling hover wash as Workspace nav. (The 4px inter-item gap comes from
+/// the enclosing [CcSidebarGroup], same as [CcSidebarItem].)
 class SpaceRow extends StatelessWidget implements CcFluidHoverTarget {
   /// Creates a [SpaceRow].
   const SpaceRow({
@@ -272,14 +272,11 @@ class SpaceRow extends StatelessWidget implements CcFluidHoverTarget {
         FocusModality.instance.isKeyboard;
   }
 
-  Color _background(
+  Color _hoverFill(
     DesignSystemTokens t,
     Set<WidgetState> states, {
     required bool fluidActive,
   }) {
-    if (selected) {
-      return t.bgBrandSolid;
-    }
     if (states.contains(WidgetState.pressed)) {
       return t.hoverStrong;
     }
@@ -310,10 +307,9 @@ class SpaceRow extends StatelessWidget implements CcFluidHoverTarget {
       // selected row's solid brand fill, so on that row the ring is accentOn.
       focusRingColor: selected ? t.accentOn : null,
       builder: (context, states) {
-        // Mirrors CcSidebarItem: the fill lerps over CcMotion.fast, so the
-        // foreground lerps with it — same duration and curve — or a white
-        // label flashes on the still-light mid-lerp fill (white-on-white on
-        // select, dark-ink-on-orange on deselect).
+        // Mirrors CcSidebarItem: the brand fill fades in via opacity over
+        // CcMotion.fast, so the foreground lerps with it — same duration and
+        // curve — or a white label flashes on the still-fading wash.
         return TweenAnimationBuilder<Color?>(
           duration: CcMotion.fast,
           curve: CcMotion.standard,
@@ -323,98 +319,121 @@ class SpaceRow extends StatelessWidget implements CcFluidHoverTarget {
             return AnimatedContainer(
               duration: CcMotion.fast,
               curve: CcMotion.standard,
-              // Mirrors CcSidebarItem's fixed 32px row height and its
-              // asymmetric inset (left 9 + the 1px reserved border = the visual
-              // 10px) so a space row's leading glyph lands on the same x=27
-              // line as a nav item's icon in both modes. While the width
-              // animates the trailing inset drops to 0 so the fixed leading
-              // glyph + gap can't overflow the narrowing row.
+              // Mirrors CcSidebarItem's fixed 32px row height. Padding lives
+              // on the content so the selected overlay (below) is full-bleed.
               height: kCcSidebarItemExtent,
-              padding: EdgeInsetsDirectional.only(
-                start: 9,
-                end: transitioning ? 0 : 10,
-              ),
               decoration: BoxDecoration(
-                color: _background(
+                color: _hoverFill(
                   t,
                   states,
                   fluidActive: CcFluidHover.isItemActive(context),
                 ),
                 borderRadius: AppRadii.brSm,
-                // A 1px border is reserved on every row (alpha-0 when idle) so the
-                // layout never shifts when [selected] toggles the brand border on —
-                // mirrors CcSidebarItem's selected treatment (the border reads as
-                // the solid pill's edge: invisible in light, a brighter rim in
-                // dark).
+              ),
+              // A 1px border is reserved on every row (alpha-0 when idle) so
+              // the layout never shifts when [selected] toggles the brand
+              // border on — mirrors CcSidebarItem (invisible in light, a
+              // brighter rim in dark). Foreground so it still rims the
+              // orange overlay rather than sitting behind it.
+              foregroundDecoration: BoxDecoration(
                 border: Border.all(
                   color: selected ? t.accent : t.accent.withValues(alpha: 0),
                   width: 1,
                 ),
+                borderRadius: AppRadii.brSm,
               ),
-              child: Row(
+              child: Stack(
+                fit: StackFit.expand,
                 children: [
-                  IconTheme.merge(
-                    data: IconThemeData(color: contentColor, size: 18),
-                    child: leading,
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  Expanded(
-                    // The label fades while the sidebar's width animates — kept
-                    // in the layout so the row geometry never changes — mirroring
-                    // CcSidebarItem's label fade.
+                  IgnorePointer(
                     child: AnimatedOpacity(
-                      opacity: transitioning ? 0 : 1,
+                      opacity: selected ? 1 : 0,
                       duration: CcMotion.fast,
                       curve: CcMotion.standard,
-                      child: Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              label,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 14,
-                                height: 1.4,
-                                fontWeight: CcTypography.regularWeight,
-                                color: contentColor,
-                              ),
-                            ),
-                          ),
-                          if (count != null) ...[
-                            const SizedBox(width: AppSpacing.sm),
-                            SpaceCountChip(count: count!, selected: selected),
-                          ],
-                        ],
-                      ),
+                      child: ColoredBox(color: t.bgBrandSolid),
                     ),
                   ),
-                  if (!muted &&
-                      !transitioning &&
-                      SpaceTrailingIndicator.shouldShow(
-                        status: status,
-                        unread: unread,
-                        leadingHandlesRunning: leadingHandlesRunning,
-                      )) ...[
-                    const SizedBox(width: AppSpacing.sm),
-                    SpaceTrailingIndicator(
-                      status: status,
-                      unread: unread,
-                      leadingHandlesRunning: leadingHandlesRunning,
-                      selected: selected,
+                  Padding(
+                    // Mirrors CcSidebarItem's asymmetric inset (left 9 + the
+                    // 1px reserved border = the visual 10px) so a space row's
+                    // leading glyph lands on the same x=27 line as a nav
+                    // item's icon in both modes. While the width animates the
+                    // trailing inset drops to 0 so the fixed leading glyph +
+                    // gap can't overflow the narrowing row.
+                    padding: EdgeInsetsDirectional.only(
+                      start: 9,
+                      end: transitioning ? 0 : 10,
                     ),
-                  ],
-                  if (menuItems != null &&
-                      menuItems!.isNotEmpty &&
-                      menuSemanticLabel != null &&
-                      !transitioning)
-                    SpaceRowOverflowMenu(
-                      items: menuItems!,
-                      semanticLabel: menuSemanticLabel!,
-                      color: contentColor,
-                      revealed: _overflowRevealed(states),
-                      selected: selected,
+                    child: Row(
+                      children: [
+                        IconTheme.merge(
+                          data: IconThemeData(color: contentColor, size: 18),
+                          child: leading,
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        Expanded(
+                          // The label fades while the sidebar's width animates — kept
+                          // in the layout so the row geometry never changes — mirroring
+                          // CcSidebarItem's label fade.
+                          child: AnimatedOpacity(
+                            opacity: transitioning ? 0 : 1,
+                            duration: CcMotion.fast,
+                            curve: CcMotion.standard,
+                            child: Row(
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    label,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      height: 1.4,
+                                      fontWeight: CcTypography.regularWeight,
+                                      color: contentColor,
+                                    ),
+                                  ),
+                                ),
+                                if (count != null) ...[
+                                  const SizedBox(width: AppSpacing.sm),
+                                  SpaceCountChip(
+                                    count: count!,
+                                    selected: selected,
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ),
+                        if (!muted &&
+                            !transitioning &&
+                            SpaceTrailingIndicator.shouldShow(
+                              status: status,
+                              unread: unread,
+                              leadingHandlesRunning: leadingHandlesRunning,
+                            )) ...[
+                          const SizedBox(width: AppSpacing.sm),
+                          SpaceTrailingIndicator(
+                            status: status,
+                            unread: unread,
+                            leadingHandlesRunning: leadingHandlesRunning,
+                            selected: selected,
+                          ),
+                        ],
+                        if (menuItems != null &&
+                            menuItems!.isNotEmpty &&
+                            menuSemanticLabel != null &&
+                            !transitioning)
+                          SpaceRowOverflowMenu(
+                            items: menuItems!,
+                            semanticLabel: menuSemanticLabel!,
+                            color: contentColor,
+                            revealed: _overflowRevealed(states),
+                            selected: selected,
+                          ),
+                      ],
                     ),
+                  ),
                 ],
               ),
             );

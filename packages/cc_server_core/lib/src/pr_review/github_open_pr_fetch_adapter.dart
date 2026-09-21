@@ -29,8 +29,12 @@ class GitHubOpenPrFetchAdapter implements OpenPrFetchPort {
     this._app,
   });
 
-  final GitHubApiClient Function(String owner) _clientForOwner;
-  final Future<GitHubAppClient?> Function()? _app;
+  final GitHubApiClient Function(String workspaceId, String owner)
+  _clientForOwner;
+  final Future<GitHubAppClient?> Function({String? workspaceId})? _app;
+
+  GitHubApiClient _client(Repo repo, {String? workspaceId}) =>
+      _clientForOwner(workspaceId ?? '', repo.remoteOwner);
 
   static List<({String owner, String name})> _specs(List<Repo> repos) => [
     for (final r in repos) (owner: r.remoteOwner, name: r.remoteName),
@@ -46,23 +50,28 @@ class GitHubOpenPrFetchAdapter implements OpenPrFetchPort {
     return grouped;
   }
 
-  Future<bool> _ownerSuspended(String owner) async {
-    final app = await _app?.call();
+  Future<bool> _ownerSuspended(String owner, {String? workspaceId}) async {
+    final app = await _app?.call(workspaceId: workspaceId);
     return app != null && await app.isOwnerSuspended(owner);
   }
 
   @override
   Future<({bool changed, String? etag})> probeRepo(
     Repo repo,
-    String? etag,
-  ) async {
+    String? etag, {
+    String? workspaceId,
+  }) async {
     try {
-      final probe = await _clientForOwner(
-        repo.remoteOwner,
+      final probe = await _client(
+        repo,
+        workspaceId: workspaceId,
       ).pr.probeOpenPullRequests(repo.remoteOwner, repo.remoteName, etag: etag);
       return (changed: probe.changed, etag: probe.etag);
     } on Object {
-      if (await _ownerSuspended(repo.remoteOwner)) {
+      if (await _ownerSuspended(
+        repo.remoteOwner,
+        workspaceId: workspaceId,
+      )) {
         throw NetworkException(
           'GitHub App installation for ${repo.remoteOwner} is suspended',
           code: kGitHubInstallationSuspendedCode,
@@ -73,13 +82,16 @@ class GitHubOpenPrFetchAdapter implements OpenPrFetchPort {
   }
 
   @override
-  Future<OpenPrFetchResult> fetchGroups(List<Repo> repos) async {
+  Future<OpenPrFetchResult> fetchGroups(
+    List<Repo> repos, {
+    String? workspaceId,
+  }) async {
     final groups = <OpenPrGroup>[];
     final resolved = <String>{};
 
     await Future.wait(
       _byOwner(repos).values.map((ownerRepos) async {
-        final client = _clientForOwner(ownerRepos.first.remoteOwner);
+        final client = _client(ownerRepos.first, workspaceId: workspaceId);
         final specs = _specs(ownerRepos);
         final GitHubPrBatchResult batch;
         try {
@@ -158,16 +170,18 @@ class GitHubOpenPrFetchAdapter implements OpenPrFetchPort {
 
   @override
   Future<Map<String, Map<int, PrStatusOverlay>>> fetchChecks(
-    List<Repo> repos,
-  ) async {
+    List<Repo> repos, {
+    String? workspaceId,
+  }) async {
     final merged = <String, Map<int, PrStatusOverlay>>{};
 
     await Future.wait(
       _byOwner(repos).values.map((ownerRepos) async {
         final Map<int, Map<int, GitHubPrStatusOverlay>> byIndex;
         try {
-          byIndex = await _clientForOwner(
-            ownerRepos.first.remoteOwner,
+          byIndex = await _client(
+            ownerRepos.first,
+            workspaceId: workspaceId,
           ).graphql.fetchOpenPullRequestsChecks(_specs(ownerRepos));
         } on Object catch (e) {
           CcHostLog.warning(
@@ -196,10 +210,15 @@ class GitHubOpenPrFetchAdapter implements OpenPrFetchPort {
   }
 
   @override
-  Future<bool?> wasMerged(Repo repo, int prNumber) async {
+  Future<bool?> wasMerged(
+    Repo repo,
+    int prNumber, {
+    String? workspaceId,
+  }) async {
     try {
-      final gh = await _clientForOwner(
-        repo.remoteOwner,
+      final gh = await _client(
+        repo,
+        workspaceId: workspaceId,
       ).pr.getPullRequest(repo.remoteOwner, repo.remoteName, prNumber);
       if (gh == null) {
         return null;
@@ -211,10 +230,15 @@ class GitHubOpenPrFetchAdapter implements OpenPrFetchPort {
   }
 
   @override
-  Future<PrMergeableState> mergeState(Repo repo, int prNumber) async {
+  Future<PrMergeableState> mergeState(
+    Repo repo,
+    int prNumber, {
+    String? workspaceId,
+  }) async {
     try {
-      final gh = await _clientForOwner(
-        repo.remoteOwner,
+      final gh = await _client(
+        repo,
+        workspaceId: workspaceId,
       ).pr.getPullRequest(repo.remoteOwner, repo.remoteName, prNumber);
       if (gh == null || gh.mergeableState.isEmpty) {
         return PrMergeableState.unknown;
@@ -228,10 +252,15 @@ class GitHubOpenPrFetchAdapter implements OpenPrFetchPort {
   }
 
   @override
-  Future<String?> latestApprover(Repo repo, int prNumber) async {
+  Future<String?> latestApprover(
+    Repo repo,
+    int prNumber, {
+    String? workspaceId,
+  }) async {
     try {
-      final reviews = await _clientForOwner(
-        repo.remoteOwner,
+      final reviews = await _client(
+        repo,
+        workspaceId: workspaceId,
       ).pr.listPullRequestReviews(repo.remoteOwner, repo.remoteName, prNumber);
       GitHubReview? newest;
       for (final review in reviews) {
@@ -255,18 +284,21 @@ class GitHubOpenPrFetchAdapter implements OpenPrFetchPort {
   @override
   Future<({String name, String? url})?> firstFailingCheck(
     Repo repo,
-    int prNumber,
-  ) async {
+    int prNumber, {
+    String? workspaceId,
+  }) async {
     try {
-      final gh = await _clientForOwner(
-        repo.remoteOwner,
+      final gh = await _client(
+        repo,
+        workspaceId: workspaceId,
       ).pr.getPullRequest(repo.remoteOwner, repo.remoteName, prNumber);
       final sha = gh?.headSha;
       if (sha == null || sha.isEmpty) {
         return null;
       }
-      final runs = await _clientForOwner(
-        repo.remoteOwner,
+      final runs = await _client(
+        repo,
+        workspaceId: workspaceId,
       ).pr.listCheckRuns(repo.remoteOwner, repo.remoteName, sha);
       for (final run in runs) {
         if (run.isFailing) {

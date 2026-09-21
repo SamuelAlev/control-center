@@ -83,6 +83,36 @@ void main() {
     expect(washes, hasLength(1));
   });
 
+  testWidgets('selecting does not lerp through a dark wash', (tester) async {
+    final selected = ValueNotifier<String?>(null);
+    addTearDown(selected.dispose);
+    await tester.pumpWidget(
+      testWrap(
+        ValueListenableBuilder<String?>(
+          valueListenable: selected,
+          builder: (context, id, _) => rail(selected: id),
+        ),
+      ),
+    );
+
+    selected.value = frontend.id;
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 40));
+
+    final row = find.ancestor(
+      of: find.text('Uber/uber-cloud-a'),
+      matching: find.byType(AnimatedContainer),
+    );
+    final color =
+        (tester.widget<AnimatedContainer>(row).decoration! as BoxDecoration)
+            .color!;
+    // Color.lerp(hover @ alpha 0, the selected blend) is a high-alpha dark
+    // gray at t≈0.5. Idle canvas and the selected blend are both opaque and
+    // light, so the mid-flight fill stays in that family.
+    expect(color.a, 1.0);
+    expect(color.computeLuminance(), greaterThan(0.5));
+  });
+
   testWidgets('hover highlight is a fluid nearest-target group', (
     tester,
   ) async {

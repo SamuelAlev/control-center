@@ -142,7 +142,7 @@ lib/features/settings/presentation/widgets/model_browser_dialog.dart  578
 lib/features/settings/presentation/widgets/providers/add_provider_pane.dart  341
 lib/features/settings/presentation/widgets/providers/model_edit_dialog.dart  341
 lib/features/settings/presentation/widgets/providers/provider_model_list.dart  360
-lib/features/settings/presentation/widgets/sections/claude_account_row.dart  312
+lib/features/settings/presentation/widgets/sections/claude_account_row.dart  302
 lib/features/settings/presentation/widgets/sections/general/notifications_section.dart  656
 lib/features/settings/presentation/widgets/sections/general/settings_shared.dart  384
 lib/features/settings/presentation/widgets/sections/integrations/server_sharing_section.dart  345

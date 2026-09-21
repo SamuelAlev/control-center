@@ -553,6 +553,7 @@ class OpenPrPollingService {
           final probe = await _port.probeRepo(
             repo,
             force ? null : st.etagByRepoId[repo.id],
+            workspaceId: workspaceId,
           );
           final etag = probe.etag;
           if (etag != null && etag.isNotEmpty) {
@@ -591,7 +592,10 @@ class OpenPrPollingService {
       ];
 
       if (listChanged && fetchable.isNotEmpty) {
-        final result = await _port.fetchGroups(fetchable);
+        final result = await _port.fetchGroups(
+          fetchable,
+          workspaceId: workspaceId,
+        );
         // GitHub answered for nothing. The batch query tolerates partial
         // failure, so a service incident returns "no repos" exactly like a
         // workspace whose queues are all empty — and persisting that would
@@ -1002,7 +1006,11 @@ class OpenPrPollingService {
           after.mergeableState == PrMergeableState.unknown;
       if (verdictMissing && _mergeConfirms < _maxMergeConfirmsPerPass) {
         _mergeConfirms++;
-        final confirmed = await _port.mergeState(repo, number);
+        final confirmed = await _port.mergeState(
+          repo,
+          number,
+          workspaceId: workspaceId,
+        );
         if (confirmed != PrMergeableState.unknown) {
           confirmedState = confirmed.name;
           after = PrNotifiableState.fromWire({
@@ -1070,7 +1078,11 @@ class OpenPrPollingService {
           if (approver == null &&
               _approverLookups < _maxApproverLookupsPerPass) {
             _approverLookups++;
-            approver = await _port.latestApprover(repo, number);
+            approver = await _port.latestApprover(
+              repo,
+              number,
+              workspaceId: workspaceId,
+            );
           }
           bus.publish(
             PrReviewDecisionChanged(
@@ -1115,7 +1127,11 @@ class OpenPrPollingService {
             ),
           );
         case PrChecksFailed():
-          final failing = await _firstFailingCheck(repo, number);
+          final failing = await _firstFailingCheck(
+            repo,
+            number,
+            workspaceId: workspaceId,
+          );
           bus.publish(
             PrChecksStatusChanged(
               workspaceId: workspaceId,
@@ -1154,10 +1170,15 @@ class OpenPrPollingService {
   /// is an improvement on that message, not a precondition for sending it.
   Future<({String name, String? url})?> _firstFailingCheck(
     Repo repo,
-    int number,
-  ) async {
+    int number, {
+    String? workspaceId,
+  }) async {
     try {
-      return await _port.firstFailingCheck(repo, number);
+      return await _port.firstFailingCheck(
+        repo,
+        number,
+        workspaceId: workspaceId,
+      );
     } on Object catch (e) {
       CcHostLog.warning('open_pr_poll: check-run lookup failed: $e');
       return null;
@@ -1278,7 +1299,11 @@ class OpenPrPollingService {
           continue;
         }
         // The PR left the open list: merged or closed.
-        final merged = await _port.wasMerged(repo, number);
+        final merged = await _port.wasMerged(
+          repo,
+          number,
+          workspaceId: workspaceId,
+        );
         _eventBus?.publish(
           PullRequestStatusChanged(
             status: merged == true ? 'merged' : 'closed',
@@ -1309,7 +1334,7 @@ class OpenPrPollingService {
   ) async {
     final Map<String, Map<int, PrStatusOverlay>> byRepoId;
     try {
-      byRepoId = await _port.fetchChecks(repos);
+      byRepoId = await _port.fetchChecks(repos, workspaceId: workspaceId);
     } on Object catch (e) {
       CcHostLog.warning('open_pr_poll: checks pass failed: $e');
       return;

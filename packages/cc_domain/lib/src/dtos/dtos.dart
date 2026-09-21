@@ -106,6 +106,8 @@ class WorkspaceDto {
     this.secretExcludeGlobs = const [],
     this.reviewConcurrency,
     this.autoPublishReview,
+    this.githubAuthMode,
+    this.githubAppId,
     this.deletedAt,
     this.createdAt,
     this.updatedAt,
@@ -123,6 +125,8 @@ class WorkspaceDto {
     autoPublishReview: json['auto_publish_review'] is bool
         ? json['auto_publish_review'] as bool
         : null,
+    githubAuthMode: json['github_auth_mode'] as String?,
+    githubAppId: json['github_app_id'] as String?,
     deletedAt: json['deleted_at'] is String
         ? DateTime.tryParse(json['deleted_at'] as String)
         : null,
@@ -153,6 +157,12 @@ class WorkspaceDto {
   /// omits it (older surfaces).
   final bool? autoPublishReview;
 
+  /// `inherit` / `app` / `pat`; null when the host omits it (older surfaces).
+  final String? githubAuthMode;
+
+  /// Numeric GitHub App id when this workspace uses its own App.
+  final String? githubAppId;
+
   /// Soft-delete timestamp; non-null when the workspace is deleted.
   final DateTime? deletedAt;
   final DateTime? createdAt;
@@ -166,6 +176,8 @@ class WorkspaceDto {
     'secret_exclude_globs': secretExcludeGlobs,
     if (reviewConcurrency != null) 'review_concurrency': reviewConcurrency,
     if (autoPublishReview != null) 'auto_publish_review': autoPublishReview,
+    if (githubAuthMode != null) 'github_auth_mode': githubAuthMode,
+    if (githubAppId != null) 'github_app_id': githubAppId,
     if (deletedAt != null) 'deleted_at': deletedAt!.toIso8601String(),
     if (createdAt != null) 'created_at': createdAt!.toIso8601String(),
     if (updatedAt != null) 'updated_at': updatedAt!.toIso8601String(),
@@ -780,6 +792,10 @@ class WorkspaceMemberDto {
     this.roleWire,
     this.invitedBy,
     this.joinedAt,
+    this.displayName,
+    this.email,
+    this.gitAuthorName,
+    this.gitAuthorEmail,
   });
 
   factory WorkspaceMemberDto.fromJson(Map<String, dynamic> json) =>
@@ -793,6 +809,10 @@ class WorkspaceMemberDto {
         joinedAt: json['joined_at'] is String
             ? DateTime.tryParse(json['joined_at'] as String)
             : null,
+        displayName: json['display_name'] as String?,
+        email: json['email'] as String?,
+        gitAuthorName: json['git_author_name'] as String?,
+        gitAuthorEmail: json['git_author_email'] as String?,
       );
 
   final String id;
@@ -814,6 +834,12 @@ class WorkspaceMemberDto {
   final String? invitedBy;
   final DateTime? joinedAt;
 
+  /// Workspace overlay; null inherits the global user row.
+  final String? displayName;
+  final String? email;
+  final String? gitAuthorName;
+  final String? gitAuthorEmail;
+
   /// The value to send back when assigning: the custom role when there is
   /// one, else the preset.
   String get effectiveRoleWire => roleWire ?? role;
@@ -826,6 +852,10 @@ class WorkspaceMemberDto {
     if (roleWire != null) 'role_wire': roleWire,
     if (invitedBy != null) 'invited_by': invitedBy,
     if (joinedAt != null) 'joined_at': joinedAt!.toIso8601String(),
+    if (displayName != null) 'display_name': displayName,
+    if (email != null) 'email': email,
+    if (gitAuthorName != null) 'git_author_name': gitAuthorName,
+    if (gitAuthorEmail != null) 'git_author_email': gitAuthorEmail,
   };
 }
 
@@ -3727,6 +3757,7 @@ class CalendarEventDto {
 class CalendarAccountDto {
   CalendarAccountDto({
     required this.id,
+    this.userId = '',
     required this.providerId,
     required this.accountEmail,
     this.displayName,
@@ -3737,6 +3768,7 @@ class CalendarAccountDto {
   factory CalendarAccountDto.fromJson(Map<String, dynamic> json) =>
       CalendarAccountDto(
         id: json['id'] as String,
+        userId: json['user_id'] as String? ?? '',
         providerId: json['provider_id'] as String? ?? 'google',
         accountEmail: json['account_email'] as String? ?? '',
         displayName: json['display_name'] as String?,
@@ -3745,6 +3777,10 @@ class CalendarAccountDto {
       );
 
   final String id;
+
+  /// The member who connected this account. Empty on legacy workspace-pool
+  /// rows.
+  final String userId;
   final String providerId;
   final String accountEmail;
   final String? displayName;
@@ -3757,6 +3793,7 @@ class CalendarAccountDto {
 
   Map<String, dynamic> toJson() => {
     'id': id,
+    'user_id': userId,
     'provider_id': providerId,
     'account_email': accountEmail,
     'display_name': ?displayName,

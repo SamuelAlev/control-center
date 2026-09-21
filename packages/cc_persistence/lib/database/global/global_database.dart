@@ -103,7 +103,7 @@ class GlobalDatabase extends _$GlobalDatabase {
   final void Function(String tag, String message)? onError;
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   /// The `server_meta` key holding this install's uuid.
   static const installIdKey = 'install_id';
@@ -146,7 +146,43 @@ class GlobalDatabase extends _$GlobalDatabase {
     MigrationStep(2, 3, (m) async {
       await m.createTable(managedActionPoliciesTable);
     }),
+    // v4: per-workspace GitHub identity — inherit the install App, use a
+    // different App, or PAT-only. Typed columns because background polling
+    // reads them on the credential path. Private keys stay in secrets.json.
+    MigrationStep(3, 4, (m) async {
+      await _addColumnIfMissing(
+        m,
+        workspacesTable,
+        workspacesTable.githubAuthMode,
+      );
+      await _addColumnIfMissing(
+        m,
+        workspacesTable,
+        workspacesTable.githubAppId,
+      );
+    }),
   ];
+
+  /// Adds [column] to [table] unless the file already has it.
+  ///
+  /// A replay from an older `user_version` (the v1→v2 tests rewind to 1 and
+  /// then walk the whole chain) must not throw on a column `onCreate` already
+  /// built. A crash mid-step would otherwise leave the file un-openable.
+  Future<void> _addColumnIfMissing(
+    Migrator m,
+    TableInfo<Table, dynamic> table,
+    GeneratedColumn<Object> column,
+  ) async {
+    final existing = await customSelect(
+      'PRAGMA table_info(${table.actualTableName})',
+    ).get();
+    final present = existing.any(
+      (row) => row.read<String>('name') == column.name,
+    );
+    if (!present) {
+      await m.addColumn(table, column);
+    }
+  }
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

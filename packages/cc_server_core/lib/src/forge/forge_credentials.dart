@@ -1,9 +1,13 @@
+import 'package:cc_domain/core/domain/entities/workspace.dart';
 import 'package:cc_domain/core/domain/ports/forge_credential_port.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_connection.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
+import 'package:cc_domain/core/domain/value_objects/github_auth_mode.dart';
+import 'package:cc_infra/cc_infra.dart' show GitHubAppClient;
 import 'package:cc_server_core/src/identity/provider_app_settings.dart';
 import 'package:cc_server_core/src/identity/provider_token.dart';
 import 'package:cc_server_core/src/identity/user_credentials_store.dart';
+import 'package:cc_server_core/src/identity/workspace_github_app_settings.dart';
 
 /// Reads a process environment variable. Injected so tests can drive the
 /// environment source without touching `Platform.environment`.
@@ -19,8 +23,9 @@ typedef ProviderTokenRefresh =
     Future<ProviderToken?> Function(
       String userId,
       ForgeHost forge,
-      ProviderToken expired,
-    );
+      ProviderToken expired, {
+      String? workspaceId,
+    });
 
 /// Server-side [ForgeCredentialPort].
 ///
@@ -29,12 +34,15 @@ typedef ProviderTokenRefresh =
 ///
 ///  1. **That user's own credential** (`userId` given) — minted by signing in
 ///     to the forge, or pasted by them. Refreshed in place when it has expired
-///     and a refresh token is available.
-///  2. **The server's app identity** — a GitHub App installation token. This is
-///     what background work runs on, so a webhook does not depend on a human's
-///     PAT surviving.
+///     and a refresh token is available. GitHub overlays are per workspace.
+///  2. **The workspace's GitHub App** (or the install App when the workspace
+///     inherits) — a GitHub App installation token. This is what background
+///     work runs on, so a webhook does not depend on a human's PAT surviving.
 ///  3. **The server owner's credential**, when there is no caller. A solo
 ///     desktop configures no app, and its owner signing in is the whole setup.
+///     PAT-only and workspace-App fallbacks use the owner's *pasted* PAT, not
+///     an App OAuth token, so one workspace cannot ride another workspace's
+///     Sign in.
 ///  4. **The environment** (`GITHUB_TOKEN`, `GITLAB_TOKEN`, …) — the CI/headless
 ///     path.
 ///
@@ -52,21 +60,34 @@ typedef ProviderTokenRefresh =
 class ForgeCredentials implements ForgeCredentialPort {
   /// Creates a [ForgeCredentials].
   ///
-  /// [_users] holds the per-user credentials; [_apps] supplies the server's own
+  /// [users] holds the per-user credentials; [apps] supplies the server's own
   /// app identity. Both may be null on a minimal host, which degrades to the
-  /// environment lane. [_viewerProbe] resolves the account name behind a token;
+  /// environment lane. [viewerProbe] resolves the account name behind a token;
   /// without it connections report authentication with no username.
+  ///
+  /// [workspaceApps] / [workspaceLookup] may be assigned after construction —
+  /// the workspace registry is assembled later on the boot path.
   ForgeCredentials({
-    required this._env,
-    this._users,
-    this._apps,
-    this._serverOwnerUserId,
-    this._viewerProbe,
-  });
+    required EnvLookup env,
+    UserCredentialsStore? users,
+    ProviderAppSettings? apps,
+    WorkspaceGitHubAppSettings? workspaceApps,
+    Future<Workspace?> Function(String workspaceId)? workspaceLookup,
+    Future<String?> Function()? serverOwnerUserId,
+    ViewerProbe? viewerProbe,
+  }) : _env = env,
+       _users = users,
+       _apps = apps,
+       workspaceApps = workspaceApps,
+       workspaceLookup = workspaceLookup,
+       _serverOwnerUserId = serverOwnerUserId,
+       _viewerProbe = viewerProbe;
 
   final EnvLookup _env;
   final UserCredentialsStore? _users;
   final ProviderAppSettings? _apps;
+  WorkspaceGitHubAppSettings? workspaceApps;
+  Future<Workspace?> Function(String workspaceId)? workspaceLookup;
   final Future<String?> Function()? _serverOwnerUserId;
   final ViewerProbe? _viewerProbe;
 
@@ -75,13 +96,16 @@ class ForgeCredentials implements ForgeCredentialPort {
   /// so the two cannot be constructed in one direction.
   ProviderTokenRefresh? refreshUserToken;
 
-  /// Cached viewer identity per (user, forge), so the roster and "is this
-  /// mine?" checks do not re-probe on every read. Invalidated whenever that
-  /// user's token for the forge changes.
+  /// Cached viewer identity per (user, forge, workspace), so the roster and
+  /// "is this mine?" checks do not re-probe on every read. Invalidated
+  /// whenever that user's token for the forge changes.
   final Map<String, String> _viewerCache = {};
 
-  static String _cacheKey(ForgeHost forge, String? userId) =>
-      '${userId ?? ''}:${forge.wire}';
+  static String _cacheKey(
+    ForgeHost forge,
+    String? userId, {
+    String? workspaceId,
+  }) => '${workspaceId ?? ''}:${userId ?? ''}:${forge.wire}';
 
   /// Environment variable names per forge, in the order they are consulted.
   ///
@@ -98,8 +122,16 @@ class ForgeCredentials implements ForgeCredentialPort {
   String get bitbucketEmail => _env('BITBUCKET_EMAIL') ?? '';
 
   @override
-  Future<String?> tokenFor(ForgeHost forge, {String? userId}) async {
-    final resolved = await _resolve(forge, userId: userId);
+  Future<String?> tokenFor(
+    ForgeHost forge, {
+    String? userId,
+    String? workspaceId,
+  }) async {
+    final resolved = await _resolve(
+      forge,
+      userId: userId,
+      workspaceId: workspaceId,
+    );
     return resolved.token.isEmpty ? null : resolved.token;
   }
 
@@ -118,14 +150,38 @@ class ForgeCredentials implements ForgeCredentialPort {
   /// rather than getting a 401 where the surface used to work — at the cost
   /// that their writes are then authored by the app again, which is exactly the
   /// state signing in fixes.
-  Future<String?> tokenForActor(ForgeHost forge, String? userId) async {
+  ///
+  /// When [workspaceId] is set, GitHub uses that workspace's overlay token,
+  /// then (inherit only) the global onboarding credential, then that
+  /// workspace's App. Never another workspace's App or token.
+  Future<String?> tokenForActor(
+    ForgeHost forge,
+    String? userId, {
+    String? workspaceId,
+  }) async {
     if (userId != null) {
-      final own = await _userLane(forge, userId);
+      final own = await _userLane(
+        forge,
+        userId,
+        workspaceId: workspaceId,
+      );
       if (own != null && own.token.isNotEmpty) {
         return own.token;
       }
+      if (workspaceId != null &&
+          workspaceId.isNotEmpty &&
+          forge == ForgeHost.github) {
+        final workspace = await workspaceLookup?.call(workspaceId);
+        if (workspace == null ||
+            workspace.githubAuthMode == GithubAuthMode.inherit) {
+          final global = await _userLane(forge, userId);
+          if (global != null && global.token.isNotEmpty) {
+            return global.token;
+          }
+        }
+      }
     }
-    return tokenFor(forge);
+    return tokenFor(forge, workspaceId: workspaceId);
   }
 
   /// Whether [userId] holds their own credential for [forge] — i.e. whether
@@ -133,12 +189,29 @@ class ForgeCredentials implements ForgeCredentialPort {
   ///
   /// The surface uses this to say whose name a write will carry instead of
   /// letting the operator discover it from the byline on GitHub.
-  Future<bool> actsAsSelf(ForgeHost forge, String? userId) async {
+  Future<bool> actsAsSelf(
+    ForgeHost forge,
+    String? userId, {
+    String? workspaceId,
+  }) async {
     if (userId == null) {
       return false;
     }
-    final own = await _userLane(forge, userId);
-    return own != null && own.token.isNotEmpty;
+    final own = await _userLane(forge, userId, workspaceId: workspaceId);
+    if (own != null && own.token.isNotEmpty) {
+      return true;
+    }
+    if (workspaceId != null &&
+        workspaceId.isNotEmpty &&
+        forge == ForgeHost.github) {
+      final workspace = await workspaceLookup?.call(workspaceId);
+      if (workspace == null ||
+          workspace.githubAuthMode == GithubAuthMode.inherit) {
+        final global = await _userLane(forge, userId);
+        return global != null && global.token.isNotEmpty;
+      }
+    }
+    return false;
   }
 
   /// The app-installation token covering [owner], or null when the server has
@@ -147,11 +220,15 @@ class ForgeCredentials implements ForgeCredentialPort {
   /// Used by the paths that know which account they are acting on (a repo's
   /// owner), so the token is scoped to that installation rather than whichever
   /// one answered first.
-  Future<String?> appTokenForOwner(ForgeHost forge, String owner) async {
+  Future<String?> appTokenForOwner(
+    ForgeHost forge,
+    String owner, {
+    String? workspaceId,
+  }) async {
     if (forge != ForgeHost.github) {
       return null;
     }
-    final app = await _apps?.githubApp();
+    final app = await _githubAppFor(workspaceId);
     return app?.tokenForOwner(owner);
   }
 
@@ -163,35 +240,38 @@ class ForgeCredentials implements ForgeCredentialPort {
   /// token with 404 (not 403), forever, and the caller reads it as the repo
   /// not existing. This resolves the installation covering [owner]
   /// specifically; when the app is not installed there the fallback is the
-  /// server owner's own credential (a pasted PAT may reach what the app
-  /// cannot) and then the environment — never another owner's installation
-  /// token, which is guaranteed not to work.
-  Future<String?> tokenForRepoOwner(ForgeHost forge, String owner) async {
+  /// workspace background PAT (or the server owner's pasted PAT) and then the
+  /// environment — never another owner's installation token, which is
+  /// guaranteed not to work.
+  ///
+  /// When [workspaceId] is set, [GithubAuthMode.app] never returns the install
+  /// App's `ghs_`, and [GithubAuthMode.pat] never returns any App token.
+  Future<String?> tokenForRepoOwner(
+    ForgeHost forge,
+    String owner, {
+    String? workspaceId,
+  }) async {
     if (!forge.isSupported) {
       return null;
     }
-    final appToken = await appTokenForOwner(forge, owner);
-    if (appToken != null && appToken.isNotEmpty) {
-      return appToken;
-    }
-    final ownerId = await _resolveOwnerId();
-    if (ownerId != null) {
-      final own = await _userLane(forge, ownerId);
-      if (own != null && own.token.isNotEmpty) {
-        return own.token;
+    if (forge == ForgeHost.github &&
+        workspaceId != null &&
+        workspaceId.isNotEmpty) {
+      final workspace = await workspaceLookup?.call(workspaceId);
+      if (workspace != null) {
+        return _tokenForRepoOwnerInWorkspace(workspace, owner);
       }
     }
-    for (final name in _envNames[forge] ?? const <String>[]) {
-      final value = _env(name);
-      if (value != null && value.isNotEmpty) {
-        return value;
-      }
-    }
-    return null;
+    return _inheritRepoOwner(forge, owner);
   }
 
   @override
-  Future<void> setToken(ForgeHost forge, String token, {String? userId}) async {
+  Future<void> setToken(
+    ForgeHost forge,
+    String token, {
+    String? userId,
+    String? workspaceId,
+  }) async {
     final owner = userId ?? await _resolveOwnerId();
     if (owner == null) {
       // No identity to attach it to. Storing it server-wide would give every
@@ -202,26 +282,39 @@ class ForgeCredentials implements ForgeCredentialPort {
       owner,
       forge,
       ProviderToken(accessToken: token),
+      workspaceId: workspaceId,
     );
-    _invalidate(forge, owner);
+    _invalidate(forge, owner, workspaceId: workspaceId);
   }
 
   @override
-  Future<void> clearToken(ForgeHost forge, {String? userId}) async {
+  Future<void> clearToken(
+    ForgeHost forge, {
+    String? userId,
+    String? workspaceId,
+  }) async {
     final owner = userId ?? await _resolveOwnerId();
     if (owner == null) {
       return;
     }
-    await _users?.clearForgeToken(owner, forge);
-    _invalidate(forge, owner);
+    await _users?.clearForgeToken(owner, forge, workspaceId: workspaceId);
+    _invalidate(forge, owner, workspaceId: workspaceId);
   }
 
   @override
-  Future<List<ForgeConnection>> connections({String? userId}) async {
+  Future<List<ForgeConnection>> connections({
+    String? userId,
+    String? workspaceId,
+  }) async {
     final result = <ForgeConnection>[];
     for (final forge in ForgeHost.supported) {
       result.add(
-        await _connectionFor(forge, userId: userId, probeViewer: false),
+        await _connectionFor(
+          forge,
+          userId: userId,
+          workspaceId: workspaceId,
+          probeViewer: false,
+        ),
       );
     }
     return result;
@@ -231,19 +324,35 @@ class ForgeCredentials implements ForgeCredentialPort {
   Future<ForgeConnection> testConnection(
     ForgeHost forge, {
     String? userId,
+    String? workspaceId,
   }) async {
-    _viewerCache.remove(_cacheKey(forge, userId));
-    return _connectionFor(forge, userId: userId, probeViewer: true);
+    _viewerCache.remove(
+      _cacheKey(forge, userId, workspaceId: workspaceId),
+    );
+    return _connectionFor(
+      forge,
+      userId: userId,
+      workspaceId: workspaceId,
+      probeViewer: true,
+    );
   }
 
   @override
-  Future<String> viewerLogin(ForgeHost forge, {String? userId}) async {
-    final key = _cacheKey(forge, userId);
+  Future<String> viewerLogin(
+    ForgeHost forge, {
+    String? userId,
+    String? workspaceId,
+  }) async {
+    final key = _cacheKey(forge, userId, workspaceId: workspaceId);
     final cached = _viewerCache[key];
     if (cached != null) {
       return cached;
     }
-    final resolved = await _resolve(forge, userId: userId);
+    final resolved = await _resolve(
+      forge,
+      userId: userId,
+      workspaceId: workspaceId,
+    );
     if (resolved.token.isEmpty) {
       return '';
     }
@@ -257,7 +366,10 @@ class ForgeCredentials implements ForgeCredentialPort {
     return _viewerCache[key] = probed;
   }
 
-  void _invalidate(ForgeHost forge, String userId) {
+  void _invalidate(ForgeHost forge, String userId, {String? workspaceId}) {
+    _viewerCache.remove(
+      _cacheKey(forge, userId, workspaceId: workspaceId),
+    );
     _viewerCache.remove(_cacheKey(forge, userId));
     _viewerCache.remove(_cacheKey(forge, null));
     _revision++;
@@ -275,12 +387,17 @@ class ForgeCredentials implements ForgeCredentialPort {
     ForgeHost forge, {
     required String? userId,
     required bool probeViewer,
+    String? workspaceId,
   }) async {
-    final resolved = await _resolve(forge, userId: userId);
+    final resolved = await _resolve(
+      forge,
+      userId: userId,
+      workspaceId: workspaceId,
+    );
     if (resolved.token.isEmpty) {
       return ForgeConnection.disconnected(forge);
     }
-    final key = _cacheKey(forge, userId);
+    final key = _cacheKey(forge, userId, workspaceId: workspaceId);
     var username = resolved.username;
     if (username.isEmpty) {
       username = probeViewer
@@ -308,20 +425,54 @@ class ForgeCredentials implements ForgeCredentialPort {
 
   /// Walks the precedence chain once.
   Future<({String token, String username, ForgeCredentialSource source})>
-  _resolve(ForgeHost forge, {String? userId}) async {
+  _resolve(
+    ForgeHost forge, {
+    String? userId,
+    String? workspaceId,
+  }) async {
     const empty = (token: '', username: '', source: ForgeCredentialSource.none);
     if (!forge.isSupported) {
       return empty;
     }
 
     if (userId != null) {
-      final own = await _userLane(forge, userId);
-      return own ?? empty;
+      final overlay = await _userLane(
+        forge,
+        userId,
+        workspaceId: workspaceId,
+      );
+      if (overlay != null) {
+        return overlay;
+      }
+      if (workspaceId != null &&
+          workspaceId.isNotEmpty &&
+          forge == ForgeHost.github) {
+        final workspace = await workspaceLookup?.call(workspaceId);
+        if (workspace == null ||
+            workspace.githubAuthMode == GithubAuthMode.inherit) {
+          final global = await _userLane(forge, userId);
+          return global ?? empty;
+        }
+      }
+      return empty;
+    }
+
+    if (forge == ForgeHost.github &&
+        workspaceId != null &&
+        workspaceId.isNotEmpty) {
+      final workspace = await workspaceLookup?.call(workspaceId);
+      if (workspace != null) {
+        final scoped = await _serverLaneForWorkspace(workspace);
+        if (scoped != null) {
+          return scoped;
+        }
+        return empty;
+      }
     }
 
     // No caller: the server's own identity first, so background work does not
     // ride on a human's credential when the app can answer.
-    final appToken = await _appLane(forge);
+    final appToken = await _installAppLane(forge);
     if (appToken != null) {
       return appToken;
     }
@@ -334,44 +485,163 @@ class ForgeCredentials implements ForgeCredentialPort {
       }
     }
 
-    for (final name in _envNames[forge] ?? const <String>[]) {
-      final value = _env(name);
-      if (value != null && value.isNotEmpty) {
-        return (
-          token: value,
-          username: '',
-          source: ForgeCredentialSource.environment,
-        );
+    return await _envLane(forge) ?? empty;
+  }
+
+  Future<String?> _tokenForRepoOwnerInWorkspace(
+    Workspace workspace,
+    String owner,
+  ) async {
+    switch (workspace.githubAuthMode) {
+      case GithubAuthMode.inherit:
+        return _inheritRepoOwner(ForgeHost.github, owner);
+      case GithubAuthMode.app:
+        final app = await workspaceApps?.githubApp(workspace);
+        if (app != null) {
+          final token = await app.tokenForOwner(owner);
+          if (token != null && token.isNotEmpty) {
+            return token;
+          }
+        }
+        return _workspacePatThenOwnerPastedThenEnv(workspace.id);
+      case GithubAuthMode.pat:
+        return _workspacePatThenOwnerPastedThenEnv(workspace.id);
+    }
+  }
+
+  Future<String?> _inheritRepoOwner(ForgeHost forge, String owner) async {
+    final appToken = await appTokenForOwner(forge, owner);
+    if (appToken != null && appToken.isNotEmpty) {
+      return appToken;
+    }
+    final ownerId = await _resolveOwnerId();
+    if (ownerId != null) {
+      final own = await _userLane(forge, ownerId);
+      if (own != null && own.token.isNotEmpty) {
+        return own.token;
       }
     }
+    return _envToken(forge);
+  }
 
-    return empty;
+  Future<String?> _workspacePatThenOwnerPastedThenEnv(
+    String workspaceId,
+  ) async {
+    final pat = await workspaceApps?.backgroundPat(workspaceId);
+    if (pat != null && pat.isNotEmpty) {
+      return pat;
+    }
+    final pasted = await _ownerPastedPat(ForgeHost.github);
+    if (pasted != null && pasted.token.isNotEmpty) {
+      return pasted.token;
+    }
+    return _envToken(ForgeHost.github);
+  }
+
+  Future<({String token, String username, ForgeCredentialSource source})?>
+  _serverLaneForWorkspace(Workspace workspace) async {
+    switch (workspace.githubAuthMode) {
+      case GithubAuthMode.inherit:
+        final app = await _installAppLane(ForgeHost.github);
+        if (app != null) {
+          return app;
+        }
+        final ownerId = await _resolveOwnerId();
+        if (ownerId != null) {
+          final owner = await _userLane(ForgeHost.github, ownerId);
+          if (owner != null) {
+            return owner;
+          }
+        }
+        return await _envLane(ForgeHost.github);
+      case GithubAuthMode.app:
+        final client = await workspaceApps?.githubApp(workspace);
+        final token = await client?.anyInstallationToken();
+        if (token != null && token.isNotEmpty) {
+          return (token: token, username: '', source: ForgeCredentialSource.app);
+        }
+        final fallback = await _workspacePatThenOwnerPastedThenEnv(
+          workspace.id,
+        );
+        if (fallback == null) {
+          return null;
+        }
+        return (
+          token: fallback,
+          username: '',
+          source: ForgeCredentialSource.settings,
+        );
+      case GithubAuthMode.pat:
+        final fallback = await _workspacePatThenOwnerPastedThenEnv(
+          workspace.id,
+        );
+        if (fallback == null) {
+          return null;
+        }
+        return (
+          token: fallback,
+          username: '',
+          source: ForgeCredentialSource.settings,
+        );
+    }
+  }
+
+  Future<GitHubAppClient?> _githubAppFor(String? workspaceId) async {
+    if (workspaceId != null && workspaceId.isNotEmpty) {
+      final workspace = await workspaceLookup?.call(workspaceId);
+      if (workspace != null) {
+        return workspaceApps?.githubApp(workspace);
+      }
+    }
+    return _apps?.githubApp();
   }
 
   /// One user's own credential, refreshed in place when it has expired.
   Future<({String token, String username, ForgeCredentialSource source})?>
-  _userLane(ForgeHost forge, String userId) async {
+  _userLane(
+    ForgeHost forge,
+    String userId, {
+    String? workspaceId,
+  }) async {
     final users = _users;
     if (users == null) {
       return null;
     }
-    var token = await users.forgeToken(userId, forge);
+    var token = await users.forgeToken(
+      userId,
+      forge,
+      workspaceId: workspaceId,
+    );
     if (token == null) {
       return null;
     }
     if (token.isExpired) {
       final refreshed = token.canRefresh
-          ? await refreshUserToken?.call(userId, forge, token)
+          ? await refreshUserToken?.call(
+              userId,
+              forge,
+              token,
+              workspaceId: workspaceId,
+            )
           : null;
       if (refreshed == null) {
         // An expired credential that cannot be refreshed is worse than none:
         // every call fails with a 401 the UI reports as an unexplained error.
         // Drop it so the row reads "not connected" and offers a sign-in.
-        await users.clearForgeToken(userId, forge);
-        _invalidate(forge, userId);
+        await users.clearForgeToken(
+          userId,
+          forge,
+          workspaceId: workspaceId,
+        );
+        _invalidate(forge, userId, workspaceId: workspaceId);
         return null;
       }
-      await users.setForgeToken(userId, forge, refreshed);
+      await users.setForgeToken(
+        userId,
+        forge,
+        refreshed,
+        workspaceId: workspaceId,
+      );
       token = refreshed;
     }
     return (
@@ -381,9 +651,23 @@ class ForgeCredentials implements ForgeCredentialPort {
     );
   }
 
-  /// The server's own app identity for [forge], when it has one.
+  /// The owner's pasted PAT (Settings source), never an App OAuth token.
   Future<({String token, String username, ForgeCredentialSource source})?>
-  _appLane(ForgeHost forge) async {
+  _ownerPastedPat(ForgeHost forge) async {
+    final ownerId = await _resolveOwnerId();
+    if (ownerId == null) {
+      return null;
+    }
+    final own = await _userLane(forge, ownerId);
+    if (own == null || own.source != ForgeCredentialSource.settings) {
+      return null;
+    }
+    return own;
+  }
+
+  /// The install-wide app identity for [forge], when it has one.
+  Future<({String token, String username, ForgeCredentialSource source})?>
+  _installAppLane(ForgeHost forge) async {
     if (forge != ForgeHost.github) {
       // Only GitHub has an app identity today. GitLab and Bitbucket would each
       // need their own registration, and claiming otherwise would report them
@@ -396,5 +680,28 @@ class ForgeCredentials implements ForgeCredentialPort {
       return null;
     }
     return (token: token, username: '', source: ForgeCredentialSource.app);
+  }
+
+  Future<({String token, String username, ForgeCredentialSource source})?>
+  _envLane(ForgeHost forge) async {
+    final value = _envToken(forge);
+    if (value == null) {
+      return null;
+    }
+    return (
+      token: value,
+      username: '',
+      source: ForgeCredentialSource.environment,
+    );
+  }
+
+  String? _envToken(ForgeHost forge) {
+    for (final name in _envNames[forge] ?? const <String>[]) {
+      final value = _env(name);
+      if (value != null && value.isNotEmpty) {
+        return value;
+      }
+    }
+    return null;
   }
 }

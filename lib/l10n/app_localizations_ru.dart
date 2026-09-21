@@ -1142,7 +1142,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get calendarSettingsDescription =>
-      'Подключите аккаунт Google, чтобы синхронизировать события в это рабочее пространство.';
+      'Подключите аккаунт Google, чтобы синхронизировать события в это пространство. Эти календари здесь ваши.';
 
   @override
   String get calendarConnecting => 'Подключение…';
@@ -7066,7 +7066,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get connectGitHubHint =>
-      'Войдите в GitHub или добавьте токен в Настройки → Вы → Профиль и идентичность → Хостинг кода';
+      'Войдите в GitHub или добавьте токен в Настройки → Рабочее пространство → Профиль и идентичность → Хостинг кода';
 
   @override
   String get connectGitHubToLoadPrs =>
@@ -7565,6 +7565,43 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get preview => 'Предпросмотр';
+
+  @override
+  String get imageDiffBefore => 'До';
+
+  @override
+  String get imageDiffAfter => 'После';
+
+  @override
+  String get imageDiffModeTwoUp => 'Рядом';
+
+  @override
+  String get imageDiffModeSwipe => 'Свайп';
+
+  @override
+  String get imageDiffModeDifference => 'Разница';
+
+  @override
+  String imageDiffChangedPercent(String percent) {
+    return 'изменено $percent %';
+  }
+
+  @override
+  String get imageDiffPictures => 'Изображения';
+
+  @override
+  String get imageDiffSource => 'Исходник';
+
+  @override
+  String get imageDiffDeleted => 'Удалено';
+
+  @override
+  String get imageDiffAdded => 'Добавлено';
+
+  @override
+  String imageDiffDimensions(int width, int height) {
+    return 'Ш: ${width}px | В: ${height}px';
+  }
 
   @override
   String get outdated => 'Устарело';
@@ -9658,7 +9695,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get profileSectionDescription =>
-      'Как вас видят коллеги и как вы указываетесь автором git-коммитов.';
+      'Как вас видит команда и авторство git-коммитов в этом пространстве. Пустые поля наследуют имя и почту аккаунта.';
 
   @override
   String get displayNameLabel => 'Отображаемое имя';
@@ -12288,7 +12325,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get settingsProfileDescription =>
-      'Ваше имя, email и git-идентичность в коммитах, которые создаются от вашего имени.';
+      'Ваше имя, почта и git-идентичность в этом пространстве. Смена пространства меняет этот слой; ник, вход и устройства остаются на аккаунте.';
 
   @override
   String get settingsServerConnectionDescription =>
@@ -12304,6 +12341,10 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get settingsWorkspaceGeneralDescription =>
       'Идентичность, политика и соглашения, общие для всех в этом рабочем пространстве.';
+
+  @override
+  String get settingsWorkspaceMeetingsDescription =>
+      'Шаблоны заметок и сохранённые голоса для встреч в этом рабочем пространстве.';
 
   @override
   String get settingsWorkspacePolicyLabel => 'Политика рабочего пространства';
@@ -12889,7 +12930,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get providerAppsDescription =>
-      'Как этот сервер аутентифицируется от своего имени и через что входит человек. Фоновая работа — вебхуки, опрос, синхронизация — идёт через приложение, а не через токен человека.';
+      'Пространства наследуют это GitHub App, если не выберут другое App или персональный токен. Фоновая работа — вебхуки, опрос, синхронизация — идёт на приложении, никогда на токене человека.';
 
   @override
   String get providerAppId => 'ID приложения';
@@ -13279,14 +13320,14 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get providerAppsGroupServerDescription =>
-      'Позволяет фоновой работе обращаться к репозиториям без человека за запросом: вебхуки, опрос pull request, синхронизация тикетов.';
+      'Для пространств, которые наследуют GitHub App этой установки. Пространство со своим App или PAT настраивается в Пространство → Общие.';
 
   @override
   String get providerAppsGroupPrConversations => 'Беседы в pull request';
 
   @override
   String get providerAppsGroupPrConversationsDescription =>
-      'Как разработчики могут обращаться к этому серверу прямо на GitHub. Работает без вебхука и публичного URL — сервер сам опрашивает.';
+      'Как разработчики говорят с этим сервером на GitHub в наследующих пространствах. У пространства со своим App свой бот в Пространство → Общие. Без вебхука и публичного URL — сервер опрашивает.';
 
   @override
   String get providerAppBotLogin => 'Логин бота';
@@ -14689,4 +14730,50 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get rigClipboardAlwaysCopyDescription =>
       'Помещать содержимое буфера обмена из любой среды на это устройство без запроса.';
+
+  @override
+  String get workspaceGitHubIdentity => 'Идентичность GitHub';
+
+  @override
+  String get workspaceGitHubIdentityDescription =>
+      'Как фоновая работа с GitHub проходит проверку в этом пространстве. Наследовать App установки, использовать другой App или только персональный токен доступа.';
+
+  @override
+  String get workspaceGitHubModeInherit =>
+      'Использовать GitHub App этой установки';
+
+  @override
+  String get workspaceGitHubModeApp => 'Использовать другой GitHub App';
+
+  @override
+  String get workspaceGitHubModePat => 'Только персональный токен доступа';
+
+  @override
+  String get workspaceGitHubInheritHint =>
+      'Использует GitHub App в Сервер → Приложения провайдеров.';
+
+  @override
+  String get workspaceGitHubAppHint =>
+      'Идентичность бота и опроса этого пространства. Участники входят в «Вы» через это App.';
+
+  @override
+  String get workspaceGitHubPatLabel => 'Фоновый токен';
+
+  @override
+  String get workspaceGitHubPatDescription =>
+      'Для опроса и агентов в этом пространстве. Это не токен профиля участника.';
+
+  @override
+  String get workspaceGitHubHasPat => 'Фоновый токен сохранён.';
+
+  @override
+  String get workspaceGitHubNoPat => 'Фоновый токен не сохранён.';
+
+  @override
+  String get profileOverlayHint =>
+      'Эти поля — вы в этом пространстве. Пустые поля наследуют имя и почту аккаунта. Смена пространства меняет этот слой.';
+
+  @override
+  String get forgeConnectionsThisWorkspace =>
+      'Войдите или вставьте токен для этого пространства.';
 }

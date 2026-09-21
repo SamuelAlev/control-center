@@ -36,6 +36,7 @@ class ForgeRepositoryFactory implements ForgeProviderFactory {
     required this._buildApiDiffSource,
     this._eventBus,
     this._changeSignals,
+    this._blobStore,
   }) : _dbs = workspaceDbs;
 
   @override
@@ -47,6 +48,7 @@ class ForgeRepositoryFactory implements ForgeProviderFactory {
   final PrDiffSource Function() _buildApiDiffSource;
   final DomainEventBus? _eventBus;
   final PrChangeSignals? _changeSignals;
+  final BlobStore? _blobStore;
 
   @override
   PrReviewRepository create(ForgeProviderContext ctx) {
@@ -63,6 +65,7 @@ class ForgeRepositoryFactory implements ForgeProviderFactory {
       localCheckoutPath: ctx.repo.path,
       eventBus: _eventBus,
       changeSignals: _changeSignals,
+      blobStore: _blobStore,
     );
   }
 }
@@ -87,6 +90,7 @@ ForgeProviderRegistry buildForgeProviderRegistry({
   required PrDiffSource localGitSource,
   DomainEventBus? eventBus,
   PrChangeSignals? changeSignals,
+  BlobStore? blobStore,
 }) {
   final factories = <ForgeProviderFactory>[];
 
@@ -101,6 +105,7 @@ ForgeProviderRegistry buildForgeProviderRegistry({
         buildApiDiffSource: () => forgeApiDiffSource(forge, dio),
         eventBus: eventBus,
         changeSignals: changeSignals,
+        blobStore: blobStore,
       ),
     );
   }

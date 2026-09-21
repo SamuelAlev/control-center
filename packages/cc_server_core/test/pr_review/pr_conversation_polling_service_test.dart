@@ -511,4 +511,44 @@ void main() {
     expect((decoded['seen'] as List).contains('lb:acme/app#9'), isTrue);
     expect(decoded['savedAt'], isNotNull);
   });
+
+  test('mentions route only into workspaces that use that App', () async {
+    repoLinks['acme/app'] = ['ws-inherit', 'ws-app-b'];
+    final appB = _FakeGateway()..botLoginValue = 'other-bot[bot]';
+    appB.mentioned = [_pr('acme/app', 7)];
+    appB.setIssue('acme', 'app', 7, [
+      _issue(11, '@other-bot[bot] hello?', login: 'octocat'),
+    ]);
+    gateway.mentioned = [_pr('acme/app', 7)];
+    gateway.setIssue('acme', 'app', 7, [_issue(12, '@$_botLogin hello?')]);
+
+    final routed = PrConversationPollingService(
+      gateway: gateway,
+      bridge: sink,
+      workspacesForRepo: (repoFullName) async =>
+          repoLinks[repoFullName.toLowerCase()] ?? const [],
+      associatedPullRequests: () async => associated,
+      loadDedupeState: () async => _emptyStore,
+      saveDedupeState: (state) async => savedState = state,
+      now: () => DateTime(2026, 8, 26, 12),
+      listIdentities: () async => [
+        PrConversationAppIdentity(
+          botLogin: _botLogin,
+          workspaceIds: const {'ws-inherit'},
+          gateway: gateway,
+        ),
+        PrConversationAppIdentity(
+          botLogin: 'other-bot[bot]',
+          workspaceIds: const {'ws-app-b'},
+          gateway: appB,
+        ),
+      ],
+    );
+
+    await routed.pollOnce();
+    expect(
+      sink.inbound.map((e) => (e.workspaceId, e.comment.id)).toSet(),
+      {('ws-inherit', 12), ('ws-app-b', 11)},
+    );
+  });
 }

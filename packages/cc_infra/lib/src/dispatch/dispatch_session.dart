@@ -628,7 +628,10 @@ class DispatchSession implements SteeringSessionView {
     final resolveIdentity = deps.resolveGitIdentity;
     if (resolveIdentity != null) {
       try {
-        final human = await resolveIdentity(requestedByUserId);
+        final human = await resolveIdentity(
+          requestedByUserId,
+          workspaceId: workspaceId,
+        );
         if (human != null) {
           _coAuthorTrailer = 'Co-Authored-By: ${human.name} <${human.email}>';
           env[coAuthorTrailerEnvKey] = _coAuthorTrailer!;
@@ -993,6 +996,7 @@ class DispatchSession implements SteeringSessionView {
         // read-only collaborator cannot dispatch a pushing agent and have it
         // succeed on someone else's reach.
         actingUserId: requestedByUserId,
+        workspaceId: workspaceId,
       );
       credHandle = scoped.handle;
 

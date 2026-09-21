@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:cc_infra/src/network/bitbucket/models/bitbucket_activity_entry.dart';
 import 'package:cc_infra/src/network/bitbucket/models/bitbucket_branch.dart';
 import 'package:cc_infra/src/network/bitbucket/models/bitbucket_comment.dart';
@@ -562,6 +564,23 @@ class BitbucketApiClient {
     );
   }
 
+  /// The raw bytes of [path] at [ref]. Same route as [getFileContent] with a
+  /// bytes response so rasters are not decoded as UTF-8.
+  Future<Uint8List> getFileBytes(
+    String workspace,
+    String repo,
+    String path,
+    String ref, {
+    CancelToken? cancelToken,
+  }) {
+    _requireCoordinate(workspace, repo);
+    return _getBytes(
+      '/repositories/$workspace/$repo/src/'
+      '${_encodePath(ref)}/${_encodePath(path)}',
+      cancelToken: cancelToken,
+    );
+  }
+
   /// The authenticated account, or null when the credentials are missing or
   /// rejected (401/403). Every other failure propagates.
   Future<BitbucketUser?> getCurrentUser({CancelToken? cancelToken}) async {
@@ -688,6 +707,20 @@ class BitbucketApiClient {
       cancelToken: cancelToken,
     );
     return response.data ?? '';
+  }
+
+  /// GETs [path] as raw bytes, bypassing JSON decoding.
+  Future<Uint8List> _getBytes(String path, {CancelToken? cancelToken}) async {
+    final response = await _dio.get<List<int>>(
+      path,
+      options: Options(responseType: ResponseType.bytes),
+      cancelToken: cancelToken,
+    );
+    final data = response.data;
+    if (data == null || data.isEmpty) {
+      return Uint8List(0);
+    }
+    return data is Uint8List ? data : Uint8List.fromList(data);
   }
 
   /// Percent-encodes each segment of [value] while preserving the `/`

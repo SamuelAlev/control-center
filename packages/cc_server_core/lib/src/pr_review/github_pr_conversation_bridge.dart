@@ -416,7 +416,7 @@ class GitHubPrConversationBridge implements GitHubPrConversationSink {
         member: null,
         refusal:
             'I do not know who you are in Control Center yet. Sign in to '
-            'GitHub from Settings → You → Profile & identity → Code hosting '
+            'GitHub from Settings → Workspace → Profile & identity → Code hosting '
             '(or paste a token) so your account is linked, and make sure you '
             'are a member of the workspace that links this repository.',
       );

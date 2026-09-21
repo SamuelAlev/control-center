@@ -1,8 +1,6 @@
 import 'package:control_center/features/settings/presentation/screens/settings_page.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/integrations/sync_health_card.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/system/branch_template_section.dart';
-import 'package:control_center/features/settings/presentation/widgets/sections/system/voice_profiles_section.dart';
-import 'package:control_center/features/settings/presentation/widgets/sections/workspace/meeting_templates_section.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/workspace/workspace_policy_section.dart';
 import 'package:control_center/features/settings/settings_extensions.dart';
 import 'package:control_center/l10n/app_localizations.dart';
@@ -14,8 +12,8 @@ import 'package:flutter/widgets.dart';
 /// The page that did not exist. Workspace-scoped configuration used to be
 /// scattered: `secretExcludeGlobs` and `reviewConcurrency` had no UI at all,
 /// sync health and chat bridges were filed under a personal "Accounts" page,
-/// voice profiles sat inside a server-scoped voice page and the branch
-/// template lived at the bottom of the "Advanced" junk drawer.
+/// and the branch template lived at the bottom of the "Advanced" junk drawer.
+/// Meeting note templates and voice profiles live on Workspace → Meetings.
 ///
 /// Workspace name, logo and deletion stay on the `/workspaces` picker, which is
 /// where they already work and where you need them when the workspace you are
@@ -40,8 +38,6 @@ class WorkspaceGeneralSettingsScreen extends StatelessWidget {
       sections: [
         WorkspacePolicySection(workspaceId: workspaceId),
         const BranchTemplateSection(),
-        const MeetingTemplatesSection(),
-        const VoiceProfilesSection(),
         const SyncHealthCard(),
       ],
     );

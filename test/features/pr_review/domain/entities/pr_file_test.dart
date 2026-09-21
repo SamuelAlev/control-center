@@ -86,6 +86,14 @@ void main() {
       expect(createPrFile(filename: 'Makefile').isMarkdown, isFalse);
       expect(createPrFile(filename: 'image.png').isMarkdown, isFalse);
     });
+
+    test('isImage covers raster and svg extensions', () {
+      expect(createPrFile(filename: 'shot.PNG').isImage, isTrue);
+      expect(createPrFile(filename: 'icon.svg').isImage, isTrue);
+      expect(createPrFile(filename: 'icon.svg').isSvg, isTrue);
+      expect(createPrFile(filename: 'photo.jpeg').imageMediaType, 'image/jpeg');
+      expect(createPrFile(filename: 'src/main.dart').isImage, isFalse);
+    });
   });
 
   group('PrFile == and hashCode', () {

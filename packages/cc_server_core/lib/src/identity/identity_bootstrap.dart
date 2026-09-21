@@ -63,7 +63,7 @@ class IdentityBootstrap {
     }
     // The OS account name is the only hint taken from the environment: it is
     // a display default, not configuration. Name and email are edited in
-    // Settings → You → Profile & identity, which is where a person looking at
+    // Settings → Workspace → Profile & identity, which is where a person looking at
     // them would change them.
     final handle = _sanitizeHandle(_env['USER'] ?? _env['USERNAME'] ?? 'owner');
     final displayName = handle;

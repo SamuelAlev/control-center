@@ -17,6 +17,7 @@ import 'package:cc_domain/features/pr_review/domain/entities/reaction_group.dart
 import 'package:cc_domain/features/pr_review/domain/entities/workflow_graph.dart';
 import 'package:cc_domain/features/pr_review/domain/providers/forge_provider.dart';
 import 'package:cc_domain/features/pr_review/domain/repositories/pr_review_repository.dart';
+import 'package:cc_domain/features/pr_review/domain/value_objects/image_diff_resolution.dart';
 import 'package:cc_domain/features/pr_review/domain/value_objects/pending_review_comment.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 
@@ -329,6 +330,28 @@ class RpcPrReviewRepository implements PrReviewRepository {
         _coords({'path': path, 'ref': ref}),
       )
       .map((data) => data['content'] as String? ?? '');
+
+  @override
+  Future<ImageDiffResolution> resolveImageDiff({
+    required String path,
+    String? previousPath,
+    required String baseRef,
+    required String headRef,
+    required PrFileStatus status,
+  }) async {
+    final data = await _client.call(
+      'pr_review.resolveImageDiff',
+      _coords({
+        'path': path,
+        if (previousPath != null && previousPath.isNotEmpty)
+          'previous_path': previousPath,
+        'base_ref': baseRef,
+        'head_ref': headRef,
+        'status': status.name,
+      }),
+    );
+    return ImageDiffResolution.fromJson(data);
+  }
 
   @override
   Stream<List<PrCommit>> watchCommits(int prNumber) => _client

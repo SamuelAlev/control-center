@@ -319,6 +319,25 @@ void main() {
       expect(adapter.requests, isEmpty);
     });
   });
+
+  group('resolving', () {
+    test('asks for a client per workspace and owner', () async {
+      final seen = <({String workspaceId, String owner})>[];
+      final resolving = GitHubIssuesTicketSyncAdapter.resolving(({
+        required String workspaceId,
+        required String owner,
+      }) async {
+        seen.add((workspaceId: workspaceId, owner: owner));
+        return dio;
+      });
+      adapter.nextJson(const []);
+      await resolving.pullChanges(
+        workspaceId: 'ws-a',
+        vendorProjectId: 'acme/widget',
+      );
+      expect(seen, [(workspaceId: 'ws-a', owner: 'acme')]);
+    });
+  });
 }
 
 // --- Dio fake ---------------------------------------------------------------

@@ -93,7 +93,10 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
     HarnessProviderFactory harnessProviderFactory =
         const HarnessProviderFactory(),
     AgentLoop agentLoop = const AgentLoopRunner(),
-    Future<({String name, String email})?> Function(String? userId)?
+    Future<({String name, String email})?> Function(
+      String? userId, {
+      String? workspaceId,
+    })?
     resolveGitIdentity,
     GitRepoInspectorPort? repoInspector,
     ProcessControlPort? processControl,

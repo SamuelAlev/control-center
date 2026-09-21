@@ -1140,7 +1140,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get calendarSettingsDescription =>
-      'اربط حساب Google لمزامنة الأحداث في مساحة العمل هذه.';
+      'اربط حساب Google لمزامنة الأحداث في مساحة العمل هذه. هذه التقاويم لك هنا.';
 
   @override
   String get calendarConnecting => 'جارٍ الاتصال…';
@@ -7057,7 +7057,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get connectGitHubHint =>
-      'سجّل الدخول إلى GitHub أو أضف رمز وصول في الإعدادات ← أنت ← الملف الشخصي والهوية ← استضافة الكود';
+      'سجّل الدخول إلى GitHub أو أضف رمز وصول في الإعدادات ← مساحة العمل ← الملف الشخصي والهوية ← استضافة الكود';
 
   @override
   String get connectGitHubToLoadPrs => 'اربط GitHub لتحميل طلبات السحب';
@@ -7567,6 +7567,43 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get preview => 'معاينة';
+
+  @override
+  String get imageDiffBefore => 'قبل';
+
+  @override
+  String get imageDiffAfter => 'بعد';
+
+  @override
+  String get imageDiffModeTwoUp => 'جنباً إلى جنب';
+
+  @override
+  String get imageDiffModeSwipe => 'تمرير';
+
+  @override
+  String get imageDiffModeDifference => 'الفرق';
+
+  @override
+  String imageDiffChangedPercent(String percent) {
+    return 'تغير $percent٪';
+  }
+
+  @override
+  String get imageDiffPictures => 'صور';
+
+  @override
+  String get imageDiffSource => 'المصدر';
+
+  @override
+  String get imageDiffDeleted => 'محذوف';
+
+  @override
+  String get imageDiffAdded => 'مضاف';
+
+  @override
+  String imageDiffDimensions(int width, int height) {
+    return 'ع: ${width}px | ص: ${height}px';
+  }
 
   @override
   String get outdated => 'قديم';
@@ -9651,7 +9688,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get profileSectionDescription =>
-      'كيف تظهر لزملاء الفريق وفي بيانات مؤلف إيداعات Git.';
+      'كيف تظهر للفريق وفي مؤلفية إيداعات git في مساحة العمل هذه. الحقول الفارغة ترث اسم حسابك وبريدك.';
 
   @override
   String get displayNameLabel => 'الاسم المعروض';
@@ -12320,7 +12357,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get settingsProfileDescription =>
-      'اسمك وبريدك الإلكتروني وهوية Git التي تُختم بها الإيداعات التي تُجرى نيابةً عنك.';
+      'اسمك وبريدك وهوية git في مساحة العمل هذه. تبديل المساحة يبدّل هذه الطبقة؛ المعرّف وتسجيل الدخول والأجهزة تبقى على الحساب.';
 
   @override
   String get settingsServerConnectionDescription =>
@@ -12336,6 +12373,10 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get settingsWorkspaceGeneralDescription =>
       'الهوية والسياسة والاصطلاحات المشتركة بين الجميع في مساحة العمل هذه.';
+
+  @override
+  String get settingsWorkspaceMeetingsDescription =>
+      'قوالب الملاحظات والأصوات المحفوظة لاجتماعات مساحة العمل هذه.';
 
   @override
   String get settingsWorkspacePolicyLabel => 'سياسة مساحة العمل';
@@ -12920,7 +12961,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get providerAppsDescription =>
-      'كيف يوثّق هذا الخادم هويته، وما الذي يسجّل الأشخاص الدخول من خلاله. الأعمال الخلفية — خطافات الويب والاستطلاع والمزامنة — تعمل باسم التطبيق، لا برمز وصول شخص أبدًا.';
+      'ترث مساحات العمل تطبيق GitHub هذا ما لم تختر تطبيقًا آخر أو رمز وصول شخصي. العمل في الخلفية — webhooks والاستطلاع والمزامنة — يعمل على التطبيق، لا على رمز شخص.';
 
   @override
   String get providerAppId => 'معرّف التطبيق';
@@ -13306,14 +13347,14 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get providerAppsGroupServerDescription =>
-      'يتيح للأعمال الخلفية الوصول إلى المستودعات دون إنسان خلف الطلب: خطافات الويب، واستطلاع طلبات السحب، ومزامنة التذاكر.';
+      'لمساحات العمل التي ترث GitHub App لهذا التثبيت. مساحة بعملها أو PAT تُضبط تحت مساحة العمل → عام.';
 
   @override
   String get providerAppsGroupPrConversations => 'محادثات طلبات السحب';
 
   @override
   String get providerAppsGroupPrConversationsDescription =>
-      'كيف يمكن للمطورين التحدث إلى هذا الخادم مباشرة على GitHub. يعمل دون خطاف ويب أو عنوان URL عام — الخادم يستطلع بنفسه.';
+      'كيف يخاطب المطوّرون هذا الخادم على GitHub في المساحات الوارثة. مساحة بعملها لها بوتها تحت مساحة العمل → عام. يعمل بلا webhook أو عنوان عام — الخادم يستطلع.';
 
   @override
   String get providerAppBotLogin => 'اسم دخول البوت';
@@ -14720,4 +14761,49 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get rigClipboardAlwaysCopyDescription =>
       'وضع محتوى الحافظة من أي حاوية على هذا الجهاز دون طلب إذن.';
+
+  @override
+  String get workspaceGitHubIdentity => 'هوية GitHub';
+
+  @override
+  String get workspaceGitHubIdentityDescription =>
+      'كيف تُصادق أعمال GitHub الخلفية في مساحة العمل هذه. ورّث تطبيق التثبيت، أو استخدم تطبيقًا آخر، أو رمز وصول شخصي فقط.';
+
+  @override
+  String get workspaceGitHubModeInherit => 'استخدام GitHub App لهذا التثبيت';
+
+  @override
+  String get workspaceGitHubModeApp => 'استخدام GitHub App مختلف';
+
+  @override
+  String get workspaceGitHubModePat => 'رمز وصول شخصي فقط';
+
+  @override
+  String get workspaceGitHubInheritHint =>
+      'يستخدم GitHub App في الخادم → تطبيقات الموفر.';
+
+  @override
+  String get workspaceGitHubAppHint =>
+      'هوية البوت والاستطلاع لمساحة العمل هذه. يسجّل الأعضاء الدخول من أنت عبر هذا التطبيق.';
+
+  @override
+  String get workspaceGitHubPatLabel => 'رمز الخلفية';
+
+  @override
+  String get workspaceGitHubPatDescription =>
+      'للاستطلاع والوكلاء في مساحة العمل هذه. ليس رمز ملف عضو.';
+
+  @override
+  String get workspaceGitHubHasPat => 'رمز خلفية محفوظ.';
+
+  @override
+  String get workspaceGitHubNoPat => 'لا يوجد رمز خلفية.';
+
+  @override
+  String get profileOverlayHint =>
+      'هذه الحقول أنت في مساحة العمل هذه. الحقول الفارغة ترث اسم حسابك وبريدك. تبديل المساحة يبدّل هذه الطبقة.';
+
+  @override
+  String get forgeConnectionsThisWorkspace =>
+      'سجّل الدخول أو الصق رمزًا لمساحة العمل هذه.';
 }

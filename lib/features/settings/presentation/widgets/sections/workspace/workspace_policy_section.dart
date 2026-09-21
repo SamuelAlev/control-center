@@ -76,14 +76,9 @@ class _WorkspacePolicySectionState
       await ref
           .read(workspaceRepositoryProvider)
           .upsert(
-            Workspace(
-              id: workspace.id,
-              name: workspace.name,
-              logoPath: workspace.logoPath,
-              ownerUserId: workspace.ownerUserId,
+            workspace.copyWith(
               secretExcludeGlobs: _parsedGlobs,
               reviewConcurrency: _concurrency ?? workspace.reviewConcurrency,
-              createdAt: workspace.createdAt,
               updatedAt: DateTime.now(),
             ),
           );

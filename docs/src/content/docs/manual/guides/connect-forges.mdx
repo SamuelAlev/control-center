@@ -9,7 +9,7 @@ The forge is a property of each **repo**, read from its `origin` remote when you
 
 ## Connect a forge
 
-1. Open **Settings → You → Profile & identity** (`/settings/profile`).
+1. Open **Settings → Workspace → Profile & identity** (`/settings/workspace/profile`).
 2. Find the **Code hosting** card. Every supported forge is listed, connected or not.
 3. Press **Sign in with …** if the row offers it, or **Add token** and paste one.
 
@@ -30,7 +30,7 @@ Each row tells you where its credential came from, because that is the differenc
 
 | Forge         | Token                                                     | Where to create it                                        |
 | ------------- | --------------------------------------------------------- | --------------------------------------------------------- |
-| **GitHub**    | A personal access token with `repo` and `read:org`        | github.com → Settings → Developer settings → Tokens        |
+| **GitHub**    | Classic: `repo` and `read:org`. Fine-grained: Contents + Pull requests (read/write), Checks + Actions (read) | github.com → Settings → Developer settings → Tokens |
 | **GitLab**    | A personal access token with `api`                        | gitlab.com → User settings → Access tokens                 |
 | **Bitbucket** | An Atlassian API token, plus your account email           | id.atlassian.com → Security → API tokens                   |
 
@@ -92,7 +92,7 @@ GitLab calls a pull request a **merge request**. Control Center says "pull reque
 
 ### The PR list is empty and says a forge is not connected
 
-You have no credential for that forge. Sign in or paste a token in **Settings → You → Profile & identity → Code hosting**. Other forges' repos are unaffected.
+You have no credential for that forge. Sign in or paste a token in **Settings → Workspace → Profile & identity → Code hosting**. Other forges' repos are unaffected.
 
 ### I connected a forge but its repos still show nothing
 

@@ -7,6 +7,7 @@ import 'package:control_center/features/auth/providers/oauth_providers.dart';
 
 import 'package:control_center/features/forge/providers/forge_providers.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/general/settings_shared.dart';
+import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/demo_unavailable.dart';
@@ -57,6 +58,9 @@ class ForgeConnectionsCard extends ConsumerWidget {
 
     return SectionCard(
       label: l10n.forgeConnections,
+      subtitle: ref.watch(activeWorkspaceIdProvider) == null
+          ? null
+          : Text(l10n.forgeConnectionsThisWorkspace),
       child: Column(
         children: [
           for (var i = 0; i < ForgeHost.supported.length; i++) ...[

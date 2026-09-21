@@ -2,12 +2,14 @@ import 'package:cc_domain/features/messaging/domain/value_objects/space_provisio
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_browser_engine.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/features/messaging/presentation/utils/provisioning_step_label.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/features/pr_review/providers/pr_space_provider.dart';
 import 'package:control_center/features/rigs/presentation/rig_tab_pane.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/widgets/demo_unavailable.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -54,6 +56,12 @@ class PrRigTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // A demo wires no enclosure port. Bail before `prSpaceProvider` tries
+    // to provision a space for a machine that cannot boot.
+    if (ref.watch(isDemoServerProvider)) {
+      return const DemoUnavailable(capability: DemoCapability.rig);
+    }
+
     final l10n = AppLocalizations.of(context);
     final t = context.designSystem ?? DesignSystemTokens.light();
     final spaceAsync = ref.watch(prSpaceProvider(pr));

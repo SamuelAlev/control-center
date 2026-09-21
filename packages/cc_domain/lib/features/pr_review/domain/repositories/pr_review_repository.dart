@@ -12,6 +12,7 @@ import 'package:cc_domain/features/pr_review/domain/entities/pr_timeline_event.d
 import 'package:cc_domain/features/pr_review/domain/entities/pr_user.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/workflow_graph.dart';
+import 'package:cc_domain/features/pr_review/domain/value_objects/image_diff_resolution.dart';
 import 'package:cc_domain/features/pr_review/domain/value_objects/pending_review_comment.dart';
 
 /// Pr review repository.
@@ -30,6 +31,16 @@ abstract class PrReviewRepository {
 
   /// Watch file content.
   Stream<String> watchFileContent(String path, String ref);
+
+  /// Resolves before/after (and optional overlay) blob refs for an image or
+  /// SVG file at [baseRef]/[headRef]. Returns refs only — never bytes.
+  Future<ImageDiffResolution> resolveImageDiff({
+    required String path,
+    String? previousPath,
+    required String baseRef,
+    required String headRef,
+    required PrFileStatus status,
+  });
 
   /// Stream of commits for a PR.
   Stream<List<PrCommit>> watchCommits(int prNumber);
@@ -317,6 +328,15 @@ class EmptyPrReviewRepository implements PrReviewRepository {
 
   @override
   Stream<String> watchFileContent(String path, String ref) => Stream.value('');
+
+  @override
+  Future<ImageDiffResolution> resolveImageDiff({
+    required String path,
+    String? previousPath,
+    required String baseRef,
+    required String headRef,
+    required PrFileStatus status,
+  }) async => ImageDiffResolution.empty;
 
   @override
   Stream<List<PrCommit>> watchCommits(int prNumber) =>

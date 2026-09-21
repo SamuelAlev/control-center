@@ -125,10 +125,11 @@ whether to save the voiceprint; if you do, it's blended into a running centroid
 for that name and matched against new speakers by cosine similarity, so the same
 person shows up with their name next time without you relabeling them.
 
-Voice profiles are workspace-scoped and never cross the boundary. Renaming a
-speaker who was previously saved un-enrolls the old name and offers to enroll
-the new one; deleting a profile removes the stored voiceprint but leaves any
-names already applied to past meetings intact.
+Voice profiles are workspace-scoped and never cross the boundary. Manage them
+at **Settings → Workspace → Meetings**. Renaming a speaker who was previously
+saved un-enrolls the old name and offers to enroll the new one; deleting a
+profile removes the stored voiceprint but leaves any names already applied to
+past meetings intact.
 
 ## The summary pipeline
 
@@ -142,8 +143,10 @@ recording → processing → done
 ```
 
 The summary agent receives the title, your rough live notes and the transcript,
-and returns **structured JSON**. The pipeline's persist steps then write that
-JSON to discrete rows:
+and returns **structured JSON**. Which sections it writes is shaped by the
+workspace's **active meeting-note template** (Settings → Workspace → Meetings);
+the active template applies to new and re-run summaries. The pipeline's persist
+steps then write that JSON to discrete rows:
 
 - `enhancedNotes` and `summary` → the meeting's notes
 - each action item → a `MeetingActionItem` row (content, owner, optional ticket link)
@@ -170,6 +173,7 @@ Decisions do reach agents indirectly, as memory facts in the `decisions` domain.
 | `/meetings`            | The list of meetings, with action-item and decision counts                            |
 | `/meetings/record`     | The live recording HUD: your notes on one side, the streaming transcript on the other |
 | `/meetings/:meetingId` | A meeting's detail: Notes, Transcript, Action items and Decisions tabs                |
+| Settings → Workspace → Meetings | Note templates and saved voice profiles for this workspace                  |
 
 ## Platform support
 

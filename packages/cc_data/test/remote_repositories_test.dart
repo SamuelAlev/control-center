@@ -35,6 +35,7 @@ import 'package:cc_domain/features/pipelines/domain/entities/step_kind.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/step_trigger.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/check_run.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
+import 'package:cc_domain/features/pr_review/domain/value_objects/image_diff_resolution.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_review_submission.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_reviewer.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_timeline_event.dart';
@@ -760,6 +761,16 @@ class _FakeHost {
       case 'pr_review.removeRequestedReviewers':
         sentPrReviewOps.add({'op': op, ...args});
         _replyData(id, op, {'ok': true});
+      case 'pr_review.resolveImageDiff':
+        sentPrReviewOps.add({'op': op, ...args});
+        _replyData(id, op, {
+          'base_ref': 'blob:sha256:aa',
+          'head_ref': 'blob:sha256:bb',
+          'overlay_ref': 'blob:sha256:cc',
+          'media_type': 'image/png',
+          'changed_percent': 12.5,
+          'identical': false,
+        });
       default:
         _replyData(id, op, <String, dynamic>{});
     }
@@ -3117,6 +3128,18 @@ void main() {
     expect(commitPreview!.shortSha, 'abc1234');
     expect(host.sentPrReviewOps.last['op'], 'pr_review.commitPreview');
     expect(host.sentPrReviewOps.last['sha'], 'abc1234');
+
+    final image = await repo.resolveImageDiff(
+      path: 'shot.png',
+      baseRef: 'aaa',
+      headRef: 'bbb',
+      status: PrFileStatus.modified,
+    );
+    expect(image.headRef, 'blob:sha256:bb');
+    expect(image.overlayRef, 'blob:sha256:cc');
+    expect(image.changedPercent, 12.5);
+    expect(host.sentPrReviewOps.last['op'], 'pr_review.resolveImageDiff');
+    expect(host.sentPrReviewOps.last['path'], 'shot.png');
   });
 
   test(

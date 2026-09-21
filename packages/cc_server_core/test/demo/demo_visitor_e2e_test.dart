@@ -75,7 +75,7 @@ void main() {
     () async {
       final tmp = Directory.systemTemp.createTempSync('cc_demo_e2e');
       addTearDown(() => deleteDirBestEffort(tmp));
-    final tmpPath = tmp.path;
+      final tmpPath = tmp.path;
       final server = await bootDemo(tmp);
       addTearDown(server.shutdown);
       final port = server.rpc.boundPort;
@@ -119,9 +119,11 @@ void main() {
       expect(spaceNames, contains('eval-review'));
 
       // Messages, in the space the review script is about.
-      final reviewSpace = (spaces['spaces'] as List).firstWhere(
-        (s) => (s as Map)['name'] == 'eval-review',
-      ) as Map;
+      final reviewSpace =
+          (spaces['spaces'] as List).firstWhere(
+                (s) => (s as Map)['name'] == 'eval-review',
+              )
+              as Map;
       final messages = await client.call('messaging.getMessages', {
         'space_id': reviewSpace['space_id'] ?? reviewSpace['id'],
       });
@@ -129,6 +131,26 @@ void main() {
         messages['messages'] as List,
         isNotEmpty,
         reason: 'a seeded space with no history is an empty demo',
+      );
+
+      // Chat on the PR page looks this up by repo + number rather than
+      // calling `pr.ensureSpace` (which a demo refuses). Without this row
+      // the tab is the red "Unknown op" the visitor used to see.
+      final reviewSpaces = await client
+          .subscribe('review_space.watchByWorkspace', const {})
+          .first
+          .timeout(const Duration(seconds: 20));
+      final associations = (reviewSpaces['associations'] as List? ?? const [])
+          .cast<Map<String, dynamic>>();
+      expect(
+        associations.any(
+          (a) =>
+              a['pr_number'] == 412 &&
+              a['repo_full_name'] == 'helix/evalkit' &&
+              a['space_id'] == (reviewSpace['space_id'] ?? reviewSpace['id']),
+        ),
+        isTrue,
+        reason: 'PR #412 chat is the eval-review space, linked by association',
       );
 
       final tickets = await client.call('tickets.list', const {});
@@ -149,18 +171,15 @@ void main() {
           .subscribe('repos.watchAll', const {})
           .first
           .timeout(const Duration(seconds: 20));
-      final repoRows =
-          (linkedRepos['repos'] as List).cast<Map<String, dynamic>>();
+      final repoRows = (linkedRepos['repos'] as List)
+          .cast<Map<String, dynamic>>();
       expect(
         repoRows,
         hasLength(4),
         reason: 'Helix ships four linked data-science repos',
       );
       expect(
-        {
-          for (final r in repoRows)
-            '${r['remote_owner']}/${r['remote_name']}',
-        },
+        {for (final r in repoRows) '${r['remote_owner']}/${r['remote_name']}'},
         {
           'helix/evalkit',
           'helix/retriever',
@@ -178,8 +197,7 @@ void main() {
         isTrue,
         reason: 'a demo visitor must not land on the signed-out PR empty state',
       );
-      final groups =
-          (openPrs['repos'] as List).cast<Map<String, dynamic>>();
+      final groups = (openPrs['repos'] as List).cast<Map<String, dynamic>>();
       expect(groups, hasLength(4));
       final numbers = <int>{};
       for (final group in groups) {
@@ -199,10 +217,7 @@ void main() {
           numbers.add((pr['number'] as num).toInt());
         }
       }
-      expect(
-        numbers,
-        containsAll({412, 409, 88, 81, 54, 49, 23, 19}),
-      );
+      expect(numbers, containsAll({412, 409, 88, 81, 54, 49, 23, 19}));
 
       // Calendar, meetings and memory: seeded pillars whose READS must stay
       // reachable. These families have their mutations denied wholesale, and
@@ -213,7 +228,8 @@ void main() {
           .cast<Map<String, dynamic>>();
       expect(meetingList, isNotEmpty);
       final segments = await client.call('meeting.getSegments', {
-        'meeting_id': meetingList.first['id'] ?? meetingList.first['meeting_id'],
+        'meeting_id':
+            meetingList.first['id'] ?? meetingList.first['meeting_id'],
       });
       expect(
         segments['segments'] as List,
@@ -284,12 +300,15 @@ void main() {
         }
         await Future<void>.delayed(const Duration(milliseconds: 250));
       }
-      expect(templateList, hasLength(2),
-          reason: 'the demo keeps exactly the two curated pipeline templates');
       expect(
-        templateList.map((t) => t['template_id'] ?? t['id']).toSet(),
-        {'pr_review', 'ticket_to_pr'},
+        templateList,
+        hasLength(2),
+        reason: 'the demo keeps exactly the two curated pipeline templates',
       );
+      expect(templateList.map((t) => t['template_id'] ?? t['id']).toSet(), {
+        'pr_review',
+        'ticket_to_pr',
+      });
 
       // Finished (and failed) pipeline runs with real step rows.
       // Pipeline run ids are GLOBALLY routed through `workspace_routes`, so
@@ -305,11 +324,16 @@ void main() {
         'workProduct.listForWorkspace',
         const {},
       );
-      final artifactList = (artifacts['products'] as List? ??
-              artifacts['work_products'] as List? ??
-              const [])
-          .cast<Map<String, dynamic>>();
-      expect(artifactList, isNotEmpty, reason: 'the artifacts surface is furnished');
+      final artifactList =
+          (artifacts['products'] as List? ??
+                  artifacts['work_products'] as List? ??
+                  const [])
+              .cast<Map<String, dynamic>>();
+      expect(
+        artifactList,
+        isNotEmpty,
+        reason: 'the artifacts surface is furnished',
+      );
 
       // The mock model list: the picker must not read as broken on a demo.
       final models = await client.call('providers.listModels', const {});
@@ -325,7 +349,8 @@ void main() {
       expect(
         (articles['articles'] as List?) ?? const [],
         isNotEmpty,
-        reason: 'a visitor lands on a furnished newsfeed (fallback articles '
+        reason:
+            'a visitor lands on a furnished newsfeed (fallback articles '
             'at minimum; real ones within seconds of the claim)',
       );
 
@@ -404,45 +429,49 @@ void main() {
     timeout: const Timeout(Duration(minutes: 3)),
   );
 
-  test('two visitors get different workspaces and cannot reach each other\'s', () async {
-    final tmp = Directory.systemTemp.createTempSync('cc_demo_isolation');
-    addTearDown(() => deleteDirBestEffort(tmp));
-    final server = await bootDemo(tmp);
-    addTearDown(server.shutdown);
-    final port = server.rpc.boundPort;
+  test(
+    'two visitors get different workspaces and cannot reach each other\'s',
+    () async {
+      final tmp = Directory.systemTemp.createTempSync('cc_demo_isolation');
+      addTearDown(() => deleteDirBestEffort(tmp));
+      final server = await bootDemo(tmp);
+      addTearDown(server.shutdown);
+      final port = server.rpc.boundPort;
 
-    final first = await redeem(port);
-    final second = await redeem(port);
+      final first = await redeem(port);
+      final second = await redeem(port);
 
-    expect(
-      first['workspace_id'],
-      isNot(second['workspace_id']),
-      reason: 'each visitor gets their own sandbox',
-    );
-    expect(first['user'], isNot(second['user']));
+      expect(
+        first['workspace_id'],
+        isNot(second['workspace_id']),
+        reason: 'each visitor gets their own sandbox',
+      );
+      expect(first['user'], isNot(second['user']));
 
-    // Visitor two, naming visitor one's workspace.
-    final client = await connectRemoteRpc(
-      uri: Uri.parse('ws://127.0.0.1:$port/rpc'),
-      deviceId: second['device_id'] as String,
-      psk: second['psk'] as String,
-    );
-    addTearDown(client.close);
-    await client.initialize();
-    client.activeWorkspaceId = first['workspace_id'] as String;
+      // Visitor two, naming visitor one's workspace.
+      final client = await connectRemoteRpc(
+        uri: Uri.parse('ws://127.0.0.1:$port/rpc'),
+        deviceId: second['device_id'] as String,
+        psk: second['psk'] as String,
+      );
+      addTearDown(client.close);
+      await client.initialize();
+      client.activeWorkspaceId = first['workspace_id'] as String;
 
-    await expectLater(
-      client.call('tickets.list', const {}),
-      throwsA(
-        isA<RemoteRpcException>().having(
-          (e) => e.code,
-          'code',
-          RpcErrorCodes.unauthorized,
+      await expectLater(
+        client.call('tickets.list', const {}),
+        throwsA(
+          isA<RemoteRpcException>().having(
+            (e) => e.code,
+            'code',
+            RpcErrorCodes.unauthorized,
+          ),
         ),
-      ),
-      reason: 'membership is the access boundary, not holding a demo code',
-    );
-  }, timeout: const Timeout(Duration(minutes: 3)));
+        reason: 'membership is the access boundary, not holding a demo code',
+      );
+    },
+    timeout: const Timeout(Duration(minutes: 3)),
+  );
 
   test('one visitor cannot see another visitor in the user list', () async {
     final tmp = Directory.systemTemp.createTempSync('cc_demo_users');

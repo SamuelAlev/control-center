@@ -80,6 +80,7 @@ class DaoCalendarRepository implements CalendarRepository {
       CalendarAccountsTableCompanion(
         id: Value(account.id),
         workspaceId: Value(account.workspaceId),
+        userId: Value(account.userId),
         providerId: Value(account.providerId),
         accountEmail: Value(account.accountEmail),
         displayName: Value(account.displayName),

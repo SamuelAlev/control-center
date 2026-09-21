@@ -14,8 +14,11 @@ import 'package:path/path.dart' as p;
 ///  * `<deviceId>` — paired-device PSKs (the original, and once only, tenant).
 ///  * `provider_app_*` — the server's own GitHub/Linear app identity
 ///    (`ProviderAppSettings`), the GitHub App private key among them.
+///  * `workspace_provider_app_github_<workspaceId>_*` — a workspace's own
+///    GitHub App (private key, client id, client secret).
+///  * `workspace_forge_github_<workspaceId>` — a workspace background PAT.
 ///  * `user_forge_*` / `user_ticket_*` — per-user provider credentials
-///    (`UserCredentialsStore`).
+///    (`UserCredentialsStore`). Overlay GitHub tokens append `_<workspaceId>`.
 ///  * `google_*` — Google Calendar OAuth credentials
 ///    (`FileGoogleCredentialsStore`).
 ///  * `oidc_client_secret` / `scim_token` — SSO (`SsoSettingsService`).
@@ -238,5 +241,22 @@ class FileSecretsStore implements PairedDeviceSecretsPort {
     (await _load()).remove(deviceId);
     _pending[deviceId] = null;
     await _flush();
+  }
+
+  /// Deletes every key for which [matches] is true. Returns how many were
+  /// removed. Used when a workspace is deleted so its App key, background PAT
+  /// and per-member overlay tokens do not outlive the tenant.
+  Future<int> deleteMatching(bool Function(String key) matches) async {
+    final map = await _load();
+    final keys = [for (final key in map.keys) if (matches(key)) key];
+    if (keys.isEmpty) {
+      return 0;
+    }
+    for (final key in keys) {
+      map.remove(key);
+      _pending[key] = null;
+    }
+    await _flush();
+    return keys.length;
   }
 }

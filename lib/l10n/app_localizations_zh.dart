@@ -1089,7 +1089,8 @@ class AppLocalizationsZh extends AppLocalizations {
   String get calendarSettingsTitle => 'Google 日历';
 
   @override
-  String get calendarSettingsDescription => '连接 Google 账户，将活动同步到此工作区。';
+  String get calendarSettingsDescription =>
+      '连接 Google 账户，将活动同步到此工作区。这些日历在这里属于你。';
 
   @override
   String get calendarConnecting => '正在连接…';
@@ -6757,7 +6758,8 @@ class AppLocalizationsZh extends AppLocalizations {
   String get reviewRequested => '已请求评审';
 
   @override
-  String get connectGitHubHint => '登录 GitHub，或在「设置 → 你 → 个人资料与身份 → 代码托管」中添加令牌';
+  String get connectGitHubHint =>
+      '登录 GitHub，或在「设置 → 工作区 → 个人资料与身份 → 代码托管」中添加令牌';
 
   @override
   String get connectGitHubToLoadPrs => '连接 GitHub 以加载 pull request';
@@ -7233,6 +7235,43 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get preview => '预览';
+
+  @override
+  String get imageDiffBefore => '更改前';
+
+  @override
+  String get imageDiffAfter => '更改后';
+
+  @override
+  String get imageDiffModeTwoUp => '并排';
+
+  @override
+  String get imageDiffModeSwipe => '滑动';
+
+  @override
+  String get imageDiffModeDifference => '差异';
+
+  @override
+  String imageDiffChangedPercent(String percent) {
+    return '已更改 $percent%';
+  }
+
+  @override
+  String get imageDiffPictures => '图片';
+
+  @override
+  String get imageDiffSource => '源码';
+
+  @override
+  String get imageDiffDeleted => '已删除';
+
+  @override
+  String get imageDiffAdded => '已添加';
+
+  @override
+  String imageDiffDimensions(int width, int height) {
+    return '宽: ${width}px | 高: ${height}px';
+  }
 
   @override
   String get outdated => '过时';
@@ -9241,7 +9280,8 @@ class AppLocalizationsZh extends AppLocalizations {
   String get profileSectionLabel => '个人资料';
 
   @override
-  String get profileSectionDescription => '你在队友面前以及 git 提交作者信息中的显示方式。';
+  String get profileSectionDescription =>
+      '你在此工作区对同事和 git 提交作者信息中的显示方式。空字段继承账户的姓名和电子邮件。';
 
   @override
   String get displayNameLabel => '显示名称';
@@ -11770,7 +11810,8 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsScopeBadgeServer => '服务器';
 
   @override
-  String get settingsProfileDescription => '你的姓名、邮箱，以及替你提交时使用的 git 身份。';
+  String get settingsProfileDescription =>
+      '你在此工作区的姓名、电子邮件和 git 身份。切换工作区会切换此覆盖层；句柄、登录和设备仍在账户上。';
 
   @override
   String get settingsServerConnectionDescription =>
@@ -11784,6 +11825,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get settingsWorkspaceGeneralDescription => '此工作区中所有人共享的身份、策略与约定。';
+
+  @override
+  String get settingsWorkspaceMeetingsDescription => '此工作区会议的笔记模板与已保存的声音。';
 
   @override
   String get settingsWorkspacePolicyLabel => '工作区策略';
@@ -12326,7 +12370,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get providerAppsDescription =>
-      '此服务器如何以自身身份认证，以及个人通过什么登录。后台工作——webhook、轮询、同步——都在应用上进行，绝不使用个人的 token。';
+      '工作区继承此 GitHub App，除非选择其他 App 或仅使用个人访问令牌。后台工作——webhook、轮询、同步——在应用上运行，绝不用个人令牌。';
 
   @override
   String get providerAppId => '应用 ID';
@@ -12683,14 +12727,14 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get providerAppsGroupServerDescription =>
-      '让后台工作在无人发起请求的情况下访问仓库：webhook、pull request 轮询、工单同步。';
+      '供继承此安装 GitHub App 的工作区使用。使用自己的 App 或 PAT 的工作区在工作区 → 常规中配置。';
 
   @override
   String get providerAppsGroupPrConversations => 'Pull request 对话';
 
   @override
   String get providerAppsGroupPrConversationsDescription =>
-      '开发者如何在 GitHub 上直接与此服务器交流。无需 webhook 或公共 URL——由服务器轮询。';
+      '继承工作区中开发者如何在 GitHub 上与此服务器对话。拥有自己 App 的工作区在工作区 → 常规下有自己的机器人。无需 webhook 或公开 URL——由服务器轮询。';
 
   @override
   String get providerAppBotLogin => '机器人登录名';
@@ -14020,6 +14064,47 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get rigClipboardAlwaysCopyDescription => '无需询问，将任何环境中的剪贴板内容放到此设备上。';
+
+  @override
+  String get workspaceGitHubIdentity => 'GitHub 身份';
+
+  @override
+  String get workspaceGitHubIdentityDescription =>
+      '此工作区后台 GitHub 工作的认证方式。继承此安装的 App、使用其他 App，或仅使用个人访问令牌。';
+
+  @override
+  String get workspaceGitHubModeInherit => '使用此安装的 GitHub App';
+
+  @override
+  String get workspaceGitHubModeApp => '使用其他 GitHub App';
+
+  @override
+  String get workspaceGitHubModePat => '仅个人访问令牌';
+
+  @override
+  String get workspaceGitHubInheritHint => '使用服务器 → 提供商应用中的 GitHub App。';
+
+  @override
+  String get workspaceGitHubAppHint => '此工作区的机器人和轮询身份。成员在「你」中通过此 App 登录。';
+
+  @override
+  String get workspaceGitHubPatLabel => '后台令牌';
+
+  @override
+  String get workspaceGitHubPatDescription => '用于此工作区的轮询和代理。不是成员的个人资料令牌。';
+
+  @override
+  String get workspaceGitHubHasPat => '已存储后台令牌。';
+
+  @override
+  String get workspaceGitHubNoPat => '未存储后台令牌。';
+
+  @override
+  String get profileOverlayHint =>
+      '这些字段是你在此工作区的身份。空字段继承账户姓名和电子邮件。切换工作区会切换此覆盖层。';
+
+  @override
+  String get forgeConnectionsThisWorkspace => '登录或粘贴此工作区的令牌。';
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -14099,7 +14184,8 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
       '其他機器上的協作者將無法連上這部伺服器。請啟用通道（設定 → 整合 → 分享此伺服器），或繫結到你的網絡，讓外部使用者可以連線。';
 
   @override
-  String get profileSectionDescription => '你在隊友眼中的名稱，以及 git 提交作者信息中的身分。';
+  String get profileSectionDescription =>
+      '你在此工作區中對隊友與 git 提交作者資訊的身分。空白欄位繼承帳戶名稱和電郵。';
 
   @override
   String get inboxSeverityInfo => '信息';
@@ -15271,7 +15357,8 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get calendarSettingsTitle => 'Google Calendar';
 
   @override
-  String get calendarSettingsDescription => '連結 Google 帳號，將活動同步到此工作區。';
+  String get calendarSettingsDescription =>
+      '連結 Google 帳號，將活動同步到此工作區。這些日曆在這裡屬於你。';
 
   @override
   String get calendarConnecting => '連線中…';
@@ -20938,7 +21025,8 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get reviewRequested => '審查請求';
 
   @override
-  String get connectGitHubHint => '登入 GitHub，或在「設定 → 你 → 個人資料與身分 → 程式碼託管」中新增權杖';
+  String get connectGitHubHint =>
+      '登入 GitHub，或在「設定 → 工作區 → 個人資料與身分 → 程式碼託管」中新增權杖';
 
   @override
   String get connectGitHubToLoadPrs => '連接 GitHub 以載入 pull request';
@@ -21414,6 +21502,43 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get preview => '預覽';
+
+  @override
+  String get imageDiffBefore => '變更前';
+
+  @override
+  String get imageDiffAfter => '變更後';
+
+  @override
+  String get imageDiffModeTwoUp => '並排';
+
+  @override
+  String get imageDiffModeSwipe => '滑動';
+
+  @override
+  String get imageDiffModeDifference => '差異';
+
+  @override
+  String imageDiffChangedPercent(String percent) {
+    return '已變更 $percent%';
+  }
+
+  @override
+  String get imageDiffPictures => '圖片';
+
+  @override
+  String get imageDiffSource => '原始碼';
+
+  @override
+  String get imageDiffDeleted => '已刪除';
+
+  @override
+  String get imageDiffAdded => '已新增';
+
+  @override
+  String imageDiffDimensions(int width, int height) {
+    return '寬: ${width}px | 高: ${height}px';
+  }
 
   @override
   String get outdated => '已過時';
@@ -23424,7 +23549,8 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get profileSectionLabel => '個人資料';
 
   @override
-  String get profileSectionDescription => '你在隊友眼中的名稱，以及 git 提交作者資訊中的身分。';
+  String get profileSectionDescription =>
+      '你在此工作區對同事和 git 提交作者資訊中的顯示方式。空白欄位繼承帳戶的名稱和電子郵件。';
 
   @override
   String get displayNameLabel => '顯示名稱';
@@ -25953,7 +26079,8 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get settingsScopeBadgeServer => '伺服器';
 
   @override
-  String get settingsProfileDescription => '你的名稱、電子郵件，以及為你產生的提交上所標記的 git 身分。';
+  String get settingsProfileDescription =>
+      '你在此工作區的名稱、電子郵件和 git 身分。切換工作區會切換此覆蓋層；帳號代號、登入與裝置仍在帳戶上。';
 
   @override
   String get settingsServerConnectionDescription =>
@@ -25967,6 +26094,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get settingsWorkspaceGeneralDescription => '此工作區中所有人共用的身分、政策與慣例。';
+
+  @override
+  String get settingsWorkspaceMeetingsDescription => '此工作區會議的筆記範本與已儲存的聲音。';
 
   @override
   String get settingsWorkspacePolicyLabel => '工作區政策';
@@ -26509,7 +26639,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get providerAppsDescription =>
-      '此伺服器如何以自身身分驗證，以及人們透過什麼登入。背景工作——webhook、輪詢、同步——都在應用程式上執行，絕不用個人的 token。';
+      '工作區繼承此 GitHub App，除非選擇其他 App 或僅使用個人存取權杖。背景工作——webhook、輪詢、同步——在應用程式上執行，絕不用個人權杖。';
 
   @override
   String get providerAppId => '應用程式 id';
@@ -26868,14 +26998,14 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get providerAppsGroupServerDescription =>
-      '讓背景工作能在沒有人類發起請求的情況下存取儲存庫：webhook、pull request 輪詢、工單同步。';
+      '供繼承此安裝 GitHub App 的工作區使用。使用自己的 App 或 PAT 的工作區在工作區 → 一般中設定。';
 
   @override
   String get providerAppsGroupPrConversations => 'Pull request 對話';
 
   @override
   String get providerAppsGroupPrConversationsDescription =>
-      '開發者如何在 GitHub 上直接與此伺服器交談。無需 webhook 或公開 URL——伺服器會自行輪詢。';
+      '繼承工作區中開發者如何在 GitHub 上與此伺服器對話。擁有自己 App 的工作區在工作區 → 一般下有自己的機器人。無需 webhook 或公開 URL——由伺服器輪詢。';
 
   @override
   String get providerAppBotLogin => '機器人登入名稱';
@@ -28205,4 +28335,45 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get rigClipboardAlwaysCopyDescription => '不經詢問，將任何環境中的剪貼簿內容放到此裝置上。';
+
+  @override
+  String get workspaceGitHubIdentity => 'GitHub 身分';
+
+  @override
+  String get workspaceGitHubIdentityDescription =>
+      '此工作區背景 GitHub 工作的驗證方式。繼承此安裝的 App、使用其他 App，或僅使用個人存取權杖。';
+
+  @override
+  String get workspaceGitHubModeInherit => '使用此安裝的 GitHub App';
+
+  @override
+  String get workspaceGitHubModeApp => '使用其他 GitHub App';
+
+  @override
+  String get workspaceGitHubModePat => '僅個人存取權杖';
+
+  @override
+  String get workspaceGitHubInheritHint => '使用伺服器 → 提供者應用程式中的 GitHub App。';
+
+  @override
+  String get workspaceGitHubAppHint => '此工作區的機器人和輪詢身分。成員在「你」中透過此 App 登入。';
+
+  @override
+  String get workspaceGitHubPatLabel => '背景權杖';
+
+  @override
+  String get workspaceGitHubPatDescription => '用於此工作區的輪詢和代理。不是成員的個人資料權杖。';
+
+  @override
+  String get workspaceGitHubHasPat => '已儲存背景權杖。';
+
+  @override
+  String get workspaceGitHubNoPat => '未儲存背景權杖。';
+
+  @override
+  String get profileOverlayHint =>
+      '這些欄位是你在此工作區的身分。空白欄位繼承帳戶名稱和電子郵件。切換工作區會切換此覆蓋層。';
+
+  @override
+  String get forgeConnectionsThisWorkspace => '登入或貼上此工作區的權杖。';
 }

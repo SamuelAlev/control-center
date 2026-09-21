@@ -6,14 +6,35 @@ import 'package:cc_domain/features/ticketing/domain/sync/ticket_sync_adapter.dar
 import 'package:cc_domain/features/ticketing/domain/sync/ticket_sync_delta.dart';
 import 'package:dio/dio.dart';
 
-/// [TicketSyncAdapter] for GitHub Issues, over the REST API. `vendorProjectId`
-/// is the `owner/repo` slug. Construct from a [Dio] authorized with a GitHub
-/// token and based at `https://api.github.com`.
-class GitHubIssuesTicketSyncAdapter implements TicketSyncAdapter {
-  /// Creates a [GitHubIssuesTicketSyncAdapter] over an authorized [Dio].
-  GitHubIssuesTicketSyncAdapter(this._dio);
+Future<Dio> Function({required String workspaceId, required String owner})
+_fixedGitHubIssuesDio(Dio dio) {
+  return ({required String workspaceId, required String owner}) async => dio;
+}
 
-  final Dio _dio;
+/// [TicketSyncAdapter] for GitHub Issues, over the REST API. `vendorProjectId`
+/// is the `owner/repo` slug.
+///
+/// The client is resolved **per (workspace, owner)**: a workspace mixing orgs
+/// (or using its own GitHub App / PAT) must not share one installation token
+/// that 404s every other owner. Tests may still pass a single [Dio].
+class GitHubIssuesTicketSyncAdapter implements TicketSyncAdapter {
+  /// Creates a [GitHubIssuesTicketSyncAdapter] over a single authorized [Dio].
+  GitHubIssuesTicketSyncAdapter(Dio dio) : _dioFor = _fixedGitHubIssuesDio(dio);
+
+  /// Creates a [GitHubIssuesTicketSyncAdapter] that resolves a client per
+  /// workspace and repo owner.
+  GitHubIssuesTicketSyncAdapter.resolving(this._dioFor);
+
+  final Future<Dio> Function({
+    required String workspaceId,
+    required String owner,
+  })
+  _dioFor;
+
+  Future<Dio> _client(String workspaceId, String vendorProjectId) {
+    final r = _split(vendorProjectId);
+    return _dioFor(workspaceId: workspaceId, owner: r.owner);
+  }
 
   @override
   String get vendorId => 'github';
@@ -38,7 +59,8 @@ class GitHubIssuesTicketSyncAdapter implements TicketSyncAdapter {
     DateTime? since,
   }) async {
     final r = _split(vendorProjectId);
-    final response = await _dio.get<List<dynamic>>(
+    final dio = await _client(workspaceId, vendorProjectId);
+    final response = await dio.get<List<dynamic>>(
       '/repos/${r.owner}/${r.repo}/issues',
       queryParameters: {
         'state': 'all',
@@ -65,10 +87,11 @@ class GitHubIssuesTicketSyncAdapter implements TicketSyncAdapter {
     String vendorProjectId = '',
   }) async {
     final r = _split(vendorProjectId);
+    final dio = await _client(workspaceId, vendorProjectId);
     final base = '/repos/${r.owner}/${r.repo}/issues';
 
     if (externalId == null || externalId.isEmpty) {
-      final response = await _dio.post<Map<String, dynamic>>(
+      final response = await dio.post<Map<String, dynamic>>(
         base,
         data: {
           'title': ticket.title,
@@ -88,13 +111,13 @@ class GitHubIssuesTicketSyncAdapter implements TicketSyncAdapter {
     final issueUrl = '$base/$externalId';
     switch (changeType) {
       case TicketChangeType.statusChanged:
-        await _dio.patch<Map<String, dynamic>>(
+        await dio.patch<Map<String, dynamic>>(
           issueUrl,
           data: _stateBody(ticket.status),
         );
       case TicketChangeType.created:
       case TicketChangeType.updated:
-        await _dio.patch<Map<String, dynamic>>(
+        await dio.patch<Map<String, dynamic>>(
           issueUrl,
           data: {
             'title': ticket.title,
@@ -104,7 +127,7 @@ class GitHubIssuesTicketSyncAdapter implements TicketSyncAdapter {
         );
       case TicketChangeType.deleted:
         // REST cannot delete an issue; close it as not-planned.
-        await _dio.patch<Map<String, dynamic>>(
+        await dio.patch<Map<String, dynamic>>(
           issueUrl,
           data: {'state': 'closed', 'state_reason': 'not_planned'},
         );

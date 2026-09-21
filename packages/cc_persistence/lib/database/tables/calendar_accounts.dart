@@ -1,18 +1,19 @@
 import 'package:drift/drift.dart';
 
 @TableIndex(name: 'idx_calendar_accounts_workspaceId', columns: {#workspaceId})
+@TableIndex(name: 'idx_calendar_accounts_userId', columns: {#userId})
 @TableIndex(
-  name: 'uq_calendar_accounts_ws_email',
-  columns: {#workspaceId, #accountEmail},
+  name: 'uq_calendar_accounts_ws_user_email',
+  columns: {#workspaceId, #userId, #accountEmail},
   unique: true,
 )
 /// Drift table for a connected external calendar account.
 ///
 /// A workspace may connect **several** accounts (still workspace-isolated): the
-/// unique `(workspaceId, accountEmail)` index enforces one row per distinct
-/// account within a workspace, so reconnecting the same account updates in
-/// place while a different email adds another. OAuth secrets are NOT stored
-/// here — they live in the platform secure store (see
+/// unique `(workspaceId, userId, accountEmail)` index enforces one row per
+/// distinct account for one member within a workspace, so reconnecting the same
+/// account updates in place while a different email adds another. OAuth secrets
+/// are NOT stored here — they live in the platform secure store (see
 /// `GoogleCredentialsRepository`); this row holds only non-secret metadata for
 /// display and sync bookkeeping.
 class CalendarAccountsTable extends Table {
@@ -21,6 +22,10 @@ class CalendarAccountsTable extends Table {
 
   /// Owning workspace.
   TextColumn get workspaceId => text()();
+
+  /// The member who connected this account. Empty on rows predating
+  /// per-user calendar ownership (legacy workspace-pool accounts).
+  TextColumn get userId => text().withDefault(const Constant(''))();
 
   /// Provider id (`google`).
   TextColumn get providerId => text().withDefault(const Constant('google'))();

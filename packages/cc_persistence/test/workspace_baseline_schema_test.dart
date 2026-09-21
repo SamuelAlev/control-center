@@ -739,5 +739,95 @@ CREATE TABLE conversation_goals (
             'should ever create them',
       );
     });
+
+    test('a fresh database carries the member profile overlay', () async {
+      final db = createTestDatabase();
+      addTearDown(db.close);
+
+      Future<Set<String>> columnsOf(String table) async =>
+          (await db.customSelect("PRAGMA table_info('$table')").get())
+              .map((r) => r.read<String>('name'))
+              .toSet();
+
+      expect(
+        await columnsOf('workspace_members'),
+        containsAll(<String>[
+          'display_name',
+          'email',
+          'git_author_name',
+          'git_author_email',
+        ]),
+      );
+      expect(await columnsOf('calendar_accounts'), contains('user_id'));
+      final indexes =
+          (await db
+                  .customSelect(
+                    "SELECT name FROM sqlite_master WHERE type = 'index' "
+                    "AND name = 'uq_calendar_accounts_ws_user_email'",
+                  )
+                  .get())
+              .map((r) => r.read<String>('name'));
+      expect(indexes, ['uq_calendar_accounts_ws_user_email']);
+    });
+
+    test(
+      'an existing v9 database is migrated to the profile overlay',
+      () async {
+        final dir = await Directory.systemTemp.createTemp('ws_migration_v10_');
+        addTearDown(() => dir.delete(recursive: true));
+        final file = File('${dir.path}/ws.db');
+
+        final setup = WorkspaceDatabase.forTesting(
+          NativeDatabase(file),
+          workspaceId: 'ws',
+        );
+        await setup.customStatement(
+          'ALTER TABLE workspace_members DROP COLUMN display_name',
+        );
+        await setup.customStatement(
+          'ALTER TABLE workspace_members DROP COLUMN email',
+        );
+        await setup.customStatement(
+          'ALTER TABLE workspace_members DROP COLUMN git_author_name',
+        );
+        await setup.customStatement(
+          'ALTER TABLE workspace_members DROP COLUMN git_author_email',
+        );
+        await setup.customStatement(
+          'DROP INDEX IF EXISTS idx_calendar_accounts_userId',
+        );
+        await setup.customStatement(
+          'DROP INDEX IF EXISTS uq_calendar_accounts_ws_user_email',
+        );
+        await setup.customStatement(
+          'ALTER TABLE calendar_accounts DROP COLUMN user_id',
+        );
+        await setup.customStatement('PRAGMA user_version = 9');
+        await setup.close();
+
+        final db = WorkspaceDatabase.forTesting(
+          NativeDatabase(file),
+          workspaceId: 'ws',
+        );
+        addTearDown(db.close);
+
+        Future<Set<String>> columnsOf(String table) async =>
+            (await db.customSelect("PRAGMA table_info('$table')").get())
+                .map((r) => r.read<String>('name'))
+                .toSet();
+
+        expect(
+          await columnsOf('workspace_members'),
+          containsAll(<String>[
+            'display_name',
+            'email',
+            'git_author_name',
+            'git_author_email',
+          ]),
+        );
+        expect(await columnsOf('calendar_accounts'), contains('user_id'));
+        expect(db.schemaVersion, WorkspaceDatabase.currentSchemaVersion);
+      },
+    );
   });
 }

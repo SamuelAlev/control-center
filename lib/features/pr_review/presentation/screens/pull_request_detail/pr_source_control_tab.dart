@@ -5,6 +5,7 @@ import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
+import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/messaging/presentation/utils/provisioning_step_label.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
@@ -17,6 +18,7 @@ import 'package:control_center/features/pr_review/providers/pr_space_provider.da
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/widgets/demo_unavailable.dart';
 import 'package:control_center/shared/widgets/inline_load_error.dart';
 import 'package:control_center/shared/widgets/source_control/scm_commit_box.dart';
 import 'package:control_center/shared/widgets/source_control/scm_view.dart';
@@ -237,9 +239,7 @@ class _PrSourceControlTabState extends ConsumerState<PrSourceControlTab> {
     // The commit landed: clear the box, refresh the tree, mark the diff stale.
     _message.clear();
     _refreshChanges();
-    ref
-        .read(prDetailPollingProvider(widget.prRef).notifier)
-        .notifyDiffStale();
+    ref.read(prDetailPollingProvider(widget.prRef).notifier).notifyDiffStale();
     if (push) {
       toast?.show(
         res.pushed ? l10n.pushedToPr : (res.error ?? l10n.pushFailed),
@@ -340,6 +340,13 @@ class _PrSourceControlTabState extends ConsumerState<PrSourceControlTab> {
 
   @override
   Widget build(BuildContext context) {
+    // Staging/commit/push are real git on an isolated worktree. A demo owns
+    // no checkout (`worktree.*` / `repos.stage` are absent), so bail before
+    // `prSpaceProvider` tries to provision a space that cannot open.
+    if (ref.watch(isDemoServerProvider)) {
+      return const DemoUnavailable(capability: DemoCapability.repos);
+    }
+
     final l10n = AppLocalizations.of(context);
     final t = context.designSystem ?? DesignSystemTokens.light();
     _handleVisibility(visible: TickerMode.valuesOf(context).enabled);

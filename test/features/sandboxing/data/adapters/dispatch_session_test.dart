@@ -81,6 +81,7 @@ class FakeCredentialBrokerPort implements CredentialBrokerPort {
     String? repoOwner,
     String? repoName,
     String? actingUserId,
+    String? workspaceId,
   }) async {
     mintCount++;
     return ScopedCredentials(

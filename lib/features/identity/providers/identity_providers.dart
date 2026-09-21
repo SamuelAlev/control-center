@@ -6,6 +6,7 @@ import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/core/settings/user_preference_sync.dart';
 import 'package:control_center/di/synced_preferences.dart';
+import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// The identity & membership data surface (who am I, users, members, invites,
@@ -15,10 +16,13 @@ final identityRepositoryProvider = Provider<RemoteIdentityRepository>(
 );
 
 /// The session's resolved identity: the authenticated user + memberships.
-/// Loaded once per connection; `refresh` after profile edits.
-final currentIdentityProvider = FutureProvider<IdentityMe>(
-  (ref) => ref.watch(identityRepositoryProvider).me(),
-);
+///
+/// Watches the active workspace so Workspace → Profile shows that workspace's
+/// overlay (name, email, git author) rather than a stale global snapshot.
+final currentIdentityProvider = FutureProvider<IdentityMe>((ref) {
+  final workspaceId = ref.watch(activeWorkspaceIdProvider);
+  return ref.watch(identityRepositoryProvider).me(workspaceId: workspaceId);
+});
 
 /// The authenticated user's id, or null while identity is still loading.
 final currentUserIdProvider = Provider<String?>(

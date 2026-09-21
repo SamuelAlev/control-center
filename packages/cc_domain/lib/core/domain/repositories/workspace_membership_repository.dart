@@ -36,6 +36,21 @@ abstract class WorkspaceMembershipRepository {
   /// Removes [userId] from [workspaceId] (their repo grants go with them).
   Future<void> remove(String workspaceId, String userId);
 
+  /// Writes [userId]'s profile overlay in [workspaceId]. Null fields inherit
+  /// the global user row. Omitted fields (via absent) stay as stored.
+  Future<void> updateProfileOverlay(
+    String workspaceId,
+    String userId, {
+    String? displayName,
+    bool clearDisplayName = false,
+    String? email,
+    bool clearEmail = false,
+    String? gitAuthorName,
+    bool clearGitAuthorName = false,
+    String? gitAuthorEmail,
+    bool clearGitAuthorEmail = false,
+  });
+
   /// Per-repo grants of [userId] in [workspaceId] (repos absent from the map
   /// are ungranted).
   Future<Map<String, RepoGrantLevel>> getRepoGrants(

@@ -504,7 +504,7 @@
   "calendarRsvpFailed": "無法更新你的回覆",
   "calendarAddAccount": "新增日曆帳號",
   "calendarSettingsTitle": "Google Calendar",
-  "calendarSettingsDescription": "連結 Google 帳號，將活動同步到此工作區。",
+  "calendarSettingsDescription": "連結 Google 帳號，將活動同步到此工作區。這些日曆在這裡屬於你。",
   "calendarConnecting": "連線中…",
   "calendarSyncNow": "立即同步",
   "calendarNoWorkspace": "請選取工作區以檢視其日曆",
@@ -3949,7 +3949,7 @@
   "agentQuestionSkippedLabel": "已略過",
   "agentQuestionFreeformOptionHint": "用你自己的話描述…",
   "reviewRequested": "審查請求",
-  "connectGitHubHint": "登入 GitHub，或在「設定 → 你 → 個人資料與身分 → 程式碼託管」中新增權杖",
+  "connectGitHubHint": "登入 GitHub，或在「設定 → 工作區 → 個人資料與身分 → 程式碼託管」中新增權杖",
   "connectGitHubToLoadPrs": "連接 GitHub 以載入 pull request",
   "noRepositoriesConfigured": "尚未設定任何儲存庫",
   "openedAgo": "建立於 {age}",
@@ -5499,7 +5499,7 @@
   },
   "deviceNeverSeen": "從未連線",
   "profileSectionLabel": "個人資料",
-  "profileSectionDescription": "你在隊友眼中的名稱，以及 git 提交作者資訊中的身分。",
+  "profileSectionDescription": "你在此工作區對同事和 git 提交作者資訊中的顯示方式。空白欄位繼承帳戶的名稱和電子郵件。",
   "displayNameLabel": "顯示名稱",
   "emailLabel": "電子郵件",
   "gitAuthorNameLabel": "Git 作者名稱",
@@ -7270,11 +7270,12 @@
   "settingsScopeBadgeDevice": "此裝置",
   "settingsScopeBadgeWorkspace": "工作區",
   "settingsScopeBadgeServer": "伺服器",
-  "settingsProfileDescription": "你的名稱、電子郵件，以及為你產生的提交上所標記的 git 身分。",
+  "settingsProfileDescription": "你在此工作區的名稱、電子郵件和 git 身分。切換工作區會切換此覆蓋層；帳號代號、登入與裝置仍在帳戶上。",
   "settingsServerConnectionDescription": "此用戶端連往哪部伺服器，以及這部伺服器如何分享（mDNS、通道、中繼）。",
   "settingsAboutDescription": "建置資訊與更新。",
   "settingsDiagnosticsDescription": "此安裝的隔離、索引、同步、日誌與當機回報。",
   "settingsWorkspaceGeneralDescription": "此工作區中所有人共用的身分、政策與慣例。",
+  "settingsWorkspaceMeetingsDescription": "此工作區會議的筆記範本與已儲存的聲音。",
   "settingsWorkspacePolicyLabel": "工作區政策",
   "settingsWorkspacePolicyDescription": "適用於此工作區中的每個成員與每個代理。",
   "settingsSecretGlobsLabel": "機密路徑排除",
@@ -7608,7 +7609,7 @@
   "ticketProviderLocal": "本機",
   "addKey": "新增金鑰",
   "providerApps": "供應商應用程式",
-  "providerAppsDescription": "此伺服器如何以自身身分驗證，以及人們透過什麼登入。背景工作——webhook、輪詢、同步——都在應用程式上執行，絕不用個人的 token。",
+  "providerAppsDescription": "工作區繼承此 GitHub App，除非選擇其他 App 或僅使用個人存取權杖。背景工作——webhook、輪詢、同步——在應用程式上執行，絕不用個人權杖。",
   "providerAppId": "應用程式 id",
   "providerPrivateKey": "私鑰",
   "providerClientId": "用戶端 id",
@@ -7757,9 +7758,9 @@
   "shortTaskDescription": "執行快速背景工作，例如標題與摘要。較小的模型適合放在這裡。",
   "settingsStateFailed": "失敗",
   "providerAppsGroupServer": "以伺服器身分行動",
-  "providerAppsGroupServerDescription": "讓背景工作能在沒有人類發起請求的情況下存取儲存庫：webhook、pull request 輪詢、工單同步。",
+  "providerAppsGroupServerDescription": "供繼承此安裝 GitHub App 的工作區使用。使用自己的 App 或 PAT 的工作區在工作區 → 一般中設定。",
   "providerAppsGroupPrConversations": "Pull request 對話",
-  "providerAppsGroupPrConversationsDescription": "開發者如何在 GitHub 上直接與此伺服器交談。無需 webhook 或公開 URL——伺服器會自行輪詢。",
+  "providerAppsGroupPrConversationsDescription": "繼承工作區中開發者如何在 GitHub 上與此伺服器對話。擁有自己 App 的工作區在工作區 → 一般下有自己的機器人。無需 webhook 或公開 URL——由伺服器輪詢。",
   "providerAppBotLogin": "機器人登入名稱",
   "providerAppBotLoginEmpty": "測試連線以解析機器人登入名稱。",
   "providerAppAskOnGitHub": "在 GitHub 上發問",
@@ -8589,5 +8590,75 @@
   "rigClipboardAlwaysPasteTitle": "一律允許貼到環境",
   "rigClipboardAlwaysPasteDescription": "不經詢問，將此裝置的剪貼簿傳送到任何環境。",
   "rigClipboardAlwaysCopyTitle": "一律允許從環境複製",
-  "rigClipboardAlwaysCopyDescription": "不經詢問，將任何環境中的剪貼簿內容放到此裝置上。"
+  "rigClipboardAlwaysCopyDescription": "不經詢問，將任何環境中的剪貼簿內容放到此裝置上。",
+  "imageDiffBefore": "變更前",
+  "@imageDiffBefore":   {
+    "description": "Label for the base (before) side of a PR image diff"
+  },
+  "imageDiffAfter": "變更後",
+  "@imageDiffAfter":   {
+    "description": "Label for the head (after) side of a PR image diff"
+  },
+  "imageDiffModeTwoUp": "並排",
+  "@imageDiffModeTwoUp":   {
+    "description": "Side-by-side comparison mode for a PR image diff"
+  },
+  "imageDiffModeSwipe": "滑動",
+  "@imageDiffModeSwipe":   {
+    "description": "Swipe-divider comparison mode for a PR image diff"
+  },
+  "imageDiffModeDifference": "差異",
+  "@imageDiffModeDifference":   {
+    "description": "Pixel overlay comparison mode for a PR image diff"
+  },
+  "imageDiffChangedPercent": "已變更 {percent}%",
+  "@imageDiffChangedPercent":   {
+    "description": "Caption showing how much of a PR image pair differs",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "imageDiffPictures": "圖片",
+  "@imageDiffPictures":   {
+    "description": "Header toggle to show SVG as pictures instead of XML hunks"
+  },
+  "imageDiffSource": "原始碼",
+  "@imageDiffSource":   {
+    "description": "Header toggle to show an SVG file's XML source diff"
+  },
+  "imageDiffDeleted": "已刪除",
+  "@imageDiffDeleted": {
+    "description": "Label for the removed (before) side of a PR image asset comparison"
+  },
+  "imageDiffAdded": "已新增",
+  "@imageDiffAdded": {
+    "description": "Label for the added (after) side of a PR image asset comparison"
+  },
+  "imageDiffDimensions": "寬: {width}px | 高: {height}px",
+  "@imageDiffDimensions": {
+    "description": "Intrinsic pixel size caption under a PR image-diff asset",
+    "placeholders": {
+      "width": {
+        "type": "int"
+      },
+      "height": {
+        "type": "int"
+      }
+    }
+  },
+  "workspaceGitHubIdentity": "GitHub 身分",
+  "workspaceGitHubIdentityDescription": "此工作區背景 GitHub 工作的驗證方式。繼承此安裝的 App、使用其他 App，或僅使用個人存取權杖。",
+  "workspaceGitHubModeInherit": "使用此安裝的 GitHub App",
+  "workspaceGitHubModeApp": "使用其他 GitHub App",
+  "workspaceGitHubModePat": "僅個人存取權杖",
+  "workspaceGitHubInheritHint": "使用伺服器 → 提供者應用程式中的 GitHub App。",
+  "workspaceGitHubAppHint": "此工作區的機器人和輪詢身分。成員在「你」中透過此 App 登入。",
+  "workspaceGitHubPatLabel": "背景權杖",
+  "workspaceGitHubPatDescription": "用於此工作區的輪詢和代理。不是成員的個人資料權杖。",
+  "workspaceGitHubHasPat": "已儲存背景權杖。",
+  "workspaceGitHubNoPat": "未儲存背景權杖。",
+  "profileOverlayHint": "這些欄位是你在此工作區的身分。空白欄位繼承帳戶名稱和電子郵件。切換工作區會切換此覆蓋層。",
+  "forgeConnectionsThisWorkspace": "登入或貼上此工作區的權杖。"
 }

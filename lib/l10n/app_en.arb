@@ -594,7 +594,7 @@
   "calendarRsvpFailed": "Couldn't update your response",
   "calendarAddAccount": "Add calendar account",
   "calendarSettingsTitle": "Google Calendar",
-  "calendarSettingsDescription": "Connect a Google account to sync events into this workspace.",
+  "calendarSettingsDescription": "Connect a Google account to sync events into this workspace. These calendars are yours here.",
   "calendarConnecting": "Connecting…",
   "calendarSyncNow": "Sync now",
   "calendarNoWorkspace": "Select a workspace to view its calendar",
@@ -6374,7 +6374,7 @@
   "agentQuestionSkippedLabel": "Skipped",
   "agentQuestionFreeformOptionHint": "Describe in your own words…",
   "reviewRequested": "Review requested",
-  "connectGitHubHint": "Sign in to GitHub or add a token in Settings → You → Profile & identity → Code hosting",
+  "connectGitHubHint": "Sign in to GitHub or add a token in Settings → Workspace → Profile & identity → Code hosting",
   "connectGitHubToLoadPrs": "Connect GitHub to load pull requests",
   "noRepositoriesConfigured": "No repositories configured",
   "openedAgo": "Opened {age}",
@@ -6844,6 +6844,63 @@
   "preview": "Preview",
   "@preview": {
     "description": "Preview tab label in the markdown editor"
+  },
+  "imageDiffBefore": "Before",
+  "@imageDiffBefore": {
+    "description": "Label for the base (before) side of a PR image diff"
+  },
+  "imageDiffAfter": "After",
+  "@imageDiffAfter": {
+    "description": "Label for the head (after) side of a PR image diff"
+  },
+  "imageDiffModeTwoUp": "2-up",
+  "@imageDiffModeTwoUp": {
+    "description": "Side-by-side comparison mode for a PR image diff"
+  },
+  "imageDiffModeSwipe": "Swipe",
+  "@imageDiffModeSwipe": {
+    "description": "Swipe-divider comparison mode for a PR image diff"
+  },
+  "imageDiffModeDifference": "Difference",
+  "@imageDiffModeDifference": {
+    "description": "Pixel overlay comparison mode for a PR image diff"
+  },
+  "imageDiffChangedPercent": "{percent}% changed",
+  "@imageDiffChangedPercent": {
+    "description": "Caption showing how much of a PR image pair differs",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "imageDiffPictures": "Pictures",
+  "@imageDiffPictures": {
+    "description": "Header toggle to show SVG as pictures instead of XML hunks"
+  },
+  "imageDiffSource": "Source",
+  "@imageDiffSource": {
+    "description": "Header toggle to show an SVG file's XML source diff"
+  },
+  "imageDiffDeleted": "Deleted",
+  "@imageDiffDeleted": {
+    "description": "Label for the removed (before) side of a PR image asset comparison"
+  },
+  "imageDiffAdded": "Added",
+  "@imageDiffAdded": {
+    "description": "Label for the added (after) side of a PR image asset comparison"
+  },
+  "imageDiffDimensions": "W: {width}px | H: {height}px",
+  "@imageDiffDimensions": {
+    "description": "Intrinsic pixel size caption under a PR image-diff asset",
+    "placeholders": {
+      "width": {
+        "type": "int"
+      },
+      "height": {
+        "type": "int"
+      }
+    }
   },
   "outdated": "Outdated",
   "@outdated": {
@@ -8296,7 +8353,7 @@
   },
   "deviceNeverSeen": "Never connected",
   "profileSectionLabel": "Profile",
-  "profileSectionDescription": "How you appear to teammates and in git commit authorship.",
+  "profileSectionDescription": "How you appear to teammates and in git commit authorship in this workspace. Empty fields inherit your account name and email.",
   "displayNameLabel": "Display name",
   "emailLabel": "Email",
   "gitAuthorNameLabel": "Git author name",
@@ -10747,7 +10804,7 @@
   "@settingsScopeBadgeServer": {
     "description": "Locale string for settingsScopeBadgeServer"
   },
-  "settingsProfileDescription": "Your name, email and the git identity stamped on commits made for you.",
+  "settingsProfileDescription": "Your name, email and git identity in this workspace. Switching workspace switches this overlay; handle, sign-in and devices stay on your account.",
   "@settingsProfileDescription": {
     "description": "Locale string for settingsProfileDescription"
   },
@@ -10766,6 +10823,10 @@
   "settingsWorkspaceGeneralDescription": "Identity, policy and conventions shared by everyone in this workspace.",
   "@settingsWorkspaceGeneralDescription": {
     "description": "Locale string for settingsWorkspaceGeneralDescription"
+  },
+  "settingsWorkspaceMeetingsDescription": "Note templates and saved voices for meetings in this workspace.",
+  "@settingsWorkspaceMeetingsDescription": {
+    "description": "Locale string for settingsWorkspaceMeetingsDescription"
   },
   "settingsWorkspacePolicyLabel": "Workspace policy",
   "@settingsWorkspacePolicyLabel": {
@@ -11502,7 +11563,7 @@
   "@providerApps": {
     "description": "Server settings card: how this server authenticates as itself"
   },
-  "providerAppsDescription": "How this server authenticates as itself, and what a person signs in through. Background work — webhooks, polling, sync — runs on the app, never on a person's token.",
+  "providerAppsDescription": "Workspaces inherit this GitHub App unless they pick a different App or a personal access token. Background work — webhooks, polling, sync — runs on the app, never on a person's token.",
   "@providerAppsDescription": {
     "description": "Subtitle of the provider apps card"
   },
@@ -11750,12 +11811,12 @@
   "shortTaskDescription": "Runs quick background work such as titles and summaries. A smaller model belongs here.",
   "settingsStateFailed": "Failed",
   "providerAppsGroupServer": "Acting as the server",
-  "providerAppsGroupServerDescription": "Lets background work reach repositories with no human behind the request: webhooks, pull-request polling, ticket sync.",
+  "providerAppsGroupServerDescription": "Used by workspaces that inherit this install's GitHub App. A workspace with its own App or a PAT configures that under Workspace → General.",
   "providerAppsGroupPrConversations": "Pull request conversations",
   "@providerAppsGroupPrConversations": {
     "description": "Settings group: how developers talk to the server on GitHub PRs"
   },
-  "providerAppsGroupPrConversationsDescription": "How developers can talk to this server directly on GitHub. Works with no webhook or public URL — the server polls.",
+  "providerAppsGroupPrConversationsDescription": "How developers can talk to this server on GitHub in inherit workspaces. A workspace with its own App has its own bot under Workspace → General. Works with no webhook or public URL — the server polls.",
   "@providerAppsGroupPrConversationsDescription": {
     "description": "Settings group description for the PR-conversations group"
   },
@@ -13197,5 +13258,57 @@
   "rigClipboardAlwaysCopyTitle": "Always allow copy from enclosures",
   "@rigClipboardAlwaysCopyTitle": {"description": "Rig clipboard permission and settings"},
   "rigClipboardAlwaysCopyDescription": "Put clipboard content from any enclosure on this device without asking.",
-  "@rigClipboardAlwaysCopyDescription": {"description": "Rig clipboard permission and settings"}
+  "@rigClipboardAlwaysCopyDescription": {"description": "Rig clipboard permission and settings"},
+  "workspaceGitHubIdentity": "GitHub identity",
+  "@workspaceGitHubIdentity": {
+    "description": "Workspace settings card: how this workspace authenticates to GitHub"
+  },
+  "workspaceGitHubIdentityDescription": "How background GitHub work in this workspace authenticates. Inherit this install's App, use a different App, or a personal access token only.",
+  "@workspaceGitHubIdentityDescription": {
+    "description": "Subtitle of the workspace GitHub identity card"
+  },
+  "workspaceGitHubModeInherit": "Use this install's GitHub App",
+  "@workspaceGitHubModeInherit": {
+    "description": "Workspace GitHub auth mode: inherit the server App"
+  },
+  "workspaceGitHubModeApp": "Use a different GitHub App",
+  "@workspaceGitHubModeApp": {
+    "description": "Workspace GitHub auth mode: a dedicated App"
+  },
+  "workspaceGitHubModePat": "Personal access token only",
+  "@workspaceGitHubModePat": {
+    "description": "Workspace GitHub auth mode: PAT, no App"
+  },
+  "workspaceGitHubInheritHint": "Uses the GitHub App on Server → Provider apps.",
+  "@workspaceGitHubInheritHint": {
+    "description": "Hint when the workspace inherits the install GitHub App"
+  },
+  "workspaceGitHubAppHint": "This workspace's bot and polling identity. Members sign in on You through this App.",
+  "@workspaceGitHubAppHint": {
+    "description": "Hint when the workspace uses its own GitHub App"
+  },
+  "workspaceGitHubPatLabel": "Background token",
+  "@workspaceGitHubPatLabel": {
+    "description": "Label for the workspace GitHub PAT field"
+  },
+  "workspaceGitHubPatDescription": "Used for polling and agents in this workspace. Not a member's profile token.",
+  "@workspaceGitHubPatDescription": {
+    "description": "Hint for PAT-only GitHub identity"
+  },
+  "workspaceGitHubHasPat": "A background token is stored.",
+  "@workspaceGitHubHasPat": {
+    "description": "Presence copy when a workspace GitHub PAT is set"
+  },
+  "workspaceGitHubNoPat": "No background token stored.",
+  "@workspaceGitHubNoPat": {
+    "description": "Presence copy when no workspace GitHub PAT is set"
+  },
+  "profileOverlayHint": "These fields are you in this workspace. Empty fields inherit your account name and email. Switching workspace switches this overlay.",
+  "@profileOverlayHint": {
+    "description": "Profile card subtitle: workspace overlay, not a second account"
+  },
+  "forgeConnectionsThisWorkspace": "Sign in or paste a token for this workspace.",
+  "@forgeConnectionsThisWorkspace": {
+    "description": "Code hosting card subtitle on Workspace \u2192 Profile"
+  }
 }

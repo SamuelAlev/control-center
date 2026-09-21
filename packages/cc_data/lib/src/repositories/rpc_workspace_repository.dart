@@ -2,6 +2,7 @@ import 'package:cc_data/src/repositories/remote_workspace_repository.dart';
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/core/domain/entities/workspace.dart';
+import 'package:cc_domain/core/domain/value_objects/github_auth_mode.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_repository.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 
@@ -41,6 +42,8 @@ class RpcWorkspaceRepository implements WorkspaceRepository {
     secretExcludeGlobs: d.secretExcludeGlobs,
     reviewConcurrency: d.reviewConcurrency ?? 3,
     autoPublishReview: d.autoPublishReview ?? false,
+    githubAuthMode: GithubAuthMode.fromWire(d.githubAuthMode),
+    githubAppId: d.githubAppId ?? '',
     deletedAt: d.deletedAt,
     createdAt: d.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0),
     updatedAt:
@@ -60,6 +63,8 @@ class RpcWorkspaceRepository implements WorkspaceRepository {
     secretExcludeGlobs: w.secretExcludeGlobs,
     reviewConcurrency: w.reviewConcurrency,
     autoPublishReview: w.autoPublishReview,
+    githubAuthMode: w.githubAuthMode.wireName,
+    githubAppId: w.githubAppId,
     deletedAt: w.deletedAt,
     createdAt: w.createdAt,
     updatedAt: w.updatedAt,

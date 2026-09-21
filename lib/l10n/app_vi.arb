@@ -504,7 +504,7 @@
   "calendarRsvpFailed": "Không thể cập nhật phản hồi của bạn",
   "calendarAddAccount": "Thêm tài khoản lịch",
   "calendarSettingsTitle": "Google Calendar",
-  "calendarSettingsDescription": "Kết nối tài khoản Google để đồng bộ sự kiện vào không gian làm việc này.",
+  "calendarSettingsDescription": "Kết nối tài khoản Google để đồng bộ sự kiện vào không gian này. Các lịch này là của bạn ở đây.",
   "calendarConnecting": "Đang kết nối…",
   "calendarSyncNow": "Đồng bộ ngay",
   "calendarNoWorkspace": "Chọn không gian làm việc để xem lịch",
@@ -3949,7 +3949,7 @@
   "agentQuestionSkippedLabel": "Đã bỏ qua",
   "agentQuestionFreeformOptionHint": "Mô tả bằng lời của bạn…",
   "reviewRequested": "Đã yêu cầu review",
-  "connectGitHubHint": "Đăng nhập GitHub hoặc thêm token trong Cài đặt → Bạn → Hồ sơ & danh tính → Code hosting",
+  "connectGitHubHint": "Đăng nhập GitHub hoặc thêm token trong Cài đặt → Không gian làm việc → Hồ sơ & danh tính → Code hosting",
   "connectGitHubToLoadPrs": "Kết nối GitHub để tải pull requests",
   "noRepositoriesConfigured": "Chưa cấu hình kho lưu trữ",
   "openedAgo": "Đã mở {age}",
@@ -5499,7 +5499,7 @@
   },
   "deviceNeverSeen": "Chưa từng kết nối",
   "profileSectionLabel": "Hồ sơ",
-  "profileSectionDescription": "Cách bạn hiện với đồng đội và trong thông tin tác giả commit git.",
+  "profileSectionDescription": "Bạn hiện ra với nhóm và trong tác giả commit git thế nào trong không gian này. Trường trống kế thừa tên và email tài khoản.",
   "displayNameLabel": "Tên hiển thị",
   "emailLabel": "Email",
   "gitAuthorNameLabel": "Tên tác giả Git",
@@ -7270,11 +7270,12 @@
   "settingsScopeBadgeDevice": "THIẾT BỊ NÀY",
   "settingsScopeBadgeWorkspace": "KHÔNG GIAN LÀM VIỆC",
   "settingsScopeBadgeServer": "MÁY CHỦ",
-  "settingsProfileDescription": "Tên, email và danh tính git gắn trên các commit thực hiện thay bạn.",
+  "settingsProfileDescription": "Tên, email và danh tính git của bạn trong không gian này. Đổi không gian sẽ đổi lớp phủ này; biệt hiệu, đăng nhập và thiết bị ở lại trên tài khoản.",
   "settingsServerConnectionDescription": "Máy chủ mà máy khách này kết nối, và cách chia sẻ máy chủ này (mDNS, tunnel, relay).",
   "settingsAboutDescription": "Danh tính bản dựng và cập nhật.",
   "settingsDiagnosticsDescription": "Cách ly, lập chỉ mục, đồng bộ, ghi nhật ký và báo cáo sự cố cho bản cài này.",
   "settingsWorkspaceGeneralDescription": "Danh tính, chính sách và quy ước dùng chung cho mọi người trong không gian làm việc này.",
+  "settingsWorkspaceMeetingsDescription": "Mẫu ghi chú và giọng đã lưu cho các cuộc họp trong không gian làm việc này.",
   "settingsWorkspacePolicyLabel": "Chính sách không gian làm việc",
   "settingsWorkspacePolicyDescription": "Áp dụng cho mọi thành viên và mọi agent trong không gian làm việc này.",
   "settingsSecretGlobsLabel": "Loại trừ đường dẫn bí mật",
@@ -7608,7 +7609,7 @@
   "ticketProviderLocal": "Cục bộ",
   "addKey": "Thêm khóa",
   "providerApps": "Ứng dụng nhà cung cấp",
-  "providerAppsDescription": "Cách máy chủ này xác thực với tư cách của chính nó, và kênh người dùng đăng nhập. Công việc nền — webhook, polling, đồng bộ — chạy trên ứng dụng, không bao giờ trên token của người dùng.",
+  "providerAppsDescription": "Không gian kế thừa GitHub App này trừ khi chọn App khác hoặc mã thông báo truy cập cá nhân. Công việc nền — webhook, thăm dò, đồng bộ — chạy trên app, không bao giờ trên mã thông báo của một người.",
   "providerAppId": "Id ứng dụng",
   "providerPrivateKey": "Khóa riêng",
   "providerClientId": "Id client",
@@ -7757,9 +7758,9 @@
   "shortTaskDescription": "Chạy việc nền nhanh như tiêu đề và tóm tắt. Nên dùng mô hình nhỏ hơn ở đây.",
   "settingsStateFailed": "Thất bại",
   "providerAppsGroupServer": "Đóng vai trò máy chủ",
-  "providerAppsGroupServerDescription": "Cho phép việc nền truy cập kho lưu trữ khi không có người đứng sau yêu cầu: webhook, polling pull request, đồng bộ phiếu.",
+  "providerAppsGroupServerDescription": "Cho không gian kế thừa GitHub App của bản cài này. Không gian có App hoặc PAT riêng được cấu hình trong Không gian làm việc → Chung.",
   "providerAppsGroupPrConversations": "Hội thoại pull request",
-  "providerAppsGroupPrConversationsDescription": "Cách nhà phát triển trò chuyện với máy chủ này trực tiếp trên GitHub. Hoạt động không cần webhook hay URL công khai — máy chủ tự polling.",
+  "providerAppsGroupPrConversationsDescription": "Cách nhà phát triển nói với máy chủ này trên GitHub trong không gian kế thừa. Không gian có App riêng có bot trong Không gian làm việc → Chung. Không cần webhook hay URL công khai — máy chủ thăm dò.",
   "providerAppBotLogin": "Tên đăng nhập bot",
   "providerAppBotLoginEmpty": "Kiểm tra kết nối để xác định tên đăng nhập bot.",
   "providerAppAskOnGitHub": "Hỏi trên GitHub",
@@ -8589,5 +8590,75 @@
   "rigClipboardAlwaysPasteTitle": "Luôn cho phép dán vào môi trường",
   "rigClipboardAlwaysPasteDescription": "Gửi bảng nhớ tạm của thiết bị này đến bất kỳ môi trường nào mà không cần hỏi.",
   "rigClipboardAlwaysCopyTitle": "Luôn cho phép sao chép từ môi trường",
-  "rigClipboardAlwaysCopyDescription": "Đặt nội dung bảng nhớ tạm từ bất kỳ môi trường nào trên thiết bị này mà không cần hỏi."
+  "rigClipboardAlwaysCopyDescription": "Đặt nội dung bảng nhớ tạm từ bất kỳ môi trường nào trên thiết bị này mà không cần hỏi.",
+  "imageDiffBefore": "Trước",
+  "@imageDiffBefore":   {
+    "description": "Label for the base (before) side of a PR image diff"
+  },
+  "imageDiffAfter": "Sau",
+  "@imageDiffAfter":   {
+    "description": "Label for the head (after) side of a PR image diff"
+  },
+  "imageDiffModeTwoUp": "Song song",
+  "@imageDiffModeTwoUp":   {
+    "description": "Side-by-side comparison mode for a PR image diff"
+  },
+  "imageDiffModeSwipe": "Vuốt",
+  "@imageDiffModeSwipe":   {
+    "description": "Swipe-divider comparison mode for a PR image diff"
+  },
+  "imageDiffModeDifference": "Khác biệt",
+  "@imageDiffModeDifference":   {
+    "description": "Pixel overlay comparison mode for a PR image diff"
+  },
+  "imageDiffChangedPercent": "Đã đổi {percent}%",
+  "@imageDiffChangedPercent":   {
+    "description": "Caption showing how much of a PR image pair differs",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "imageDiffPictures": "Hình ảnh",
+  "@imageDiffPictures":   {
+    "description": "Header toggle to show SVG as pictures instead of XML hunks"
+  },
+  "imageDiffSource": "Mã nguồn",
+  "@imageDiffSource":   {
+    "description": "Header toggle to show an SVG file's XML source diff"
+  },
+  "imageDiffDeleted": "Đã xóa",
+  "@imageDiffDeleted": {
+    "description": "Label for the removed (before) side of a PR image asset comparison"
+  },
+  "imageDiffAdded": "Đã thêm",
+  "@imageDiffAdded": {
+    "description": "Label for the added (after) side of a PR image asset comparison"
+  },
+  "imageDiffDimensions": "R: {width}px | C: {height}px",
+  "@imageDiffDimensions": {
+    "description": "Intrinsic pixel size caption under a PR image-diff asset",
+    "placeholders": {
+      "width": {
+        "type": "int"
+      },
+      "height": {
+        "type": "int"
+      }
+    }
+  },
+  "workspaceGitHubIdentity": "Danh tính GitHub",
+  "workspaceGitHubIdentityDescription": "Cách công việc GitHub nền xác thực trong không gian làm việc này. Kế thừa App của bản cài, dùng App khác, hoặc chỉ mã thông báo truy cập cá nhân.",
+  "workspaceGitHubModeInherit": "Dùng GitHub App của bản cài này",
+  "workspaceGitHubModeApp": "Dùng GitHub App khác",
+  "workspaceGitHubModePat": "Chỉ mã thông báo truy cập cá nhân",
+  "workspaceGitHubInheritHint": "Dùng GitHub App trong Máy chủ → Ứng dụng nhà cung cấp.",
+  "workspaceGitHubAppHint": "Danh tính bot và thăm dò của không gian này. Thành viên đăng nhập ở Bạn qua App này.",
+  "workspaceGitHubPatLabel": "Mã thông báo nền",
+  "workspaceGitHubPatDescription": "Cho thăm dò và tác nhân trong không gian này. Không phải mã thông báo hồ sơ của thành viên.",
+  "workspaceGitHubHasPat": "Đã lưu mã thông báo nền.",
+  "workspaceGitHubNoPat": "Không có mã thông báo nền.",
+  "profileOverlayHint": "Các trường này là bạn trong không gian này. Trường trống kế thừa tên và email tài khoản. Đổi không gian sẽ đổi lớp phủ này.",
+  "forgeConnectionsThisWorkspace": "Đăng nhập hoặc dán mã thông báo cho không gian làm việc này."
 }

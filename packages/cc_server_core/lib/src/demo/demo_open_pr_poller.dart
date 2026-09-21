@@ -11,33 +11,51 @@ class _OfflineOpenPrFetchPort implements OpenPrFetchPort {
   const _OfflineOpenPrFetchPort();
 
   @override
-  Future<({bool changed, String? etag})> probeRepo(Repo repo, String? etag) async =>
-      (changed: false, etag: etag);
+  Future<({bool changed, String? etag})> probeRepo(
+    Repo repo,
+    String? etag, {
+    String? workspaceId,
+  }) async => (changed: false, etag: etag);
 
   @override
-  Future<OpenPrFetchResult> fetchGroups(List<Repo> repos) async =>
-      (groups: const <OpenPrGroup>[], resolvedRepoIds: const <String>{});
+  Future<OpenPrFetchResult> fetchGroups(
+    List<Repo> repos, {
+    String? workspaceId,
+  }) async => (groups: const <OpenPrGroup>[], resolvedRepoIds: const <String>{});
 
   @override
   Future<Map<String, Map<int, PrStatusOverlay>>> fetchChecks(
-    List<Repo> repos,
-  ) async => const {};
+    List<Repo> repos, {
+    String? workspaceId,
+  }) async => const {};
 
   @override
-  Future<bool?> wasMerged(Repo repo, int prNumber) async => null;
+  Future<bool?> wasMerged(
+    Repo repo,
+    int prNumber, {
+    String? workspaceId,
+  }) async => null;
 
   @override
-  Future<PrMergeableState> mergeState(Repo repo, int prNumber) async =>
-      PrMergeableState.unknown;
+  Future<PrMergeableState> mergeState(
+    Repo repo,
+    int prNumber, {
+    String? workspaceId,
+  }) async => PrMergeableState.unknown;
 
   @override
-  Future<String?> latestApprover(Repo repo, int prNumber) async => null;
+  Future<String?> latestApprover(
+    Repo repo,
+    int prNumber, {
+    String? workspaceId,
+  }) async => null;
 
   @override
   Future<({String name, String? url})?> firstFailingCheck(
     Repo repo,
-    int prNumber,
-  ) async => null;
+    int prNumber, {
+    String? workspaceId,
+  }) async => null;
 }
 
 /// The demo's open-PR poller: a real [OpenPrPollingService] that never polls.

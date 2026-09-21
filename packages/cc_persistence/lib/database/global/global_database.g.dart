@@ -88,6 +88,30 @@ class $WorkspacesTableTable extends WorkspacesTable
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _githubAuthModeMeta = const VerificationMeta(
+    'githubAuthMode',
+  );
+  @override
+  late final GeneratedColumn<String> githubAuthMode = GeneratedColumn<String>(
+    'github_auth_mode',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('inherit'),
+  );
+  static const VerificationMeta _githubAppIdMeta = const VerificationMeta(
+    'githubAppId',
+  );
+  @override
+  late final GeneratedColumn<String> githubAppId = GeneratedColumn<String>(
+    'github_app_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
   static const VerificationMeta _positionMeta = const VerificationMeta(
     'position',
   );
@@ -144,6 +168,8 @@ class $WorkspacesTableTable extends WorkspacesTable
     secretExcludeGlobs,
     reviewConcurrency,
     autoPublishReview,
+    githubAuthMode,
+    githubAppId,
     position,
     createdAt,
     updatedAt,
@@ -216,6 +242,24 @@ class $WorkspacesTableTable extends WorkspacesTable
         ),
       );
     }
+    if (data.containsKey('github_auth_mode')) {
+      context.handle(
+        _githubAuthModeMeta,
+        githubAuthMode.isAcceptableOrUnknown(
+          data['github_auth_mode']!,
+          _githubAuthModeMeta,
+        ),
+      );
+    }
+    if (data.containsKey('github_app_id')) {
+      context.handle(
+        _githubAppIdMeta,
+        githubAppId.isAcceptableOrUnknown(
+          data['github_app_id']!,
+          _githubAppIdMeta,
+        ),
+      );
+    }
     if (data.containsKey('position')) {
       context.handle(
         _positionMeta,
@@ -277,6 +321,14 @@ class $WorkspacesTableTable extends WorkspacesTable
         DriftSqlType.bool,
         data['${effectivePrefix}auto_publish_review'],
       )!,
+      githubAuthMode: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}github_auth_mode'],
+      )!,
+      githubAppId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}github_app_id'],
+      )!,
       position: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}position'],
@@ -332,6 +384,15 @@ class WorkspacesTableData extends DataClass
   /// "Publish to GitHub" action, which itself stays ActionClass-guarded).
   final bool autoPublishReview;
 
+  /// How this workspace authenticates to GitHub for background work
+  /// (`inherit` / `app` / `pat`). Typed because the server reads it on the
+  /// credential path — not an opaque `workspace_settings` string.
+  final String githubAuthMode;
+
+  /// Numeric GitHub App id when [githubAuthMode] is `app`. Empty otherwise.
+  /// The private key is never a column; it lives in `secrets.json`.
+  final String githubAppId;
+
   /// The operator's manual order for the workspace switcher / manager
   /// (drag-to-reorder in "manage workspaces"). Lower sorts first;
   /// [createdAt] is the stable tiebreak. Mirrors `repos.position` — one manual
@@ -355,6 +416,8 @@ class WorkspacesTableData extends DataClass
     required this.secretExcludeGlobs,
     required this.reviewConcurrency,
     required this.autoPublishReview,
+    required this.githubAuthMode,
+    required this.githubAppId,
     required this.position,
     required this.createdAt,
     required this.updatedAt,
@@ -374,6 +437,8 @@ class WorkspacesTableData extends DataClass
     map['secret_exclude_globs'] = Variable<String>(secretExcludeGlobs);
     map['review_concurrency'] = Variable<int>(reviewConcurrency);
     map['auto_publish_review'] = Variable<bool>(autoPublishReview);
+    map['github_auth_mode'] = Variable<String>(githubAuthMode);
+    map['github_app_id'] = Variable<String>(githubAppId);
     map['position'] = Variable<int>(position);
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
@@ -396,6 +461,8 @@ class WorkspacesTableData extends DataClass
       secretExcludeGlobs: Value(secretExcludeGlobs),
       reviewConcurrency: Value(reviewConcurrency),
       autoPublishReview: Value(autoPublishReview),
+      githubAuthMode: Value(githubAuthMode),
+      githubAppId: Value(githubAppId),
       position: Value(position),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
@@ -420,6 +487,8 @@ class WorkspacesTableData extends DataClass
       ),
       reviewConcurrency: serializer.fromJson<int>(json['reviewConcurrency']),
       autoPublishReview: serializer.fromJson<bool>(json['autoPublishReview']),
+      githubAuthMode: serializer.fromJson<String>(json['githubAuthMode']),
+      githubAppId: serializer.fromJson<String>(json['githubAppId']),
       position: serializer.fromJson<int>(json['position']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
@@ -437,6 +506,8 @@ class WorkspacesTableData extends DataClass
       'secretExcludeGlobs': serializer.toJson<String>(secretExcludeGlobs),
       'reviewConcurrency': serializer.toJson<int>(reviewConcurrency),
       'autoPublishReview': serializer.toJson<bool>(autoPublishReview),
+      'githubAuthMode': serializer.toJson<String>(githubAuthMode),
+      'githubAppId': serializer.toJson<String>(githubAppId),
       'position': serializer.toJson<int>(position),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
@@ -452,6 +523,8 @@ class WorkspacesTableData extends DataClass
     String? secretExcludeGlobs,
     int? reviewConcurrency,
     bool? autoPublishReview,
+    String? githubAuthMode,
+    String? githubAppId,
     int? position,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -464,6 +537,8 @@ class WorkspacesTableData extends DataClass
     secretExcludeGlobs: secretExcludeGlobs ?? this.secretExcludeGlobs,
     reviewConcurrency: reviewConcurrency ?? this.reviewConcurrency,
     autoPublishReview: autoPublishReview ?? this.autoPublishReview,
+    githubAuthMode: githubAuthMode ?? this.githubAuthMode,
+    githubAppId: githubAppId ?? this.githubAppId,
     position: position ?? this.position,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
@@ -486,6 +561,12 @@ class WorkspacesTableData extends DataClass
       autoPublishReview: data.autoPublishReview.present
           ? data.autoPublishReview.value
           : this.autoPublishReview,
+      githubAuthMode: data.githubAuthMode.present
+          ? data.githubAuthMode.value
+          : this.githubAuthMode,
+      githubAppId: data.githubAppId.present
+          ? data.githubAppId.value
+          : this.githubAppId,
       position: data.position.present ? data.position.value : this.position,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
@@ -503,6 +584,8 @@ class WorkspacesTableData extends DataClass
           ..write('secretExcludeGlobs: $secretExcludeGlobs, ')
           ..write('reviewConcurrency: $reviewConcurrency, ')
           ..write('autoPublishReview: $autoPublishReview, ')
+          ..write('githubAuthMode: $githubAuthMode, ')
+          ..write('githubAppId: $githubAppId, ')
           ..write('position: $position, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
@@ -520,6 +603,8 @@ class WorkspacesTableData extends DataClass
     secretExcludeGlobs,
     reviewConcurrency,
     autoPublishReview,
+    githubAuthMode,
+    githubAppId,
     position,
     createdAt,
     updatedAt,
@@ -536,6 +621,8 @@ class WorkspacesTableData extends DataClass
           other.secretExcludeGlobs == this.secretExcludeGlobs &&
           other.reviewConcurrency == this.reviewConcurrency &&
           other.autoPublishReview == this.autoPublishReview &&
+          other.githubAuthMode == this.githubAuthMode &&
+          other.githubAppId == this.githubAppId &&
           other.position == this.position &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
@@ -550,6 +637,8 @@ class WorkspacesTableCompanion extends UpdateCompanion<WorkspacesTableData> {
   final Value<String> secretExcludeGlobs;
   final Value<int> reviewConcurrency;
   final Value<bool> autoPublishReview;
+  final Value<String> githubAuthMode;
+  final Value<String> githubAppId;
   final Value<int> position;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
@@ -563,6 +652,8 @@ class WorkspacesTableCompanion extends UpdateCompanion<WorkspacesTableData> {
     this.secretExcludeGlobs = const Value.absent(),
     this.reviewConcurrency = const Value.absent(),
     this.autoPublishReview = const Value.absent(),
+    this.githubAuthMode = const Value.absent(),
+    this.githubAppId = const Value.absent(),
     this.position = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
@@ -577,6 +668,8 @@ class WorkspacesTableCompanion extends UpdateCompanion<WorkspacesTableData> {
     this.secretExcludeGlobs = const Value.absent(),
     this.reviewConcurrency = const Value.absent(),
     this.autoPublishReview = const Value.absent(),
+    this.githubAuthMode = const Value.absent(),
+    this.githubAppId = const Value.absent(),
     this.position = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
@@ -592,6 +685,8 @@ class WorkspacesTableCompanion extends UpdateCompanion<WorkspacesTableData> {
     Expression<String>? secretExcludeGlobs,
     Expression<int>? reviewConcurrency,
     Expression<bool>? autoPublishReview,
+    Expression<String>? githubAuthMode,
+    Expression<String>? githubAppId,
     Expression<int>? position,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
@@ -607,6 +702,8 @@ class WorkspacesTableCompanion extends UpdateCompanion<WorkspacesTableData> {
         'secret_exclude_globs': secretExcludeGlobs,
       if (reviewConcurrency != null) 'review_concurrency': reviewConcurrency,
       if (autoPublishReview != null) 'auto_publish_review': autoPublishReview,
+      if (githubAuthMode != null) 'github_auth_mode': githubAuthMode,
+      if (githubAppId != null) 'github_app_id': githubAppId,
       if (position != null) 'position': position,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
@@ -623,6 +720,8 @@ class WorkspacesTableCompanion extends UpdateCompanion<WorkspacesTableData> {
     Value<String>? secretExcludeGlobs,
     Value<int>? reviewConcurrency,
     Value<bool>? autoPublishReview,
+    Value<String>? githubAuthMode,
+    Value<String>? githubAppId,
     Value<int>? position,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
@@ -637,6 +736,8 @@ class WorkspacesTableCompanion extends UpdateCompanion<WorkspacesTableData> {
       secretExcludeGlobs: secretExcludeGlobs ?? this.secretExcludeGlobs,
       reviewConcurrency: reviewConcurrency ?? this.reviewConcurrency,
       autoPublishReview: autoPublishReview ?? this.autoPublishReview,
+      githubAuthMode: githubAuthMode ?? this.githubAuthMode,
+      githubAppId: githubAppId ?? this.githubAppId,
       position: position ?? this.position,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -669,6 +770,12 @@ class WorkspacesTableCompanion extends UpdateCompanion<WorkspacesTableData> {
     if (autoPublishReview.present) {
       map['auto_publish_review'] = Variable<bool>(autoPublishReview.value);
     }
+    if (githubAuthMode.present) {
+      map['github_auth_mode'] = Variable<String>(githubAuthMode.value);
+    }
+    if (githubAppId.present) {
+      map['github_app_id'] = Variable<String>(githubAppId.value);
+    }
     if (position.present) {
       map['position'] = Variable<int>(position.value);
     }
@@ -697,6 +804,8 @@ class WorkspacesTableCompanion extends UpdateCompanion<WorkspacesTableData> {
           ..write('secretExcludeGlobs: $secretExcludeGlobs, ')
           ..write('reviewConcurrency: $reviewConcurrency, ')
           ..write('autoPublishReview: $autoPublishReview, ')
+          ..write('githubAuthMode: $githubAuthMode, ')
+          ..write('githubAppId: $githubAppId, ')
           ..write('position: $position, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
@@ -9325,6 +9434,8 @@ typedef $$WorkspacesTableTableCreateCompanionBuilder =
       Value<String> secretExcludeGlobs,
       Value<int> reviewConcurrency,
       Value<bool> autoPublishReview,
+      Value<String> githubAuthMode,
+      Value<String> githubAppId,
       Value<int> position,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
@@ -9340,6 +9451,8 @@ typedef $$WorkspacesTableTableUpdateCompanionBuilder =
       Value<String> secretExcludeGlobs,
       Value<int> reviewConcurrency,
       Value<bool> autoPublishReview,
+      Value<String> githubAuthMode,
+      Value<String> githubAppId,
       Value<int> position,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
@@ -9388,6 +9501,16 @@ class $$WorkspacesTableTableFilterComposer
 
   ColumnFilters<bool> get autoPublishReview => $composableBuilder(
     column: $table.autoPublishReview,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get githubAuthMode => $composableBuilder(
+    column: $table.githubAuthMode,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get githubAppId => $composableBuilder(
+    column: $table.githubAppId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -9456,6 +9579,16 @@ class $$WorkspacesTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get githubAuthMode => $composableBuilder(
+    column: $table.githubAuthMode,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get githubAppId => $composableBuilder(
+    column: $table.githubAppId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get position => $composableBuilder(
     column: $table.position,
     builder: (column) => ColumnOrderings(column),
@@ -9512,6 +9645,16 @@ class $$WorkspacesTableTableAnnotationComposer
 
   GeneratedColumn<bool> get autoPublishReview => $composableBuilder(
     column: $table.autoPublishReview,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get githubAuthMode => $composableBuilder(
+    column: $table.githubAuthMode,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get githubAppId => $composableBuilder(
+    column: $table.githubAppId,
     builder: (column) => column,
   );
 
@@ -9572,6 +9715,8 @@ class $$WorkspacesTableTableTableManager
                 Value<String> secretExcludeGlobs = const Value.absent(),
                 Value<int> reviewConcurrency = const Value.absent(),
                 Value<bool> autoPublishReview = const Value.absent(),
+                Value<String> githubAuthMode = const Value.absent(),
+                Value<String> githubAppId = const Value.absent(),
                 Value<int> position = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
@@ -9585,6 +9730,8 @@ class $$WorkspacesTableTableTableManager
                 secretExcludeGlobs: secretExcludeGlobs,
                 reviewConcurrency: reviewConcurrency,
                 autoPublishReview: autoPublishReview,
+                githubAuthMode: githubAuthMode,
+                githubAppId: githubAppId,
                 position: position,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
@@ -9600,6 +9747,8 @@ class $$WorkspacesTableTableTableManager
                 Value<String> secretExcludeGlobs = const Value.absent(),
                 Value<int> reviewConcurrency = const Value.absent(),
                 Value<bool> autoPublishReview = const Value.absent(),
+                Value<String> githubAuthMode = const Value.absent(),
+                Value<String> githubAppId = const Value.absent(),
                 Value<int> position = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
@@ -9613,6 +9762,8 @@ class $$WorkspacesTableTableTableManager
                 secretExcludeGlobs: secretExcludeGlobs,
                 reviewConcurrency: reviewConcurrency,
                 autoPublishReview: autoPublishReview,
+                githubAuthMode: githubAuthMode,
+                githubAppId: githubAppId,
                 position: position,
                 createdAt: createdAt,
                 updatedAt: updatedAt,

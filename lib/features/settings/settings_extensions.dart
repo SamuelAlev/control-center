@@ -31,8 +31,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// set small — a slot per page is a registry, a slot per gap is a plugin
 /// framework nobody asked for.
 enum SettingsSlot {
-  /// Settings → You → Profile & identity, after the built-in identity cards.
-  userProfile,
+  /// Settings → Workspace → Profile & identity, after the built-in identity
+  /// cards (name, email, git author).
+  workspaceProfile,
 
   /// Settings → Workspace → General, after the built-in workspace cards.
   workspaceGeneral,

@@ -28,7 +28,7 @@ and the server receives the credential — no callback URL, no port, nothing to
 expose. Available whenever the server has a client id, which an official build
 already ships.
 
-1. Go to **Settings → You → Profile & identity → Code hosting** (or the first
+1. Go to **Settings → Workspace → Profile & identity → Code hosting** (or the first
    step of onboarding)
 2. On the **GitHub** row, click **Sign in with GitHub**
 3. A dialog shows an eight-character code and opens
@@ -45,9 +45,11 @@ polling until the code expires (about 15 minutes), so the sign-in still lands.
 The fallback when the server has no app, when the app is not installed on an
 account you need, or when you would simply rather use a PAT.
 
-1. Go to **Settings → You → Profile & identity → Code hosting**
+1. Go to **Settings → Workspace → Profile & identity → Code hosting**
 2. On the **GitHub** row, click **Add token**
-3. Paste a token with `repo` and `read:org` and save
+3. Paste a token with `repo` and `read:org` (classic) and save. A **fine-grained**
+   token needs repository **Contents** and **Pull requests** (read and write),
+   plus **Checks** and **Actions** (read).
 
 The token is probed as it is stored, so the row can name the account it belongs
 to. Click **Disconnect** to remove it.
@@ -131,6 +133,12 @@ app's settings (General → Device flow) and try again.
 
 You have not signed in; what you are seeing is the server's app identity
 answering. Click **Sign in with GitHub** on that row.
+
+### A fine-grained PAT shows no merge button or check status
+
+The token needs **Contents** and **Pull requests** (read and write), plus
+**Checks** and **Actions** (read). After changing it, paste it again under
+Code hosting.
 
 ### Adding a repo is rejected
 

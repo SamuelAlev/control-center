@@ -1129,7 +1129,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get calendarSettingsDescription =>
-      'Hubungkan akun Google untuk menyinkronkan acara ke ruang kerja ini.';
+      'Hubungkan akun Google untuk menyinkronkan acara ke ruang kerja ini. Kalender ini milik Anda di sini.';
 
   @override
   String get calendarConnecting => 'Menghubungkan…';
@@ -6999,7 +6999,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get connectGitHubHint =>
-      'Masuk ke GitHub atau tambahkan token di Settings → You → Profile & identity → Code hosting';
+      'Masuk ke GitHub atau tambahkan token di Settings → Ruang kerja → Profile & identity → Code hosting';
 
   @override
   String get connectGitHubToLoadPrs =>
@@ -7485,6 +7485,43 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get preview => 'Pratinjau';
+
+  @override
+  String get imageDiffBefore => 'Sebelum';
+
+  @override
+  String get imageDiffAfter => 'Sesudah';
+
+  @override
+  String get imageDiffModeTwoUp => 'Berdampingan';
+
+  @override
+  String get imageDiffModeSwipe => 'Geser';
+
+  @override
+  String get imageDiffModeDifference => 'Perbedaan';
+
+  @override
+  String imageDiffChangedPercent(String percent) {
+    return '$percent% berubah';
+  }
+
+  @override
+  String get imageDiffPictures => 'Gambar';
+
+  @override
+  String get imageDiffSource => 'Sumber';
+
+  @override
+  String get imageDiffDeleted => 'Dihapus';
+
+  @override
+  String get imageDiffAdded => 'Ditambahkan';
+
+  @override
+  String imageDiffDimensions(int width, int height) {
+    return 'L: ${width}px | T: ${height}px';
+  }
 
   @override
   String get outdated => 'Usang';
@@ -9560,7 +9597,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get profileSectionDescription =>
-      'Cara Anda tampil kepada rekan tim dan dalam kepenulisan commit git.';
+      'Bagaimana Anda tampil bagi tim dan kepenulisan commit git di ruang kerja ini. Bidang kosong mewarisi nama dan email akun.';
 
   @override
   String get displayNameLabel => 'Nama tampilan';
@@ -12140,7 +12177,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get settingsProfileDescription =>
-      'Nama, email, dan identitas git yang dicap pada commit yang dibuat untuk Anda.';
+      'Nama, email, dan identitas git Anda di ruang kerja ini. Mengganti ruang mengganti overlay ini; handle, masuk, dan perangkat tetap di akun.';
 
   @override
   String get settingsServerConnectionDescription =>
@@ -12156,6 +12193,10 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get settingsWorkspaceGeneralDescription =>
       'Identitas, kebijakan, dan konvensi yang dibagikan semua orang di ruang kerja ini.';
+
+  @override
+  String get settingsWorkspaceMeetingsDescription =>
+      'Templat catatan dan suara tersimpan untuk rapat di ruang kerja ini.';
 
   @override
   String get settingsWorkspacePolicyLabel => 'Kebijakan ruang kerja';
@@ -12737,7 +12778,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get providerAppsDescription =>
-      'Cara server ini mengautentikasi sebagai dirinya sendiri, dan lewat apa orang masuk. Pekerjaan latar belakang — webhook, polling, sinkronisasi — berjalan di aplikasi, bukan di token seseorang.';
+      'Ruang kerja mewarisi GitHub App ini kecuali memilih App lain atau token akses pribadi. Pekerjaan latar belakang — webhook, polling, sinkronisasi — berjalan di app, bukan token seseorang.';
 
   @override
   String get providerAppId => 'Id aplikasi';
@@ -13126,14 +13167,14 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get providerAppsGroupServerDescription =>
-      'Memungkinkan pekerjaan latar belakang menjangkau repositori tanpa manusia di balik permintaan: webhook, polling pull request, sinkronisasi tiket.';
+      'Untuk ruang kerja yang mewarisi GitHub App instalasi ini. Ruang dengan App atau PAT sendiri diatur di Ruang kerja → Umum.';
 
   @override
   String get providerAppsGroupPrConversations => 'Percakapan pull request';
 
   @override
   String get providerAppsGroupPrConversationsDescription =>
-      'Cara pengembang berbicara dengan server ini langsung di GitHub. Berfungsi tanpa webhook atau URL publik — server melakukan polling.';
+      'Cara pengembang berbicara dengan server ini di GitHub pada ruang yang mewarisi. Ruang dengan App sendiri punya bot di Ruang kerja → Umum. Tanpa webhook atau URL publik — server melakukan polling.';
 
   @override
   String get providerAppBotLogin => 'Login bot';
@@ -14521,4 +14562,49 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get rigClipboardAlwaysCopyDescription =>
       'Letakkan konten papan klip dari lingkungan mana pun di perangkat ini tanpa bertanya.';
+
+  @override
+  String get workspaceGitHubIdentity => 'Identitas GitHub';
+
+  @override
+  String get workspaceGitHubIdentityDescription =>
+      'Cara pekerjaan GitHub latar belakang mengautentikasi di ruang kerja ini. Mewarisi App instalasi, App lain, atau hanya token akses pribadi.';
+
+  @override
+  String get workspaceGitHubModeInherit => 'Gunakan GitHub App instalasi ini';
+
+  @override
+  String get workspaceGitHubModeApp => 'Gunakan GitHub App lain';
+
+  @override
+  String get workspaceGitHubModePat => 'Hanya token akses pribadi';
+
+  @override
+  String get workspaceGitHubInheritHint =>
+      'Menggunakan GitHub App di Server → Aplikasi penyedia.';
+
+  @override
+  String get workspaceGitHubAppHint =>
+      'Identitas bot dan polling ruang kerja ini. Anggota masuk di Anda melalui App ini.';
+
+  @override
+  String get workspaceGitHubPatLabel => 'Token latar belakang';
+
+  @override
+  String get workspaceGitHubPatDescription =>
+      'Untuk polling dan agen di ruang kerja ini. Bukan token profil anggota.';
+
+  @override
+  String get workspaceGitHubHasPat => 'Token latar belakang tersimpan.';
+
+  @override
+  String get workspaceGitHubNoPat => 'Tidak ada token latar belakang.';
+
+  @override
+  String get profileOverlayHint =>
+      'Bidang ini adalah Anda di ruang kerja ini. Bidang kosong mewarisi nama dan email akun. Mengganti ruang kerja mengganti overlay ini.';
+
+  @override
+  String get forgeConnectionsThisWorkspace =>
+      'Masuk atau tempel token untuk ruang kerja ini.';
 }

@@ -2,6 +2,7 @@ import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/core/domain/entities/message.dart';
 import 'package:cc_domain/core/domain/repositories/user_repository.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
+import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
 import 'package:cc_domain/features/pr_review/domain/ports/review_finding_status_port.dart';
 import 'package:cc_domain/features/pr_review/domain/repositories/pr_review_repository.dart';
 import 'package:cc_domain/features/pr_review/domain/value_objects/pending_review_comment.dart';
@@ -177,6 +178,33 @@ List<RepoOp> buildPrReviewOps({
           (ctx.args['run_id'] as num).toInt(),
         );
         return {'graph': ?(graph == null ? null : workflowGraphToWire(graph))};
+      },
+    ),
+    RepoOp(
+      name: 'pr_review.resolveImageDiff',
+      kind: RepoOpKind.read,
+      requiredArgs: ['owner', 'repo', 'path', 'base_ref', 'head_ref', 'status'],
+      handler: (ctx) async {
+        final c = requireRepoCoords(ctx.args);
+        final repo = await resolvePrReviewRepository(
+          ctx.workspaceId!,
+          c.owner,
+          c.repo,
+          userId: ctx.userId,
+        );
+        final previous = ctx.args['previous_path'];
+        final result = await repo.resolveImageDiff(
+          path: ctx.args['path'] as String,
+          previousPath: previous is String && previous.isNotEmpty
+              ? previous
+              : null,
+          baseRef: ctx.args['base_ref'] as String,
+          headRef: ctx.args['head_ref'] as String,
+          status: PrFileStatusExtension.fromString(
+            ctx.args['status'] as String? ?? 'modified',
+          ),
+        );
+        return result.toJson();
       },
     ),
     RepoOp(

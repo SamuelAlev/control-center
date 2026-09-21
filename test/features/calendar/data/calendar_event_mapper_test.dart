@@ -11,6 +11,7 @@ void main() {
         CalendarAccountsTableData(
           id: 'acc-1',
           workspaceId: 'ws-A',
+          userId: 'u-1',
           providerId: 'google',
           accountEmail: 'a@x.com',
           authExpiredAt: authExpiredAt,
@@ -22,6 +23,7 @@ void main() {
       final account = mapper.accountToDomain(row());
       expect(account.authExpiredAt, isNull);
       expect(account.needsReauth, isFalse);
+      expect(account.userId, 'u-1');
     });
 
     test('carries authExpiredAt through so needsReauth is true', () {

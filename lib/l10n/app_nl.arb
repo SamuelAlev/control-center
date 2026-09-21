@@ -438,7 +438,7 @@
   "calendarRsvpFailed": "Kon je reactie niet bijwerken",
   "calendarAddAccount": "Agenda-account toevoegen",
   "calendarSettingsTitle": "Google Agenda",
-  "calendarSettingsDescription": "Verbind een Google-account om afspraken in deze werkruimte te synchroniseren.",
+  "calendarSettingsDescription": "Koppel een Google-account om gebeurtenissen naar deze werkruimte te synchroniseren. Deze agenda's zijn hier van jou.",
   "calendarConnecting": "Verbinden…",
   "calendarSyncNow": "Nu synchroniseren",
   "calendarNoWorkspace": "Selecteer een werkruimte om de agenda te bekijken",
@@ -3856,7 +3856,7 @@
   "agentQuestionSkippedLabel": "Overgeslagen",
   "agentQuestionFreeformOptionHint": "Beschrijf het in je eigen woorden…",
   "reviewRequested": "Review aangevraagd",
-  "connectGitHubHint": "Log in bij GitHub of voeg een token toe in Instellingen → Jij → Profiel en identiteit → Codehosting",
+  "connectGitHubHint": "Log in bij GitHub of voeg een token toe in Instellingen → Werkruimte → Profiel en identiteit → Codehosting",
   "connectGitHubToLoadPrs": "Verbind GitHub om pull requests te laden",
   "noRepositoriesConfigured": "Geen repository's geconfigureerd",
   "openedAgo": "Geopend {age}",
@@ -4753,7 +4753,7 @@
   },
   "deviceNeverSeen": "Nooit verbonden",
   "profileSectionLabel": "Profiel",
-  "profileSectionDescription": "Hoe je verschijnt voor teamgenoten en in git-commit-auteurschap.",
+  "profileSectionDescription": "Hoe je voor het team en in git-commit-auteurschap in deze werkruimte verschijnt. Lege velden erven naam en e-mail van het account.",
   "displayNameLabel": "Weergavenaam",
   "emailLabel": "E-mail",
   "gitAuthorNameLabel": "Git-auteursnaam",
@@ -6719,11 +6719,12 @@
   "settingsScopeBadgeDevice": "DIT APPARAAT",
   "settingsScopeBadgeWorkspace": "WERKRUIMTE",
   "settingsScopeBadgeServer": "SERVER",
-  "settingsProfileDescription": "Je naam, e-mail en de git-identiteit die op commits namens jou komt te staan.",
+  "settingsProfileDescription": "Je naam, e-mail en git-identiteit in deze werkruimte. Van werkruimte wisselen wisselt deze overlay; handle, aanmelden en apparaten blijven op het account.",
   "settingsServerConnectionDescription": "Met welke server deze client verbinding maakt en hoe deze server wordt gedeeld (mDNS, tunnels, relay).",
   "settingsAboutDescription": "Build-identiteit en updates.",
   "settingsDiagnosticsDescription": "Isolatie, indexering, synchronisatie, logging en crashrapportage van deze installatie.",
   "settingsWorkspaceGeneralDescription": "Identiteit, beleid en conventies die iedereen in deze werkruimte deelt.",
+  "settingsWorkspaceMeetingsDescription": "Notitiesjablonen en opgeslagen stemmen voor vergaderingen in deze werkruimte.",
   "settingsWorkspacePolicyLabel": "Werkruimtebeleid",
   "settingsWorkspacePolicyDescription": "Geldt voor elk lid en elke agent in deze werkruimte.",
   "settingsSecretGlobsLabel": "Uitgesloten geheime paden",
@@ -6991,7 +6992,7 @@
   "ticketProviderLocal": "Lokaal",
   "addKey": "Sleutel toevoegen",
   "providerApps": "Provider-apps",
-  "providerAppsDescription": "Hoe deze server zichzelf authenticeert, en waarmee iemand inlogt. Achtergrondwerk — webhooks, polling, synchronisatie — loopt via de app, nooit via iemands token.",
+  "providerAppsDescription": "Werkruimten erven deze GitHub App tenzij ze een andere App of een persoonlijk toegangstoken kiezen. Achtergrondwerk — webhooks, polling, sync — draait op de app, nooit op iemands token.",
   "providerAppId": "App-id",
   "providerPrivateKey": "Privésleutel",
   "providerClientId": "Client-id",
@@ -7130,12 +7131,12 @@
   "shortTaskDescription": "Doet kort achtergrondwerk zoals titels en samenvattingen. Een kleiner model past hier.",
   "settingsStateFailed": "Mislukt",
   "providerAppsGroupServer": "Handelen als de server",
-  "providerAppsGroupServerDescription": "Laat achtergrondwerk repositories bereiken zonder mens achter het verzoek: webhooks, pull request-polling, ticketsynchronisatie.",
+  "providerAppsGroupServerDescription": "Voor werkruimten die de GitHub App van deze installatie erven. Een werkruimte met eigen App of PAT wordt ingesteld onder Werkruimte → Algemeen.",
   "providerAppsGroupPrConversations": "Pullrequest-gesprekken",
   "@providerAppsGroupPrConversations": {
     "description": "Settings group: how developers talk to the server on GitHub PRs"
   },
-  "providerAppsGroupPrConversationsDescription": "Hoe ontwikkelaars direct op GitHub met deze server kunnen praten. Werkt zonder webhook en zonder openbare URL — de server pollt periodiek.",
+  "providerAppsGroupPrConversationsDescription": "Hoe ontwikkelaars met deze server op GitHub praten in ervende werkruimten. Een werkruimte met eigen App heeft zijn bot onder Werkruimte → Algemeen. Werkt zonder webhook of openbare URL — de server polt.",
   "@providerAppsGroupPrConversationsDescription": {
     "description": "Settings group description for the PR-conversations group"
   },
@@ -7782,5 +7783,75 @@
   "rigClipboardAlwaysPasteTitle": "Plakken in omgevingen altijd toestaan",
   "rigClipboardAlwaysPasteDescription": "Stuur het klembord van dit apparaat zonder vragen naar elke omgeving.",
   "rigClipboardAlwaysCopyTitle": "Kopiëren uit omgevingen altijd toestaan",
-  "rigClipboardAlwaysCopyDescription": "Plaats klembordinhoud uit elke omgeving zonder vragen op dit apparaat."
+  "rigClipboardAlwaysCopyDescription": "Plaats klembordinhoud uit elke omgeving zonder vragen op dit apparaat.",
+  "imageDiffBefore": "Voor",
+  "@imageDiffBefore":   {
+    "description": "Label for the base (before) side of a PR image diff"
+  },
+  "imageDiffAfter": "Na",
+  "@imageDiffAfter":   {
+    "description": "Label for the head (after) side of a PR image diff"
+  },
+  "imageDiffModeTwoUp": "Naast elkaar",
+  "@imageDiffModeTwoUp":   {
+    "description": "Side-by-side comparison mode for a PR image diff"
+  },
+  "imageDiffModeSwipe": "Vegen",
+  "@imageDiffModeSwipe":   {
+    "description": "Swipe-divider comparison mode for a PR image diff"
+  },
+  "imageDiffModeDifference": "Verschil",
+  "@imageDiffModeDifference":   {
+    "description": "Pixel overlay comparison mode for a PR image diff"
+  },
+  "imageDiffChangedPercent": "{percent}% gewijzigd",
+  "@imageDiffChangedPercent":   {
+    "description": "Caption showing how much of a PR image pair differs",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "imageDiffPictures": "Afbeeldingen",
+  "@imageDiffPictures":   {
+    "description": "Header toggle to show SVG as pictures instead of XML hunks"
+  },
+  "imageDiffSource": "Bron",
+  "@imageDiffSource":   {
+    "description": "Header toggle to show an SVG file's XML source diff"
+  },
+  "imageDiffDeleted": "Verwijderd",
+  "@imageDiffDeleted": {
+    "description": "Label for the removed (before) side of a PR image asset comparison"
+  },
+  "imageDiffAdded": "Toegevoegd",
+  "@imageDiffAdded": {
+    "description": "Label for the added (after) side of a PR image asset comparison"
+  },
+  "imageDiffDimensions": "B: {width}px | H: {height}px",
+  "@imageDiffDimensions": {
+    "description": "Intrinsic pixel size caption under a PR image-diff asset",
+    "placeholders": {
+      "width": {
+        "type": "int"
+      },
+      "height": {
+        "type": "int"
+      }
+    }
+  },
+  "workspaceGitHubIdentity": "GitHub-identiteit",
+  "workspaceGitHubIdentityDescription": "Hoe achtergrondwerk op GitHub in deze werkruimte authenticert. De App van deze installatie overnemen, een andere App gebruiken, of alleen een persoonlijk toegangstoken.",
+  "workspaceGitHubModeInherit": "GitHub App van deze installatie gebruiken",
+  "workspaceGitHubModeApp": "Een andere GitHub App gebruiken",
+  "workspaceGitHubModePat": "Alleen persoonlijk toegangstoken",
+  "workspaceGitHubInheritHint": "Gebruikt de GitHub App onder Server → Provider-apps.",
+  "workspaceGitHubAppHint": "Bot- en polling-identiteit van deze werkruimte. Leden melden zich aan bij Jij via deze App.",
+  "workspaceGitHubPatLabel": "Achtergrondtoken",
+  "workspaceGitHubPatDescription": "Voor polling en agenten in deze werkruimte. Niet het profieltoken van een lid.",
+  "workspaceGitHubHasPat": "Er is een achtergrondtoken opgeslagen.",
+  "workspaceGitHubNoPat": "Geen achtergrondtoken opgeslagen.",
+  "profileOverlayHint": "Deze velden ben jij in deze werkruimte. Lege velden erven naam en e-mail van het account. Van werkruimte wisselen wisselt deze overlay.",
+  "forgeConnectionsThisWorkspace": "Meld je aan of plak een token voor deze werkruimte."
 }

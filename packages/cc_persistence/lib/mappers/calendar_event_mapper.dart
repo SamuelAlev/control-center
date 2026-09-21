@@ -37,6 +37,7 @@ class CalendarEventMapper {
     return CalendarAccount(
       id: row.id,
       workspaceId: row.workspaceId,
+      userId: row.userId,
       providerId: row.providerId,
       accountEmail: row.accountEmail,
       displayName: row.displayName,

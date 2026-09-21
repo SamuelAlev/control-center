@@ -45,6 +45,24 @@ void main() {
     ]);
   });
 
+  test('profile & identity lives under Workspace, not You', () {
+    expect(
+      kSettingsNav
+          .firstWhere((g) => g.scope == SettingScope.user)
+          .items
+          .map((e) => e.id),
+      isNot(contains('you.profile')),
+    );
+    expect(
+      kSettingsNav
+          .firstWhere((g) => g.scope == SettingScope.workspace)
+          .items
+          .first
+          .id,
+      'workspace.profile',
+    );
+  });
+
   group('scope namespacing', () {
     /// Strips the `/workspaces/<id>` prefix, leaving the logical settings path.
     String logical(String route) =>

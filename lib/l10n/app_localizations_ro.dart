@@ -1144,7 +1144,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get calendarSettingsDescription =>
-      'Conectează un cont Google ca să sincronizezi evenimentele în acest spațiu de lucru.';
+      'Conectează un cont Google pentru a sincroniza evenimentele în acest spațiu. Aceste calendare sunt ale tale aici.';
 
   @override
   String get calendarConnecting => 'Se conectează…';
@@ -7060,7 +7060,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get connectGitHubHint =>
-      'Autentifică-te pe GitHub sau adaugă un token în Setări → Tu → Profil și identitate → Găzduire cod';
+      'Autentifică-te pe GitHub sau adaugă un token în Setări → Spațiu de lucru → Profil și identitate → Găzduire cod';
 
   @override
   String get connectGitHubToLoadPrs =>
@@ -7553,6 +7553,43 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get preview => 'Previzualizare';
+
+  @override
+  String get imageDiffBefore => 'Înainte';
+
+  @override
+  String get imageDiffAfter => 'După';
+
+  @override
+  String get imageDiffModeTwoUp => 'Una lângă alta';
+
+  @override
+  String get imageDiffModeSwipe => 'Glisează';
+
+  @override
+  String get imageDiffModeDifference => 'Diferență';
+
+  @override
+  String imageDiffChangedPercent(String percent) {
+    return '$percent% modificat';
+  }
+
+  @override
+  String get imageDiffPictures => 'Imagini';
+
+  @override
+  String get imageDiffSource => 'Sursă';
+
+  @override
+  String get imageDiffDeleted => 'Șters';
+
+  @override
+  String get imageDiffAdded => 'Adăugat';
+
+  @override
+  String imageDiffDimensions(int width, int height) {
+    return 'L: ${width}px | Î: ${height}px';
+  }
 
   @override
   String get outdated => 'Învechit';
@@ -9646,7 +9683,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get profileSectionDescription =>
-      'Cum apari față de colegi și în autoratul commit-urilor git.';
+      'Cum apari echipei și în autoratul commit-urilor git în acest spațiu. Câmpurile goale moștenesc numele și e-mailul contului.';
 
   @override
   String get displayNameLabel => 'Nume afișat';
@@ -12255,7 +12292,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsProfileDescription =>
-      'Numele, emailul și identitatea git stampilată pe commit-urile făcute pentru tine.';
+      'Numele, e-mailul și identitatea git în acest spațiu. Schimbarea spațiului schimbă această suprapunere; identificatorul, autentificarea și dispozitivele rămân pe cont.';
 
   @override
   String get settingsServerConnectionDescription =>
@@ -12272,6 +12309,10 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get settingsWorkspaceGeneralDescription =>
       'Identitate, politică și convenții partajate de toți din acest spațiu de lucru.';
+
+  @override
+  String get settingsWorkspaceMeetingsDescription =>
+      'Șabloane de note și voci salvate pentru întâlnirile din acest spațiu de lucru.';
 
   @override
   String get settingsWorkspacePolicyLabel => 'Politică spațiu de lucru';
@@ -12859,7 +12900,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get providerAppsDescription =>
-      'Cum se autentifică acest server ca el însuși și prin ce se autentifică o persoană. Munca de fundal — webhook-uri, polling, sincronizare — rulează pe aplicație, niciodată pe tokenul unei persoane.';
+      'Spațiile moștenesc acest GitHub App decât dacă aleg alt App sau un token de acces personal. Munca din fundal — webhook-uri, interogare, sync — rulează pe app, niciodată pe tokenul unei persoane.';
 
   @override
   String get providerAppId => 'App id';
@@ -13250,14 +13291,14 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get providerAppsGroupServerDescription =>
-      'Permite muncii de fundal să atingă depozite fără un om în spatele cererii: webhook-uri, polling de pull request-uri, sincronizare tichete.';
+      'Pentru spațiile care moștenesc GitHub App-ul acestei instalații. Un spațiu cu App sau PAT propriu se configurează în Spațiu de lucru → General.';
 
   @override
   String get providerAppsGroupPrConversations => 'Conversații de pull request';
 
   @override
   String get providerAppsGroupPrConversationsDescription =>
-      'Cum pot vorbi dezvoltatorii cu acest server direct pe GitHub. Funcționează fără webhook sau URL public — serverul face polling.';
+      'Cum vorbesc dezvoltatorii cu acest server pe GitHub în spațiile moștenite. Un spațiu cu App propriu își are botul în Spațiu de lucru → General. Funcționează fără webhook sau URL public — serverul interoghează.';
 
   @override
   String get providerAppBotLogin => 'Login bot';
@@ -14659,4 +14700,50 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get rigClipboardAlwaysCopyDescription =>
       'Puneți conținutul clipboardului din orice mediu pe acest dispozitiv fără confirmare.';
+
+  @override
+  String get workspaceGitHubIdentity => 'Identitate GitHub';
+
+  @override
+  String get workspaceGitHubIdentityDescription =>
+      'Cum se autentifică munca GitHub din fundal în acest spațiu de lucru. Moștenește App-ul instalației, folosește alt App sau doar un token de acces personal.';
+
+  @override
+  String get workspaceGitHubModeInherit =>
+      'Folosește GitHub App-ul acestei instalații';
+
+  @override
+  String get workspaceGitHubModeApp => 'Folosește un alt GitHub App';
+
+  @override
+  String get workspaceGitHubModePat => 'Doar token de acces personal';
+
+  @override
+  String get workspaceGitHubInheritHint =>
+      'Folosește GitHub App-ul din Server → Aplicații furnizor.';
+
+  @override
+  String get workspaceGitHubAppHint =>
+      'Identitatea de bot și de interogare a acestui spațiu. Membrii se autentifică în Tu prin acest App.';
+
+  @override
+  String get workspaceGitHubPatLabel => 'Token de fundal';
+
+  @override
+  String get workspaceGitHubPatDescription =>
+      'Pentru interogare și agenți în acest spațiu. Nu este tokenul de profil al unui membru.';
+
+  @override
+  String get workspaceGitHubHasPat => 'Un token de fundal este stocat.';
+
+  @override
+  String get workspaceGitHubNoPat => 'Niciun token de fundal stocat.';
+
+  @override
+  String get profileOverlayHint =>
+      'Aceste câmpuri ești tu în acest spațiu. Câmpurile goale moștenesc numele și e-mailul contului. Schimbarea spațiului schimbă această suprapunere.';
+
+  @override
+  String get forgeConnectionsThisWorkspace =>
+      'Autentifică-te sau lipește un token pentru acest spațiu de lucru.';
 }

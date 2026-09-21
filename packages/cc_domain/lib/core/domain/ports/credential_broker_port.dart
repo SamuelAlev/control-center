@@ -52,6 +52,7 @@ abstract interface class CredentialBrokerPort {
     String? repoOwner,
     String? repoName,
     String? actingUserId,
+    String? workspaceId,
   });
 
   /// Revokes a previously-minted grant. Idempotent.

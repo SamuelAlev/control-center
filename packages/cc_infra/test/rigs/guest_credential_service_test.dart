@@ -23,6 +23,7 @@ class _FakeBroker implements CredentialBrokerPort {
     String? repoOwner,
     String? repoName,
     String? actingUserId,
+    String? workspaceId,
   }) async {
     if (fail) {
       throw StateError('no credential available');

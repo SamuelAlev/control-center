@@ -438,7 +438,7 @@
   "calendarRsvpFailed": "Antwort konnte nicht aktualisiert werden",
   "calendarAddAccount": "Kalenderkonto hinzufügen",
   "calendarSettingsTitle": "Google Calendar",
-  "calendarSettingsDescription": "Verbinde ein Google-Konto, um Termine in diesen Workspace zu synchronisieren.",
+  "calendarSettingsDescription": "Verbinde ein Google-Konto, um Termine in diesen Workspace zu synchronisieren. Diese Kalender gehören hier dir.",
   "calendarConnecting": "Verbinden…",
   "calendarSyncNow": "Jetzt synchronisieren",
   "calendarNoWorkspace": "Wähle einen Workspace, um seinen Kalender zu sehen",
@@ -3850,7 +3850,7 @@
   "agentQuestionSkippedLabel": "Übersprungen",
   "agentQuestionFreeformOptionHint": "In eigenen Worten beschreiben…",
   "reviewRequested": "Review angefragt",
-  "connectGitHubHint": "Melde dich bei GitHub an oder füge ein Token unter Einstellungen → Du → Profil und Identität → Code-Hosting hinzu",
+  "connectGitHubHint": "Melde dich bei GitHub an oder füge ein Token unter Einstellungen → Arbeitsbereich → Profil und Identität → Code-Hosting hinzu",
   "connectGitHubToLoadPrs": "GitHub verbinden, um Pull Requests zu laden",
   "noRepositoriesConfigured": "Keine Repositories konfiguriert",
   "openedAgo": "Geöffnet {age}",
@@ -4745,7 +4745,7 @@
   },
   "deviceNeverSeen": "Nie verbunden",
   "profileSectionLabel": "Profil",
-  "profileSectionDescription": "So erscheinen Sie für Teammitglieder und in der Git-Commit-Urheberschaft.",
+  "profileSectionDescription": "Wie du fürs Team und in der Git-Commit-Autorschaft in diesem Workspace erscheinst. Leere Felder erben Name und E-Mail deines Kontos.",
   "displayNameLabel": "Anzeigename",
   "emailLabel": "E-Mail",
   "gitAuthorNameLabel": "Git-Autorname",
@@ -6711,11 +6711,12 @@
   "settingsScopeBadgeDevice": "DIESES GERÄT",
   "settingsScopeBadgeWorkspace": "ARBEITSBEREICH",
   "settingsScopeBadgeServer": "SERVER",
-  "settingsProfileDescription": "Dein Name, deine E-Mail und die Git-Identität, die auf Commits in deinem Namen steht.",
+  "settingsProfileDescription": "Dein Name, E-Mail und Git-Identität in diesem Workspace. Ein Wechsel des Workspace wechselt dieses Overlay; Handle, Anmeldung und Geräte bleiben am Konto.",
   "settingsServerConnectionDescription": "Der Server, mit dem dieser Client spricht, und wie dieser Server geteilt wird (mDNS, Tunnel, Relay).",
   "settingsAboutDescription": "Build-Identität und Updates.",
   "settingsDiagnosticsDescription": "Isolation, Indizierung, Synchronisierung, Logging und Absturzberichte dieser Installation.",
   "settingsWorkspaceGeneralDescription": "Identität, Richtlinien und Konventionen, die alle in diesem Arbeitsbereich teilen.",
+  "settingsWorkspaceMeetingsDescription": "Notizvorlagen und gespeicherte Stimmen für Meetings in diesem Arbeitsbereich.",
   "settingsWorkspacePolicyLabel": "Arbeitsbereichs-Richtlinien",
   "settingsWorkspacePolicyDescription": "Gilt für jedes Mitglied und jeden Agenten in diesem Arbeitsbereich.",
   "settingsSecretGlobsLabel": "Ausgeschlossene Geheimnispfade",
@@ -6983,7 +6984,7 @@
   "ticketProviderLocal": "Lokal",
   "addKey": "Schlüssel hinzufügen",
   "providerApps": "Anbieter-Apps",
-  "providerAppsDescription": "Wie sich dieser Server selbst authentifiziert und womit sich eine Person anmeldet. Hintergrundarbeit — Webhooks, Polling, Sync — läuft über die App, nie über das Token einer Person.",
+  "providerAppsDescription": "Workspaces erben diese GitHub-App, sofern sie nicht eine andere App oder nur ein persönliches Zugriffstoken wählen. Hintergrundarbeit — Webhooks, Polling, Sync — läuft auf der App, nie auf dem Token einer Person.",
   "providerAppId": "App-ID",
   "providerPrivateKey": "Privater Schlüssel",
   "providerClientId": "Client-ID",
@@ -7122,12 +7123,12 @@
   "shortTaskDescription": "Erledigt kurze Hintergrundarbeit wie Titel und Zusammenfassungen. Hier passt ein kleineres Modell.",
   "settingsStateFailed": "Fehlgeschlagen",
   "providerAppsGroupServer": "Als Server handeln",
-  "providerAppsGroupServerDescription": "Ermöglicht Hintergrundarbeiten den Zugriff auf Repositories ohne Person hinter der Anfrage: Webhooks, Pull-Request-Abfragen, Ticket-Abgleich.",
+  "providerAppsGroupServerDescription": "Für Workspaces, die die GitHub-App dieser Installation erben. Ein Workspace mit eigener App oder einem PAT konfiguriert das unter Workspace → Allgemein.",
   "providerAppsGroupPrConversations": "Pull-Request-Konversationen",
   "@providerAppsGroupPrConversations": {
     "description": "Settings group: how developers talk to the server on GitHub PRs"
   },
-  "providerAppsGroupPrConversationsDescription": "Wie Entwickler direkt auf GitHub mit diesem Server sprechen können. Funktioniert ohne Webhook und ohne öffentliche URL — der Server fragt regelmäßig ab.",
+  "providerAppsGroupPrConversationsDescription": "Wie Entwickler auf GitHub in erbenden Workspaces mit diesem Server sprechen. Ein Workspace mit eigener App hat seinen Bot unter Workspace → Allgemein. Funktioniert ohne Webhook oder öffentliche URL — der Server pollt.",
   "@providerAppsGroupPrConversationsDescription": {
     "description": "Settings group description for the PR-conversations group"
   },
@@ -7774,5 +7775,75 @@
   "rigClipboardAlwaysPasteTitle": "Einfügen in Umgebungen immer erlauben",
   "rigClipboardAlwaysPasteDescription": "Die Zwischenablage dieses Geräts ohne Nachfrage an eine beliebige Umgebung senden.",
   "rigClipboardAlwaysCopyTitle": "Kopieren aus Umgebungen immer erlauben",
-  "rigClipboardAlwaysCopyDescription": "Inhalte der Zwischenablage aus einer beliebigen Umgebung ohne Nachfrage auf diesem Gerät ablegen."
+  "rigClipboardAlwaysCopyDescription": "Inhalte der Zwischenablage aus einer beliebigen Umgebung ohne Nachfrage auf diesem Gerät ablegen.",
+  "imageDiffBefore": "Vorher",
+  "@imageDiffBefore":   {
+    "description": "Label for the base (before) side of a PR image diff"
+  },
+  "imageDiffAfter": "Nachher",
+  "@imageDiffAfter":   {
+    "description": "Label for the head (after) side of a PR image diff"
+  },
+  "imageDiffModeTwoUp": "Nebeneinander",
+  "@imageDiffModeTwoUp":   {
+    "description": "Side-by-side comparison mode for a PR image diff"
+  },
+  "imageDiffModeSwipe": "Wischen",
+  "@imageDiffModeSwipe":   {
+    "description": "Swipe-divider comparison mode for a PR image diff"
+  },
+  "imageDiffModeDifference": "Differenz",
+  "@imageDiffModeDifference":   {
+    "description": "Pixel overlay comparison mode for a PR image diff"
+  },
+  "imageDiffChangedPercent": "{percent} % geändert",
+  "@imageDiffChangedPercent":   {
+    "description": "Caption showing how much of a PR image pair differs",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "imageDiffPictures": "Bilder",
+  "@imageDiffPictures":   {
+    "description": "Header toggle to show SVG as pictures instead of XML hunks"
+  },
+  "imageDiffSource": "Quelltext",
+  "@imageDiffSource":   {
+    "description": "Header toggle to show an SVG file's XML source diff"
+  },
+  "imageDiffDeleted": "Gelöscht",
+  "@imageDiffDeleted": {
+    "description": "Label for the removed (before) side of a PR image asset comparison"
+  },
+  "imageDiffAdded": "Hinzugefügt",
+  "@imageDiffAdded": {
+    "description": "Label for the added (after) side of a PR image asset comparison"
+  },
+  "imageDiffDimensions": "B: {width}px | H: {height}px",
+  "@imageDiffDimensions": {
+    "description": "Intrinsic pixel size caption under a PR image-diff asset",
+    "placeholders": {
+      "width": {
+        "type": "int"
+      },
+      "height": {
+        "type": "int"
+      }
+    }
+  },
+  "workspaceGitHubIdentity": "GitHub-Identität",
+  "workspaceGitHubIdentityDescription": "Wie Hintergrund-GitHub-Arbeit in diesem Workspace sich authentifiziert. Die App dieser Installation erben, eine andere App nutzen oder nur ein persönliches Zugriffstoken.",
+  "workspaceGitHubModeInherit": "GitHub-App dieser Installation verwenden",
+  "workspaceGitHubModeApp": "Eine andere GitHub-App verwenden",
+  "workspaceGitHubModePat": "Nur persönliches Zugriffstoken",
+  "workspaceGitHubInheritHint": "Verwendet die GitHub-App unter Server → Anbieter-Apps.",
+  "workspaceGitHubAppHint": "Bot- und Polling-Identität dieses Workspace. Mitglieder melden sich unter Du über diese App an.",
+  "workspaceGitHubPatLabel": "Hintergrund-Token",
+  "workspaceGitHubPatDescription": "Für Polling und Agenten in diesem Workspace. Nicht das Profil-Token eines Mitglieds.",
+  "workspaceGitHubHasPat": "Ein Hintergrund-Token ist gespeichert.",
+  "workspaceGitHubNoPat": "Kein Hintergrund-Token gespeichert.",
+  "profileOverlayHint": "Diese Felder bist du in diesem Workspace. Leere Felder erben Name und E-Mail deines Kontos. Ein Workspace-Wechsel wechselt dieses Overlay.",
+  "forgeConnectionsThisWorkspace": "Melde dich an oder füge ein Token für diesen Workspace ein."
 }

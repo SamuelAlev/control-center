@@ -4,24 +4,19 @@ import 'package:control_center/features/settings/settings_extensions.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:flutter/widgets.dart';
 
-/// Settings → You → Profile & identity.
+/// Settings → Workspace → Profile & identity.
 ///
-/// Who you are and what you are connected as: your display name and email, the
-/// git identity stamped on commits made on your behalf, your GitHub
-/// credentials, your calendar accounts and the link between your chat account
-/// and your user.
-///
-/// This used to be spread across the "Accounts" page under "Integrations",
-/// which stacked four scopes in five consecutive cards — your profile, your
-/// per-device credentials, the workspace's sync health and the workspace's
-/// chat-bridge setup — with nothing to tell them apart. The two workspace cards
-/// moved to Workspace → General; everything personal is here.
+/// Who you are in this workspace: display name, email, the git identity
+/// stamped on commits made on your behalf, your GitHub credentials, your
+/// calendar accounts and the link between your chat account and your user.
+/// Switching workspace switches this overlay; handle, sign-in and devices
+/// stay on the account (You → Your devices).
 ///
 /// The calendar and chat-account cards are not listed here: `calendar` and
-/// `chat_bridges` contribute them to [SettingsSlot.userProfile] themselves. The
-/// chat one renders only its "link my account" half — connecting the Slack app
-/// and customizing the bot is workspace administration and stays on the
-/// workspace page, and that split is the contributing feature's call to make.
+/// `chat_bridges` contribute them to [SettingsSlot.workspaceProfile]
+/// themselves. The chat one renders only its "link my account" half —
+/// connecting the Slack app and customizing the bot is workspace
+/// administration and stays on Workspace → General.
 class ProfileSettingsScreen extends StatelessWidget {
   /// Creates a [ProfileSettingsScreen].
   const ProfileSettingsScreen({super.key});
@@ -32,7 +27,7 @@ class ProfileSettingsScreen extends StatelessWidget {
     return SettingsPage(
       title: l10n.settingsProfile,
       subtitle: l10n.settingsProfileDescription,
-      slot: SettingsSlot.userProfile,
+      slot: SettingsSlot.workspaceProfile,
       // The forge card is CONTRIBUTED by `forge` (`forge.connections`) rather
       // than named here — settings owns the page, not the integrations on it.
       // Ticketing's vendor lives on Workspace → General: where tickets live is

@@ -504,7 +504,7 @@
   "calendarRsvpFailed": "Δεν ήταν δυνατή η ενημέρωση της απάντησής σας",
   "calendarAddAccount": "Προσθήκη λογαριασμού ημερολογίου",
   "calendarSettingsTitle": "Google Calendar",
-  "calendarSettingsDescription": "Συνδέστε λογαριασμό Google για συγχρονισμό γεγονότων σε αυτόν τον χώρο εργασίας.",
+  "calendarSettingsDescription": "Συνδέστε λογαριασμό Google για συγχρονισμό εκδηλώσεων σε αυτόν τον χώρο. Αυτά τα ημερολόγια είναι δικά σας εδώ.",
   "calendarConnecting": "Σύνδεση…",
   "calendarSyncNow": "Συγχρονισμός τώρα",
   "calendarNoWorkspace": "Επιλέξτε χώρο εργασίας για να δείτε το ημερολόγιό του",
@@ -3949,7 +3949,7 @@
   "agentQuestionSkippedLabel": "Παραλείφθηκε",
   "agentQuestionFreeformOptionHint": "Περιγράψτε με δικά σας λόγια…",
   "reviewRequested": "Ζητήθηκε ανασκόπηση",
-  "connectGitHubHint": "Συνδεθείτε στο GitHub ή προσθέστε token στις Ρυθμίσεις → Εσείς → Προφίλ και ταυτότητα → Φιλοξενία κώδικα",
+  "connectGitHubHint": "Συνδεθείτε στο GitHub ή προσθέστε token στις Ρυθμίσεις → Χώρος εργασίας → Προφίλ και ταυτότητα → Φιλοξενία κώδικα",
   "connectGitHubToLoadPrs": "Συνδέστε το GitHub για φόρτωση pull requests",
   "noRepositoriesConfigured": "Δεν έχουν ρυθμιστεί αποθετήρια",
   "openedAgo": "Άνοιξε {age}",
@@ -5499,7 +5499,7 @@
   },
   "deviceNeverSeen": "Δεν συνδέθηκε ποτέ",
   "profileSectionLabel": "Προφίλ",
-  "profileSectionDescription": "Πώς εμφανίζεστε στους συνεργάτες και στη συγγραφή git commit.",
+  "profileSectionDescription": "Πώς εμφανίζεστε στην ομάδα και στη συγγραφή git commit σε αυτόν τον χώρο. Τα κενά κληρονομούν όνομα και email του λογαριασμού.",
   "displayNameLabel": "Εμφανιζόμενο όνομα",
   "emailLabel": "Email",
   "gitAuthorNameLabel": "Όνομα συγγραφέα Git",
@@ -7270,11 +7270,12 @@
   "settingsScopeBadgeDevice": "ΑΥΤΗ Η ΣΥΣΚΕΥΗ",
   "settingsScopeBadgeWorkspace": "ΧΩΡΟΣ ΕΡΓΑΣΙΑΣ",
   "settingsScopeBadgeServer": "ΔΙΑΚΟΜΙΣΤΗΣ",
-  "settingsProfileDescription": "Το όνομα, το email και η ταυτότητα git που σφραγίζεται στα commit που γίνονται για εσάς.",
+  "settingsProfileDescription": "Το όνομα, το email και η ταυτότητα git σας σε αυτόν τον χώρο. Η αλλαγή χώρου αλλάζει αυτή την επικάλυψη· το αναγνωριστικό, η σύνδεση και οι συσκευές μένουν στον λογαριασμό.",
   "settingsServerConnectionDescription": "Με ποιον διακομιστή μιλά αυτός ο πελάτης και πώς κοινοποιείται αυτός ο διακομιστής (mDNS, σήραγγες, αναμετάδοση).",
   "settingsAboutDescription": "Ταυτότητα έκδοσης και ενημερώσεις.",
   "settingsDiagnosticsDescription": "Απομόνωση, ευρετηρίαση, συγχρονισμός, καταγραφή και αναφορά σφαλμάτων για αυτή την εγκατάσταση.",
   "settingsWorkspaceGeneralDescription": "Ταυτότητα, πολιτική και συμβάσεις που μοιράζονται όλοι σε αυτόν τον χώρο εργασίας.",
+  "settingsWorkspaceMeetingsDescription": "Πρότυπα σημειώσεων και αποθηκευμένες φωνές για τις συσκέψεις αυτού του χώρου εργασίας.",
   "settingsWorkspacePolicyLabel": "Πολιτική χώρου εργασίας",
   "settingsWorkspacePolicyDescription": "Ισχύει για κάθε μέλος και κάθε πράκτορα σε αυτόν τον χώρο εργασίας.",
   "settingsSecretGlobsLabel": "Εξαιρέσεις διαδρομών μυστικών",
@@ -7608,7 +7609,7 @@
   "ticketProviderLocal": "Τοπικό",
   "addKey": "Προσθήκη κλειδιού",
   "providerApps": "Εφαρμογές παρόχων",
-  "providerAppsDescription": "Πώς αυτός ο διακομιστής αυθεντικοποιείται ως ο εαυτός του και μέσω τίνος συνδέεται ένα άτομο. Η εργασία παρασκηνίου — webhook, δημοσκόπηση, συγχρονισμός — τρέχει στην εφαρμογή, ποτέ στο token ενός ατόμου.",
+  "providerAppsDescription": "Οι χώροι εργασίας κληρονομούν αυτό το GitHub App εκτός αν επιλέξουν άλλο App ή προσωπικό διακριτικό. Η εργασία στο παρασκήνιο — webhooks, polling, sync — τρέχει στην εφαρμογή, ποτέ στο διακριτικό ενός ατόμου.",
   "providerAppId": "ID εφαρμογής",
   "providerPrivateKey": "Ιδιωτικό κλειδί",
   "providerClientId": "Client id",
@@ -7757,9 +7758,9 @@
   "shortTaskDescription": "Τρέχει γρήγορη εργασία παρασκηνίου όπως τίτλους και περιλήψεις. Ένα μικρότερο μοντέλο ανήκει εδώ.",
   "settingsStateFailed": "Απέτυχε",
   "providerAppsGroupServer": "Ενέργεια ως διακομιστής",
-  "providerAppsGroupServerDescription": "Επιτρέπει στην εργασία παρασκηνίου να φτάνει αποθετήρια χωρίς άνθρωπο πίσω από το αίτημα: webhook, δημοσκόπηση pull request, συγχρονισμός εισιτηρίων.",
+  "providerAppsGroupServerDescription": "Για χώρους που κληρονομούν το GitHub App αυτής της εγκατάστασης. Ένας χώρος με δικό του App ή PAT ρυθμίζεται στο Χώρος εργασίας → Γενικά.",
   "providerAppsGroupPrConversations": "Συνομιλίες pull request",
-  "providerAppsGroupPrConversationsDescription": "Πώς μπορούν οι προγραμματιστές να μιλήσουν απευθείας σε αυτόν τον διακομιστή στο GitHub. Λειτουργεί χωρίς webhook ή δημόσιο URL — ο διακομιστής κάνει δημοσκόπηση.",
+  "providerAppsGroupPrConversationsDescription": "Πώς μιλούν οι προγραμματιστές σε αυτόν τον διακομιστή στο GitHub σε κληρονομούμενους χώρους. Ένας χώρος με δικό του App έχει bot στο Χώρος εργασίας → Γενικά. Χωρίς webhook ή δημόσιο URL — ο διακομιστής κάνει polling.",
   "providerAppBotLogin": "Σύνδεση bot",
   "providerAppBotLoginEmpty": "Δοκιμάστε τη σύνδεση για επίλυση της σύνδεσης bot.",
   "providerAppAskOnGitHub": "Ερώτηση στο GitHub",
@@ -8589,5 +8590,75 @@
   "rigClipboardAlwaysPasteTitle": "Να επιτρέπεται πάντα η επικόλληση σε περιβάλλοντα",
   "rigClipboardAlwaysPasteDescription": "Αποστολή του προχείρου αυτής της συσκευής σε οποιοδήποτε περιβάλλον χωρίς ερώτηση.",
   "rigClipboardAlwaysCopyTitle": "Να επιτρέπεται πάντα η αντιγραφή από περιβάλλοντα",
-  "rigClipboardAlwaysCopyDescription": "Τοποθέτηση περιεχομένου προχείρου από οποιοδήποτε περιβάλλον σε αυτήν τη συσκευή χωρίς ερώτηση."
+  "rigClipboardAlwaysCopyDescription": "Τοποθέτηση περιεχομένου προχείρου από οποιοδήποτε περιβάλλον σε αυτήν τη συσκευή χωρίς ερώτηση.",
+  "imageDiffBefore": "Πριν",
+  "@imageDiffBefore":   {
+    "description": "Label for the base (before) side of a PR image diff"
+  },
+  "imageDiffAfter": "Μετά",
+  "@imageDiffAfter":   {
+    "description": "Label for the head (after) side of a PR image diff"
+  },
+  "imageDiffModeTwoUp": "Δίπλα",
+  "@imageDiffModeTwoUp":   {
+    "description": "Side-by-side comparison mode for a PR image diff"
+  },
+  "imageDiffModeSwipe": "Σύρετε",
+  "@imageDiffModeSwipe":   {
+    "description": "Swipe-divider comparison mode for a PR image diff"
+  },
+  "imageDiffModeDifference": "Διαφορά",
+  "@imageDiffModeDifference":   {
+    "description": "Pixel overlay comparison mode for a PR image diff"
+  },
+  "imageDiffChangedPercent": "Άλλαξε {percent}%",
+  "@imageDiffChangedPercent":   {
+    "description": "Caption showing how much of a PR image pair differs",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "imageDiffPictures": "Εικόνες",
+  "@imageDiffPictures":   {
+    "description": "Header toggle to show SVG as pictures instead of XML hunks"
+  },
+  "imageDiffSource": "Πηγή",
+  "@imageDiffSource":   {
+    "description": "Header toggle to show an SVG file's XML source diff"
+  },
+  "imageDiffDeleted": "Διαγράφηκε",
+  "@imageDiffDeleted": {
+    "description": "Label for the removed (before) side of a PR image asset comparison"
+  },
+  "imageDiffAdded": "Προστέθηκε",
+  "@imageDiffAdded": {
+    "description": "Label for the added (after) side of a PR image asset comparison"
+  },
+  "imageDiffDimensions": "Π: {width}px | Υ: {height}px",
+  "@imageDiffDimensions": {
+    "description": "Intrinsic pixel size caption under a PR image-diff asset",
+    "placeholders": {
+      "width": {
+        "type": "int"
+      },
+      "height": {
+        "type": "int"
+      }
+    }
+  },
+  "workspaceGitHubIdentity": "Ταυτότητα GitHub",
+  "workspaceGitHubIdentityDescription": "Πώς πιστοποιείται η εργασία GitHub στο παρασκήνιο σε αυτόν τον χώρο εργασίας. Κληρονομιά του App της εγκατάστασης, άλλο App ή μόνο προσωπικό διακριτικό πρόσβασης.",
+  "workspaceGitHubModeInherit": "Χρήση του GitHub App αυτής της εγκατάστασης",
+  "workspaceGitHubModeApp": "Χρήση διαφορετικού GitHub App",
+  "workspaceGitHubModePat": "Μόνο προσωπικό διακριτικό πρόσβασης",
+  "workspaceGitHubInheritHint": "Χρησιμοποιεί το GitHub App στο Διακομιστής → Εφαρμογές παρόχων.",
+  "workspaceGitHubAppHint": "Ταυτότητα bot και polling αυτού του χώρου. Τα μέλη συνδέονται στο Εσείς μέσω αυτού του App.",
+  "workspaceGitHubPatLabel": "Διακριτικό παρασκηνίου",
+  "workspaceGitHubPatDescription": "Για polling και πράκτορες σε αυτόν τον χώρο. Όχι το διακριτικό προφίλ ενός μέλους.",
+  "workspaceGitHubHasPat": "Υπάρχει αποθηκευμένο διακριτικό παρασκηνίου.",
+  "workspaceGitHubNoPat": "Δεν υπάρχει διακριτικό παρασκηνίου.",
+  "profileOverlayHint": "Αυτά τα πεδία είστε εσείς σε αυτόν τον χώρο. Τα κενά κληρονομούν όνομα και email του λογαριασμού. Η αλλαγή χώρου αλλάζει αυτή την επικάλυψη.",
+  "forgeConnectionsThisWorkspace": "Συνδεθείτε ή επικολλήστε διακριτικό για αυτόν τον χώρο εργασίας."
 }

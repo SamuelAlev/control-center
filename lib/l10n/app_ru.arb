@@ -504,7 +504,7 @@
   "calendarRsvpFailed": "Не удалось обновить ответ",
   "calendarAddAccount": "Добавить аккаунт календаря",
   "calendarSettingsTitle": "Google Calendar",
-  "calendarSettingsDescription": "Подключите аккаунт Google, чтобы синхронизировать события в это рабочее пространство.",
+  "calendarSettingsDescription": "Подключите аккаунт Google, чтобы синхронизировать события в это пространство. Эти календари здесь ваши.",
   "calendarConnecting": "Подключение…",
   "calendarSyncNow": "Синхронизировать",
   "calendarNoWorkspace": "Выберите рабочее пространство, чтобы просмотреть его календарь",
@@ -3949,7 +3949,7 @@
   "agentQuestionSkippedLabel": "Пропущено",
   "agentQuestionFreeformOptionHint": "Опишите своими словами…",
   "reviewRequested": "Запрошено ревью",
-  "connectGitHubHint": "Войдите в GitHub или добавьте токен в Настройки → Вы → Профиль и идентичность → Хостинг кода",
+  "connectGitHubHint": "Войдите в GitHub или добавьте токен в Настройки → Рабочее пространство → Профиль и идентичность → Хостинг кода",
   "connectGitHubToLoadPrs": "Подключите GitHub, чтобы загружать pull request",
   "noRepositoriesConfigured": "Репозитории не настроены",
   "openedAgo": "Открыт {age}",
@@ -5499,7 +5499,7 @@
   },
   "deviceNeverSeen": "Никогда не подключалось",
   "profileSectionLabel": "Профиль",
-  "profileSectionDescription": "Как вас видят коллеги и как вы указываетесь автором git-коммитов.",
+  "profileSectionDescription": "Как вас видит команда и авторство git-коммитов в этом пространстве. Пустые поля наследуют имя и почту аккаунта.",
   "displayNameLabel": "Отображаемое имя",
   "emailLabel": "Email",
   "gitAuthorNameLabel": "Имя автора Git",
@@ -7270,11 +7270,12 @@
   "settingsScopeBadgeDevice": "ЭТО УСТРОЙСТВО",
   "settingsScopeBadgeWorkspace": "РАБОЧЕЕ ПРОСТРАНСТВО",
   "settingsScopeBadgeServer": "СЕРВЕР",
-  "settingsProfileDescription": "Ваше имя, email и git-идентичность в коммитах, которые создаются от вашего имени.",
+  "settingsProfileDescription": "Ваше имя, почта и git-идентичность в этом пространстве. Смена пространства меняет этот слой; ник, вход и устройства остаются на аккаунте.",
   "settingsServerConnectionDescription": "К какому серверу подключается этот клиент и как сервер доступен (mDNS, туннели, relay).",
   "settingsAboutDescription": "Идентичность сборки и обновления.",
   "settingsDiagnosticsDescription": "Изоляция, индексирование, синхронизация, журналирование и отчёты о сбоях для этой установки.",
   "settingsWorkspaceGeneralDescription": "Идентичность, политика и соглашения, общие для всех в этом рабочем пространстве.",
+  "settingsWorkspaceMeetingsDescription": "Шаблоны заметок и сохранённые голоса для встреч в этом рабочем пространстве.",
   "settingsWorkspacePolicyLabel": "Политика рабочего пространства",
   "settingsWorkspacePolicyDescription": "Действует для всех участников и всех агентов в этом рабочем пространстве.",
   "settingsSecretGlobsLabel": "Исключения секретных путей",
@@ -7608,7 +7609,7 @@
   "ticketProviderLocal": "Локальный",
   "addKey": "Добавить ключ",
   "providerApps": "Приложения провайдера",
-  "providerAppsDescription": "Как этот сервер аутентифицируется от своего имени и через что входит человек. Фоновая работа — вебхуки, опрос, синхронизация — идёт через приложение, а не через токен человека.",
+  "providerAppsDescription": "Пространства наследуют это GitHub App, если не выберут другое App или персональный токен. Фоновая работа — вебхуки, опрос, синхронизация — идёт на приложении, никогда на токене человека.",
   "providerAppId": "ID приложения",
   "providerPrivateKey": "Закрытый ключ",
   "providerClientId": "ID клиента",
@@ -7757,9 +7758,9 @@
   "shortTaskDescription": "Выполняет быструю фоновую работу: заголовки и сводки. Сюда подходит меньшая модель.",
   "settingsStateFailed": "Сбой",
   "providerAppsGroupServer": "В роли сервера",
-  "providerAppsGroupServerDescription": "Позволяет фоновой работе обращаться к репозиториям без человека за запросом: вебхуки, опрос pull request, синхронизация тикетов.",
+  "providerAppsGroupServerDescription": "Для пространств, которые наследуют GitHub App этой установки. Пространство со своим App или PAT настраивается в Пространство → Общие.",
   "providerAppsGroupPrConversations": "Беседы в pull request",
-  "providerAppsGroupPrConversationsDescription": "Как разработчики могут обращаться к этому серверу прямо на GitHub. Работает без вебхука и публичного URL — сервер сам опрашивает.",
+  "providerAppsGroupPrConversationsDescription": "Как разработчики говорят с этим сервером на GitHub в наследующих пространствах. У пространства со своим App свой бот в Пространство → Общие. Без вебхука и публичного URL — сервер опрашивает.",
   "providerAppBotLogin": "Логин бота",
   "providerAppBotLoginEmpty": "Проверьте подключение, чтобы узнать логин бота.",
   "providerAppAskOnGitHub": "Обращения на GitHub",
@@ -8589,5 +8590,75 @@
   "rigClipboardAlwaysPasteTitle": "Всегда разрешать вставку в среды",
   "rigClipboardAlwaysPasteDescription": "Отправлять буфер обмена этого устройства в любую среду без запроса.",
   "rigClipboardAlwaysCopyTitle": "Всегда разрешать копирование из сред",
-  "rigClipboardAlwaysCopyDescription": "Помещать содержимое буфера обмена из любой среды на это устройство без запроса."
+  "rigClipboardAlwaysCopyDescription": "Помещать содержимое буфера обмена из любой среды на это устройство без запроса.",
+  "imageDiffBefore": "До",
+  "@imageDiffBefore":   {
+    "description": "Label for the base (before) side of a PR image diff"
+  },
+  "imageDiffAfter": "После",
+  "@imageDiffAfter":   {
+    "description": "Label for the head (after) side of a PR image diff"
+  },
+  "imageDiffModeTwoUp": "Рядом",
+  "@imageDiffModeTwoUp":   {
+    "description": "Side-by-side comparison mode for a PR image diff"
+  },
+  "imageDiffModeSwipe": "Свайп",
+  "@imageDiffModeSwipe":   {
+    "description": "Swipe-divider comparison mode for a PR image diff"
+  },
+  "imageDiffModeDifference": "Разница",
+  "@imageDiffModeDifference":   {
+    "description": "Pixel overlay comparison mode for a PR image diff"
+  },
+  "imageDiffChangedPercent": "изменено {percent} %",
+  "@imageDiffChangedPercent":   {
+    "description": "Caption showing how much of a PR image pair differs",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "imageDiffPictures": "Изображения",
+  "@imageDiffPictures":   {
+    "description": "Header toggle to show SVG as pictures instead of XML hunks"
+  },
+  "imageDiffSource": "Исходник",
+  "@imageDiffSource":   {
+    "description": "Header toggle to show an SVG file's XML source diff"
+  },
+  "imageDiffDeleted": "Удалено",
+  "@imageDiffDeleted": {
+    "description": "Label for the removed (before) side of a PR image asset comparison"
+  },
+  "imageDiffAdded": "Добавлено",
+  "@imageDiffAdded": {
+    "description": "Label for the added (after) side of a PR image asset comparison"
+  },
+  "imageDiffDimensions": "Ш: {width}px | В: {height}px",
+  "@imageDiffDimensions": {
+    "description": "Intrinsic pixel size caption under a PR image-diff asset",
+    "placeholders": {
+      "width": {
+        "type": "int"
+      },
+      "height": {
+        "type": "int"
+      }
+    }
+  },
+  "workspaceGitHubIdentity": "Идентичность GitHub",
+  "workspaceGitHubIdentityDescription": "Как фоновая работа с GitHub проходит проверку в этом пространстве. Наследовать App установки, использовать другой App или только персональный токен доступа.",
+  "workspaceGitHubModeInherit": "Использовать GitHub App этой установки",
+  "workspaceGitHubModeApp": "Использовать другой GitHub App",
+  "workspaceGitHubModePat": "Только персональный токен доступа",
+  "workspaceGitHubInheritHint": "Использует GitHub App в Сервер → Приложения провайдеров.",
+  "workspaceGitHubAppHint": "Идентичность бота и опроса этого пространства. Участники входят в «Вы» через это App.",
+  "workspaceGitHubPatLabel": "Фоновый токен",
+  "workspaceGitHubPatDescription": "Для опроса и агентов в этом пространстве. Это не токен профиля участника.",
+  "workspaceGitHubHasPat": "Фоновый токен сохранён.",
+  "workspaceGitHubNoPat": "Фоновый токен не сохранён.",
+  "profileOverlayHint": "Эти поля — вы в этом пространстве. Пустые поля наследуют имя и почту аккаунта. Смена пространства меняет этот слой.",
+  "forgeConnectionsThisWorkspace": "Войдите или вставьте токен для этого пространства."
 }

@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/check_run.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/commit_status.dart';
@@ -438,6 +440,19 @@ class BitbucketForgePrClient implements ForgePrClient {
     String ref, {
     Object? cancelToken,
   }) => _client.getFileContent(
+    owner,
+    repo,
+    path,
+    ref,
+    cancelToken: _token(cancelToken),
+  );
+
+  @override
+  Future<Uint8List> getFileBytes(
+    String path,
+    String ref, {
+    Object? cancelToken,
+  }) => _client.getFileBytes(
     owner,
     repo,
     path,

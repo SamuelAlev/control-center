@@ -3,32 +3,96 @@ import 'package:cc_domain/cc_domain.dart' show PullRequestDto, RpcErrorCodes;
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
+import 'package:control_center/di/demo_providers.dart';
+import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/repos/providers/repo_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+/// No backing space for this PR, and the host will not mint one.
+///
+/// `pr.ensureSpace` provisions a worktree, so a demo (and an older host that
+/// never shipped the verb) refuses it. Chat then looks up a seeded
+/// review-space association by repo + number instead; if none exists there is
+/// nothing to open.
+final class PrSpaceUnavailable implements Exception {
+  /// Creates a [PrSpaceUnavailable].
+  const PrSpaceUnavailable();
+
+  @override
+  String toString() => 'No review space for this pull request';
+}
 
 /// Ensures a PR has a backing space (chat/terminal/files hang off it) and
 /// returns its space id. Idempotent server-side (`pr.ensureSpace`): the
 /// first call creates the space, links the review-space association and
 /// kicks off provisioning of the repo worktree at the PR head; later calls
 /// return the same space. Keyed by PR node id.
+///
+/// A demo never calls the verb: it seeds the association (and refuses
+/// provisioning), so this resolves off `review_space.watchByWorkspace`
+/// matched by repo + number — forge node ids on the fixture and the
+/// association are not the same string.
 final prSpaceProvider = FutureProvider.autoDispose.family<String, PullRequest>((
   ref,
   pr,
 ) async {
-  final client = ref.watch(rpcClientProvider);
-  final data = await client.call('pr.ensureSpace', {
-    'repo_full_name': pr.repoFullName,
-    'pr_number': pr.number,
-    'pr_external_id': pr.externalId,
-    'title': pr.title,
-  });
-  final spaceId = data['space_id'] as String?;
-  if (spaceId == null || spaceId.isEmpty) {
-    throw StateError('pr.ensureSpace returned no space_id');
+  if (ref.watch(isDemoServerProvider)) {
+    final existing = await _existingPrSpaceId(ref, pr);
+    if (existing != null) {
+      return existing;
+    }
+    throw const PrSpaceUnavailable();
   }
-  return spaceId;
+
+  final client = ref.watch(rpcClientProvider);
+  try {
+    final data = await client.call('pr.ensureSpace', {
+      'repo_full_name': pr.repoFullName,
+      'pr_number': pr.number,
+      'pr_external_id': pr.externalId,
+      'title': pr.title,
+    });
+    final spaceId = data['space_id'] as String?;
+    if (spaceId == null || spaceId.isEmpty) {
+      throw StateError('pr.ensureSpace returned no space_id');
+    }
+    return spaceId;
+  } on RemoteRpcException catch (e) {
+    if (e.code == RpcErrorCodes.opUnknown) {
+      final existing = await _existingPrSpaceId(ref, pr);
+      if (existing != null) {
+        return existing;
+      }
+      throw const PrSpaceUnavailable();
+    }
+    rethrow;
+  }
 });
+
+/// The seeded (or already-linked) space for [pr], matched by repo + number.
+///
+/// Not by forge id: `PullRequest.externalId` is a GraphQL node id on the
+/// demo fixtures (`PR_412`) while the association the seeder writes is
+/// keyed off `detail.id` (`4120001`), and REST-fetched PRs often have an
+/// empty external id. Repo + number is what the review tab already uses
+/// for the same reason.
+Future<String?> _existingPrSpaceId(Ref ref, PullRequest pr) async {
+  final workspaceId = ref.watch(activeWorkspaceIdProvider);
+  if (workspaceId == null) {
+    return null;
+  }
+  final all = await ref
+      .watch(reviewSpaceRepositoryProvider)
+      .watchByWorkspace(workspaceId)
+      .first;
+  for (final a in all) {
+    if (a.repoFullName == pr.repoFullName && a.prNumber == pr.number) {
+      return a.spaceId;
+    }
+  }
+  return null;
+}
 
 /// Resolves the workspace repo id for a PR's `owner/repo`, or null when the
 /// active workspace / linked repo can't be resolved. Shared by the PR file and

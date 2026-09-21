@@ -275,6 +275,7 @@ class CalendarAccount {
   const CalendarAccount({
     required this.id,
     required this.workspaceId,
+    this.userId = '',
     required this.providerId,
     required this.accountEmail,
     this.displayName,
@@ -287,6 +288,10 @@ class CalendarAccount {
 
   /// Owning workspace.
   final String workspaceId;
+
+  /// The member who connected this account. Empty on legacy workspace-pool
+  /// rows predating per-user calendar ownership.
+  final String userId;
 
   /// Provider id (`google`).
   final String providerId;
@@ -310,12 +315,14 @@ class CalendarAccount {
 
   /// Returns a copy with the given fields replaced.
   CalendarAccount copyWith({
+    String? userId,
     String? displayName,
     DateTime? lastSyncedAt,
     DateTime? authExpiredAt,
   }) => CalendarAccount(
     id: id,
     workspaceId: workspaceId,
+    userId: userId ?? this.userId,
     providerId: providerId,
     accountEmail: accountEmail,
     displayName: displayName ?? this.displayName,
@@ -329,6 +336,7 @@ class CalendarAccount {
       other is CalendarAccount &&
           id == other.id &&
           workspaceId == other.workspaceId &&
+          userId == other.userId &&
           providerId == other.providerId &&
           accountEmail == other.accountEmail &&
           displayName == other.displayName &&
@@ -339,6 +347,7 @@ class CalendarAccount {
   int get hashCode => Object.hash(
     id,
     workspaceId,
+    userId,
     providerId,
     accountEmail,
     displayName,

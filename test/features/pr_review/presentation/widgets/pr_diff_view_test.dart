@@ -356,7 +356,7 @@ void main() {
       expect(toggledViewed, true);
     });
 
-    testWidgets('renders binary file message', (tester) async {
+    testWidgets('renders image diff body for a binary raster', (tester) async {
       final files = [
         _testFile(
           filename: 'image.png',
@@ -370,10 +370,72 @@ void main() {
       await tester.pumpWidget(
         _wrapSlivers(PrDiffView(files: files, comments: const [])),
       );
+      await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      // A file with an empty patch renders its header without crash.
       expect(find.text('image.png'), findsOneWidget);
+      expect(find.byKey(const Key('image-diff-body')), findsOneWidget);
+    });
+
+    testWidgets('SVG with a text patch offers pictures/source toggle', (
+      tester,
+    ) async {
+      final files = [
+        _testFile(
+          filename: 'icon.svg',
+          patch: '@@ -1,1 +1,1 @@\n-<svg/>\n+<svg></svg>\n',
+          status: PrFileStatus.modified,
+          additions: 1,
+          deletions: 1,
+        ),
+      ];
+
+      await tester.pumpWidget(
+        _wrapSlivers(PrDiffView(files: files, comments: const [])),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('Pictures'), findsOneWidget);
+      expect(find.text('Source'), findsOneWidget);
+      expect(find.byKey(const Key('image-diff-body')), findsOneWidget);
+
+      await tester.tap(find.text('Source'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.byKey(const Key('image-diff-body')), findsNothing);
+    });
+
+    testWidgets('file-level comment opens on an image with no code rows', (
+      tester,
+    ) async {
+      final controller = _createController();
+      final files = [
+        _testFile(
+          filename: 'image.png',
+          patch: '',
+          status: PrFileStatus.modified,
+          additions: 0,
+          deletions: 0,
+        ),
+      ];
+
+      await tester.pumpWidget(
+        _wrapSlivers(
+          PrDiffView(
+            files: files,
+            comments: const [],
+            inlineCommentsController: controller,
+            showToolbar: false,
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await tester.tap(find.byIcon(AppIcons.messageSquarePlus));
+      await tester.pump();
+      expect(find.byType(PrCommentComposer), findsOneWidget);
     });
 
     testWidgets('renders added and removed status chips', (tester) async {

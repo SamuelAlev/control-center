@@ -1143,7 +1143,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get calendarSettingsDescription =>
-      'Verbinde ein Google-Konto, um Termine in diesen Workspace zu synchronisieren.';
+      'Verbinde ein Google-Konto, um Termine in diesen Workspace zu synchronisieren. Diese Kalender gehören hier dir.';
 
   @override
   String get calendarConnecting => 'Verbinden…';
@@ -7047,7 +7047,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get connectGitHubHint =>
-      'Melde dich bei GitHub an oder füge ein Token unter Einstellungen → Du → Profil und Identität → Code-Hosting hinzu';
+      'Melde dich bei GitHub an oder füge ein Token unter Einstellungen → Arbeitsbereich → Profil und Identität → Code-Hosting hinzu';
 
   @override
   String get connectGitHubToLoadPrs =>
@@ -7532,6 +7532,43 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get preview => 'Vorschau';
+
+  @override
+  String get imageDiffBefore => 'Vorher';
+
+  @override
+  String get imageDiffAfter => 'Nachher';
+
+  @override
+  String get imageDiffModeTwoUp => 'Nebeneinander';
+
+  @override
+  String get imageDiffModeSwipe => 'Wischen';
+
+  @override
+  String get imageDiffModeDifference => 'Differenz';
+
+  @override
+  String imageDiffChangedPercent(String percent) {
+    return '$percent % geändert';
+  }
+
+  @override
+  String get imageDiffPictures => 'Bilder';
+
+  @override
+  String get imageDiffSource => 'Quelltext';
+
+  @override
+  String get imageDiffDeleted => 'Gelöscht';
+
+  @override
+  String get imageDiffAdded => 'Hinzugefügt';
+
+  @override
+  String imageDiffDimensions(int width, int height) {
+    return 'B: ${width}px | H: ${height}px';
+  }
 
   @override
   String get outdated => 'Veraltet';
@@ -9619,7 +9656,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get profileSectionDescription =>
-      'So erscheinen Sie für Teammitglieder und in der Git-Commit-Urheberschaft.';
+      'Wie du fürs Team und in der Git-Commit-Autorschaft in diesem Workspace erscheinst. Leere Felder erben Name und E-Mail deines Kontos.';
 
   @override
   String get displayNameLabel => 'Anzeigename';
@@ -12204,7 +12241,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsProfileDescription =>
-      'Dein Name, deine E-Mail und die Git-Identität, die auf Commits in deinem Namen steht.';
+      'Dein Name, E-Mail und Git-Identität in diesem Workspace. Ein Wechsel des Workspace wechselt dieses Overlay; Handle, Anmeldung und Geräte bleiben am Konto.';
 
   @override
   String get settingsServerConnectionDescription =>
@@ -12220,6 +12257,10 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get settingsWorkspaceGeneralDescription =>
       'Identität, Richtlinien und Konventionen, die alle in diesem Arbeitsbereich teilen.';
+
+  @override
+  String get settingsWorkspaceMeetingsDescription =>
+      'Notizvorlagen und gespeicherte Stimmen für Meetings in diesem Arbeitsbereich.';
 
   @override
   String get settingsWorkspacePolicyLabel => 'Arbeitsbereichs-Richtlinien';
@@ -12804,7 +12845,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get providerAppsDescription =>
-      'Wie sich dieser Server selbst authentifiziert und womit sich eine Person anmeldet. Hintergrundarbeit — Webhooks, Polling, Sync — läuft über die App, nie über das Token einer Person.';
+      'Workspaces erben diese GitHub-App, sofern sie nicht eine andere App oder nur ein persönliches Zugriffstoken wählen. Hintergrundarbeit — Webhooks, Polling, Sync — läuft auf der App, nie auf dem Token einer Person.';
 
   @override
   String get providerAppId => 'App-ID';
@@ -13196,14 +13237,14 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get providerAppsGroupServerDescription =>
-      'Ermöglicht Hintergrundarbeiten den Zugriff auf Repositories ohne Person hinter der Anfrage: Webhooks, Pull-Request-Abfragen, Ticket-Abgleich.';
+      'Für Workspaces, die die GitHub-App dieser Installation erben. Ein Workspace mit eigener App oder einem PAT konfiguriert das unter Workspace → Allgemein.';
 
   @override
   String get providerAppsGroupPrConversations => 'Pull-Request-Konversationen';
 
   @override
   String get providerAppsGroupPrConversationsDescription =>
-      'Wie Entwickler direkt auf GitHub mit diesem Server sprechen können. Funktioniert ohne Webhook und ohne öffentliche URL — der Server fragt regelmäßig ab.';
+      'Wie Entwickler auf GitHub in erbenden Workspaces mit diesem Server sprechen. Ein Workspace mit eigener App hat seinen Bot unter Workspace → Allgemein. Funktioniert ohne Webhook oder öffentliche URL — der Server pollt.';
 
   @override
   String get providerAppBotLogin => 'Bot-Login';
@@ -14597,4 +14638,50 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get rigClipboardAlwaysCopyDescription =>
       'Inhalte der Zwischenablage aus einer beliebigen Umgebung ohne Nachfrage auf diesem Gerät ablegen.';
+
+  @override
+  String get workspaceGitHubIdentity => 'GitHub-Identität';
+
+  @override
+  String get workspaceGitHubIdentityDescription =>
+      'Wie Hintergrund-GitHub-Arbeit in diesem Workspace sich authentifiziert. Die App dieser Installation erben, eine andere App nutzen oder nur ein persönliches Zugriffstoken.';
+
+  @override
+  String get workspaceGitHubModeInherit =>
+      'GitHub-App dieser Installation verwenden';
+
+  @override
+  String get workspaceGitHubModeApp => 'Eine andere GitHub-App verwenden';
+
+  @override
+  String get workspaceGitHubModePat => 'Nur persönliches Zugriffstoken';
+
+  @override
+  String get workspaceGitHubInheritHint =>
+      'Verwendet die GitHub-App unter Server → Anbieter-Apps.';
+
+  @override
+  String get workspaceGitHubAppHint =>
+      'Bot- und Polling-Identität dieses Workspace. Mitglieder melden sich unter Du über diese App an.';
+
+  @override
+  String get workspaceGitHubPatLabel => 'Hintergrund-Token';
+
+  @override
+  String get workspaceGitHubPatDescription =>
+      'Für Polling und Agenten in diesem Workspace. Nicht das Profil-Token eines Mitglieds.';
+
+  @override
+  String get workspaceGitHubHasPat => 'Ein Hintergrund-Token ist gespeichert.';
+
+  @override
+  String get workspaceGitHubNoPat => 'Kein Hintergrund-Token gespeichert.';
+
+  @override
+  String get profileOverlayHint =>
+      'Diese Felder bist du in diesem Workspace. Leere Felder erben Name und E-Mail deines Kontos. Ein Workspace-Wechsel wechselt dieses Overlay.';
+
+  @override
+  String get forgeConnectionsThisWorkspace =>
+      'Melde dich an oder füge ein Token für diesen Workspace ein.';
 }

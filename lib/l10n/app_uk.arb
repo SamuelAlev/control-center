@@ -504,7 +504,7 @@
   "calendarRsvpFailed": "Не вдалося оновити відповідь",
   "calendarAddAccount": "Додати обліковий запис календаря",
   "calendarSettingsTitle": "Google Calendar",
-  "calendarSettingsDescription": "Підключіть обліковий запис Google, щоб синхронізувати події з цим робочим простором.",
+  "calendarSettingsDescription": "Підключіть обліковий запис Google, щоб синхронізувати події в цей простір. Ці календарі тут ваші.",
   "calendarConnecting": "Підключення…",
   "calendarSyncNow": "Синхронізувати зараз",
   "calendarNoWorkspace": "Виберіть робочий простір, щоб переглянути його календар",
@@ -3949,7 +3949,7 @@
   "agentQuestionSkippedLabel": "Пропущено",
   "agentQuestionFreeformOptionHint": "Опишіть своїми словами…",
   "reviewRequested": "Запит на рев'ю",
-  "connectGitHubHint": "Увійдіть у GitHub або додайте токен у Налаштування → Ви → Профіль і ідентичність → Хостинг коду",
+  "connectGitHubHint": "Увійдіть у GitHub або додайте токен у Налаштування → Робочий простір → Профіль і ідентичність → Хостинг коду",
   "connectGitHubToLoadPrs": "Підключіть GitHub, щоб завантажити pull requests",
   "noRepositoriesConfigured": "Репозиторії не налаштовано",
   "openedAgo": "Відкрито {age}",
@@ -5499,7 +5499,7 @@
   },
   "deviceNeverSeen": "Ніколи не підключався",
   "profileSectionLabel": "Профіль",
-  "profileSectionDescription": "Як вас бачать колеги та в авторстві git-комітів.",
+  "profileSectionDescription": "Як вас бачить команда й авторство git-комітів у цьому просторі. Порожні поля успадковують ім'я й пошту облікового запису.",
   "displayNameLabel": "Ім’я для відображення",
   "emailLabel": "Email",
   "gitAuthorNameLabel": "Ім’я автора Git",
@@ -7270,11 +7270,12 @@
   "settingsScopeBadgeDevice": "ЦЕЙ ПРИСТРІЙ",
   "settingsScopeBadgeWorkspace": "РОБОЧИЙ ПРОСТІР",
   "settingsScopeBadgeServer": "СЕРВЕР",
-  "settingsProfileDescription": "Ваше ім’я, email і git-ідентичність на комітах, зроблених для вас.",
+  "settingsProfileDescription": "Ваше ім'я, пошта й git-ідентичність у цьому просторі. Зміна простору змінює цей шар; псевдонім, вхід і пристрої лишаються на обліковому записі.",
   "settingsServerConnectionDescription": "З яким сервером спілкується цей клієнт і як сервер поширюється (mDNS, тунелі, реле).",
   "settingsAboutDescription": "Ідентичність збірки та оновлення.",
   "settingsDiagnosticsDescription": "Ізоляція, індексування, синхронізація, журналювання та звіти про збої для цієї інсталяції.",
   "settingsWorkspaceGeneralDescription": "Ідентичність, політика та угоди, спільні для всіх у цьому робочому просторі.",
+  "settingsWorkspaceMeetingsDescription": "Шаблони нотаток і збережені голоси для зустрічей у цьому робочому просторі.",
   "settingsWorkspacePolicyLabel": "Політика робочого простору",
   "settingsWorkspacePolicyDescription": "Застосовується до кожного учасника й кожного агента в цьому робочому просторі.",
   "settingsSecretGlobsLabel": "Виключення секретних шляхів",
@@ -7608,7 +7609,7 @@
   "ticketProviderLocal": "Локально",
   "addKey": "Додати ключ",
   "providerApps": "Застосунки провайдера",
-  "providerAppsDescription": "Як цей сервер автентифікується від свого імені і через що людина входить. Фонова робота — вебхуки, опитування, синхронізація — виконується від застосунку, ніколи від токена людини.",
+  "providerAppsDescription": "Простори успадковують цей GitHub App, якщо не оберуть інший App або персональний токен. Фонова робота — вебхуки, опитування, синхронізація — йде на застосунку, ніколи на токені людини.",
   "providerAppId": "ID застосунку",
   "providerPrivateKey": "Приватний ключ",
   "providerClientId": "ID клієнта",
@@ -7757,9 +7758,9 @@
   "shortTaskDescription": "Виконує швидку фонову роботу, як-от заголовки й підсумки. Сюди пасує менша модель.",
   "settingsStateFailed": "Помилка",
   "providerAppsGroupServer": "Роль сервера",
-  "providerAppsGroupServerDescription": "Дозволяє фоновій роботі звертатися до репозиторіїв без людини за запитом: вебхуки, опитування pull request, синхронізація тікетів.",
+  "providerAppsGroupServerDescription": "Для просторів, що успадковують GitHub App цієї інсталяції. Простір із власним App або PAT налаштовується в Простір → Загальні.",
   "providerAppsGroupPrConversations": "Розмови в pull request",
-  "providerAppsGroupPrConversationsDescription": "Як розробники можуть спілкуватися з цим сервером безпосередньо на GitHub. Працює без вебхука чи публічної URL — сервер опитує.",
+  "providerAppsGroupPrConversationsDescription": "Як розробники говорять із цим сервером на GitHub у просторах, що успадковують. Простір із власним App має бота в Простір → Загальні. Без вебхука й публічної URL — сервер опитує.",
   "providerAppBotLogin": "Логін бота",
   "providerAppBotLoginEmpty": "Перевірте з’єднання, щоб визначити логін бота.",
   "providerAppAskOnGitHub": "Запити на GitHub",
@@ -8589,5 +8590,75 @@
   "rigClipboardAlwaysPasteTitle": "Завжди дозволяти вставлення в середовища",
   "rigClipboardAlwaysPasteDescription": "Надсилати буфер обміну цього пристрою в будь-яке середовище без запиту.",
   "rigClipboardAlwaysCopyTitle": "Завжди дозволяти копіювання із середовищ",
-  "rigClipboardAlwaysCopyDescription": "Розміщувати вміст буфера обміну з будь-якого середовища на цьому пристрої без запиту."
+  "rigClipboardAlwaysCopyDescription": "Розміщувати вміст буфера обміну з будь-якого середовища на цьому пристрої без запиту.",
+  "imageDiffBefore": "До",
+  "@imageDiffBefore":   {
+    "description": "Label for the base (before) side of a PR image diff"
+  },
+  "imageDiffAfter": "Після",
+  "@imageDiffAfter":   {
+    "description": "Label for the head (after) side of a PR image diff"
+  },
+  "imageDiffModeTwoUp": "Поруч",
+  "@imageDiffModeTwoUp":   {
+    "description": "Side-by-side comparison mode for a PR image diff"
+  },
+  "imageDiffModeSwipe": "Свайп",
+  "@imageDiffModeSwipe":   {
+    "description": "Swipe-divider comparison mode for a PR image diff"
+  },
+  "imageDiffModeDifference": "Різниця",
+  "@imageDiffModeDifference":   {
+    "description": "Pixel overlay comparison mode for a PR image diff"
+  },
+  "imageDiffChangedPercent": "змінено {percent}%",
+  "@imageDiffChangedPercent":   {
+    "description": "Caption showing how much of a PR image pair differs",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "imageDiffPictures": "Зображення",
+  "@imageDiffPictures":   {
+    "description": "Header toggle to show SVG as pictures instead of XML hunks"
+  },
+  "imageDiffSource": "Джерело",
+  "@imageDiffSource":   {
+    "description": "Header toggle to show an SVG file's XML source diff"
+  },
+  "imageDiffDeleted": "Видалено",
+  "@imageDiffDeleted": {
+    "description": "Label for the removed (before) side of a PR image asset comparison"
+  },
+  "imageDiffAdded": "Додано",
+  "@imageDiffAdded": {
+    "description": "Label for the added (after) side of a PR image asset comparison"
+  },
+  "imageDiffDimensions": "Ш: {width}px | В: {height}px",
+  "@imageDiffDimensions": {
+    "description": "Intrinsic pixel size caption under a PR image-diff asset",
+    "placeholders": {
+      "width": {
+        "type": "int"
+      },
+      "height": {
+        "type": "int"
+      }
+    }
+  },
+  "workspaceGitHubIdentity": "Ідентичність GitHub",
+  "workspaceGitHubIdentityDescription": "Як фонова робота з GitHub автентифікується в цьому просторі. Успадкувати App інсталяції, інший App або лише персональний токен доступу.",
+  "workspaceGitHubModeInherit": "Використовувати GitHub App цієї інсталяції",
+  "workspaceGitHubModeApp": "Використовувати інший GitHub App",
+  "workspaceGitHubModePat": "Лише персональний токен доступу",
+  "workspaceGitHubInheritHint": "Використовує GitHub App у Сервер → Застосунки постачальників.",
+  "workspaceGitHubAppHint": "Ідентичність бота й опитування цього простору. Учасники входять у Ви через цей App.",
+  "workspaceGitHubPatLabel": "Фоновий токен",
+  "workspaceGitHubPatDescription": "Для опитування й агентів у цьому просторі. Це не токен профілю учасника.",
+  "workspaceGitHubHasPat": "Фоновий токен збережено.",
+  "workspaceGitHubNoPat": "Фоновий токен не збережено.",
+  "profileOverlayHint": "Ці поля — ви в цьому просторі. Порожні поля успадковують ім'я й пошту облікового запису. Зміна простору змінює цей шар.",
+  "forgeConnectionsThisWorkspace": "Увійдіть або вставте токен для цього простору."
 }

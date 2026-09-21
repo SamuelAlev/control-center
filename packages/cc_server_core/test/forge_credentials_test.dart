@@ -2,14 +2,17 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:cc_domain/core/domain/entities/workspace.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_connection.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
+import 'package:cc_domain/core/domain/value_objects/github_auth_mode.dart';
 import 'package:cc_infra/cc_infra.dart' show GitHubAppClient;
 import 'package:cc_server_core/src/file_secrets_store.dart';
 import 'package:cc_server_core/src/forge/forge_credentials.dart';
 import 'package:cc_server_core/src/identity/provider_app_settings.dart';
 import 'package:cc_server_core/src/identity/provider_token.dart';
 import 'package:cc_server_core/src/identity/user_credentials_store.dart';
+import 'package:cc_server_core/src/identity/workspace_github_app_settings.dart';
 import 'package:dio/dio.dart';
 import 'package:test/test.dart';
 
@@ -424,7 +427,8 @@ void main() {
           source: ForgeCredentialSource.oauth,
         ),
       );
-      creds.refreshUserToken = (userId, forge, expired) async => ProviderToken(
+      creds.refreshUserToken = (userId, forge, expired, {workspaceId}) async =>
+          ProviderToken(
         accessToken: 'fresh',
         refreshToken: expired.refreshToken,
         expiresAt: DateTime.now().toUtc().add(const Duration(hours: 8)),
@@ -468,7 +472,8 @@ void main() {
           expiresAt: DateTime.now().toUtc().subtract(const Duration(hours: 1)),
         ),
       );
-      creds.refreshUserToken = (userId, forge, expired) async => null;
+      creds.refreshUserToken = (userId, forge, expired, {workspaceId}) async =>
+          null;
 
       expect(await creds.tokenFor(ForgeHost.github, userId: alice), isNull);
       expect(await users.forgeToken(alice, ForgeHost.github), isNull);
@@ -643,6 +648,212 @@ void main() {
       expect(
         () => creds.setToken(ForgeHost.github, 'x'),
         throwsA(isA<StateError>()),
+      );
+    });
+  });
+
+  group('per-workspace GitHub identity', () {
+    Workspace workspace({
+      required String id,
+      GithubAuthMode mode = GithubAuthMode.inherit,
+      String appId = '',
+    }) {
+      final now = DateTime.utc(2024);
+      return Workspace(
+        id: id,
+        name: id,
+        createdAt: now,
+        updatedAt: now,
+        githubAuthMode: mode,
+        githubAppId: appId,
+      );
+    }
+
+    Future<ForgeCredentials> wired({
+      required Map<String, Workspace> workspaces,
+      ProviderAppSettings? apps,
+      Map<String, String> env = const {},
+      String? ownerUserId,
+    }) async {
+      final creds = build(apps: apps, env: env, ownerUserId: ownerUserId);
+      creds.workspaceApps = WorkspaceGitHubAppSettings(
+        secrets: secrets,
+        install: apps ?? ProviderAppSettings(secrets: secrets),
+        githubAppFactory: ({required String appId, required String pem}) {
+          final adapter = _FakeGitHubAdapter({
+            '/app/installations': [
+              {
+                'id': 7,
+                'account': {'login': 'other-org'},
+                'repository_selection': 'all',
+              },
+            ],
+            '/app/installations/7/access_tokens': {
+              'token': 'ghs_workspace',
+              'expires_at': DateTime.now()
+                  .toUtc()
+                  .add(const Duration(hours: 1))
+                  .toIso8601String(),
+            },
+          });
+          final dio = Dio(BaseOptions(baseUrl: 'https://api.github.com'))
+            ..httpClientAdapter = adapter;
+          return GitHubAppClient(
+            appId: appId,
+            privateKeyPem: pem,
+            dio: dio,
+          );
+        },
+      );
+      creds.workspaceLookup = (id) async => workspaces[id];
+      return creds;
+    }
+
+    test('inherit is unchanged: the install App answers', () async {
+      final apps = appSettingsWith(token: 'ghs_install');
+      await apps.save(
+        ProviderApp.github,
+        appId: '123',
+        privateKeyPem: _testPrivateKeyPem,
+      );
+      final creds = await wired(
+        workspaces: {'ws-a': workspace(id: 'ws-a')},
+        apps: apps,
+      );
+      expect(
+        await creds.tokenForRepoOwner(ForgeHost.github, 'acme', workspaceId: 'ws-a'),
+        'ghs_install',
+      );
+    });
+
+    test('app mode never returns the install App token', () async {
+      final apps = appSettingsWith(token: 'ghs_install');
+      await apps.save(
+        ProviderApp.github,
+        appId: '123',
+        privateKeyPem: _testPrivateKeyPem,
+      );
+      await secrets.writePsk(
+        WorkspaceGitHubAppSettings.privateKeySecret('ws-app'),
+        _testPrivateKeyPem,
+      );
+      final creds = await wired(
+        workspaces: {
+          'ws-app': workspace(
+            id: 'ws-app',
+            mode: GithubAuthMode.app,
+            appId: '999',
+          ),
+        },
+        apps: apps,
+      );
+      expect(
+        await creds.tokenForRepoOwner(
+          ForgeHost.github,
+          'other-org',
+          workspaceId: 'ws-app',
+        ),
+        'ghs_workspace',
+      );
+    });
+
+    test('app mode with a missing key fails closed', () async {
+      final apps = appSettingsWith(token: 'ghs_install');
+      await apps.save(
+        ProviderApp.github,
+        appId: '123',
+        privateKeyPem: _testPrivateKeyPem,
+      );
+      final creds = await wired(
+        workspaces: {
+          'ws-app': workspace(
+            id: 'ws-app',
+            mode: GithubAuthMode.app,
+            appId: '999',
+          ),
+        },
+        apps: apps,
+        env: {'GITHUB_TOKEN': 'from-env'},
+      );
+      final token = await creds.tokenForRepoOwner(
+        ForgeHost.github,
+        'acme',
+        workspaceId: 'ws-app',
+      );
+      expect(token, isNot(startsWith('ghs_')));
+      expect(token, 'from-env');
+    });
+
+    test('pat mode never returns an App token', () async {
+      final apps = appSettingsWith(token: 'ghs_install');
+      await apps.save(
+        ProviderApp.github,
+        appId: '123',
+        privateKeyPem: _testPrivateKeyPem,
+      );
+      await secrets.writePsk(
+        WorkspaceGitHubAppSettings.backgroundPatSecret('ws-pat'),
+        'gho_workspace_pat',
+      );
+      final creds = await wired(
+        workspaces: {
+          'ws-pat': workspace(id: 'ws-pat', mode: GithubAuthMode.pat),
+        },
+        apps: apps,
+      );
+      final token = await creds.tokenForRepoOwner(
+        ForgeHost.github,
+        'acme',
+        workspaceId: 'ws-pat',
+      );
+      expect(token, isNot(startsWith('ghs_')));
+      expect(token, 'gho_workspace_pat');
+    });
+
+    test('a PAT saved in workspace B does not clear A or the global slot',
+        () async {
+      final creds = build();
+      await creds.setToken(
+        ForgeHost.github,
+        'global-oauth',
+        userId: alice,
+      );
+      await creds.setToken(
+        ForgeHost.github,
+        'ws-a-token',
+        userId: alice,
+        workspaceId: 'ws-a',
+      );
+      await creds.setToken(
+        ForgeHost.github,
+        'ws-b-token',
+        userId: alice,
+        workspaceId: 'ws-b',
+      );
+
+      expect(
+        await users.forgeToken(alice, ForgeHost.github),
+        isNotNull,
+      );
+      expect(
+        (await users.forgeToken(
+          alice,
+          ForgeHost.github,
+          workspaceId: 'ws-a',
+        ))!.accessToken,
+        'ws-a-token',
+      );
+      expect(
+        (await users.forgeToken(
+          alice,
+          ForgeHost.github,
+          workspaceId: 'ws-b',
+        ))!.accessToken,
+        'ws-b-token',
+      );
+      expect(
+        (await users.forgeToken(alice, ForgeHost.github))!.accessToken,
+        'global-oauth',
       );
     });
   });

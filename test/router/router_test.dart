@@ -570,7 +570,9 @@ void main() {
         // first-run flow to replace one expired token.
         await tester.pumpWidget(const SizedBox());
         final context = tester.element(find.byType(SizedBox));
-        final notifier = ValueNotifier<OnboardingGate>(OnboardingGate.signedOut);
+        final notifier = ValueNotifier<OnboardingGate>(
+          OnboardingGate.signedOut,
+        );
 
         for (final route in <String>[
           '/inbox',
@@ -596,7 +598,9 @@ void main() {
       testWidgets('leaves splash for the re-auth screen', (tester) async {
         await tester.pumpWidget(const SizedBox());
         final context = tester.element(find.byType(SizedBox));
-        final notifier = ValueNotifier<OnboardingGate>(OnboardingGate.signedOut);
+        final notifier = ValueNotifier<OnboardingGate>(
+          OnboardingGate.signedOut,
+        );
 
         expect(
           onboardingGuard(
@@ -614,7 +618,9 @@ void main() {
       testWidgets('stays put while still signed out', (tester) async {
         await tester.pumpWidget(const SizedBox());
         final context = tester.element(find.byType(SizedBox));
-        final notifier = ValueNotifier<OnboardingGate>(OnboardingGate.signedOut);
+        final notifier = ValueNotifier<OnboardingGate>(
+          OnboardingGate.signedOut,
+        );
 
         expect(
           onboardingGuard(
@@ -637,7 +643,9 @@ void main() {
         // sign-in that silently failed.
         await tester.pumpWidget(const SizedBox());
         final context = tester.element(find.byType(SizedBox));
-        final notifier = ValueNotifier<OnboardingGate>(OnboardingGate.signedOut);
+        final notifier = ValueNotifier<OnboardingGate>(
+          OnboardingGate.signedOut,
+        );
 
         expect(
           onboardingGuard(
@@ -684,13 +692,17 @@ void main() {
         notifier.dispose();
       });
 
-      testWidgets('does NOT eject a user who is mid-onboarding', (tester) async {
+      testWidgets('does NOT eject a user who is mid-onboarding', (
+        tester,
+      ) async {
         // A token that expires between the workspace step and the model step
         // would otherwise throw the operator into the re-auth screen and strand
         // the steps after it — and step 1 already carries the same forge card.
         await tester.pumpWidget(const SizedBox());
         final context = tester.element(find.byType(SizedBox));
-        final notifier = ValueNotifier<OnboardingGate>(OnboardingGate.signedOut);
+        final notifier = ValueNotifier<OnboardingGate>(
+          OnboardingGate.signedOut,
+        );
 
         expect(
           onboardingGuard(
@@ -834,21 +846,27 @@ void main() {
       expect(container.read(onboardingGateProvider), OnboardingGate.complete);
     });
 
-    test('resolves to signedOut when a FINISHED setup lost its forge', () async {
-      // The credential is the only missing piece, so this is a re-auth, not a
-      // setup. It must not resolve to `incomplete` — that would re-ask for a
-      // workspace they already have and read as if the install was reset.
-      final container = _gateContainer(
-        workspaces: [_workspaceRow()],
-        connections: const [_disconnectedGitHub],
-        onboardingFinished: true,
-      );
-      addTearDown(container.dispose);
+    test(
+      'resolves to signedOut when a FINISHED setup lost its forge',
+      () async {
+        // The credential is the only missing piece, so this is a re-auth, not a
+        // setup. It must not resolve to `incomplete` — that would re-ask for a
+        // workspace they already have and read as if the install was reset.
+        final container = _gateContainer(
+          workspaces: [_workspaceRow()],
+          connections: const [_disconnectedGitHub],
+          onboardingFinished: true,
+        );
+        addTearDown(container.dispose);
 
-      container.read(onboardingGateProvider);
-      await Future<void>.delayed(Duration.zero);
-      expect(container.read(onboardingGateProvider), OnboardingGate.signedOut);
-    });
+        container.read(onboardingGateProvider);
+        await Future<void>.delayed(Duration.zero);
+        expect(
+          container.read(onboardingGateProvider),
+          OnboardingGate.signedOut,
+        );
+      },
+    );
 
     test('an INVITED member with no forge onboards, not re-auths', () async {
       // The case that killed the old "workspaces prove you were signed in
@@ -994,7 +1012,8 @@ void main() {
           prefs ?? AppPreferences.inMemory(),
         ),
         currentIdentityProvider.overrideWith(
-          (ref) => identity == null ? Completer<IdentityMe>().future : identity(),
+          (ref) =>
+              identity == null ? Completer<IdentityMe>().future : identity(),
         ),
         onboardingFinishedPushProvider.overrideWithValue(push ?? () async {}),
       ],
@@ -1067,24 +1086,27 @@ void main() {
       expect(pushes, 1);
     });
 
-    test('a failed push is swallowed and does not latch the writer shut', () async {
-      // The gate fires this from a provider body and the flow awaits it before
-      // navigating, so a server that is down must not throw into either — but
-      // it must also leave the writer able to try again.
-      var pushes = 0;
-      final container = containerWith(
-        identity: () async => _me(),
-        push: () async {
-          pushes++;
-          throw StateError('offline');
-        },
-      );
-      addTearDown(container.dispose);
+    test(
+      'a failed push is swallowed and does not latch the writer shut',
+      () async {
+        // The gate fires this from a provider body and the flow awaits it before
+        // navigating, so a server that is down must not throw into either — but
+        // it must also leave the writer able to try again.
+        var pushes = 0;
+        final container = containerWith(
+          identity: () async => _me(),
+          push: () async {
+            pushes++;
+            throw StateError('offline');
+          },
+        );
+        addTearDown(container.dispose);
 
-      await markOnboardingFinished(container.read(_refProvider));
-      await markOnboardingFinished(container.read(_refProvider));
-      expect(pushes, 2);
-    });
+        await markOnboardingFinished(container.read(_refProvider));
+        await markOnboardingFinished(container.read(_refProvider));
+        expect(pushes, 2);
+      },
+    );
   });
 
   // ---------------------------------------------------------------------------
@@ -1196,6 +1218,13 @@ void main() {
 
     // Settings paths are namespaced by SCOPE, so the URL states who a change
     // affects rather than only the sidebar grouping doing so.
+    test('settingsProfileRoute is scoped to the workspace', () {
+      expect(
+        settingsProfileRoute('w1'),
+        '/workspaces/w1/settings/workspace/profile',
+      );
+    });
+
     test('settingsAppearanceRoute is scoped to you', () {
       expect(
         settingsAppearanceRoute('w1'),
@@ -1221,6 +1250,13 @@ void main() {
       expect(
         settingsReposRoute('w1'),
         '/workspaces/w1/settings/workspace/repositories',
+      );
+    });
+
+    test('settingsMeetingsRoute is scoped to the workspace', () {
+      expect(
+        settingsMeetingsRoute('w1'),
+        '/workspaces/w1/settings/workspace/meetings',
       );
     });
 
@@ -1266,4 +1302,3 @@ void main() {
     });
   });
 }
-

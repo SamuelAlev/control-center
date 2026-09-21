@@ -33,6 +33,7 @@ class EnvCredentialBroker implements CredentialBrokerPort {
     // person. Anything that needs a per-member boundary must run on
     // `GitHubFineGrainedTokenBroker` instead.
     String? actingUserId,
+    String? workspaceId,
   }) async {
     final creds = await _credentials.loadCredentials();
     final env = <String, String>{};

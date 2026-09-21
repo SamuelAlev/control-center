@@ -7,6 +7,7 @@ import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_inline_thread.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/reaction_group.dart';
 import 'package:cc_domain/features/pr_review/domain/services/diff_parser.dart';
+import 'package:cc_domain/features/pr_review/domain/value_objects/image_diff_resolution.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/theme/app_fonts.dart';
 import 'package:control_center/core/theme/font_settings.dart';
@@ -21,6 +22,7 @@ import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_v
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/diff_structure_store.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/diff_symbol_popover.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/file_header.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/image_diff_body.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/measured_inline_thread.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/outdated_comments.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/pr_diff_document.dart';
@@ -75,6 +77,9 @@ class UnifiedDiffView extends ConsumerStatefulWidget {
     this.workspaceId,
     this.repoId,
     this.spaceId,
+    this.resolveImageDiff,
+    this.imageDiffBaseRef,
+    this.imageDiffHeadRef,
   });
 
   /// Files in display (tree) order.
@@ -127,6 +132,15 @@ class UnifiedDiffView extends ConsumerStatefulWidget {
   /// PR/space id used to pick the worktree code-graph partition.
   final String? spaceId;
 
+  /// Resolves blob refs for image/SVG files.
+  final ImageDiffResolver? resolveImageDiff;
+
+  /// Commit SHA for the before side of an image diff.
+  final String? imageDiffBaseRef;
+
+  /// Commit SHA for the after side of an image diff.
+  final String? imageDiffHeadRef;
+
   @override
   ConsumerState<UnifiedDiffView> createState() => UnifiedDiffViewState();
 }
@@ -168,6 +182,10 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
   /// you scroll near a previewing file. Invalidated alongside the diff caches in
   /// [didUpdateWidget].
   final Map<String, String> _previewContent = {};
+
+  /// Resolved image-diff blob refs, keyed by filename. Same recycle-safe
+  /// cache as [_previewContent] so scrolling away and back does not re-fetch.
+  final Map<String, ImageDiffResolution> _imageDiffs = {};
 
   /// Threads to render, keyed by their slot key, rebuilt with the slot list.
   Map<String, PrInlineThread> _threadBySlotKey = const {};
@@ -320,12 +338,30 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
         continue;
       }
       if (_document.isPreviewing(f)) {
-        // Reserve the preview body height (clearing any comment reservation so
-        // _FileLayout stays self-consistent) and emit a single preview slot in
-        // place of the file's diff rows. The slot's measured height is fed back
-        // via _onPreviewMeasured, exactly like a comment block.
-        _document.setCommentBlocks(f, const []);
-        _document.setPreviewHeight(f, _previewHeights[filename] ?? 240);
+        // Reserve the preview body height. Image files can still host a
+        // file-level composer under the pictures; Markdown preview stays
+        // comment-free (its rows are gone).
+        const previewComposerKey = 'composer';
+        final composer = _activeComposer?.fileIndex == f
+            ? _activeComposer
+            : null;
+        final blocks = <DiffCommentBlock>[];
+        if (composer != null && ctl != null) {
+          blocks.add(
+            DiffCommentBlock(
+              key: previewComposerKey,
+              anchorLine: -1,
+              height:
+                  _commentHeights[previewComposerKey] ??
+                  _estimateComposerHeight(),
+            ),
+          );
+        }
+        _document.setCommentBlocks(f, blocks);
+        final previewH =
+            _previewHeights[filename] ??
+            (_document.files[f].isImage ? kImageDiffEstimateHeight : 240.0);
+        _document.setPreviewHeight(f, previewH);
         slots.add(
           DiffSlot(
             kind: DiffSlotKind.preview,
@@ -335,6 +371,23 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
             height: _document.previewHeightOf(f),
           ),
         );
+        if (composer != null && ctl != null) {
+          slots.add(
+            DiffSlot(
+              kind: DiffSlotKind.composer,
+              key: previewComposerKey,
+              fileIndex: f,
+              offset:
+                  _document.offsetOfFile(f) +
+                  kFastFileHeaderHeight +
+                  _document.previewHeightOf(f),
+              height:
+                  _commentHeights[previewComposerKey] ??
+                  _estimateComposerHeight(),
+              anchorDisplayLine: 0,
+            ),
+          );
+        }
         continue;
       }
       final raw = _document.structureOf(f);
@@ -959,6 +1012,7 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
         // The file set/order/content changed — any cached preview content may
         // now be stale; drop it so previewing files re-fetch their HEAD content.
         _previewContent.clear();
+        _imageDiffs.clear();
         final ro = _sliverKey.currentContext?.findRenderObject();
         if (ro is RenderUnifiedDiffSliver) {
           ro.clearLineCache();
@@ -967,6 +1021,7 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
         for (final i in repatched) {
           _store.invalidateFile(i);
           _previewContent.remove(widget.files[i].filename);
+          _imageDiffs.remove(widget.files[i].filename);
         }
       }
       _syncViewedFromFiles();
@@ -978,6 +1033,11 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
     if (!identical(oldWidget.serverComments, widget.serverComments)) {
       _focusedThreadId = null;
       _reconcileResolvedOverrides();
+      _revision++;
+    }
+    if (oldWidget.imageDiffBaseRef != widget.imageDiffBaseRef ||
+        oldWidget.imageDiffHeadRef != widget.imageDiffHeadRef) {
+      _imageDiffs.clear();
       _revision++;
     }
     // If the PR or controller changed, tear down the review overlay so it
@@ -1097,7 +1157,7 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
   void _togglePreview(int index) {
     final next = !_document.isPreviewing(index);
     if (next) {
-      if (_activeComposer?.fileIndex == index) {
+      if (!widget.files[index].isImage && _activeComposer?.fileIndex == index) {
         _activeComposer = null;
         _commentHeights.remove('composer');
       }
@@ -1111,8 +1171,14 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
   }
 
   /// Opens an inline composer for a new file-level comment, anchored at the
-  /// file's first code row (triggered by the header "+").
+  /// file's first code row (triggered by the header "+"). Image files have no
+  /// code rows, so they get a synthetic `RIGHT:1` file-level anchor.
   void _openFileComment(int fileIndex) {
+    final file = _document.files[fileIndex];
+    if (file.isImage) {
+      _openFileLevelComposer(fileIndex);
+      return;
+    }
     final d = _firstCodeDisplayLine(fileIndex);
     if (d != null) {
       _openComposerForRange(
@@ -1124,6 +1190,29 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
         PrInlineThreadKind.comment,
       );
     }
+  }
+
+  void _openFileLevelComposer(int fileIndex) {
+    if (widget.inlineCommentsController == null) {
+      return;
+    }
+    setState(() {
+      _activeComposer = ComposerRequest(
+        fileIndex: fileIndex,
+        anchorDisplayLine: 0,
+        startDisplayLine: 0,
+        endDisplayLine: 0,
+        startCol: null,
+        endCol: null,
+        side: 'RIGHT',
+        lineNoStart: 1,
+        lineNoEnd: 1,
+        originalCode: '',
+        kind: PrInlineThreadKind.comment,
+      );
+      _commentHeights.remove('composer');
+      _revision++;
+    });
   }
 
   int? _firstCodeDisplayLine(int file) {
@@ -1689,8 +1778,14 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
     }
     var needsLayout = false;
     if (_document.isPreviewing(index)) {
-      _document.setPreviewing(index, previewing: false);
-      needsLayout = true;
+      final file = _document.files[index];
+      // Raster image bodies have no source rows to land on. SVG with a text
+      // patch can drop back to the XML hunks when a line is named.
+      if (!file.isImage ||
+          (file.isSvg && file.patch.isNotEmpty && line != null)) {
+        _document.setPreviewing(index, previewing: false);
+        needsLayout = true;
+      }
     }
     if (!_document.isExpanded(index)) {
       _document.setExpanded(index, expanded: true);
@@ -2955,6 +3050,8 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
         switch (slot.kind) {
           case DiffSlotKind.header:
             final file = _document.files[slot.fileIndex];
+            final l10n = AppLocalizations.of(context);
+            final svgSource = file.isSvg && file.patch.isNotEmpty;
             // The docked (pinned) header drops its own top border — the same
             // flush contract as the first file under a bordered toolbar —
             // otherwise the line above the pinned position doubles to 2px.
@@ -2966,11 +3063,14 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
                 expanded: _document.isExpanded(slot.fileIndex),
                 isViewed: _viewed.contains(file.filename),
                 canPreview:
-                    file.isMarkdown &&
-                    file.status != PrFileStatus.removed &&
-                    widget.fetchFileContent != null,
+                    (file.isMarkdown &&
+                        file.status != PrFileStatus.removed &&
+                        widget.fetchFileContent != null) ||
+                    svgSource,
                 isPreview: _document.isPreviewing(slot.fileIndex),
                 onTogglePreview: () => _togglePreview(slot.fileIndex),
+                previewOffLabel: svgSource ? l10n.imageDiffSource : null,
+                previewOnLabel: svgSource ? l10n.imageDiffPictures : null,
                 onToggleExpanded: () => _toggleExpanded(slot.fileIndex),
                 onToggleViewed: widget.onToggleViewed != null
                     ? () => _toggleViewed(slot.fileIndex)
@@ -3013,7 +3113,12 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
               return const SizedBox.shrink();
             }
             // The diff sliver has no ambient Material, so wrap —
-            // the thread's reply TextField and ink need one.
+            // the thread's reply TextField and ink need one. Measurement
+            // stays live (HeightReporter inside MeasuredInlineThread):
+            // opening the reply composer is an inner setState that never
+            // rebuilds this host, so a one-shot post-frame measure would
+            // leave the card overflowing the next file until a highlight
+            // click forced a parent rebuild.
             return Material(
               key: ValueKey(slot.key),
               type: MaterialType.transparency,
@@ -3085,6 +3190,28 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
             );
           case DiffSlotKind.preview:
             final file = _document.files[slot.fileIndex];
+            if (file.isImage) {
+              return Material(
+                key: ValueKey(slot.key),
+                type: MaterialType.transparency,
+                child: HeightReporter(
+                  onMeasured: (h) => _onPreviewMeasured(file.filename, h),
+                  child: ImageDiffBody(
+                    path: file.filename,
+                    previousPath: file.previousFilename,
+                    status: file.status,
+                    workspaceId: widget.workspaceId ?? '',
+                    baseRef: widget.imageDiffBaseRef ?? '',
+                    headRef: widget.imageDiffHeadRef ?? '',
+                    resolve: widget.resolveImageDiff,
+                    cached: _imageDiffs[file.filename],
+                    onLoaded: (resolved) =>
+                        _imageDiffs[file.filename] = resolved,
+                    isSvg: file.isSvg,
+                  ),
+                ),
+              );
+            }
             final fetch = widget.fetchFileContent;
             if (fetch == null) {
               return const SizedBox.shrink();

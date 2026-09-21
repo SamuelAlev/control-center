@@ -85,6 +85,7 @@ void main() {
       // a failing test rather than a missing page.
       expect(registry.bodies.map((b) => b.navItemId).toSet(), {
         'workspace.agents',
+        'workspace.meetings',
         'workspace.repositories',
         'you.devices',
         'you.newsfeed',
@@ -101,22 +102,25 @@ void main() {
       });
       expect(registry.sections.map((s) => s.id).toSet(), {
         'forge.connections',
+        'forge.github-identity',
         'ticketing.connection',
         'calendar.accounts',
         'chat_bridges.my-account-link',
         'chat_bridges.workspace-setup',
         'messaging.conversation-titles',
       });
-      expect({
-        for (final s in registry.sections) s.id: s.slot,
-      }, {
-        'forge.connections': SettingsSlot.userProfile,
-        'ticketing.connection': SettingsSlot.workspaceGeneral,
-        'calendar.accounts': SettingsSlot.userProfile,
-        'chat_bridges.my-account-link': SettingsSlot.userProfile,
-        'chat_bridges.workspace-setup': SettingsSlot.workspaceGeneral,
-        'messaging.conversation-titles': SettingsSlot.workspaceGeneral,
-      });
+      expect(
+        {for (final s in registry.sections) s.id: s.slot},
+        {
+          'forge.connections': SettingsSlot.workspaceProfile,
+          'forge.github-identity': SettingsSlot.workspaceGeneral,
+          'ticketing.connection': SettingsSlot.workspaceGeneral,
+          'calendar.accounts': SettingsSlot.workspaceProfile,
+          'chat_bridges.my-account-link': SettingsSlot.workspaceProfile,
+          'chat_bridges.workspace-setup': SettingsSlot.workspaceGeneral,
+          'messaging.conversation-titles': SettingsSlot.workspaceGeneral,
+        },
+      );
     });
   });
 
@@ -126,7 +130,7 @@ void main() {
         sections: [
           SettingsSectionContribution(
             id: 'b',
-            slot: SettingsSlot.userProfile,
+            slot: SettingsSlot.workspaceProfile,
             order: 20,
             builder: _stub,
           ),
@@ -137,16 +141,16 @@ void main() {
           ),
           SettingsSectionContribution(
             id: 'a',
-            slot: SettingsSlot.userProfile,
+            slot: SettingsSlot.workspaceProfile,
             order: 10,
             builder: _stub,
           ),
         ],
       );
-      expect(registry.sectionsFor(SettingsSlot.userProfile).map((s) => s.id), [
-        'a',
-        'b',
-      ]);
+      expect(
+        registry.sectionsFor(SettingsSlot.workspaceProfile).map((s) => s.id),
+        ['a', 'b'],
+      );
     });
 
     test('sectionsFor does not mutate the backing list', () {
@@ -156,19 +160,19 @@ void main() {
         sections: [
           SettingsSectionContribution(
             id: 'late',
-            slot: SettingsSlot.userProfile,
+            slot: SettingsSlot.workspaceProfile,
             order: 20,
             builder: _stub,
           ),
           SettingsSectionContribution(
             id: 'early',
-            slot: SettingsSlot.userProfile,
+            slot: SettingsSlot.workspaceProfile,
             order: 10,
             builder: _stub,
           ),
         ],
       );
-      registry.sectionsFor(SettingsSlot.userProfile);
+      registry.sectionsFor(SettingsSlot.workspaceProfile);
       expect(registry.sections.map((s) => s.id), ['late', 'early']);
     });
 

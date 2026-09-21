@@ -1126,7 +1126,7 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get calendarSettingsDescription =>
-      'اس ورک اسپیس میں ایونٹس سنک کرنے کے لیے Google اکاؤنٹ منسلک کریں۔';
+      'اس ورک اسپیس میں ایونٹس ہم آہنگ کرنے کے لیے Google اکاؤنٹ جوڑیں۔ یہ کیلنڈرز یہاں آپ کے ہیں۔';
 
   @override
   String get calendarConnecting => 'منسلک ہو رہا ہے…';
@@ -6963,7 +6963,7 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get connectGitHubHint =>
-      'GitHub میں سائن اِن کریں یا ترتیبات ← آپ ← پروفائل اور شناخت ← کوڈ ہوسٹنگ میں ٹوکن شامل کریں';
+      'GitHub میں سائن اِن کریں یا ترتیبات ← ورک اسپیس ← پروفائل اور شناخت ← کوڈ ہوسٹنگ میں ٹوکن شامل کریں';
 
   @override
   String get connectGitHubToLoadPrs =>
@@ -7446,6 +7446,43 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get preview => 'پیش منظر';
+
+  @override
+  String get imageDiffBefore => 'پہلے';
+
+  @override
+  String get imageDiffAfter => 'بعد';
+
+  @override
+  String get imageDiffModeTwoUp => 'دو کالم';
+
+  @override
+  String get imageDiffModeSwipe => 'سوائپ';
+
+  @override
+  String get imageDiffModeDifference => 'فرق';
+
+  @override
+  String imageDiffChangedPercent(String percent) {
+    return '$percent٪ تبدیل';
+  }
+
+  @override
+  String get imageDiffPictures => 'تصاویر';
+
+  @override
+  String get imageDiffSource => 'ماخذ';
+
+  @override
+  String get imageDiffDeleted => 'حذف شدہ';
+
+  @override
+  String get imageDiffAdded => 'شامل کیا گیا';
+
+  @override
+  String imageDiffDimensions(int width, int height) {
+    return 'چ: ${width}px | ا: ${height}px';
+  }
 
   @override
   String get outdated => 'پرانا';
@@ -9509,7 +9546,7 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get profileSectionDescription =>
-      'آپ ٹیم ساتھیوں اور git کمیٹ تصنیف میں کیسے دکھتے ہیں۔';
+      'اس ورک اسپیس میں ٹیم اور git کمیٹ تصنیف میں آپ کیسے نظر آتے ہیں۔ خالی فیلڈز اکاؤنٹ کا نام اور ای میل وراثت میں لیتی ہیں۔';
 
   @override
   String get displayNameLabel => 'ڈسپلے نام';
@@ -12080,7 +12117,7 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get settingsProfileDescription =>
-      'آپ کا نام، ای میل اور git شناخت جو آپ کے لیے کمیٹس پر لگتی ہے۔';
+      'اس ورک اسپیس میں آپ کا نام، ای میل اور git شناخت۔ ورک اسپیس بدلنا یہ تہہ بدلتا ہے؛ ہینڈل، سائن ان اور آلات اکاؤنٹ پر رہتے ہیں۔';
 
   @override
   String get settingsServerConnectionDescription =>
@@ -12096,6 +12133,10 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String get settingsWorkspaceGeneralDescription =>
       'شناخت، پالیسی اور روایات جو اس ورک اسپیس کے سب شیئر کرتے ہیں۔';
+
+  @override
+  String get settingsWorkspaceMeetingsDescription =>
+      'اس ورک اسپیس کی میٹنگز کے لیے نوٹ ٹیمپلیٹس اور محفوظ شدہ آوازیں۔';
 
   @override
   String get settingsWorkspacePolicyLabel => 'ورک اسپیس پالیسی';
@@ -12674,7 +12715,7 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get providerAppsDescription =>
-      'یہ سرور خود کیسے تصدیق کرتا ہے، اور شخص کس سے سائن اِن کرتا ہے۔ پس منظر کام — ویب ہکس، پولنگ، سنک — ایپ پر چلتا ہے، کسی کے ٹوکن پر نہیں۔';
+      'ورک اسپیسز یہ GitHub App وراثت میں لیتے ہیں جب تک وہ دوسرا App یا ذاتی رسائی ٹوکن نہ چنیں۔ پس منظر کام — ویب ہکس، پولنگ، ہم آہنگی — ایپ پر چلتا ہے، کسی شخص کے ٹوکن پر نہیں۔';
 
   @override
   String get providerAppId => 'App id';
@@ -13060,14 +13101,14 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get providerAppsGroupServerDescription =>
-      'پس منظر کام کو بغیر انسان کے ریپوزٹریز تک پہنچاتا ہے: ویب ہکس، pull request پولنگ، ٹکٹ سنک۔';
+      'ان ورک اسپیسز کے لیے جو اس تنصیب کا GitHub App وراثت میں لیتے ہیں۔ اپنے App یا PAT والی ورک اسپیس ورک اسپیس → عمومی میں ترتیب پاتی ہے۔';
 
   @override
   String get providerAppsGroupPrConversations => 'Pull request گفتگوئیں';
 
   @override
   String get providerAppsGroupPrConversationsDescription =>
-      'ڈویلپرز GitHub پر اس سرور سے براہِ راست کیسے بات کر سکتے ہیں۔ ویب ہک یا پبلک URL کے بغیر کام کرتا ہے — سرور پول کرتا ہے۔';
+      'وراثت والی ورک اسپیسز میں ڈویلپرز GitHub پر اس سرور سے کیسے بات کرتے ہیں۔ اپنے App والی ورک اسپیس کا بوٹ ورک اسپیس → عمومی میں ہے۔ ویب ہک یا عوامی URL کے بغیر — سرور پول کرتا ہے۔';
 
   @override
   String get providerAppBotLogin => 'بوٹ لاگ اِن';
@@ -14448,4 +14489,50 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String get rigClipboardAlwaysCopyDescription =>
       'کسی بھی ماحول سے کلپ بورڈ کا مواد پوچھے بغیر اس آلے پر رکھیں۔';
+
+  @override
+  String get workspaceGitHubIdentity => 'GitHub شناخت';
+
+  @override
+  String get workspaceGitHubIdentityDescription =>
+      'اس ورک اسپیس میں پس منظر GitHub کام کی تصدیق کیسے ہوتی ہے۔ تنصیب کا App وراثت میں لیں، دوسرا App استعمال کریں، یا صرف ذاتی رسائی ٹوکن۔';
+
+  @override
+  String get workspaceGitHubModeInherit =>
+      'اس تنصیب کا GitHub App استعمال کریں';
+
+  @override
+  String get workspaceGitHubModeApp => 'کوئی اور GitHub App استعمال کریں';
+
+  @override
+  String get workspaceGitHubModePat => 'صرف ذاتی رسائی ٹوکن';
+
+  @override
+  String get workspaceGitHubInheritHint =>
+      'سرور → فراہم کنندہ ایپس کا GitHub App استعمال کرتا ہے۔';
+
+  @override
+  String get workspaceGitHubAppHint =>
+      'اس ورک اسپیس کی بوٹ اور پولنگ شناخت۔ اراکین آپ میں اس App کے ذریعے سائن ان کرتے ہیں۔';
+
+  @override
+  String get workspaceGitHubPatLabel => 'پس منظر ٹوکن';
+
+  @override
+  String get workspaceGitHubPatDescription =>
+      'اس ورک اسپیس میں پولنگ اور ایجنٹس کے لیے۔ رکن کا پروفائل ٹوکن نہیں۔';
+
+  @override
+  String get workspaceGitHubHasPat => 'پس منظر ٹوکن محفوظ ہے۔';
+
+  @override
+  String get workspaceGitHubNoPat => 'کوئی پس منظر ٹوکن محفوظ نہیں۔';
+
+  @override
+  String get profileOverlayHint =>
+      'یہ فیلڈز اس ورک اسپیس میں آپ ہیں۔ خالی فیلڈز اکاؤنٹ کا نام اور ای میل وراثت میں لیتی ہیں۔ ورک اسپیس بدلنا یہ تہہ بدلتا ہے۔';
+
+  @override
+  String get forgeConnectionsThisWorkspace =>
+      'اس ورک اسپیس کے لیے سائن ان کریں یا ٹوکن چسپاں کریں۔';
 }

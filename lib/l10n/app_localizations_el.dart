@@ -1146,7 +1146,7 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get calendarSettingsDescription =>
-      'Συνδέστε λογαριασμό Google για συγχρονισμό γεγονότων σε αυτόν τον χώρο εργασίας.';
+      'Συνδέστε λογαριασμό Google για συγχρονισμό εκδηλώσεων σε αυτόν τον χώρο. Αυτά τα ημερολόγια είναι δικά σας εδώ.';
 
   @override
   String get calendarConnecting => 'Σύνδεση…';
@@ -7065,7 +7065,7 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get connectGitHubHint =>
-      'Συνδεθείτε στο GitHub ή προσθέστε token στις Ρυθμίσεις → Εσείς → Προφίλ και ταυτότητα → Φιλοξενία κώδικα';
+      'Συνδεθείτε στο GitHub ή προσθέστε token στις Ρυθμίσεις → Χώρος εργασίας → Προφίλ και ταυτότητα → Φιλοξενία κώδικα';
 
   @override
   String get connectGitHubToLoadPrs =>
@@ -7552,6 +7552,43 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get preview => 'Προεπισκόπηση';
+
+  @override
+  String get imageDiffBefore => 'Πριν';
+
+  @override
+  String get imageDiffAfter => 'Μετά';
+
+  @override
+  String get imageDiffModeTwoUp => 'Δίπλα';
+
+  @override
+  String get imageDiffModeSwipe => 'Σύρετε';
+
+  @override
+  String get imageDiffModeDifference => 'Διαφορά';
+
+  @override
+  String imageDiffChangedPercent(String percent) {
+    return 'Άλλαξε $percent%';
+  }
+
+  @override
+  String get imageDiffPictures => 'Εικόνες';
+
+  @override
+  String get imageDiffSource => 'Πηγή';
+
+  @override
+  String get imageDiffDeleted => 'Διαγράφηκε';
+
+  @override
+  String get imageDiffAdded => 'Προστέθηκε';
+
+  @override
+  String imageDiffDimensions(int width, int height) {
+    return 'Π: ${width}px | Υ: ${height}px';
+  }
 
   @override
   String get outdated => 'Παρωχημένο';
@@ -9646,7 +9683,7 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get profileSectionDescription =>
-      'Πώς εμφανίζεστε στους συνεργάτες και στη συγγραφή git commit.';
+      'Πώς εμφανίζεστε στην ομάδα και στη συγγραφή git commit σε αυτόν τον χώρο. Τα κενά κληρονομούν όνομα και email του λογαριασμού.';
 
   @override
   String get displayNameLabel => 'Εμφανιζόμενο όνομα';
@@ -12235,7 +12272,7 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get settingsProfileDescription =>
-      'Το όνομα, το email και η ταυτότητα git που σφραγίζεται στα commit που γίνονται για εσάς.';
+      'Το όνομα, το email και η ταυτότητα git σας σε αυτόν τον χώρο. Η αλλαγή χώρου αλλάζει αυτή την επικάλυψη· το αναγνωριστικό, η σύνδεση και οι συσκευές μένουν στον λογαριασμό.';
 
   @override
   String get settingsServerConnectionDescription =>
@@ -12251,6 +12288,10 @@ class AppLocalizationsEl extends AppLocalizations {
   @override
   String get settingsWorkspaceGeneralDescription =>
       'Ταυτότητα, πολιτική και συμβάσεις που μοιράζονται όλοι σε αυτόν τον χώρο εργασίας.';
+
+  @override
+  String get settingsWorkspaceMeetingsDescription =>
+      'Πρότυπα σημειώσεων και αποθηκευμένες φωνές για τις συσκέψεις αυτού του χώρου εργασίας.';
 
   @override
   String get settingsWorkspacePolicyLabel => 'Πολιτική χώρου εργασίας';
@@ -12839,7 +12880,7 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get providerAppsDescription =>
-      'Πώς αυτός ο διακομιστής αυθεντικοποιείται ως ο εαυτός του και μέσω τίνος συνδέεται ένα άτομο. Η εργασία παρασκηνίου — webhook, δημοσκόπηση, συγχρονισμός — τρέχει στην εφαρμογή, ποτέ στο token ενός ατόμου.';
+      'Οι χώροι εργασίας κληρονομούν αυτό το GitHub App εκτός αν επιλέξουν άλλο App ή προσωπικό διακριτικό. Η εργασία στο παρασκήνιο — webhooks, polling, sync — τρέχει στην εφαρμογή, ποτέ στο διακριτικό ενός ατόμου.';
 
   @override
   String get providerAppId => 'ID εφαρμογής';
@@ -13232,14 +13273,14 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get providerAppsGroupServerDescription =>
-      'Επιτρέπει στην εργασία παρασκηνίου να φτάνει αποθετήρια χωρίς άνθρωπο πίσω από το αίτημα: webhook, δημοσκόπηση pull request, συγχρονισμός εισιτηρίων.';
+      'Για χώρους που κληρονομούν το GitHub App αυτής της εγκατάστασης. Ένας χώρος με δικό του App ή PAT ρυθμίζεται στο Χώρος εργασίας → Γενικά.';
 
   @override
   String get providerAppsGroupPrConversations => 'Συνομιλίες pull request';
 
   @override
   String get providerAppsGroupPrConversationsDescription =>
-      'Πώς μπορούν οι προγραμματιστές να μιλήσουν απευθείας σε αυτόν τον διακομιστή στο GitHub. Λειτουργεί χωρίς webhook ή δημόσιο URL — ο διακομιστής κάνει δημοσκόπηση.';
+      'Πώς μιλούν οι προγραμματιστές σε αυτόν τον διακομιστή στο GitHub σε κληρονομούμενους χώρους. Ένας χώρος με δικό του App έχει bot στο Χώρος εργασίας → Γενικά. Χωρίς webhook ή δημόσιο URL — ο διακομιστής κάνει polling.';
 
   @override
   String get providerAppBotLogin => 'Σύνδεση bot';
@@ -14640,4 +14681,51 @@ class AppLocalizationsEl extends AppLocalizations {
   @override
   String get rigClipboardAlwaysCopyDescription =>
       'Τοποθέτηση περιεχομένου προχείρου από οποιοδήποτε περιβάλλον σε αυτήν τη συσκευή χωρίς ερώτηση.';
+
+  @override
+  String get workspaceGitHubIdentity => 'Ταυτότητα GitHub';
+
+  @override
+  String get workspaceGitHubIdentityDescription =>
+      'Πώς πιστοποιείται η εργασία GitHub στο παρασκήνιο σε αυτόν τον χώρο εργασίας. Κληρονομιά του App της εγκατάστασης, άλλο App ή μόνο προσωπικό διακριτικό πρόσβασης.';
+
+  @override
+  String get workspaceGitHubModeInherit =>
+      'Χρήση του GitHub App αυτής της εγκατάστασης';
+
+  @override
+  String get workspaceGitHubModeApp => 'Χρήση διαφορετικού GitHub App';
+
+  @override
+  String get workspaceGitHubModePat => 'Μόνο προσωπικό διακριτικό πρόσβασης';
+
+  @override
+  String get workspaceGitHubInheritHint =>
+      'Χρησιμοποιεί το GitHub App στο Διακομιστής → Εφαρμογές παρόχων.';
+
+  @override
+  String get workspaceGitHubAppHint =>
+      'Ταυτότητα bot και polling αυτού του χώρου. Τα μέλη συνδέονται στο Εσείς μέσω αυτού του App.';
+
+  @override
+  String get workspaceGitHubPatLabel => 'Διακριτικό παρασκηνίου';
+
+  @override
+  String get workspaceGitHubPatDescription =>
+      'Για polling και πράκτορες σε αυτόν τον χώρο. Όχι το διακριτικό προφίλ ενός μέλους.';
+
+  @override
+  String get workspaceGitHubHasPat =>
+      'Υπάρχει αποθηκευμένο διακριτικό παρασκηνίου.';
+
+  @override
+  String get workspaceGitHubNoPat => 'Δεν υπάρχει διακριτικό παρασκηνίου.';
+
+  @override
+  String get profileOverlayHint =>
+      'Αυτά τα πεδία είστε εσείς σε αυτόν τον χώρο. Τα κενά κληρονομούν όνομα και email του λογαριασμού. Η αλλαγή χώρου αλλάζει αυτή την επικάλυψη.';
+
+  @override
+  String get forgeConnectionsThisWorkspace =>
+      'Συνδεθείτε ή επικολλήστε διακριτικό για αυτόν τον χώρο εργασίας.';
 }

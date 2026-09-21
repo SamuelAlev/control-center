@@ -504,7 +504,7 @@
   "calendarRsvpFailed": "تعذّر تحديث ردّك",
   "calendarAddAccount": "إضافة حساب تقويم",
   "calendarSettingsTitle": "تقويم Google",
-  "calendarSettingsDescription": "اربط حساب Google لمزامنة الأحداث في مساحة العمل هذه.",
+  "calendarSettingsDescription": "اربط حساب Google لمزامنة الأحداث في مساحة العمل هذه. هذه التقاويم لك هنا.",
   "calendarConnecting": "جارٍ الاتصال…",
   "calendarSyncNow": "المزامنة الآن",
   "calendarNoWorkspace": "اختر مساحة عمل لعرض تقويمها",
@@ -3949,7 +3949,7 @@
   "agentQuestionSkippedLabel": "تم التخطي",
   "agentQuestionFreeformOptionHint": "صِف الأمر بكلماتك…",
   "reviewRequested": "طُلبت مراجعة",
-  "connectGitHubHint": "سجّل الدخول إلى GitHub أو أضف رمز وصول في الإعدادات ← أنت ← الملف الشخصي والهوية ← استضافة الكود",
+  "connectGitHubHint": "سجّل الدخول إلى GitHub أو أضف رمز وصول في الإعدادات ← مساحة العمل ← الملف الشخصي والهوية ← استضافة الكود",
   "connectGitHubToLoadPrs": "اربط GitHub لتحميل طلبات السحب",
   "noRepositoriesConfigured": "لا مستودعات مُعدّة",
   "openedAgo": "فُتح {age}",
@@ -5499,7 +5499,7 @@
   },
   "deviceNeverSeen": "لم يتصل مطلقًا",
   "profileSectionLabel": "الملف الشخصي",
-  "profileSectionDescription": "كيف تظهر لزملاء الفريق وفي بيانات مؤلف إيداعات Git.",
+  "profileSectionDescription": "كيف تظهر للفريق وفي مؤلفية إيداعات git في مساحة العمل هذه. الحقول الفارغة ترث اسم حسابك وبريدك.",
   "displayNameLabel": "الاسم المعروض",
   "emailLabel": "البريد الإلكتروني",
   "gitAuthorNameLabel": "اسم المؤلف في Git",
@@ -7270,11 +7270,12 @@
   "settingsScopeBadgeDevice": "هذا الجهاز",
   "settingsScopeBadgeWorkspace": "مساحة العمل",
   "settingsScopeBadgeServer": "الخادم",
-  "settingsProfileDescription": "اسمك وبريدك الإلكتروني وهوية Git التي تُختم بها الإيداعات التي تُجرى نيابةً عنك.",
+  "settingsProfileDescription": "اسمك وبريدك وهوية git في مساحة العمل هذه. تبديل المساحة يبدّل هذه الطبقة؛ المعرّف وتسجيل الدخول والأجهزة تبقى على الحساب.",
   "settingsServerConnectionDescription": "الخادم الذي يتصل به هذا العميل، وكيفية مشاركة هذا الخادم (mDNS، الأنفاق، المرحّل).",
   "settingsAboutDescription": "هوية البناء والتحديثات.",
   "settingsDiagnosticsDescription": "العزل والفهرسة والمزامنة والتسجيل وتقارير الأعطال لهذا التثبيت.",
   "settingsWorkspaceGeneralDescription": "الهوية والسياسة والاصطلاحات المشتركة بين الجميع في مساحة العمل هذه.",
+  "settingsWorkspaceMeetingsDescription": "قوالب الملاحظات والأصوات المحفوظة لاجتماعات مساحة العمل هذه.",
   "settingsWorkspacePolicyLabel": "سياسة مساحة العمل",
   "settingsWorkspacePolicyDescription": "تنطبق على كل عضو وكل وكيل في مساحة العمل هذه.",
   "settingsSecretGlobsLabel": "استثناءات مسارات الأسرار",
@@ -7608,7 +7609,7 @@
   "ticketProviderLocal": "محلي",
   "addKey": "إضافة مفتاح",
   "providerApps": "تطبيقات الموفّرين",
-  "providerAppsDescription": "كيف يوثّق هذا الخادم هويته، وما الذي يسجّل الأشخاص الدخول من خلاله. الأعمال الخلفية — خطافات الويب والاستطلاع والمزامنة — تعمل باسم التطبيق، لا برمز وصول شخص أبدًا.",
+  "providerAppsDescription": "ترث مساحات العمل تطبيق GitHub هذا ما لم تختر تطبيقًا آخر أو رمز وصول شخصي. العمل في الخلفية — webhooks والاستطلاع والمزامنة — يعمل على التطبيق، لا على رمز شخص.",
   "providerAppId": "معرّف التطبيق",
   "providerPrivateKey": "المفتاح الخاص",
   "providerClientId": "معرّف العميل",
@@ -7757,9 +7758,9 @@
   "shortTaskDescription": "يشغّل الأعمال الخلفية السريعة مثل العناوين والملخصات. النموذج الأصغر هو الأنسب هنا.",
   "settingsStateFailed": "فشل",
   "providerAppsGroupServer": "التصرف باسم الخادم",
-  "providerAppsGroupServerDescription": "يتيح للأعمال الخلفية الوصول إلى المستودعات دون إنسان خلف الطلب: خطافات الويب، واستطلاع طلبات السحب، ومزامنة التذاكر.",
+  "providerAppsGroupServerDescription": "لمساحات العمل التي ترث GitHub App لهذا التثبيت. مساحة بعملها أو PAT تُضبط تحت مساحة العمل → عام.",
   "providerAppsGroupPrConversations": "محادثات طلبات السحب",
-  "providerAppsGroupPrConversationsDescription": "كيف يمكن للمطورين التحدث إلى هذا الخادم مباشرة على GitHub. يعمل دون خطاف ويب أو عنوان URL عام — الخادم يستطلع بنفسه.",
+  "providerAppsGroupPrConversationsDescription": "كيف يخاطب المطوّرون هذا الخادم على GitHub في المساحات الوارثة. مساحة بعملها لها بوتها تحت مساحة العمل → عام. يعمل بلا webhook أو عنوان عام — الخادم يستطلع.",
   "providerAppBotLogin": "اسم دخول البوت",
   "providerAppBotLoginEmpty": "اختبر الاتصال للحصول على اسم دخول البوت.",
   "providerAppAskOnGitHub": "السؤال على GitHub",
@@ -8589,5 +8590,75 @@
   "rigClipboardAlwaysPasteTitle": "السماح دائمًا باللصق في الحاويات",
   "rigClipboardAlwaysPasteDescription": "إرسال حافظة هذا الجهاز إلى أي حاوية دون طلب إذن.",
   "rigClipboardAlwaysCopyTitle": "السماح دائمًا بالنسخ من الحاويات",
-  "rigClipboardAlwaysCopyDescription": "وضع محتوى الحافظة من أي حاوية على هذا الجهاز دون طلب إذن."
+  "rigClipboardAlwaysCopyDescription": "وضع محتوى الحافظة من أي حاوية على هذا الجهاز دون طلب إذن.",
+  "imageDiffBefore": "قبل",
+  "@imageDiffBefore":   {
+    "description": "Label for the base (before) side of a PR image diff"
+  },
+  "imageDiffAfter": "بعد",
+  "@imageDiffAfter":   {
+    "description": "Label for the head (after) side of a PR image diff"
+  },
+  "imageDiffModeTwoUp": "جنباً إلى جنب",
+  "@imageDiffModeTwoUp":   {
+    "description": "Side-by-side comparison mode for a PR image diff"
+  },
+  "imageDiffModeSwipe": "تمرير",
+  "@imageDiffModeSwipe":   {
+    "description": "Swipe-divider comparison mode for a PR image diff"
+  },
+  "imageDiffModeDifference": "الفرق",
+  "@imageDiffModeDifference":   {
+    "description": "Pixel overlay comparison mode for a PR image diff"
+  },
+  "imageDiffChangedPercent": "تغير {percent}٪",
+  "@imageDiffChangedPercent":   {
+    "description": "Caption showing how much of a PR image pair differs",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "imageDiffPictures": "صور",
+  "@imageDiffPictures":   {
+    "description": "Header toggle to show SVG as pictures instead of XML hunks"
+  },
+  "imageDiffSource": "المصدر",
+  "@imageDiffSource":   {
+    "description": "Header toggle to show an SVG file's XML source diff"
+  },
+  "imageDiffDeleted": "محذوف",
+  "@imageDiffDeleted": {
+    "description": "Label for the removed (before) side of a PR image asset comparison"
+  },
+  "imageDiffAdded": "مضاف",
+  "@imageDiffAdded": {
+    "description": "Label for the added (after) side of a PR image asset comparison"
+  },
+  "imageDiffDimensions": "ع: {width}px | ص: {height}px",
+  "@imageDiffDimensions": {
+    "description": "Intrinsic pixel size caption under a PR image-diff asset",
+    "placeholders": {
+      "width": {
+        "type": "int"
+      },
+      "height": {
+        "type": "int"
+      }
+    }
+  },
+  "workspaceGitHubIdentity": "هوية GitHub",
+  "workspaceGitHubIdentityDescription": "كيف تُصادق أعمال GitHub الخلفية في مساحة العمل هذه. ورّث تطبيق التثبيت، أو استخدم تطبيقًا آخر، أو رمز وصول شخصي فقط.",
+  "workspaceGitHubModeInherit": "استخدام GitHub App لهذا التثبيت",
+  "workspaceGitHubModeApp": "استخدام GitHub App مختلف",
+  "workspaceGitHubModePat": "رمز وصول شخصي فقط",
+  "workspaceGitHubInheritHint": "يستخدم GitHub App في الخادم → تطبيقات الموفر.",
+  "workspaceGitHubAppHint": "هوية البوت والاستطلاع لمساحة العمل هذه. يسجّل الأعضاء الدخول من أنت عبر هذا التطبيق.",
+  "workspaceGitHubPatLabel": "رمز الخلفية",
+  "workspaceGitHubPatDescription": "للاستطلاع والوكلاء في مساحة العمل هذه. ليس رمز ملف عضو.",
+  "workspaceGitHubHasPat": "رمز خلفية محفوظ.",
+  "workspaceGitHubNoPat": "لا يوجد رمز خلفية.",
+  "profileOverlayHint": "هذه الحقول أنت في مساحة العمل هذه. الحقول الفارغة ترث اسم حسابك وبريدك. تبديل المساحة يبدّل هذه الطبقة.",
+  "forgeConnectionsThisWorkspace": "سجّل الدخول أو الصق رمزًا لمساحة العمل هذه."
 }

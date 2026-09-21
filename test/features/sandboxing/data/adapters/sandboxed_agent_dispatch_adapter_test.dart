@@ -84,6 +84,7 @@ class _FakeBroker implements CredentialBrokerPort {
     String? repoOwner,
     String? repoName,
     String? actingUserId,
+    String? workspaceId,
   }) async {
     if (mintStaller != null) {
       return mintStaller!.future;

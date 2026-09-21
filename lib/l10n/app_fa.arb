@@ -504,7 +504,7 @@
   "calendarRsvpFailed": "به‌روزرسانی پاسخ شما ممکن نشد",
   "calendarAddAccount": "افزودن حساب تقویم",
   "calendarSettingsTitle": "Google Calendar",
-  "calendarSettingsDescription": "یک حساب Google وصل کنید تا رویدادها به این فضای کاری همگام شوند.",
+  "calendarSettingsDescription": "حساب گوگل را وصل کنید تا رویدادها به این فضا همگام شوند. این تقویم‌ها اینجا مال شماست.",
   "calendarConnecting": "در حال اتصال…",
   "calendarSyncNow": "همگام‌سازی اکنون",
   "calendarNoWorkspace": "یک فضای کاری انتخاب کنید تا تقویمش را ببینید",
@@ -3949,7 +3949,7 @@
   "agentQuestionSkippedLabel": "رد شد",
   "agentQuestionFreeformOptionHint": "با کلمات خودتان توضیح دهید…",
   "reviewRequested": "بازبینی درخواست شد",
-  "connectGitHubHint": "وارد GitHub شوید یا در تنظیمات ← شما ← نمایه و هویت ← میزبانی کد توکن اضافه کنید",
+  "connectGitHubHint": "وارد GitHub شوید یا در تنظیمات ← فضای کاری ← نمایه و هویت ← میزبانی کد توکن اضافه کنید",
   "connectGitHubToLoadPrs": "برای بارگذاری pull requestها GitHub را وصل کنید",
   "noRepositoriesConfigured": "مخزنی پیکربندی نشده",
   "openedAgo": "بازشده {age}",
@@ -5499,7 +5499,7 @@
   },
   "deviceNeverSeen": "هرگز متصل نشده",
   "profileSectionLabel": "نمایه",
-  "profileSectionDescription": "چطور برای هم‌تیمی‌ها و در نویسندگی کامیت git ظاهر می‌شوید.",
+  "profileSectionDescription": "چگونه در این فضا برای تیم و نویسندگی commit گیت دیده می‌شوید. فیلدهای خالی نام و ایمیل حساب را به ارث می‌برند.",
   "displayNameLabel": "نام نمایشی",
   "emailLabel": "ایمیل",
   "gitAuthorNameLabel": "نام نویسندهٔ Git",
@@ -7270,11 +7270,12 @@
   "settingsScopeBadgeDevice": "این دستگاه",
   "settingsScopeBadgeWorkspace": "فضای کاری",
   "settingsScopeBadgeServer": "سرور",
-  "settingsProfileDescription": "نام، ایمیل و هویت git که روی کامیت‌های به‌نام شما می‌خورد.",
+  "settingsProfileDescription": "نام، ایمیل و هویت git شما در این فضا. تعویض فضا این لایه را عوض می‌کند؛ شناسه، ورود و دستگاه‌ها روی حساب می‌مانند.",
   "settingsServerConnectionDescription": "این کلاینت با کدام سرور حرف می‌زند، و این سرور چطور به اشتراک گذاشته می‌شود (mDNS، تونل، رله).",
   "settingsAboutDescription": "هویت بیلد و به‌روزرسانی‌ها.",
   "settingsDiagnosticsDescription": "ایزوله‌سازی، ایندکس، همگام‌سازی، ثبت و گزارش کرش این نصب.",
   "settingsWorkspaceGeneralDescription": "هویت، سیاست و قراردادهای مشترک همه در این فضای کاری.",
+  "settingsWorkspaceMeetingsDescription": "الگوهای یادداشت و صداهای ذخیره‌شده برای جلسات این فضای کاری.",
   "settingsWorkspacePolicyLabel": "سیاست فضای کاری",
   "settingsWorkspacePolicyDescription": "برای هر عضو و هر عامل این فضای کاری اعمال می‌شود.",
   "settingsSecretGlobsLabel": "استثناهای مسیر محرمانه",
@@ -7608,7 +7609,7 @@
   "ticketProviderLocal": "محلی",
   "addKey": "افزودن کلید",
   "providerApps": "برنامه‌های ارائه‌دهنده",
-  "providerAppsDescription": "این سرور به‌عنوان خودش چطور احراز هویت می‌کند، و شخص از چه مسیری وارد می‌شود. کار پس‌زمینه — وب‌هوک، نظرسنجی، همگام‌سازی — روی برنامه اجرا می‌شود، هرگز روی توکن شخص.",
+  "providerAppsDescription": "فضاهای کاری این GitHub App را به ارث می‌برند مگر App دیگر یا رمز دسترسی شخصی انتخاب کنند. کار پس‌زمینه — وب‌هوک، نظرسنجی، همگام‌سازی — روی برنامه اجرا می‌شود، نه روی رمز فرد.",
   "providerAppId": "شناسهٔ برنامه",
   "providerPrivateKey": "کلید خصوصی",
   "providerClientId": "شناسهٔ کلاینت",
@@ -7757,9 +7758,9 @@
   "shortTaskDescription": "کار پس‌زمینهٔ سریع مثل عناوین و خلاصه‌ها را اجرا می‌کند. مدل کوچک‌تر اینجا جا می‌گیرد.",
   "settingsStateFailed": "ناموفق",
   "providerAppsGroupServer": "عمل به‌عنوان سرور",
-  "providerAppsGroupServerDescription": "به کار پس‌زمینه اجازه می‌دهد بدون انسان پشت درخواست به مخزن‌ها برسد: وب‌هوک، نظرسنجی pull request، همگام‌سازی تیکت.",
+  "providerAppsGroupServerDescription": "برای فضاهایی که GitHub App این نصب را به ارث می‌برند. فضا با App یا PAT خودش در فضای کاری → عمومی پیکربندی می‌شود.",
   "providerAppsGroupPrConversations": "گفتگوهای pull request",
-  "providerAppsGroupPrConversationsDescription": "توسعه‌دهندگان چطور می‌توانند مستقیم روی GitHub با این سرور حرف بزنند. بدون وب‌هوک یا URL عمومی کار می‌کند — سرور نظرسنجی می‌کند.",
+  "providerAppsGroupPrConversationsDescription": "چگونه توسعه‌دهندگان در فضاهای ارثی در GitHub با این سرور صحبت می‌کنند. فضای با App خودش رباتش را در فضای کاری → عمومی دارد. بدون وب‌هوک یا نشانی عمومی — سرور نظرسنجی می‌کند.",
   "providerAppBotLogin": "ورود ربات",
   "providerAppBotLoginEmpty": "اتصال را آزمایش کنید تا ورود ربات حل شود.",
   "providerAppAskOnGitHub": "پرسیدن در GitHub",
@@ -8589,5 +8590,75 @@
   "rigClipboardAlwaysPasteTitle": "همیشه جای‌گذاری در محیط‌ها مجاز باشد",
   "rigClipboardAlwaysPasteDescription": "بریده‌دان این دستگاه را بدون پرسش به هر محیطی بفرستد.",
   "rigClipboardAlwaysCopyTitle": "همیشه کپی از محیط‌ها مجاز باشد",
-  "rigClipboardAlwaysCopyDescription": "محتوای بریده‌دان را از هر محیطی بدون پرسش روی این دستگاه قرار دهد."
+  "rigClipboardAlwaysCopyDescription": "محتوای بریده‌دان را از هر محیطی بدون پرسش روی این دستگاه قرار دهد.",
+  "imageDiffBefore": "قبل",
+  "@imageDiffBefore":   {
+    "description": "Label for the base (before) side of a PR image diff"
+  },
+  "imageDiffAfter": "بعد",
+  "@imageDiffAfter":   {
+    "description": "Label for the head (after) side of a PR image diff"
+  },
+  "imageDiffModeTwoUp": "دو ستونه",
+  "@imageDiffModeTwoUp":   {
+    "description": "Side-by-side comparison mode for a PR image diff"
+  },
+  "imageDiffModeSwipe": "کشیدن",
+  "@imageDiffModeSwipe":   {
+    "description": "Swipe-divider comparison mode for a PR image diff"
+  },
+  "imageDiffModeDifference": "تفاوت",
+  "@imageDiffModeDifference":   {
+    "description": "Pixel overlay comparison mode for a PR image diff"
+  },
+  "imageDiffChangedPercent": "{percent}٪ تغییر کرده",
+  "@imageDiffChangedPercent":   {
+    "description": "Caption showing how much of a PR image pair differs",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "imageDiffPictures": "تصاویر",
+  "@imageDiffPictures":   {
+    "description": "Header toggle to show SVG as pictures instead of XML hunks"
+  },
+  "imageDiffSource": "منبع",
+  "@imageDiffSource":   {
+    "description": "Header toggle to show an SVG file's XML source diff"
+  },
+  "imageDiffDeleted": "حذف‌شده",
+  "@imageDiffDeleted": {
+    "description": "Label for the removed (before) side of a PR image asset comparison"
+  },
+  "imageDiffAdded": "اضافه‌شده",
+  "@imageDiffAdded": {
+    "description": "Label for the added (after) side of a PR image asset comparison"
+  },
+  "imageDiffDimensions": "ع: {width}px | ط: {height}px",
+  "@imageDiffDimensions": {
+    "description": "Intrinsic pixel size caption under a PR image-diff asset",
+    "placeholders": {
+      "width": {
+        "type": "int"
+      },
+      "height": {
+        "type": "int"
+      }
+    }
+  },
+  "workspaceGitHubIdentity": "هویت GitHub",
+  "workspaceGitHubIdentityDescription": "نحوه احراز هویت کار پس‌زمینه GitHub در این فضای کاری. ارث‌بردن App نصب، App دیگر، یا فقط رمز دسترسی شخصی.",
+  "workspaceGitHubModeInherit": "استفاده از GitHub App این نصب",
+  "workspaceGitHubModeApp": "استفاده از GitHub App دیگر",
+  "workspaceGitHubModePat": "فقط رمز دسترسی شخصی",
+  "workspaceGitHubInheritHint": "از GitHub App در سرور → برنامه‌های ارائه‌دهنده استفاده می‌کند.",
+  "workspaceGitHubAppHint": "هویت ربات و نظرسنجی این فضا. اعضا در شما از طریق این App وارد می‌شوند.",
+  "workspaceGitHubPatLabel": "رمز پس‌زمینه",
+  "workspaceGitHubPatDescription": "برای نظرسنجی و عامل‌ها در این فضا. رمز نمایه عضو نیست.",
+  "workspaceGitHubHasPat": "رمز پس‌زمینه ذخیره شده است.",
+  "workspaceGitHubNoPat": "رمز پس‌زمینه‌ای ذخیره نشده.",
+  "profileOverlayHint": "این فیلدها شما در این فضای کاری هستید. فیلدهای خالی نام و ایمیل حساب را به ارث می‌برند. تعویض فضا این لایه را عوض می‌کند.",
+  "forgeConnectionsThisWorkspace": "وارد شوید یا رمزی برای این فضای کاری جای‌گذاری کنید."
 }

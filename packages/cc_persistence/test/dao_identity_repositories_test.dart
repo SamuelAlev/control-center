@@ -163,6 +163,28 @@ void main() {
       );
     });
 
+    test('profile overlay is workspace-scoped and survives a role upsert',
+        () async {
+      await memberRepo.upsert(member('m-1', 'w-1', 'u-1'));
+      await memberRepo.upsert(member('m-2', 'w-2', 'u-1'));
+      await memberRepo.updateProfileOverlay(
+        'w-1',
+        'u-1',
+        displayName: 'Sam Here',
+        gitAuthorEmail: 'sam@w1.example',
+      );
+      await memberRepo.upsert(
+        member('m-1', 'w-1', 'u-1', role: WorkspaceRole.admin),
+      );
+      final inW1 = await memberRepo.getMember('w-1', 'u-1');
+      final inW2 = await memberRepo.getMember('w-2', 'u-1');
+      expect(inW1?.displayName, 'Sam Here');
+      expect(inW1?.gitAuthorEmail, 'sam@w1.example');
+      expect(inW1?.role, WorkspaceRole.admin);
+      expect(inW2?.displayName, isNull);
+      expect(inW2?.gitAuthorEmail, isNull);
+    });
+
     test('remove deletes a membership', () async {
       await memberRepo.upsert(member('m-1', 'w-1', 'u-1'));
       await memberRepo.remove('w-1', 'u-1');

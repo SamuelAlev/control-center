@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/core/domain/entities/github_user.dart';
 import 'package:cc_infra/src/network/error_mapper.dart';
@@ -31,6 +33,37 @@ class GitHubContentClient {
         cancelToken: cancelToken,
       );
       return response.data?.toString() ?? '';
+    } on DioException catch (e) {
+      if (e.type == DioExceptionType.cancel) {
+        rethrow;
+      }
+
+      throw mapDioException(e);
+    }
+  }
+
+  /// Fetches the raw bytes of a single file at [ref] (branch name, tag, or
+  /// commit SHA). Same endpoint as [getFileContent] with a bytes response so
+  /// rasters are not decoded as UTF-8.
+  Future<Uint8List> getFileBytes(
+    String owner,
+    String repo,
+    String path,
+    String ref, {
+    CancelToken? cancelToken,
+  }) async {
+    _requireOwnerRepo(owner, repo);
+    try {
+      final response = await _dio.get<List<int>>(
+        '/repos/$owner/$repo/contents/$path',
+        queryParameters: {'ref': ref},
+        options: Options(
+          headers: {'Accept': 'application/vnd.github.raw'},
+          responseType: ResponseType.bytes,
+        ),
+        cancelToken: cancelToken,
+      );
+      return _asBytes(response.data);
     } on DioException catch (e) {
       if (e.type == DioExceptionType.cancel) {
         rethrow;
@@ -324,6 +357,55 @@ class GitHubContentClient {
     }
   }
 
+  /// The authenticated token's own permission on [owner]/[repo].
+  ///
+  /// Reads `permissions` from `GET /repos/{owner}/{repo}` — Metadata:read is
+  /// enough, and the answer is what this token can do, not the user's role on
+  /// the repo. Fine-grained PATs often 403 the collaborators-permission
+  /// endpoint even when Contents is read-write, which hid the merge button.
+  ///
+  /// Returns one of: "admin", "write", "read", "none".
+  Future<String> getAuthenticatedRepoPermission(
+    String owner,
+    String repo, {
+    CancelToken? cancelToken,
+  }) async {
+    _requireOwnerRepo(owner, repo);
+    try {
+      final response = await _dio.get(
+        '/repos/$owner/$repo',
+        cancelToken: cancelToken,
+      );
+      final data = response.data;
+      if (data is! Map<String, dynamic>) {
+        return 'none';
+      }
+      final perms = data['permissions'];
+      if (perms is Map) {
+        if (perms['admin'] == true) {
+          return 'admin';
+        }
+        if (perms['maintain'] == true || perms['push'] == true) {
+          return 'write';
+        }
+        if (perms['triage'] == true || perms['pull'] == true) {
+          return 'read';
+        }
+      }
+      return switch (data['role_name'] as String?) {
+        'admin' => 'admin',
+        'maintain' || 'write' => 'write',
+        'triage' || 'read' => 'read',
+        _ => 'none',
+      };
+    } on DioException catch (e) {
+      if (e.type == DioExceptionType.cancel) {
+        rethrow;
+      }
+      throw mapDioException(e);
+    }
+  }
+
   /// Fetches the repository permission level for [username].
   ///
   /// Returns one of: "admin", "write", "read", "none".
@@ -391,4 +473,11 @@ class GitHubContentClient {
       throw ArgumentError('owner and repo must not be empty');
     }
   }
+}
+
+Uint8List _asBytes(List<int>? data) {
+  if (data == null || data.isEmpty) {
+    return Uint8List(0);
+  }
+  return data is Uint8List ? data : Uint8List.fromList(data);
 }

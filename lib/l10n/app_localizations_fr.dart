@@ -1143,7 +1143,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get calendarSettingsDescription =>
-      'Connectez un compte Google pour synchroniser les événements dans cet espace de travail.';
+      'Connectez un compte Google pour synchroniser les événements dans cet espace de travail. Ces calendriers sont les vôtres ici.';
 
   @override
   String get calendarConnecting => 'Connexion…';
@@ -7052,7 +7052,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get connectGitHubHint =>
-      'Connectez-vous à GitHub ou ajoutez un jeton dans Paramètres → Vous → Profil et identité → Hébergement de code';
+      'Connectez-vous à GitHub ou ajoutez un jeton dans Paramètres → Espace de travail → Profil et identité → Hébergement de code';
 
   @override
   String get connectGitHubToLoadPrs =>
@@ -7538,6 +7538,43 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get preview => 'Aperçu';
+
+  @override
+  String get imageDiffBefore => 'Avant';
+
+  @override
+  String get imageDiffAfter => 'Après';
+
+  @override
+  String get imageDiffModeTwoUp => 'Côte à côte';
+
+  @override
+  String get imageDiffModeSwipe => 'Balayer';
+
+  @override
+  String get imageDiffModeDifference => 'Différence';
+
+  @override
+  String imageDiffChangedPercent(String percent) {
+    return '$percent % modifié';
+  }
+
+  @override
+  String get imageDiffPictures => 'Images';
+
+  @override
+  String get imageDiffSource => 'Source';
+
+  @override
+  String get imageDiffDeleted => 'Supprimé';
+
+  @override
+  String get imageDiffAdded => 'Ajouté';
+
+  @override
+  String imageDiffDimensions(int width, int height) {
+    return 'L : ${width}px | H : ${height}px';
+  }
 
   @override
   String get outdated => 'Obsolète';
@@ -9631,7 +9668,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get profileSectionDescription =>
-      'Votre apparence pour vos coéquipiers et dans les commits git.';
+      'Comment vous apparaissez à l\'équipe et dans l\'auteur des commits git dans cet espace. Les champs vides héritent du nom et de l\'e-mail du compte.';
 
   @override
   String get displayNameLabel => 'Nom affiché';
@@ -12224,7 +12261,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get settingsProfileDescription =>
-      'Votre nom, votre e-mail et l\'identité git apposée sur les commits faits en votre nom.';
+      'Votre nom, e-mail et identité git dans cet espace de travail. Changer d\'espace change cette superposition ; identifiant, connexion et appareils restent sur le compte.';
 
   @override
   String get settingsServerConnectionDescription =>
@@ -12241,6 +12278,10 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get settingsWorkspaceGeneralDescription =>
       'Identité, règles et conventions partagées par tous les membres de cet espace de travail.';
+
+  @override
+  String get settingsWorkspaceMeetingsDescription =>
+      'Modèles de notes et voix enregistrées pour les réunions de cet espace de travail.';
 
   @override
   String get settingsWorkspacePolicyLabel => 'Règles de l\'espace de travail';
@@ -12828,7 +12869,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get providerAppsDescription =>
-      'Comment ce serveur s\'authentifie lui-même, et par quoi une personne se connecte. Les tâches de fond — webhooks, sondages, synchronisation — passent par l\'application, jamais par le jeton d\'une personne.';
+      'Les espaces de travail héritent de cette GitHub App, sauf s\'ils choisissent une autre App ou un jeton d\'accès personnel. Le travail en arrière-plan — webhooks, sondage, sync — s\'exécute sur l\'app, jamais sur le jeton d\'une personne.';
 
   @override
   String get providerAppId => 'Identifiant d\'application';
@@ -13220,7 +13261,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get providerAppsGroupServerDescription =>
-      'Permet aux tâches d’arrière-plan d’accéder aux dépôts sans intervention humaine : webhooks, interrogation des pull requests, synchronisation des tickets.';
+      'Utilisé par les espaces de travail qui héritent de la GitHub App de cette installation. Un espace avec sa propre App ou un PAT se configure sous Espace de travail → Général.';
 
   @override
   String get providerAppsGroupPrConversations =>
@@ -13228,7 +13269,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get providerAppsGroupPrConversationsDescription =>
-      'Comment les développeurs peuvent parler à ce serveur directement sur GitHub. Fonctionne sans webhook ni URL publique — le serveur interroge GitHub périodiquement.';
+      'Comment les développeurs parlent à ce serveur sur GitHub dans les espaces hérités. Un espace avec sa propre App a son bot sous Espace de travail → Général. Fonctionne sans webhook ni URL publique — le serveur sonde.';
 
   @override
   String get providerAppBotLogin => 'Login du bot';
@@ -14625,6 +14666,53 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get rigClipboardAlwaysCopyDescription =>
       'Placer le contenu du presse-papiers de n’importe quel environnement sur cet appareil sans demande.';
+
+  @override
+  String get workspaceGitHubIdentity => 'Identité GitHub';
+
+  @override
+  String get workspaceGitHubIdentityDescription =>
+      'Comment le travail GitHub en arrière-plan s\'authentifie dans cet espace. Hériter de l\'App de l\'installation, utiliser une autre App, ou un jeton d\'accès personnel uniquement.';
+
+  @override
+  String get workspaceGitHubModeInherit =>
+      'Utiliser la GitHub App de cette installation';
+
+  @override
+  String get workspaceGitHubModeApp => 'Utiliser une autre GitHub App';
+
+  @override
+  String get workspaceGitHubModePat => 'Jeton d\'accès personnel uniquement';
+
+  @override
+  String get workspaceGitHubInheritHint =>
+      'Utilise la GitHub App dans Serveur → Apps fournisseurs.';
+
+  @override
+  String get workspaceGitHubAppHint =>
+      'Identité bot et sondage de cet espace. Les membres se connectent dans Vous via cette App.';
+
+  @override
+  String get workspaceGitHubPatLabel => 'Jeton d\'arrière-plan';
+
+  @override
+  String get workspaceGitHubPatDescription =>
+      'Pour le sondage et les agents dans cet espace. Pas le jeton de profil d\'un membre.';
+
+  @override
+  String get workspaceGitHubHasPat =>
+      'Un jeton d\'arrière-plan est enregistré.';
+
+  @override
+  String get workspaceGitHubNoPat => 'Aucun jeton d\'arrière-plan enregistré.';
+
+  @override
+  String get profileOverlayHint =>
+      'Ces champs vous représentent dans cet espace. Les champs vides héritent du nom et de l\'e-mail du compte. Changer d\'espace change cette superposition.';
+
+  @override
+  String get forgeConnectionsThisWorkspace =>
+      'Connectez-vous ou collez un jeton pour cet espace de travail.';
 }
 
 /// The translations for French, as used in Canada (`fr_CA`).
@@ -14678,7 +14766,7 @@ class AppLocalizationsFrCa extends AppLocalizationsFr {
 
   @override
   String get settingsProfileDescription =>
-      'Votre nom, votre courriel et l\'identité git apposée sur les commits faits en votre nom.';
+      'Votre nom, votre courriel et l\'identité git dans cet espace de travail. Changer d\'espace change cette superposition; le pseudonyme, la connexion et les appareils restent sur votre compte.';
 
   @override
   String get ssoEmailAttributeLabel => 'Attribut courriel';

@@ -1145,7 +1145,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get calendarSettingsDescription =>
-      'Połącz konto Google, aby synchronizować wydarzenia do tego obszaru roboczego.';
+      'Połącz konto Google, aby synchronizować wydarzenia do tej przestrzeni. Te kalendarze są tutaj twoje.';
 
   @override
   String get calendarConnecting => 'Łączenie…';
@@ -7089,7 +7089,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get connectGitHubHint =>
-      'Zaloguj się do GitHub lub dodaj token w Ustawienia → Ty → Profil i tożsamość → Hosting kodu';
+      'Zaloguj się do GitHub lub dodaj token w Ustawienia → Obszar roboczy → Profil i tożsamość → Hosting kodu';
 
   @override
   String get connectGitHubToLoadPrs =>
@@ -7589,6 +7589,43 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get preview => 'Podgląd';
+
+  @override
+  String get imageDiffBefore => 'Przed';
+
+  @override
+  String get imageDiffAfter => 'Po';
+
+  @override
+  String get imageDiffModeTwoUp => 'Obok siebie';
+
+  @override
+  String get imageDiffModeSwipe => 'Przesuń';
+
+  @override
+  String get imageDiffModeDifference => 'Różnica';
+
+  @override
+  String imageDiffChangedPercent(String percent) {
+    return 'zmieniono $percent%';
+  }
+
+  @override
+  String get imageDiffPictures => 'Obrazy';
+
+  @override
+  String get imageDiffSource => 'Źródło';
+
+  @override
+  String get imageDiffDeleted => 'Usunięto';
+
+  @override
+  String get imageDiffAdded => 'Dodano';
+
+  @override
+  String imageDiffDimensions(int width, int height) {
+    return 'S: ${width}px | W: ${height}px';
+  }
 
   @override
   String get outdated => 'Nieaktualne';
@@ -9682,7 +9719,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get profileSectionDescription =>
-      'Jak widzą Cię współpracownicy i w autorstwie commitów gita.';
+      'Jak wyglądasz dla zespołu i w autorstwie commitów git w tej przestrzeni. Puste pola dziedziczą nazwę i e-mail konta.';
 
   @override
   String get displayNameLabel => 'Nazwa wyświetlana';
@@ -12315,7 +12352,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get settingsProfileDescription =>
-      'Twoje imię, e-mail i tożsamość gita odbijana na tworzonych dla Ciebie commitach.';
+      'Twoja nazwa, e-mail i tożsamość git w tej przestrzeni. Zmiana przestrzeni zmienia tę nakładkę; identyfikator, logowanie i urządzenia zostają na koncie.';
 
   @override
   String get settingsServerConnectionDescription =>
@@ -12331,6 +12368,10 @@ class AppLocalizationsPl extends AppLocalizations {
   @override
   String get settingsWorkspaceGeneralDescription =>
       'Tożsamość, zasady i konwencje wspólne dla wszystkich w tym obszarze roboczym.';
+
+  @override
+  String get settingsWorkspaceMeetingsDescription =>
+      'Szablony notatek i zapisane głosy na spotkania w tym obszarze roboczym.';
 
   @override
   String get settingsWorkspacePolicyLabel => 'Zasady obszaru roboczego';
@@ -12919,7 +12960,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get providerAppsDescription =>
-      'Jak ten serwer uwierzytelnia się jako on sam i przez co loguje się człowiek. Praca w tle — webhooki, odpytywanie, synchronizacja — działa na aplikacji, nigdy na tokenie osoby.';
+      'Przestrzenie dziedziczą tę GitHub App, chyba że wybiorą inną App albo osobisty token dostępu. Praca w tle — webhooki, odpytywanie, sync — działa na aplikacji, nigdy na tokenie osoby.';
 
   @override
   String get providerAppId => 'Identyfikator aplikacji';
@@ -13306,14 +13347,14 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get providerAppsGroupServerDescription =>
-      'Pozwala pracy w tle sięgać repozytoriów bez człowieka za żądaniem: webhooki, odpytywanie pull requestów, synchronizacja zgłoszeń.';
+      'Dla przestrzeni dziedziczących GitHub App tej instalacji. Przestrzeń z własną App lub PAT ustawia się w Przestrzeń → Ogólne.';
 
   @override
   String get providerAppsGroupPrConversations => 'Rozmowy przy pull requestach';
 
   @override
   String get providerAppsGroupPrConversationsDescription =>
-      'Jak deweloperzy mogą rozmawiać z tym serwerem wprost na GitHubie. Działa bez webhooka i publicznego adresu URL — serwer odpytuje.';
+      'Jak deweloperzy rozmawiają z tym serwerem na GitHubie w przestrzeniach dziedziczących. Przestrzeń z własną App ma bota w Przestrzeń → Ogólne. Działa bez webhooka i publicznego URL — serwer odpytuje.';
 
   @override
   String get providerAppBotLogin => 'Login bota';
@@ -14716,4 +14757,49 @@ class AppLocalizationsPl extends AppLocalizations {
   @override
   String get rigClipboardAlwaysCopyDescription =>
       'Umieszczaj zawartość schowka z dowolnego środowiska na tym urządzeniu bez pytania.';
+
+  @override
+  String get workspaceGitHubIdentity => 'Tożsamość GitHub';
+
+  @override
+  String get workspaceGitHubIdentityDescription =>
+      'Jak uwierzytelnia się praca w tle na GitHubie w tej przestrzeni. Dziedziczenie App tej instalacji, inna App albo tylko osobisty token dostępu.';
+
+  @override
+  String get workspaceGitHubModeInherit => 'Użyj GitHub App tej instalacji';
+
+  @override
+  String get workspaceGitHubModeApp => 'Użyj innej GitHub App';
+
+  @override
+  String get workspaceGitHubModePat => 'Tylko osobisty token dostępu';
+
+  @override
+  String get workspaceGitHubInheritHint =>
+      'Używa GitHub App w Serwer → Aplikacje dostawców.';
+
+  @override
+  String get workspaceGitHubAppHint =>
+      'Tożsamość bota i odpytywania tej przestrzeni. Członkowie logują się w Ty przez tę App.';
+
+  @override
+  String get workspaceGitHubPatLabel => 'Token w tle';
+
+  @override
+  String get workspaceGitHubPatDescription =>
+      'Do odpytywania i agentów w tej przestrzeni. To nie token profilu członka.';
+
+  @override
+  String get workspaceGitHubHasPat => 'Token w tle jest zapisany.';
+
+  @override
+  String get workspaceGitHubNoPat => 'Brak zapisanego tokenu w tle.';
+
+  @override
+  String get profileOverlayHint =>
+      'Te pola to ty w tej przestrzeni. Puste pola dziedziczą nazwę i e-mail konta. Zmiana przestrzeni zmienia tę nakładkę.';
+
+  @override
+  String get forgeConnectionsThisWorkspace =>
+      'Zaloguj się albo wklej token dla tej przestrzeni.';
 }

@@ -504,7 +504,7 @@
   "calendarRsvpFailed": "Odpověď se nepodařilo aktualizovat",
   "calendarAddAccount": "Přidat účet kalendáře",
   "calendarSettingsTitle": "Google Calendar",
-  "calendarSettingsDescription": "Připojte účet Google a synchronizujte události do tohoto pracovního prostoru.",
+  "calendarSettingsDescription": "Propojte účet Google a synchronizujte události do tohoto workspace. Tyto kalendáře jsou tady vaše.",
   "calendarConnecting": "Připojování…",
   "calendarSyncNow": "Synchronizovat teď",
   "calendarNoWorkspace": "Vyberte pracovní prostor pro zobrazení jeho kalendáře",
@@ -3949,7 +3949,7 @@
   "agentQuestionSkippedLabel": "Přeskočeno",
   "agentQuestionFreeformOptionHint": "Popište to vlastními slovy…",
   "reviewRequested": "Vyžádána kontrola",
-  "connectGitHubHint": "Přihlaste se na GitHub nebo přidejte token v Nastavení → Vy → Profil a identita → Hostování kódu",
+  "connectGitHubHint": "Přihlaste se na GitHub nebo přidejte token v Nastavení → Pracovní prostor → Profil a identita → Hostování kódu",
   "connectGitHubToLoadPrs": "Připojte GitHub a načtěte pull requesty",
   "noRepositoriesConfigured": "Žádné nakonfigurované repozitáře",
   "openedAgo": "Otevřeno {age}",
@@ -5499,7 +5499,7 @@
   },
   "deviceNeverSeen": "Nikdy nepřipojeno",
   "profileSectionLabel": "Profil",
-  "profileSectionDescription": "Jak se zobrazujete kolegům a v autorství git commitů.",
+  "profileSectionDescription": "Jak vás vidí tým a autorství git commitů v tomto workspace. Prázdná pole zdědí jméno a e-mail účtu.",
   "displayNameLabel": "Zobrazované jméno",
   "emailLabel": "E-mail",
   "gitAuthorNameLabel": "Jméno autora Git",
@@ -7270,11 +7270,12 @@
   "settingsScopeBadgeDevice": "TOTO ZAŘÍZENÍ",
   "settingsScopeBadgeWorkspace": "PRACOVNÍ PROSTOR",
   "settingsScopeBadgeServer": "SERVER",
-  "settingsProfileDescription": "Vaše jméno, e-mail a git identita razítkovaná na commitech udělaných za vás.",
+  "settingsProfileDescription": "Vaše jméno, e-mail a git identita v tomto workspace. Přepnutí workspace přepne tuto vrstvu; handle, přihlášení a zařízení zůstanou na účtu.",
   "settingsServerConnectionDescription": "Ke kterému serveru tento klient mluví a jak se tento server sdílí (mDNS, tunely, relé).",
   "settingsAboutDescription": "Identita sestavení a aktualizace.",
   "settingsDiagnosticsDescription": "Izolace, indexování, synchronizace, protokolování a hlášení pádů této instalace.",
   "settingsWorkspaceGeneralDescription": "Identita, politika a konvence sdílené všemi v tomto pracovním prostoru.",
+  "settingsWorkspaceMeetingsDescription": "Šablony poznámek a uložené hlasy pro schůzky v tomto pracovním prostoru.",
   "settingsWorkspacePolicyLabel": "Politika pracovního prostoru",
   "settingsWorkspacePolicyDescription": "Platí pro každého člena a každého agenta v tomto pracovním prostoru.",
   "settingsSecretGlobsLabel": "Vyloučení cest k tajemstvím",
@@ -7608,7 +7609,7 @@
   "ticketProviderLocal": "Místní",
   "addKey": "Přidat klíč",
   "providerApps": "Aplikace poskytovatelů",
-  "providerAppsDescription": "Jak se tento server autentizuje jako on sám a přes co se přihlašuje člověk. Práce na pozadí — webhooky, polling, synchronizace — běží na aplikaci, nikdy na tokenu člověka.",
+  "providerAppsDescription": "Workspacy dědí tuto GitHub App, pokud si nevyberou jinou App nebo osobní přístupový token. Práce na pozadí — webhooky, polling, sync — běží na app, nikdy na tokenu osoby.",
   "providerAppId": "ID aplikace",
   "providerPrivateKey": "Soukromý klíč",
   "providerClientId": "Client id",
@@ -7757,9 +7758,9 @@
   "shortTaskDescription": "Spouští rychlou práci na pozadí, například názvy a shrnutí. Patří sem menší model.",
   "settingsStateFailed": "Selhalo",
   "providerAppsGroupServer": "Jednání jako server",
-  "providerAppsGroupServerDescription": "Umožní práci na pozadí dosáhnout repozitářů bez člověka za požadavkem: webhooky, polling pull requestů, synchronizace ticketů.",
+  "providerAppsGroupServerDescription": "Pro workspacy, které dědí GitHub App této instalace. Workspace s vlastní App nebo PAT se nastavuje v Workspace → Obecné.",
   "providerAppsGroupPrConversations": "Konverzace pull requestů",
-  "providerAppsGroupPrConversationsDescription": "Jak můžou vývojáři mluvit s tímto serverem přímo na GitHub. Funguje bez webhooku nebo veřejného URL — server polluje.",
+  "providerAppsGroupPrConversationsDescription": "Jak vývojáři mluví s tímto serverem na GitHubu v děděných workspacích. Workspace s vlastní App má bota v Workspace → Obecné. Funguje bez webhooku a veřejné URL — server polluje.",
   "providerAppBotLogin": "Přihlášení bota",
   "providerAppBotLoginEmpty": "Otestujte připojení a vyřešte přihlášení bota.",
   "providerAppAskOnGitHub": "Ptaní na GitHub",
@@ -8589,5 +8590,75 @@
   "rigClipboardAlwaysPasteTitle": "Vždy povolit vložení do kontejnerů",
   "rigClipboardAlwaysPasteDescription": "Odesílat schránku tohoto zařízení do libovolného kontejneru bez dotazu.",
   "rigClipboardAlwaysCopyTitle": "Vždy povolit kopírování z kontejnerů",
-  "rigClipboardAlwaysCopyDescription": "Vložit obsah schránky z libovolného kontejneru do tohoto zařízení bez dotazu."
+  "rigClipboardAlwaysCopyDescription": "Vložit obsah schránky z libovolného kontejneru do tohoto zařízení bez dotazu.",
+  "imageDiffBefore": "Předtím",
+  "@imageDiffBefore":   {
+    "description": "Label for the base (before) side of a PR image diff"
+  },
+  "imageDiffAfter": "Potom",
+  "@imageDiffAfter":   {
+    "description": "Label for the head (after) side of a PR image diff"
+  },
+  "imageDiffModeTwoUp": "Vedle sebe",
+  "@imageDiffModeTwoUp":   {
+    "description": "Side-by-side comparison mode for a PR image diff"
+  },
+  "imageDiffModeSwipe": "Potáhnout",
+  "@imageDiffModeSwipe":   {
+    "description": "Swipe-divider comparison mode for a PR image diff"
+  },
+  "imageDiffModeDifference": "Rozdíl",
+  "@imageDiffModeDifference":   {
+    "description": "Pixel overlay comparison mode for a PR image diff"
+  },
+  "imageDiffChangedPercent": "Změněno {percent} %",
+  "@imageDiffChangedPercent":   {
+    "description": "Caption showing how much of a PR image pair differs",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "imageDiffPictures": "Obrázky",
+  "@imageDiffPictures":   {
+    "description": "Header toggle to show SVG as pictures instead of XML hunks"
+  },
+  "imageDiffSource": "Zdroj",
+  "@imageDiffSource":   {
+    "description": "Header toggle to show an SVG file's XML source diff"
+  },
+  "imageDiffDeleted": "Odstraněno",
+  "@imageDiffDeleted": {
+    "description": "Label for the removed (before) side of a PR image asset comparison"
+  },
+  "imageDiffAdded": "Přidáno",
+  "@imageDiffAdded": {
+    "description": "Label for the added (after) side of a PR image asset comparison"
+  },
+  "imageDiffDimensions": "Š: {width}px | V: {height}px",
+  "@imageDiffDimensions": {
+    "description": "Intrinsic pixel size caption under a PR image-diff asset",
+    "placeholders": {
+      "width": {
+        "type": "int"
+      },
+      "height": {
+        "type": "int"
+      }
+    }
+  },
+  "workspaceGitHubIdentity": "Identita GitHub",
+  "workspaceGitHubIdentityDescription": "Jak se v tomto workspace ověřuje práce na GitHubu na pozadí. Zdění App této instalace, jiná App, nebo jen osobní přístupový token.",
+  "workspaceGitHubModeInherit": "Použít GitHub App této instalace",
+  "workspaceGitHubModeApp": "Použít jinou GitHub App",
+  "workspaceGitHubModePat": "Pouze osobní přístupový token",
+  "workspaceGitHubInheritHint": "Používá GitHub App v Server → Aplikace poskytovatelů.",
+  "workspaceGitHubAppHint": "Bot a identita pollingu tohoto workspace. Členové se na You přihlašují přes tuto App.",
+  "workspaceGitHubPatLabel": "Token na pozadí",
+  "workspaceGitHubPatDescription": "Pro polling a agenty v tomto workspace. Nejde o profilový token člena.",
+  "workspaceGitHubHasPat": "Token na pozadí je uložen.",
+  "workspaceGitHubNoPat": "Žádný token na pozadí není uložen.",
+  "profileOverlayHint": "Tato pole jste vy v tomto workspace. Prázdná pole zdědí jméno a e-mail účtu. Přepnutí workspace přepne tuto vrstvu.",
+  "forgeConnectionsThisWorkspace": "Přihlaste se nebo vložte token pro tento workspace."
 }

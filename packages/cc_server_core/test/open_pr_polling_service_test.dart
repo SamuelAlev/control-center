@@ -102,8 +102,9 @@ class FakeOpenPrFetchPort implements OpenPrFetchPort {
   @override
   Future<({bool changed, String? etag})> probeRepo(
     Repo repo,
-    String? etag,
-  ) async {
+    String? etag, {
+    String? workspaceId,
+  }) async {
     probeCalls++;
     probedRepoIds.add(repo.id);
     final error = probeErrors[repo.id];
@@ -114,7 +115,10 @@ class FakeOpenPrFetchPort implements OpenPrFetchPort {
   }
 
   @override
-  Future<OpenPrFetchResult> fetchGroups(List<Repo> repos) async {
+  Future<OpenPrFetchResult> fetchGroups(
+    List<Repo> repos, {
+    String? workspaceId,
+  }) async {
     fetchGroupsCalls++;
     final gate = fetchGroupsGate;
     if (gate != null) {
@@ -131,15 +135,19 @@ class FakeOpenPrFetchPort implements OpenPrFetchPort {
 
   @override
   Future<Map<String, Map<int, PrStatusOverlay>>> fetchChecks(
-    List<Repo> repos,
-  ) async {
+    List<Repo> repos, {
+    String? workspaceId,
+  }) async {
     fetchChecksCalls++;
     return checks;
   }
 
   @override
-  Future<bool?> wasMerged(Repo repo, int prNumber) async =>
-      mergedNumbers.contains(prNumber);
+  Future<bool?> wasMerged(
+    Repo repo,
+    int prNumber, {
+    String? workspaceId,
+  }) async => mergedNumbers.contains(prNumber);
 
   /// Scripted forge verdict for the readiness confirmation, per PR number.
   /// Absent = `unknown`, i.e. "not confirmed", which suppresses the edge.
@@ -156,13 +164,21 @@ class FakeOpenPrFetchPort implements OpenPrFetchPort {
   int firstFailingCheckCalls = 0;
 
   @override
-  Future<PrMergeableState> mergeState(Repo repo, int prNumber) async {
+  Future<PrMergeableState> mergeState(
+    Repo repo,
+    int prNumber, {
+    String? workspaceId,
+  }) async {
     mergeStateCalls++;
     return mergeStates[prNumber] ?? PrMergeableState.unknown;
   }
 
   @override
-  Future<String?> latestApprover(Repo repo, int prNumber) async {
+  Future<String?> latestApprover(
+    Repo repo,
+    int prNumber, {
+    String? workspaceId,
+  }) async {
     latestApproverCalls++;
     return approvers[prNumber];
   }
@@ -170,8 +186,9 @@ class FakeOpenPrFetchPort implements OpenPrFetchPort {
   @override
   Future<({String name, String? url})?> firstFailingCheck(
     Repo repo,
-    int prNumber,
-  ) async {
+    int prNumber, {
+    String? workspaceId,
+  }) async {
     firstFailingCheckCalls++;
     return failingChecks[prNumber];
   }

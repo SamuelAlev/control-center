@@ -7,12 +7,12 @@ import 'package:flutter/widgets.dart';
 ///
 /// Connecting the Slack app, running guided setup and customizing the bot is
 /// workspace administration; linking *your* chat account to *your* user is
-/// identity. They are different scopes with different audiences, so they are
-/// two contributions rather than one card filed under whichever scope wins.
+/// identity in this workspace. They are different surfaces with different
+/// audiences, so they are two contributions rather than one card.
 const List<SettingsSectionContribution> chatBridgesSettingsSections = [
   SettingsSectionContribution(
     id: 'chat_bridges.my-account-link',
-    slot: SettingsSlot.userProfile,
+    slot: SettingsSlot.workspaceProfile,
     order: 40,
     builder: _buildMyAccountLink,
   ),

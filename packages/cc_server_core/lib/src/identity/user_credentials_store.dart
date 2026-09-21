@@ -15,6 +15,8 @@ import 'package:cc_server_core/src/identity/provider_token.dart';
 /// second file): one on-disk map, one in-memory cache, the same 0600
 /// host-filesystem trust boundary as the device PSKs. Keys are namespaced
 /// (`user_forge_<forge>_<userId>`) so they can never collide with device ids.
+/// A GitHub overlay for one workspace appends `_<workspaceId>` so connecting
+/// on You in that workspace does not overwrite the global onboarding slot.
 ///
 /// Tokens are write-only from the API's point of view: callers can store,
 /// delete and probe for presence, and the resolution paths read the raw value —
@@ -26,37 +28,70 @@ class UserCredentialsStore {
 
   final FileSecretsStore _secrets;
 
-  static String _forgeKey(ForgeHost forge, String userId) =>
-      'user_forge_${forge.wire}_$userId';
+  /// Secrets-file key for [userId]'s [forge] credential.
+  ///
+  /// When [workspaceId] is set this is the overlay for that workspace; when
+  /// omitted it is the global onboarding slot.
+  static String forgeKey(
+    ForgeHost forge,
+    String userId, {
+    String? workspaceId,
+  }) {
+    final base = 'user_forge_${forge.wire}_$userId';
+    if (workspaceId == null || workspaceId.isEmpty) {
+      return base;
+    }
+    return '${base}_$workspaceId';
+  }
 
   static String _ticketKey(TicketProvider provider, String userId) =>
       'user_ticket_${provider.name}_$userId';
 
   /// [userId]'s credential for [forge], or null when they have none.
-  Future<ProviderToken?> forgeToken(String userId, ForgeHost forge) =>
-      _secrets.readPsk(_forgeKey(forge, userId)).then(ProviderToken.tryParse);
+  ///
+  /// A non-empty [workspaceId] reads the overlay for that workspace only —
+  /// it does not fall back to the global slot. Callers that want the inherit
+  /// chain (overlay then onboarding) do that themselves.
+  Future<ProviderToken?> forgeToken(
+    String userId,
+    ForgeHost forge, {
+    String? workspaceId,
+  }) => _secrets
+      .readPsk(forgeKey(forge, userId, workspaceId: workspaceId))
+      .then(ProviderToken.tryParse);
 
   /// Stores [token] as [userId]'s credential for [forge].
   Future<void> setForgeToken(
     String userId,
     ForgeHost forge,
-    ProviderToken token,
-  ) async {
+    ProviderToken token, {
+    String? workspaceId,
+  }) async {
     if (token.accessToken.isEmpty) {
-      await clearForgeToken(userId, forge);
+      await clearForgeToken(userId, forge, workspaceId: workspaceId);
       return;
     }
-    await _secrets.writePsk(_forgeKey(forge, userId), token.encode());
+    await _secrets.writePsk(
+      forgeKey(forge, userId, workspaceId: workspaceId),
+      token.encode(),
+    );
   }
 
   /// Removes [userId]'s credential for [forge].
-  Future<void> clearForgeToken(String userId, ForgeHost forge) =>
-      _secrets.deletePsk(_forgeKey(forge, userId));
+  Future<void> clearForgeToken(
+    String userId,
+    ForgeHost forge, {
+    String? workspaceId,
+  }) => _secrets.deletePsk(forgeKey(forge, userId, workspaceId: workspaceId));
 
   /// Whether [userId] has a credential for [forge] (presence only — the value
   /// itself is never exposed).
-  Future<bool> hasForgeToken(String userId, ForgeHost forge) async =>
-      (await forgeToken(userId, forge)) != null;
+  Future<bool> hasForgeToken(
+    String userId,
+    ForgeHost forge, {
+    String? workspaceId,
+  }) async =>
+      (await forgeToken(userId, forge, workspaceId: workspaceId)) != null;
 
   /// [userId]'s credential for the ticketing [provider], or null.
   Future<ProviderToken?> ticketToken(
@@ -89,13 +124,18 @@ class UserCredentialsStore {
 
   /// Stores a pasted GitHub token for [userId]. An empty token deletes the
   /// entry (the member reverts to the server's app credential).
-  Future<void> setGitHubToken(String userId, String token) => setForgeToken(
+  Future<void> setGitHubToken(
+    String userId,
+    String token, {
+    String? workspaceId,
+  }) => setForgeToken(
     userId,
     ForgeHost.github,
     ProviderToken(accessToken: token),
+    workspaceId: workspaceId,
   );
 
   /// Whether [userId] has a GitHub token configured.
-  Future<bool> hasGitHubToken(String userId) =>
-      hasForgeToken(userId, ForgeHost.github);
+  Future<bool> hasGitHubToken(String userId, {String? workspaceId}) =>
+      hasForgeToken(userId, ForgeHost.github, workspaceId: workspaceId);
 }

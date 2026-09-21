@@ -30,6 +30,7 @@ void main() {
           'accounts': [
             {
               'id': 'acc-1',
+              'user_id': 'u-1',
               'provider_id': 'google',
               'account_email': 'sam@example.com',
               'display_name': 'Sam',
@@ -44,6 +45,7 @@ void main() {
         final a = accounts.first;
         expect(a.id, 'acc-1');
         expect(a.workspaceId, 'ws-1');
+        expect(a.userId, 'u-1');
         expect(a.providerId, 'google');
         expect(a.accountEmail, 'sam@example.com');
         expect(a.displayName, 'Sam');

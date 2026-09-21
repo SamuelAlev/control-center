@@ -34,12 +34,19 @@ void main() {
     );
 
     expect(find.byIcon(CcIcons.house), findsNothing);
-    final box = tester.widget<SizedBox>(find.byType(SizedBox).first);
-    expect(box.width, 18);
-    // Unselected rows render their icon in textSecondary.
+    final iconSize = find.byWidgetPredicate(
+      (w) => w is SizedBox && w.width == 18 && w.height == 18,
+    );
+    expect(iconSize, findsOneWidget);
+    // Unselected rows render their icon in textSecondary. The brand-fill
+    // overlay is also a ColoredBox, so pin the assertion to the 18px slot.
     final t = DesignSystemTokens.light();
     expect(
-      tester.widget<ColoredBox>(find.byType(ColoredBox).first).color,
+      tester
+          .widget<ColoredBox>(
+            find.descendant(of: iconSize, matching: find.byType(ColoredBox)),
+          )
+          .color,
       t.textSecondary,
     );
   });
@@ -191,6 +198,59 @@ void main() {
     expect(ink(), t.textSecondary);
   });
 
+  testWidgets(
+    'selecting fades the brand fill instead of lerping through dark',
+    (tester) async {
+      final t = DesignSystemTokens.light();
+      final selected = ValueNotifier(false);
+      addTearDown(selected.dispose);
+      await tester.pumpWidget(
+        ccTestApp(
+          ValueListenableBuilder<bool>(
+            valueListenable: selected,
+            builder: (context, sel, _) => CcSidebarItem(
+              icon: CcIcons.house,
+              label: 'Inbox',
+              selected: sel,
+              onPressed: () {},
+            ),
+          ),
+        ),
+      );
+
+      Color wash() {
+        final container = tester.widget<AnimatedContainer>(
+          find.byType(AnimatedContainer),
+        );
+        return (container.decoration! as BoxDecoration).color!;
+      }
+
+      // The hover wash is the fg RGB at low alpha. Color.lerp of that into
+      // bgBrandSolid peaks at a high-alpha dark brown — the click flash.
+      // Selecting must not retint this wash; the brand fill is a sibling.
+      expect(wash().r, closeTo(t.hover.r, 0.01));
+      expect(wash().g, closeTo(t.hover.g, 0.01));
+      expect(wash().b, closeTo(t.hover.b, 0.01));
+      expect(wash().a, lessThan(0.2));
+
+      selected.value = true;
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 40));
+      expect(wash().r, closeTo(t.hover.r, 0.01));
+      expect(wash().g, closeTo(t.hover.g, 0.01));
+      expect(wash().b, closeTo(t.hover.b, 0.01));
+      expect(wash().a, lessThan(0.2));
+
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widgetList<ColoredBox>(find.byType(ColoredBox))
+            .any((c) => c.color == t.bgBrandSolid),
+        isTrue,
+      );
+    },
+  );
+
   testWidgets('renders a trailing badge when provided', (tester) async {
     await tester.pumpWidget(
       ccTestApp(
@@ -221,7 +281,9 @@ void main() {
       return tester.getRect(find.byType(AnimatedContainer));
     }
 
-    testWidgets('default pins the badge to the trailing gutter', (tester) async {
+    testWidgets('default pins the badge to the trailing gutter', (
+      tester,
+    ) async {
       final row = await pumpAndMeasure(
         tester,
         const CcSidebarItem(
@@ -230,9 +292,9 @@ void main() {
           badge: Text('3'),
         ),
       );
-      // Right border (1px) + the fixed right inset = the badge's distance
-      // from the row's outer right edge, whatever the label's width.
-      expect(row.right - tester.getTopRight(find.text('3')).dx, 11);
+      // The reserved 1px border is painted (foreground), not laid out; the
+      // trailing inset is the 10px padding, whatever the label's width.
+      expect(row.right - tester.getTopRight(find.text('3')).dx, 10);
     });
 
     testWidgets(

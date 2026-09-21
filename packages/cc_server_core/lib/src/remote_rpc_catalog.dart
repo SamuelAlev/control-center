@@ -190,7 +190,9 @@ import 'package:cc_server_core/src/identity/provider_app_settings.dart';
 import 'package:cc_server_core/src/identity/provider_oauth_service.dart';
 import 'package:cc_server_core/src/identity/provider_token.dart';
 import 'package:cc_server_core/src/identity/user_credentials_store.dart';
+import 'package:cc_server_core/src/identity/workspace_github_app_settings.dart';
 import 'package:cc_server_core/src/identity/workspace_invite_service.dart';
+import 'package:cc_server_core/src/identity/workspace_profile.dart';
 import 'package:cc_server_core/src/paired_device_secrets_port.dart';
 import 'package:cc_server_core/src/pr_review/open_pr_polling_service.dart';
 import 'package:cc_server_core/src/pr_review/review_ci_signal_service.dart';
@@ -555,7 +557,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   // every comment as whatever identity the server itself holds — an operator
   // approving from here showed up on GitHub as the app. The cache below is
   // keyed by user for the same reason.
-  ForgeProviderRegistry Function(String? actingUserId)?
+  ForgeProviderRegistry Function(String? actingUserId, {String? workspaceId})?
   forgeProviderRegistryFor,
   PrPreviewFetcher? fetchPrPreview,
   CommitPreviewFetcher? fetchCommitPreview,
@@ -666,11 +668,20 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   // The SERVER's own app identity (GitHub App, Linear app), backing
   // `providerApps.*`. Operator-only; absent when null.
   ProviderAppSettings? providerApps,
+  // Per-workspace GitHub App / background PAT, backing `workspaceGitHub.*`.
+  // Admin-only; absent when null. Secrets live in secrets.json, never
+  // workspace.db.
+  WorkspaceGitHubAppSettings? workspaceGitHubApps,
   // Builds the API client for one repo, on that repo's own forge, acting as
   // [actingUserId]. Backs the compose-PR reads (branches, default branch,
   // comparison, templates) so the composer works the same on every forge. Null
   // → those ops degrade to empty.
-  ForgePrClient Function(Repo repo, String? actingUserId)? buildForgePrClient,
+  ForgePrClient Function(
+    Repo repo,
+    String? actingUserId, {
+    String? workspaceId,
+  })?
+  buildForgePrClient,
   // Detects the OS-native sandbox capabilities of the SERVER's machine (which
   // backends are available + the recommended one) for the Settings → Sandboxing
   // page. The sandbox runs on the host, so detection is a host-local capability
@@ -1402,6 +1413,35 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   final identityUsers = userRepository;
   final identityMembers = membershipRepository;
   final identityInvites = inviteRepository;
+
+  /// Workspace overlay for unscoped ops. RPC clients inject `workspace_id`
+  /// even on `workspaceScoped: false` calls so Sign in / Profile in a
+  /// workspace write the overlay rather than the global onboarding slot.
+  String? overlayWorkspaceId(RepoOpContext ctx) {
+    final raw = ctx.args['workspace_id'];
+    if (raw is String && raw.isNotEmpty) {
+      return raw;
+    }
+    return ctx.workspaceId;
+  }
+
+  /// Like [overlayWorkspaceId], but refuses a workspace the caller is not
+  /// a member of. Unscoped ops have no dispatcher membership gate.
+  Future<String?> overlayWorkspaceIdChecked(RepoOpContext ctx) async {
+    final id = overlayWorkspaceId(ctx);
+    if (id == null || id.isEmpty) {
+      return null;
+    }
+    final members = identityMembers;
+    if (members == null) {
+      return id;
+    }
+    final member = await members.getMember(id, ctx.userId);
+    if (member == null) {
+      throw const AuthException('Not a member of this workspace');
+    }
+    return id;
+  }
   final identityActivity = userActivityRepository;
   final identityPrefs = userPreferencesRepository;
   final identityInviteService = inviteService;
@@ -1796,8 +1836,17 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   /// The forge client for a repo already validated by
   /// [requireWorkspaceForgeRepo], acting as [actingUserId], or null when its
   /// forge has no client wired.
-  ForgePrClient? forgeClientFor(Repo repo, String? actingUserId) =>
-      repo.hasForgeRemote ? buildForgePrClient?.call(repo, actingUserId) : null;
+  ForgePrClient? forgeClientFor(
+    Repo repo,
+    String? actingUserId, {
+    String? workspaceId,
+  }) => repo.hasForgeRemote
+      ? buildForgePrClient?.call(
+          repo,
+          actingUserId,
+          workspaceId: workspaceId,
+        )
+      : null;
 
   /// [userId] is the caller: it gates repo access and keys the cache.
   ///
@@ -1867,6 +1916,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     // others.
     final created = forgeProviderRegistryFor(
       asApp ? null : userId,
+      workspaceId: workspaceId,
     ).resolve(ForgeProviderContext(repo: match, workspaceId: workspaceId));
     prRepoCache[key] = created;
     return created;
@@ -2718,9 +2768,17 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         kind: RepoOpKind.read,
         workspaceScoped: false,
         handler: (ctx) async {
-          final user = await identityUsers.getById(ctx.userId);
+          var user = await identityUsers.getById(ctx.userId);
           if (user == null) {
             throw const NotFoundException('User not found');
+          }
+          final overlayId = overlayWorkspaceId(ctx);
+          if (overlayId != null && overlayId.isNotEmpty) {
+            final member = await identityMembers.getMember(
+              overlayId,
+              ctx.userId,
+            );
+            user = applyMemberOverlay(user, member);
           }
           final memberships = await identityMembers.getForUser(ctx.userId);
           return {
@@ -2771,6 +2829,54 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           );
           await identityUsers.upsert(updated);
           return {'user': userToWire(updated, includeOnboarding: true)};
+        },
+      ),
+      // Workspace overlay for Workspace → Profile: name, email and git author in
+      // THIS workspace. Empty fields inherit the global `users` row. Handle,
+      // SSO and devices stay on the account.
+      RepoOp(
+        name: 'identity.updateWorkspaceProfile',
+        kind: RepoOpKind.mutate,
+        handler: (ctx) async {
+          String? optional(String key) {
+            final value = ctx.args[key];
+            return value is String && value.isNotEmpty ? value : null;
+          }
+
+          bool clear(String key) {
+            if (!ctx.args.containsKey(key)) {
+              return false;
+            }
+            final value = ctx.args[key];
+            return value is! String || value.isEmpty;
+          }
+
+          await identityMembers.updateProfileOverlay(
+            ctx.workspaceId!,
+            ctx.userId,
+            displayName: optional('display_name'),
+            clearDisplayName: clear('display_name'),
+            email: optional('email'),
+            clearEmail: clear('email'),
+            gitAuthorName: optional('git_author_name'),
+            clearGitAuthorName: clear('git_author_name'),
+            gitAuthorEmail: optional('git_author_email'),
+            clearGitAuthorEmail: clear('git_author_email'),
+          );
+          final user = await identityUsers.getById(ctx.userId);
+          if (user == null) {
+            throw const NotFoundException('User not found');
+          }
+          final member = await identityMembers.getMember(
+            ctx.workspaceId!,
+            ctx.userId,
+          );
+          return {
+            'user': userToWire(
+              applyMemberOverlay(user, member),
+              includeOnboarding: true,
+            ),
+          };
         },
       ),
       // Records that the caller has finished first-run setup. Self-service
@@ -3975,6 +4081,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           'connections': [
             for (final c in await forgeCredentials.connections(
               userId: ctx.userId,
+              workspaceId: await overlayWorkspaceIdChecked(ctx),
             ))
               c.toJson(),
           ],
@@ -3996,6 +4103,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           return (await forgeCredentials.testConnection(
             forge,
             userId: ctx.userId,
+            workspaceId: await overlayWorkspaceIdChecked(ctx),
           )).toJson();
         },
       ),
@@ -4021,6 +4129,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           if (token is! String) {
             throw const NotFoundException('Missing or invalid argument: token');
           }
+          final workspaceId = await overlayWorkspaceIdChecked(ctx);
           final oauth = providerOAuth;
           final app = ProviderApp.fromWire(forge.wire);
           if (oauth != null && app != null && token.isNotEmpty) {
@@ -4031,13 +4140,20 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
               userId: ctx.userId,
               provider: app,
               token: token,
+              workspaceId: workspaceId,
             );
           } else {
-            await forgeCredentials.setToken(forge, token, userId: ctx.userId);
+            await forgeCredentials.setToken(
+              forge,
+              token,
+              userId: ctx.userId,
+              workspaceId: workspaceId,
+            );
           }
           return (await forgeCredentials.testConnection(
             forge,
             userId: ctx.userId,
+            workspaceId: workspaceId,
           )).toJson();
         },
       ),
@@ -4051,7 +4167,11 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           if (!forge.isSupported) {
             throw const NotFoundException('Missing or invalid argument: forge');
           }
-          await forgeCredentials.clearToken(forge, userId: ctx.userId);
+          await forgeCredentials.clearToken(
+            forge,
+            userId: ctx.userId,
+            workspaceId: await overlayWorkspaceIdChecked(ctx),
+          );
           return {'ok': true};
         },
       ),
@@ -4146,7 +4266,9 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         kind: RepoOpKind.read,
         workspaceScoped: false,
         handler: (ctx) async {
-          final available = await providerOAuth.availableProviders();
+          final available = await providerOAuth.availableProviders(
+            workspaceId: await overlayWorkspaceIdChecked(ctx),
+          );
           final origin = _httpOriginFrom(pairingServerUrl);
           return {
             'providers': [
@@ -4198,6 +4320,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
             final prompt = await providerOAuth.beginDeviceLogin(
               provider: provider,
               userId: ctx.userId,
+              workspaceId: await overlayWorkspaceIdChecked(ctx),
             );
             return prompt.toJson();
           }
@@ -4212,6 +4335,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
             provider: provider,
             userId: ctx.userId,
             redirectUri: providerOAuthRedirectUri(origin, provider.wire),
+            workspaceId: await overlayWorkspaceIdChecked(ctx),
           );
           return {'mode': 'redirect', 'url': url.toString()};
         },
@@ -4302,6 +4426,108 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
             );
           }
           return (await providerApps.status(provider, probe: true)).toJson();
+        },
+      ),
+    ],
+    // Per-workspace GitHub identity: a different App, or PAT-only. Admin of
+    // the bound workspace. Secrets never leave the server.
+    if (workspaceGitHubApps != null) ...[
+      RepoOp(
+        name: 'workspaceGitHub.status',
+        kind: RepoOpKind.read,
+        minRole: WorkspaceRole.admin,
+        handler: (ctx) async {
+          final ws = await workspaceRepository.getById(ctx.workspaceId!);
+          if (ws == null) {
+            throw const NotFoundException('Workspace not found');
+          }
+          final status = await workspaceGitHubApps.status(
+            ws,
+            probe: ctx.args['probe'] == true,
+          );
+          return {
+            ...status.toJson(),
+            'github_auth_mode': ws.githubAuthMode.wireName,
+            'has_background_pat': await workspaceGitHubApps.hasBackgroundPat(
+              ws.id,
+            ),
+          };
+        },
+      ),
+      RepoOp(
+        name: 'workspaceGitHub.save',
+        kind: RepoOpKind.mutate,
+        minRole: WorkspaceRole.admin,
+        handler: (ctx) async {
+          final ws = await workspaceRepository.getById(ctx.workspaceId!);
+          if (ws == null) {
+            throw const NotFoundException('Workspace not found');
+          }
+          String? field(String key) {
+            final value = ctx.args[key];
+            return value is String ? value : null;
+          }
+
+          final saved = await workspaceGitHubApps.save(
+            ws,
+            clientId: field('client_id'),
+            clientSecret: field('client_secret'),
+            privateKeyPem: field('private_key'),
+          );
+          return {
+            ...saved.toJson(),
+            'github_auth_mode': ws.githubAuthMode.wireName,
+            'has_background_pat': await workspaceGitHubApps.hasBackgroundPat(
+              ws.id,
+            ),
+          };
+        },
+      ),
+      RepoOp(
+        name: 'workspaceGitHub.test',
+        kind: RepoOpKind.read,
+        minRole: WorkspaceRole.admin,
+        handler: (ctx) async {
+          final ws = await workspaceRepository.getById(ctx.workspaceId!);
+          if (ws == null) {
+            throw const NotFoundException('Workspace not found');
+          }
+          final status = await workspaceGitHubApps.status(ws, probe: true);
+          return {
+            ...status.toJson(),
+            'github_auth_mode': ws.githubAuthMode.wireName,
+            'has_background_pat': await workspaceGitHubApps.hasBackgroundPat(
+              ws.id,
+            ),
+          };
+        },
+      ),
+      RepoOp(
+        name: 'workspaceGitHub.setPat',
+        kind: RepoOpKind.mutate,
+        minRole: WorkspaceRole.admin,
+        handler: (ctx) async {
+          final token = ctx.args['token'];
+          await workspaceGitHubApps.setBackgroundPat(
+            ctx.workspaceId!,
+            token is String ? token : '',
+          );
+          return {
+            'ok': true,
+            'has_background_pat': await workspaceGitHubApps.hasBackgroundPat(
+              ctx.workspaceId!,
+            ),
+          };
+        },
+      ),
+      RepoOp(
+        name: 'workspaceGitHub.hasPat',
+        kind: RepoOpKind.read,
+        minRole: WorkspaceRole.admin,
+        handler: (ctx) async => {
+          'has_background_pat': await workspaceGitHubApps.hasBackgroundPat(
+            ctx.workspaceId!,
+          ),
         },
       ),
     ],
@@ -4835,6 +5061,17 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
               for (final p in rawPaths)
                 if (p is String && p.isNotEmpty) p,
           ];
+          final users = identityUsers;
+          final members = identityMembers;
+          final identity = users != null && members != null
+              ? await resolveWorkspaceGitIdentity(
+                  users: users,
+                  members: members,
+                  ownerUserId: serverOwnerUserId ?? ctx.userId,
+                  userId: ctx.userId,
+                  workspaceId: ctx.workspaceId,
+                )
+              : null;
           final res = await worktreeCommit(
             workspaceId: ctx.workspaceId!,
             spaceId: ctx.args['space_id'] as String,
@@ -4845,8 +5082,10 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
             amend: ctx.args['amend'] as bool? ?? false,
             sync: ctx.args['sync'] as bool? ?? false,
             pushBranch: ctx.args['push_branch'] as String?,
-            authorName: ctx.args['author_name'] as String?,
-            authorEmail: ctx.args['author_email'] as String?,
+            // Git identity is overlay → global User. Client-supplied author
+            // strings are not the source of truth.
+            authorName: identity?.name,
+            authorEmail: identity?.email,
             // The push is authored on the forge as the human who clicked.
             actingUserId: ctx.userId,
           );
@@ -10591,6 +10830,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         handler: (ctx) async {
           final begin = await calendarConnect.begin(
             workspaceId: ctx.workspaceId!,
+            userId: ctx.userId,
             useBuiltin: ctx.args['use_builtin'] == true,
             clientId: ctx.args['client_id'] as String? ?? '',
             clientSecret: ctx.args['client_secret'] as String? ?? '',
@@ -10627,6 +10867,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           await calendarConnect.disconnect(
             workspaceId: ctx.workspaceId!,
             accountId: ctx.args['account_id'] as String,
+            userId: ctx.userId,
           );
           return {'ok': true};
         },
@@ -10760,7 +11001,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         if (ghRepos.isEmpty) {
           return {'authenticated': true, 'repos': <Map<String, dynamic>>[]};
         }
-        final groups = await fetch(ghRepos);
+        final groups = await fetch(ghRepos, workspaceId: ctx.workspaceId);
         return {
           'authenticated': true,
           'repos': [
@@ -11107,7 +11348,11 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           ctx.args['repo'] as String,
           userId: ctx.userId,
         );
-        final client = forgeClientFor(matched, ctx.userId);
+        final client = forgeClientFor(
+          matched,
+          ctx.userId,
+          workspaceId: ctx.workspaceId,
+        );
         if (client == null) {
           return {'branches': <String>[]};
         }
@@ -11120,6 +11365,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
             (await forgeCredentials?.viewerLogin(
                       matched.forge,
                       userId: ctx.userId,
+                      workspaceId: ctx.workspaceId,
                     ) ??
                     '')
                 .toLowerCase();
@@ -11147,7 +11393,11 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           ctx.args['repo'] as String,
           userId: ctx.userId,
         );
-        final client = forgeClientFor(matched, ctx.userId);
+        final client = forgeClientFor(
+          matched,
+          ctx.userId,
+          workspaceId: ctx.workspaceId,
+        );
         if (client == null) {
           return {'branch': ''};
         }
@@ -11165,7 +11415,11 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           ctx.args['repo'] as String,
           userId: ctx.userId,
         );
-        final client = forgeClientFor(matched, ctx.userId);
+        final client = forgeClientFor(
+          matched,
+          ctx.userId,
+          workspaceId: ctx.workspaceId,
+        );
         if (client == null || !client.capabilities.prTemplates) {
           return {'templates': <Map<String, dynamic>>[]};
         }
@@ -11195,7 +11449,11 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           ctx.args['repo'] as String,
           userId: ctx.userId,
         );
-        final client = forgeClientFor(matched, ctx.userId);
+        final client = forgeClientFor(
+          matched,
+          ctx.userId,
+          workspaceId: ctx.workspaceId,
+        );
         if (client == null) {
           return {'comparison': null};
         }
@@ -11299,7 +11557,12 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           userId: ctx.userId,
         );
         return {
-          'permission': await read.repoPermission(owner, repo, ctx.userId),
+          'permission': await read.repoPermission(
+            owner,
+            repo,
+            ctx.userId,
+            workspaceId: ctx.workspaceId,
+          ),
         };
       },
     ),
@@ -13192,9 +13455,8 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       workspaceScoped: false,
       requiredArgs: ['workspace'],
       handler: (ctx) async {
-        final incoming = workspaceFromWire(
-          (ctx.args['workspace'] as Map).cast<String, dynamic>(),
-        );
+        final raw = (ctx.args['workspace'] as Map).cast<String, dynamic>();
+        final incoming = workspaceFromWire(raw);
         // Detect a CREATE (vs an update) so the server can bootstrap the new
         // workspace exactly once.
         final existing = await workspaceRepository.getById(incoming.id);
@@ -13230,11 +13492,24 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         // `IdentityBootstrap._backfillWorkspaceOwnership` happens to repair it.
         // On UPDATE, carry the stored owner over when the wire omits it so a
         // rename from an older client can never wipe the stamp.
-        final toStore = incoming.ownerUserId != null
+        var toStore = incoming.ownerUserId != null
             ? incoming
             : incoming.copyWith(
                 ownerUserId: isNew ? ctx.userId : existing.ownerUserId,
               );
+        // Older clients omit the GitHub identity fields. Carry the stored
+        // values over so a rename cannot silently reset a workspace that
+        // picked its own App or a PAT.
+        if (!isNew && existing != null) {
+          if (!raw.containsKey('github_auth_mode')) {
+            toStore = toStore.copyWith(
+              githubAuthMode: existing.githubAuthMode,
+            );
+          }
+          if (!raw.containsKey('github_app_id')) {
+            toStore = toStore.copyWith(githubAppId: existing.githubAppId);
+          }
+        }
         final id = await workspaceRepository.upsert(toStore);
         if (isNew) {
           final members = identityMembers;
@@ -13301,6 +13576,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           }
         }
         await workspaceRepository.delete(id);
+        await workspaceGitHubApps?.deleteForWorkspace(id);
         return {'ok': true};
       },
     ),
@@ -14982,7 +15258,13 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       handler: (ctx) => calendarRepository
           .watchAccounts(ctx.workspaceId!)
           .map(
-            (list) => {'accounts': list.map(calendarAccountToWire).toList()},
+            (list) => {
+              'accounts': [
+                for (final a in list)
+                  if (a.userId == ctx.userId || a.userId.isEmpty)
+                    calendarAccountToWire(a),
+              ],
+            },
           ),
     ),
     WatchQuery(

@@ -104,12 +104,14 @@ class ClaudeAccountsSection extends ConsumerWidget {
                   label: v.account.label,
                   detail: _candidateDetail(l10n, v),
                   unavailable: !v.account.loggedIn || v.account.isRateLimited(),
-                  // Expired AND signed out, never the timestamp alone: an
-                  // access token that lapsed overnight is renewed by the CLI
-                  // on the next run, and only the server can tell that from
-                  // one nothing can renew.
+                  // A lapsed access token is still usable — the CLI renews it
+                  // on the next run — so it is not [unavailable]. The reason
+                  // still has to show, or the roster disagrees with the
+                  // usage flyout.
                   unavailableReason:
-                      !v.account.loggedIn && v.account.isCredentialExpired()
+                      v.account.loggedIn && v.account.isCredentialExpired()
+                      ? l10n.subscriptionUsageSignInExpired
+                      : !v.account.loggedIn && v.account.isCredentialExpired()
                       ? l10n.accountPoolExpired
                       : !v.account.loggedIn
                       ? l10n.accountPoolSignedOut

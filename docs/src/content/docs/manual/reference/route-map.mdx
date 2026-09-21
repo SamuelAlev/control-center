@@ -64,7 +64,7 @@ There is **no "Plans" sidebar item**. Plan Studio opens as an editor tab from th
 
 ## Settings routes
 
-`/settings` redirects to `/settings/you/profile`. The sidebar's settings button and `Cmd/Ctrl + ,` both go to `/settings/you/profile`.
+`/settings` redirects to `/settings/you/appearance`. The sidebar's settings button and `Cmd/Ctrl + ,` both go to `/settings/you/appearance`.
 
 Settings paths are namespaced by **scope** — `you/`, `workspace/`, `server/` — because the segment states who a change affects. Two paths predate the namespacing and are not scoped in the URL: `/settings/memory` and `/settings/pipelines`.
 
@@ -72,8 +72,7 @@ Settings paths are namespaced by **scope** — `you/`, `workspace/`, `server/` �
 
 | Path                          | Screen                                                                     |
 | ----------------------------- | -------------------------------------------------------------------------- |
-| `/settings/you/profile`       | Profile and identity (the settings landing)                                |
-| `/settings/you/appearance`    | Theme, language, typography, editor theme                                  |
+| `/settings/you/appearance`    | Theme, language, typography, editor theme (the settings landing)          |
 | `/settings/you/notifications` | Per-event toggles, quiet hours                                             |
 | `/settings/you/keybindings`   | Keyboard shortcut reference (read-only)                                    |
 | `/settings/you/audio`         | Microphone, dictation, meeting detection and soundscape output             |
@@ -84,7 +83,9 @@ Settings paths are namespaced by **scope** — `you/`, `workspace/`, `server/` �
 
 | Path                               | Screen                                                                                              |
 | ---------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `/settings/workspace/profile`      | Profile and identity in this workspace: name, git author, code hosting, calendar |
 | `/settings/workspace/general`      | Name, logo, secret globs, review concurrency, branch naming, sync health, chat bridges, danger zone |
+| `/settings/workspace/meetings`     | Meeting note templates and saved voice profiles                                                     |
 | `/settings/workspace/members`      | Roster, invites, audit trail. The audit trail paginates with optional `?cursor=`                    |
 | `/settings/workspace/repositories` | Repositories registered in this workspace                                                           |
 | `/settings/workspace/agents`       | Registered agent identities                                                                         |

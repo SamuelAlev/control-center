@@ -71,7 +71,9 @@ class _FakeAdapter implements HttpClientAdapter {
 /// The server's GitHub App, answering `/app/installations` with ONE
 /// installation on `o` — so a mint for `o/r` resolves to id 9 the way it does
 /// in production, instead of being told an id up front.
-Future<GitHubAppClient?> Function() _app(_FakeAdapter fake) {
+Future<GitHubAppClient?> Function({String? workspaceId}) _app(
+  _FakeAdapter fake,
+) {
   final dio = Dio(BaseOptions(baseUrl: 'https://api.github.com'))
     ..httpClientAdapter = fake;
   final client = GitHubAppClient(
@@ -79,7 +81,7 @@ Future<GitHubAppClient?> Function() _app(_FakeAdapter fake) {
     privateKeyPem: _privatePem,
     dio: dio,
   );
-  return () async => client;
+  return ({workspaceId}) async => client;
 }
 
 /// The installations document the fake serves for `/app/installations`.
@@ -325,6 +327,25 @@ void main() {
         repoName: 'r',
       );
       expect(creds.environment['GH_TOKEN'], 'pat_raw');
+    });
+
+    test('a workspace background PAT is the fallback for a member run',
+        () async {
+      final broker = GitHubFineGrainedTokenBroker(
+        _FakeCreds(),
+        serverOwnerUserId: () async => 'user-owner',
+        workspacePat: (workspaceId) async =>
+            workspaceId == 'ws-a' ? 'gho_workspace' : null,
+      );
+      final creds = await broker.mint(
+        conversationId: 'c1',
+        capabilities: pushCaps,
+        repoOwner: 'o',
+        repoName: 'r',
+        actingUserId: 'user-someone-else',
+        workspaceId: 'ws-a',
+      );
+      expect(creds.environment['GH_TOKEN'], 'gho_workspace');
     });
   });
 }

@@ -1140,7 +1140,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get calendarSettingsDescription =>
-      'Conecte uma conta Google para sincronizar eventos neste espaço de trabalho.';
+      'Ligue uma conta Google para sincronizar eventos neste espaço. Estes calendários são seus aqui.';
 
   @override
   String get calendarConnecting => 'Conectando…';
@@ -7032,7 +7032,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get connectGitHubHint =>
-      'Entre no GitHub ou adicione um token em Configurações → Você → Perfil e identidade → Hospedagem de código';
+      'Entre no GitHub ou adicione um token em Configurações → Espaço de trabalho → Perfil e identidade → Hospedagem de código';
 
   @override
   String get connectGitHubToLoadPrs =>
@@ -7517,6 +7517,43 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get preview => 'Pré-visualização';
+
+  @override
+  String get imageDiffBefore => 'Antes';
+
+  @override
+  String get imageDiffAfter => 'Depois';
+
+  @override
+  String get imageDiffModeTwoUp => 'Lado a lado';
+
+  @override
+  String get imageDiffModeSwipe => 'Deslizar';
+
+  @override
+  String get imageDiffModeDifference => 'Diferença';
+
+  @override
+  String imageDiffChangedPercent(String percent) {
+    return '$percent% alterado';
+  }
+
+  @override
+  String get imageDiffPictures => 'Imagens';
+
+  @override
+  String get imageDiffSource => 'Código';
+
+  @override
+  String get imageDiffDeleted => 'Excluído';
+
+  @override
+  String get imageDiffAdded => 'Adicionado';
+
+  @override
+  String imageDiffDimensions(int width, int height) {
+    return 'L: ${width}px | A: ${height}px';
+  }
 
   @override
   String get outdated => 'Desatualizado';
@@ -9600,7 +9637,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get profileSectionDescription =>
-      'Como você aparece para a equipe e na autoria dos commits do git.';
+      'Como aparece à equipa e na autoria de commits git neste espaço. Campos vazios herdam o nome e o e-mail da conta.';
 
   @override
   String get displayNameLabel => 'Nome de exibição';
@@ -12185,7 +12222,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get settingsProfileDescription =>
-      'Seu nome, e-mail e a identidade git aplicada aos commits feitos em seu nome.';
+      'O seu nome, e-mail e identidade git neste espaço. Trocar de espaço troca esta sobreposição; identificador, início de sessão e dispositivos ficam na conta.';
 
   @override
   String get settingsServerConnectionDescription =>
@@ -12202,6 +12239,10 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get settingsWorkspaceGeneralDescription =>
       'Identidade, políticas e convenções compartilhadas por todos neste espaço de trabalho.';
+
+  @override
+  String get settingsWorkspaceMeetingsDescription =>
+      'Modelos de notas e vozes salvas para as reuniões deste espaço de trabalho.';
 
   @override
   String get settingsWorkspacePolicyLabel => 'Política do espaço de trabalho';
@@ -12785,7 +12826,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get providerAppsDescription =>
-      'Como este servidor se autentica a si próprio e com o quê uma pessoa entra. O trabalho em segundo plano — webhooks, sondagens, sincronização — usa a app, nunca o token de uma pessoa.';
+      'Os espaços herdam este GitHub App a menos que escolham outro App ou um token de acesso pessoal. O trabalho em segundo plano — webhooks, sondagem, sync — corre na app, nunca no token de uma pessoa.';
 
   @override
   String get providerAppId => 'Id da app';
@@ -13177,14 +13218,14 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get providerAppsGroupServerDescription =>
-      'Permite que o trabalho em segundo plano alcance repositórios sem uma pessoa por trás do pedido: webhooks, sondagem de pull requests, sincronização de tickets.';
+      'Para espaços que herdam o GitHub App desta instalação. Um espaço com App ou PAT próprio configura-se em Espaço de trabalho → Geral.';
 
   @override
   String get providerAppsGroupPrConversations => 'Conversas de pull request';
 
   @override
   String get providerAppsGroupPrConversationsDescription =>
-      'Como os desenvolvedores podem falar com este servidor diretamente no GitHub. Funciona sem webhook e sem URL pública — o servidor verifica periodicamente.';
+      'Como os programadores falam com este servidor no GitHub nos espaços herdados. Um espaço com App próprio tem o bot em Espaço de trabalho → Geral. Funciona sem webhook nem URL pública — o servidor sonda.';
 
   @override
   String get providerAppBotLogin => 'Login do bot';
@@ -14579,6 +14620,51 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get rigClipboardAlwaysCopyDescription =>
       'Colocar conteúdo da área de transferência de qualquer ambiente neste dispositivo sem perguntar.';
+
+  @override
+  String get workspaceGitHubIdentity => 'Identidade GitHub';
+
+  @override
+  String get workspaceGitHubIdentityDescription =>
+      'Como o trabalho de GitHub em segundo plano autentica neste espaço de trabalho. Herdar o App desta instalação, usar outro App ou só um token de acesso pessoal.';
+
+  @override
+  String get workspaceGitHubModeInherit => 'Usar o GitHub App desta instalação';
+
+  @override
+  String get workspaceGitHubModeApp => 'Usar outro GitHub App';
+
+  @override
+  String get workspaceGitHubModePat => 'Apenas token de acesso pessoal';
+
+  @override
+  String get workspaceGitHubInheritHint =>
+      'Usa o GitHub App em Servidor → Apps de provedor.';
+
+  @override
+  String get workspaceGitHubAppHint =>
+      'Identidade de bot e de sondagem deste espaço. Os membros entram em Você por este App.';
+
+  @override
+  String get workspaceGitHubPatLabel => 'Token de segundo plano';
+
+  @override
+  String get workspaceGitHubPatDescription =>
+      'Para sondagem e agentes neste espaço. Não é o token de perfil de um membro.';
+
+  @override
+  String get workspaceGitHubHasPat => 'Há um token de segundo plano guardado.';
+
+  @override
+  String get workspaceGitHubNoPat => 'Nenhum token de segundo plano guardado.';
+
+  @override
+  String get profileOverlayHint =>
+      'Estes campos são você neste espaço. Campos vazios herdam o nome e o e-mail da conta. Trocar de espaço troca esta sobreposição.';
+
+  @override
+  String get forgeConnectionsThisWorkspace =>
+      'Entre ou cole um token para este espaço de trabalho.';
 }
 
 /// The translations for Portuguese, as used in Portugal (`pt_PT`).
@@ -14706,7 +14792,7 @@ class AppLocalizationsPtPt extends AppLocalizationsPt {
 
   @override
   String get calendarSettingsDescription =>
-      'Ligue uma conta Google para sincronizar eventos neste espaço de trabalho.';
+      'Ligue uma conta Google para sincronizar eventos neste espaço de trabalho. Estes calendários são seus aqui.';
 
   @override
   String get calendarConnecting => 'A ligar…';
@@ -15337,7 +15423,7 @@ class AppLocalizationsPtPt extends AppLocalizationsPt {
 
   @override
   String get connectGitHubHint =>
-      'Entre no GitHub ou adicione um token em Definições → Você → Perfil e identidade → Hospedagem de código';
+      'Entre no GitHub ou adicione um token em Definições → Espaço de trabalho → Perfil e identidade → Hospedagem de código';
 
   @override
   String get connectGitHubToLoadPrs =>
@@ -15723,7 +15809,7 @@ class AppLocalizationsPtPt extends AppLocalizationsPt {
 
   @override
   String get profileSectionDescription =>
-      'Como você aparece para a equipa e na autoria dos commits do git.';
+      'Como aparece para a equipa e na autoria dos commits do git neste espaço. Campos vazios herdam o nome e o e-mail da conta.';
 
   @override
   String get profileSaved => 'Perfil guardado';
@@ -16009,6 +16095,10 @@ class AppLocalizationsPtPt extends AppLocalizationsPt {
       'Identidade, políticas e convenções partilhadas por todos neste espaço de trabalho.';
 
   @override
+  String get settingsWorkspaceMeetingsDescription =>
+      'Modelos de notas e vozes guardadas para as reuniões deste espaço de trabalho.';
+
+  @override
   String get connect => 'Ligar';
 
   @override
@@ -16032,7 +16122,7 @@ class AppLocalizationsPtPt extends AppLocalizationsPt {
 
   @override
   String get providerAppsDescription =>
-      'Como este servidor se autentica a si próprio e com o quê uma pessoa entra. O trabalho em segundo plano — webhooks, sondagens, sincronização — usa a aplicação, nunca o token de uma pessoa.';
+      'Os espaços herdam esta GitHub App a menos que escolham outra App ou um token de acesso pessoal. O trabalho em segundo plano — webhooks, sondagens, sincronização — corre na app, nunca no token de uma pessoa.';
 
   @override
   String get providerAppId => 'Id da aplicação';

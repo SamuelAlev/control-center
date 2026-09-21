@@ -34,6 +34,7 @@ import 'package:control_center/features/settings/presentation/screens/backup_set
 import 'package:control_center/features/settings/presentation/screens/diagnostics_settings_screen.dart';
 import 'package:control_center/features/settings/presentation/screens/keybindings_settings_screen.dart';
 import 'package:control_center/features/settings/presentation/screens/mcp_servers_settings_screen.dart';
+import 'package:control_center/features/settings/presentation/screens/meetings_settings_screen.dart';
 import 'package:control_center/features/settings/presentation/screens/members_settings_screen.dart';
 import 'package:control_center/features/settings/presentation/screens/newsfeed_settings_screen.dart';
 import 'package:control_center/features/settings/presentation/screens/notifications_settings_screen.dart';
@@ -432,14 +433,9 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: settingsRoute(workspaceIdParam),
             redirect: (_, state) =>
-                settingsProfileRoute(state.pathParameters['workspaceId']!),
+                settingsAppearanceRoute(state.pathParameters['workspaceId']!),
           ),
           // You — follows the signed-in user across devices.
-          GoRoute(
-            path: settingsProfileRoute(workspaceIdParam),
-            pageBuilder: (context, state) =>
-                buildPage(state, _absorb(const ProfileSettingsScreen())),
-          ),
           GoRoute(
             path: settingsAppearanceRoute(workspaceIdParam),
             pageBuilder: (context, state) =>
@@ -470,13 +466,23 @@ final routerProvider = Provider<GoRouter>((ref) {
             pageBuilder: (context, state) =>
                 buildPage(state, _absorb(const NewsfeedSettingsScreen())),
           ),
-          // Workspace — affects everyone in this workspace.
+          // Workspace — this workspace's identity, policy and roster.
+          GoRoute(
+            path: settingsProfileRoute(workspaceIdParam),
+            pageBuilder: (context, state) =>
+                buildPage(state, _absorb(const ProfileSettingsScreen())),
+          ),
           GoRoute(
             path: settingsWorkspaceGeneralRoute(workspaceIdParam),
             pageBuilder: (context, state) => buildPage(
               state,
               _absorb(const WorkspaceGeneralSettingsScreen()),
             ),
+          ),
+          GoRoute(
+            path: settingsMeetingsRoute(workspaceIdParam),
+            pageBuilder: (context, state) =>
+                buildPage(state, _absorb(const MeetingsSettingsScreen())),
           ),
           GoRoute(
             path: settingsMembersRoute(workspaceIdParam),

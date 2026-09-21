@@ -40,11 +40,17 @@ class _FakePort implements OpenPrFetchPort {
   int fetchCalls = 0;
 
   @override
-  Future<({bool changed, String? etag})> probeRepo(Repo repo, String? etag) =>
-      Future.value((changed: true, etag: null));
+  Future<({bool changed, String? etag})> probeRepo(
+    Repo repo,
+    String? etag, {
+    String? workspaceId,
+  }) => Future.value((changed: true, etag: null));
 
   @override
-  Future<OpenPrFetchResult> fetchGroups(List<Repo> repos) async {
+  Future<OpenPrFetchResult> fetchGroups(
+    List<Repo> repos, {
+    String? workspaceId,
+  }) async {
     fetchCalls++;
     if (fail) {
       throw StateError('forge is down');
@@ -67,8 +73,9 @@ class _FakePort implements OpenPrFetchPort {
 
   @override
   Future<Map<String, Map<int, PrStatusOverlay>>> fetchChecks(
-    List<Repo> repos,
-  ) async {
+    List<Repo> repos, {
+    String? workspaceId,
+  }) async {
     if (fail) {
       throw StateError('forge is down');
     }
@@ -79,21 +86,32 @@ class _FakePort implements OpenPrFetchPort {
   }
 
   @override
-  Future<bool?> wasMerged(Repo repo, int prNumber) async =>
-      fail ? null : true;
+  Future<bool?> wasMerged(
+    Repo repo,
+    int prNumber, {
+    String? workspaceId,
+  }) async => fail ? null : true;
 
   @override
-  Future<PrMergeableState> mergeState(Repo repo, int prNumber) async =>
-      PrMergeableState.clean;
+  Future<PrMergeableState> mergeState(
+    Repo repo,
+    int prNumber, {
+    String? workspaceId,
+  }) async => PrMergeableState.clean;
 
   @override
-  Future<String?> latestApprover(Repo repo, int prNumber) async => 'octocat';
+  Future<String?> latestApprover(
+    Repo repo,
+    int prNumber, {
+    String? workspaceId,
+  }) async => 'octocat';
 
   @override
   Future<({String name, String? url})?> firstFailingCheck(
     Repo repo,
-    int prNumber,
-  ) async => (name: 'build', url: 'https://ci.example/1');
+    int prNumber, {
+    String? workspaceId,
+  }) async => (name: 'build', url: 'https://ci.example/1');
 }
 
 void main() {

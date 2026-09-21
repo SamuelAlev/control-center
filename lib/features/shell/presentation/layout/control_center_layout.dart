@@ -235,7 +235,7 @@ class _ControlCenterLayoutState extends ConsumerState<ControlCenterLayout> {
           : location == route;
       // The only attention affordance: agents cannot reach a code host until a
       // forge connection exists and that is configured here.
-      final attention = needsIntegrationSetup && entry.id == 'you.profile';
+      final attention = needsIntegrationSetup && entry.id == 'workspace.profile';
       return CcSidebarItem(
         icon: entry.icon,
         label: label,

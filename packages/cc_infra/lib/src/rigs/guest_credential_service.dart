@@ -286,6 +286,7 @@ class GuestCredentialService {
         // itself — a member who cannot push is refused a token that can, even
         // from inside an enclosure whose spec says `canPushToRepo`.
         actingUserId: grant.actingUserId,
+        workspaceId: grant.workspaceId,
       );
     } on Object catch (e) {
       CcInfraLog.warning('rig/credentials: mint failed for rig $rigId: $e');

@@ -1,6 +1,7 @@
 import 'package:cc_domain/features/messaging/domain/value_objects/space_provisioning_status.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/features/messaging/presentation/utils/provisioning_step_label.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/features/pr_review/providers/pr_space_provider.dart';
@@ -8,6 +9,7 @@ import 'package:control_center/features/sandboxing/presentation/terminal_panel.d
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/widgets/demo_unavailable.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -49,6 +51,12 @@ class _PrTerminalTabState extends ConsumerState<PrTerminalTab> {
 
   @override
   Widget build(BuildContext context) {
+    // A demo wires no PTY. Bail before `prSpaceProvider` tries to provision
+    // a space for a shell that cannot attach — same gate as the editor tab.
+    if (ref.watch(isDemoServerProvider)) {
+      return const DemoUnavailable(capability: DemoCapability.terminal);
+    }
+
     final l10n = AppLocalizations.of(context);
     final t = context.designSystem ?? DesignSystemTokens.light();
     final spaceAsync = ref.watch(prSpaceProvider(widget.pr));

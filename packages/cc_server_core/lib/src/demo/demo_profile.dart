@@ -161,6 +161,7 @@ class DemoProfile {
     'ticket_sync.',
     'users.',
     'voice_profile.',
+    'workspaceGitHub.',
     'workspace_settings.',
     'worktree.',
   };

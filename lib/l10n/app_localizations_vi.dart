@@ -1132,7 +1132,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get calendarSettingsDescription =>
-      'Kết nối tài khoản Google để đồng bộ sự kiện vào không gian làm việc này.';
+      'Kết nối tài khoản Google để đồng bộ sự kiện vào không gian này. Các lịch này là của bạn ở đây.';
 
   @override
   String get calendarConnecting => 'Đang kết nối…';
@@ -6984,7 +6984,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get connectGitHubHint =>
-      'Đăng nhập GitHub hoặc thêm token trong Cài đặt → Bạn → Hồ sơ & danh tính → Code hosting';
+      'Đăng nhập GitHub hoặc thêm token trong Cài đặt → Không gian làm việc → Hồ sơ & danh tính → Code hosting';
 
   @override
   String get connectGitHubToLoadPrs => 'Kết nối GitHub để tải pull requests';
@@ -7467,6 +7467,43 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get preview => 'Xem trước';
+
+  @override
+  String get imageDiffBefore => 'Trước';
+
+  @override
+  String get imageDiffAfter => 'Sau';
+
+  @override
+  String get imageDiffModeTwoUp => 'Song song';
+
+  @override
+  String get imageDiffModeSwipe => 'Vuốt';
+
+  @override
+  String get imageDiffModeDifference => 'Khác biệt';
+
+  @override
+  String imageDiffChangedPercent(String percent) {
+    return 'Đã đổi $percent%';
+  }
+
+  @override
+  String get imageDiffPictures => 'Hình ảnh';
+
+  @override
+  String get imageDiffSource => 'Mã nguồn';
+
+  @override
+  String get imageDiffDeleted => 'Đã xóa';
+
+  @override
+  String get imageDiffAdded => 'Đã thêm';
+
+  @override
+  String imageDiffDimensions(int width, int height) {
+    return 'R: ${width}px | C: ${height}px';
+  }
 
   @override
   String get outdated => 'Lỗi thời';
@@ -9533,7 +9570,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get profileSectionDescription =>
-      'Cách bạn hiện với đồng đội và trong thông tin tác giả commit git.';
+      'Bạn hiện ra với nhóm và trong tác giả commit git thế nào trong không gian này. Trường trống kế thừa tên và email tài khoản.';
 
   @override
   String get displayNameLabel => 'Tên hiển thị';
@@ -12106,7 +12143,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get settingsProfileDescription =>
-      'Tên, email và danh tính git gắn trên các commit thực hiện thay bạn.';
+      'Tên, email và danh tính git của bạn trong không gian này. Đổi không gian sẽ đổi lớp phủ này; biệt hiệu, đăng nhập và thiết bị ở lại trên tài khoản.';
 
   @override
   String get settingsServerConnectionDescription =>
@@ -12122,6 +12159,10 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get settingsWorkspaceGeneralDescription =>
       'Danh tính, chính sách và quy ước dùng chung cho mọi người trong không gian làm việc này.';
+
+  @override
+  String get settingsWorkspaceMeetingsDescription =>
+      'Mẫu ghi chú và giọng đã lưu cho các cuộc họp trong không gian làm việc này.';
 
   @override
   String get settingsWorkspacePolicyLabel => 'Chính sách không gian làm việc';
@@ -12701,7 +12742,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get providerAppsDescription =>
-      'Cách máy chủ này xác thực với tư cách của chính nó, và kênh người dùng đăng nhập. Công việc nền — webhook, polling, đồng bộ — chạy trên ứng dụng, không bao giờ trên token của người dùng.';
+      'Không gian kế thừa GitHub App này trừ khi chọn App khác hoặc mã thông báo truy cập cá nhân. Công việc nền — webhook, thăm dò, đồng bộ — chạy trên app, không bao giờ trên mã thông báo của một người.';
 
   @override
   String get providerAppId => 'Id ứng dụng';
@@ -13087,14 +13128,14 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get providerAppsGroupServerDescription =>
-      'Cho phép việc nền truy cập kho lưu trữ khi không có người đứng sau yêu cầu: webhook, polling pull request, đồng bộ phiếu.';
+      'Cho không gian kế thừa GitHub App của bản cài này. Không gian có App hoặc PAT riêng được cấu hình trong Không gian làm việc → Chung.';
 
   @override
   String get providerAppsGroupPrConversations => 'Hội thoại pull request';
 
   @override
   String get providerAppsGroupPrConversationsDescription =>
-      'Cách nhà phát triển trò chuyện với máy chủ này trực tiếp trên GitHub. Hoạt động không cần webhook hay URL công khai — máy chủ tự polling.';
+      'Cách nhà phát triển nói với máy chủ này trên GitHub trong không gian kế thừa. Không gian có App riêng có bot trong Không gian làm việc → Chung. Không cần webhook hay URL công khai — máy chủ thăm dò.';
 
   @override
   String get providerAppBotLogin => 'Tên đăng nhập bot';
@@ -14476,4 +14517,49 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get rigClipboardAlwaysCopyDescription =>
       'Đặt nội dung bảng nhớ tạm từ bất kỳ môi trường nào trên thiết bị này mà không cần hỏi.';
+
+  @override
+  String get workspaceGitHubIdentity => 'Danh tính GitHub';
+
+  @override
+  String get workspaceGitHubIdentityDescription =>
+      'Cách công việc GitHub nền xác thực trong không gian làm việc này. Kế thừa App của bản cài, dùng App khác, hoặc chỉ mã thông báo truy cập cá nhân.';
+
+  @override
+  String get workspaceGitHubModeInherit => 'Dùng GitHub App của bản cài này';
+
+  @override
+  String get workspaceGitHubModeApp => 'Dùng GitHub App khác';
+
+  @override
+  String get workspaceGitHubModePat => 'Chỉ mã thông báo truy cập cá nhân';
+
+  @override
+  String get workspaceGitHubInheritHint =>
+      'Dùng GitHub App trong Máy chủ → Ứng dụng nhà cung cấp.';
+
+  @override
+  String get workspaceGitHubAppHint =>
+      'Danh tính bot và thăm dò của không gian này. Thành viên đăng nhập ở Bạn qua App này.';
+
+  @override
+  String get workspaceGitHubPatLabel => 'Mã thông báo nền';
+
+  @override
+  String get workspaceGitHubPatDescription =>
+      'Cho thăm dò và tác nhân trong không gian này. Không phải mã thông báo hồ sơ của thành viên.';
+
+  @override
+  String get workspaceGitHubHasPat => 'Đã lưu mã thông báo nền.';
+
+  @override
+  String get workspaceGitHubNoPat => 'Không có mã thông báo nền.';
+
+  @override
+  String get profileOverlayHint =>
+      'Các trường này là bạn trong không gian này. Trường trống kế thừa tên và email tài khoản. Đổi không gian sẽ đổi lớp phủ này.';
+
+  @override
+  String get forgeConnectionsThisWorkspace =>
+      'Đăng nhập hoặc dán mã thông báo cho không gian làm việc này.';
 }

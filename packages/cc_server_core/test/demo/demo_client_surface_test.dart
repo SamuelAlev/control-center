@@ -169,9 +169,12 @@ void main() {
     // attendee with `self: true`, and the demo seeds none — so the RSVP
     // control never renders.
     'calendar.rsvp',
-    // Behind the demo-gated code-server tab and the PR list's paging, neither
-    // of which a visitor reaches (four PRs, no second page).
+    // Chat looks the space up from the seeded `review_spaces` row (repo +
+    // number) rather than calling this; it provisions a worktree, which a
+    // public visitor must not start. Source control / terminal / editor /
+    // file / rig tabs gate on `isDemoServerProvider` before they would.
     'pr.ensureSpace',
+    // PR list paging — four PRs, no second page a visitor reaches.
     'pr.openPageForRepo',
     // Review-findings actions that POST to a forge. The findings themselves
     // are seeded and readable, and their triage state (`setFindingStatus`) is
@@ -187,6 +190,13 @@ void main() {
     // The ticketing connections card, same shape as the forge one: the
     // credential port is absent, so the card reports nothing connected.
     'ticketing.listConnections',
+    // Workspace → General GitHub identity, gated by isDemoServerProvider
+    // and workspace admin. Denied by prefix on a demo (`workspaceGitHub.`).
+    'workspaceGitHub.status',
+    'workspaceGitHub.save',
+    'workspaceGitHub.test',
+    'workspaceGitHub.setPat',
+    'workspaceGitHub.hasPat',
   };
 
   test('every op the client calls exists on a demo server', () async {
