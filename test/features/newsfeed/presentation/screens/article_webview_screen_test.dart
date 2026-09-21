@@ -48,30 +48,6 @@ void main() {
   });
 
   group('ArticleWebviewScreen', () {
-    testWidgets('renders article reader toolbar', (tester) async {
-      tester.view.physicalSize = const Size(800, 600);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(() {
-        tester.view.resetPhysicalSize();
-        tester.view.resetDevicePixelRatio();
-      });
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            appPreferencesProvider.overrideWithValue(prefs),
-            newsfeedRepositoryProvider.overrideWithValue(
-              _FakeNewsfeedRepository(article: _testArticle()),
-            ),
-            contentBlockingProvider.overrideWith(ContentBlockingController.new),
-          ],
-          child: _wrap(const ArticleWebviewScreen(articleId: 'article-1')),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 1));
-    });
-
     testWidgets('renders close button in toolbar', (tester) async {
       tester.view.physicalSize = const Size(800, 600);
       tester.view.devicePixelRatio = 1.0;
@@ -150,33 +126,6 @@ void main() {
       expect(find.byIcon(AppIcons.arrowRight), findsOneWidget);
     });
 
-    testWidgets('renders reload button in toolbar', (tester) async {
-      tester.view.physicalSize = const Size(800, 600);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(() {
-        tester.view.resetPhysicalSize();
-        tester.view.resetDevicePixelRatio();
-      });
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            appPreferencesProvider.overrideWithValue(prefs),
-            newsfeedRepositoryProvider.overrideWithValue(
-              _FakeNewsfeedRepository(article: _testArticle()),
-            ),
-            contentBlockingProvider.overrideWith(ContentBlockingController.new),
-          ],
-          child: _wrap(const ArticleWebviewScreen(articleId: 'article-1')),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 1));
-
-      // When loading, the reload button shows a spinner instead of the icon
-      expect(find.byType(CcSpinner), findsWidgets);
-    });
-
     testWidgets('renders open external button in toolbar', (tester) async {
       tester.view.physicalSize = const Size(800, 600);
       tester.view.devicePixelRatio = 1.0;
@@ -201,81 +150,6 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
 
       expect(find.byIcon(AppIcons.externalLink), findsOneWidget);
-    });
-
-    testWidgets('renders bookmark button when article found', (tester) async {
-      tester.view.physicalSize = const Size(800, 600);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(() {
-        tester.view.resetPhysicalSize();
-        tester.view.resetDevicePixelRatio();
-      });
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            appPreferencesProvider.overrideWithValue(prefs),
-            newsfeedRepositoryProvider.overrideWithValue(
-              _FakeNewsfeedRepository(article: _testArticle()),
-            ),
-            contentBlockingProvider.overrideWith(ContentBlockingController.new),
-          ],
-          child: _wrap(const ArticleWebviewScreen(articleId: 'article-1')),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 1));
-
-      // The toolbar renders without error when an article is found
-    });
-
-    testWidgets('shows loading spinner initially', (tester) async {
-      tester.view.physicalSize = const Size(800, 600);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(() {
-        tester.view.resetPhysicalSize();
-        tester.view.resetDevicePixelRatio();
-      });
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            appPreferencesProvider.overrideWithValue(prefs),
-            newsfeedRepositoryProvider.overrideWithValue(
-              _FakeNewsfeedRepository(article: _testArticle()),
-            ),
-            contentBlockingProvider.overrideWith(ContentBlockingController.new),
-          ],
-          child: _wrap(const ArticleWebviewScreen(articleId: 'article-1')),
-        ),
-      );
-      await tester.pump();
-
-      expect(find.byType(CcSpinner), findsWidgets);
-    });
-
-    testWidgets('url bar renders in toolbar', (tester) async {
-      tester.view.physicalSize = const Size(800, 600);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(() {
-        tester.view.resetPhysicalSize();
-        tester.view.resetDevicePixelRatio();
-      });
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            appPreferencesProvider.overrideWithValue(prefs),
-            newsfeedRepositoryProvider.overrideWithValue(
-              _FakeNewsfeedRepository(article: _testArticle()),
-            ),
-            contentBlockingProvider.overrideWith(ContentBlockingController.new),
-          ],
-          child: _wrap(const ArticleWebviewScreen(articleId: 'article-1')),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 1));
     });
 
     testWidgets('back and forward buttons disabled initially', (tester) async {

@@ -47,11 +47,6 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('unassigned avatar renders without a name', (tester) async {
-      await tester.pumpWidget(_wrap(const TicketAssigneeAvatar(name: null)));
-      expect(tester.takeException(), isNull);
-    });
-
     testWidgets('renders without the design-token extension (fallback)', (
       tester,
     ) async {

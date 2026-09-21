@@ -1181,19 +1181,6 @@ void main() {
     });
   });
 
-  group('FleetSchedulerService.dispose', () {
-    test('disposes cleanly', () {
-      final repo = _FakeFleetRepo();
-      final svc = FleetSchedulerService(
-        repository: repo,
-        executorResolver: (_) => null,
-        now: () => _t(0),
-      );
-      svc.dispose();
-      expect(true, isTrue);
-    });
-  });
-
   group('FleetSchedulerService local worker capacity', () {
     test('local worker multiplexes multiple jobs (no busy cap)', () async {
       final repo = _FakeFleetRepo();

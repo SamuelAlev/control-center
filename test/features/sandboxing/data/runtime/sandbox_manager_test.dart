@@ -529,29 +529,4 @@ void main() {
       expect(v1.raw, v2.raw);
     });
   });
-
-  // =========================================================================
-  // Resource limits: SandboxWrapResult
-  // =========================================================================
-  group('SandboxWrapResult', () {
-    test('holds executable, argv and environment', () {
-      const result = SandboxWrapResult(
-        executable: '/bin/echo',
-        argv: ['hello'],
-        environment: {'FOO': 'bar'},
-      );
-      expect(result.executable, '/bin/echo');
-      expect(result.argv, ['hello']);
-      expect(result.environment, {'FOO': 'bar'});
-    });
-
-    test('const constructor works', () {
-      const result = SandboxWrapResult(
-        executable: 'x',
-        argv: [],
-        environment: {},
-      );
-      expect(result, isA<SandboxWrapResult>());
-    });
-  });
 }

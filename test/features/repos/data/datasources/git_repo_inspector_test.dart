@@ -5,11 +5,6 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('GitRepoInspector', () {
-    test('creates const instance', () {
-      const inspector = GitRepoInspector();
-      expect(inspector, isNotNull);
-    });
-
     test('throws GitRepoInspectionException for non-existent path', () async {
       const inspector = GitRepoInspector();
       await expectLater(
@@ -151,20 +146,9 @@ void main() {
       expect(ex.toString(), 'test error');
       expect(ex.message, 'test error');
     });
-
-    test('different messages are unequal', () {
-      const a = GitRepoInspectionException('error a');
-      const b = GitRepoInspectionException('error b');
-      expect(a.message, isNot(b.message));
-    });
   });
 
   group('GitRepoInspector additional', () {
-    test('const constructor works', () {
-      const inspector = GitRepoInspector();
-      expect(inspector, isA<GitRepoInspector>());
-    });
-
     test('inspect throws on non-git directory', () async {
       const inspector = GitRepoInspector();
       expect(

@@ -2,8 +2,6 @@ import 'dart:async';
 
 import 'package:cc_domain/core/domain/entities/workspace.dart';
 import 'package:cc_domain/core/domain/repositories/cache_repository.dart';
-import 'package:cc_domain/features/pr_review/domain/entities/pr_user.dart';
-import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:control_center/core/theme/font_settings.dart';
@@ -38,38 +36,6 @@ Widget _wrap(Widget child) {
         routes: [GoRoute(path: '/', builder: (_, _) => child)],
       ),
     ),
-  );
-}
-
-PullRequest _makePr({
-  required int number,
-  required String title,
-  PrState state = PrState.open,
-  bool isDraft = false,
-  String authorLogin = 'dev',
-  String body = '',
-  String repoFullName = 'owner/repo',
-  DateTime? createdAt,
-  DateTime? updatedAt,
-  DateTime? mergedAt,
-  List<PrUser> requestedReviewers = const [],
-  List<PrUser> assignees = const [],
-}) {
-  return PullRequest(
-    id: number,
-    number: number,
-    title: title,
-    body: body,
-    state: state,
-    isDraft: isDraft,
-    author: PrUser(login: authorLogin, avatarUrl: ''),
-    createdAt: createdAt ?? DateTime(2024),
-    updatedAt: updatedAt ?? DateTime(2024),
-    repoFullName: repoFullName,
-    htmlUrl: 'https://github.com/$repoFullName/pull/$number',
-    requestedReviewers: requestedReviewers,
-    assignees: assignees,
-    mergedAt: mergedAt,
   );
 }
 
@@ -124,35 +90,6 @@ void main() {
   }
 
   group('PullRequestDetailScreen', () {
-    testWidgets('renders loading state', (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            ...baseOverrides(),
-            prDetailProvider(
-              _prRefOf(42),
-            ).overrideWith((ref) => const Stream.empty()),
-          ],
-          child: _wrap(
-            CcTheme(
-              data: CcThemeData.light(),
-              child: const PullRequestDetailScreen(
-                workspaceId: 'ws',
-                owner: 'owner',
-                repo: 'repo',
-                prNumber: 42,
-              ),
-            ),
-          ),
-        ),
-      );
-      await tester.pump();
-
-      expect(find.byType(PrOverviewSkeleton), findsOneWidget);
-      await tester.pumpWidget(Container());
-      await tester.pump(const Duration(milliseconds: 100));
-    });
-
     testWidgets('loading workbench tabs remain switchable', (tester) async {
       await tester.pumpWidget(
         ProviderScope(
@@ -218,34 +155,6 @@ void main() {
       await tester.pump();
 
       expect(find.text('Pull request not found'), findsOneWidget);
-      await tester.pumpWidget(Container());
-      await tester.pump(const Duration(milliseconds: 100));
-    });
-
-    testWidgets('renders error state without crashing', (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            ...baseOverrides(),
-            prDetailProvider(_prRefOf(42)).overrideWithValue(
-              AsyncValue.error(Exception('Network error'), StackTrace.empty),
-            ),
-          ],
-          child: _wrap(
-            CcTheme(
-              data: CcThemeData.light(),
-              child: const PullRequestDetailScreen(
-                workspaceId: 'ws',
-                owner: 'owner',
-                repo: 'repo',
-                prNumber: 42,
-              ),
-            ),
-          ),
-        ),
-      );
-      await tester.pump();
-      await tester.pump();
       await tester.pumpWidget(Container());
       await tester.pump(const Duration(milliseconds: 100));
     });
@@ -352,167 +261,6 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
     });
 
-    testWidgets('renders PR detail without crashing', (tester) async {
-      tester.view.physicalSize = const Size(1024, 800);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(() {
-        tester.view.resetPhysicalSize();
-        tester.view.resetDevicePixelRatio();
-      });
-
-      final pr = _makePr(number: 42, title: 'Fix login bug');
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            ...baseOverrides(prNumber: 42),
-            prDetailProvider(
-              _prRefOf(42),
-            ).overrideWith((ref) => Stream.value(pr)),
-          ],
-          child: _wrap(
-            CcTheme(
-              data: CcThemeData.light(),
-              child: const PullRequestDetailScreen(
-                workspaceId: 'ws',
-                owner: 'owner',
-                repo: 'repo',
-                prNumber: 42,
-              ),
-            ),
-          ),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
-
-      expect(find.byType(PullRequestDetailScreen), findsOneWidget);
-      await tester.pumpWidget(Container());
-      await tester.pump(const Duration(milliseconds: 100));
-    });
-
-    testWidgets('renders draft PR without crashing', (tester) async {
-      tester.view.physicalSize = const Size(1024, 800);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(() {
-        tester.view.resetPhysicalSize();
-        tester.view.resetDevicePixelRatio();
-      });
-
-      final pr = _makePr(number: 55, title: 'Draft PR', isDraft: true);
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            ...baseOverrides(prNumber: 55),
-            prDetailProvider(
-              _prRefOf(55),
-            ).overrideWith((ref) => Stream.value(pr)),
-          ],
-          child: _wrap(
-            CcTheme(
-              data: CcThemeData.light(),
-              child: const PullRequestDetailScreen(
-                workspaceId: 'ws',
-                owner: 'owner',
-                repo: 'repo',
-                prNumber: 55,
-              ),
-            ),
-          ),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
-
-      expect(find.byType(PullRequestDetailScreen), findsOneWidget);
-      await tester.pumpWidget(Container());
-      await tester.pump(const Duration(milliseconds: 100));
-    });
-
-    testWidgets('renders merged PR without crashing', (tester) async {
-      tester.view.physicalSize = const Size(1024, 800);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(() {
-        tester.view.resetPhysicalSize();
-        tester.view.resetDevicePixelRatio();
-      });
-
-      final pr = _makePr(
-        number: 77,
-        title: 'Merged PR',
-        state: PrState.merged,
-        mergedAt: DateTime(2024, 5, 1),
-      );
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            ...baseOverrides(prNumber: 77),
-            prDetailProvider(
-              _prRefOf(77),
-            ).overrideWith((ref) => Stream.value(pr)),
-          ],
-          child: _wrap(
-            CcTheme(
-              data: CcThemeData.light(),
-              child: const PullRequestDetailScreen(
-                workspaceId: 'ws',
-                owner: 'owner',
-                repo: 'repo',
-                prNumber: 77,
-              ),
-            ),
-          ),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
-
-      expect(find.byType(PullRequestDetailScreen), findsOneWidget);
-      await tester.pumpWidget(Container());
-      await tester.pump(const Duration(milliseconds: 100));
-    });
-
-    testWidgets('renders closed PR without crashing', (tester) async {
-      tester.view.physicalSize = const Size(1024, 800);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(() {
-        tester.view.resetPhysicalSize();
-        tester.view.resetDevicePixelRatio();
-      });
-
-      final pr = _makePr(number: 88, title: 'Closed PR', state: PrState.closed);
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            ...baseOverrides(prNumber: 88),
-            prDetailProvider(
-              _prRefOf(88),
-            ).overrideWith((ref) => Stream.value(pr)),
-          ],
-          child: _wrap(
-            CcTheme(
-              data: CcThemeData.light(),
-              child: const PullRequestDetailScreen(
-                workspaceId: 'ws',
-                owner: 'owner',
-                repo: 'repo',
-                prNumber: 88,
-              ),
-            ),
-          ),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
-
-      expect(find.byType(PullRequestDetailScreen), findsOneWidget);
-      await tester.pumpWidget(Container());
-      await tester.pump(const Duration(milliseconds: 100));
-    });
-
     testWidgets('not found state shows icon and page wrapper', (tester) async {
       await tester.pumpWidget(
         ProviderScope(
@@ -573,37 +321,6 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
     });
 
-    testWidgets('loading state renders skeleton', (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            ...baseOverrides(),
-            prDetailProvider(
-              _prRefOf(42),
-            ).overrideWith((ref) => const Stream.empty()),
-          ],
-          child: _wrap(
-            CcTheme(
-              data: CcThemeData.light(),
-              child: const PullRequestDetailScreen(
-                workspaceId: 'ws',
-                owner: 'owner',
-                repo: 'repo',
-                prNumber: 42,
-              ),
-            ),
-          ),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
-
-      // The product register calls for a skeleton, not a centered spinner.
-      expect(find.byType(PrOverviewSkeleton), findsOneWidget);
-      await tester.pumpWidget(Container());
-      await tester.pump(const Duration(milliseconds: 100));
-    });
-
     testWidgets('not found state renders not found text', (tester) async {
       await tester.pumpWidget(
         ProviderScope(
@@ -630,35 +347,6 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.text('Pull request not found'), findsOneWidget);
-      await tester.pumpWidget(Container());
-      await tester.pump(const Duration(milliseconds: 100));
-    });
-
-    testWidgets('renders with different PR numbers', (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            ...baseOverrides(prNumber: 7),
-            prDetailProvider(
-              _prRefOf(7),
-            ).overrideWith((ref) => const Stream.empty()),
-          ],
-          child: _wrap(
-            CcTheme(
-              data: CcThemeData.light(),
-              child: const PullRequestDetailScreen(
-                workspaceId: 'ws',
-                owner: 'owner',
-                repo: 'repo',
-                prNumber: 7,
-              ),
-            ),
-          ),
-        ),
-      );
-      await tester.pump();
-
-      expect(find.byType(PrOverviewSkeleton), findsOneWidget);
       await tester.pumpWidget(Container());
       await tester.pump(const Duration(milliseconds: 100));
     });

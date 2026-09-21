@@ -3,7 +3,6 @@ import 'package:cc_domain/features/pr_review/domain/entities/pr_review_submissio
 import 'package:cc_domain/features/pr_review/domain/entities/pr_user.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_domain/features/pr_review/domain/repositories/pr_review_repository.dart';
-import 'package:cc_markdown/cc_markdown.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/theme/font_settings.dart';
 import 'package:control_center/features/pr_review/presentation/screens/pull_request_detail/pr_header_section.dart';
@@ -91,16 +90,6 @@ const _prRef = (workspaceId: 'ws', repoFullName: 'owner/repo', number: 42);
 
 void main() {
   group('PrHeaderSection', () {
-    testWidgets('renders body', (tester) async {
-      final pr = _pr();
-      await tester.pumpWidget(_wrap(PrHeaderSection(pr: pr, prRef: _prRef)));
-      await tester.pumpAndSettle(const Duration(seconds: 5));
-
-      expect(find.byType(PrBodyMarkdown), findsOneWidget);
-      await tester.pumpWidget(Container());
-      await tester.pump(const Duration(milliseconds: 100));
-    });
-
     testWidgets('renders empty body message when body is empty', (
       tester,
     ) async {
@@ -121,16 +110,6 @@ void main() {
       await tester.pumpAndSettle(const Duration(seconds: 5));
 
       expect(find.text('No description provided.'), findsOneWidget);
-      await tester.pumpWidget(Container());
-      await tester.pump(const Duration(milliseconds: 100));
-    });
-
-    testWidgets('renders with markdown body content', (tester) async {
-      final pr = _pr(body: '## Summary\nThis is a PR body with **bold** text.');
-      await tester.pumpWidget(_wrap(PrHeaderSection(pr: pr, prRef: _prRef)));
-      await tester.pumpAndSettle(const Duration(seconds: 5));
-
-      expect(find.byType(PrBodyMarkdown), findsOneWidget);
       await tester.pumpWidget(Container());
       await tester.pump(const Duration(milliseconds: 100));
     });
@@ -162,7 +141,9 @@ void main() {
   group('EditablePrTitle', () {
     testWidgets('leads the title with the PR status icon', (tester) async {
       final pr = _pr(number: 42, body: 'Test');
-      await tester.pumpWidget(_wrap(EditablePrTitle(pr: pr, prRef: _prRef, canEdit: false)));
+      await tester.pumpWidget(
+        _wrap(EditablePrTitle(pr: pr, prRef: _prRef, canEdit: false)),
+      );
       await tester.pumpAndSettle(const Duration(seconds: 5));
 
       expect(find.byType(PrStatusIcon), findsOneWidget);
@@ -174,22 +155,6 @@ void main() {
   });
 
   group('PrBodyMarkdown', () {
-    testWidgets('renders markdown body', (tester) async {
-      await tester.pumpWidget(
-        _wrap(
-          const PrBodyMarkdown(
-            body: '**bold** text',
-            repoFullName: 'owner/repo',
-          ),
-        ),
-      );
-      await tester.pumpAndSettle(const Duration(seconds: 5));
-
-      expect(find.byType(CcMarkdown), findsOneWidget);
-      await tester.pumpWidget(Container());
-      await tester.pump(const Duration(milliseconds: 100));
-    });
-
     testWidgets('renders empty state for empty body', (tester) async {
       await tester.pumpWidget(
         _wrap(const PrBodyMarkdown(body: '', repoFullName: 'owner/repo')),

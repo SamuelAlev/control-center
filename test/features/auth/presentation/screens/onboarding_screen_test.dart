@@ -375,22 +375,6 @@ void main() {
     );
   });
 
-  testWidgets('renders AnimatedSwitcher for step transitions', (tester) async {
-    await pumpOnboarding(tester, authenticated: false);
-    expect(find.byType(AnimatedSwitcher), findsOneWidget);
-  });
-
-  testWidgets('renders KeyedSubtree for step animation keys', (tester) async {
-    await pumpOnboarding(tester, authenticated: false);
-    // KeyedSubtree is used inside AnimatedSwitcher and possibly elsewhere.
-    expect(find.byType(KeyedSubtree), findsWidgets);
-  });
-
-  testWidgets('renders SafeArea', (tester) async {
-    await pumpOnboarding(tester, authenticated: false);
-    expect(find.byType(SafeArea), findsOneWidget);
-  });
-
   testWidgets('ConstrainedBox max width is 720', (tester) async {
     await pumpOnboarding(tester, authenticated: false);
     final boxes = find.byType(ConstrainedBox);

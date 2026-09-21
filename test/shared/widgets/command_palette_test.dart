@@ -107,23 +107,6 @@ void main() {
       expect(count, 3);
     });
 
-    test('different items have different ids', () {
-      final a = CommandItem(
-        id: 'a',
-        label: 'A',
-        icon: Icons.ac_unit,
-        onExecute: () {},
-      );
-      final b = CommandItem(
-        id: 'b',
-        label: 'B',
-        icon: Icons.ac_unit,
-        onExecute: () {},
-      );
-
-      expect(a.id, isNot(b.id));
-    });
-
     test('category groups items', () {
       final nav = CommandItem(
         id: 'nav',

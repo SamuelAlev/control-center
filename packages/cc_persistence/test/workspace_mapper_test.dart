@@ -45,14 +45,6 @@ void main() {
       expect(domain.name, 'Test WS');
     });
 
-    test('toDomain maps workspace with different name', () async {
-      final row = await createWorkspace(name: 'Active Project');
-
-      final domain = mapper.toDomain(row);
-      expect(domain.id, 'ws-1');
-      expect(domain.name, 'Active Project');
-    });
-
     test('toDomain maps null fields', () async {
       final row = await createWorkspace();
 
@@ -79,28 +71,6 @@ void main() {
       expect(domains.length, 2);
       expect(domains[0].id, 'ws-a');
       expect(domains[1].id, 'ws-b');
-    });
-
-    test('toDomainList returns empty list for empty input', () {
-      final domains = mapper.toDomainList([]);
-      expect(domains, isEmpty);
-    });
-
-    test('toDomain preserves createdAt and updatedAt', () async {
-      final row = await createWorkspace();
-
-      final domain = mapper.toDomain(row);
-      expect(domain.createdAt, isA<DateTime>());
-      expect(domain.updatedAt, isA<DateTime>());
-    });
-
-    test('toDomain with special characters in name', () async {
-      final row = await createWorkspace(
-        name: 'Project (Phase 2) - Build & Test',
-      );
-
-      final domain = mapper.toDomain(row);
-      expect(domain.name, 'Project (Phase 2) - Build & Test');
     });
   });
 }

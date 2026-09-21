@@ -120,11 +120,6 @@ void main() {
   });
 
   group('CheckOnboardingCompleteUseCase edge cases', () {
-    test('const constructor works', () {
-      const useCase = CheckOnboardingCompleteUseCase();
-      expect(useCase, isA<CheckOnboardingCompleteUseCase>());
-    });
-
     test('isComplete is true only when both conditions met', () {
       const useCase = CheckOnboardingCompleteUseCase();
 

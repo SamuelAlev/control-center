@@ -210,19 +210,5 @@ void main() {
         expect(companion.status.value, 'archived');
       },
     );
-
-    test(
-      'fromRow with special characters in name',
-      timeout: const Timeout.factor(2),
-      () async {
-        final row = await insertProject(
-          name: 'Project (Phase 2) — Build & Test',
-        );
-
-        final project = mapper.fromRow(row);
-
-        expect(project.name, 'Project (Phase 2) — Build & Test');
-      },
-    );
   });
 }

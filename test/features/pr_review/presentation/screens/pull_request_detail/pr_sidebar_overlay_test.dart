@@ -66,27 +66,6 @@ const _prRef = (workspaceId: 'ws', repoFullName: 'owner/repo', number: 42);
 
 void main() {
   group('TreeOverlay', () {
-    testWidgets('tree mode renders empty state when no files', (tester) async {
-      final pr = _pr();
-      await tester.pumpWidget(
-        _wrap(
-          TreeOverlay(
-            pr: pr,
-            prRef: _prRef,
-            diffKey: GlobalKey(),
-            mode: PrDiffSidebarMode.tree,
-            searchFocusToken: 0,
-            onOpenSearch: () {},
-            onShowFileTree: () {},
-            onOpenFileInEditor: (_, {int? line}) {},
-          ),
-        ),
-      );
-      await tester.pumpAndSettle(const Duration(seconds: 5));
-
-      expect(find.byType(SizedBox), findsAtLeastNWidgets(1));
-    });
-
     testWidgets('search mode shows a preparing state without a workspace', (
       tester,
     ) async {

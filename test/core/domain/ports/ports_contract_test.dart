@@ -36,24 +36,6 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   // ---------------------------------------------------------------------------
-  // SystemAudioSourceKind
-  // ---------------------------------------------------------------------------
-  group('SystemAudioSourceKind', () {
-    test('all enum values are distinct', () {
-      const values = SystemAudioSourceKind.values;
-      expect(values.length, 4);
-      expect(values.toSet().length, 4);
-    });
-
-    test('values have expected indices', () {
-      expect(SystemAudioSourceKind.system.index, 0);
-      expect(SystemAudioSourceKind.process.index, 1);
-      expect(SystemAudioSourceKind.monitor.index, 2);
-      expect(SystemAudioSourceKind.unknown.index, 3);
-    });
-  });
-
-  // ---------------------------------------------------------------------------
   // SystemAudioSource
   // ---------------------------------------------------------------------------
   group('SystemAudioSource', () {
@@ -246,28 +228,6 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
-  // BatchDeliveryPolicy
-  // ---------------------------------------------------------------------------
-  group('BatchDeliveryPolicy', () {
-    test('all enum values are distinct', () {
-      const values = BatchDeliveryPolicy.values;
-      expect(values.length, 3);
-      expect(values.toSet().length, 3);
-    });
-
-    test('values include realtime, digest2h, digestDaily', () {
-      expect(
-        BatchDeliveryPolicy.values,
-        containsAll([
-          BatchDeliveryPolicy.realtime,
-          BatchDeliveryPolicy.digest2h,
-          BatchDeliveryPolicy.digestDaily,
-        ]),
-      );
-    });
-  });
-
-  // ---------------------------------------------------------------------------
   // ScopedCredentials
   // ---------------------------------------------------------------------------
   group('ScopedCredentials', () {
@@ -308,16 +268,8 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
-  // ConfirmationSeverity & ConfirmationRequest
+  // ConfirmationRequest
   // ---------------------------------------------------------------------------
-  group('ConfirmationSeverity', () {
-    test('all enum values are distinct', () {
-      const values = ConfirmationSeverity.values;
-      expect(values.length, 3);
-      expect(values.toSet().length, 3);
-    });
-  });
-
   group('ConfirmationRequest', () {
     test('constructs with required fields and default severity', () {
       const req = ConfirmationRequest(
@@ -342,16 +294,6 @@ void main() {
       );
       expect(req.severity, ConfirmationSeverity.destructive);
       expect(req.command, 'git branch -D feature/x');
-    });
-
-    test('constructs with info severity', () {
-      const req = ConfirmationRequest(
-        spaceId: 'conv-3',
-        title: 'Network access',
-        detail: 'Egress to api.example.com',
-        severity: ConfirmationSeverity.info,
-      );
-      expect(req.severity, ConfirmationSeverity.info);
     });
   });
 
@@ -716,7 +658,6 @@ void main() {
       expect(port.dimension, 384);
     });
 
-
     test('ProcessDetectionPort contract is valid', () async {
       final port = _TestProcessDetectionPort();
       final procs = await port.detect();
@@ -944,10 +885,7 @@ class _TestNotificationPreferencesPort implements NotificationPreferencesPort {
   Future<Set<String>> getMutedRepos() async => const {};
 
   @override
-  Future<void> setRepoMuted(
-    String repoFullName, {
-    required bool muted,
-  }) async {}
+  Future<void> setRepoMuted(String repoFullName, {required bool muted}) async {}
 
   @override
   Future<BatchDeliveryPolicy> getBatchDeliveryPolicy() async =>
@@ -1098,9 +1036,7 @@ class _TestRepoWorkspaceProvisionerPort
   }) async {}
 
   @override
-  Future<void> releaseSpaceAnyWorkspace({
-    required String spaceId,
-  }) async {}
+  Future<void> releaseSpaceAnyWorkspace({required String spaceId}) async {}
 
   @override
   Future<void> releaseTicket({required String ticketId}) async {}

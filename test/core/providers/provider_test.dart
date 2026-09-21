@@ -1,4 +1,3 @@
-import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:control_center/core/providers/event_bus_provider.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -23,21 +22,11 @@ void main() {
   });
 
   test('githubUserProvider returns null when not authenticated', () async {
-    final container = ProviderContainer(
-      overrides: const [],
-    );
+    final container = ProviderContainer(overrides: const []);
     addTearDown(container.dispose);
 
     final user = await container.read(githubUserProvider.future);
     expect(user, isNull);
-  });
-
-  test('domainEventBusProvider creates a bus', () {
-    final container = ProviderContainer();
-    addTearDown(container.dispose);
-
-    final bus = container.read(domainEventBusProvider);
-    expect(bus, isA<DomainEventBus>());
   });
 
   test('domainEventBusProvider returns same instance', () {

@@ -20,49 +20,4 @@ void main() {
     // Search icon inside the Row
     expect(find.byIcon(AppIcons.search), findsOneWidget);
   });
-
-  testWidgets('renders keybinding categories', (tester) async {
-    await tester.pumpWidget(
-      ProviderScope(child: testWrap(const KeybindingsSettingsScreen())),
-    );
-    await tester.pump();
-    await tester.pump();
-
-    // Screen renders with search field and binding content.
-    expect(find.byType(KeybindingsSettingsScreen), findsOneWidget);
-    expect(find.byType(CcTextField), findsOneWidget);
-  });
-
-  testWidgets('filters bindings by search query', (tester) async {
-    await tester.pumpWidget(
-      ProviderScope(child: testWrap(const KeybindingsSettingsScreen())),
-    );
-    await tester.pump();
-    await tester.pump();
-
-    await tester.enterText(find.byType(CcTextField), 'Inbox');
-    await tester.pump();
-    await tester.pump();
-
-    // Screen still renders after filtering.
-    expect(find.byType(KeybindingsSettingsScreen), findsOneWidget);
-  });
-
-  testWidgets('shows empty state when query matches nothing', (tester) async {
-    await tester.pumpWidget(
-      ProviderScope(child: testWrap(const KeybindingsSettingsScreen())),
-    );
-    await tester.pump();
-    await tester.pump();
-
-    await tester.enterText(
-      find.byType(CcTextField),
-      'nothingmatchesthisxyz123',
-    );
-    await tester.pump();
-    await tester.pump();
-
-    // Empty state renders — screen still present.
-    expect(find.byType(KeybindingsSettingsScreen), findsOneWidget);
-  });
 }

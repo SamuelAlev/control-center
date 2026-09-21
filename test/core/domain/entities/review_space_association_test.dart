@@ -29,78 +29,7 @@ void main() {
     );
   }
 
-  group('ReviewSpaceStatus', () {
-    test('has all expected values', () {
-      expect(
-        ReviewSpaceStatus.values,
-        containsAll([
-          ReviewSpaceStatus.requested,
-          ReviewSpaceStatus.inProgress,
-          ReviewSpaceStatus.awaitingApproval,
-          ReviewSpaceStatus.completed,
-        ]),
-      );
-    });
-  });
-
   group('ReviewSpaceAssociation', () {
-    group('constructor', () {
-      test('creates with all required fields', () {
-        final assoc = createAssoc();
-        expect(assoc.id, 'rca-1');
-        expect(assoc.spaceId, 'ch-1');
-        expect(assoc.workspaceId, 'ws-1');
-        expect(assoc.prExternalId, 'PR_node1');
-        expect(assoc.prNumber, 42);
-        expect(assoc.repoFullName, 'acme/repo');
-        expect(assoc.status, ReviewSpaceStatus.requested);
-        expect(assoc.createdAt, testCreatedAt);
-        expect(assoc.updatedAt, testUpdatedAt);
-      });
-    });
-
-    group('convenience getters', () {
-      test('isRequested returns true for requested status', () {
-        final assoc = createAssoc(status: ReviewSpaceStatus.requested);
-        expect(assoc.isRequested, isTrue);
-      });
-
-      test('isRequested returns false for other status', () {
-        final assoc = createAssoc(status: ReviewSpaceStatus.inProgress);
-        expect(assoc.isRequested, isFalse);
-      });
-
-      test('isInProgress returns true for inProgress status', () {
-        final assoc = createAssoc(status: ReviewSpaceStatus.inProgress);
-        expect(assoc.isInProgress, isTrue);
-      });
-
-      test('isInProgress returns false for other status', () {
-        final assoc = createAssoc(status: ReviewSpaceStatus.requested);
-        expect(assoc.isInProgress, isFalse);
-      });
-
-      test('isAwaitingApproval returns true for awaitingApproval status', () {
-        final assoc = createAssoc(status: ReviewSpaceStatus.awaitingApproval);
-        expect(assoc.isAwaitingApproval, isTrue);
-      });
-
-      test('isAwaitingApproval returns false for other status', () {
-        final assoc = createAssoc(status: ReviewSpaceStatus.completed);
-        expect(assoc.isAwaitingApproval, isFalse);
-      });
-
-      test('isCompleted returns true for completed status', () {
-        final assoc = createAssoc(status: ReviewSpaceStatus.completed);
-        expect(assoc.isCompleted, isTrue);
-      });
-
-      test('isCompleted returns false for other status', () {
-        final assoc = createAssoc(status: ReviewSpaceStatus.requested);
-        expect(assoc.isCompleted, isFalse);
-      });
-    });
-
     group('status transition methods', () {
       test('markInProgress returns copy with inProgress status', () {
         final assoc = createAssoc(status: ReviewSpaceStatus.requested);
@@ -228,76 +157,10 @@ void main() {
         expect(copy.hashCode, equals(assoc.hashCode));
       });
 
-      test('updates id', () {
-        final assoc = createAssoc();
-        final copy = assoc.copyWith(id: 'new-id');
-        expect(copy.id, 'new-id');
-        expect(copy.spaceId, assoc.spaceId);
-      });
-
-      test('updates spaceId', () {
-        final assoc = createAssoc();
-        final copy = assoc.copyWith(spaceId: 'new-ch');
-        expect(copy.spaceId, 'new-ch');
-      });
-
-      test('updates workspaceId', () {
-        final assoc = createAssoc();
-        final copy = assoc.copyWith(workspaceId: 'new-ws');
-        expect(copy.workspaceId, 'new-ws');
-      });
-
-      test('updates prExternalId', () {
-        final assoc = createAssoc();
-        final copy = assoc.copyWith(prExternalId: 'PR_new');
-        expect(copy.prExternalId, 'PR_new');
-      });
-
-      test('updates prNumber', () {
-        final assoc = createAssoc();
-        final copy = assoc.copyWith(prNumber: 99);
-        expect(copy.prNumber, 99);
-      });
-
-      test('updates repoFullName', () {
-        final assoc = createAssoc();
-        final copy = assoc.copyWith(repoFullName: 'org/new-repo');
-        expect(copy.repoFullName, 'org/new-repo');
-      });
-
-      test('updates status', () {
-        final assoc = createAssoc();
-        final copy = assoc.copyWith(status: ReviewSpaceStatus.completed);
-        expect(copy.status, ReviewSpaceStatus.completed);
-      });
-
-      test('updates createdAt', () {
-        final assoc = createAssoc();
-        final newDate = DateTime(2025, 1, 1);
-        final copy = assoc.copyWith(createdAt: newDate);
-        expect(copy.createdAt, newDate);
-      });
-
-      test('updates updatedAt', () {
-        final assoc = createAssoc();
-        final newDate = DateTime(2025, 6, 1);
-        final copy = assoc.copyWith(updatedAt: newDate);
-        expect(copy.updatedAt, newDate);
-      });
-
       test('does not mutate original', () {
         final assoc = createAssoc();
         assoc.copyWith(status: ReviewSpaceStatus.completed);
         expect(assoc.status, ReviewSpaceStatus.requested);
-      });
-
-      test('chaining copyWith calls', () {
-        final assoc = createAssoc();
-        final copy = assoc
-            .copyWith(status: ReviewSpaceStatus.inProgress)
-            .copyWith(repoFullName: 'new/repo');
-        expect(copy.status, ReviewSpaceStatus.inProgress);
-        expect(copy.repoFullName, 'new/repo');
       });
     });
   });

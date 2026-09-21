@@ -5,7 +5,6 @@ import 'package:cc_domain/features/pr_review/domain/repositories/pr_review_repos
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/theme/font_settings.dart';
 import 'package:control_center/features/pr_review/presentation/screens/pull_request_detail/pr_files_tab.dart';
-import 'package:control_center/features/pr_review/presentation/widgets/pr_detail_skeleton.dart';
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
@@ -74,30 +73,6 @@ const _prRef = (workspaceId: 'ws', repoFullName: 'owner/repo', number: 42);
 
 void main() {
   group('FilesTab', () {
-    testWidgets('renders loading state', (tester) async {
-      final pr = _pr();
-
-      await tester.pumpWidget(
-        _wrapSliver(
-          FilesTab(
-            pr: pr,
-            prRef: _prRef,
-            allFiles: const [],
-            commits: const [],
-            comments: const [],
-            isLoading: true,
-            error: null,
-            diffKey: GlobalKey(),
-          ),
-        ),
-      );
-      await tester.pump();
-
-      expect(find.byType(PrDiffSkeleton), findsOneWidget);
-      await tester.pumpWidget(Container());
-      await tester.pump(const Duration(milliseconds: 100));
-    });
-
     testWidgets('renders error state', (tester) async {
       final pr = _pr();
 

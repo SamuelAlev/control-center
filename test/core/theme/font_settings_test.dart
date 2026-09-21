@@ -168,23 +168,6 @@ void main() {
       expect(FontSource.values, contains(FontSource.google));
       expect(FontSource.values, contains(FontSource.system));
     });
-
-    test('name returns correct string', () {
-      expect(FontSource.google.name, 'google');
-      expect(FontSource.system.name, 'system');
-    });
-  });
-
-  group('fontSettingsProvider', () {
-    test('is a valid NotifierProvider', () {
-      expect(fontSettingsProvider, isA<NotifierProvider>());
-    });
-  });
-
-  group('codeFontFamilyProvider', () {
-    test('is a valid Provider', () {
-      expect(codeFontFamilyProvider, isA<Provider<String>>());
-    });
   });
 
   group('FontSettingsNotifier', () {

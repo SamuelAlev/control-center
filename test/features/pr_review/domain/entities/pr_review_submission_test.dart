@@ -86,21 +86,4 @@ void main() {
       expect(a, equals(a));
     });
   });
-
-  group('PrReviewSubmissionState', () {
-    test('all enum values are distinct', () {
-      expect(PrReviewSubmissionState.values.length, 4);
-      expect(PrReviewSubmissionState.values.toSet().length, 4);
-    });
-
-    test('individual values', () {
-      expect(PrReviewSubmissionState.approved, isA<PrReviewSubmissionState>());
-      expect(
-        PrReviewSubmissionState.changesRequested,
-        isA<PrReviewSubmissionState>(),
-      );
-      expect(PrReviewSubmissionState.commented, isA<PrReviewSubmissionState>());
-      expect(PrReviewSubmissionState.pending, isA<PrReviewSubmissionState>());
-    });
-  });
 }

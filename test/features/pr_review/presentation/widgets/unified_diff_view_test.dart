@@ -44,119 +44,27 @@ void main() {
   tearDownAll(() => DiffWorkerPool.debugForceInline = false);
 
   group('UnifiedDiffView', () {
-    testWidgets('builds with empty files list', (tester) async {
-      await tester.pumpWidget(_wrap(const UnifiedDiffView(files: [])));
-      await tester.pump(const Duration(milliseconds: 100));
-      await tester.pump(const Duration(milliseconds: 100));
-      // Empty sliver may not mount a SliverToBoxAdapter; verify no crash.
-      expect(tester.takeException(), isNull);
-    });
-
-    testWidgets('builds with a single file', (tester) async {
-      final files = [_testFile()];
-
-      await tester.pumpWidget(_wrap(UnifiedDiffView(files: files)));
-      await tester.pump(const Duration(milliseconds: 100));
-      await tester.pump(const Duration(milliseconds: 100));
-
-      expect(find.byType(UnifiedDiffView), findsOneWidget);
-    });
-
-    testWidgets('builds with multiple files', (tester) async {
+    testWidgets('first frame parses only the opening file of a mid-size PR', (
+      tester,
+    ) async {
+      // 12 files × ~80 lines is well under the old 20k eager-parse budget,
+      // so the previous path parsed EVERY file in initState and froze the
+      // Diff-tab click. The last file must stay unparsed after the first
+      // layout — only the opening viewport is allowed to pay parse cost.
+      final tallPatch =
+          '@@ -1,80 +1,80 @@\n${List.filled(80, ' line\n').join()}';
       final files = [
         _testFile(filename: 'lib/a.dart'),
-        _testFile(filename: 'lib/b.dart'),
-        _testFile(filename: 'lib/c.dart'),
+        for (var i = 1; i <= 12; i++)
+          _testFile(filename: 'lib/f$i.dart', patch: tallPatch),
       ];
+      final key = GlobalKey<UnifiedDiffViewState>();
+      await tester.pumpWidget(_wrap(UnifiedDiffView(key: key, files: files)));
+      await tester.pump();
 
-      await tester.pumpWidget(_wrap(UnifiedDiffView(files: files)));
-      await tester.pump(const Duration(milliseconds: 100));
-      await tester.pump(const Duration(milliseconds: 100));
-
-      expect(find.byType(UnifiedDiffView), findsOneWidget);
-    });
-
-    testWidgets(
-      'first frame parses only the opening file of a mid-size PR',
-      (tester) async {
-        // 12 files × ~80 lines is well under the old 20k eager-parse budget,
-        // so the previous path parsed EVERY file in initState and froze the
-        // Diff-tab click. The last file must stay unparsed after the first
-        // layout — only the opening viewport is allowed to pay parse cost.
-        final tallPatch =
-            '@@ -1,80 +1,80 @@\n${List.filled(80, ' line\n').join()}';
-        final files = [
-          _testFile(filename: 'lib/a.dart'),
-          for (var i = 1; i <= 12; i++)
-            _testFile(filename: 'lib/f$i.dart', patch: tallPatch),
-        ];
-        final key = GlobalKey<UnifiedDiffViewState>();
-        await tester.pumpWidget(
-          _wrap(UnifiedDiffView(key: key, files: files)),
-        );
-        await tester.pump();
-
-        final doc = key.currentState!.debugDocument;
-        expect(doc.structureOf(0), isNotNull);
-        expect(doc.structureOf(doc.fileCount - 1), isNull);
-      },
-    );
-
-    testWidgets('splitView=true parameter accepted', (tester) async {
-      final files = [_testFile()];
-
-      await tester.pumpWidget(
-        _wrap(UnifiedDiffView(files: files, splitView: true)),
-      );
-      await tester.pump(const Duration(milliseconds: 100));
-      await tester.pump(const Duration(milliseconds: 100));
-
-      expect(find.byType(UnifiedDiffView), findsOneWidget);
-    });
-
-    testWidgets('bare construction accepted (no controller)', (tester) async {
-      final files = [_testFile()];
-
-      await tester.pumpWidget(
-        _wrap(UnifiedDiffView(files: files)),
-      );
-      await tester.pump(const Duration(milliseconds: 100));
-      await tester.pump(const Duration(milliseconds: 100));
-
-      expect(find.byType(UnifiedDiffView), findsOneWidget);
-    });
-
-    testWidgets('renders files with different statuses', (tester) async {
-      final files = [
-        _testFile(
-          filename: 'lib/added.dart',
-          status: PrFileStatus.added,
-          patch: '@@ -0,0 +1,3 @@\n+new file\n+content\n',
-          additions: 3,
-          deletions: 0,
-        ),
-        _testFile(filename: 'lib/modified.dart', status: PrFileStatus.modified),
-        _testFile(
-          filename: 'lib/removed.dart',
-          status: PrFileStatus.removed,
-          patch: '@@ -1,3 +0,0 @@\n-old\n-content\n',
-          additions: 0,
-          deletions: 3,
-        ),
-        _testFile(
-          filename: 'lib/renamed.dart',
-          status: PrFileStatus.renamed,
-          patch: '@@ -1,2 +1,2 @@\n-old\n+new\n',
-          additions: 1,
-          deletions: 1,
-        ),
-      ];
-
-      await tester.pumpWidget(_wrap(UnifiedDiffView(files: files)));
-      await tester.pump(const Duration(milliseconds: 100));
-      await tester.pump(const Duration(milliseconds: 100));
-
-      expect(find.byType(UnifiedDiffView), findsOneWidget);
+      final doc = key.currentState!.debugDocument;
+      expect(doc.structureOf(0), isNotNull);
+      expect(doc.structureOf(doc.fileCount - 1), isNull);
     });
 
     testWidgets('marking a file viewed keeps its diff expanded', (

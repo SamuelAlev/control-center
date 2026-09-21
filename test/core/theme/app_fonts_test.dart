@@ -7,11 +7,6 @@ void main() {
 
   group('AppFonts', () {
     group('ui', () {
-      test('returns a TextStyle', () {
-        final style = AppFonts.ui();
-        expect(style, isA<TextStyle>());
-      });
-
       test('merges with provided textStyle', () {
         const baseStyle = TextStyle(fontSize: 18, fontWeight: FontWeight.bold);
         final style = AppFonts.ui(textStyle: baseStyle);
@@ -21,11 +16,6 @@ void main() {
     });
 
     group('code', () {
-      test('returns a TextStyle', () {
-        final style = AppFonts.code();
-        expect(style, isA<TextStyle>());
-      });
-
       test('merges with provided textStyle', () {
         const baseStyle = TextStyle(fontSize: 14, color: Colors.blue);
         final style = AppFonts.code(textStyle: baseStyle);
@@ -44,11 +34,6 @@ void main() {
         expect(style.fontSize, 12);
         expect(style.fontWeight, FontWeight.w600);
         expect(style.color, Colors.green);
-      });
-
-      test('returns TextStyle with no parameters', () {
-        final style = AppFonts.codeStyle();
-        expect(style, isA<TextStyle>());
       });
 
       test('applies backgroundColor parameter', () {

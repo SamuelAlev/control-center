@@ -6,7 +6,6 @@ import 'package:control_center/features/repos/providers/repo_providers.dart';
 import 'package:control_center/features/shell/presentation/widgets/title_bar_workspace_chip.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
-import 'package:control_center/shared/widgets/workspace_avatar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -31,24 +30,6 @@ void main() {
   setUp(() async {
     TestWidgetsFlutterBinding.ensureInitialized();
     prefs = AppPreferences.inMemory();
-  });
-
-  group('WorkspaceAvatar', () {
-    testWidgets('renders default icon when no logo path', (tester) async {
-      await tester.pumpWidget(_wrap(const WorkspaceAvatar(size: 32)));
-      await tester.pump();
-
-      expect(find.byType(WorkspaceAvatar), findsOneWidget);
-    });
-
-    testWidgets('renders default icon for empty logo path', (tester) async {
-      await tester.pumpWidget(
-        _wrap(const WorkspaceAvatar(hasLogo: false, size: 32)),
-      );
-      await tester.pump();
-
-      expect(find.byType(WorkspaceAvatar), findsOneWidget);
-    });
   });
 
   group('TitleBarWorkspaceChip', () {

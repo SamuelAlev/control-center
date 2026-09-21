@@ -45,10 +45,5 @@ void main() {
       expect(CodeEdgeKind.tryParse(''), isNull);
       expect(CodeEdgeKind.tryParse('calls '), isNull);
     });
-
-    test('all values are distinct', () {
-      const values = CodeEdgeKind.values;
-      expect(values.toSet().length, values.length);
-    });
   });
 }

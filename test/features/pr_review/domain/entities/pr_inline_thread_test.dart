@@ -384,17 +384,4 @@ void main() {
       expect(thread.toString(), 'PrInlineThread(src/main.dart:42, comment)');
     });
   });
-
-  group('PrInlineSyncState', () {
-    test('all enum values are distinct', () {
-      expect(PrInlineSyncState.values.length, 5);
-      expect(PrInlineSyncState.values.toSet().length, 5);
-    });
-  });
-
-  group('PrInlineThreadKind', () {
-    test('all enum values are distinct', () {
-      expect(PrInlineThreadKind.values.length, 2);
-    });
-  });
 }

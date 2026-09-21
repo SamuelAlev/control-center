@@ -1,7 +1,7 @@
 import 'package:cc_domain/features/meetings/domain/entities/meeting.dart';
 import 'package:control_center/features/meetings/presentation/widgets/meeting_common.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import '../../../../helpers/test_wrap.dart';
 
@@ -120,24 +120,6 @@ void main() {
     testWidgets('already-uppercase text stays uppercase', (tester) async {
       await tester.pumpWidget(testWrap(const MeetingEyebrow('DECISIONS')));
       expect(find.text('DECISIONS'), findsOneWidget);
-    });
-  });
-
-  group('MeetingEqualizerBars', () {
-    testWidgets('renders without error', (tester) async {
-      await tester.pumpWidget(
-        testWrap(const MeetingEqualizerBars(color: Colors.orange)),
-      );
-      // The widget renders via AnimatedBuilder; verify it's present.
-      expect(find.byType(MeetingEqualizerBars), findsOneWidget);
-    });
-
-    testWidgets('renders correct number of bars', (tester) async {
-      await tester.pumpWidget(
-        testWrap(const MeetingEqualizerBars(color: Colors.orange, barCount: 4)),
-      );
-      // 4 AnimatedBuilder widgets
-      expect(find.byType(MeetingEqualizerBars), findsOneWidget);
     });
   });
 }

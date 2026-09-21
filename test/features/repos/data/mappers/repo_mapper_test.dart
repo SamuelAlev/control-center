@@ -6,10 +6,6 @@ void main() {
   const mapper = RepoMapper();
 
   group('RepoMapper', () {
-    test('creates const instance', timeout: const Timeout.factor(2), () {
-      expect(mapper, isNotNull);
-    });
-
     test(
       'toDomain maps all fields correctly',
       timeout: const Timeout.factor(2),

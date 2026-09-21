@@ -131,54 +131,6 @@ void main() {
     expect(find.text('My RSS Feed'), findsOneWidget);
   });
 
-  testWidgets('renders placeholder thumbnail when no image', (tester) async {
-    tester.view.physicalSize = const Size(300, 400);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(() {
-      tester.view.resetPhysicalSize();
-      tester.view.resetDevicePixelRatio();
-    });
-
-    final article = _makeArticle(imageUrl: '');
-
-    await tester.pumpWidget(
-      _wrap(
-        ArticleCard(
-          article: article,
-          feed: null,
-          onTap: () {},
-          onToggleSaved: () {},
-        ),
-      ),
-    );
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 200));
-  });
-
-  testWidgets('renders bookmark icon', (tester) async {
-    tester.view.physicalSize = const Size(300, 400);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(() {
-      tester.view.resetPhysicalSize();
-      tester.view.resetDevicePixelRatio();
-    });
-
-    final article = _makeArticle();
-
-    await tester.pumpWidget(
-      _wrap(
-        ArticleCard(
-          article: article,
-          feed: null,
-          onTap: () {},
-          onToggleSaved: () {},
-        ),
-      ),
-    );
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 200));
-  });
-
   testWidgets('renders relative time', (tester) async {
     tester.view.physicalSize = const Size(300, 400);
     tester.view.devicePixelRatio = 1.0;
@@ -233,30 +185,6 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
 
     expect(find.text('30m'), findsOneWidget);
-  });
-
-  testWidgets('renders saved article icon color', (tester) async {
-    tester.view.physicalSize = const Size(300, 400);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(() {
-      tester.view.resetPhysicalSize();
-      tester.view.resetDevicePixelRatio();
-    });
-
-    final article = _makeArticle(saved: true);
-
-    await tester.pumpWidget(
-      _wrap(
-        ArticleCard(
-          article: article,
-          feed: null,
-          onTap: () {},
-          onToggleSaved: () {},
-        ),
-      ),
-    );
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 200));
   });
 
   testWidgets('relative time with days', (tester) async {

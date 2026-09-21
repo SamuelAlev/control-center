@@ -60,27 +60,7 @@ void main() {
     });
   });
 
-  group('SkeletonBar', () {
-    testWidgets('renders animated skeleton placeholder', (tester) async {
-      await tester.pumpWidget(testWrap(const SkeletonBar(width: 200)));
-
-      expect(find.byType(SkeletonBar), findsOneWidget);
-    });
-
-    testWidgets('renders with custom width', (tester) async {
-      await tester.pumpWidget(testWrap(const SkeletonBar(width: 100)));
-
-      expect(find.byType(SkeletonBar), findsOneWidget);
-    });
-  });
-
   group('AppearanceSection', () {
-    testWidgets('renders section card', (tester) async {
-      await tester.pumpWidget(testWrap(const AppearanceSection()));
-
-      expect(find.byType(AppearanceSection), findsOneWidget);
-    });
-
     testWidgets('language picker is a searchable autocomplete', (tester) async {
       await tester.pumpWidget(testWrap(const AppearanceSection()));
 

@@ -113,11 +113,4 @@ void main() {
       expect(await service.listModels('cursor-agent'), isEmpty);
     });
   });
-
-  group('AcpModelsService constructor', () {
-    test('creates without arguments', () {
-      final svc = AcpModelsService();
-      expect(svc, isA<AcpModelsService>());
-    });
-  });
 }

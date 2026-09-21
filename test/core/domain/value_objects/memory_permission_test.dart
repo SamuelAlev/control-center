@@ -30,18 +30,5 @@ void main() {
       expect(MemoryPermission.tryParse('admin'), isNull);
       expect(MemoryPermission.tryParse('readwrite'), isNull);
     });
-
-    test('all values are distinct', () {
-      final values = MemoryPermission.values.toSet();
-      expect(values.length, 3);
-      expect(
-        values,
-        containsAll(<MemoryPermission>[
-          MemoryPermission.none,
-          MemoryPermission.read,
-          MemoryPermission.write,
-        ]),
-      );
-    });
   });
 }

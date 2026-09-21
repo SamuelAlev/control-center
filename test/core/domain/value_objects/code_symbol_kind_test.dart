@@ -59,12 +59,5 @@ void main() {
       expect(CodeSymbolKind.tryParse(''), isNull);
       expect(CodeSymbolKind.tryParse('not_a_kind'), isNull);
     });
-
-    test('all values are distinct', () {
-      expect(
-        CodeSymbolKind.values.toSet().length,
-        equals(CodeSymbolKind.values.length),
-      );
-    });
   });
 }

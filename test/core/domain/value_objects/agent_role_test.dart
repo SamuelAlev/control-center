@@ -54,9 +54,5 @@ void main() {
       expect(AgentRole.tryParse(''), isNull);
       expect(AgentRole.tryParse('CEO '), isNull);
     });
-
-    test('all values are distinct', () {
-      expect(AgentRole.values.toSet().length, AgentRole.values.length);
-    });
   });
 }

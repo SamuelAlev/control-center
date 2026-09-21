@@ -25,22 +25,6 @@ void main() {
       expect(find.text('Processing'), findsOneWidget);
     });
 
-    testWidgets('renders with processing filter selected', (tester) async {
-      final controller = TextEditingController();
-      await tester.pumpWidget(
-        testWrap(
-          MeetingToolbar(
-            filter: MeetingListFilter.processing,
-            searchController: controller,
-            onFilterChanged: (_) {},
-          ),
-        ),
-      );
-      addTearDown(controller.dispose);
-
-      expect(find.byType(MeetingToolbar), findsOneWidget);
-    });
-
     testWidgets('typing search text updates the shared controller', (
       tester,
     ) async {

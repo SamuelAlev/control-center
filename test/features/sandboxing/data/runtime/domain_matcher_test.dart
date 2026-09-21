@@ -77,13 +77,6 @@ void main() {
       test('returns false when no pattern matches among many', () {
         expect(matchesAny('example.com', ['a.com', 'b.com', 'c.com']), false);
       });
-
-      test('short-circuits on first match', () {
-        expect(
-          matchesAny('example.com', ['example.com', 'nonexistent.com']),
-          true,
-        );
-      });
     });
 
     group('empty patterns list', () {
