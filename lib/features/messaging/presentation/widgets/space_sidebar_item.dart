@@ -354,14 +354,15 @@ class SpaceRow extends StatelessWidget implements CcFluidHoverTarget {
                     ),
                   ),
                   Padding(
-                    // Mirrors CcSidebarItem's asymmetric inset (left 9 + the
-                    // 1px reserved border = the visual 10px) so a space row's
-                    // leading glyph lands on the same x=27 line as a nav
-                    // item's icon in both modes. While the width animates the
-                    // trailing inset drops to 0 so the fixed leading glyph +
-                    // gap can't overflow the narrowing row.
+                    // Mirrors CcSidebarItem's 10px start inset so a space
+                    // row's leading glyph lands on the same x=27 line as a
+                    // nav item's icon in both modes. The 1px accent border
+                    // is paint-only and does not inset the child. While the
+                    // width animates the trailing inset drops to 0 so the
+                    // fixed leading glyph + gap can't overflow the
+                    // narrowing row.
                     padding: EdgeInsetsDirectional.only(
-                      start: 9,
+                      start: 10,
                       end: transitioning ? 0 : 10,
                     ),
                     child: Row(

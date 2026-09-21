@@ -18,9 +18,10 @@ const double _kCollapsedWidth = 54;
 const double kCcSidebarItemExtent = 32;
 
 /// Distance from a [CcSidebarItem]'s leading edge to its 18px icon center:
-/// 1px reserved border + 9px start padding + 9px half-icon. Nested tree
-/// rails ([CcSidebarBranch]) pin to this x so they continue the parent
-/// icon's spine.
+/// 10px start padding + 9px half-icon. Nested tree rails
+/// ([CcSidebarBranch]) pin to this x so they continue the parent icon's
+/// spine. The row's 1px accent border is paint-only and is not part of
+/// this offset.
 const double kCcSidebarItemIconCenter = 19;
 
 /// The share of the body a pinned block may occupy before it starts scrolling

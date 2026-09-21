@@ -167,25 +167,69 @@ int compute(int a, int b) {
           'lines': [8],
         }, ctx());
 
-        final launched = await tool.execute({
-          'op': 'launch',
-          'program': 'bin/main.dart',
-        }, ctx());
-        expect(launched.isError, isFalse, reason: launched.content);
-        expect(
-          launched.content,
-          contains('Stopped'),
-          reason: 'the breakpoint on the product line should be hit',
-        );
+        Future<void> launchUntilStopped() async {
+          var launched = await tool.execute({
+            'op': 'launch',
+            'program': 'bin/main.dart',
+          }, ctx());
+          // A dropped VM service can leave a zombie that still occupies the
+          // conversation key. Terminate it so a fresh start can succeed.
+          if (launched.isError &&
+              launched.content.contains('already running')) {
+            await tool.execute({'op': 'terminate'}, ctx());
+            launched = await tool.execute({
+              'op': 'launch',
+              'program': 'bin/main.dart',
+            }, ctx());
+          }
+          expect(launched.isError, isFalse, reason: launched.content);
+          expect(
+            launched.content,
+            contains('Stopped'),
+            reason: 'the breakpoint on the product line should be hit',
+          );
+        }
+
+        Future<bool> waitForLiveSession() async {
+          final deadline = DateTime.now().add(const Duration(seconds: 2));
+          while (supervisor.sessionFor('conv-1') == null) {
+            if (DateTime.now().isAfter(deadline)) {
+              return false;
+            }
+            await Future<void>.delayed(const Duration(milliseconds: 50));
+          }
+          return true;
+        }
+
+        await launchUntilStopped();
 
         late HarnessToolResult stack;
         for (var attempt = 0; ; attempt++) {
+          // Looping `stack` on a dead service is not a retry. Wait for a
+          // live session, and re-launch if the adapter dropped between
+          // `stopped` and the first `stackTrace`.
+          if (supervisor.sessionFor('conv-1') == null) {
+            final live = await waitForLiveSession();
+            if (!live) {
+              if (attempt >= 9) {
+                stack = await tool.execute({'op': 'stack'}, ctx());
+                break;
+              }
+              await launchUntilStopped();
+              continue;
+            }
+          }
+
           stack = await tool.execute({'op': 'stack'}, ctx());
           if (!stack.isError && stack.content.contains('compute')) {
             break;
           }
           if (attempt >= 9) {
             break;
+          }
+          if (stack.isError && stack.content.contains('No debug session')) {
+            await launchUntilStopped();
+            continue;
           }
           await Future<void>.delayed(const Duration(milliseconds: 250));
         }

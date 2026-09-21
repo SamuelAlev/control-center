@@ -441,6 +441,10 @@ class DemoProfile {
     'notifications.clear',
     'approval_routing.setPolicy',
     'prefs.set',
+    // The caller's own workspace overlay (display name / email / git author
+    // in THIS workspace). Empty fields inherit the global users row; it
+    // never touches a forge credential.
+    'identity.updateWorkspaceProfile',
   };
 
   /// Mutating ops refused by name rather than by prefix.

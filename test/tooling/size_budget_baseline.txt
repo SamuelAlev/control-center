@@ -4,8 +4,8 @@
 #
 # Format: <repo-relative path> <line count when baselined>
 #
-# Updated 2026-09-20 after CI ratchet catch-up (PR-detail lag work, profile
-# charts, pipeline editor, demo seeder, calendar host).
+# Updated 2026-09-21 after GitHub-per-workspace identity, image diffs in the
+# PR viewer, and extracting workspaceGitHub/identity overlay ops to extraOps.
 lib/features/agents/presentation/screens/agent_registry_screen.dart  612
 lib/features/agents/presentation/widgets/agent_form_dialog.dart  793
 lib/features/agents/presentation/widgets/agent_logs_tab.dart  483
@@ -44,7 +44,7 @@ lib/features/messaging/presentation/widgets/message_feed.dart  322
 lib/features/messaging/presentation/widgets/space_header.dart  605
 lib/features/messaging/presentation/widgets/space_input_bar.dart  354
 lib/features/messaging/presentation/widgets/space_row_adornments.dart  389
-lib/features/messaging/presentation/widgets/space_sidebar_item.dart  587
+lib/features/messaging/presentation/widgets/space_sidebar_item.dart  607
 lib/features/newsfeed/presentation/screens/article_webview_screen.dart  430
 lib/features/newsfeed/presentation/settings/newsfeed_feeds_section.dart  495
 lib/features/newsfeed/presentation/widgets/adblocker_webview.dart  485
@@ -84,10 +84,11 @@ lib/features/pr_review/presentation/screens/compose_pull_request_screen.dart  77
 lib/features/pr_review/presentation/screens/pull_request_detail/pr_checks_tab.dart  879
 lib/features/pr_review/presentation/screens/pull_request_detail/pr_detail_actions.dart  382
 lib/features/pr_review/presentation/screens/pull_request_detail/pr_diff_tab.dart  579
+lib/features/pr_review/presentation/screens/pull_request_detail/pr_files_tab.dart  252
 lib/features/pr_review/presentation/screens/pull_request_detail/pr_header_section.dart  301
-lib/features/pr_review/presentation/screens/pull_request_detail/pr_source_control_tab.dart  714
+lib/features/pr_review/presentation/screens/pull_request_detail/pr_source_control_tab.dart  721
 lib/features/pr_review/presentation/screens/pull_request_detail_screen.dart  1414
-lib/features/pr_review/presentation/screens/pull_request_list_screen.dart  305
+lib/features/pr_review/presentation/screens/pull_request_list_screen.dart  341
 lib/features/pr_review/presentation/widgets/assignee_picker_flyout.dart  362
 lib/features/pr_review/presentation/widgets/compose/compose_branch_bar.dart  387
 lib/features/pr_review/presentation/widgets/compose/compose_pr_pickers.dart  481
@@ -96,19 +97,21 @@ lib/features/pr_review/presentation/widgets/mention_autocomplete_field.dart  436
 lib/features/pr_review/presentation/widgets/merge_flyout_button.dart  552
 lib/features/pr_review/presentation/widgets/open_in_ide_button.dart  585
 lib/features/pr_review/presentation/widgets/picker_flyout.dart  340
-lib/features/pr_review/presentation/widgets/pr_activity_timeline.dart  1698
+lib/features/pr_review/presentation/widgets/pr_activity_timeline.dart  1721
 lib/features/pr_review/presentation/widgets/pr_detail_skeleton.dart  445
 lib/features/pr_review/presentation/widgets/pr_diff_file_tree.dart  819
 lib/features/pr_review/presentation/widgets/pr_diff_view/commit_range_selector.dart  425
 lib/features/pr_review/presentation/widgets/pr_diff_view/unified/diff_goto.dart  648
-lib/features/pr_review/presentation/widgets/pr_diff_view/unified/file_header.dart  377
+lib/features/pr_review/presentation/widgets/pr_diff_view/unified/file_header.dart  390
+lib/features/pr_review/presentation/widgets/pr_diff_view/unified/image_diff_body.dart  1110
 lib/features/pr_review/presentation/widgets/pr_diff_view/unified/outdated_comments.dart  522
-lib/features/pr_review/presentation/widgets/pr_diff_view/unified/pr_diff_document.dart  926
+lib/features/pr_review/presentation/widgets/pr_diff_view/unified/pr_diff_document.dart  929
 lib/features/pr_review/presentation/widgets/pr_diff_view/unified/suggestion_composer.dart  319
 lib/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_diff_sliver.dart  996
 lib/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_diff_sliver_painting.dart  424
-lib/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_diff_view.dart  3199
+lib/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_diff_view.dart  3326
 lib/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_row_painter.dart  903
+lib/features/pr_review/presentation/widgets/pr_diff_view.dart  310
 lib/features/pr_review/presentation/widgets/pr_filter/pr_filter_bar.dart  406
 lib/features/pr_review/presentation/widgets/pr_filter/pr_filter_menu.dart  1280
 lib/features/pr_review/presentation/widgets/pr_inline_comments/comment_composer_widget.dart  378
@@ -156,7 +159,7 @@ lib/features/settings/presentation/widgets/sections/workspace/meeting_templates_
 lib/features/settings/presentation/widgets/sections/workspace/members_roster_section.dart  522
 lib/features/settings/presentation/widgets/sections/workspace/workspace_activity_section.dart  577
 lib/features/settings/presentation/widgets/skills_settings.dart  1185
-lib/features/shell/presentation/widgets/app_sidebar.dart  554
+lib/features/shell/presentation/widgets/app_sidebar.dart  552
 lib/features/shell/presentation/widgets/notification_bell.dart  615
 lib/features/shell/presentation/widgets/server_shutdown_overlay.dart  436
 lib/features/shell/presentation/widgets/title_bar_workspace_chip.dart  363

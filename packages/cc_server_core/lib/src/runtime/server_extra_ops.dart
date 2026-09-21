@@ -12,10 +12,7 @@ import 'package:cc_infra/cc_infra.dart'
         ServerWeatherService,
         SoundscapeHub;
 import 'package:cc_persistence/cc_persistence.dart'
-    show
-        DaoAgentRepository,
-        DaoUserRepository,
-        DaoWorkspaceRepository;
+    show DaoAgentRepository, DaoUserRepository, DaoWorkspaceRepository;
 import 'package:cc_server_core/src/agents/agent_create_rpc.dart';
 import 'package:cc_server_core/src/chat/chat_connector.dart';
 import 'package:cc_server_core/src/chat/chat_rpc_ops.dart';
@@ -26,6 +23,9 @@ import 'package:cc_server_core/src/fonts/fonts_rpc.dart';
 import 'package:cc_server_core/src/identity/caching_workspace_membership_repository.dart';
 import 'package:cc_server_core/src/identity/sso_ops.dart';
 import 'package:cc_server_core/src/identity/sso_settings_service.dart';
+import 'package:cc_server_core/src/identity/workspace_github_app_settings.dart';
+import 'package:cc_server_core/src/identity/workspace_github_rpc.dart';
+import 'package:cc_server_core/src/identity/workspace_profile_rpc.dart';
 import 'package:cc_server_core/src/model_routing/models_dev_rpc.dart';
 import 'package:cc_server_core/src/newsfeed/filter_list_rpc.dart';
 import 'package:cc_server_core/src/soundscape/soundscape_rpc.dart';
@@ -61,6 +61,7 @@ ExtraOpsResult buildServerExtraOps({
   required Future<bool> Function(String userId) isServerOwner,
   required CodeGraphRepository codeGraphRepository,
   CodeGraphTreePort? codeGraphTree,
+  WorkspaceGitHubAppSettings? workspaceGitHubApps,
 }) {
   final ops = <RepoOp>[
     ...fleetOps,
@@ -77,13 +78,18 @@ ExtraOpsResult buildServerExtraOps({
     ...buildWeatherOps(weatherService),
     ...buildFontsOps(fontCatalog),
     ...buildFilterListOps(filterLists),
-    ...buildModelsDevOps(
-      source: modelsDevSource,
-      catalog: modelCatalogService,
-    ),
+    ...buildModelsDevOps(source: modelsDevSource, catalog: modelCatalogService),
     ...buildSoundscapeOps(soundscapeHub),
     ...buildChatOps(connector: chatConnector, users: userRepository),
     ...buildSsoOps(settings: ssoSettings, isServerOwner: isServerOwner),
+    ...buildIdentityWorkspaceProfileOps(
+      users: userRepository,
+      members: membershipRepository,
+    ),
+    ...buildWorkspaceGitHubOps(
+      workspaceRepository: workspaceRepository,
+      apps: workspaceGitHubApps,
+    ),
     ...buildCodeGraphOps(
       workspaceRepository: workspaceRepository,
       codeGraph: codeGraphRepository,

@@ -35,7 +35,6 @@ import 'package:cc_domain/features/pipelines/domain/entities/step_kind.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/step_trigger.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/check_run.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
-import 'package:cc_domain/features/pr_review/domain/value_objects/image_diff_resolution.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_review_submission.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_reviewer.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_timeline_event.dart';

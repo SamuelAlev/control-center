@@ -162,14 +162,23 @@ void main() {
     test('send writes a frame back to the client as JSON text', () async {
       transport.start();
       final clientFrames = <dynamic>[];
-      final sub = clientSocket.listen(clientFrames.add);
+      final frameArrived = Completer<void>();
+      final sub = clientSocket.listen((frame) {
+        clientFrames.add(frame);
+        if (!frameArrived.isCompleted) {
+          frameArrived.complete();
+        }
+      });
 
       await transport.send({
         'jsonrpc': '2.0',
         'id': 1,
         'result': {'ok': true},
       });
-      await pumpEventQueue(times: 20);
+      // Wait for the frame itself, not a fixed pump count — a loaded runner
+      // needs more event-loop turns than any fixed number (same flake the
+      // sibling tests in this file already wait out).
+      await frameArrived.future.timeout(const Duration(seconds: 5));
       await sub.cancel();
       expect(clientFrames, isNotEmpty);
       expect(jsonDecode(clientFrames.last as String), {

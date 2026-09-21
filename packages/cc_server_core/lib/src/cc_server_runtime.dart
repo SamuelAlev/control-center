@@ -5244,6 +5244,7 @@ Future<CcServer> runCcServer({
     userRepository: userRepository,
     ssoSettings: ssoSettings,
     isServerOwner: isServerOwner,
+    workspaceGitHubApps: demo != null ? null : workspaceGitHub,
     codeGraphRepository: DaoCodeGraphRepository(
       workspaceDbs,
       embeddingService: embeddingService,

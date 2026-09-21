@@ -668,9 +668,9 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   // The SERVER's own app identity (GitHub App, Linear app), backing
   // `providerApps.*`. Operator-only; absent when null.
   ProviderAppSettings? providerApps,
-  // Per-workspace GitHub App / background PAT, backing `workspaceGitHub.*`.
-  // Admin-only; absent when null. Secrets live in secrets.json, never
-  // workspace.db.
+  // Per-workspace GitHub App / background PAT. The `workspaceGitHub.*` ops
+  // live in extraOps (`buildWorkspaceGitHubOps`); this port stays here so
+  // `workspace.delete` can wipe that workspace's secrets. Absent when null.
   WorkspaceGitHubAppSettings? workspaceGitHubApps,
   // Builds the API client for one repo, on that repo's own forge, acting as
   // [actingUserId]. Backs the compose-PR reads (branches, default branch,
@@ -1442,6 +1442,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     }
     return id;
   }
+
   final identityActivity = userActivityRepository;
   final identityPrefs = userPreferencesRepository;
   final identityInviteService = inviteService;
@@ -1841,11 +1842,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     String? actingUserId, {
     String? workspaceId,
   }) => repo.hasForgeRemote
-      ? buildForgePrClient?.call(
-          repo,
-          actingUserId,
-          workspaceId: workspaceId,
-        )
+      ? buildForgePrClient?.call(repo, actingUserId, workspaceId: workspaceId)
       : null;
 
   /// [userId] is the caller: it gates repo access and keys the cache.
@@ -2829,54 +2826,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           );
           await identityUsers.upsert(updated);
           return {'user': userToWire(updated, includeOnboarding: true)};
-        },
-      ),
-      // Workspace overlay for Workspace → Profile: name, email and git author in
-      // THIS workspace. Empty fields inherit the global `users` row. Handle,
-      // SSO and devices stay on the account.
-      RepoOp(
-        name: 'identity.updateWorkspaceProfile',
-        kind: RepoOpKind.mutate,
-        handler: (ctx) async {
-          String? optional(String key) {
-            final value = ctx.args[key];
-            return value is String && value.isNotEmpty ? value : null;
-          }
-
-          bool clear(String key) {
-            if (!ctx.args.containsKey(key)) {
-              return false;
-            }
-            final value = ctx.args[key];
-            return value is! String || value.isEmpty;
-          }
-
-          await identityMembers.updateProfileOverlay(
-            ctx.workspaceId!,
-            ctx.userId,
-            displayName: optional('display_name'),
-            clearDisplayName: clear('display_name'),
-            email: optional('email'),
-            clearEmail: clear('email'),
-            gitAuthorName: optional('git_author_name'),
-            clearGitAuthorName: clear('git_author_name'),
-            gitAuthorEmail: optional('git_author_email'),
-            clearGitAuthorEmail: clear('git_author_email'),
-          );
-          final user = await identityUsers.getById(ctx.userId);
-          if (user == null) {
-            throw const NotFoundException('User not found');
-          }
-          final member = await identityMembers.getMember(
-            ctx.workspaceId!,
-            ctx.userId,
-          );
-          return {
-            'user': userToWire(
-              applyMemberOverlay(user, member),
-              includeOnboarding: true,
-            ),
-          };
         },
       ),
       // Records that the caller has finished first-run setup. Self-service
@@ -4426,108 +4375,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
             );
           }
           return (await providerApps.status(provider, probe: true)).toJson();
-        },
-      ),
-    ],
-    // Per-workspace GitHub identity: a different App, or PAT-only. Admin of
-    // the bound workspace. Secrets never leave the server.
-    if (workspaceGitHubApps != null) ...[
-      RepoOp(
-        name: 'workspaceGitHub.status',
-        kind: RepoOpKind.read,
-        minRole: WorkspaceRole.admin,
-        handler: (ctx) async {
-          final ws = await workspaceRepository.getById(ctx.workspaceId!);
-          if (ws == null) {
-            throw const NotFoundException('Workspace not found');
-          }
-          final status = await workspaceGitHubApps.status(
-            ws,
-            probe: ctx.args['probe'] == true,
-          );
-          return {
-            ...status.toJson(),
-            'github_auth_mode': ws.githubAuthMode.wireName,
-            'has_background_pat': await workspaceGitHubApps.hasBackgroundPat(
-              ws.id,
-            ),
-          };
-        },
-      ),
-      RepoOp(
-        name: 'workspaceGitHub.save',
-        kind: RepoOpKind.mutate,
-        minRole: WorkspaceRole.admin,
-        handler: (ctx) async {
-          final ws = await workspaceRepository.getById(ctx.workspaceId!);
-          if (ws == null) {
-            throw const NotFoundException('Workspace not found');
-          }
-          String? field(String key) {
-            final value = ctx.args[key];
-            return value is String ? value : null;
-          }
-
-          final saved = await workspaceGitHubApps.save(
-            ws,
-            clientId: field('client_id'),
-            clientSecret: field('client_secret'),
-            privateKeyPem: field('private_key'),
-          );
-          return {
-            ...saved.toJson(),
-            'github_auth_mode': ws.githubAuthMode.wireName,
-            'has_background_pat': await workspaceGitHubApps.hasBackgroundPat(
-              ws.id,
-            ),
-          };
-        },
-      ),
-      RepoOp(
-        name: 'workspaceGitHub.test',
-        kind: RepoOpKind.read,
-        minRole: WorkspaceRole.admin,
-        handler: (ctx) async {
-          final ws = await workspaceRepository.getById(ctx.workspaceId!);
-          if (ws == null) {
-            throw const NotFoundException('Workspace not found');
-          }
-          final status = await workspaceGitHubApps.status(ws, probe: true);
-          return {
-            ...status.toJson(),
-            'github_auth_mode': ws.githubAuthMode.wireName,
-            'has_background_pat': await workspaceGitHubApps.hasBackgroundPat(
-              ws.id,
-            ),
-          };
-        },
-      ),
-      RepoOp(
-        name: 'workspaceGitHub.setPat',
-        kind: RepoOpKind.mutate,
-        minRole: WorkspaceRole.admin,
-        handler: (ctx) async {
-          final token = ctx.args['token'];
-          await workspaceGitHubApps.setBackgroundPat(
-            ctx.workspaceId!,
-            token is String ? token : '',
-          );
-          return {
-            'ok': true,
-            'has_background_pat': await workspaceGitHubApps.hasBackgroundPat(
-              ctx.workspaceId!,
-            ),
-          };
-        },
-      ),
-      RepoOp(
-        name: 'workspaceGitHub.hasPat',
-        kind: RepoOpKind.read,
-        minRole: WorkspaceRole.admin,
-        handler: (ctx) async => {
-          'has_background_pat': await workspaceGitHubApps.hasBackgroundPat(
-            ctx.workspaceId!,
-          ),
         },
       ),
     ],
@@ -13500,14 +13347,13 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         // Older clients omit the GitHub identity fields. Carry the stored
         // values over so a rename cannot silently reset a workspace that
         // picked its own App or a PAT.
-        if (!isNew && existing != null) {
+        final previous = existing;
+        if (previous != null) {
           if (!raw.containsKey('github_auth_mode')) {
-            toStore = toStore.copyWith(
-              githubAuthMode: existing.githubAuthMode,
-            );
+            toStore = toStore.copyWith(githubAuthMode: previous.githubAuthMode);
           }
           if (!raw.containsKey('github_app_id')) {
-            toStore = toStore.copyWith(githubAppId: existing.githubAppId);
+            toStore = toStore.copyWith(githubAppId: previous.githubAppId);
           }
         }
         final id = await workspaceRepository.upsert(toStore);

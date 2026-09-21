@@ -68,14 +68,13 @@ void main() {
     'takeover', 'team', 'terminal', 'ticket_link',
     'ticket_sync', 'ticketing', 'tickets', 'todos',
     'usage', 'users', 'voice_profile', 'weather',
-    'workProduct', 'workspace', 'workspace_settings', 'worktree',
+    'workProduct', 'workspace', 'workspaceGitHub', 'workspace_settings',
+    'worktree',
   };
 
   test('the permission catalog mints exactly the pinned domains', () {
     final root = repoRoot();
-    final serverSrc = Directory(
-      '${root.path}/packages/cc_server_core/lib/src',
-    );
+    final serverSrc = Directory('${root.path}/packages/cc_server_core/lib/src');
     // `name:` is matched through any intervening comment but never across the
     // next `RepoOp(`, so each match binds to its own op (same form as
     // `rpc_op_coverage_test.dart`).

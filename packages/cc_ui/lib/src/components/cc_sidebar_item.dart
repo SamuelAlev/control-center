@@ -250,25 +250,26 @@ class CcSidebarItem extends StatelessWidget implements CcFluidHoverTarget {
               ),
               Padding(
                 // The 10px left inset aligns the icon's left edge with the
-                // group header's text (8px sidebar inset + 1px reserved
-                // border + 9px padding = the header's 8 + 10). It also puts
-                // the icon's center at x=27 from the sidebar edge — the
-                // exact spot the rail's centered 32px square puts it (rail
-                // width 54, content center 27) — so toggling the sidebar
-                // moves nothing (27 − 8 sidebar inset − 9 half-icon = 10).
+                // group header's text (8px sidebar inset + 10px padding =
+                // the header's 8 + 10). It also puts the icon's center at
+                // x=27 from the sidebar edge — the exact spot the rail's
+                // centered 32px square puts it (rail width 54, content
+                // center 27) — so toggling the sidebar moves nothing
+                // (27 − 8 sidebar inset − 9 half-icon = 10).
                 //
-                // Start 9 + the 1px reserved border = the visual 10px
-                // inset: the icon's leading edge lands exactly where
-                // CcSidebarGroup's header padding (10) starts the section
-                // title. While the width animates the trailing inset drops
-                // to 0: the row keeps its expanded geometry (labels fading)
-                // down to the rail's 38px content width without the fixed
-                // icon + gap + padding overflowing it
-                // (18 + 8 + 9 + 2 borders = 37 ≤ 38).
+                // The 1px accent border is paint-only (foregroundDecoration
+                // never insets the child), so the padding itself is the
+                // visual 10px inset: the icon's leading edge lands exactly
+                // where CcSidebarGroup's header padding (10) starts the
+                // section title. While the width animates the trailing
+                // inset drops to 0: the row keeps its expanded geometry
+                // (labels fading) down to the rail's 38px content width
+                // without the fixed icon + gap + padding overflowing it
+                // (18 + 8 + 10 = 36 ≤ 38).
                 padding: collapsed
                     ? EdgeInsets.zero
                     : EdgeInsetsDirectional.only(
-                        start: 9,
+                        start: 10,
                         end: transitioning ? 0 : 10,
                       ),
                 child: content,

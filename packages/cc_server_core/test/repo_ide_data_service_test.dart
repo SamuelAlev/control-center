@@ -1299,7 +1299,7 @@ void main() {
           isolatedRepoRepository: _FakeIsolatedRepoRepo()
             ..bySpace['ws:ch'] = [_worktree('repo1', wt)],
           fileSearch: DartFileSearch(),
-          githubToken: ({actingUserId}) async {
+          githubToken: ({actingUserId, workspaceId}) async {
             seenActingUserIds.add(actingUserId);
             return null;
           },
