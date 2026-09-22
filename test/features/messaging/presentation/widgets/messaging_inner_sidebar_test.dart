@@ -12,6 +12,7 @@ import 'package:control_center/features/messaging/presentation/widgets/space_row
 import 'package:control_center/features/messaging/presentation/widgets/space_sidebar_item.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
+import 'package:control_center/features/pr_review/providers/pr_space_provider.dart';
 import 'package:control_center/features/repos/providers/repo_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
@@ -91,6 +92,7 @@ List<Override> _commonOverrides({
     spaceStatusProvider(c.id).overrideWithValue(SpaceStatus.idle),
     spaceUnreadProvider(c.id).overrideWithValue(unreadSpaceIds.contains(c.id)),
     spacePrsProvider(c.id).overrideWithValue(const []),
+    spaceBranchPullRequestsProvider(c.id).overrideWith((ref) async => const []),
   ],
 ];
 

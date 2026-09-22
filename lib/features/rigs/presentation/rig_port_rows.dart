@@ -20,19 +20,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// PTY session. Mutations and the watch key both branch on this.
 class PortsTarget {
   /// An enclosed Terminal (VM) identified by [rigId].
-  const PortsTarget.rig({required this.workspaceId, required String rigId})
+  const PortsTarget.rig({required this.workspaceId, required String this.rigId})
     : sessionId = null,
-      spaceId = '',
-      rigId = rigId;
+      spaceId = '';
 
   /// A host-shell PTY identified by [sessionId] in [spaceId].
   const PortsTarget.session({
     required this.workspaceId,
-    required String sessionId,
-    required String spaceId,
-  }) : rigId = null,
-       sessionId = sessionId,
-       spaceId = spaceId;
+    required String this.sessionId,
+    required this.spaceId,
+  }) : rigId = null;
 
   /// The owning workspace.
   final String workspaceId;
@@ -196,7 +193,8 @@ class PortMenu extends ConsumerWidget {
               ? l10n.rigPortsExposeLan
               : l10n.rigPortsLanPrivate,
           icon: AppIcons.globe,
-          onSelected: () => unawaited(_setLan(repo, exposed: port.lanPort == null)),
+          onSelected: () =>
+              unawaited(_setLan(repo, exposed: port.lanPort == null)),
         ),
         CcMenuItem(
           label: l10n.rigPortsSetDomain,
@@ -396,7 +394,11 @@ class _AddPortRowState extends ConsumerState<AddPortRow> {
           hostPort: localPort,
         );
       } else {
-        await repo.addPort(widget.target.workspaceId, widget.target.rigId!, port);
+        await repo.addPort(
+          widget.target.workspaceId,
+          widget.target.rigId!,
+          port,
+        );
       }
       _controller.clear();
       _local.clear();

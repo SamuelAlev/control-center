@@ -1,4 +1,5 @@
 import 'package:cc_domain/cc_domain.dart';
+import 'package:cc_domain/core/domain/ports/agent_question_port.dart';
 import 'package:cc_domain/core/domain/services/memory_access_policy.dart';
 import 'package:cc_domain/features/memory/domain/services/fact_extraction.dart';
 import 'package:cc_domain/features/memory/domain/services/memory_consolidation_service.dart';
@@ -79,6 +80,7 @@ void main() {
       newsfeedOwnerUserId: 'owner-user',
       ticketRepository: DaoTicketRepository(dbs, global.workspaceRouteDao),
       messagingRepository: DaoMessagingRepository(dbs),
+      agentQuestions: _SilentQuestions(),
       todoRepository: DaoTodoRepository(dbs),
       agentRunLogRepository: DaoAgentRunLogRepository(dbs),
       memoryFactRepository: memoryFactRepository,
@@ -134,6 +136,9 @@ void main() {
         // Long instructed by prompts/mode-guard but historically never
         // registered server-side — now real.
         'send_message',
+        // Claude addresses this as mcp__control-center__ask_user. Absent
+        // from tools/list, ToolSearch reports it missing and the run guesses.
+        'ask_user',
         'list_tickets',
         'get_ticket',
         // The per-conversation checklist agents plan with.
@@ -172,4 +177,9 @@ void main() {
       reason: 'BM25 catalogue must mirror tools/list exactly',
     );
   });
+}
+
+class _SilentQuestions implements AgentQuestionPort {
+  @override
+  Future<AgentQuestionAnswer?> ask(AgentQuestionRequest request) async => null;
 }

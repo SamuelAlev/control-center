@@ -303,7 +303,6 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
     }
   }
 
-
   /// Two-way sync between the focused editor tab and the URL's `?tab=` param:
   /// a tab switch publishes lightweight browser history, while back/forward or
   /// a deep link re-focuses the named tab. The state machine lives in
@@ -375,7 +374,6 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
     }
     _openConversation(spaceId, conv.id);
   }
-
 
   /// Opens (or focuses) the conversation's code-server editor tab on its
   /// isolated worktree — the single place where files are created/saved. Driven
@@ -967,7 +965,6 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
     });
   }
 
-
   /// Focuses a HOST browser tab by its mirror id — a BROWSERS row's tap.
   void _focusBrowserTab(String tabId) {
     final found = _layout.focusTab(
@@ -1000,7 +997,6 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
     }
   }
 
-
   void _schedulePersist() {
     final spaceId = widget.selectedSpaceId;
     final workspaceId = _workspaceId;
@@ -1027,7 +1023,6 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
       layout: _layout,
     );
   }
-
 
   Widget _buildBody(
     EditorTab tab,
@@ -1568,7 +1563,7 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
                     _layout.openInActiveLeaf(
                       EditorTab(
                         kind: MessagingTabKinds.review,
-                        label: l10n.ideReviewCode,
+                        label: l10n.ideReviewCodeInRepo(target.repoFullName),
                         icon: MessagingTabKinds.iconFor(
                           MessagingTabKinds.review,
                         ),

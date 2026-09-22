@@ -1,5 +1,4 @@
 import 'package:cc_domain/core/domain/entities/workspace.dart';
-import 'package:cc_domain/core/domain/value_objects/github_auth_mode.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/auth/providers/oauth_providers.dart';
@@ -24,7 +23,9 @@ class WorkspaceGitHubIdentityCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final status = ref.watch(workspaceGitHubStatusProvider).value;
     final workspace = ref.watch(activeWorkspaceProvider);
-    if (status == null || workspace == null) return const SizedBox.shrink();
+    if (status == null || workspace == null) {
+      return const SizedBox.shrink();
+    }
     return _WorkspaceGitHubIdentityBody(
       workspace: workspace,
       status: status,
@@ -80,7 +81,9 @@ class _WorkspaceGitHubIdentityBodyState
     setState(() => _testing = true);
     try {
       final result = await testWorkspaceGitHubApp(ref);
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       CcToastScope.of(context).show(
         result.app.error.isNotEmpty
             ? result.app.error
@@ -97,7 +100,9 @@ class _WorkspaceGitHubIdentityBodyState
         );
       }
     } finally {
-      if (mounted) setState(() => _testing = false);
+      if (mounted) {
+        setState(() => _testing = false);
+      }
     }
   }
 

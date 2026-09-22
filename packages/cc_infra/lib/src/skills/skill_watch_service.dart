@@ -1,3 +1,6 @@
+/// @docImport 'package:cc_infra/src/code_graph/code_graph_watch_service.dart';
+library;
+
 import 'dart:async';
 import 'dart:io';
 

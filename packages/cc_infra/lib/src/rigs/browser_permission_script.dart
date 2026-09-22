@@ -163,7 +163,7 @@ const String kBrowserPermissionDrainScript = r'''
 /// Resolves one parked interceptor promise in the page.
 String browserPermissionResolveScript(String id, {required bool allow}) {
   final safeId = id.replaceAll(r'\', r'\\').replaceAll("'", r"\'");
-  return "(() => { try { globalThis.__ccPermResolve && "
+  return '(() => { try { globalThis.__ccPermResolve && '
       "globalThis.__ccPermResolve('$safeId', $allow); } catch (e) {} "
-      "return JSON.stringify({ok: true}); })()";
+      'return JSON.stringify({ok: true}); })()';
 }

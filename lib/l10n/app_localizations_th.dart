@@ -3170,6 +3170,16 @@ class AppLocalizationsTh extends AppLocalizations {
   String get editMessage => 'แก้ไขข้อความ';
 
   @override
+  String get revertToThere => 'ย้อนกลับไปที่นั่น';
+
+  @override
+  String get sendAsNewMessage => 'ส่งเป็นข้อความใหม่';
+
+  @override
+  String get editMessageChoiceBody =>
+      'การย้อนกลับจะซ่อนข้อความหลังจากข้อความนี้และย้อนไฟล์ของเอเจนต์ คุณเลิกทำได้ การส่งเป็นข้อความใหม่จะคงการสนทนาไว้เหมือนเดิม';
+
+  @override
   String get deleteMessage => 'ลบข้อความ';
 
   @override
@@ -8513,6 +8523,11 @@ class AppLocalizationsTh extends AppLocalizations {
   String get ideReviewCode => 'รีวิวโค้ด';
 
   @override
+  String ideReviewCodeInRepo(String repo) {
+    return 'รีวิวโค้ด ($repo)';
+  }
+
+  @override
   String get ideRevertConfirmTitle => 'ย้อนการเปลี่ยนแปลง';
 
   @override
@@ -10390,6 +10405,86 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get commitAndSync => 'คอมมิตและซิงค์';
+
+  @override
+  String get scmSyncChanges => 'ซิงค์การเปลี่ยนแปลง';
+
+  @override
+  String get scmPublishBranch => 'เผยแพร่สาขา';
+
+  @override
+  String get scmSyncFailed => 'ซิงค์ไม่สำเร็จ';
+
+  @override
+  String get scmSyncDirty => 'คอมมิตหรือยกเลิกการเปลี่ยนแปลงก่อนซิงค์';
+
+  @override
+  String get scmSynced => 'ซิงค์แล้ว';
+
+  @override
+  String get scmSelectBranch => 'เลือกสาขาที่จะเช็คเอาต์';
+
+  @override
+  String get scmCreateBranch => 'สร้างสาขาใหม่…';
+
+  @override
+  String get scmCreateBranchFrom => 'สร้างสาขาใหม่จาก…';
+
+  @override
+  String get scmCheckoutDetached => 'เช็คเอาต์แบบแยก…';
+
+  @override
+  String get scmBranchName => 'ชื่อสาขา';
+
+  @override
+  String get scmCreateBranchTitle => 'สร้างสาขา';
+
+  @override
+  String scmFromRef(String ref) {
+    return 'จาก ⁨$ref⁩';
+  }
+
+  @override
+  String get scmCheckoutFailed => 'สลับสาขาไม่ได้';
+
+  @override
+  String get scmCheckoutDirty => 'คอมมิตหรือยกเลิกการเปลี่ยนแปลงก่อนสลับสาขา';
+
+  @override
+  String scmSwitchedToBranch(String branch) {
+    return 'สลับไปที่ ⁨$branch⁩';
+  }
+
+  @override
+  String scmDetachedAt(String ref) {
+    return 'แยกที่ ⁨$ref⁩';
+  }
+
+  @override
+  String get scmDetachedHead => 'HEAD ที่แยกออก';
+
+  @override
+  String get scmNoBranches => 'ไม่มีสาขาที่ตรงกัน';
+
+  @override
+  String get scmBranches => 'สาขา';
+
+  @override
+  String get scmRemoteBranches => 'สาขาระยะไกล';
+
+  @override
+  String get scmTags => 'แท็ก';
+
+  @override
+  String get scmPickStartPoint => 'เลือกจุดเริ่มต้น';
+
+  @override
+  String get scmSwitchBranch => 'สลับสาขา';
+
+  @override
+  String commitMessageOnBranch(String shortcut, String branch) {
+    return 'ข้อความ ($shortcut เพื่อคอมมิตบน “$branch”)';
+  }
 
   @override
   String get committed => 'คอมมิตแล้ว';

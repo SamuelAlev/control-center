@@ -3236,6 +3236,16 @@ class AppLocalizationsPl extends AppLocalizations {
   String get editMessage => 'Edytuj wiadomość';
 
   @override
+  String get revertToThere => 'Przywróć do tamtego miejsca';
+
+  @override
+  String get sendAsNewMessage => 'Wyślij jako nową wiadomość';
+
+  @override
+  String get editMessageChoiceBody =>
+      'Przywrócenie ukrywa późniejsze wiadomości i cofa pliki agenta. Można to cofnąć. Wysłanie jako nowej wiadomości zostawia rozmowę bez zmian.';
+
+  @override
   String get deleteMessage => 'Usuń wiadomość';
 
   @override
@@ -8718,6 +8728,11 @@ class AppLocalizationsPl extends AppLocalizations {
   String get ideReviewCode => 'Przejrzyj kod';
 
   @override
+  String ideReviewCodeInRepo(String repo) {
+    return 'Przejrzyj kod ($repo)';
+  }
+
+  @override
   String get ideRevertConfirmTitle => 'Przywróć zmiany';
 
   @override
@@ -10624,6 +10639,88 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get commitAndSync => 'Commit i synchronizacja';
+
+  @override
+  String get scmSyncChanges => 'Synchronizuj zmiany';
+
+  @override
+  String get scmPublishBranch => 'Opublikuj gałąź';
+
+  @override
+  String get scmSyncFailed => 'Synchronizacja nie powiodła się';
+
+  @override
+  String get scmSyncDirty =>
+      'Zrób commit lub odrzuć zmiany przed synchronizacją';
+
+  @override
+  String get scmSynced => 'Zsynchronizowano';
+
+  @override
+  String get scmSelectBranch => 'Wybierz gałąź do przełączenia';
+
+  @override
+  String get scmCreateBranch => 'Utwórz nową gałąź…';
+
+  @override
+  String get scmCreateBranchFrom => 'Utwórz nową gałąź z…';
+
+  @override
+  String get scmCheckoutDetached => 'Przełącz na oderwany HEAD…';
+
+  @override
+  String get scmBranchName => 'Nazwa gałęzi';
+
+  @override
+  String get scmCreateBranchTitle => 'Utwórz gałąź';
+
+  @override
+  String scmFromRef(String ref) {
+    return 'Z ⁨$ref⁩';
+  }
+
+  @override
+  String get scmCheckoutFailed => 'Nie udało się przełączyć gałęzi';
+
+  @override
+  String get scmCheckoutDirty =>
+      'Zatwierdź lub odrzuć zmiany przed przełączeniem gałęzi';
+
+  @override
+  String scmSwitchedToBranch(String branch) {
+    return 'Przełączono na ⁨$branch⁩';
+  }
+
+  @override
+  String scmDetachedAt(String ref) {
+    return 'Oderwano przy ⁨$ref⁩';
+  }
+
+  @override
+  String get scmDetachedHead => 'Oderwany HEAD';
+
+  @override
+  String get scmNoBranches => 'Brak pasujących gałęzi';
+
+  @override
+  String get scmBranches => 'Gałęzie';
+
+  @override
+  String get scmRemoteBranches => 'Gałęzie zdalne';
+
+  @override
+  String get scmTags => 'Tagi';
+
+  @override
+  String get scmPickStartPoint => 'Wybierz punkt startowy';
+
+  @override
+  String get scmSwitchBranch => 'Przełącz gałąź';
+
+  @override
+  String commitMessageOnBranch(String shortcut, String branch) {
+    return 'Wiadomość ($shortcut, aby zrobić commit na „$branch”)';
+  }
 
   @override
   String get committed => 'Utworzono commit';

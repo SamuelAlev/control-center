@@ -3101,6 +3101,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get editMessage => '编辑消息';
 
   @override
+  String get revertToThere => '还原到那里';
+
+  @override
+  String get sendAsNewMessage => '作为新消息发送';
+
+  @override
+  String get editMessageChoiceBody =>
+      '还原会隐藏这条消息之后的内容，并回退代理的文件。你可以撤销。作为新消息发送则保持对话不变。';
+
+  @override
   String get deleteMessage => '删除消息';
 
   @override
@@ -8318,6 +8328,11 @@ class AppLocalizationsZh extends AppLocalizations {
   String get ideReviewCode => '审查代码';
 
   @override
+  String ideReviewCodeInRepo(String repo) {
+    return '审查代码 ($repo)';
+  }
+
+  @override
   String get ideRevertConfirmTitle => '还原更改';
 
   @override
@@ -10165,6 +10180,86 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get commitAndSync => '提交并同步';
+
+  @override
+  String get scmSyncChanges => '同步更改';
+
+  @override
+  String get scmPublishBranch => '发布分支';
+
+  @override
+  String get scmSyncFailed => '同步失败';
+
+  @override
+  String get scmSyncDirty => '同步前请提交或放弃更改';
+
+  @override
+  String get scmSynced => '已同步';
+
+  @override
+  String get scmSelectBranch => '选择要检出的分支';
+
+  @override
+  String get scmCreateBranch => '创建新分支…';
+
+  @override
+  String get scmCreateBranchFrom => '从所选提交创建新分支…';
+
+  @override
+  String get scmCheckoutDetached => '分离头指针检出…';
+
+  @override
+  String get scmBranchName => '分支名称';
+
+  @override
+  String get scmCreateBranchTitle => '创建分支';
+
+  @override
+  String scmFromRef(String ref) {
+    return '从 ⁨$ref⁩';
+  }
+
+  @override
+  String get scmCheckoutFailed => '无法切换分支';
+
+  @override
+  String get scmCheckoutDirty => '切换分支前请提交或放弃更改';
+
+  @override
+  String scmSwitchedToBranch(String branch) {
+    return '已切换到 ⁨$branch⁩';
+  }
+
+  @override
+  String scmDetachedAt(String ref) {
+    return '已分离到 ⁨$ref⁩';
+  }
+
+  @override
+  String get scmDetachedHead => '分离的 HEAD';
+
+  @override
+  String get scmNoBranches => '没有匹配的分支';
+
+  @override
+  String get scmBranches => '分支';
+
+  @override
+  String get scmRemoteBranches => '远程分支';
+
+  @override
+  String get scmTags => '标签';
+
+  @override
+  String get scmPickStartPoint => '选择起点';
+
+  @override
+  String get scmSwitchBranch => '切换分支';
+
+  @override
+  String commitMessageOnBranch(String shortcut, String branch) {
+    return '消息（$shortcut 提交到“$branch”）';
+  }
 
   @override
   String get committed => '已提交';
@@ -17372,6 +17467,16 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get editMessage => '編輯訊息';
 
   @override
+  String get revertToThere => '還原至該處';
+
+  @override
+  String get sendAsNewMessage => '作為新訊息傳送';
+
+  @override
+  String get editMessageChoiceBody =>
+      '還原會隱藏這則訊息之後的內容，並回復代理的檔案。你可以復原。作為新訊息傳送則保持對話不變。';
+
+  @override
   String get deleteMessage => '刪除訊息';
 
   @override
@@ -22588,6 +22693,11 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get ideReviewCode => '審查程式碼';
 
   @override
+  String ideReviewCodeInRepo(String repo) {
+    return '審查程式碼 ($repo)';
+  }
+
+  @override
   String get ideRevertConfirmTitle => '還原變更';
 
   @override
@@ -24437,6 +24547,86 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get commitAndSync => '提交並同步';
+
+  @override
+  String get scmSyncChanges => '同步變更';
+
+  @override
+  String get scmPublishBranch => '發佈分支';
+
+  @override
+  String get scmSyncFailed => '同步失敗';
+
+  @override
+  String get scmSyncDirty => '同步前請提交或捨棄變更';
+
+  @override
+  String get scmSynced => '已同步';
+
+  @override
+  String get scmSelectBranch => '選擇要取出的分支';
+
+  @override
+  String get scmCreateBranch => '建立新分支…';
+
+  @override
+  String get scmCreateBranchFrom => '從所選提交建立新分支…';
+
+  @override
+  String get scmCheckoutDetached => '分離 HEAD 取出…';
+
+  @override
+  String get scmBranchName => '分支名稱';
+
+  @override
+  String get scmCreateBranchTitle => '建立分支';
+
+  @override
+  String scmFromRef(String ref) {
+    return '從 ⁨$ref⁩';
+  }
+
+  @override
+  String get scmCheckoutFailed => '無法切換分支';
+
+  @override
+  String get scmCheckoutDirty => '切換分支前請提交或捨棄變更';
+
+  @override
+  String scmSwitchedToBranch(String branch) {
+    return '已切換至 ⁨$branch⁩';
+  }
+
+  @override
+  String scmDetachedAt(String ref) {
+    return '已分離至 ⁨$ref⁩';
+  }
+
+  @override
+  String get scmDetachedHead => '分離的 HEAD';
+
+  @override
+  String get scmNoBranches => '沒有相符的分支';
+
+  @override
+  String get scmBranches => '分支';
+
+  @override
+  String get scmRemoteBranches => '遠端分支';
+
+  @override
+  String get scmTags => '標籤';
+
+  @override
+  String get scmPickStartPoint => '選擇起點';
+
+  @override
+  String get scmSwitchBranch => '切換分支';
+
+  @override
+  String commitMessageOnBranch(String shortcut, String branch) {
+    return '訊息（$shortcut 提交到「$branch」）';
+  }
 
   @override
   String get committed => '已提交';

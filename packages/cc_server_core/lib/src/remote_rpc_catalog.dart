@@ -785,6 +785,13 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   // Publishes a conversation worktree's branch to origin (push only). Lets the
   // compose-PR screen open a PR from a chat's local-only worktree branch.
   WorktreePublishBranchFn? worktreePublishBranch,
+  // Fetch + rebase + push for the IDE Source Control "Sync changes" /
+  // "Publish branch" button. Never commits. Null ⇒ the op is omitted.
+  WorktreeSyncBranchFn? worktreeSyncBranch,
+  // Branch list + checkout for the space Source Control picker. Both stay
+  // inside the isolated worktree (no fetch). Null ⇒ the ops are omitted.
+  WorktreeListBranchesFn? worktreeListBranches,
+  WorktreeCheckoutFn? worktreeCheckout,
   // Controls the MCP HTTP server the SERVER hosts (start/stop/reconfigure +
   // status). The MCP server is a host-global process-wide listener (NOT
   // workspace data), so the `mcp.*` ops are declared `workspaceScoped: false`.
@@ -1079,6 +1086,15 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     String conversationId,
   )?
   watchConversationTokens,
+  // The composer's ↑/↓ recall. Null leaves the op absent; the client then
+  // has no history rather than falling back to the full message list.
+  Stream<List<String>> Function(
+    String workspaceId,
+    String spaceId,
+    String conversationId,
+    String userId,
+  )?
+  watchUserPromptHistory,
   // The provisioner tears down the worktree folder a repo loses when it
   // leaves a space's selection. Null (a bare test host) leaves the folder
   // behind — the selection write still lands, so a later sweep is the only
@@ -1942,6 +1958,9 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   final worktreeRead = worktreeReadFile;
   final worktreeCommit = worktreeCommitAndPush;
   final worktreePublish = worktreePublishBranch;
+  final worktreeSync = worktreeSyncBranch;
+  final worktreeBranches = worktreeListBranches;
+  final worktreeCheckoutFn = worktreeCheckout;
   final mcp = mcpControl;
   final mcpClient = mcpClientControl;
   final embeddingModel = embeddingModelControl;
@@ -4449,6 +4468,10 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           return {
             'staged': filter(grouped.staged).map(prFileToWire).toList(),
             'unstaged': filter(grouped.unstaged).map(prFileToWire).toList(),
+            'hasUpstream': grouped.hasUpstream,
+            'ahead': grouped.ahead,
+            'behind': grouped.behind,
+            'aheadOfBase': grouped.aheadOfBase,
           };
         },
       ),
@@ -4831,6 +4854,71 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
             return {'ok': false};
           }
           return {'ok': true, ...res};
+        },
+      ),
+    // VS Code's Sync: fetch, rebase onto what arrived, then push when this
+    // side is ahead or the branch was never published. Never commits, so
+    // gitCommit would be a false declaration. The fetch is the network, and
+    // the push is gitPush — both are the honest worst case of one button.
+    if (worktreeSync != null)
+      RepoOp(
+        name: 'worktree.syncBranch',
+        kind: RepoOpKind.mutate,
+        actionClasses: const {ActionClass.networkEgress, ActionClass.gitPush},
+        requiredArgs: ['workspace_id', 'space_id', 'repo_id'],
+        handler: (ctx) async {
+          final res = await worktreeSync(
+            workspaceId: ctx.workspaceId!,
+            spaceId: ctx.args['space_id'] as String,
+            repoId: ctx.args['repo_id'] as String,
+            actingUserId: ctx.userId,
+          );
+          if (res == null) {
+            return {'ok': false};
+          }
+          return {'ok': true, ...res};
+        },
+      ),
+    // The branch picker. A read of refs already in the worktree — no fetch,
+    // so it declares nothing. Checkout is a mutation of that same isolated
+    // tree (see the no-effect exemption): it never pushes and never writes
+    // the source checkout.
+    if (worktreeBranches != null)
+      RepoOp(
+        name: 'worktree.listBranches',
+        kind: RepoOpKind.read,
+        requiredArgs: ['workspace_id', 'space_id', 'repo_id'],
+        handler: (ctx) async {
+          final res = await worktreeBranches(
+            workspaceId: ctx.workspaceId!,
+            spaceId: ctx.args['space_id'] as String,
+            repoId: ctx.args['repo_id'] as String,
+          );
+          if (res == null) {
+            return {'ok': false};
+          }
+          return {'ok': true, ...res};
+        },
+      ),
+    if (worktreeCheckoutFn != null)
+      RepoOp(
+        name: 'worktree.checkout',
+        kind: RepoOpKind.mutate,
+        requiredArgs: ['workspace_id', 'space_id', 'repo_id'],
+        handler: (ctx) async {
+          final res = await worktreeCheckoutFn(
+            workspaceId: ctx.workspaceId!,
+            spaceId: ctx.args['space_id'] as String,
+            repoId: ctx.args['repo_id'] as String,
+            branch: ctx.args['branch'] as String?,
+            startPoint: ctx.args['start_point'] as String?,
+            create: ctx.args['create'] as bool? ?? false,
+            detach: ctx.args['detach'] as bool? ?? false,
+          );
+          if (res == null) {
+            return {'ok': false};
+          }
+          return res;
         },
       ),
 
@@ -14223,6 +14311,31 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           ).map((t) => {'tokens': t.tokens, 'chars': t.chars});
         },
       ),
+    // Composer recall: this caller's recent plain-text prompts, not the
+    // conversation. The user id comes from the session, never from args, so
+    // a client cannot ask for someone else's history.
+    if (watchUserPromptHistory != null)
+      WatchQuery(
+        name: 'messaging.watchUserPromptHistory',
+        handler: (ctx) async* {
+          final spaceId = ctx.args['space_id'] as String?;
+          if (spaceId == null) {
+            throw const NotFoundException('Missing space_id');
+          }
+          await assertSpaceOwned(ctx.workspaceId!, spaceId);
+          final conversationId = await resolveConversationId(
+            ctx.workspaceId!,
+            spaceId,
+            ctx.args['conversation_id'],
+          );
+          yield* watchUserPromptHistory(
+            ctx.workspaceId!,
+            spaceId,
+            conversationId,
+            ctx.userId,
+          ).map((prompts) => {'prompts': prompts});
+        },
+      ),
     // Live turn relay: seed snapshot of every active turn in the space, then
     // coalesced per-segment updates straight from the dispatch stack's
     // ActiveStreamRegistry — the streaming path, decoupled from DB flushes.
@@ -15314,7 +15427,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       },
     ),
 
-      // Each watch carries `owner`/`repo` (+ prNumber/path/sha) in its args; the
+    // Each watch carries `owner`/`repo` (+ prNumber/path/sha) in its args; the
     // repository is resolved from the bound workspace's LINKED repo, so a watch
     // over an (owner, repo) the workspace doesn't own errors before streaming.
     WatchQuery(

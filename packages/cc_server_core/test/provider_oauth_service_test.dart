@@ -4,7 +4,6 @@ import 'package:cc_domain/cc_domain.dart' show AuthException;
 import 'package:cc_domain/core/domain/entities/workspace.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_connection.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
-import 'package:cc_domain/core/domain/value_objects/github_auth_mode.dart';
 import 'package:cc_server_core/src/file_secrets_store.dart';
 import 'package:cc_server_core/src/identity/provider_app_settings.dart';
 import 'package:cc_server_core/src/identity/provider_oauth_service.dart';

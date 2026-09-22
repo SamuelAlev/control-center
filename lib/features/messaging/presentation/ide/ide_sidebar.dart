@@ -57,7 +57,8 @@ class IdeSidebar extends ConsumerStatefulWidget {
 
   /// Called when a Source Control changed file is opened for review (opens a
   /// multi-file "Review code" tab anchored to the file).
-  final ValueChanged<({String repoId, PrFile file})> onOpenReview;
+  final ValueChanged<({String repoId, String repoFullName, PrFile file})>
+  onOpenReview;
 
   /// Called to open a Source Control file in the conversation's editor.
   final ValueChanged<({String repoId, String path})> onViewSource;

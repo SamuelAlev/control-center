@@ -17,6 +17,11 @@ class FollowState {
   /// Whether growth should be compensated (anchored/free) rather than followed
   /// (following, on the live edge).
   bool get isPinnedFollow => mode == FollowMode.following;
+
+  /// Set while an older page is being inserted at the far end of a reverse
+  /// list. That growth is history, not a new message at the live edge, and
+  /// compensating for it jumps the reader off the line they were reading.
+  bool loadingOlder = false;
 }
 
 /// Offset below which the reverse list is considered pinned to the newest
@@ -52,7 +57,10 @@ class ReverseFollowPhysics extends ScrollPhysics {
       velocity: velocity,
     );
     final grew = newPosition.maxScrollExtent - oldPosition.maxScrollExtent;
-    if (grew > 0 && !state.isPinnedFollow && velocity == 0) {
+    if (grew > 0 &&
+        !state.isPinnedFollow &&
+        !state.loadingOlder &&
+        velocity == 0) {
       return (oldPosition.pixels + grew).clamp(
         newPosition.minScrollExtent,
         newPosition.maxScrollExtent,

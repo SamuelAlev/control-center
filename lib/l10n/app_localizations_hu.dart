@@ -3202,6 +3202,16 @@ class AppLocalizationsHu extends AppLocalizations {
   String get editMessage => 'Üzenet szerkesztése';
 
   @override
+  String get revertToThere => 'Visszaállítás oda';
+
+  @override
+  String get sendAsNewMessage => 'Küldés új üzenetként';
+
+  @override
+  String get editMessageChoiceBody =>
+      'A visszaállítás elrejti az ez utáni üzeneteket, és visszaállítja az ügynök fájljait. Ezt vissza lehet vonni. Új üzenetként küldve a beszélgetés változatlan marad.';
+
+  @override
   String get deleteMessage => 'Üzenet törlése';
 
   @override
@@ -8625,6 +8635,11 @@ class AppLocalizationsHu extends AppLocalizations {
   String get ideReviewCode => 'Kód átnézése';
 
   @override
+  String ideReviewCodeInRepo(String repo) {
+    return 'Kód átnézése ($repo)';
+  }
+
+  @override
   String get ideRevertConfirmTitle => 'Módosítások visszavonása';
 
   @override
@@ -10528,6 +10543,88 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get commitAndSync => 'Commit és szinkron';
+
+  @override
+  String get scmSyncChanges => 'Változások szinkronizálása';
+
+  @override
+  String get scmPublishBranch => 'Ág közzététele';
+
+  @override
+  String get scmSyncFailed => 'A szinkronizálás nem sikerült';
+
+  @override
+  String get scmSyncDirty =>
+      'Szinkronizálás előtt commitold vagy vesd el a változásokat';
+
+  @override
+  String get scmSynced => 'Szinkronizálva';
+
+  @override
+  String get scmSelectBranch => 'Válassz ágat a váltáshoz';
+
+  @override
+  String get scmCreateBranch => 'Új ág létrehozása…';
+
+  @override
+  String get scmCreateBranchFrom => 'Új ág létrehozása ebből…';
+
+  @override
+  String get scmCheckoutDetached => 'Leválasztott checkout…';
+
+  @override
+  String get scmBranchName => 'Ág neve';
+
+  @override
+  String get scmCreateBranchTitle => 'Ág létrehozása';
+
+  @override
+  String scmFromRef(String ref) {
+    return 'Innen: ⁨$ref⁩';
+  }
+
+  @override
+  String get scmCheckoutFailed => 'Nem sikerült ágat váltani';
+
+  @override
+  String get scmCheckoutDirty =>
+      'Változások véglegesítése vagy elvetése ágváltás előtt';
+
+  @override
+  String scmSwitchedToBranch(String branch) {
+    return 'Váltás erre: ⁨$branch⁩';
+  }
+
+  @override
+  String scmDetachedAt(String ref) {
+    return 'Leválasztva itt: ⁨$ref⁩';
+  }
+
+  @override
+  String get scmDetachedHead => 'Leválasztott HEAD';
+
+  @override
+  String get scmNoBranches => 'Nincs egyező ág';
+
+  @override
+  String get scmBranches => 'Ágak';
+
+  @override
+  String get scmRemoteBranches => 'Távoli ágak';
+
+  @override
+  String get scmTags => 'Címkék';
+
+  @override
+  String get scmPickStartPoint => 'Kiindulópont kiválasztása';
+
+  @override
+  String get scmSwitchBranch => 'Ág váltása';
+
+  @override
+  String commitMessageOnBranch(String shortcut, String branch) {
+    return 'Üzenet ($shortcut a commitoláshoz ezen: „$branch”)';
+  }
 
   @override
   String get committed => 'Commitolva';

@@ -205,6 +205,8 @@ void main() {
         messageType: 'text',
         compacted: false,
         reverted: false,
+        contentChars: 0,
+        transcriptChars: 0,
         createdAt: now,
       );
 
@@ -232,6 +234,8 @@ void main() {
         messageType: 'text',
         compacted: false,
         reverted: false,
+        contentChars: 0,
+        transcriptChars: 0,
         createdAt: now,
       );
 
@@ -252,6 +256,8 @@ void main() {
         messageType: 'system',
         compacted: false,
         reverted: false,
+        contentChars: 0,
+        transcriptChars: 0,
         createdAt: now,
       );
 
@@ -272,6 +278,8 @@ void main() {
         messageType: 'ticket_card',
         compacted: false,
         reverted: false,
+        contentChars: 0,
+        transcriptChars: 0,
         createdAt: now,
       );
 
@@ -292,6 +300,8 @@ void main() {
         messageType: 'agent_turn',
         compacted: false,
         reverted: false,
+        contentChars: 0,
+        transcriptChars: 0,
         createdAt: now,
       );
 
@@ -312,6 +322,8 @@ void main() {
         messageType: 'bogus',
         compacted: false,
         reverted: false,
+        contentChars: 0,
+        transcriptChars: 0,
         createdAt: now,
       );
 
@@ -332,6 +344,8 @@ void main() {
         metadata: '{"agentName":"TestAgent","streamComplete":true}',
         compacted: false,
         reverted: false,
+        contentChars: 0,
+        transcriptChars: 0,
         createdAt: now,
       );
 
@@ -354,6 +368,8 @@ void main() {
         metadata: null,
         compacted: false,
         reverted: false,
+        contentChars: 0,
+        transcriptChars: 0,
         createdAt: now,
       );
 
@@ -374,6 +390,8 @@ void main() {
         metadata: '{invalid json}',
         compacted: false,
         reverted: false,
+        contentChars: 0,
+        transcriptChars: 0,
         createdAt: now,
       );
 
@@ -393,6 +411,8 @@ void main() {
         messageType: 'text',
         compacted: true,
         reverted: false,
+        contentChars: 0,
+        transcriptChars: 0,
         createdAt: now,
       );
 
@@ -416,6 +436,8 @@ void main() {
           messageType: 'text',
           compacted: false,
           reverted: false,
+          contentChars: 0,
+          transcriptChars: 0,
           createdAt: now,
         ),
         ConversationMessagesTableData(
@@ -428,6 +450,8 @@ void main() {
           messageType: 'text',
           compacted: false,
           reverted: false,
+          contentChars: 0,
+          transcriptChars: 0,
           createdAt: now,
         ),
       ];

@@ -2,12 +2,16 @@ import 'dart:async';
 
 import 'package:cc_domain/cc_domain.dart'
     show RunCredentialBlockDto, RunCredentialLane, RunCredentialReason;
+import 'package:cc_domain/features/settings/domain/entities/adapter.dart'
+    show AdapterTransport, predefinedAdapters;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/dispatch/presentation/widgets/credential_gate_body.dart';
 import 'package:control_center/features/dispatch/providers/credential_gate_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/router/routes.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 /// Opens a modal whenever the server parks a run on a credential it cannot use,
 /// and closes it by itself the moment the credential works.
@@ -40,21 +44,149 @@ class _CredentialGateOverlayState extends ConsumerState<CredentialGateOverlay> {
   /// monotonically and never reused, so a handled one can never be a new one.
   final Set<String> _handled = {};
 
+  /// The block whose sign-in the operator just left to do in Settings.
+  ///
+  /// While this is set the dialog stays down — opening it again on top of the
+  /// account page would hide the login it was opened to reach. Cleared when
+  /// they leave that page: a probe then either resumes the parked run or puts
+  /// the dialog back.
+  String? _resumeBlockId;
+
+  GoRouter? _router;
+
+  /// Whether the current location is the adapters page. Tracked from the
+  /// router, not from this widget rebuilding: the overlay is a `const` child
+  /// of the shell, so a route change does not rebuild it.
+  bool _onAdapters = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final next = GoRouter.maybeOf(context);
+    if (identical(next, _router)) {
+      return;
+    }
+    _router?.routerDelegate.removeListener(_onRoute);
+    _router = next;
+    _onAdapters = _isAdaptersRoute(_router);
+    _router?.routerDelegate.addListener(_onRoute);
+  }
+
+  @override
+  void dispose() {
+    _router?.routerDelegate.removeListener(_onRoute);
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    ref.listen(blockedRunsProvider, (_, next) {
-      final blocked = next.asData?.value ?? const <RunCredentialBlockDto>[];
-      // One at a time. Two parked runs are almost always the same missing
-      // credential, and stacking modals would ask the operator to fix it twice;
-      // the second opens on its own if it is genuinely different.
-      final first = blocked.where((b) => !_handled.contains(b.id)).firstOrNull;
-      if (first == null) {
-        return;
-      }
-      _handled.add(first.id);
-      unawaited(_open(first.id));
-    });
+    ref.listen<AsyncValue<List<RunCredentialBlockDto>>>(
+      blockedRunsProvider,
+      (_, _) => _considerOpening(),
+    );
     return const SizedBox.shrink();
+  }
+
+  void _onRoute() {
+    final now = _isAdaptersRoute(_router);
+    final blockId = _resumeBlockId;
+    final left = _onAdapters && !now && blockId != null;
+    _onAdapters = now;
+    if (left) {
+      unawaited(_resume(blockId));
+    }
+  }
+
+  bool _isAdaptersRoute(GoRouter? router) {
+    final path = router?.state.uri.path ?? '';
+    return path.contains('/settings/server/providers');
+  }
+
+  /// One dialog at a time. Two parked runs are almost always the same missing
+  /// credential, and stacking modals would ask the operator to fix it twice;
+  /// the next one opens on its own once this one is done.
+  void _considerOpening() {
+    if (!mounted || _resumeBlockId != null) {
+      return;
+    }
+    final blocked =
+        ref.read(blockedRunsProvider).asData?.value ??
+        const <RunCredentialBlockDto>[];
+    final first = blocked.where((b) => !_handled.contains(b.id)).firstOrNull;
+    if (first == null) {
+      return;
+    }
+    _handled.add(first.id);
+    unawaited(_open(first.id));
+  }
+
+  /// Hands back the navigation the dialog runs after it pops.
+  ///
+  /// Null when this overlay is not under a router or the block names no
+  /// workspace — the dialog stays up rather than closing onto nowhere.
+  VoidCallback? _prepareOpenSettings(RunCredentialBlockDto block) {
+    final router = _router;
+    if (router == null) {
+      return null;
+    }
+    final fromBlock = block.workspaceId;
+    final workspaceId = (fromBlock != null && fromBlock.isNotEmpty)
+        ? fromBlock
+        : router.state.pathParameters['workspaceId'];
+    if (workspaceId == null || workspaceId.isEmpty) {
+      return null;
+    }
+    final adapterId = predefinedAdapters
+        .where((adapter) => adapter.transport == AdapterTransport.claudeCli)
+        .map((adapter) => adapter.id)
+        .firstOrNull;
+    return () {
+      // Forget the handled mark so a run that is still parked when they
+      // come back can open again. The flag below keeps that from happening
+      // while they are still on the sign-in page.
+      _handled.remove(block.id);
+      _resumeBlockId = block.id;
+      _onAdapters = false;
+      router.go(settingsAdaptersRoute(workspaceId, adapterId: adapterId));
+    };
+  }
+
+  /// Re-probes [id] the moment they leave the sign-in page, then either lets
+  /// the resumed run alone or puts the dialog back.
+  Future<void> _resume(String id) async {
+    try {
+      await ref.read(credentialGateRepositoryProvider).retry(id);
+    } on Object {
+      // No server in reach, or the probe itself failed. The snapshot below
+      // is what decides whether the dialog comes back; a thrown probe is
+      // not a reason to lose the parked run.
+    }
+    if (!mounted || _resumeBlockId != id) {
+      return;
+    }
+    // The resolve snapshot and the RPC response race on the same socket.
+    // One turn of the event loop is enough for a snapshot that already
+    // arrived to land in the provider before we read it.
+    await Future<void>.delayed(Duration.zero);
+    if (!mounted || _resumeBlockId != id) {
+      return;
+    }
+    final blocked =
+        ref.read(blockedRunsProvider).asData?.value ??
+        const <RunCredentialBlockDto>[];
+    final stillParked = blocked.any((block) => block.id == id);
+    if (!stillParked) {
+      _resumeBlockId = null;
+      _considerOpening();
+      return;
+    }
+    // They came back to the sign-in page before the probe finished. Keep
+    // waiting; the next time they leave, this runs again.
+    if (_isAdaptersRoute(_router)) {
+      return;
+    }
+    _resumeBlockId = null;
+    _considerOpening();
   }
 
   Future<void> _open(String id) => showCcDialog<void>(
@@ -63,14 +195,23 @@ class _CredentialGateOverlayState extends ConsumerState<CredentialGateOverlay> {
     // leave it parked with nothing on screen explaining why nothing is
     // happening — the two ways out are both buttons.
     barrierDismissible: false,
-    builder: (_) => _CredentialGateDialog(blockId: id),
+    builder: (_) => _CredentialGateDialog(
+      blockId: id,
+      prepareOpenSettings: _prepareOpenSettings,
+    ),
   );
 }
 
 class _CredentialGateDialog extends ConsumerStatefulWidget {
-  const _CredentialGateDialog({required this.blockId});
+  const _CredentialGateDialog({
+    required this.blockId,
+    required this.prepareOpenSettings,
+  });
 
   final String blockId;
+
+  /// See [CredentialGateBody.prepareOpenSettings].
+  final VoidCallback? Function(RunCredentialBlockDto block) prepareOpenSettings;
 
   @override
   ConsumerState<_CredentialGateDialog> createState() =>
@@ -141,7 +282,11 @@ class _CredentialGateDialogState extends ConsumerState<_CredentialGateDialog> {
     return CcDialog(
       maxWidth: 560,
       title: _title(l10n, block),
-      content: CredentialGateBody(block: block, onConnected: _retry),
+      content: CredentialGateBody(
+        block: block,
+        onConnected: _retry,
+        prepareOpenSettings: widget.prepareOpenSettings,
+      ),
       actions: [
         CcButton(
           variant: CcButtonVariant.secondary,

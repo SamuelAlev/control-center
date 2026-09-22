@@ -121,9 +121,11 @@ Future<void> _prepareDesktop() async {
 
   // Cap the engine image cache well below Flutter's default (~100MB / 1000
   // images). The desktop shows mostly small avatars and feed thumbnails
-  // (already downscaled via ResizeImage), so the default budget just lets
-  // decoded bitmaps accumulate as idle RSS.
-  PaintingBinding.instance.imageCache.maximumSizeBytes = 48 << 20;
+  // (already downscaled via ResizeImage); decoded bitmaps stay resident
+  // until a newer image needs the slot.
+  PaintingBinding.instance.imageCache
+    ..maximumSize = 400
+    ..maximumSizeBytes = 32 << 20;
 
   // Route the client-resident packages' log seams (cc_infra device adapters /
   // dio clients + cc_domain) into AppLog before anything else starts. The

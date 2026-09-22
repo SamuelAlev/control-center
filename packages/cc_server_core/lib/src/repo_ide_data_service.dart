@@ -73,6 +73,18 @@ class WorktreeWriteResult {
   final String path;
 }
 
+/// Head commit of an open pull request for [branch] in [repoId], from the
+/// local open-PR snapshot. Null when this branch has no open pull request.
+///
+/// Must not hit the network: [RepoIdeDataService.repoChangesGrouped] runs on
+/// the source-control poll, every few seconds.
+typedef PublishedBranchHead =
+    Future<String?> Function({
+      required String workspaceId,
+      required String repoId,
+      required String branch,
+    });
+
 /// Result of reverting one or more working-tree files in a conversation
 /// worktree to HEAD. [reverted] counts files restored; [skipped] lists paths
 /// that could not be reverted (untracked/new files — `git checkout-index` is a
@@ -117,6 +129,7 @@ class RepoIdeDataService {
     required this._fileSearch,
     SessionDiffPort? diff,
     this._githubToken,
+    this._publishedBranchHead,
   }) : _repos = repoRepository,
        _workspaces = workspaceRepository,
        _isolated = isolatedRepoRepository,
@@ -132,10 +145,14 @@ class RepoIdeDataService {
   /// [_githubToken]'s `actingUserId` names the human whose click drove the
   /// operation, so their push is authored on GitHub as THEM (per-actor lane);
   /// omitted, it resolves the server chain (app → owner → environment), which
-  /// is only right for work with no human behind it. [workspaceId] selects
+  /// is only right for work with no human behind it. `workspaceId` selects
   /// that workspace's GitHub overlay rather than another workspace's token.
   final Future<String?> Function({String? actingUserId, String? workspaceId})?
   _githubToken;
+
+  /// Open pull request head for a branch this checkout has never fetched.
+  /// Null leaves publication entirely to local git refs.
+  final PublishedBranchHead? _publishedBranchHead;
 
   /// Reads no more than this many bytes when sniffing a file for a NUL byte.
   static const _binarySniffBytes = 8000;
@@ -214,24 +231,266 @@ class RepoIdeDataService {
   /// (worktree vs index + untracked) buckets — the VS Code Source Control model.
   /// Same workspace/space scoping as [repoChanges]; empty buckets when the
   /// space has no worktree for [repoId].
-  Future<({List<PrFile> staged, List<PrFile> unstaged})> repoChangesGrouped(
+  ///
+  /// Also reports how the branch sits against its upstream (local refs only,
+  /// no fetch): ahead is commits to push, behind is commits to pull. A branch
+  /// with no tracking ref and no `origin/<branch>` is still published when an
+  /// open pull request names it — the head commit from that snapshot stands
+  /// in for the missing remote-tracking ref, so a pull request opened outside
+  /// this worktree is not offered as "Publish branch". With neither, ahead is
+  /// commits the remote default does not contain, so a local conversation
+  /// commit is still visible.
+  Future<
+    ({
+      List<PrFile> staged,
+      List<PrFile> unstaged,
+      bool hasUpstream,
+      int ahead,
+      int behind,
+      int aheadOfBase,
+    })
+  >
+  repoChangesGrouped(
     String workspaceId,
     String repoId, {
     String? spaceId,
   }) async {
+    Future<
+      ({
+        List<PrFile> staged,
+        List<PrFile> unstaged,
+        bool hasUpstream,
+        int ahead,
+        int behind,
+        int aheadOfBase,
+      })
+    >
+    pack(String root) async {
+      final grouped = await _diff.groupedChanges(root);
+      final published = _publishedBranchHead;
+      final sync = await _branchSync(
+        p.normalize(root),
+        publishedHeadSha: published == null
+            ? null
+            : (branch) => published(
+                workspaceId: workspaceId,
+                repoId: repoId,
+                branch: branch,
+              ),
+      );
+      return (
+        staged: grouped.staged,
+        unstaged: grouped.unstaged,
+        hasUpstream: sync.hasUpstream,
+        ahead: sync.ahead,
+        behind: sync.behind,
+        aheadOfBase: sync.aheadOfBase,
+      );
+    }
+
     if (spaceId != null) {
       final worktree = await _worktreeFor(workspaceId, spaceId, repoId);
       if (worktree == null) {
-        return (staged: const <PrFile>[], unstaged: const <PrFile>[]);
+        return _emptyGrouped();
       }
-      return _diff.groupedChanges(worktree.path);
+      return pack(worktree.path);
     }
     final repo = await _linkedRepo(workspaceId, repoId);
     if (repo == null) {
-      return (staged: const <PrFile>[], unstaged: const <PrFile>[]);
+      return _emptyGrouped();
     }
-    return _diff.groupedChanges(repo.path);
+    return pack(repo.path);
   }
+
+  ({
+    List<PrFile> staged,
+    List<PrFile> unstaged,
+    bool hasUpstream,
+    int ahead,
+    int behind,
+    int aheadOfBase,
+  })
+  _emptyGrouped() => (
+    staged: const <PrFile>[],
+    unstaged: const <PrFile>[],
+    hasUpstream: false,
+    ahead: 0,
+    behind: 0,
+    aheadOfBase: 0,
+  );
+
+  /// Ahead/behind from local refs. No network: the poll that reads this runs
+  /// every few seconds, and a fetch belongs on [syncBranch].
+  ///
+  /// `ahead`/`behind` are against the tracking branch. With no tracking config
+  /// but an `origin/<branch>` ref (a push that never ran `-u`), they are
+  /// against that ref, so commits already on the remote are not counted as
+  /// unpushed. A pull request opened outside this checkout leaves no such
+  /// ref; [publishedHeadSha] supplies that branch's head from the open-PR
+  /// snapshot and the comparison stays local. Only a branch neither git nor
+  /// that snapshot has falls back to commits the default branch does not
+  /// contain. `aheadOfBase` is always against the default branch and skips
+  /// that branch itself, so a published feature branch still counts as a
+  /// pull request after it is in sync with upstream.
+  Future<({bool hasUpstream, int ahead, int behind, int aheadOfBase})>
+  _branchSync(
+    String root, {
+    Future<String?> Function(String branch)? publishedHeadSha,
+  }) async {
+    const env = {'GIT_TERMINAL_PROMPT': '0', 'GIT_ASKPASS': 'echo'};
+    Future<ProcessResult> git(List<String> args) =>
+        Process.run('git', args, workingDirectory: root, environment: env);
+
+    final headBranch =
+        ((await git(['rev-parse', '--abbrev-ref', 'HEAD'])).stdout as String)
+            .trim();
+    final bases = <String>[
+      'origin/HEAD',
+      'origin/main',
+      'origin/master',
+      if (headBranch != 'main') 'main',
+      if (headBranch != 'master') 'master',
+    ];
+    int? unpushed;
+    int? aheadOfBase;
+    for (final base in bases) {
+      final abbrev = await git(['rev-parse', '--abbrev-ref', base]);
+      if (abbrev.exitCode != 0) {
+        continue;
+      }
+      final name = (abbrev.stdout as String).trim();
+      if (name.isEmpty) {
+        continue;
+      }
+      final n = await git(['rev-list', '--count', '$base..HEAD']);
+      if (n.exitCode != 0) {
+        continue;
+      }
+      final count = int.tryParse((n.stdout as String).trim()) ?? 0;
+      unpushed ??= count;
+      final short = name.startsWith('origin/')
+          ? name.substring('origin/'.length)
+          : name;
+      if (short != headBranch) {
+        aheadOfBase ??= count;
+      }
+      if (unpushed != null && aheadOfBase != null) {
+        break;
+      }
+    }
+
+    final upstream = await git([
+      'rev-parse',
+      '--abbrev-ref',
+      '--symbolic-full-name',
+      '@{upstream}',
+    ]);
+    if (upstream.exitCode == 0 &&
+        (upstream.stdout as String).trim().isNotEmpty) {
+      final counts = await git([
+        'rev-list',
+        '--left-right',
+        '--count',
+        'HEAD...@{upstream}',
+      ]);
+      final parts = (counts.stdout as String).trim().split(RegExp(r'\s+'));
+      if (counts.exitCode == 0 && parts.length >= 2) {
+        return (
+          hasUpstream: true,
+          ahead: int.tryParse(parts[0]) ?? 0,
+          behind: int.tryParse(parts[1]) ?? 0,
+          aheadOfBase: aheadOfBase ?? 0,
+        );
+      }
+      return (
+        hasUpstream: true,
+        ahead: 0,
+        behind: 0,
+        aheadOfBase: aheadOfBase ?? 0,
+      );
+    }
+
+    // A publish that did not set tracking still updates
+    // refs/remotes/origin/<branch>. Comparing to the default branch would
+    // report those pushed commits as outgoing.
+    if (headBranch.isNotEmpty && headBranch != 'HEAD') {
+      final remoteBranch = 'origin/$headBranch';
+      final remote = await git([
+        'rev-parse',
+        '--verify',
+        '--quiet',
+        remoteBranch,
+      ]);
+      if (remote.exitCode == 0) {
+        final counts = await git([
+          'rev-list',
+          '--left-right',
+          '--count',
+          'HEAD...$remoteBranch',
+        ]);
+        final parts = (counts.stdout as String).trim().split(RegExp(r'\s+'));
+        if (counts.exitCode == 0 && parts.length >= 2) {
+          return (
+            hasUpstream: true,
+            ahead: int.tryParse(parts[0]) ?? 0,
+            behind: int.tryParse(parts[1]) ?? 0,
+            aheadOfBase: aheadOfBase ?? 0,
+          );
+        }
+      }
+    }
+
+    // A pull request opened from another checkout (or the forge UI) publishes
+    // the branch without writing `refs/remotes/origin/<branch>` here. The
+    // snapshot head is that remote tip. Counting against the default branch
+    // would report those commits as still needing a first push.
+    if (publishedHeadSha != null &&
+        headBranch.isNotEmpty &&
+        headBranch != 'HEAD') {
+      final raw = (await publishedHeadSha(headBranch))?.trim() ?? '';
+      if (_isCommitSha(raw)) {
+        final exists = await git(['cat-file', '-e', '$raw^{commit}']);
+        if (exists.exitCode == 0) {
+          final counts = await git([
+            'rev-list',
+            '--left-right',
+            '--count',
+            'HEAD...$raw',
+          ]);
+          final parts = (counts.stdout as String).trim().split(RegExp(r'\s+'));
+          if (counts.exitCode == 0 && parts.length >= 2) {
+            return (
+              hasUpstream: true,
+              ahead: int.tryParse(parts[0]) ?? 0,
+              behind: int.tryParse(parts[1]) ?? 0,
+              aheadOfBase: aheadOfBase ?? 0,
+            );
+          }
+        } else {
+          // The forge moved and this checkout has not fetched that commit.
+          // Still published: Sync fetches it. Publish would claim the branch
+          // had never left the machine.
+          return (
+            hasUpstream: true,
+            ahead: 0,
+            behind: 1,
+            aheadOfBase: aheadOfBase ?? 0,
+          );
+        }
+      }
+    }
+
+    return (
+      hasUpstream: false,
+      ahead: unpushed ?? 0,
+      behind: 0,
+      aheadOfBase: aheadOfBase ?? 0,
+    );
+  }
+
+  static final RegExp _commitSha = RegExp(r'^[0-9a-fA-F]{7,64}$');
+
+  static bool _isCommitSha(String sha) => _commitSha.hasMatch(sha);
 
   /// Stages [paths] (empty ⇒ all changes) into the git index of the
   /// conversation's isolated worktree for [repoId] via `git add`. Paths are
@@ -1356,6 +1615,9 @@ class RepoIdeDataService {
       '-c',
       'credential.helper=',
       'push',
+      // Track the remote branch so the next status read can show ahead/behind
+      // instead of offering Publish again for a branch that already exists.
+      '-u',
       if (amend) '--force-with-lease',
       'origin',
       'HEAD:refs/heads/$branch',
@@ -1438,6 +1700,7 @@ class RepoIdeDataService {
       '-c',
       'credential.helper=',
       'push',
+      '-u',
       'origin',
       'HEAD:refs/heads/$branch',
     ], env: env);
@@ -1456,6 +1719,387 @@ class RepoIdeDataService {
       'pushed': true,
       'uncommitted': uncommitted,
     };
+  }
+
+  /// VS Code's Sync for the conversation worktree: fetch the branch, rebase when
+  /// the remote has commits this side does not, then push when this side is
+  /// ahead or the branch has never been published. Never commits.
+  ///
+  /// A dirty tree that still needs the rebase is refused (`dirty: true`) so
+  /// uncommitted edits are not clobbered. A rebase conflict aborts and returns
+  /// git's message. Null when the space has no worktree for [repoId].
+  Future<Map<String, dynamic>?> syncBranch({
+    required String workspaceId,
+    required String spaceId,
+    required String repoId,
+    String? actingUserId,
+  }) async {
+    final worktree = await _worktreeFor(workspaceId, spaceId, repoId);
+    if (worktree == null) {
+      return null;
+    }
+    final root = p.normalize(worktree.path);
+    const baseEnv = {
+      'GIT_TERMINAL_PROMPT': '0',
+      'GIT_ASKPASS': 'echo',
+      'GIT_CONFIG_NOSYSTEM': '1',
+      // A conflicted rebase must not open an editor; we abort and report.
+      'GIT_EDITOR': 'true',
+    };
+    Future<ProcessResult> git(List<String> args, {Map<String, String>? env}) =>
+        Process.run(
+          'git',
+          args,
+          workingDirectory: root,
+          environment: {...baseEnv, ...?env},
+        );
+
+    var branch = worktree.branch.trim();
+    if (branch.isEmpty) {
+      branch =
+          ((await git(['rev-parse', '--abbrev-ref', 'HEAD'])).stdout as String)
+              .trim();
+    }
+    if (branch.isEmpty || branch == 'HEAD') {
+      return {
+        'pulled': false,
+        'pushed': false,
+        'dirty': false,
+        'error': 'the worktree has no branch to sync',
+      };
+    }
+
+    final token = await _githubToken?.call(
+      actingUserId: actingUserId,
+      workspaceId: workspaceId,
+    );
+    var env = <String, String>{};
+    if (token != null && token.isNotEmpty) {
+      final b64 = base64Encode(utf8.encode('x-access-token:$token'));
+      env = {
+        'GIT_CONFIG_PARAMETERS':
+            "'http.https://github.com/.extraHeader=Authorization: Basic $b64'",
+      };
+    }
+
+    // A missing remote branch (first publish) fails the fetch; the push below
+    // creates it. Any other fetch failure falls through to the push, which
+    // reports the network error if it is real.
+    final fetch = await git([
+      '-c',
+      'credential.helper=',
+      'fetch',
+      'origin',
+      branch,
+    ], env: env);
+    final fetched = fetch.exitCode == 0;
+    var pulled = false;
+    if (fetched) {
+      final behindRes = await git(['rev-list', '--count', 'HEAD..FETCH_HEAD']);
+      final behind = behindRes.exitCode == 0
+          ? int.tryParse((behindRes.stdout as String).trim()) ?? 0
+          : 0;
+      if (behind > 0) {
+        final status = await git(['status', '--porcelain']);
+        final dirty =
+            status.exitCode == 0 && (status.stdout as String).trim().isNotEmpty;
+        if (dirty) {
+          return {'pulled': false, 'pushed': false, 'dirty': true};
+        }
+        final rebase = await git(['rebase', 'FETCH_HEAD']);
+        if (rebase.exitCode != 0) {
+          await git(['rebase', '--abort']);
+          return {
+            'pulled': false,
+            'pushed': false,
+            'dirty': false,
+            'error': (rebase.stderr as String).trim(),
+          };
+        }
+        pulled = true;
+      }
+    }
+
+    final aheadRes = fetched
+        ? await git(['rev-list', '--count', 'FETCH_HEAD..HEAD'])
+        : null;
+    final ahead = aheadRes == null || aheadRes.exitCode != 0
+        ? (fetched ? 0 : 1)
+        : int.tryParse((aheadRes.stdout as String).trim()) ?? 0;
+    if (fetched && ahead == 0) {
+      return {'pulled': pulled, 'pushed': false, 'dirty': false};
+    }
+    final pushRes = await git([
+      '-c',
+      'credential.helper=',
+      'push',
+      '-u',
+      'origin',
+      'HEAD:refs/heads/$branch',
+    ], env: env);
+    if (pushRes.exitCode != 0) {
+      return {
+        'pulled': pulled,
+        'pushed': false,
+        'dirty': false,
+        'error': pushRes.stderr.toString().trim(),
+      };
+    }
+    return {'pulled': pulled, 'pushed': true, 'dirty': false};
+  }
+
+  /// Local branches, remote-tracking refs and tags in the conversation
+  /// worktree, newest commit first. No network: a fetch belongs on
+  /// [syncBranch]. Null when the space has no worktree for [repoId].
+  Future<Map<String, dynamic>?> listBranches({
+    required String workspaceId,
+    required String spaceId,
+    required String repoId,
+  }) async {
+    final worktree = await _worktreeFor(workspaceId, spaceId, repoId);
+    if (worktree == null) {
+      return null;
+    }
+    final root = p.normalize(worktree.path);
+    final head =
+        ((await _git(root, ['rev-parse', '--abbrev-ref', 'HEAD'])).stdout
+                as String)
+            .trim();
+    final listed = await _git(root, const [
+      'for-each-ref',
+      '--count=400',
+      '--sort=-committerdate',
+      '--format=%(refname)\x1f%(objectname:short)\x1f%(committerdate:unix)\x1f%(subject)',
+      'refs/heads',
+      'refs/remotes',
+      'refs/tags',
+    ]);
+    final refs = <Map<String, Object?>>[];
+    if (listed.exitCode == 0) {
+      for (final line in (listed.stdout as String).split('\n')) {
+        if (line.isEmpty) {
+          continue;
+        }
+        final parts = line.split('\x1f');
+        if (parts.length < 4) {
+          continue;
+        }
+        final refname = parts[0];
+        if (refname == 'refs/remotes/origin/HEAD') {
+          continue;
+        }
+        final parsed = _parseRefName(refname);
+        if (parsed == null) {
+          continue;
+        }
+        final (kind, name, localName) = parsed;
+        refs.add({
+          'name': name,
+          'kind': kind,
+          'sha': parts[1],
+          'committedAt': int.tryParse(parts[2]) ?? 0,
+          'subject': parts.sublist(3).join('\x1f'),
+          'current': kind == 'branch' && name == head,
+          'localName': localName,
+        });
+      }
+    }
+    return {'current': head, 'detached': head == 'HEAD', 'refs': refs};
+  }
+
+  /// Checks [branch] out in the conversation worktree, or creates it.
+  ///
+  /// Stays inside the isolated copy: local refs and remote-tracking refs
+  /// already in the worktree, never a fetch and never a write into the
+  /// source checkout. A dirty tree is left for git to accept or refuse —
+  /// creating a branch at HEAD keeps uncommitted work, switching to another
+  /// commit does not overwrite files.
+  ///
+  /// On success the isolated-repo row's branch is updated to the checked-out
+  /// name, because commit and push publish that stored name. A detached
+  /// checkout stores an empty branch so a later push cannot invent
+  /// `refs/heads/HEAD`. If recording the row fails, the checkout is rolled
+  /// back. Null when the space has no worktree for [repoId].
+  Future<Map<String, dynamic>?> checkoutBranch({
+    required String workspaceId,
+    required String spaceId,
+    required String repoId,
+    String? branch,
+    String? startPoint,
+    bool create = false,
+    bool detach = false,
+  }) async {
+    final worktree = await _worktreeFor(workspaceId, spaceId, repoId);
+    if (worktree == null) {
+      return null;
+    }
+    final root = p.normalize(worktree.path);
+    final previous =
+        ((await _git(root, ['rev-parse', '--abbrev-ref', 'HEAD'])).stdout
+                as String)
+            .trim();
+    final previousSha =
+        ((await _git(root, ['rev-parse', 'HEAD'])).stdout as String).trim();
+
+    if (detach) {
+      final start = (startPoint?.trim().isNotEmpty ?? false)
+          ? startPoint!.trim()
+          : 'HEAD';
+      if (!_isRefToken(start)) {
+        return {'ok': false, 'error': 'invalid start point'};
+      }
+      final verified = await _verifyCommit(root, start);
+      if (!verified) {
+        return {'ok': false, 'error': 'unknown start point'};
+      }
+      final res = await _git(root, ['switch', '--detach', start]);
+      if (res.exitCode != 0) {
+        return _checkoutFailure(res);
+      }
+      final recorded = await _recordBranch(
+        root,
+        worktree,
+        branch: '',
+        previous: previous,
+        previousSha: previousSha,
+      );
+      if (recorded != null) {
+        return recorded;
+      }
+      return {'ok': true, 'branch': '', 'detached': true, 'dirty': false};
+    }
+
+    final name = branch?.trim() ?? '';
+    if (!_isRefToken(name)) {
+      return {'ok': false, 'error': 'invalid branch name'};
+    }
+    final format = await _git(root, ['check-ref-format', '--branch', name]);
+    if (format.exitCode != 0) {
+      return {'ok': false, 'error': 'invalid branch name'};
+    }
+    final start = startPoint?.trim() ?? '';
+    if (start.isNotEmpty && !_isRefToken(start)) {
+      return {'ok': false, 'error': 'invalid start point'};
+    }
+
+    final ProcessResult res;
+    if (create) {
+      final atHead = start.isEmpty || start == 'HEAD' || start == previous;
+      if (atHead) {
+        res = await _git(root, ['switch', '-c', name]);
+      } else {
+        if (!await _verifyCommit(root, start)) {
+          return {'ok': false, 'error': 'unknown start point'};
+        }
+        final remote = await _git(root, [
+          'show-ref',
+          '--verify',
+          '--quiet',
+          'refs/remotes/$start',
+        ]);
+        res = remote.exitCode == 0
+            ? await _git(root, ['switch', '--track', '-c', name, start])
+            : await _git(root, ['switch', '-c', name, start]);
+      }
+    } else {
+      final local = await _git(root, [
+        'show-ref',
+        '--verify',
+        '--quiet',
+        'refs/heads/$name',
+      ]);
+      if (local.exitCode == 0) {
+        res = await _git(root, ['switch', '--', name]);
+      } else {
+        final remote = await _git(root, [
+          'show-ref',
+          '--verify',
+          '--quiet',
+          'refs/remotes/origin/$name',
+        ]);
+        if (remote.exitCode != 0) {
+          return {'ok': false, 'error': 'no such branch'};
+        }
+        res = await _git(root, [
+          'switch',
+          '--track',
+          '-c',
+          name,
+          'origin/$name',
+        ]);
+      }
+    }
+    if (res.exitCode != 0) {
+      return _checkoutFailure(res);
+    }
+    final checked =
+        ((await _git(root, ['rev-parse', '--abbrev-ref', 'HEAD'])).stdout
+                as String)
+            .trim();
+    final recorded = await _recordBranch(
+      root,
+      worktree,
+      branch: checked == 'HEAD' ? '' : checked,
+      previous: previous,
+      previousSha: previousSha,
+      created: create ? name : null,
+    );
+    if (recorded != null) {
+      return recorded;
+    }
+    return {
+      'ok': true,
+      'branch': checked == 'HEAD' ? '' : checked,
+      'detached': checked == 'HEAD',
+      'dirty': false,
+    };
+  }
+
+  /// Writes [branch] onto the isolated-repo row. On failure, checks the
+  /// previous commit back out (and deletes [created]) so the disk and the
+  /// row cannot disagree about what a later push would publish.
+  Future<Map<String, dynamic>?> _recordBranch(
+    String root,
+    IsolatedRepo worktree, {
+    required String branch,
+    required String previous,
+    required String previousSha,
+    String? created,
+  }) async {
+    try {
+      await _isolated.upsert(worktree.copyWith(branch: branch));
+    } on Object {
+      if (previous == 'HEAD') {
+        await _git(root, ['switch', '--detach', previousSha]);
+      } else if (previous.isNotEmpty) {
+        await _git(root, ['switch', '--', previous]);
+      }
+      if (created != null && created.isNotEmpty) {
+        await _git(root, ['branch', '-D', created]);
+      }
+      return {'ok': false, 'error': 'could not record the checked-out branch'};
+    }
+    return null;
+  }
+
+  Future<bool> _verifyCommit(String root, String start) async {
+    final verified = await _git(root, [
+      'rev-parse',
+      '--verify',
+      '--end-of-options',
+      '$start^{commit}',
+    ]);
+    return verified.exitCode == 0;
+  }
+
+  Map<String, dynamic> _checkoutFailure(ProcessResult res) {
+    final err = (res.stderr as String).trim();
+    final dirty =
+        err.contains('local changes') ||
+        err.contains('would be overwritten') ||
+        err.contains('overwritten by checkout') ||
+        err.contains('Please commit your changes');
+    return {'ok': false, 'dirty': dirty, 'error': dirty ? null : err};
   }
 
   /// Re-syncs the conversation worktree for [repoId] to the current PR head.
@@ -1591,6 +2235,17 @@ class RepoIdeDataService {
     ];
   }
 
+  Future<ProcessResult> _git(String root, List<String> args) => Process.run(
+    'git',
+    args,
+    workingDirectory: root,
+    environment: const {
+      'GIT_TERMINAL_PROMPT': '0',
+      'GIT_ASKPASS': 'echo',
+      'GIT_CONFIG_NOSYSTEM': '1',
+    },
+  );
+
   Future<IsolatedRepo?> _worktreeFor(
     String workspaceId,
     String spaceId,
@@ -1642,4 +2297,53 @@ class RepoIdeDataService {
     }
     return false;
   }
+}
+
+/// A branch, remote-tracking ref or tag name that cannot be an option and
+/// cannot escape the ref namespace. `git check-ref-format` still runs on
+/// branch names; this only keeps a caller-supplied token out of argv flags.
+bool _isRefToken(String name) {
+  if (name.isEmpty || name.length > 250) {
+    return false;
+  }
+  if (name.startsWith('-') || name.startsWith('.') || name.startsWith('/')) {
+    return false;
+  }
+  if (name.endsWith('/') || name.endsWith('.') || name.endsWith('.lock')) {
+    return false;
+  }
+  if (name.contains('..') || name.contains('//') || name.contains('@{')) {
+    return false;
+  }
+  return RegExp(r'^[A-Za-z0-9._/@+-]+$').hasMatch(name);
+}
+
+/// `(kind, name, localName)` for a `for-each-ref` refname, or null.
+(String, String, String)? _parseRefName(String refname) {
+  const heads = 'refs/heads/';
+  const remotes = 'refs/remotes/';
+  const tags = 'refs/tags/';
+  if (refname.startsWith(heads)) {
+    final name = refname.substring(heads.length);
+    if (name.isEmpty) {
+      return null;
+    }
+    return ('branch', name, name);
+  }
+  if (refname.startsWith(remotes)) {
+    final name = refname.substring(remotes.length);
+    final slash = name.indexOf('/');
+    if (name.isEmpty || slash <= 0 || slash == name.length - 1) {
+      return null;
+    }
+    return ('remote', name, name.substring(slash + 1));
+  }
+  if (refname.startsWith(tags)) {
+    final name = refname.substring(tags.length);
+    if (name.isEmpty) {
+      return null;
+    }
+    return ('tag', name, name);
+  }
+  return null;
 }

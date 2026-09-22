@@ -224,6 +224,26 @@ void main() {
     });
 
     test(
+      'a frame opened off-isolate is delivered before the next frame',
+      () async {
+        final link = _Link(
+          maxChunkChars: 32 * 1024,
+          windowChunks: 64,
+          creditEvery: 8,
+        );
+        // Above the decode threshold, so the receiver leaves this isolate,
+        // then a small frame arrives while that decode is still running.
+        await link.a.sendFrame({'id': 1, 'blob': 'x' * 60000});
+        await link.a.sendFrame({'id': 2});
+        final deadline = DateTime.now().add(const Duration(seconds: 20));
+        while (link.framesAtB.length < 2 && DateTime.now().isBefore(deadline)) {
+          await Future<void>.delayed(const Duration(milliseconds: 5));
+        }
+        expect(link.framesAtB.map((frame) => frame['id']).toList(), [1, 2]);
+      },
+    );
+
+    test(
       'a 50 MB payload streams chunked with progress over the relay path',
       () async {
         // Real-size soak (PRD 15 acceptance): 50 MB of payload through 16 KB
@@ -238,7 +258,12 @@ void main() {
           List<int>.generate(50 * 1024 * 1024, (i) => 97 + (i % 26)),
         );
         await link.a.sendFrame({'blob': blob});
-        await _settle();
+        // Opening a payload this size leaves the calling isolate. [_settle]
+        // only drains the event queue; it does not wait for that isolate.
+        final deadline = DateTime.now().add(const Duration(minutes: 1));
+        while (link.framesAtB.isEmpty && DateTime.now().isBefore(deadline)) {
+          await Future<void>.delayed(const Duration(milliseconds: 20));
+        }
         expect(link.framesAtB.single['blob'], hasLength(blob.length));
         expect(link.progressA.last.fraction, 1.0);
         expect(link.progressA.last.totalChunks, greaterThan(1000));

@@ -129,11 +129,15 @@ class ControlCenterApp extends ConsumerWidget {
         locale: localeOverride,
         supportedLocales: kSupportedAppLocales,
         localeResolutionCallback: resolveAppLocale,
+        // These delegates still come from flutter_localizations: MaterialApp
+        // here is package:flutter/material.dart, and that library looks up its
+        // own MaterialLocalizations. The material_ui / cupertino_ui replacements
+        // register a different type.
         localizationsDelegates: const [
           AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate, // ignore: deprecated_member_use
           GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate, // ignore: deprecated_member_use
         ],
         builder: (context, child) {
           // The one chokepoint for intl: bare DateFormat/NumberFormat calls

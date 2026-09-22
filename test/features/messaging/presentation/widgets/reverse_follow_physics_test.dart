@@ -150,6 +150,48 @@ void main() {
       expect(result, 700);
     });
 
+    test('compensates a shrink so collapsing an accordion does not jump up', () {
+      // Reader parked in history. Closing a tool row shrinks maxScrollExtent.
+      // A reverse list keeps the numeric offset, which slides the viewport
+      // toward older messages; subtracting the shrink holds the same lines.
+      final state = FollowState()..mode = FeedFollowMode.free;
+      final physics = ReverseFollowPhysics(state: state);
+      final result = physics.adjustPositionForNewDimensions(
+        oldPosition: _metrics(pixels: 500, max: 2000),
+        newPosition: _metrics(pixels: 500, max: 1820),
+        isScrolling: false,
+        velocity: 0,
+      );
+      expect(result, 320); // 500 - 180
+    });
+
+    test('does not compensate a shrink while following the live edge', () {
+      final physics = ReverseFollowPhysics(state: FollowState());
+      final result = physics.adjustPositionForNewDimensions(
+        oldPosition: _metrics(pixels: 0, max: 2000),
+        newPosition: _metrics(pixels: 0, max: 1820),
+        isScrolling: false,
+        velocity: 0,
+      );
+      expect(result, 0);
+    });
+
+    test('clamps a huge negative estimation spike to one viewport', () {
+      // A tall row leaving the built set deflates the ESTIMATED maxScrollExtent
+      // by thousands of px. Compensating by the raw delta would snap the reader
+      // to the live edge. The clamp caps it at one viewport.
+      final state = FollowState()..mode = FeedFollowMode.free;
+      final physics = ReverseFollowPhysics(state: state);
+      final result = physics.adjustPositionForNewDimensions(
+        oldPosition: _metrics(pixels: 2000, max: 10000),
+        newPosition: _metrics(pixels: 2000, max: 2000), // -8000 estimation spike
+        isScrolling: false,
+        velocity: 0,
+      );
+      // 2000 + max(-8000, -viewport 500) = 1500, NOT 0.
+      expect(result, 1500);
+    });
+
     test('no-op when content does not grow', () {
       final state = FollowState()..mode = FeedFollowMode.free;
       final physics = ReverseFollowPhysics(state: state);

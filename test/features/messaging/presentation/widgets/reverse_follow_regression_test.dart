@@ -231,6 +231,65 @@ void main() {
       );
     });
 
+    testWidgets('collapsing a grown row returns to the same reading position', (
+      tester,
+    ) async {
+      // Opening a tool accordion grows its row and is already compensated.
+      // Closing it shrinks the row by the same amount; without a matching
+      // negative compensation the reverse list keeps the inflated offset and
+      // the reader lands further up, on older messages.
+      var now = DateTime(2026);
+      final state = FollowState(now: () => now)..mode = FeedFollowMode.free;
+      final controller = ScrollController();
+      addTearDown(controller.dispose);
+
+      var extra = 0.0;
+      final heights = _rowHeights(40);
+
+      await tester.pumpWidget(
+        StatefulBuilder(
+          builder: (context, setState) {
+            _growRow0 = (v) => setState(() => extra = v);
+            return _harness(
+              state: state,
+              physicsBuilder: current,
+              controller: controller,
+              heights: heights,
+              firstRowExtra: extra,
+              cacheExtentPx: 100000,
+            );
+          },
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      controller.jumpTo(600);
+      await tester.pumpAndSettle();
+      expect(controller.position.pixels, closeTo(600, 1));
+
+      now = now.add(kUserScrollCompensationHold * 2);
+
+      _growRow0!(300);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 16));
+      expect(controller.position.pixels, closeTo(900, 40));
+
+      // The growth correction can itself be reported as a scroll. Step past
+      // the hold so the collapse is compensated on its own.
+      now = now.add(kUserScrollCompensationHold * 2);
+
+      _growRow0!(0);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 16));
+
+      expect(tester.takeException(), isNull);
+      expect(
+        controller.position.pixels,
+        closeTo(600, 40),
+        reason: 'closing the grown row should restore the reading position',
+      );
+    });
+
     testWidgets('legacy physics misbehaves in the same harness', (
       tester,
     ) async {

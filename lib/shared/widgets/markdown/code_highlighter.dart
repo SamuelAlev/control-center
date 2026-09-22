@@ -24,10 +24,13 @@ import 'package:shiki_flutter/engine.dart' show ThemedToken;
 typedef _HighlightKey = (String languageId, String themeId, String code);
 
 /// Maximum number of entries per highlight cache.
-const int _maxCacheEntries = 128;
+const int _maxCacheEntries = 64;
 
-/// Maximum total source characters per highlight cache (~2MB).
-const int _maxCacheChars = 2 * 1024 * 1024;
+/// Maximum total source characters per highlight cache. Two caches (whole
+/// block and per line) each hold this much source; the span objects are
+/// larger than the source, so the cap is what keeps a long scrolling session
+/// from retaining every block it has highlighted.
+const int _maxCacheChars = 512 * 1024;
 
 /// Items larger than this are never cached (they would evict everything else).
 const int _maxCacheableItemChars = 100 * 1024;

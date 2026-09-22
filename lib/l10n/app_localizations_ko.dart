@@ -3140,6 +3140,16 @@ class AppLocalizationsKo extends AppLocalizations {
   String get editMessage => '메시지 편집';
 
   @override
+  String get revertToThere => '거기까지 되돌리기';
+
+  @override
+  String get sendAsNewMessage => '새 메시지로 보내기';
+
+  @override
+  String get editMessageChoiceBody =>
+      '되돌리면 이 메시지 이후가 숨겨지고 에이전트의 파일이 되돌아갑니다. 실행 취소할 수 있습니다. 새 메시지로 보내면 대화는 그대로 남습니다.';
+
+  @override
   String get deleteMessage => '메시지 삭제';
 
   @override
@@ -8409,6 +8419,11 @@ class AppLocalizationsKo extends AppLocalizations {
   String get ideReviewCode => '코드 검토';
 
   @override
+  String ideReviewCodeInRepo(String repo) {
+    return '코드 검토 ($repo)';
+  }
+
+  @override
   String get ideRevertConfirmTitle => '변경 사항 되돌리기';
 
   @override
@@ -10268,6 +10283,86 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get commitAndSync => '커밋 및 동기화';
+
+  @override
+  String get scmSyncChanges => '변경 내용 동기화';
+
+  @override
+  String get scmPublishBranch => '브랜치 게시';
+
+  @override
+  String get scmSyncFailed => '동기화 실패';
+
+  @override
+  String get scmSyncDirty => '동기화하기 전에 변경 내용을 커밋하거나 버리세요';
+
+  @override
+  String get scmSynced => '동기화됨';
+
+  @override
+  String get scmSelectBranch => '체크아웃할 브랜치 선택';
+
+  @override
+  String get scmCreateBranch => '새 브랜치 만들기…';
+
+  @override
+  String get scmCreateBranchFrom => '다음에서 새 브랜치 만들기…';
+
+  @override
+  String get scmCheckoutDetached => '분리된 상태로 체크아웃…';
+
+  @override
+  String get scmBranchName => '브랜치 이름';
+
+  @override
+  String get scmCreateBranchTitle => '브랜치 만들기';
+
+  @override
+  String scmFromRef(String ref) {
+    return '⁨$ref⁩에서';
+  }
+
+  @override
+  String get scmCheckoutFailed => '브랜치를 전환하지 못했습니다';
+
+  @override
+  String get scmCheckoutDirty => '브랜치를 전환하기 전에 변경 사항을 커밋하거나 버리세요';
+
+  @override
+  String scmSwitchedToBranch(String branch) {
+    return '⁨$branch⁩(으)로 전환함';
+  }
+
+  @override
+  String scmDetachedAt(String ref) {
+    return '⁨$ref⁩에서 분리됨';
+  }
+
+  @override
+  String get scmDetachedHead => '분리된 HEAD';
+
+  @override
+  String get scmNoBranches => '일치하는 브랜치 없음';
+
+  @override
+  String get scmBranches => '브랜치';
+
+  @override
+  String get scmRemoteBranches => '원격 브랜치';
+
+  @override
+  String get scmTags => '태그';
+
+  @override
+  String get scmPickStartPoint => '시작 지점 선택';
+
+  @override
+  String get scmSwitchBranch => '브랜치 전환';
+
+  @override
+  String commitMessageOnBranch(String shortcut, String branch) {
+    return '메시지 ($shortcut로 “$branch”에 커밋)';
+  }
 
   @override
   String get committed => '커밋됨';

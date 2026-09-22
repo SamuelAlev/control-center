@@ -71,6 +71,12 @@ class ModeToolPolicy {
     'list_my_tools',
     'todo_write',
     'todo_read',
+    // How a run asks the operator, in every mode. The harness pins this name
+    // on its own surface; the MCP dispatcher does not — it is a flat
+    // allow-list, so a read-tier tool absent from this set is refused to
+    // Claude and Pi. Omitting it is how a run reported the tool missing and
+    // guessed instead of asking.
+    'ask_user',
   };
 
   /// Tools available to any participant in a review-mode conversation.

@@ -6,8 +6,8 @@ import 'package:control_center/features/messaging/providers/messaging_providers.
 import 'package:control_center/features/pipelines/providers/pipeline_providers.dart';
 import 'package:control_center/features/repos/providers/repo_providers.dart';
 import 'package:control_center/features/shell/presentation/layout/control_center_layout.dart';
-import 'package:control_center/features/soundscape/device_location_reader.dart';
 import 'package:control_center/features/shell/presentation/widgets/app_sidebar.dart';
+import 'package:control_center/features/soundscape/device_location_reader.dart';
 import 'package:control_center/features/ticketing/providers/ticketing_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';

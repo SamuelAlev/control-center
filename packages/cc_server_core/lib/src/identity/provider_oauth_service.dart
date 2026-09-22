@@ -120,17 +120,13 @@ class ProviderOAuthService {
   /// [workspaceApps] / [workspaceLookup] may be assigned after construction —
   /// the workspace registry is assembled later on the boot path.
   ProviderOAuthService({
-    required ProviderAppSettings apps,
-    required UserCredentialsStore users,
-    WorkspaceGitHubAppSettings? workspaceApps,
-    Future<Workspace?> Function(String workspaceId)? workspaceLookup,
+    required this._apps,
+    required this._users,
+    this.workspaceApps,
+    this.workspaceLookup,
     HttpClient? httpClient,
     DateTime Function()? now,
-  }) : _apps = apps,
-       _users = users,
-       workspaceApps = workspaceApps,
-       workspaceLookup = workspaceLookup,
-       _http = httpClient ?? (HttpClient()..connectionTimeout = _httpTimeout),
+  }) : _http = httpClient ?? (HttpClient()..connectionTimeout = _httpTimeout),
        _now = now ?? (() => DateTime.now().toUtc());
 
   /// Bound on every provider round-trip. A wedged provider must not pin the
@@ -149,7 +145,13 @@ class ProviderOAuthService {
 
   final ProviderAppSettings _apps;
   final UserCredentialsStore _users;
+
+  /// Workspace GitHub App overlay. Assigned after construction, once the
+  /// workspace registry exists.
   WorkspaceGitHubAppSettings? workspaceApps;
+
+  /// Loads a workspace so sign-in can follow its auth mode. Assigned after
+  /// construction, once the workspace registry exists.
   Future<Workspace?> Function(String workspaceId)? workspaceLookup;
   final HttpClient _http;
   final DateTime Function() _now;

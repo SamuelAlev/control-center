@@ -49,7 +49,7 @@ IsolatedRepo _worktree(String repoId) => IsolatedRepo(
   repoId: repoId,
   backend: RepoIsolationBackend.gitWorktree,
   path: '/tmp/wt-$repoId',
-  branch: 'conv/ch',
+  branch: 'space/ch',
   sourcePath: '/tmp/repo-$repoId',
   createdAt: DateTime(2025),
 );

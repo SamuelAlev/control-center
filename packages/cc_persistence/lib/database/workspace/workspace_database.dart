@@ -425,7 +425,7 @@ class WorkspaceDatabase extends _$WorkspaceDatabase {
   /// The current workspace schema version, as a const so non-database code
   /// (the server's /healthz build/compat block) can report it without
   /// instantiating a database. Keep in lockstep with [schemaVersion].
-  static const int currentSchemaVersion = 10;
+  static const int currentSchemaVersion = 13;
 
   @override
   int get schemaVersion => currentSchemaVersion;
@@ -645,6 +645,43 @@ class WorkspaceDatabase extends _$WorkspaceDatabase {
         await _createIndexIfMissing(m, uqCalendarAccountsWsUserEmail);
       },
     ),
+    // v10 → v11: sidebar activity indexes. Fresh files build them in
+    // onCreate; this step carries existing workspace files forward. See
+    // [_createConversationActivityIndexes].
+    MigrationStep(
+      10,
+      11,
+      (m) async {
+        await _createConversationActivityIndexes();
+      },
+    ),
+    // v11 → v12: integer character counts for the context meter. Fresh files
+    // build the columns in onCreate; this step carries existing files forward
+    // and backfills them once. See [_backfillConversationCharCounts].
+    MigrationStep(
+      11,
+      12,
+      (m) async {
+        await _addConversationCharColumns();
+        await _backfillConversationCharCounts();
+        await _createConversationCharIndex();
+      },
+    ),
+    // v12 → v13: stored list metadata. Fresh files build the column in
+    // onCreate; this step carries existing files forward and fills it once.
+    // See [_backfillListMetadata].
+    MigrationStep(
+      12,
+      13,
+      (m) async {
+        await _addColumnIfMissing(
+          m,
+          conversationMessagesTable,
+          conversationMessagesTable.listMetadata,
+        );
+        await _backfillListMetadata();
+      },
+    ),
   ];
 
   /// Creates [index] unless the file already has it.
@@ -723,6 +760,19 @@ class WorkspaceDatabase extends _$WorkspaceDatabase {
       // writes; WAL lets readers proceed, but two writers still contend and
       // without this a reconciler tick can abort a user write outright.
       await customStatement('PRAGMA busy_timeout = 5000');
+      // WAL + synchronous=NORMAL. FULL fsyncs every commit; a message send
+      // writes the row, the FTS index and the sync feed, and those fsyncs
+      // are what push a loopback action past a frame. NORMAL syncs at
+      // checkpoint time: an app crash does not lose committed transactions,
+      // a power loss can lose the ones not yet checkpointed. That is the
+      // setting SQLite recommends for WAL.
+      // temp_store=MEMORY keeps sorts and transient indexes off disk.
+      // mmap_size caps how much of the file can be faulted into RAM. Those
+      // pages stay resident while the connection is open; 8MB matches the
+      // page cache so one workspace cannot also pin a 64MB window.
+      await customStatement('PRAGMA synchronous = NORMAL');
+      await customStatement('PRAGMA temp_store = MEMORY');
+      await customStatement('PRAGMA mmap_size = 8388608');
       // Cap the per-connection page cache at 8MB (negative = KiB units) and
       // let SQLite hand cache memory back to the OS under pressure. This bound
       // matters more than it used to: N open workspaces means N caches, so an
@@ -1035,9 +1085,113 @@ class WorkspaceDatabase extends _$WorkspaceDatabase {
     );
   }
 
+  /// Partial indexes for the sidebar activity watch.
+  ///
+  /// That watch re-runs on every conversation-message write, including a
+  /// streaming transcript flush. The maxima only need ids, time and sender,
+  /// so they must not drag each row's metadata (the transcript) off disk.
+  /// The question count is the one predicate that reads metadata. It filters
+  /// on `message_type`, which already has an index, so that pass only touches
+  /// user-question rows.
+  Future<void> _createConversationActivityIndexes() async {
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_conversation_messages_live_activity '
+      'ON conversation_messages ('
+      'space_id, conversation_id, created_at, sender_type'
+      ') WHERE reverted = 0',
+    );
+  }
+
+  /// Adds the meter's integer columns when a re-entered v12 step finds them
+  /// missing. A bare `ADD COLUMN` throws if a previous attempt already added
+  /// them, and that throw leaves the file stuck below the new version.
+  Future<void> _addConversationCharColumns() async {
+    final rows = await customSelect(
+      "PRAGMA table_info('conversation_messages')",
+    ).get();
+    final present = rows.map((row) => row.read<String>('name')).toSet();
+    if (!present.contains('content_chars')) {
+      await customStatement(
+        'ALTER TABLE conversation_messages ADD COLUMN content_chars '
+        'INTEGER NOT NULL DEFAULT 0',
+      );
+    }
+    if (!present.contains('transcript_chars')) {
+      await customStatement(
+        'ALTER TABLE conversation_messages ADD COLUMN transcript_chars '
+        'INTEGER NOT NULL DEFAULT 0',
+      );
+    }
+  }
+
+  /// One-time copy of the counts the meter used to compute on every read.
+  ///
+  /// The sync-update trigger would otherwise record a change for every
+  /// message. It is dropped for this statement and reinstalled immediately
+  /// after; the FTS trigger only watches `content` and `space_id`, so this
+  /// update does not touch the search index.
+  Future<void> _backfillConversationCharCounts() async {
+    await customStatement(
+      'DROP TRIGGER IF EXISTS trg_sync_conversation_messages_update',
+    );
+    await customStatement(
+      r'''
+UPDATE conversation_messages
+SET content_chars = LENGTH(content),
+    transcript_chars = CAST(
+      COALESCE(json_extract(metadata, '$.transcriptChars'), 0) AS INTEGER
+    )
+''',
+    );
+    await _createSyncTriggers();
+  }
+
+  /// One-time copy of the metadata text list watches read.
+  ///
+  /// The select used to strip segments with json_remove on every row,
+  /// every flush. Doing it here means a later flush reads the stored column
+  /// and leaves the transcript blobs alone. The sync-update trigger is
+  /// dropped for the same reason as [_backfillConversationCharCounts]: one
+  /// UPDATE of every message must not record one change per message. The
+  /// FTS trigger only watches content and space_id.
+  Future<void> _backfillListMetadata() async {
+    await customStatement(
+      'DROP TRIGGER IF EXISTS trg_sync_conversation_messages_update',
+    );
+    await customStatement(
+      r'''
+UPDATE conversation_messages
+SET list_metadata = CASE
+  WHEN json_type(metadata, '$.segments') IS NULL THEN metadata
+  ELSE json_set(
+    json_remove(metadata, '$.segments'),
+    '$.segments_elided', json('true'),
+    '$.segment_count', json_array_length(metadata, '$.segments')
+  )
+END
+''',
+    );
+    await _createSyncTriggers();
+  }
+
+  /// Covering index for [MessagingDao.conversationCharCountsSql].
+  ///
+  /// The partial predicate matches the meter's filter, so the sum never
+  /// reads message bodies or transcript JSON.
+  Future<void> _createConversationCharIndex() async {
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_conversation_messages_live_chars '
+      'ON conversation_messages ('
+      'conversation_id, message_type, content_chars, transcript_chars'
+      ') WHERE reverted = 0 AND compacted = 0',
+    );
+  }
+
   /// Composite indexes for hot filter+sort paths single-column indexes miss
   /// (space/conversation message history, agent run logs, PRs). `IF NOT EXISTS`.
   Future<void> _createHotPathIndexes() async {
+    await _createConversationActivityIndexes();
+    await _createConversationCharIndex();
     await customStatement(
       'CREATE INDEX IF NOT EXISTS idx_conversation_messages_space_created '
       'ON conversation_messages (space_id, created_at)',

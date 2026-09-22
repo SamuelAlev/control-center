@@ -31,7 +31,17 @@ void main() {
 
       expect(_state(tester).startEdgeVisible, isFalse);
       expect(_state(tester).endEdgeVisible, isTrue);
-      expect(find.byType(ShaderMask), findsOneWidget);
+      // One scrim, over the trailing edge only — never a full-viewport mask.
+      expect(find.byType(ShaderMask), findsNothing);
+      expect(
+        find.descendant(
+          of: find.byType(CcScrollArea),
+          matching: find.byWidgetPredicate(
+            (widget) => widget is IgnorePointer && widget.ignoring,
+          ),
+        ),
+        findsOneWidget,
+      );
       expect(tester.takeException(), isNull);
     });
 

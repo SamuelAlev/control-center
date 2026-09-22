@@ -5,7 +5,6 @@ import 'dart:typed_data';
 import 'package:cc_domain/core/domain/entities/workspace.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_connection.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
-import 'package:cc_domain/core/domain/value_objects/github_auth_mode.dart';
 import 'package:cc_infra/cc_infra.dart' show GitHubAppClient;
 import 'package:cc_server_core/src/file_secrets_store.dart';
 import 'package:cc_server_core/src/forge/forge_credentials.dart';

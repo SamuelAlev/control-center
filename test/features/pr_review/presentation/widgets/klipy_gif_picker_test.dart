@@ -281,7 +281,7 @@ void main() {
   });
 
   group('GifPickerPopover', () {
-    Finder _addGif() => find.byWidgetPredicate(
+    Finder addGif() => find.byWidgetPredicate(
       (w) => w is CcIconButton && w.tooltip == 'Add GIF',
     );
 
@@ -310,7 +310,7 @@ void main() {
 
       expect(find.byKey(const Key('gif-picker-panel')), findsNothing);
 
-      await tester.tap(_addGif());
+      await tester.tap(addGif());
       await tester.pump();
       await tester.pump();
 
@@ -323,11 +323,11 @@ void main() {
     ) async {
       await pumpPicker(tester, alignment: Alignment.bottomRight);
 
-      await tester.tap(_addGif());
+      await tester.tap(addGif());
       await tester.pump();
       await tester.pump();
 
-      final trigger = tester.getRect(_addGif());
+      final trigger = tester.getRect(addGif());
       final panel = tester.getRect(find.byKey(const Key('gif-picker-panel')));
       final screen = tester.getSize(find.byType(Overlay).first);
 
@@ -353,7 +353,7 @@ void main() {
       (tester) async {
         await pumpPicker(tester);
 
-        await tester.tap(_addGif());
+        await tester.tap(addGif());
         await tester.pump();
         await tester.pump();
 

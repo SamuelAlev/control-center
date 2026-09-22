@@ -1,20 +1,29 @@
+// StreamQueryStore is the only signal drift exposes for "a watch is still
+// attached". It is not in the public library; closing without it would drop
+// a live query stream the next time this file went idle.
+// ignore_for_file: implementation_imports, invalid_use_of_internal_member
+import 'dart:async';
 import 'dart:io';
 
 import 'package:cc_persistence/database/global/global_database.dart';
 import 'package:cc_persistence/database/workspace/workspace_database.dart';
 import 'package:cc_persistence/src/server_database.dart';
 import 'package:drift/drift.dart';
+import 'package:drift/src/runtime/executor/stream_queries.dart';
 
 /// Hands out per-workspace DBs at `<dataDir>/<workspaceId>/workspace.db`.
 ///
 /// Repositories hold this manager and resolve DAOs per call
 /// (`_dbs.of(workspaceId).agentDao`) — never cache a DAO (pins the first
 /// workspace). [of] is sync over `LazyDatabase` so Stream repos stay sync.
-/// In-use DBs stay open until [close]/[closeAll]/[dropAndClose];
-/// [useTransiently] closes cross-workspace fan-out opens that nothing else
-/// claimed. `quick_check` runs once per file per process ([_integrityChecked]).
-/// [openCount] past [softOpenLimit] is logged; [executorFactory] is injectable
-/// for a future shared DriftIsolate.
+/// In-use DBs stay open until [close]/[closeAll]/[dropAndClose]. When
+/// [idleAfter] is set, a file with no live watch and no in-flight statement
+/// is closed that long after its last statement; the next [of] reopens it
+/// without repeating `quick_check`. [useTransiently] still closes
+/// cross-workspace fan-out opens that nothing else claimed. `quick_check`
+/// runs once per file per process ([_integrityChecked]). [openCount] past
+/// [softOpenLimit] is logged; [executorFactory] is injectable for a future
+/// shared DriftIsolate.
 class WorkspaceDatabaseManager {
   /// Creates a manager rooted at [dataDir].
   ///
@@ -22,24 +31,60 @@ class WorkspaceDatabaseManager {
   /// and is the registry consulted by [allWorkspaceIds]. [executorFactory] defaults
   /// to [openWorkspaceDatabase] and exists so tests can hand out in-memory
   /// executors (and so a future shared-isolate strategy is a one-line swap).
+  /// [idleAfter] turns on idle closing; [clock] is the time source for that
+  /// check (tests pass a fake).
   WorkspaceDatabaseManager({
     required String dataDir,
     required this._global,
     QueryExecutor Function(String workspaceId)? executorFactory,
     this.onWarn,
     this.onError,
+    this.idleAfter,
+    DateTime Function()? clock,
   }) : _dataDir = dataDir,
+       _clock = clock ?? DateTime.now,
        executorFactory =
            executorFactory ??
            ((workspaceId) => openWorkspaceDatabase(
              dataDir: dataDir,
              workspaceId: workspaceId,
-           ));
+           )) {
+    final idle = idleAfter;
+    if (idle != null) {
+      final tick = idle < const Duration(seconds: 15)
+          ? idle
+          : const Duration(seconds: 15);
+      _idleTimer = Timer.periodic(tick, (_) {
+        unawaited(evictIdle());
+      });
+    }
+  }
 
   final String _dataDir;
   final GlobalDatabase _global;
   final Map<String, WorkspaceDatabase> _open = {};
+  final Map<String, _WorkspaceLease> _leases = {};
+
+  /// Idle files taken out of [_open] and not closed yet.
+  ///
+  /// [of] in that window puts the same instance back. Closing it while it
+  /// was still cached handed the caller a connection this method then closed.
+  final Map<String, ({WorkspaceDatabase db, _WorkspaceLease lease})> _closing =
+      {};
+  final DateTime Function() _clock;
+  Timer? _idleTimer;
+  bool _evicting = false;
   String? _installId;
+
+  /// How long a workspace file with no live watch and no in-flight statement
+  /// stays open after its last statement.
+  ///
+  /// Null disables idle closing. Tests and short-lived CLI tools leave it
+  /// null and tear the file down themselves. The long-running server sets it
+  /// so a workspace touched once does not keep an isolate, a page cache and
+  /// a mapping for the rest of the process. A live watch or an in-flight
+  /// statement holds the file open regardless of this duration.
+  final Duration? idleAfter;
 
   /// Workspaces whose ONLY opener so far is a cross-workspace read.
   ///
@@ -124,8 +169,13 @@ class WorkspaceDatabaseManager {
   WorkspaceDatabase of(String workspaceId) => _resolve(workspaceId);
 
   WorkspaceDatabase _resolve(String workspaceId, {bool transient = false}) {
+    final closing = _closing.remove(workspaceId);
+    if (closing != null) {
+      _reclaim(workspaceId, closing.db, closing.lease);
+    }
     final cached = _open[workspaceId];
     if (cached != null) {
+      _leases[workspaceId]?.touch();
       if (!transient) {
         // Claimed by a real workspace-scoped caller — an in-flight fan-out
         // must no longer treat this file as its own to close.
@@ -140,8 +190,14 @@ class WorkspaceDatabaseManager {
         'not a valid workspace id (must be a safe single path segment)',
       );
     }
+    final lease = _WorkspaceLease(_clock);
+    final watches = _LeaseStreamQueryStore();
+    lease.watches = watches;
     final db = WorkspaceDatabase(
-      executorFactory(workspaceId),
+      DatabaseConnection(
+        _ActivityExecutor(executorFactory(workspaceId), lease),
+        streamQueries: watches,
+      ),
       workspaceId: workspaceId,
       installId: _installId ?? 'unknown',
       onWarn: onWarn,
@@ -150,6 +206,7 @@ class WorkspaceDatabaseManager {
       onIntegrityChecked: () => _integrityChecked.add(workspaceId),
     );
     _open[workspaceId] = db;
+    _leases[workspaceId] = lease;
     if (transient) {
       _transientOnly.add(workspaceId);
     }
@@ -201,6 +258,96 @@ class WorkspaceDatabaseManager {
     }
   }
 
+  /// Closes workspace files that have been idle for [idleAfter].
+  ///
+  /// A file is idle when nothing is watching it, no statement is in flight,
+  /// and no [useTransiently] call is inside it. Live watches and open
+  /// transactions keep their file. No-op when [idleAfter] is null. Safe to
+  /// call while a previous pass is still closing files.
+  ///
+  /// The idle file is detached before the close. [of] in that gap reclaims
+  /// the same instance, and a statement that starts on it does too. Closing
+  /// the cached instance after [of] had already returned it killed the
+  /// caller's database. [_integrityChecked] is left alone: the next open of
+  /// a file that really closed skips `quick_check`.
+  Future<void> evictIdle() async {
+    final idle = idleAfter;
+    if (idle == null || _evicting) {
+      return;
+    }
+    _evicting = true;
+    try {
+      final now = _clock();
+      final victims = <String>[];
+      for (final id in _open.keys) {
+        if (_isIdle(id, now, idle)) {
+          victims.add(id);
+        }
+      }
+      final parked = <String>[];
+      for (final id in victims) {
+        if (!_isIdle(id, _clock(), idle)) {
+          continue;
+        }
+        final db = _open.remove(id);
+        final lease = _leases.remove(id);
+        _transientOnly.remove(id);
+        if (db == null || lease == null) {
+          continue;
+        }
+        _closing[id] = (db: db, lease: lease);
+        parked.add(id);
+      }
+      // Lets an of() or a statement already queued on this event loop take
+      // the lease before the close. Awaiting the close itself from inside
+      // that caller would deadlock on this pass.
+      await Future<void>.delayed(Duration.zero);
+      for (final id in parked) {
+        final closing = _closing.remove(id);
+        if (closing == null) {
+          continue;
+        }
+        if (_stillInUse(id, closing.lease, idle)) {
+          _reclaim(id, closing.db, closing.lease);
+          continue;
+        }
+        await closing.db.close();
+      }
+    } finally {
+      _evicting = false;
+    }
+  }
+
+  /// Puts [db] back in the open set. A second connection for the same id is
+  /// left untouched.
+  void _reclaim(String id, WorkspaceDatabase db, _WorkspaceLease lease) {
+    final current = _open[id];
+    if (current != null && !identical(current, db)) {
+      return;
+    }
+    _open[id] = db;
+    _leases[id] = lease;
+    lease.touch();
+  }
+
+  bool _stillInUse(String workspaceId, _WorkspaceLease lease, Duration idle) {
+    if (_transientDepth.containsKey(workspaceId) || lease.isHeld) {
+      return true;
+    }
+    return _clock().difference(lease.lastTouch) < idle;
+  }
+
+  bool _isIdle(String workspaceId, DateTime now, Duration idle) {
+    if (_transientDepth.containsKey(workspaceId)) {
+      return false;
+    }
+    final lease = _leases[workspaceId];
+    if (lease == null || lease.isHeld) {
+      return false;
+    }
+    return now.difference(lease.lastTouch) >= idle;
+  }
+
   /// Every workspace id the server knows about, from the `global.db` registry,
   /// **including soft-deleted ones** (their directories still exist and still
   /// need sweeping/backing up).
@@ -237,15 +384,28 @@ class WorkspaceDatabaseManager {
 
   /// Closes [workspaceId]'s database if open, releasing its isolate.
   Future<void> close(String workspaceId) async {
-    final db = _open.remove(workspaceId);
+    final open = _open.remove(workspaceId);
+    final closing = _closing.remove(workspaceId);
+    _leases.remove(workspaceId);
     _transientOnly.remove(workspaceId);
-    await db?.close();
+    await open?.close();
+    if (closing != null && !identical(closing.db, open)) {
+      await closing.db.close();
+    }
   }
 
   /// Closes every open workspace database. Called on server shutdown.
   Future<void> closeAll() async {
-    final dbs = _open.values.toList(growable: false);
+    _idleTimer?.cancel();
+    _idleTimer = null;
+    final dbs = <WorkspaceDatabase>[
+      ..._open.values,
+      for (final closing in _closing.values)
+        if (!_open.values.contains(closing.db)) closing.db,
+    ];
     _open.clear();
+    _leases.clear();
+    _closing.clear();
     _transientOnly.clear();
     for (final db in dbs) {
       await db.close();
@@ -346,4 +506,224 @@ class WorkspaceDatabaseManager {
     }
     return orphans;
   }
+}
+
+/// Recency and in-flight state for one open workspace file.
+final class _WorkspaceLease {
+  _WorkspaceLease(this._clock) : lastTouch = _clock();
+
+  final DateTime Function() _clock;
+  DateTime lastTouch;
+  int _depth = 0;
+  _LeaseStreamQueryStore? watches;
+
+  /// True while a statement, transaction, or table watch is outstanding.
+  bool get isHeld => _depth > 0 || (watches?.hasListeners ?? false);
+
+  void touch() => lastTouch = _clock();
+
+  void enter() {
+    _depth++;
+    touch();
+  }
+
+  void leave() {
+    if (_depth > 0) {
+      _depth--;
+    }
+    touch();
+  }
+}
+
+/// Counts listeners on drift's table-update stream.
+///
+/// Every `select.watch()` and every `tableUpdates()` listen subscribes here,
+/// so a quiet screen that is still subscribed keeps the file open. The count
+/// drops when the last listener cancels, after drift's one-turn grace.
+final class _LeaseStreamQueryStore extends StreamQueryStore {
+  int _listeners = 0;
+
+  bool get hasListeners => _listeners > 0;
+
+  @override
+  Stream<Set<TableUpdate>> updatesForSync(TableUpdateQuery query) {
+    final inner = super.updatesForSync(query);
+    return Stream<Set<TableUpdate>>.multi((listener) {
+      _listeners++;
+      var released = false;
+      void release() {
+        if (released) {
+          return;
+        }
+        released = true;
+        _listeners--;
+      }
+
+      final sub = inner.listen(
+        listener.add,
+        onError: (Object error, StackTrace stack) {
+          listener.addError(error, stack);
+        },
+        onDone: () {
+          release();
+          listener.close();
+        },
+      );
+      listener.onCancel = () {
+        release();
+        return sub.cancel();
+      };
+    }, isBroadcast: true);
+  }
+}
+
+/// Forwards a [QueryExecutor] and holds [_lease] for each in-flight call.
+final class _ActivityExecutor implements QueryExecutor {
+  _ActivityExecutor(this._inner, this._lease, {this._onClose});
+
+  final QueryExecutor _inner;
+  final _WorkspaceLease _lease;
+  void Function()? _onClose;
+
+  Future<T> _track<T>(Future<T> future) {
+    _lease.enter();
+    return future.whenComplete(_lease.leave);
+  }
+
+  @override
+  SqlDialect get dialect => _inner.dialect;
+
+  @override
+  Future<bool> ensureOpen(QueryExecutorUser user) =>
+      _track(_inner.ensureOpen(user));
+
+  @override
+  Future<List<Map<String, Object?>>> runSelect(
+    String statement,
+    List<Object?> args,
+  ) => _track(_inner.runSelect(statement, args));
+
+  @override
+  Future<int> runInsert(String statement, List<Object?> args) =>
+      _track(_inner.runInsert(statement, args));
+
+  @override
+  Future<int> runUpdate(String statement, List<Object?> args) =>
+      _track(_inner.runUpdate(statement, args));
+
+  @override
+  Future<int> runDelete(String statement, List<Object?> args) =>
+      _track(_inner.runDelete(statement, args));
+
+  @override
+  Future<void> runCustom(String statement, [List<Object?>? args]) =>
+      _track(_inner.runCustom(statement, args));
+
+  @override
+  Future<void> runBatched(BatchedStatements statements) =>
+      _track(_inner.runBatched(statements));
+
+  @override
+  TransactionExecutor beginTransaction() {
+    _lease.enter();
+    try {
+      return _ActivityTransaction(_inner.beginTransaction(), _lease.leave);
+    } catch (_) {
+      _lease.leave();
+      rethrow;
+    }
+  }
+
+  @override
+  QueryExecutor beginExclusive() {
+    _lease.enter();
+    try {
+      return _ActivityExecutor(
+        _inner.beginExclusive(),
+        _lease,
+        onClose: _lease.leave,
+      );
+    } catch (_) {
+      _lease.leave();
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> close() async {
+    try {
+      await _inner.close();
+    } finally {
+      final hook = _onClose;
+      _onClose = null;
+      hook?.call();
+    }
+  }
+}
+
+/// Holds [_leave] from [beginTransaction] until the transaction ends.
+final class _ActivityTransaction implements TransactionExecutor {
+  _ActivityTransaction(this._inner, this._leave);
+
+  final TransactionExecutor _inner;
+  final void Function() _leave;
+  var _finished = false;
+
+  void _finish() {
+    if (_finished) {
+      return;
+    }
+    _finished = true;
+    _leave();
+  }
+
+  @override
+  bool get supportsNestedTransactions => _inner.supportsNestedTransactions;
+
+  @override
+  SqlDialect get dialect => _inner.dialect;
+
+  @override
+  Future<bool> ensureOpen(QueryExecutorUser user) => _inner.ensureOpen(user);
+
+  @override
+  Future<List<Map<String, Object?>>> runSelect(
+    String statement,
+    List<Object?> args,
+  ) => _inner.runSelect(statement, args);
+
+  @override
+  Future<int> runInsert(String statement, List<Object?> args) =>
+      _inner.runInsert(statement, args);
+
+  @override
+  Future<int> runUpdate(String statement, List<Object?> args) =>
+      _inner.runUpdate(statement, args);
+
+  @override
+  Future<int> runDelete(String statement, List<Object?> args) =>
+      _inner.runDelete(statement, args);
+
+  @override
+  Future<void> runCustom(String statement, [List<Object?>? args]) =>
+      _inner.runCustom(statement, args);
+
+  @override
+  Future<void> runBatched(BatchedStatements statements) =>
+      _inner.runBatched(statements);
+
+  @override
+  TransactionExecutor beginTransaction() => _inner.beginTransaction();
+
+  @override
+  QueryExecutor beginExclusive() => _inner.beginExclusive();
+
+  @override
+  Future<void> send() => _inner.send().whenComplete(_finish);
+
+  @override
+  Future<void> rollback() => _inner.rollback().whenComplete(_finish);
+
+  @override
+  Future<void> close() => _inner.close().whenComplete(_finish);
 }

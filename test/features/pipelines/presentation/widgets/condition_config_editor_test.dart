@@ -10,7 +10,7 @@ Widget _wrap(Widget child) {
   return MaterialApp(
     localizationsDelegates: const [
       ...AppLocalizations.localizationsDelegates,
-      GlobalMaterialLocalizations.delegate,
+      GlobalMaterialLocalizations.delegate, // ignore: deprecated_member_use
       GlobalWidgetsLocalizations.delegate,
     ],
     supportedLocales: AppLocalizations.supportedLocales,

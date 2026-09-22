@@ -9,7 +9,11 @@ import 'package:cc_domain/features/messaging/domain/entities/conversation_tree.d
 import 'package:cc_domain/features/messaging/domain/entities/space.dart';
 import 'package:cc_domain/features/messaging/domain/entities/space_participant.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
+import 'package:cc_domain/features/messaging/domain/services/prompt_history.dart';
+import 'package:cc_domain/features/messaging/domain/services/side_channel_render.dart';
+import 'package:cc_domain/features/messaging/domain/value_objects/conversation_context_history.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/conversation_token_totals.dart';
+import 'package:cc_domain/features/messaging/domain/value_objects/dispatch_reply_hints.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/message_cursor.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/message_page.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/space_activity.dart';
@@ -51,6 +55,28 @@ class DaoMessagingRepository implements MessagingRepository {
   Stream<List<T>> _distinctRows<T>(Stream<List<T>> source) =>
       distinctRows(source);
 
+  /// Domain equality for a message list.
+  ///
+  /// Drift re-emits a watch when any column of the table changes, including
+  /// the meter counters. Those counters are not on [Message], so a tool-only
+  /// flush that leaves the list projection alone would still rebuild the
+  /// feed if the row objects were compared. Comparing the domain rows drops
+  /// that emission before it is encoded onto the socket.
+  bool _sameMessages(List<Message> a, List<Message> b) {
+    if (identical(a, b)) {
+      return true;
+    }
+    if (a.length != b.length) {
+      return false;
+    }
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   /// Newest-activity-first, the order the space list is displayed in. Applied
   /// to the merged cross-workspace list, which concatenation would otherwise
   /// leave interleaved by workspace.
@@ -85,7 +111,7 @@ class DaoMessagingRepository implements MessagingRepository {
     String conversationId,
   ) => _distinctRows(
     _dao(workspaceId).watchMessages(conversationId),
-  ).map(_mapper.messagesToDomain);
+  ).map(_mapper.messagesToDomain).distinct(_sameMessages);
 
   @override
   Stream<({List<Message> messages, bool hasMore})> watchMessagesWindow(
@@ -105,12 +131,19 @@ class DaoMessagingRepository implements MessagingRepository {
           messages: _mapper.messagesToDomain(windowRows),
           hasMore: hasMore,
         );
-      });
+      }).distinct(
+        (a, b) =>
+            a.hasMore == b.hasMore && _sameMessages(a.messages, b.messages),
+      );
 
   /// The size of a conversation's live region, computed in SQL. NOT part of
   /// [MessagingRepository] — like [watchSpaceActivity] it is a server-only
   /// read-model projection, reached over `messaging.watchConversationTokens`
   /// and consumed through `MessagingSummariesPort`.
+  ///
+  /// The per-message counts are stored columns
+  /// (`content_chars`, `transcript_chars`), not `LENGTH(content)` and not a
+  /// parse of each transcript. Token estimates still round per message.
   Stream<ConversationTokenTotals> watchConversationTokens(
     String workspaceId,
     String spaceId,
@@ -142,6 +175,34 @@ class DaoMessagingRepository implements MessagingRepository {
         // reading it was already showing.
         .distinct();
   }
+
+  /// How many of the caller's recent text rows [watchUserPromptHistory] reads.
+  ///
+  /// Collapse drops empties, compacted rows and consecutive duplicates, so
+  /// the list the composer walks is at most this long — and a long thread
+  /// never ships its history to answer an up-arrow.
+  static const promptHistoryRowLimit = 64;
+
+  /// The caller's recent plain-text prompts, oldest first.
+  ///
+  /// NOT part of [MessagingRepository]. Server-only projection behind
+  /// `messaging.watchUserPromptHistory`: the composer recalls what this user
+  /// typed, and reading the conversation to find those rows re-sent every
+  /// message on every write.
+  Stream<List<String>> watchUserPromptHistory(
+    String workspaceId,
+    String spaceId,
+    String conversationId,
+    String userId,
+  ) => distinctRows(
+    _dao(workspaceId)
+        .watchRecentUserTexts(
+          conversationId,
+          userId,
+          limit: promptHistoryRowLimit,
+        )
+        .map((rows) => collapsePromptHistory(rows.reversed)),
+  );
 
   /// Per-space activity signals for [workspaceId], computed in SQL. NOT
   /// part of [MessagingRepository]: server-only projection behind
@@ -470,6 +531,24 @@ class DaoMessagingRepository implements MessagingRepository {
     messageType: messageType,
   );
 
+  /// Mid-turn transcript flush.
+  ///
+  /// [projectList] is false when the visible text did not change. The full
+  /// transcript and the meter counter are still written; the list projection
+  /// the feed watches is not, so a tool-only flush does not rebuild the chat.
+  Future<void> flushStreamingMessage(
+    String workspaceId,
+    String messageId, {
+    String? content,
+    required Map<String, dynamic> metadata,
+    required bool projectList,
+  }) => _dao(workspaceId).updateMessage(
+    messageId,
+    content: content,
+    metadata: metadata,
+    writeListMetadata: projectList,
+  );
+
   /// Idempotently resolves (minting when absent) the space's standing
   /// conversation id — exposed for callers that key a stream before their
   /// first message exists.
@@ -496,6 +575,251 @@ class DaoMessagingRepository implements MessagingRepository {
     return _mapper.messagesToDomain(rows);
   }
 
+  /// [DispatchReplyHints] for a send, without reading message bodies.
+  ///
+  /// [conversationId] defaults to the space's standing conversation, same as
+  /// [getMessages]. The previous message is the second-newest live row.
+  Future<DispatchReplyHints> dispatchReplyHints({
+    required String workspaceId,
+    required String spaceId,
+    String? conversationId,
+  }) async {
+    final convId =
+        conversationId ??
+        await _conversations(workspaceId).ensureStandingConversation(
+          workspaceId: workspaceId,
+          spaceId: spaceId,
+        );
+    final dao = _dao(workspaceId);
+    final kinds = await dao.recentLiveMessageKinds(convId);
+    final previous = kinds.length >= 2 ? kinds[1] : null;
+    final pending =
+        previous != null &&
+        previous.messageType == 'plan' &&
+        (previous.planStatus == null || previous.planStatus == 'pending');
+    return DispatchReplyHints(
+      previousIsPendingPlan: pending,
+      lastAgentSenderId: await dao.latestAgentSenderId(convId),
+    );
+  }
+
+  /// The plan a refinement should update: the newest still-pending plan, or
+  /// the newest plan of any status when none are pending.
+  ///
+  /// Scoped to the standing conversation, matching [getMessages] called
+  /// without a conversation id. One plan row is loaded, not the conversation.
+  Future<Message?> latestPlanMessage({
+    required String workspaceId,
+    required String spaceId,
+  }) async {
+    final convId = await _conversations(workspaceId).ensureStandingConversation(
+      workspaceId: workspaceId,
+      spaceId: spaceId,
+    );
+    final dao = _dao(workspaceId);
+    final id =
+        await dao.latestPlanMessageId(convId, pendingOnly: true) ??
+        await dao.latestPlanMessageId(convId);
+    if (id == null) {
+      return null;
+    }
+    return getMessageById(workspaceId, id);
+  }
+
+  /// History for an agent dispatch, without older transcript blobs.
+  ///
+  /// [characterBudget] is the verbatim window in Dart `content.length`, the
+  /// same check the prompt builder uses. Pages of [pageSize] walk back from
+  /// the newest live row until that budget is crossed. Summaries are a
+  /// separate read so a compacted span still stands in for the history the
+  /// tail no longer includes. The last agent turn is loaded on its own,
+  /// because the run digest needs that one transcript.
+  Future<ConversationContextHistory> dispatchContextHistory({
+    required String workspaceId,
+    required String spaceId,
+    String? conversationId,
+    required int characterBudget,
+    int pageSize = 48,
+  }) async {
+    final convId =
+        conversationId ??
+        await _conversations(workspaceId).ensureStandingConversation(
+          workspaceId: workspaceId,
+          spaceId: spaceId,
+        );
+    final dao = _dao(workspaceId);
+    final summaries = _mapper.messagesToDomain(
+      await dao.contextSummaries(convId),
+    );
+    final newestFirst = <Message>[];
+    var counted = 0;
+    var filled = false;
+    int? beforeSeconds;
+    int? beforeRowid;
+    while (!filled) {
+      final page = await dao.contextTailPage(
+        convId,
+        limit: pageSize,
+        beforeCreatedAtSeconds: beforeSeconds,
+        beforeRowid: beforeRowid,
+      );
+      if (page.isEmpty) {
+        break;
+      }
+      for (final row in page) {
+        final message = _mapper.messageToDomain(row.data);
+        newestFirst.add(message);
+        if (!messageCountsTowardContextBudget(message)) {
+          continue;
+        }
+        counted += message.content.length;
+        if (counted > characterBudget) {
+          filled = true;
+          break;
+        }
+      }
+      if (page.length < pageSize) {
+        break;
+      }
+      final oldest = page.last;
+      beforeSeconds = oldest.data.createdAt.millisecondsSinceEpoch ~/ 1000;
+      beforeRowid = oldest.rowid;
+    }
+    final turnId = await dao.latestContextAgentTurnId(convId);
+    final lastAgentTurn = turnId == null
+        ? null
+        : await getMessageById(workspaceId, turnId);
+    return ConversationContextHistory(
+      messages: newestFirst.reversed.toList(growable: false),
+      summaries: summaries,
+      lastAgentTurn: lastAgentTurn,
+    );
+  }
+
+  /// Queued steering cards, oldest delivery order first.
+  ///
+  /// Does not read other message types. [spaceId] is bound in SQL so a
+  /// conversation id from another space cannot leak into this one.
+  Future<List<Message>> queuedSteeringMessages({
+    required String workspaceId,
+    required String spaceId,
+    required String conversationId,
+  }) async {
+    final rows = await _dao(workspaceId).queuedSteeringMessages(
+      conversationId,
+      spaceId,
+    );
+    final queued = _mapper.messagesToDomain(rows)
+      ..sort((a, b) => a.steerOrder.compareTo(b.steerOrder));
+    return queued;
+  }
+
+  /// Text of the oldest live human message, for conversation titling.
+  ///
+  /// Null [conversationId] resolves the space's standing conversation, same
+  /// as [getMessages]. The read is one row of `content`.
+  Future<String?> firstHumanContent({
+    required String workspaceId,
+    required String spaceId,
+    String? conversationId,
+  }) async {
+    if (spaceId.isEmpty) {
+      return null;
+    }
+    final convId =
+        conversationId ??
+        await _conversations(workspaceId).ensureStandingConversation(
+          workspaceId: workspaceId,
+          spaceId: spaceId,
+        );
+    final content = await _dao(workspaceId).firstHumanContent(convId);
+    final trimmed = content?.trim();
+    if (trimmed == null || trimmed.isEmpty) {
+      return null;
+    }
+    return trimmed;
+  }
+
+  /// Newest live message text from [agentId] in [conversationId].
+  ///
+  /// One row of `content`. Null when that agent has not spoken.
+  Future<String?> latestAgentContent({
+    required String workspaceId,
+    required String conversationId,
+    required String agentId,
+  }) => _dao(workspaceId).latestAgentContent(conversationId, agentId);
+
+  /// Messages a side-channel prompt would render, newest window only.
+  ///
+  /// Pages of [pageSize] walk back from the newest live row until
+  /// [sideChannelLine] crosses [maxChars]. The crossing row is included so
+  /// the renderer still emits its omission marker. An agent turn with empty
+  /// content is loaded in full (its transcript is the body); every other row
+  /// stays on the list select, so older `segments` blobs are not read.
+  Future<List<Message>> sideChannelMessages({
+    required String workspaceId,
+    required String spaceId,
+    String? conversationId,
+    required int maxChars,
+    int pageSize = 32,
+  }) async {
+    final convId =
+        conversationId ??
+        await _conversations(workspaceId).ensureStandingConversation(
+          workspaceId: workspaceId,
+          spaceId: spaceId,
+        );
+    final dao = _dao(workspaceId);
+    final newestFirst = <Message>[];
+    var counted = 0;
+    int? beforeSeconds;
+    int? beforeRowid;
+    while (true) {
+      final page = await dao.sideChannelTailPage(
+        convId,
+        limit: pageSize,
+        beforeCreatedAtSeconds: beforeSeconds,
+        beforeRowid: beforeRowid,
+      );
+      if (page.isEmpty) {
+        break;
+      }
+      final litePage = [
+        for (final row in page) _mapper.messageToDomain(row.data),
+      ];
+      final upgradeIds = <String>[
+        for (final message in litePage)
+          if (message.isAgentTurn && message.content.trim().isEmpty)
+            message.id,
+      ];
+      final fullById = {
+        for (final row in await dao.messagesByIds(upgradeIds))
+          row.id: _mapper.messageToDomain(row),
+      };
+      var crossed = false;
+      for (final lite in litePage) {
+        final message = fullById[lite.id] ?? lite;
+        newestFirst.add(message);
+        final line = sideChannelLine(message);
+        if (line == null) {
+          continue;
+        }
+        if (counted + line.length > maxChars) {
+          crossed = true;
+          break;
+        }
+        counted += line.length;
+      }
+      if (crossed || page.length < pageSize) {
+        break;
+      }
+      final oldest = page.last;
+      beforeSeconds = oldest.data.createdAt.millisecondsSinceEpoch ~/ 1000;
+      beforeRowid = oldest.rowid;
+    }
+    return newestFirst.reversed.toList(growable: false);
+  }
+
   @override
   Future<List<Message>> getSpaceMessages(
     String workspaceId,
@@ -509,9 +833,9 @@ class DaoMessagingRepository implements MessagingRepository {
   Stream<List<Message>> watchSpaceMessages(
     String workspaceId,
     String spaceId,
-  ) => _dao(
-    workspaceId,
-  ).watchMessagesForSpace(spaceId).map(_mapper.messagesToDomain);
+  ) => _distinctRows(
+    _dao(workspaceId).watchMessagesForSpace(spaceId),
+  ).map(_mapper.messagesToDomain).distinct(_sameMessages);
 
   @override
   Future<List<Message>> searchInSpace(

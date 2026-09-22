@@ -36,7 +36,7 @@ class SpaceReposTable extends Table {
   /// only learns at run time (the entry is rendered before it is stored).
   ///
   /// It is the BASE, not the working branch: the worktree still gets its own
-  /// `conv/<space>` branch cut from here, so an agent's commits never land on
+  /// `space/<space>` branch cut from here, so an agent's commits never land on
   /// the branch it was told to start from.
   TextColumn get branch => text().nullable()();
 

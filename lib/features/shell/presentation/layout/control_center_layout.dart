@@ -130,33 +130,43 @@ class _ControlCenterLayoutState extends ConsumerState<ControlCenterLayout> {
                   const WebUpdateBanner(),
                   // Full-width top bar: sidebar toggle, back/forward,
                   // breadcrumb, notifications, focus.
-                  ShellTitleBar(
-                    canGoBack: navState.canGoBack,
-                    canGoForward: navState.canGoForward,
-                    onGoBack: historyNotifier.goBack,
-                    onGoForward: historyNotifier.goForward,
+                  // Each chrome region is its own layer so scrolling the
+                  // routed page does not repaint the bar or the sidebars,
+                  // and a sidebar hover does not repaint the page.
+                  RepaintBoundary(
+                    child: ShellTitleBar(
+                      canGoBack: navState.canGoBack,
+                      canGoForward: navState.canGoForward,
+                      onGoBack: historyNotifier.goBack,
+                      onGoForward: historyNotifier.goForward,
+                    ),
                   ),
                   Expanded(
                     child: Row(
                       children: [
                         // Primary navigation.
-                        AppSidebar(
-                          location: location,
-                          workspaceId: workspaceId,
+                        RepaintBoundary(
+                          child: AppSidebar(
+                            location: location,
+                            workspaceId: workspaceId,
+                          ),
                         ),
                         if (inSettings)
-                          CcSidebar(
-                            width: 240,
-                            header: const _SettingsSidebarHeader(),
-                            children: _buildSettingsGroups(
-                              context,
-                              location,
-                              workspaceId,
-                              needsIntegrationSetup: _integrationsNeedSetup(),
+                          RepaintBoundary(
+                            child: CcSidebar(
+                              width: 240,
+                              header: const _SettingsSidebarHeader(),
+                              children: _buildSettingsGroups(
+                                context,
+                                location,
+                                workspaceId,
+                                needsIntegrationSetup: _integrationsNeedSetup(),
+                              ),
                             ),
                           ),
-                        if (showSpacesSubSidebar) const SpacesSubSidebar(),
-                        Expanded(child: widget.child),
+                        if (showSpacesSubSidebar)
+                          const RepaintBoundary(child: SpacesSubSidebar()),
+                        Expanded(child: RepaintBoundary(child: widget.child)),
                       ],
                     ),
                   ),
@@ -234,7 +244,8 @@ class _ControlCenterLayoutState extends ConsumerState<ControlCenterLayout> {
           : location == route;
       // The only attention affordance: agents cannot reach a code host until a
       // forge connection exists and that is configured here.
-      final attention = needsIntegrationSetup && entry.id == 'workspace.profile';
+      final attention =
+          needsIntegrationSetup && entry.id == 'workspace.profile';
       return CcSidebarItem(
         icon: entry.icon,
         label: label,

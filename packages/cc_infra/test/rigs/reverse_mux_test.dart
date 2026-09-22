@@ -62,7 +62,7 @@ void main() {
     test('the guest script speaks the same frame layout as the host', () {
       expect(kRigReverseMuxScript, contains("pack('C N N'"));
       expect(kRigReverseMuxScript, contains('32768'));
-      expect(kRigReverseMuxScript, contains("127.0.0.1"));
+      expect(kRigReverseMuxScript, contains('127.0.0.1'));
       expect(kRigReverseMuxScript, contains('::1'));
     });
   });
@@ -91,7 +91,7 @@ void main() {
         '${Directory.systemTemp.path}/cc-revtun-${listen.port}.pl',
       );
       await script.writeAsString(kRigReverseMuxScript);
-      addTearDown(() => script.deleteSync());
+      addTearDown(script.deleteSync);
 
       final process = await Process.start('perl', [
         '-C0',

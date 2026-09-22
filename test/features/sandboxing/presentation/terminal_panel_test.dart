@@ -214,9 +214,9 @@ Widget _terminalWrap(Widget child, {RemoteRpcClient? rpcClient}) {
     child: MaterialApp(
       localizationsDelegates: [
         ...AppLocalizations.localizationsDelegates,
-        GlobalMaterialLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate, // ignore: deprecated_member_use
         GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate, // ignore: deprecated_member_use
       ],
       supportedLocales: AppLocalizations.supportedLocales,
       locale: const Locale('en'),

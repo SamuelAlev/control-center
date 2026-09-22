@@ -13,6 +13,25 @@ typedef RepoFileContentArgs = ({
   String? spaceId,
 });
 
+/// Reads [path] from the conversation worktree ([spaceId]) or the linked
+/// checkout. Diff gap expansion calls this at the click, so the bytes are the
+/// file on disk then, not a value cached when the diff was first loaded.
+Future<String> fetchRepoFileContent(
+  RemoteRpcClient client, {
+  required String workspaceId,
+  required String repoId,
+  required String path,
+  String? spaceId,
+}) async {
+  final data = await client.call('repos.readFile', {
+    'workspace_id': workspaceId,
+    'repo_id': repoId,
+    'path': path,
+    'space_id': ?spaceId,
+  });
+  return data['content'] as String? ?? '';
+}
+
 /// A file's decoded content + binary flag, read SERVER-SIDE from a linked repo
 /// checkout via the `repos.readFile` op (the SERVER owns the checkout; traversal
 /// outside the repo root is rejected there). Backs the IDE FileViewer tab.

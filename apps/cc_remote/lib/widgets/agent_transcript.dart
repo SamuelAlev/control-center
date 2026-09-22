@@ -10,7 +10,7 @@ import 'package:flutter/widgets.dart';
 /// reasoning, tool calls (with inputs/outputs), errors, sandbox violations and
 /// the answer text, all in the chronological order they were emitted, rather
 /// than collapsing the process and printing the answer separately at the end.
-/// Updates live as the host persists segments onto the message row.
+/// Updates live from the turn relay, not from the list row.
 ///
 /// Material-free (cc_ui only), so it renders on the phone PWA.
 class AgentTranscript extends StatefulWidget {
@@ -87,7 +87,12 @@ class _AgentTranscriptState extends State<AgentTranscript> {
     return switch (seg) {
       final ToolSegment s => _tool(t, s),
       final ReasoningSegment s => _reasoning(t, s),
-      final ErrorSegment s => _mono(t, s.message, t.dangerSoft, t.textErrorPrimary),
+      final ErrorSegment s => _mono(
+        t,
+        s.message,
+        t.dangerSoft,
+        t.textErrorPrimary,
+      ),
       final ViolationSegment s => _mono(
         t,
         s.target == null ? s.message : '${s.message}: ${s.target}',

@@ -803,11 +803,7 @@ class RigDomainRouter {
   /// [_muxPortOf] resolves an exec rig's mux forward. [_hostPortOf] resolves
   /// a host-shell source's published host port when there is no mux — the
   /// domain then dials that loopback address with no preamble.
-  RigDomainRouter({
-    required int? Function(String sourceId) muxPortOf,
-    int? Function(String sourceId, int guestPort)? hostPortOf,
-  }) : _muxPortOf = muxPortOf,
-       _hostPortOf = hostPortOf;
+  RigDomainRouter({required this._muxPortOf, this._hostPortOf});
 
   final int? Function(String sourceId) _muxPortOf;
   final int? Function(String sourceId, int guestPort)? _hostPortOf;

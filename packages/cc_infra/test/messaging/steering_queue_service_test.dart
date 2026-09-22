@@ -13,19 +13,25 @@ class _FakeMessagingRepo implements MessagingRepository {
   final List<Map<String, dynamic>> inserts = [];
   final List<String> deletes = [];
   int idSeq = 0;
+  bool scanThrows = false;
 
   @override
   Future<List<Message>> getMessages(
     String workspaceId,
     String spaceId, {
     String? conversationId,
-  }) async => messages
-      .where(
-        (m) =>
-            m.conversationId == (conversationId ?? 'conv') &&
-            m.spaceId == spaceId,
-      )
-      .toList();
+  }) async {
+    if (scanThrows) {
+      throw StateError('full scan');
+    }
+    return messages
+        .where(
+          (m) =>
+              m.conversationId == (conversationId ?? 'conv') &&
+              m.spaceId == spaceId,
+        )
+        .toList();
+  }
 
   @override
   Future<String> insertSteeringMessage({
@@ -104,6 +110,16 @@ class _FakeMessagingRepo implements MessagingRepository {
   ) async {
     deletes.add(messageId);
     messages.removeWhere((m) => m.id == messageId);
+  }
+
+  @override
+  Future<Message?> getMessageById(String workspaceId, String messageId) async {
+    for (final message in messages) {
+      if (message.id == messageId) {
+        return message;
+      }
+    }
+    return null;
   }
 
   @override
@@ -562,6 +578,44 @@ void main() {
       runLogs.active = [];
       await service.handleRunEnded('ws', 'conv', 'space');
       expect(dispatched, isEmpty);
+    });
+
+    test('fast queue lookup does not scan the conversation', () async {
+      messaging.scanThrows = true;
+      final fast = SteeringQueueService(
+        messagingRepository: messaging,
+        runLogRepository: runLogs,
+        dispatchResponder:
+            ({
+              required String workspaceId,
+              required String spaceId,
+              String? conversationId,
+              required String content,
+              String? senderUserId,
+            }) async {
+              dispatched.add(content);
+            },
+        sessionsForConversation: (conversationId) => const [],
+        queuedSteering:
+            ({
+              required String workspaceId,
+              required String spaceId,
+              required String conversationId,
+            }) async => messaging.messages
+                .where((m) => m.conversationId == conversationId)
+                .toList(),
+      );
+      await fast.enqueue(
+        workspaceId: 'ws',
+        spaceId: 'space',
+        conversationId: 'conv',
+        content: 'nudge',
+        senderUserId: 'user-1',
+      );
+      runLogs.active = [];
+      await fast.handleRunEnded('ws', 'conv', 'space');
+      expect(messaging.messages.single.messageType, MessageType.text);
+      expect(dispatched, ['nudge']);
     });
   });
 }

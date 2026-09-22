@@ -60,11 +60,8 @@ const double _timelineWidth = 56;
 
 /// A kalender tile that carries the originating domain [CalendarEvent].
 class _DomainTile extends k.KalenderEvent {
-  _DomainTile({
-    required super.start,
-    required super.end,
-    required this.event,
-  }) : super(isAllDay: event.isAllDay);
+  _DomainTile({required super.start, required super.end, required this.event})
+    : super(isAllDay: event.isAllDay);
 
   final CalendarEvent event;
 
@@ -221,11 +218,7 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
     if (!end.isAfter(start)) {
       end = start.add(const Duration(minutes: 30));
     }
-    return _DomainTile(
-      start: start,
-      end: end,
-      event: event,
-    );
+    return _DomainTile(start: start, end: end, event: event);
   }
 
   k.ViewConfiguration _buildConfiguration() {
@@ -796,6 +789,15 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
     k.KalenderDateTimeRange? tileRange,
   }) {
     final domain = event is _DomainTile ? event.event : null;
+    final isPast =
+        domain != null && domain.endTime.toLocal().isBefore(widget.now);
+    // Past tiles used to be wrapped in Opacity(0.5). That saveLayers every
+    // event on every frame the calendar paints. The same 50% folded into the
+    // tile's own colors keeps the dim and lets the grid scroll without an
+    // offscreen buffer per event.
+    Color dim(Color color) => isPast
+        ? color.withValues(alpha: (color.a * 0.5).clamp(0.0, 1.0))
+        : color;
     final status = domain?.status ?? CalendarEventStatus.confirmed;
     final cancelled = status == CalendarEventStatus.cancelled;
     // An invitation the user has not responded to yet ("needsAction"). Drawn as
@@ -817,12 +819,12 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
     // rather than painting every block the same: a soft fill in the calendar's
     // color for confirmed, a dashed outline for an unanswered invitation, an
     // outline for tentative, a neutral strikethrough for cancelled.
-    final Color fill;
+    Color fill;
     // The fill shown while the pointer is over the tile — a touch stronger than
     // [fill] so hovering gives a clear, consistent "this is interactive" cue.
-    final Color hoverFill;
-    final Color accentBar;
-    final Color titleColor;
+    Color hoverFill;
+    Color accentBar;
+    Color titleColor;
     BoxBorder? border;
     var dashed = false;
     if (cancelled) {
@@ -858,6 +860,16 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
       );
       accentBar = calColor;
       titleColor = t.textPrimary;
+    }
+    fill = dim(fill);
+    hoverFill = dim(hoverFill);
+    accentBar = dim(accentBar);
+    titleColor = dim(titleColor);
+    if (isPast && border != null) {
+      border = Border.all(
+        color: dim(calColor.withValues(alpha: 0.6)),
+        width: 1,
+      );
     }
 
     final title = Text(
@@ -904,7 +916,7 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
               if (startLabel != null) ...[
                 Text(
                   startLabel,
-                  style: TextStyle(fontSize: 11, color: t.textTertiary),
+                  style: TextStyle(fontSize: 11, color: dim(t.textTertiary)),
                 ),
                 const SizedBox(width: 4),
               ],
@@ -923,7 +935,7 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
                     rangeLabel,
                     style: TextStyle(
                       fontSize: 10,
-                      color: cancelled ? t.textTertiary : t.textSecondary,
+                      color: dim(cancelled ? t.textTertiary : t.textSecondary),
                     ),
                   ),
                 ),
@@ -966,7 +978,7 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
       // box. Drawn as a foreground painter so it sits above the clipped content.
       box = CustomPaint(
         foregroundPainter: _DashedRRectPainter(
-          color: calColor,
+          color: dim(calColor),
           radius: AppRadii.sm,
         ),
         child: box,
@@ -982,13 +994,7 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
       child: box,
     );
 
-    // A finished event is dimmed so attention falls on what is still ahead. Only
-    // fully-elapsed events fade — one in progress (end still in the future) stays
-    // at full strength. Re-evaluated on each rebuild rather than on a timer, so a
-    // tile that elapses mid-session fades on the next refresh.
-    final isPast =
-        domain != null && domain.endTime.toLocal().isBefore(widget.now);
-    return isPast ? Opacity(opacity: 0.5, child: tile) : tile;
+    return tile;
   }
 }
 

@@ -3221,6 +3221,16 @@ class AppLocalizationsCs extends AppLocalizations {
   String get editMessage => 'Upravit zprávu';
 
   @override
+  String get revertToThere => 'Vrátit se tam';
+
+  @override
+  String get sendAsNewMessage => 'Odeslat jako novou zprávu';
+
+  @override
+  String get editMessageChoiceBody =>
+      'Vrácení skryje zprávy za touto a vrátí soubory agenta. Můžete to vrátit zpět. Odeslání jako nové zprávy nechá konverzaci beze změny.';
+
+  @override
   String get deleteMessage => 'Smazat zprávu';
 
   @override
@@ -8685,6 +8695,11 @@ class AppLocalizationsCs extends AppLocalizations {
   String get ideReviewCode => 'Zkontrolovat kód';
 
   @override
+  String ideReviewCodeInRepo(String repo) {
+    return 'Zkontrolovat kód ($repo)';
+  }
+
+  @override
   String get ideRevertConfirmTitle => 'Vrátit změny';
 
   @override
@@ -10587,6 +10602,88 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get commitAndSync => 'Commit a synchronizace';
+
+  @override
+  String get scmSyncChanges => 'Synchronizovat změny';
+
+  @override
+  String get scmPublishBranch => 'Publikovat větev';
+
+  @override
+  String get scmSyncFailed => 'Synchronizace se nezdařila';
+
+  @override
+  String get scmSyncDirty =>
+      'Před synchronizací změny zacommitujte nebo zahoďte';
+
+  @override
+  String get scmSynced => 'Synchronizováno';
+
+  @override
+  String get scmSelectBranch => 'Vyberte větev k přepnutí';
+
+  @override
+  String get scmCreateBranch => 'Vytvořit novou větev…';
+
+  @override
+  String get scmCreateBranchFrom => 'Vytvořit novou větev z…';
+
+  @override
+  String get scmCheckoutDetached => 'Přepnout na oddělený HEAD…';
+
+  @override
+  String get scmBranchName => 'Název větve';
+
+  @override
+  String get scmCreateBranchTitle => 'Vytvořit větev';
+
+  @override
+  String scmFromRef(String ref) {
+    return 'Z ⁨$ref⁩';
+  }
+
+  @override
+  String get scmCheckoutFailed => 'Větev se nepodařilo přepnout';
+
+  @override
+  String get scmCheckoutDirty =>
+      'Před přepnutím větve změny uložte nebo zahoďte';
+
+  @override
+  String scmSwitchedToBranch(String branch) {
+    return 'Přepnuto na ⁨$branch⁩';
+  }
+
+  @override
+  String scmDetachedAt(String ref) {
+    return 'Odděleno na ⁨$ref⁩';
+  }
+
+  @override
+  String get scmDetachedHead => 'Oddělený HEAD';
+
+  @override
+  String get scmNoBranches => 'Žádné odpovídající větve';
+
+  @override
+  String get scmBranches => 'Větve';
+
+  @override
+  String get scmRemoteBranches => 'Vzdálené větve';
+
+  @override
+  String get scmTags => 'Štítky';
+
+  @override
+  String get scmPickStartPoint => 'Vyberte výchozí bod';
+
+  @override
+  String get scmSwitchBranch => 'Přepnout větev';
+
+  @override
+  String commitMessageOnBranch(String shortcut, String branch) {
+    return 'Zpráva ($shortcut pro commit na „$branch“)';
+  }
 
   @override
   String get committed => 'Commitnuto';

@@ -104,6 +104,19 @@ class ContextInspectionService {
     // reuses it), else the agent's global dir — the same fallback
     // `ensureSpaceWorkspace` returns when nothing is linked.
     final agentDir = await _filesystem.agentDir(workspaceId, slug);
+    // Dispatch heals the agent's skill links before it builds the prompt
+    // (`AgentDispatchService`). Do the same here, or the explorer reports the
+    // name list from `Agent.skills` while a run would have loaded each
+    // SKILL.md. A failure leaves whatever is already linked.
+    try {
+      await _filesystem.syncAgentSkillLinks(
+        workspaceId,
+        slug,
+        agent.skills.toList(),
+      );
+    } on Object {
+      // Best-effort, matching the dispatch heal.
+    }
     final spaceDir = await _filesystem.spaceDir(workspaceId, spaceId);
     final overlay = p.join(spaceDir, 'agents', slug);
     final workingDirectory = Directory(overlay).existsSync()

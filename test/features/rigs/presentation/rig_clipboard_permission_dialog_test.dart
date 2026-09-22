@@ -131,9 +131,9 @@ Widget _wrap(Widget child, AppPreferences preferences) => ProviderScope(
     key: ValueKey(child.runtimeType),
     localizationsDelegates: [
       ...AppLocalizations.localizationsDelegates,
-      GlobalMaterialLocalizations.delegate,
+      GlobalMaterialLocalizations.delegate, // ignore: deprecated_member_use
       GlobalWidgetsLocalizations.delegate,
-      GlobalCupertinoLocalizations.delegate,
+      GlobalCupertinoLocalizations.delegate, // ignore: deprecated_member_use
     ],
     supportedLocales: kSupportedAppLocales,
     locale: const Locale('en'),

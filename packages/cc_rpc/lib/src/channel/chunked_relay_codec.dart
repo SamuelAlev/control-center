@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:cc_rpc/src/channel/frame_codec.dart';
 import 'package:cc_rpc/src/crypto/relay_frame_crypto.dart';
+import 'package:isolate_manager/isolate_manager.dart';
 
 /// Direction of a relay transfer, for progress reporting.
 enum RelayTransferDirection {
@@ -113,6 +115,17 @@ class ChunkedRelaySession {
   /// the same id out of order.
   Future<void> _sendChain = Future.value();
 
+  /// Serializes delivery of reassembled frames. A large frame is opened and
+  /// decoded off this isolate; a later small frame must not be handed to
+  /// [_onFrame] first. Credit frames are not part of that order — they only
+  /// move the send window, and holding them behind a decode would stall the
+  /// sender.
+  Future<void> _orderChain = Future<void>.value();
+
+  /// Frames whose delivery is queued behind an off-isolate decode, including
+  /// that decode itself. Zero means a small frame can be delivered inline.
+  int _orderedPending = 0;
+
   /// Sends one JSON-RPC [frame], sealing and chunking as needed. Completes
   /// when every piece has been handed to the transport (which, under a full
   /// window, means after the receiver granted credits). Throws
@@ -130,7 +143,9 @@ class ChunkedRelaySession {
     if (_closed) {
       throw StateError('relay session is closed');
     }
-    final sealed = RelayFrameCrypto.seal(jsonEncode(frame), _psk);
+    // Large frames encode off this isolate; the send chain above still
+    // orders them. Small frames encode inline inside [encodeJsonFrame].
+    final sealed = RelayFrameCrypto.seal(await encodeJsonFrame(frame), _psk);
     if (sealed.length <= maxChunkChars) {
       await _acquireWindow(1);
       _chunksSent++;
@@ -264,35 +279,75 @@ class ChunkedRelaySession {
   }
 
   void _openAndDispatch(String sealed) {
-    final String clear;
-    try {
-      clear = RelayFrameCrypto.open(sealed, _psk);
-    } on RelayFrameAuthException {
-      // Never feed unauthenticated bytes to the RPC session.
+    if (_closed) {
       return;
     }
-    final Object? decoded;
-    try {
-      decoded = jsonDecode(clear);
-    } catch (_) {
+    // Sealed text is base64url of the plaintext, so this is a ceiling on the
+    // JSON size. Under it, opening and decoding inline is cheaper than an
+    // isolate hop — and it keeps credit frames synchronous, which the send
+    // window awaits.
+    if (sealed.length < _offloadSealedChars) {
+      final decoded = _decodeSealedFrame(sealed, _psk);
+      if (decoded == null) {
+        return;
+      }
+      if (_applyCredit(decoded)) {
+        return;
+      }
+      if (_orderedPending == 0) {
+        _onFrame(decoded);
+        return;
+      }
+      _enqueueOrdered(Future<Map<String, dynamic>?>.value(decoded));
       return;
     }
-    if (decoded is! Map<String, dynamic>) {
-      return;
-    }
+    // Started now, not inside the chain, so two large frames decode in
+    // parallel. The chain only orders [_onFrame]. The closure must not
+    // capture this session: it holds futures, which cannot cross an isolate.
+    final psk = _psk;
+    final pending = IsolateManager.run(() => _decodeSealedFrame(sealed, psk));
+    _enqueueOrdered(pending);
+  }
+
+  /// Queues [pending] behind whatever frame is already decoding. A failure,
+  /// including one thrown by [_onFrame], must not strand every later frame.
+  void _enqueueOrdered(Future<Map<String, dynamic>?> pending) {
+    _orderedPending++;
+    final step = _orderChain.then((_) async {
+      try {
+        if (_closed) {
+          return;
+        }
+        final decoded = await pending;
+        if (decoded == null || _closed) {
+          return;
+        }
+        if (_applyCredit(decoded)) {
+          return;
+        }
+        _onFrame(decoded);
+      } finally {
+        _orderedPending--;
+      }
+    });
+    _orderChain = step.catchError((Object _) {});
+  }
+
+  /// Applies a credit frame. Returns true when [decoded] was one.
+  bool _applyCredit(Map<String, dynamic> decoded) {
     final credit = decoded['__cc_credit'];
-    if (credit is int) {
-      if (credit > _chunksCredited) {
-        _chunksCredited = credit;
-      }
-      final wait = _windowWait;
-      if (wait != null && !wait.isCompleted) {
-        _windowWait = null;
-        wait.complete();
-      }
-      return;
+    if (credit is! int) {
+      return false;
     }
-    _onFrame(decoded);
+    if (credit > _chunksCredited) {
+      _chunksCredited = credit;
+    }
+    final wait = _windowWait;
+    if (wait != null && !wait.isCompleted) {
+      _windowWait = null;
+      wait.complete();
+    }
+    return true;
   }
 
   /// Releases waiters and refuses further work. Idempotent.
@@ -320,6 +375,37 @@ class RelayBackpressureStallException implements Exception {
   String toString() =>
       'RelayBackpressureStallException: relay peer granted no send credits '
       'within the stall timeout — closing the link.';
+}
+
+/// Sealed frames at least this long are opened and decoded off-isolate.
+///
+/// Base64url expands the plaintext by 4/3, so this lines up with
+/// [kIsolateDecodeThresholdChars] of JSON rather than with the sealed
+/// character count itself.
+const int _offloadSealedChars = (kIsolateDecodeThresholdChars * 4) ~/ 3;
+
+/// Opens and decodes one sealed relay frame.
+///
+/// Returns null for a failed tag, a truncated token, or a payload that is
+/// not a JSON object. Null is the isolate-friendly form of "drop it": an
+/// exception thrown inside [IsolateManager.run] would surface as a delivery
+/// failure instead of a skipped frame.
+Map<String, dynamic>? _decodeSealedFrame(String sealed, String psk) {
+  final String clear;
+  try {
+    clear = RelayFrameCrypto.open(sealed, psk);
+  } on RelayFrameAuthException {
+    return null;
+  }
+  try {
+    final decoded = jsonDecode(clear);
+    if (decoded is Map<String, dynamic>) {
+      return decoded;
+    }
+  } catch (_) {
+    return null;
+  }
+  return null;
 }
 
 class _Assembly {

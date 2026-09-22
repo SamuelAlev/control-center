@@ -47,11 +47,14 @@ class McpCallScope {
   /// Applies this scope to [args] for a tool whose input schema is [schema].
   ///
   /// Returns a new map; [args] is not mutated. Only argument names the schema
-  /// declares under `properties` are touched.
+  /// declares under `properties` are touched. Keys in [force] are overwritten
+  /// with the scope's value when the scope has one. Tools opt in per argument
+  /// (`forcedScopeKeys`) when the argument names this run rather than a target.
   Map<String, dynamic> apply(
     Map<String, dynamic> args,
-    Map<String, dynamic> schema,
-  ) {
+    Map<String, dynamic> schema, {
+    Set<String> force = const {},
+  }) {
     final props = schema['properties'];
     if (props is! Map<String, dynamic> || isEmpty) {
       return args;
@@ -69,7 +72,11 @@ class McpCallScope {
         return;
       }
       final existing = scoped[key];
-      if (existing == null || existing == '') {
+      // [force] is for arguments that name THIS run, not a target the model
+      // chooses. A question has to render in the space the human is watching;
+      // a model-supplied space id would park the form where nobody is looking
+      // and the call would sit out its timeout.
+      if (force.contains(key) || existing == null || existing == '') {
         scoped[key] = value;
       }
     }

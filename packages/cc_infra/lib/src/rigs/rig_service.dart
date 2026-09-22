@@ -1,3 +1,6 @@
+/// @docImport 'package:cc_infra/src/sandboxing/terminal_session_service.dart';
+library;
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io' show Process;
@@ -1604,7 +1607,6 @@ class RigService implements RigPort, RigPortsPort {
     return null;
   }
 
-
   @override
   Stream<Map<String, dynamic>> watchPorts(String workspaceId, String rigId) =>
       _ports.watch(workspaceId, rigId).map((s) => s.toWire());
@@ -1685,12 +1687,8 @@ class RigService implements RigPort, RigPortsPort {
     String sessionId, {
     required String spaceId,
     required int guestPort,
-  }) => _ports.removeForward(
-    workspaceId,
-    sessionId,
-    guestPort,
-    spaceId: spaceId,
-  );
+  }) =>
+      _ports.removeForward(workspaceId, sessionId, guestPort, spaceId: spaceId);
 
   @override
   Future<bool> setPortLanExposed(
@@ -1744,7 +1742,6 @@ class RigService implements RigPort, RigPortsPort {
       await _touch(live);
     }
   }
-
 
   Future<void> _boot(_LiveRig live) async {
     final rig = live.rig;
@@ -2129,8 +2126,7 @@ class RigService implements RigPort, RigPortsPort {
       rigId: live.rig.id,
       workspaceId: live.rig.workspaceId,
       conversationId: live.rig.conversationId,
-      reverse: ({required int devicePort, required int hostPort}) =>
-          adb.reverse(devicePort: devicePort, hostPort: hostPort),
+      reverse: adb.reverse,
       removeReverse: adb.removeReverse,
       removeAllReverses: adb.removeAllReverses,
     );

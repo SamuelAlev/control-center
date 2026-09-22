@@ -284,8 +284,8 @@ void main() {
 
   test('host-shell tree listeners stay in that session', () async {
     final guest = _FakeGuest();
-    var aListens = [const RigOpenPort(port: 5173, process: 'node')];
-    var bListens = [const RigOpenPort(port: 5173, process: 'node')];
+    final aListens = [const RigOpenPort(port: 5173, process: 'node')];
+    final bListens = [const RigOpenPort(port: 5173, process: 'node')];
     final service = RigPortsService(
       runInGuest: guest.run,
       startInGuest: guest.start,

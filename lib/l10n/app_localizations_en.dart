@@ -3185,6 +3185,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get editMessage => 'Edit message';
 
   @override
+  String get revertToThere => 'Revert to there';
+
+  @override
+  String get sendAsNewMessage => 'Send as a new message';
+
+  @override
+  String get editMessageChoiceBody =>
+      'Revert hides the messages after this one and rolls the agent\'s files back. You can undo that. Sending as a new message leaves the conversation as it is.';
+
+  @override
   String get deleteMessage => 'Delete message';
 
   @override
@@ -8565,6 +8575,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ideReviewCode => 'Review code';
 
   @override
+  String ideReviewCodeInRepo(String repo) {
+    return 'Review code ($repo)';
+  }
+
+  @override
   String get ideRevertConfirmTitle => 'Revert changes';
 
   @override
@@ -10456,6 +10471,87 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get commitAndSync => 'Commit & sync';
+
+  @override
+  String get scmSyncChanges => 'Sync changes';
+
+  @override
+  String get scmPublishBranch => 'Publish branch';
+
+  @override
+  String get scmSyncFailed => 'Sync failed';
+
+  @override
+  String get scmSyncDirty => 'Commit or discard changes before syncing';
+
+  @override
+  String get scmSynced => 'Synced';
+
+  @override
+  String get scmSelectBranch => 'Select a branch to checkout';
+
+  @override
+  String get scmCreateBranch => 'Create new branch…';
+
+  @override
+  String get scmCreateBranchFrom => 'Create new branch from…';
+
+  @override
+  String get scmCheckoutDetached => 'Checkout detached…';
+
+  @override
+  String get scmBranchName => 'Branch name';
+
+  @override
+  String get scmCreateBranchTitle => 'Create branch';
+
+  @override
+  String scmFromRef(String ref) {
+    return 'From ⁨$ref⁩';
+  }
+
+  @override
+  String get scmCheckoutFailed => 'Couldn\'t switch branches';
+
+  @override
+  String get scmCheckoutDirty =>
+      'Commit or discard changes before switching branches';
+
+  @override
+  String scmSwitchedToBranch(String branch) {
+    return 'Switched to ⁨$branch⁩';
+  }
+
+  @override
+  String scmDetachedAt(String ref) {
+    return 'Detached at ⁨$ref⁩';
+  }
+
+  @override
+  String get scmDetachedHead => 'Detached HEAD';
+
+  @override
+  String get scmNoBranches => 'No matching branches';
+
+  @override
+  String get scmBranches => 'Branches';
+
+  @override
+  String get scmRemoteBranches => 'Remote branches';
+
+  @override
+  String get scmTags => 'Tags';
+
+  @override
+  String get scmPickStartPoint => 'Select a start point';
+
+  @override
+  String get scmSwitchBranch => 'Switch branch';
+
+  @override
+  String commitMessageOnBranch(String shortcut, String branch) {
+    return 'Message ($shortcut to commit on “$branch”)';
+  }
 
   @override
   String get committed => 'Committed';

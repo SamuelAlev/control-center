@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:cc_domain/core/domain/entities/workspace.dart';
-import 'package:cc_domain/core/domain/value_objects/github_auth_mode.dart';
 import 'package:cc_persistence/database/global/global_database.dart';
 
 /// Maps database rows to [Workspace] domain entities.

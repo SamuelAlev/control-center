@@ -166,6 +166,46 @@ void main() {
       );
       expect(find.text('No matches'), findsOneWidget);
     });
+
+    testWidgets('a long hit list mounts rows through a builder', (
+      tester,
+    ) async {
+      final outputs = List.generate(
+        80,
+        (i) => 'lib/a.dart:${i + 1}: hit $i',
+      ).join('\n');
+      await tester.pumpWidget(
+        testWrap(
+          GrepResultBody(
+            outputs: outputs,
+            codeFont: 'monospace',
+            tokens: tokens,
+          ),
+        ),
+      );
+      expect(find.byType(ListView), findsOneWidget);
+      expect(find.textContaining('hit 0'), findsOneWidget);
+      expect(find.textContaining('hit 79'), findsNothing);
+    });
+
+    testWidgets('many files mount through a builder', (tester) async {
+      final outputs = List.generate(
+        80,
+        (i) => 'lib/file_$i.dart:1: only',
+      ).join('\n');
+      await tester.pumpWidget(
+        testWrap(
+          GrepResultBody(
+            outputs: outputs,
+            codeFont: 'monospace',
+            tokens: tokens,
+          ),
+        ),
+      );
+      expect(find.byType(ListView), findsOneWidget);
+      expect(find.text('lib/file_0.dart'), findsOneWidget);
+      expect(find.text('lib/file_79.dart'), findsNothing);
+    });
   });
 
   group('applyIntralineBackground', () {
@@ -329,6 +369,18 @@ void main() {
       // Gutter shows the original starting line number.
       expect(find.text('10'), findsOneWidget);
       expect(find.text('11'), findsOneWidget);
+    });
+
+    testWidgets('a long file mounts gutter rows through a builder', (
+      tester,
+    ) async {
+      final code = List.generate(200, (i) => 'preview line $i').join('\n');
+      await tester.pumpWidget(
+        _host(CodePreview(code: code, codeFont: 'monospace', tokens: tokens)),
+      );
+      expect(find.byType(ListView), findsOneWidget);
+      expect(find.textContaining('preview line 0'), findsOneWidget);
+      expect(find.textContaining('preview line 199'), findsNothing);
     });
   });
 

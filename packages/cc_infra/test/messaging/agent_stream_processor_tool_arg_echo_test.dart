@@ -175,10 +175,69 @@ void main() {
       expect(repo.lastContent, 'All done.');
     });
   });
+
+  test('a tool-only flush leaves the list projection', () async {
+    final projected = <bool>[];
+    final contents = <String?>[];
+    final localRegistry = ActiveStreamRegistry();
+    final localEvents = StreamController<AgentProcessEvent>();
+    addTearDown(localEvents.close);
+    final local = AgentStreamProcessor(
+      agentDispatchService: FakeAgentDispatchService(),
+      repo: repo,
+      streamRegistry: localRegistry,
+      flushMessage:
+          (
+            String workspaceId,
+            String messageId, {
+            String? content,
+            required Map<String, dynamic> metadata,
+            required bool projectList,
+          }) async {
+            projected.add(projectList);
+            contents.add(content);
+          },
+    );
+    const id = 'msg-flush';
+    localRegistry.register(id, spaceId: 'chan-1');
+    local.processStream(
+      workspaceId: 'ws-1',
+      stream: localEvents.stream,
+      dispatchResult: AgentDispatchResult(
+        stream: const Stream.empty(),
+        dispatchId: 'dispatch-flush',
+        runLog: AgentRunLog(
+          id: 'run-flush',
+          workspaceId: 'ws-1',
+          agentId: 'agent-1',
+          status: RunStatus.running,
+          startedAt: DateTime.utc(2026, 7, 25),
+        ),
+      ),
+      spaceId: 'chan-1',
+      agentId: 'agent-1',
+      agentName: 'ceo',
+      messageId: id,
+    );
+    localEvents.add(TextEvent(content: 'hello'));
+    await Future<void>.delayed(const Duration(milliseconds: 500));
+    localEvents.add(
+      ToolCallEvent(
+        toolName: 'read',
+        toolCallId: 'call_flush',
+        inputs: {'path': 'lib/main.dart'},
+      ),
+    );
+    await Future<void>.delayed(const Duration(milliseconds: 500));
+    expect(projected, [true, false]);
+    expect(contents, ['hello', null]);
+    expect(repo.updates, 0);
+  });
 }
 
 class FakeMessagingRepository implements MessagingRepository {
   String? lastContent;
+  int updates = 0;
 
   @override
   Future<void> updateMessage(
@@ -189,6 +248,7 @@ class FakeMessagingRepository implements MessagingRepository {
     Map<String, dynamic>? metadata,
     String? idempotencyKey,
   }) async {
+    updates++;
     lastContent = content;
   }
 

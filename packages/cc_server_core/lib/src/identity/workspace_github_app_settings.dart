@@ -1,6 +1,5 @@
 import 'package:cc_domain/cc_domain.dart' show AuthException;
 import 'package:cc_domain/core/domain/entities/workspace.dart';
-import 'package:cc_domain/core/domain/value_objects/github_auth_mode.dart';
 import 'package:cc_infra/cc_infra.dart' show GitHubAppClient;
 import 'package:cc_server_core/src/file_secrets_store.dart';
 import 'package:cc_server_core/src/identity/provider_app_settings.dart';
@@ -8,7 +7,7 @@ import 'package:cc_server_core/src/identity/provider_app_settings.dart';
 /// Per-workspace GitHub App identity (act-as-server + optional sign-in).
 ///
 /// Secrets live in [FileSecretsStore], never in `workspace.db` — exporting a
-/// workspace must not leak a private key. [workspaces.github_app_id] on the
+/// workspace must not leak a private key. `workspaces.github_app_id` on the
 /// registry row is the non-secret id; the PEM and OAuth secret stay here.
 ///
 /// [GithubAuthMode.inherit] workspaces share the install App. [GithubAuthMode.pat]
@@ -17,13 +16,10 @@ import 'package:cc_server_core/src/identity/provider_app_settings.dart';
 class WorkspaceGitHubAppSettings {
   /// Creates a [WorkspaceGitHubAppSettings].
   WorkspaceGitHubAppSettings({
-    required FileSecretsStore secrets,
-    required ProviderAppSettings install,
-    GitHubAppClient Function({required String appId, required String pem})?
-    githubAppFactory,
-  }) : _secrets = secrets,
-       _install = install,
-       _githubAppFactory = githubAppFactory;
+    required this._secrets,
+    required this._install,
+    this._githubAppFactory,
+  });
 
   final FileSecretsStore _secrets;
   final ProviderAppSettings _install;
@@ -100,8 +96,7 @@ class WorkspaceGitHubAppSettings {
         return null;
       case GithubAuthMode.app:
         final clientId =
-            (await _secrets.readPsk(clientIdSecret(workspace.id)) ?? '')
-                .trim();
+            (await _secrets.readPsk(clientIdSecret(workspace.id)) ?? '').trim();
         if (clientId.isEmpty) {
           return null;
         }
@@ -111,7 +106,7 @@ class WorkspaceGitHubAppSettings {
     }
   }
 
-  /// Background PAT for [workspace], or null.
+  /// Background PAT for [workspaceId], or null.
   Future<String?> backgroundPat(String workspaceId) async {
     final raw = await _secrets.readPsk(backgroundPatSecret(workspaceId));
     if (raw == null || raw.trim().isEmpty) {
@@ -174,10 +169,8 @@ class WorkspaceGitHubAppSettings {
     final appId = workspace.githubAuthMode == GithubAuthMode.app
         ? workspace.githubAppId
         : '';
-    final pem =
-        await _secrets.readPsk(privateKeySecret(workspace.id)) ?? '';
-    final clientId =
-        await _secrets.readPsk(clientIdSecret(workspace.id)) ?? '';
+    final pem = await _secrets.readPsk(privateKeySecret(workspace.id)) ?? '';
+    final clientId = await _secrets.readPsk(clientIdSecret(workspace.id)) ?? '';
     var installations = const <Map<String, Object?>>[];
     var error = '';
     var botLogin = '';
@@ -223,8 +216,8 @@ class WorkspaceGitHubAppSettings {
 
   Future<GitHubAppClient?> _workspaceClient(Workspace workspace) async {
     final appId = workspace.githubAppId.trim();
-    final pem =
-        (await _secrets.readPsk(privateKeySecret(workspace.id)) ?? '').trim();
+    final pem = (await _secrets.readPsk(privateKeySecret(workspace.id)) ?? '')
+        .trim();
     if (appId.isEmpty || pem.isEmpty) {
       return null;
     }

@@ -352,7 +352,7 @@ void main() {
         fallbackDir: '/agent/dir',
       );
 
-      // The branch is the PR's, not a `conv/<id>` scratch branch — the agent
+      // The branch is the PR's, not a `space/<id>` scratch branch — the agent
       // has to be able to commit and push the pull request it is reviewing.
       expect(isolation.provisions.single.branch, 'pr/42');
     });
@@ -538,13 +538,13 @@ void main() {
             '${tempDir.path}/w-1/spaces/ch-12345678/repos',
           );
           expect(isolation.provisions.first.name, 'repo');
-          // Without ticket key/title, branch defaults to conv/<short-space>
-          expect(isolation.provisions.first.branch, 'conv/ch-12345');
+          // Without ticket key/title, branch defaults to space/<short-space>
+          expect(isolation.provisions.first.branch, 'space/ch-12345');
           expect(registry.rows, hasLength(1));
           expect(registry.rows.first.workspaceId, 'w-1');
           expect(registry.rows.first.spaceId, 'ch-12345678');
           expect(registry.rows.first.repoId, 'r-1');
-          expect(registry.rows.first.branch, 'conv/ch-12345');
+          expect(registry.rows.first.branch, 'space/ch-12345');
           expect(registry.rows.first.backend, RepoIsolationBackend.rift);
           expect(registry.rows.first.sourcePath, repo.path);
         } finally {
@@ -899,7 +899,7 @@ void main() {
                 spaceId: 'ch',
                 repoId: 'r-1',
                 path: worktreePath,
-                branch: 'conv/ch',
+                branch: 'space/ch',
                 backend: RepoIsolationBackend.rift,
                 sourcePath: '/tmp/test-repo',
                 createdAt: DateTime(2026),
@@ -1388,7 +1388,7 @@ void main() {
           fallbackDir: '/fallback',
         );
 
-        expect(isolation.provisions.first.branch, 'conv/12345678');
+        expect(isolation.provisions.first.branch, 'space/12345678');
       } finally {
         tempDir.deleteSync(recursive: true);
       }
@@ -1616,7 +1616,7 @@ void main() {
             spaceId: 'ch',
             repoId: 'r-1',
             path: legacy.path,
-            branch: 'conv/ch',
+            branch: 'space/ch',
             backend: RepoIsolationBackend.rift,
             sourcePath: '/tmp/test-repo',
             createdAt: DateTime(2026),

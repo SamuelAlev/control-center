@@ -1,3 +1,6 @@
+/// @docImport 'package:cc_persistence/database/workspace/workspace_database.dart';
+library;
+
 import 'package:cc_persistence/database/daos/fleet_dao.dart';
 import 'package:cc_persistence/database/daos/managed_action_policy_dao.dart';
 import 'package:cc_persistence/database/daos/paired_device_dao.dart';
@@ -191,6 +194,18 @@ class GlobalDatabase extends _$GlobalDatabase {
       // two writers still contend and without this a scheduler tick can abort a
       // user write outright.
       await customStatement('PRAGMA busy_timeout = 5000');
+      // WAL + synchronous=NORMAL. FULL fsyncs every commit, and a burst of
+      // small writes (identity, fleet, routing) pays that on the interaction
+      // path. NORMAL syncs at checkpoint time: an app crash does not lose
+      // committed transactions, a power loss can lose the ones not yet
+      // checkpointed. That is the setting SQLite recommends for WAL.
+      // temp_store=MEMORY keeps sorts and transient indexes off disk.
+      // mmap_size caps how much of the file can be faulted into RAM. Those
+      // pages stay resident while the connection is open; 8MB matches the
+      // page cache so this file cannot also pin a 64MB window.
+      await customStatement('PRAGMA synchronous = NORMAL');
+      await customStatement('PRAGMA temp_store = MEMORY');
+      await customStatement('PRAGMA mmap_size = 8388608');
       // Cap the per-connection page cache at 8MB (negative = KiB units).
       await customStatement('PRAGMA cache_size = -8192');
       // Bound the WAL file so a long-running server doesn't accumulate an

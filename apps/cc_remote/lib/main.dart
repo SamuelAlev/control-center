@@ -31,6 +31,12 @@ Future<void> main() async {
   // language, last workspace). Resolve the singleton once before runApp so the
   // appearance notifiers can read/write it synchronously.
   WidgetsFlutterBinding.ensureInitialized();
+  // Same decoded-image budget as the desktop and web apps. The phone client
+  // shows the same avatars and thumbnails, and the engine default (1000
+  // images / 100MB) would keep them for the life of the tab.
+  PaintingBinding.instance.imageCache
+    ..maximumSize = 400
+    ..maximumSizeBytes = 32 << 20;
   // Hand right-click / long-press to the app: Flutter web enables the browser's
   // own context menu by default, which also makes the engine suppress Flutter's
   // selection toolbars (so selected text has no copy affordance).

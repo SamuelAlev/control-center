@@ -333,7 +333,10 @@ class RiftRepoIsolationAdapter implements RepoIsolationPort {
   /// worktree, and tearing it down from inside a create is not this layer's
   /// call — the caller reaps an orphaned directory before provisioning.
   /// Returns whether the path is now free.
-  Future<bool> _pruneStaleRegistryEntry(String destParentDir, String name) async {
+  Future<bool> _pruneStaleRegistryEntry(
+    String destParentDir,
+    String name,
+  ) async {
     final destPath = p.join(destParentDir, name);
     if (Directory(destPath).existsSync()) {
       return false;
@@ -351,7 +354,9 @@ class RiftRepoIsolationAdapter implements RepoIsolationPort {
         return false;
       }
     } on Object catch (e) {
-      CcInfraLog.warning('could not release the stale rift entry $destPath: $e');
+      CcInfraLog.warning(
+        'could not release the stale rift entry $destPath: $e',
+      );
       return false;
     }
     try {
@@ -757,7 +762,7 @@ class RiftRepoIsolationAdapter implements RepoIsolationPort {
   /// still provisions that way: rows minted by the fallback this class used to
   /// have are still on disk and in the registry, and their teardown is what
   /// REMOVES the worktree registration and branch from the user's repo. Losing
-  /// it would strand that state — `.git/worktrees/<name>` entries and `conv/*`
+  /// it would strand that state — `.git/worktrees/<name>` entries and `space/*`
   /// branches — in the checkout for good.
   @override
   Future<void> destroy({
@@ -966,7 +971,7 @@ class RiftRepoIsolationAdapter implements RepoIsolationPort {
 
   /// A filesystem-safe, collision-resistant folder name for one capture,
   /// derived from the working [branch] (or `worktree` when absent). Slashes
-  /// are flattened: a branch like `conv/abc` must not become a nested path
+  /// are flattened: a branch like `space/abc` must not become a nested path
   /// under the rescue root.
   String _rescueFolderName(String? branch) {
     final base = (branch == null || branch.isEmpty)

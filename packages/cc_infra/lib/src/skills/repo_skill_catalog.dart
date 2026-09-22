@@ -46,16 +46,17 @@ class RepoSkillEntry {
 /// What every repo in a space ships, behind the supply-chain scan gate.
 ///
 /// Shared by the two things that need it and must never disagree: the projector
-/// that materializes ONE repo's skills for the agent, and the RPC that lists
-/// ALL of them for the composer's slash palette. If they used separate gates,
-/// the palette could offer a name the server then refuses to load — the exact
-/// failure mode the workspace skills already had.
+/// that links every repo's skills into the overlay, and the RPC that lists them
+/// for the composer's slash palette. If they used separate gates, the palette
+/// could offer a name the server then refuses to load — the exact failure mode
+/// the workspace skills already had.
 ///
-/// The asymmetry between the two is deliberate. An agent gets only the repo it
-/// is working in, because an always-present index costs context on every turn
-/// and a sibling service's `testing` skill is actively misleading. A human
-/// naming a skill is an explicit act with no such cost, so the composer reaches
-/// any repo — qualified by repo name when it needs disambiguating.
+/// The active repo decides whose root instructions are inlined, not which
+/// skills exist: Claude Code's Skill tool only sees `.claude/skills` in the
+/// working directory, so a skill left under `repos/<name>/` is unreachable. A
+/// slug two repos both ship is linked under a repo-qualified name, so the bare
+/// name cannot run the wrong repository's instructions. A human naming a skill
+/// reaches any repo the same way.
 class RepoSkillCatalog {
   /// Creates a [RepoSkillCatalog].
   ///
@@ -128,6 +129,27 @@ class RepoSkillCatalog {
   /// [repo]'s admitted skills.
   Future<List<RepoSkillEntry>> forRepo(String repo) async =>
       (await inspect(repo)).admitted;
+
+  /// Whether more than one admitted skill matches [name].
+  ///
+  /// A qualified `<repo>:<skill>` names one repo, so it is never ambiguous. A
+  /// bare name is ambiguous when two repositories each ship it — those are
+  /// different instructions, and a caller must not pick one.
+  Future<bool> isAmbiguous(String name) async {
+    if (name.indexOf(':') > 0) {
+      return false;
+    }
+    var matches = 0;
+    for (final entry in await listAll()) {
+      if (entry.name == name || entry.slug == name) {
+        matches++;
+        if (matches > 1) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
 
   /// Resolves a name to one skill, or null.
   ///

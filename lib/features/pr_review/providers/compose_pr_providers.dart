@@ -39,7 +39,7 @@ final repoBranchesProvider = FutureProvider.autoDispose<List<String>>((
 ///
 /// This is the compare-branch candidate that [repoBranchesProvider] structurally
 /// cannot know about: a conversation worktree is created with a local
-/// `git checkout -b conv/<id>` and is never pushed, so GitHub's `refs/heads/*`
+/// `git checkout -b space/<id>` and is never pushed, so GitHub's `refs/heads/*`
 /// listing does not contain it. Composing a PR from a chat therefore ended at
 /// two empty pickers and a permanently disabled submit button.
 final worktreeBranchProvider = FutureProvider.autoDispose

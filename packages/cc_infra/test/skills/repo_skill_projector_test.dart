@@ -78,7 +78,7 @@ void main() {
       ..sort();
   }
 
-  test('projects only the active repo', () async {
+  test('projects every repo, not only the active one', () async {
     writeSkill('web-app', '.agents/skills', 'forms');
     writeSkill('web-app', '.agents/skills', 'routing');
     writeSkill('api', '.agents/skills', 'migrations');
@@ -88,13 +88,32 @@ void main() {
     expect(result.repo, 'web-app');
     expect(result.skills.map((s) => s.name).toList()..sort(), [
       'forms',
+      'migrations',
       'routing',
     ]);
-    expect(linkedSlugs('.claude/skills'), ['forms', 'routing']);
+    expect(linkedSlugs('.claude/skills'), ['forms', 'migrations', 'routing']);
     expect(linkedSlugs('.opencode/skills'), isEmpty);
   });
 
-  test('a swap removes the previous repo entirely', () async {
+  test('a shared slug is qualified and a unique one stays bare', () async {
+    writeSkill('app-server', '.agents/skills', 'rest-endpoints');
+    writeSkill('app-server', '.agents/skills', 'testing');
+    writeSkill('web-app', '.agents/skills', 'forms');
+    writeSkill('web-app', '.agents/skills', 'testing');
+
+    await projector(_FakeScanner()).project('web-app');
+
+    String qualified(String repo, String slug) =>
+        repoSkillInvocationName(repo: repo, slug: slug, shared: true);
+    expect(linkedSlugs('.claude/skills'), [
+      qualified('app-server', 'testing'),
+      'forms',
+      'rest-endpoints',
+      qualified('web-app', 'testing'),
+    ]);
+  });
+
+  test('a swap keeps every repo linked and moves the active one', () async {
     writeSkill('web-app', '.agents/skills', 'forms');
     writeSkill('api', '.agents/skills', 'migrations');
 
@@ -102,22 +121,23 @@ void main() {
     await proj.project('web-app');
     final second = await proj.project('api');
 
-    expect(second.skills.map((s) => s.name), ['migrations']);
-    expect(linkedSlugs('.claude/skills'), [
+    expect(second.skills.map((s) => s.name).toList()..sort(), [
+      'forms',
       'migrations',
-    ], reason: 'the previous repo must not linger');
+    ]);
+    expect(linkedSlugs('.claude/skills'), ['forms', 'migrations']);
     expect(proj.projectedRepo, 'api');
   });
 
-  test('a null active repo clears the projection', () async {
+  test('a null active repo keeps the skills and names no repository', () async {
     writeSkill('web-app', '.agents/skills', 'forms');
     final proj = projector(_FakeScanner());
     await proj.project('web-app');
 
     final cleared = await proj.project(null);
-    expect(cleared.skills, isEmpty);
+    expect(cleared.skills.map((s) => s.name), ['forms']);
     expect(cleared.repo, isNull);
-    expect(linkedSlugs('.claude/skills'), isEmpty);
+    expect(linkedSlugs('.claude/skills'), ['forms']);
     expect(proj.projectedRepo, isNull);
   });
 
@@ -178,8 +198,8 @@ void main() {
     await proj.project('web-app');
 
     expect(scanner.scanned, [
-      'forms',
       'migrations',
+      'forms',
     ], reason: 'unchanged files must not be re-scanned on every switch');
   });
 
@@ -191,14 +211,15 @@ void main() {
     expect(Directory(p.join(overlay, '.agents')).existsSync(), isFalse);
   });
 
-  test('a missing worktree clears rather than throwing', () async {
+  test('an unknown active repo does not drop the others', () async {
     writeSkill('web-app', '.agents/skills', 'forms');
     final proj = projector(_FakeScanner());
     await proj.project('web-app');
 
     final result = await proj.project('does-not-exist');
-    expect(result.skills, isEmpty);
-    expect(linkedSlugs('.claude/skills'), isEmpty);
+    expect(result.repo, isNull);
+    expect(result.skills.map((s) => s.name), ['forms']);
+    expect(linkedSlugs('.claude/skills'), ['forms']);
   });
 
   test('discovers .claude/skills as well as .agents/skills', () async {
@@ -284,8 +305,12 @@ void main() {
 
       final text = overlayAgentsMd();
       expect(text, contains('Active repository: api'));
-      expect(text, isNot(contains('web-app')));
-      expect(text, isNot(contains('forms')));
+      expect(text, isNot(contains('Active repository: web-app')));
+      expect(
+        '- forms — does forms'.allMatches(text).length,
+        1,
+        reason: 'the other repo\'s skill stays listed, once',
+      );
       expect(
         'Agent profile body.'.allMatches(text).length,
         1,
@@ -302,6 +327,7 @@ void main() {
       final text = overlayAgentsMd();
       expect(text, contains('Agent profile body.'));
       expect(text, isNot(contains('Active repository')));
+      expect(text, contains('forms'));
     });
 
     test(

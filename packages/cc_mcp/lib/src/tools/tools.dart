@@ -6,6 +6,7 @@ export 'add_review_diagram_tool.dart';
 export 'add_review_node_tool.dart';
 export 'artifact_tools.dart';
 export 'ask_agent_tool.dart';
+export 'ask_user_tool.dart';
 export 'code_graph_tools.dart';
 export 'confirm_review_node_tool.dart';
 export 'consolidate_memory_tool.dart';

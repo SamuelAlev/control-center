@@ -48,28 +48,71 @@ Future<String> encodeJsonFrame(Map<String, dynamic> frame) async {
   return IsolateManager.run(() => jsonEncode(frame));
 }
 
-/// Cheap "is this frame big?" probe: sums the length of top-level String
-/// values, which is where a large frame's bytes actually are (a document
-/// body, a diff, a base64 blob). Nested structures are not walked — the point
-/// is to spend O(top-level fields), not O(payload), deciding.
+/// Whether [encodeJsonFrame] will leave this isolate to encode [frame].
+///
+/// Exposed for tests. Production call sites should use [encodeJsonFrame].
+bool frameLooksLarge(Map<String, dynamic> frame) => _looksLarge(frame);
+
+/// Cheap "is this frame big?" probe.
+///
+/// Maps are walked, because a request only has a handful of objects
+/// (`params`, `args`, a snapshot's `data`). Lists are not: a `sub/snapshot`
+/// is a list of row maps, and visiting every row is most of the cost of
+/// encoding it. A few rows are sampled and scaled by the list length, which
+/// is enough to tell a short list from one that belongs off this isolate.
+/// [String.length] is constant-time, so the probe never copies payload bytes.
 bool _looksLarge(Map<String, dynamic> frame) {
   var chars = 0;
   for (final value in frame.values) {
-    if (value is String) {
-      chars += value.length;
-      if (chars >= kIsolateEncodeThresholdChars) {
-        return true;
-      }
-    } else if (value is Map) {
-      for (final nested in value.values) {
-        if (nested is String) {
-          chars += nested.length;
-          if (chars >= kIsolateEncodeThresholdChars) {
-            return true;
-          }
-        }
-      }
+    chars += _probeChars(value, 0);
+    if (chars >= kIsolateEncodeThresholdChars) {
+      return true;
     }
   }
   return false;
+}
+
+int _probeChars(Object? value, int depth) {
+  if (value is String) {
+    return value.length;
+  }
+  if (value is List) {
+    return _sampledListChars(value, depth);
+  }
+  if (value is! Map) {
+    return 0;
+  }
+  var chars = 0;
+  for (final nested in value.values) {
+    chars += depth >= 8
+        ? (nested is String ? nested.length : 0)
+        : _probeChars(nested, depth + 1);
+    if (chars >= kIsolateEncodeThresholdChars) {
+      return chars;
+    }
+  }
+  return chars;
+}
+
+int _sampledListChars(List<dynamic> items, int depth) {
+  final length = items.length;
+  if (length == 0) {
+    return 0;
+  }
+  final indexes = <int>{
+    0,
+    length ~/ 4,
+    length ~/ 2,
+    (length * 3) ~/ 4,
+    length - 1,
+  };
+  var sample = 0;
+  for (final index in indexes) {
+    final item = _probeChars(items[index], depth + 1);
+    if (item >= kIsolateEncodeThresholdChars) {
+      return item;
+    }
+    sample += item;
+  }
+  return (sample / indexes.length * length).ceil();
 }

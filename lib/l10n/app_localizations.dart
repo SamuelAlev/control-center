@@ -5604,11 +5604,29 @@ abstract class AppLocalizations {
   /// **'edited'**
   String get edited;
 
-  /// Title of the dialog for editing a chat message
+  /// Banner shown in the composer while a sent message is loaded back into it for editing
   ///
   /// In en, this message translates to:
   /// **'Edit message'**
   String get editMessage;
+
+  /// Choice when sending an edited earlier message: hide everything after it and roll the agent's files back
+  ///
+  /// In en, this message translates to:
+  /// **'Revert to there'**
+  String get revertToThere;
+
+  /// Choice when sending an edited earlier message: keep the conversation and send the text as a new message
+  ///
+  /// In en, this message translates to:
+  /// **'Send as a new message'**
+  String get sendAsNewMessage;
+
+  /// Body of the dialog shown when sending a message that was loaded back into the composer
+  ///
+  /// In en, this message translates to:
+  /// **'Revert hides the messages after this one and rolls the agent\'s files back. You can undo that. Sending as a new message leaves the conversation as it is.'**
+  String get editMessageChoiceBody;
 
   /// Title of the dialog confirming deletion of a chat message
   ///
@@ -14789,6 +14807,12 @@ abstract class AppLocalizations {
   /// **'Review code'**
   String get ideReviewCode;
 
+  /// No description provided for @ideReviewCodeInRepo.
+  ///
+  /// In en, this message translates to:
+  /// **'Review code ({repo})'**
+  String ideReviewCodeInRepo(String repo);
+
   /// No description provided for @ideRevertConfirmTitle.
   ///
   /// In en, this message translates to:
@@ -18082,6 +18106,150 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Commit & sync'**
   String get commitAndSync;
+
+  /// No description provided for @scmSyncChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync changes'**
+  String get scmSyncChanges;
+
+  /// No description provided for @scmPublishBranch.
+  ///
+  /// In en, this message translates to:
+  /// **'Publish branch'**
+  String get scmPublishBranch;
+
+  /// No description provided for @scmSyncFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync failed'**
+  String get scmSyncFailed;
+
+  /// No description provided for @scmSyncDirty.
+  ///
+  /// In en, this message translates to:
+  /// **'Commit or discard changes before syncing'**
+  String get scmSyncDirty;
+
+  /// No description provided for @scmSynced.
+  ///
+  /// In en, this message translates to:
+  /// **'Synced'**
+  String get scmSynced;
+
+  /// No description provided for @scmSelectBranch.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a branch to checkout'**
+  String get scmSelectBranch;
+
+  /// No description provided for @scmCreateBranch.
+  ///
+  /// In en, this message translates to:
+  /// **'Create new branch…'**
+  String get scmCreateBranch;
+
+  /// No description provided for @scmCreateBranchFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'Create new branch from…'**
+  String get scmCreateBranchFrom;
+
+  /// No description provided for @scmCheckoutDetached.
+  ///
+  /// In en, this message translates to:
+  /// **'Checkout detached…'**
+  String get scmCheckoutDetached;
+
+  /// No description provided for @scmBranchName.
+  ///
+  /// In en, this message translates to:
+  /// **'Branch name'**
+  String get scmBranchName;
+
+  /// No description provided for @scmCreateBranchTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create branch'**
+  String get scmCreateBranchTitle;
+
+  /// No description provided for @scmFromRef.
+  ///
+  /// In en, this message translates to:
+  /// **'From ⁨{ref}⁩'**
+  String scmFromRef(String ref);
+
+  /// No description provided for @scmCheckoutFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t switch branches'**
+  String get scmCheckoutFailed;
+
+  /// No description provided for @scmCheckoutDirty.
+  ///
+  /// In en, this message translates to:
+  /// **'Commit or discard changes before switching branches'**
+  String get scmCheckoutDirty;
+
+  /// No description provided for @scmSwitchedToBranch.
+  ///
+  /// In en, this message translates to:
+  /// **'Switched to ⁨{branch}⁩'**
+  String scmSwitchedToBranch(String branch);
+
+  /// No description provided for @scmDetachedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Detached at ⁨{ref}⁩'**
+  String scmDetachedAt(String ref);
+
+  /// No description provided for @scmDetachedHead.
+  ///
+  /// In en, this message translates to:
+  /// **'Detached HEAD'**
+  String get scmDetachedHead;
+
+  /// No description provided for @scmNoBranches.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching branches'**
+  String get scmNoBranches;
+
+  /// No description provided for @scmBranches.
+  ///
+  /// In en, this message translates to:
+  /// **'Branches'**
+  String get scmBranches;
+
+  /// No description provided for @scmRemoteBranches.
+  ///
+  /// In en, this message translates to:
+  /// **'Remote branches'**
+  String get scmRemoteBranches;
+
+  /// No description provided for @scmTags.
+  ///
+  /// In en, this message translates to:
+  /// **'Tags'**
+  String get scmTags;
+
+  /// No description provided for @scmPickStartPoint.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a start point'**
+  String get scmPickStartPoint;
+
+  /// No description provided for @scmSwitchBranch.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch branch'**
+  String get scmSwitchBranch;
+
+  /// No description provided for @commitMessageOnBranch.
+  ///
+  /// In en, this message translates to:
+  /// **'Message ({shortcut} to commit on “{branch}”)'**
+  String commitMessageOnBranch(String shortcut, String branch);
 
   /// No description provided for @committed.
   ///

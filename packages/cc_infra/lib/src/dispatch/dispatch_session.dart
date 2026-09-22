@@ -827,12 +827,14 @@ class DispatchSession implements SteeringSessionView {
   ActiveRepoTracker? _repoTracker;
   RepoSkillProjector? _repoProjector;
 
-  /// Prepares repo-scoped skills for this run and projects the starting repo.
+  /// Prepares repo-scoped skills for this run and projects them.
   ///
-  /// A space checks every linked repo out side by side, but an agent works in
-  /// one at a time — so only that one's skills are ever loaded. When the space
-  /// holds a single repo the answer is known before the first turn and is
-  /// seeded here; otherwise the first file the agent touches decides.
+  /// Every checked-out repo's skills are linked into the overlay, because
+  /// Claude Code's Skill tool only sees `.claude/skills` in the working
+  /// directory and will not follow `repos/` out of it. A space with one repo
+  /// is seeded as active before the first turn; with several, the first file
+  /// the agent touches decides whose instructions are inlined. The links
+  /// themselves do not wait for that.
   Future<void> _initRepoScoping(String wsId) async {
     final reposDir = _reposDir;
     final scanner = deps.skillScanner;
@@ -1413,6 +1415,113 @@ class DispatchSession implements SteeringSessionView {
     return outcome == RunCredentialOutcome.resolved;
   }
 
+  /// Parks this run until a Claude Code account that just 401'd has a newer
+  /// credential, and reports whether one landed.
+  ///
+  /// Distinct from [_gateOnClaudeSignIn]: that one fires before spawn, when
+  /// the directory is empty. This one fires after `claude -p` has already
+  /// proved the credential on disk no longer authenticates — an access token
+  /// the CLI could not renew, which still looks signed-in to the pre-spawn
+  /// probe. The same prompt is re-run when a human signs in; cancelling or
+  /// timing out falls through to the error the turn already has.
+  ///
+  /// False when no gate is wired, when the operator cancels, when the wait
+  /// times out, or when the gate says "resolved" without the credential file
+  /// actually changing — that last one is what stops a poll from relaunching
+  /// `claude` against the same dead token.
+  Future<bool> _gateOnExpiredClaudeSignIn({required String detail}) async {
+    final gate = deps.credentialGate;
+    if (gate == null) {
+      return false;
+    }
+    addEvent(
+      DebugEvent(
+        content:
+            '[claude] waiting for a fresh sign-in — '
+            'the same prompt continues as soon as one lands.',
+      ),
+    );
+    final before = _claudeCredentialBlobs();
+    final outcome = await gate.awaitCredentials(
+      RunCredentialBlockRequest(
+        lane: RunCredentialLane.claudeCode,
+        reason: RunCredentialReason.credentialExpired,
+        detail: detail,
+        runLogId: runLogId,
+        accountIds: [
+          for (final a in claudeAccounts)
+            if (a.accountId.isNotEmpty) a.accountId,
+        ],
+        workspaceId: workspaceId,
+        spaceId: spaceId,
+        conversationId: conversationId,
+        agentId: agentId,
+        agentName: agentName,
+      ),
+      // Re-mirror first. On macOS the login lands in the Keychain and the
+      // file the sandbox can read is only a copy; without the sync the probe
+      // watches a file `claude auth login` never touches.
+      recheck: () => _claudeCredentialsRenewed(before),
+    );
+    if (outcome != RunCredentialOutcome.resolved) {
+      return false;
+    }
+    return _claudeCredentialsRenewed(before);
+  }
+
+  /// `.credentials.json` contents for every account dir this run can see.
+  ///
+  /// A missing file is stored as null so a login that creates one counts as
+  /// a change, and a sign-out that deletes one does not have to.
+  Map<String, String?> _claudeCredentialBlobs() {
+    final dirs = <String>{
+      if (claudeConfigDir != null && claudeConfigDir!.isNotEmpty)
+        claudeConfigDir!,
+      for (final a in claudeAccounts)
+        if (a.configDir.isNotEmpty) a.configDir,
+    };
+    return {for (final dir in dirs) dir: _readClaudeCredential(dir)};
+  }
+
+  /// Whether any account dir now holds a different credential than [before].
+  ///
+  /// Content, not mtime: a failed refresh and the Keychain mirror can both
+  /// rewrite the file without a human signing in, and a 1-second filesystem
+  /// timestamp cannot tell that apart from a real login. A new sign-in
+  /// replaces the blob.
+  Future<bool> _claudeCredentialsRenewed(Map<String, String?> before) async {
+    final sync = deps.syncClaudeCredential;
+    if (sync != null) {
+      for (final account in claudeAccounts) {
+        if (account.accountId.isEmpty) {
+          continue;
+        }
+        await sync(account.accountId);
+      }
+    }
+    for (final entry in _claudeCredentialBlobs().entries) {
+      final current = entry.value;
+      if (current != null &&
+          current.isNotEmpty &&
+          current != before[entry.key]) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  String? _readClaudeCredential(String dir) {
+    try {
+      final file = File('$dir/.credentials.json');
+      if (!file.existsSync()) {
+        return null;
+      }
+      return file.readAsStringSync();
+    } on Object {
+      return null;
+    }
+  }
+
   /// Whether [credential] can actually start a run: it carries a secret, or it
   /// says none is needed (a keyless custom endpoint, method `none`).
   static bool _harnessAuthSatisfied(ProviderCredential? credential) =>
@@ -1899,7 +2008,13 @@ class DispatchSession implements SteeringSessionView {
         addEvent(ErrorEvent(content: event.content));
         break;
       case SandboxEventType.exit:
-        _completeRun();
+        // A process exit ends one `exec`, not the dispatch. Claude Code
+        // reports a dead sign-in on the `result` line and then exits; the
+        // runner turns that into the transcript (or parks the run on the
+        // sign-in dialog) only after `exec` returns. Closing here dropped
+        // that error — the turn finished as an empty bubble — and cancelled
+        // the event subscription, so a failover onto the next account ran
+        // without anyone listening.
         break;
       case SandboxEventType.killed:
         addEvent(

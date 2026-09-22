@@ -1,9 +1,9 @@
 import 'package:cc_domain/core/domain/entities/message.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_settings_repository.dart';
-import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
 import 'package:cc_domain/features/messaging/domain/services/conversation_title_model.dart'
     show kConversationTitleAdapterSettingKey, kConversationTitleModelSettingKey;
+import 'package:cc_domain/features/messaging/domain/services/side_channel_render.dart';
 import 'package:cc_harness/context.dart';
 import 'package:cc_infra/src/dispatch/adapter_one_shot_runner.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
@@ -48,6 +48,7 @@ class ConversationSideChannelService {
     required this._repo,
     required this._runner,
     required this._settings,
+    this._sideChannelMessages,
     this._timeout = const Duration(minutes: 2),
     this._maxPromptChars = 60000,
   });
@@ -55,6 +56,18 @@ class ConversationSideChannelService {
   final MessagingRepository _repo;
   final AdapterOneShotRunner _runner;
   final WorkspaceSettingsRepository _settings;
+
+  /// Newest rows of the conversation, already cut to `maxChars` of rendered
+  /// side-channel text. Null keeps [MessagingRepository.getMessages], which
+  /// tests and hosts without the paged read still use.
+  final Future<List<Message>> Function({
+    required String workspaceId,
+    required String spaceId,
+    String? conversationId,
+    required int maxChars,
+  })?
+  _sideChannelMessages;
+
   final Duration _timeout;
   final int _maxPromptChars;
 
@@ -110,11 +123,19 @@ class ConversationSideChannelService {
       kConversationTitleModelSettingKey,
     ))?.trim();
 
-    final messages = await _repo.getMessages(
-      workspaceId,
-      spaceId,
-      conversationId: conversationId,
-    );
+    final load = _sideChannelMessages;
+    final messages = load == null
+        ? await _repo.getMessages(
+            workspaceId,
+            spaceId,
+            conversationId: conversationId,
+          )
+        : await load(
+            workspaceId: workspaceId,
+            spaceId: spaceId,
+            conversationId: conversationId,
+            maxChars: _maxPromptChars,
+          );
     if (messages.isEmpty) {
       return const SideChannelResult(empty: true);
     }
@@ -160,18 +181,10 @@ String renderConversationForSideChannel(
   final rendered = <String>[];
   var total = 0;
   for (final message in messages.reversed) {
-    final who = message.isUser
-        ? 'User'
-        : message.isAgentTurn
-        ? (message.metadata?['agentName'] as String? ?? 'Agent')
-        : 'System';
-    final body = message.isAgentTurn && message.content.trim().isEmpty
-        ? _transcriptText(message)
-        : message.content.trim();
-    if (body.isEmpty) {
+    final line = sideChannelLine(message);
+    if (line == null) {
       continue;
     }
-    final line = '$who: $body';
     if (total + line.length > maxChars) {
       rendered.add('[…earlier conversation omitted]');
       break;
@@ -180,27 +193,4 @@ String renderConversationForSideChannel(
     rendered.add(line);
   }
   return rendered.reversed.join('\n\n');
-}
-
-/// The readable text of an agent turn whose content is empty because its
-/// substance lives in transcript segments.
-String _transcriptText(Message message) {
-  final parts = <String>[];
-  for (final segment in message.transcript) {
-    switch (segment) {
-      case TextSegment(:final text):
-        parts.add(text.trim());
-      case ToolSegment(:final toolName, :final inputs):
-        // The tool CALL is the useful signal for a handoff ("it edited
-        // auth.dart"); the output is bulk and usually stale.
-        final target = inputs?['path'] ?? inputs?['file_path'] ?? '';
-        parts.add('[$toolName${target == '' ? '' : ' $target'}]');
-      case ErrorSegment(:final message):
-        parts.add('[error: $message]');
-      case ReasoningSegment():
-      case ViolationSegment():
-        break;
-    }
-  }
-  return parts.where((p) => p.isNotEmpty).join('\n');
 }

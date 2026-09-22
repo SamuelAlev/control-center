@@ -36,7 +36,7 @@ class MotifEvent {
 /// Notes on a beat grid with jitter, phrases of 2–4 with long rests; pentatonic
 /// steps with center attractor and gap-fill; openings snap to the pad chord.
 /// Density is notes/min (weather/daypart); ~half echo opposite stereo.
-/// [ascentBias] biases Rise without extra PRNG. Pure in [SeededPrng] + clock;
+/// `ascentBias` biases Rise without extra PRNG. Pure in [SeededPrng] + clock;
 /// boundary-exact.
 class MotifScheduler {
   /// Creates a scheduler over [scaleMidi] (ascending) with a pulse grid of

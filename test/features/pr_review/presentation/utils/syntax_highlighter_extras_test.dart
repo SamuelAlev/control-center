@@ -74,6 +74,13 @@ void main() {
       expect(_rejoin(lines), code);
     });
 
+    test('the same snippet is not tokenized again', () {
+      const code = 'final x = 1;';
+      final first = highlightDiffLines(code, 'dart', dark: true);
+      final second = highlightDiffLines(code, 'dart', dark: true);
+      expect(identical(first, second), isTrue);
+    });
+
     test('dart keywords take the CC theme keyword colour', () {
       final lines = highlightDiffLines('final x = 1;', 'dart', dark: true);
       final colors = lines.single.map((t) => t.colorValue).toList();

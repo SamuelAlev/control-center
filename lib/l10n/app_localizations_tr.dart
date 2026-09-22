@@ -3195,6 +3195,16 @@ class AppLocalizationsTr extends AppLocalizations {
   String get editMessage => 'Mesajı düzenle';
 
   @override
+  String get revertToThere => 'Oraya geri al';
+
+  @override
+  String get sendAsNewMessage => 'Yeni mesaj olarak gönder';
+
+  @override
+  String get editMessageChoiceBody =>
+      'Geri alma bu mesajdan sonrakileri gizler ve aracının dosyalarını geri sarar. Bunu geri alabilirsiniz. Yeni mesaj olarak göndermek konuşmayı olduğu gibi bırakır.';
+
+  @override
   String get deleteMessage => 'Mesajı sil';
 
   @override
@@ -8585,6 +8595,11 @@ class AppLocalizationsTr extends AppLocalizations {
   String get ideReviewCode => 'Kodu incele';
 
   @override
+  String ideReviewCodeInRepo(String repo) {
+    return 'Kodu incele ($repo)';
+  }
+
+  @override
   String get ideRevertConfirmTitle => 'Değişiklikleri geri al';
 
   @override
@@ -10483,6 +10498,88 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get commitAndSync => 'Commit ve senkronize et';
+
+  @override
+  String get scmSyncChanges => 'Değişiklikleri eşitle';
+
+  @override
+  String get scmPublishBranch => 'Dalı yayımla';
+
+  @override
+  String get scmSyncFailed => 'Eşitleme başarısız';
+
+  @override
+  String get scmSyncDirty =>
+      'Eşitlemeden önce değişiklikleri commit edin veya geri alın';
+
+  @override
+  String get scmSynced => 'Eşitlendi';
+
+  @override
+  String get scmSelectBranch => 'Çıkış yapılacak dalı seç';
+
+  @override
+  String get scmCreateBranch => 'Yeni dal oluştur…';
+
+  @override
+  String get scmCreateBranchFrom => 'Şuradan yeni dal oluştur…';
+
+  @override
+  String get scmCheckoutDetached => 'Ayrık çıkış…';
+
+  @override
+  String get scmBranchName => 'Dal adı';
+
+  @override
+  String get scmCreateBranchTitle => 'Dal oluştur';
+
+  @override
+  String scmFromRef(String ref) {
+    return '⁨$ref⁩ konumundan';
+  }
+
+  @override
+  String get scmCheckoutFailed => 'Dal değiştirilemedi';
+
+  @override
+  String get scmCheckoutDirty =>
+      'Dal değiştirmeden önce değişiklikleri işle veya vazgeç';
+
+  @override
+  String scmSwitchedToBranch(String branch) {
+    return '⁨$branch⁩ dalına geçildi';
+  }
+
+  @override
+  String scmDetachedAt(String ref) {
+    return '⁨$ref⁩ konumunda ayrık';
+  }
+
+  @override
+  String get scmDetachedHead => 'Ayrık HEAD';
+
+  @override
+  String get scmNoBranches => 'Eşleşen dal yok';
+
+  @override
+  String get scmBranches => 'Dallar';
+
+  @override
+  String get scmRemoteBranches => 'Uzak dallar';
+
+  @override
+  String get scmTags => 'Etiketler';
+
+  @override
+  String get scmPickStartPoint => 'Bir başlangıç noktası seç';
+
+  @override
+  String get scmSwitchBranch => 'Dal değiştir';
+
+  @override
+  String commitMessageOnBranch(String shortcut, String branch) {
+    return 'İleti ($shortcut ile “$branch” üzerinde commit)';
+  }
 
   @override
   String get committed => 'Commit edildi';

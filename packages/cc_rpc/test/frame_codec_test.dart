@@ -38,4 +38,68 @@ void main() {
       },
     );
   });
+
+  group('encodeJsonFrame', () {
+    test('a short frame stays on this isolate', () {
+      final frame = <String, dynamic>{
+        'jsonrpc': '2.0',
+        'method': 'repo/call',
+        'params': {
+          'op': 'messaging.send',
+          'args': {'body': 'hello'},
+        },
+      };
+      expect(frameLooksLarge(frame), isFalse);
+    });
+
+    test('a large nested string is encoded off this isolate', () async {
+      final body = 'z' * (kIsolateEncodeThresholdChars + 10);
+      final frame = <String, dynamic>{
+        'jsonrpc': '2.0',
+        'method': 'repo/call',
+        'params': {
+          'op': 'messaging.send',
+          'args': {'body': body},
+        },
+      };
+      expect(frameLooksLarge(frame), isTrue);
+      expect(await encodeJsonFrame(frame), jsonEncode(frame));
+    });
+
+    test('a subscription snapshot of many rows counts as large', () async {
+      final rows = [
+        for (var i = 0; i < 200; i++) {'id': '$i', 'body': 'y' * 400},
+      ];
+      final frame = <String, dynamic>{
+        'jsonrpc': '2.0',
+        'method': 'sub/snapshot',
+        'params': {
+          'subscriptionId': 's1',
+          'rev': 3,
+          'full': true,
+          'data': {'rows': rows},
+        },
+      };
+      expect(frameLooksLarge(frame), isTrue);
+      expect(await encodeJsonFrame(frame), jsonEncode(frame));
+    });
+
+    test('a short subscription snapshot stays inline', () {
+      final frame = <String, dynamic>{
+        'jsonrpc': '2.0',
+        'method': 'sub/snapshot',
+        'params': {
+          'subscriptionId': 's1',
+          'rev': 1,
+          'full': true,
+          'data': {
+            'rows': [
+              {'id': '1', 'body': 'hi'},
+            ],
+          },
+        },
+      };
+      expect(frameLooksLarge(frame), isFalse);
+    });
+  });
 }

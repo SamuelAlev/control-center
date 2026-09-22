@@ -487,7 +487,7 @@ List<CcBreadcrumbItem> _pullRequestDetailCrumbs(
         );
   List<CcBreadcrumbItem> trail(CcBreadcrumbItem current) => [
     listCrumb,
-    if (repoCrumb != null) repoCrumb,
+    ?repoCrumb,
     current,
   ];
   if (prRef == null) {

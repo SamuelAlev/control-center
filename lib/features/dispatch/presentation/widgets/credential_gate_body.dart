@@ -7,12 +7,10 @@ import 'package:control_center/features/settings/presentation/widgets/sections/c
 import 'package:control_center/features/settings/providers/claude_account_providers.dart';
 import 'package:control_center/features/settings/providers/harness_providers_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
-import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/app_timestamp.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 /// What a parked run's dialog shows: who is waiting, the server's own reason,
 /// the two instants that bound the wait, and the lane-specific fix.
@@ -25,6 +23,7 @@ class CredentialGateBody extends ConsumerWidget {
   const CredentialGateBody({
     required this.block,
     required this.onConnected,
+    required this.prepareOpenSettings,
     super.key,
   });
 
@@ -35,6 +34,13 @@ class CredentialGateBody extends ConsumerWidget {
   /// Called when the embedded login panel reports a credential landed, so the
   /// server re-probes immediately instead of on its next poll.
   final VoidCallback onConnected;
+
+  /// Prepares the jump to the Claude Code sign-in screen.
+  ///
+  /// Returns the navigation to run after this dialog has popped, or null when
+  /// there is no workspace to open settings in. The dialog itself sits on the
+  /// root navigator, above every route, so it cannot read the current route.
+  final VoidCallback? Function(RunCredentialBlockDto block) prepareOpenSettings;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -75,7 +81,7 @@ class CredentialGateBody extends ConsumerWidget {
         if (block.lane == RunCredentialLane.harness)
           _HarnessFix(providerId: block.providerId, onConnected: onConnected)
         else
-          _ClaudeFix(block: block),
+          _ClaudeFix(block: block, prepareOpenSettings: prepareOpenSettings),
       ],
     );
   }
@@ -173,9 +179,12 @@ class _HarnessFix extends ConsumerWidget {
 /// CLI owns it — so the panel names the accounts that were tried and points at
 /// the one screen that hands over the login command.
 class _ClaudeFix extends ConsumerWidget {
-  const _ClaudeFix({required this.block});
+  const _ClaudeFix({required this.block, required this.prepareOpenSettings});
 
   final RunCredentialBlockDto block;
+
+  /// See [CredentialGateBody.prepareOpenSettings].
+  final VoidCallback? Function(RunCredentialBlockDto block) prepareOpenSettings;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -244,15 +253,15 @@ class _ClaudeFix extends ConsumerWidget {
               variant: CcButtonVariant.secondary,
               size: CcButtonSize.sm,
               onPressed: () {
-                final workspaceId = context.currentWorkspaceId;
-                if (workspaceId == null || workspaceId.isEmpty) {
+                // Resolve the destination before popping. The closure runs
+                // against the shell, which still has a route after this
+                // dialog — pushed on the root navigator — is gone.
+                final leave = prepareOpenSettings(block);
+                if (leave == null) {
                   return;
                 }
-                // The dialog closes: the login happens on that screen, and the
-                // gate reopens this if the run is still parked when it is done
-                // — it never stopped watching.
                 Navigator.of(context).pop();
-                context.go(settingsAdaptersRoute(workspaceId));
+                leave();
               },
               child: Text(l10n.credentialGateOpenSettings),
             ),

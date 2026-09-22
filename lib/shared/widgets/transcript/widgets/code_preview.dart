@@ -54,6 +54,12 @@ class CodePreview extends StatefulWidget {
 }
 
 class _CodePreviewState extends State<CodePreview> {
+  /// Past this many lines the gutter mounts through a builder. A write opens
+  /// expanded inside one chat list item, and laying out the whole head (up to
+  /// [CodePreview.maxLines]) walks text layout for rows the viewport cannot
+  /// show. Shorter files stay a column so they still size to their text.
+  static const int _virtualizeRows = 64;
+
   bool _showAll = false;
 
   @override
@@ -90,6 +96,9 @@ class _CodePreviewState extends State<CodePreview> {
       ),
     );
     final gutterStyle = baseStyle.copyWith(color: tokens.textQuaternary);
+    final virtualize =
+        !widget.maxHeight.isInfinite &&
+        (truncated ? widget.maxLines : totalLines) > _virtualizeRows;
 
     return Container(
       decoration: BoxDecoration(
@@ -97,78 +106,119 @@ class _CodePreviewState extends State<CodePreview> {
         borderRadius: BorderRadius.circular(4),
         border: Border.all(color: tokens.borderSecondary),
       ),
-      constraints: BoxConstraints(maxHeight: widget.maxHeight),
+      // A builder viewport needs a finite height. The short path only caps
+      // it, so a handful of lines still shrinks to the text.
+      height: virtualize ? widget.maxHeight : null,
+      constraints: virtualize
+          ? null
+          : BoxConstraints(maxHeight: widget.maxHeight),
       // No explicit scrollbar: the app-wide [CcScrollBehavior] injects the
       // design-system one, wired to this scrollable's controller.
       child: Directionality(
         // Pinned per the carve-out above: gutter + code rows never mirror.
         textDirection: TextDirection.ltr,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(vertical: 6),
-          child: SelectionArea(
-            child: HighlightedCodeLines(
-              code: displayCode,
-              languageId: widget.languageId,
-              builder: (context, highlighted) {
-                final lines = highlighted.toList();
-                // Drop a single trailing empty line from a final newline.
-                if (lines.isNotEmpty &&
-                    lines.last.isEmpty &&
-                    displayCode.endsWith('\n')) {
-                  lines.removeLast();
-                }
-                final gutterWidth = '${widget.startLine + lines.length}'.length;
-                return Column(
+        child: SelectionArea(
+          child: HighlightedCodeLines(
+            code: displayCode,
+            languageId: widget.languageId,
+            builder: (context, highlighted) {
+              final lines = highlighted.toList();
+              // Drop a single trailing empty line from a final newline.
+              if (lines.isNotEmpty &&
+                  lines.last.isEmpty &&
+                  displayCode.endsWith('\n')) {
+                lines.removeLast();
+              }
+              final gutterWidth = '${widget.startLine + lines.length}'.length;
+              final showAll = truncated
+                  ? _showAllButton(context, totalLines, tokens)
+                  : null;
+              if (lines.length > _virtualizeRows && widget.maxHeight.isFinite) {
+                return ListView.builder(
+                  primary: false,
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  itemCount: lines.length + (showAll == null ? 0 : 1),
+                  itemBuilder: (context, index) {
+                    if (index >= lines.length) {
+                      return showAll!;
+                    }
+                    return _gutterLine(
+                      index: index,
+                      spans: lines[index],
+                      baseStyle: baseStyle,
+                      gutterStyle: gutterStyle,
+                      gutterWidth: gutterWidth,
+                    );
+                  },
+                );
+              }
+              return SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     for (var i = 0; i < lines.length; i++)
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(left: 10, right: 10),
-                            child: Text(
-                              '${widget.startLine + i}'.padLeft(gutterWidth),
-                              style: gutterStyle,
-                            ),
-                          ),
-                          Expanded(
-                            child: Padding(
-                              padding: const EdgeInsets.only(right: 10),
-                              child: Text.rich(
-                                TextSpan(style: baseStyle, children: lines[i]),
-                              ),
-                            ),
-                          ),
-                        ],
+                      _gutterLine(
+                        index: i,
+                        spans: lines[i],
+                        baseStyle: baseStyle,
+                        gutterStyle: gutterStyle,
+                        gutterWidth: gutterWidth,
                       ),
-                    if (truncated)
-                      Padding(
-                        padding: const EdgeInsetsDirectional.only(
-                          start: 10,
-                          top: 4,
-                        ),
-                        child: Align(
-                          alignment: AlignmentDirectional.centerStart,
-                          child: CcButton(
-                            onPressed: () => setState(() => _showAll = true),
-                            variant: CcButtonVariant.ghost,
-                            size: CcButtonSize.sm,
-                            child: Text(
-                              AppLocalizations.of(
-                                context,
-                              ).transcriptShowAllLines(totalLines),
-                              style: CcTypography.caption.copyWith(
-                                color: tokens.accent,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
+                    ?showAll,
                   ],
-                );
-              },
-            ),
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _gutterLine({
+    required int index,
+    required List<InlineSpan> spans,
+    required TextStyle baseStyle,
+    required TextStyle gutterStyle,
+    required int gutterWidth,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 10, right: 10),
+          child: Text(
+            '${widget.startLine + index}'.padLeft(gutterWidth),
+            style: gutterStyle,
+          ),
+        ),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.only(right: 10),
+            child: Text.rich(TextSpan(style: baseStyle, children: spans)),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _showAllButton(
+    BuildContext context,
+    int totalLines,
+    DesignSystemTokens tokens,
+  ) {
+    return Padding(
+      padding: const EdgeInsetsDirectional.only(start: 10, top: 4),
+      child: Align(
+        alignment: AlignmentDirectional.centerStart,
+        child: CcButton(
+          onPressed: () => setState(() => _showAll = true),
+          variant: CcButtonVariant.ghost,
+          size: CcButtonSize.sm,
+          child: Text(
+            AppLocalizations.of(context).transcriptShowAllLines(totalLines),
+            style: CcTypography.caption.copyWith(color: tokens.accent),
           ),
         ),
       ),

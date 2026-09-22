@@ -3189,6 +3189,16 @@ class AppLocalizationsVi extends AppLocalizations {
   String get editMessage => 'Sửa tin nhắn';
 
   @override
+  String get revertToThere => 'Hoàn nguyên về đó';
+
+  @override
+  String get sendAsNewMessage => 'Gửi như tin nhắn mới';
+
+  @override
+  String get editMessageChoiceBody =>
+      'Hoàn nguyên ẩn các tin nhắn sau tin này và đưa tệp của tác nhân về lại. Bạn có thể hoàn tác. Gửi như tin nhắn mới giữ nguyên cuộc trò chuyện.';
+
+  @override
   String get deleteMessage => 'Xóa tin nhắn';
 
   @override
@@ -8574,6 +8584,11 @@ class AppLocalizationsVi extends AppLocalizations {
   String get ideReviewCode => 'Review mã';
 
   @override
+  String ideReviewCodeInRepo(String repo) {
+    return 'Review mã ($repo)';
+  }
+
+  @override
   String get ideRevertConfirmTitle => 'Hoàn nguyên thay đổi';
 
   @override
@@ -10468,6 +10483,87 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get commitAndSync => 'Commit & đồng bộ';
+
+  @override
+  String get scmSyncChanges => 'Đồng bộ thay đổi';
+
+  @override
+  String get scmPublishBranch => 'Xuất bản nhánh';
+
+  @override
+  String get scmSyncFailed => 'Đồng bộ thất bại';
+
+  @override
+  String get scmSyncDirty => 'Commit hoặc hủy thay đổi trước khi đồng bộ';
+
+  @override
+  String get scmSynced => 'Đã đồng bộ';
+
+  @override
+  String get scmSelectBranch => 'Chọn nhánh để checkout';
+
+  @override
+  String get scmCreateBranch => 'Tạo nhánh mới…';
+
+  @override
+  String get scmCreateBranchFrom => 'Tạo nhánh mới từ…';
+
+  @override
+  String get scmCheckoutDetached => 'Checkout tách rời…';
+
+  @override
+  String get scmBranchName => 'Tên nhánh';
+
+  @override
+  String get scmCreateBranchTitle => 'Tạo nhánh';
+
+  @override
+  String scmFromRef(String ref) {
+    return 'Từ ⁨$ref⁩';
+  }
+
+  @override
+  String get scmCheckoutFailed => 'Không chuyển được nhánh';
+
+  @override
+  String get scmCheckoutDirty =>
+      'Hãy commit hoặc hủy thay đổi trước khi chuyển nhánh';
+
+  @override
+  String scmSwitchedToBranch(String branch) {
+    return 'Đã chuyển sang ⁨$branch⁩';
+  }
+
+  @override
+  String scmDetachedAt(String ref) {
+    return 'Tách rời tại ⁨$ref⁩';
+  }
+
+  @override
+  String get scmDetachedHead => 'HEAD tách rời';
+
+  @override
+  String get scmNoBranches => 'Không có nhánh khớp';
+
+  @override
+  String get scmBranches => 'Nhánh';
+
+  @override
+  String get scmRemoteBranches => 'Nhánh từ xa';
+
+  @override
+  String get scmTags => 'Thẻ';
+
+  @override
+  String get scmPickStartPoint => 'Chọn điểm bắt đầu';
+
+  @override
+  String get scmSwitchBranch => 'Chuyển nhánh';
+
+  @override
+  String commitMessageOnBranch(String shortcut, String branch) {
+    return 'Thông điệp ($shortcut để commit trên “$branch”)';
+  }
 
   @override
   String get committed => 'Đã commit';

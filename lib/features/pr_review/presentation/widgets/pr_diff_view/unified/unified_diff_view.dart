@@ -994,7 +994,7 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
       final fullReset = _needsFullCacheReset(oldWidget.files, widget.files);
       final repatched = _document.setFiles(widget.files);
       if (fullReset) {
-        _store.resetTokens();
+        _store.resetTokens(dropExpandedLines: true);
         // The file set/order/content changed — any cached preview content may
         // now be stale; drop it so previewing files re-fetch their HEAD content.
         _previewContent.clear();
@@ -1513,7 +1513,6 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
 
     return out;
   }
-
 
   RenderUnifiedDiffSliver? get _sliver {
     final ro = _sliverKey.currentContext?.findRenderObject();
@@ -2778,7 +2777,7 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
       newStart: newStart,
     );
     _document.setStructure(file, spliced, augment: false);
-    _store.spliceTokens(file, rawIndex, slice.length);
+    _store.spliceTokens(file, rawIndex, slice);
     // Line indices shifted — drop the paragraph cache so stale rows can't be
     // reused, then relayout.
     final ro = _sliverKey.currentContext?.findRenderObject();
@@ -2913,26 +2912,42 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
 
   /// Scrolls the host scrollable so file [index]'s header (or [line]) sits
   /// at the top.
-  Future<void> jumpToFile(int index, {int? line}) async {
+  ///
+  /// Returns false when the diff has no laid-out scroll position yet, so a
+  /// caller can retry on a later frame. A desktop scroll view does not attach
+  /// itself to an ancestor [PrimaryScrollController]; the host has to install
+  /// the one this reads.
+  Future<bool> jumpToFile(int index, {int? line}) async {
     if (index < 0 || index >= _document.fileCount) {
-      return;
+      return false;
     }
     final renderObject = _sliverKey.currentContext?.findRenderObject();
     final controller = PrimaryScrollController.maybeOf(context);
     if (renderObject is! RenderUnifiedDiffSliver ||
         controller == null ||
         !controller.hasClients) {
-      return;
+      return false;
     }
     final rawTarget = line == null
         ? renderObject.revealOffsetForFile(index)
         : renderObject.revealOffsetForLine(index, line);
-    final target = rawTarget.clamp(0.0, controller.position.maxScrollExtent);
+    final max = controller.position.maxScrollExtent;
+    // A zero extent with the file past the origin means the sliver has not
+    // reported its height yet. Clamping that to 0 and treating it as "already
+    // there" would swallow the jump.
+    if (rawTarget > 1 && max <= 0) {
+      return false;
+    }
+    final target = rawTarget.clamp(0.0, max);
+    if ((controller.offset - target).abs() < 1) {
+      return true;
+    }
     await controller.animateTo(
       target,
       duration: const Duration(milliseconds: 240),
       curve: Curves.easeOutCubic,
     );
+    return true;
   }
 
   TextStyle _baseStyle(String codeFont, {required bool ligatures}) {

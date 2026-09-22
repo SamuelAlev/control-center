@@ -57,6 +57,7 @@ class SteeringQueueService {
     required AgentRunLogRepository runLogRepository,
     required this._dispatchResponder,
     required SteeringSessionsFor sessionsForConversation,
+    this._queuedSteering,
   }) : _messaging = messagingRepository,
        _runLogs = runLogRepository,
        _sessionsFor = sessionsForConversation;
@@ -65,6 +66,15 @@ class SteeringQueueService {
   final AgentRunLogRepository _runLogs;
   final DispatchResponder _dispatchResponder;
   final SteeringSessionsFor _sessionsFor;
+
+  /// Queued steering cards without a full-conversation scan. Null keeps
+  /// [MessagingRepository.getMessages], which tests use.
+  final Future<List<Message>> Function({
+    required String workspaceId,
+    required String spaceId,
+    required String conversationId,
+  })?
+  _queuedSteering;
 
   /// Queues [content] against the runs live in [conversationId].
   ///
@@ -274,13 +284,10 @@ class SteeringQueueService {
       return;
     }
     unawaited(() async {
-      final rows = await _messaging.getMessages(
-        workspaceId,
-        spaceId,
-        conversationId: conversationId,
-      );
-      final row = rows.where((m) => m.id == ref).firstOrNull;
-      if (row == null || !row.isSteeringQueued) {
+      final row = await _messaging.getMessageById(workspaceId, ref);
+      if (row == null ||
+          row.conversationId != conversationId ||
+          !row.isSteeringQueued) {
         return;
       }
       await _messaging.updateMessage(
@@ -381,11 +388,18 @@ class SteeringQueueService {
     String spaceId,
     String conversationId,
   ) async {
-    final rows = await _messaging.getMessages(
-      workspaceId,
-      spaceId,
-      conversationId: conversationId,
-    );
+    final load = _queuedSteering;
+    final rows = load == null
+        ? await _messaging.getMessages(
+            workspaceId,
+            spaceId,
+            conversationId: conversationId,
+          )
+        : await load(
+            workspaceId: workspaceId,
+            spaceId: spaceId,
+            conversationId: conversationId,
+          );
     final queued = rows.where((m) => m.isSteeringQueued).toList()
       ..sort((a, b) => a.steerOrder.compareTo(b.steerOrder));
     return queued;
@@ -398,18 +412,13 @@ class SteeringQueueService {
     String conversationId,
     String messageId,
   ) async {
-    final spaceId = await _spaceIdFor(workspaceId, conversationId);
-    if (spaceId == null) {
+    final row = await _messaging.getMessageById(workspaceId, messageId);
+    if (row == null ||
+        row.conversationId != conversationId ||
+        !row.isSteeringQueued) {
       return null;
     }
-    final rows = await _messaging.getMessages(
-      workspaceId,
-      spaceId,
-      conversationId: conversationId,
-    );
-    return rows
-        .where((m) => m.id == messageId && m.isSteeringQueued)
-        .firstOrNull;
+    return row;
   }
 
   /// Resolves the space that owns [conversationId] from its active run logs.

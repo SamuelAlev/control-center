@@ -1,3 +1,6 @@
+/// @docImport 'package:control_center/shared/widgets/foreground_ticker_gate.dart';
+library;
+
 import 'dart:async';
 
 import 'package:control_center/app/window_chrome.dart' show isMainWindowTitle;

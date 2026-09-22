@@ -45,16 +45,29 @@ class ThreadIndicator extends ConsumerWidget {
   /// still loading.
   String _displayName(WidgetRef ref, String principalId) {
     final workspaceId = ref.watch(activeWorkspaceIdProvider);
-    final agents = workspaceId == null
+    // Name only. The agent roster and the user directory both re-emit the
+    // whole collection; a status tick on one agent used to rebuild every
+    // thread row in the open feed.
+    final agentName = workspaceId == null
         ? null
-        : ref.watch(workspaceAgentsProvider(workspaceId)).value;
-    final agent = agents?.where((a) => a.id == principalId).firstOrNull;
-    if (agent != null) {
-      return agent.name;
+        : ref.watch(
+            workspaceAgentsProvider(workspaceId).select(
+              (async) => async.asData?.value
+                  .where((agent) => agent.id == principalId)
+                  .firstOrNull
+                  ?.name,
+            ),
+          );
+    final userName = ref.watch(
+      usersByIdProvider.select(
+        (async) => async.asData?.value[principalId]?.displayName,
+      ),
+    );
+    if (agentName != null) {
+      return agentName;
     }
-    final user = ref.watch(usersByIdProvider).value?[principalId];
-    if (user != null) {
-      return user.displayName;
+    if (userName != null) {
+      return userName;
     }
     return principalId.length > 8 ? principalId.substring(0, 8) : principalId;
   }

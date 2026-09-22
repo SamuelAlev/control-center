@@ -342,6 +342,31 @@ void main() {
     expect(system, contains('- Git rebase question'));
     expect(system, contains("Sorry, I can't assist with that."));
   });
+
+  test('first-message lookup does not scan the conversation', () async {
+    useHarness('anthropic/x');
+    conversations.put(conversationWithTitle(''));
+    messaging.scanThrows = true;
+    factory.reply = 'Git rebase question';
+    final titled = ConversationTitleService(
+      runner: AdapterOneShotRunner(credentials: creds, factory: factory),
+      settings: settings,
+      conversationRepo: conversations,
+      messagingRepo: messaging,
+      firstHumanContent:
+          ({
+            required String workspaceId,
+            required String spaceId,
+            String? conversationId,
+          }) async => 'How do I rebase?',
+    );
+    await titled.maybeGenerate(
+      workspaceId: workspaceId,
+      spaceId: spaceId,
+      conversationId: 'conv-1',
+    );
+    expect(conversations.renames.single.title, 'Git rebase question');
+  });
 }
 
 // Fakes
@@ -511,13 +536,19 @@ class _FakeConversations implements ConversationRepository {
 
 class _FakeMessaging implements MessagingRepository {
   List<Message> messages = const [];
+  bool scanThrows = false;
 
   @override
   Future<List<Message>> getMessages(
     String workspaceId,
     String spaceId, {
     String? conversationId,
-  }) async => messages;
+  }) async {
+    if (scanThrows) {
+      throw StateError('full scan');
+    }
+    return messages;
+  }
 
   @override
   dynamic noSuchMethod(Invocation invocation) {}

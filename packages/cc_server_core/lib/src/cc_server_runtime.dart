@@ -21,10 +21,10 @@ import 'package:cc_domain/core/domain/services/user_mention_parser.dart';
 import 'package:cc_domain/core/domain/value_objects/account_pool.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_capabilities.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_role.dart';
+import 'package:cc_domain/core/domain/value_objects/github_auth_mode.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_domain/core/domain/value_objects/principal.dart';
 import 'package:cc_domain/core/domain/value_objects/repo_grant_level.dart';
-import 'package:cc_domain/core/domain/value_objects/github_auth_mode.dart';
 import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
 import 'package:cc_domain/core/logging/cc_domain_log.dart';
 import 'package:cc_domain/features/agents/domain/services/budget_policy_service.dart';
@@ -184,8 +184,8 @@ import 'package:cc_server_core/src/identity/server_identity_store.dart';
 import 'package:cc_server_core/src/identity/sso_settings_service.dart';
 import 'package:cc_server_core/src/identity/user_credentials_store.dart';
 import 'package:cc_server_core/src/identity/workspace_github_app_settings.dart';
-import 'package:cc_server_core/src/identity/workspace_profile.dart';
 import 'package:cc_server_core/src/identity/workspace_invite_service.dart';
+import 'package:cc_server_core/src/identity/workspace_profile.dart';
 import 'package:cc_server_core/src/local_rpc_server.dart';
 import 'package:cc_server_core/src/models/managed_model_control.dart';
 import 'package:cc_server_core/src/models/selectable_voice_model_control.dart';
@@ -358,6 +358,11 @@ Future<CcServer> runCcServer({
     global: globalDb,
     onWarn: (tag, message) => CcHostLog.warning('$tag: $message'),
     onError: (tag, message) => CcHostLog.error('$tag: $message'),
+    // A workspace that nobody is watching and nobody is querying does not
+    // keep its isolate, page cache and mapping. The open workspace stays:
+    // its live watches hold the file, so the next action does not pay a
+    // reopen.
+    idleAfter: const Duration(seconds: 45),
   );
   // Every cross-workspace read in the server goes through this one helper, so
   // the complete list of things that legitimately span workspaces (dashboards,
@@ -690,11 +695,12 @@ Future<CcServer> runCcServer({
   final messagingRepository = DaoMessagingRepository(workspaceDbs);
   final conversationRepository = DaoConversationRepository(workspaceDbs);
 
-  // ONE instance, shared by the two halves that have to meet: the dispatch
-  // path (where `ask_user` calls `ask()` and the run blocks on a Completer)
-  // and the RPC catalog (where `messaging.updateMessage` carries the client's
-  // answer back and completes it). Two instances would mean the agent waits on
-  // a completer nobody can reach — which is the state this subsystem was in.
+  // ONE instance, shared by the three halves that have to meet: the harness
+  // `ask_user` tool, the MCP `ask_user` tool (Claude and Pi block inside the
+  // tool call), and the RPC catalog (where `messaging.updateMessage` carries
+  // the client's answer back and completes it). Two instances would mean the
+  // agent waits on a completer nobody can reach — which is the state this
+  // subsystem was in.
   //
   // The timeout is generous but finite: a question nobody answers must end as
   // a tool error the agent can act on, not as a run pinned forever.
@@ -1260,6 +1266,7 @@ Future<CcServer> runCcServer({
     newsfeedOwnerUserId: ownerUserId,
     ticketRepository: ticketRepository,
     messagingRepository: messagingRepository,
+    agentQuestions: agentQuestions,
     todoRepository: todoRepository,
     // Pipeline structured-output contract (submit_output writes outputJson).
     agentRunLogRepository: agentRunLogRepository,
@@ -1561,12 +1568,17 @@ Future<CcServer> runCcServer({
   // PRD 23 §6 enforcement: quarantined skills are refused agent links. The
   // filter is attached here (not in the constructor) because its verdict source
   // is `skillBundles` itself, which is built over `workspaceFilesystem`.
+  //
+  // The filter answers "may this skill be linked?" ([SkillQuarantineGuard.mayLink]).
+  // [SkillQuarantineGuard.isQuarantined] answers the opposite question; wiring
+  // that one strips every healthy attachment and leaves the prompt with the
+  // skill names alone.
   final skillQuarantineGuard = SkillQuarantineGuard(
     agents: agentRepository,
     bundles: skillBundles,
     filesystem: workspaceFilesystem,
   );
-  workspaceFilesystem.linkFilter = skillQuarantineGuard.isQuarantined;
+  workspaceFilesystem.linkFilter = skillQuarantineGuard.mayLink;
   // The skills antivirus as a pipeline (PRD 23 §2/§6): the analysis service is
   // the workhorse both the pipeline body (engine runs) and the settings UI's
   // synchronous scan ops (projection runs recorded by the reporter) drive.
@@ -2143,6 +2155,9 @@ Future<CcServer> runCcServer({
     messagingRepository: messagingRepository,
     conversationRepository: conversationRepository,
     embeddingPort: embeddingService,
+    // The prompt only keeps a budgeted tail, the summaries, and one
+    // transcript. Do not load every older turn to build that.
+    contextHistory: messagingRepository.dispatchContextHistory,
   );
   // ONE rift registry for every managed copy on this host — conversation
   // worktrees and PR worktrees alike. It has to be one file: rift's marker lives
@@ -2482,6 +2497,9 @@ Future<CcServer> runCcServer({
     // Per-turn git snapshots so a conversation revert can roll back the
     // worktree filesystem, not just the transcript.
     snapshotPort: const ProcessGitSnapshotAdapter(),
+    // Tool-only flushes store the transcript without rewriting the list
+    // projection, so the open chat does not rebuild on every tool call.
+    flushMessage: messagingRepository.flushStreamingMessage,
   );
   // Durable goal supervisor (`/goal`, `/loop`): persists each objective in
   // SQLite and keeps dispatching bounded runs until the agent calls
@@ -2507,6 +2525,9 @@ Future<CcServer> runCcServer({
     settings: workspaceSettingsRepository,
     conversationRepo: conversationRepository,
     messagingRepo: messagingRepository,
+    // Titling only needs the first human message. Do not load every
+    // transcript to find it.
+    firstHumanContent: messagingRepository.firstHumanContent,
   );
   // `/handoff`, `/btw`, `/omfg`: one question ABOUT the conversation that is
   // never added to it. Runs on the SAME operator-chosen one-shot runner as
@@ -2516,6 +2537,9 @@ Future<CcServer> runCcServer({
     repo: messagingRepository,
     runner: adapterOneShotRunner,
     settings: workspaceSettingsRepository,
+    // The prompt keeps the newest 60k characters. Do not load every
+    // transcript to build that window.
+    sideChannelMessages: messagingRepository.sideChannelMessages,
   );
   // Turns a rough request into an objective an agent can pursue for hours
   // without supervision. On the same one-shot runner: anything wanting a
@@ -2530,6 +2554,11 @@ Future<CcServer> runCcServer({
   late final SpaceProvisioningService spaceProvisioningService;
   final messagingService = MessagingService(
     messagingRepository,
+    // Reply routing must not read every transcript. The two lookups are
+    // index reads; the message bodies stay on disk until a run actually
+    // needs them.
+    dispatchReplyHints: messagingRepository.dispatchReplyHints,
+    latestPlanMessage: messagingRepository.latestPlanMessage,
     agentRepo: agentRepository,
     // Resolves the space's standing conversation for dispatches that name none
     // (a ticket, a pipeline step, the chat bridge): conversations own their
@@ -2654,6 +2683,8 @@ Future<CcServer> runCcServer({
     runLogRepository: agentRunLogRepository,
     dispatchResponder: messagingService.dispatchResponderForText,
     sessionsForConversation: agentDispatch.sessionsForConversation,
+    // Queue edits and run-start replay only need the queued cards.
+    queuedSteering: messagingRepository.queuedSteeringMessages,
   );
   messagingService.steeringQueueService = steeringQueueService;
   agentDispatch.onSessionHarnessStarted =
@@ -4292,6 +4323,30 @@ Future<CcServer> runCcServer({
           actingUserId,
           workspaceId: workspaceId,
         ),
+    // A pull request opened outside this worktree (the forge UI, `gh`)
+    // publishes the branch without writing a remote-tracking ref here. The
+    // open-PR snapshot's head is that tip, so source control stops offering
+    // "Publish branch" for a branch GitHub already has. Local refs still win
+    // when they exist; this is only the fallback, and it never fetches.
+    publishedBranchHead:
+        ({
+          required String workspaceId,
+          required String repoId,
+          required String branch,
+        }) async {
+          final repo = await repoRepository.getById(workspaceId, repoId);
+          if (repo == null || !repo.hasForgeRemote) {
+            return null;
+          }
+          final pr = await (demo?.openPrPoller ?? openPrPoller)
+              .openPrForHeadBranch(
+                workspaceId: workspaceId,
+                repoFullName: repo.fullName,
+                branch: branch,
+              );
+          final sha = pr?['head_sha'];
+          return sha is String && sha.isNotEmpty ? sha : null;
+        },
   );
 
   // Pauses runs at turn boundaries (or stops CLI runs), writes the durable
@@ -5208,6 +5263,7 @@ Future<CcServer> runCcServer({
     // DAO repository): per-space sidebar signals and conversation size.
     watchSpaceActivity: messagingRepository.watchSpaceActivity,
     watchConversationTokens: messagingRepository.watchConversationTokens,
+    watchUserPromptHistory: messagingRepository.watchUserPromptHistory,
     // Conversations (parallel streams / "parentheses" inside a space).
     conversationRepository: conversationRepository,
     watchConversationsForSpace: (workspaceId, spaceId) => conversationRepository
@@ -5357,6 +5413,11 @@ Future<CcServer> runCcServer({
     worktreeCommitAndPush: demo != null ? null : repoIdeData.commitAndPush,
     // demo: never publish a branch from a public endpoint.
     worktreePublishBranch: demo != null ? null : repoIdeData.publishBranch,
+    // demo: never fetch or push from a public endpoint.
+    worktreeSyncBranch: demo != null ? null : repoIdeData.syncBranch,
+    // demo: no checkout to switch, and no refs to list.
+    worktreeListBranches: demo != null ? null : repoIdeData.listBranches,
+    worktreeCheckout: demo != null ? null : repoIdeData.checkoutBranch,
     // Remote agent-action approvals: the same registry the dispatch/MCP paths
     // publish to, exposed to clients over `confirmation.watchPending` +
     // `confirmation.respond` so a desktop/web/phone user can approve or deny.
@@ -7252,6 +7313,8 @@ Future<CcServer> runCcServer({
     eventBus: eventBus,
     runLogRepository: agentRunLogRepository,
     messagingRepository: messagingRepository,
+    // Harvest only needs that agent's newest message text.
+    latestAgentContent: messagingRepository.latestAgentContent,
   )..start();
   final orchestrationRunListener = OrchestrationRunListener(
     eventBus: eventBus,

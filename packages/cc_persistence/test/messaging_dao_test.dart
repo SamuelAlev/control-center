@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:test/test.dart';
 
@@ -476,6 +478,173 @@ void main() {
           .watchMessagesWindow('ch-order', limit: 50)
           .first;
       expect(window.map((m) => m.content), ['first', 'second', 'third']);
+    });
+
+    test('list watches drop transcript segments and one-shot reads keep them',
+        () async {
+      await db.messagingDao.insertSpace(
+        SpacesTableCompanion.insert(id: 'ch-lite', name: 'lite'),
+      );
+      await seedConv('ch-lite');
+      await db.messagingDao.insertMessage(
+        ConversationMessagesTableCompanion.insert(
+          id: 'm-lite',
+          spaceId: 'ch-lite',
+          conversationId: 'ch-lite',
+          senderId: 'agent',
+          senderType: 'agent',
+          content: 'answer',
+          messageType: const Value('agent_turn'),
+          metadata: const Value(
+            '{"keep":"yes","segments":[{"t":"text","text":"blob"}]}',
+          ),
+        ),
+      );
+      await db.messagingDao.insertMessage(
+        ConversationMessagesTableCompanion.insert(
+          id: 'm-plain',
+          spaceId: 'ch-lite',
+          conversationId: 'ch-lite',
+          senderId: 'user',
+          senderType: 'user',
+          content: 'hi',
+          metadata: const Value('{"keep":"only"}'),
+        ),
+      );
+
+      Map<String, dynamic> decoded(String? raw) =>
+          jsonDecode(raw!) as Map<String, dynamic>;
+
+      final watched = await db.messagingDao.watchMessages('ch-lite').first;
+      final lite = decoded(watched.firstWhere((m) => m.id == 'm-lite').metadata);
+      expect(lite.containsKey('segments'), isFalse);
+      expect(lite['segments_elided'], isTrue);
+      expect(lite['segment_count'], 1);
+      expect(lite['keep'], 'yes');
+      final plain = decoded(
+        watched.firstWhere((m) => m.id == 'm-plain').metadata,
+      );
+      expect(plain, {'keep': 'only'});
+
+      final window = await db.messagingDao
+          .watchMessagesWindow('ch-lite', limit: 10)
+          .first;
+      final windowLite = decoded(
+        window.firstWhere((m) => m.id == 'm-lite').metadata,
+      );
+      expect(windowLite['segment_count'], 1);
+      expect(windowLite.containsKey('segments'), isFalse);
+
+      final spaceWatch = await db.messagingDao
+          .watchMessagesForSpace('ch-lite')
+          .first;
+      expect(
+        decoded(spaceWatch.firstWhere((m) => m.id == 'm-lite').metadata)
+            .containsKey('segments'),
+        isFalse,
+      );
+
+      final full = await db.messagingDao.getMessageById('m-lite');
+      expect(decoded(full!.metadata)['segments'], isA<List<dynamic>>());
+      final oneShot = await db.messagingDao.getMessages('ch-lite');
+      expect(
+        decoded(oneShot.firstWhere((m) => m.id == 'm-lite').metadata)['segments'],
+        isA<List<dynamic>>(),
+      );
+
+      final page = await db.messagingDao.getMessagePageRows(
+        'ch-lite',
+        'ch-lite',
+        limit: 10,
+      );
+      final pageLite = decoded(
+        page.firstWhere((r) => r.data.id == 'm-lite').data.metadata,
+      );
+      expect(pageLite.containsKey('segments'), isFalse);
+      expect(pageLite['segment_count'], 1);
+      expect(pageLite['keep'], 'yes');
+
+      final hits = await db.messagingDao.searchInSpace('ch-lite', 'answer');
+      final hit = hits.firstWhere((m) => m.id == 'm-lite');
+      final hitMeta = decoded(hit.metadata);
+      expect(hitMeta.containsKey('segments'), isFalse);
+      expect(hitMeta['keep'], 'yes');
+      expect(hit.embedding, isNull);
+
+      final columns = db.messagingDao.messageListSelectColumns;
+      expect(
+        columns,
+        contains('WHEN list_metadata IS NOT NULL THEN list_metadata'),
+      );
+      expect(
+        columns,
+        contains('json_type(metadata, \'\$.segments\')'),
+      );
+
+      await db.messagingDao.updateMessage('m-lite', content: 'answer2');
+      final kept = await db
+          .customSelect(
+            'SELECT list_metadata, metadata, content FROM conversation_messages WHERE id = \'m-lite\'',
+          )
+          .getSingle();
+      expect(kept.read<String>('content'), 'answer2');
+      expect(
+        decoded(kept.read<String>('list_metadata')).containsKey('segments'),
+        isFalse,
+      );
+      expect(
+        decoded(kept.read<String>('metadata'))['segments'],
+        isA<List<dynamic>>(),
+      );
+
+      await db.messagingDao.updateMessage(
+        'm-lite',
+        metadata: <String, dynamic>{
+          'keep': 'yes',
+          'segments': <Map<String, dynamic>>[
+            <String, dynamic>{'t': 'text'},
+          ],
+        },
+      );
+      final typed = await db
+          .customSelect(
+            'SELECT list_metadata, metadata FROM conversation_messages WHERE id = \'m-lite\'',
+          )
+          .getSingle();
+      final typedLite = decoded(typed.read<String>('list_metadata'));
+      expect(typedLite.containsKey('segments'), isFalse);
+      expect(typedLite['segment_count'], 1);
+      expect(typedLite['keep'], 'yes');
+      expect(
+        decoded(typed.read<String>('metadata'))['segments'],
+        isA<List<dynamic>>(),
+      );
+
+      await db.customStatement(
+        'INSERT INTO conversation_messages (id, space_id, conversation_id, sender_id, sender_type, content, metadata) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [
+          'm-raw',
+          'ch-lite',
+          'ch-lite',
+          'agent',
+          'agent',
+          'raw',
+          '{"keep":"raw","segments":[{"t":"text"}]}',
+        ],
+      );
+      final rawStored = await db
+          .customSelect(
+            'SELECT list_metadata FROM conversation_messages WHERE id = \'m-raw\'',
+          )
+          .getSingle();
+      expect(rawStored.read<String?>('list_metadata'), isNull);
+      final rawWatch = await db.messagingDao.watchMessages('ch-lite').first;
+      final rawLite = decoded(
+        rawWatch.firstWhere((m) => m.id == 'm-raw').metadata,
+      );
+      expect(rawLite.containsKey('segments'), isFalse);
+      expect(rawLite['segments_elided'], isTrue);
+      expect(rawLite['keep'], 'raw');
     });
   });
 }

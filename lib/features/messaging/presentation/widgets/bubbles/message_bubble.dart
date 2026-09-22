@@ -101,11 +101,16 @@ class SpaceMessageBubble extends ConsumerWidget {
     // the thread is otherwise invisible from the stream it branched off.
     final refs = message.entityRefs;
     final open = onOpenThread;
+    // The space publishes one map of every thread. Selecting this message's
+    // rollup means a reply in some other thread does not rebuild this row
+    // (and the transcript under it).
     final thread = open == null
         ? null
-        : ref
-              .watch(spaceThreadSummariesProvider(message.spaceId))
-              .value?[message.id];
+        : ref.watch(
+            spaceThreadSummariesProvider(
+              message.spaceId,
+            ).select((async) => async.asData?.value[message.id]),
+          );
     if (refs.isEmpty && thread == null) {
       return bubble;
     }

@@ -404,6 +404,7 @@ class _MentionPopupState extends State<MentionPopup> {
     final s = row.suggestion!;
     final selected = row.index == _selected;
     return _SuggestionRow(
+      key: ValueKey('${row.sourceKind}:${s.id}'),
       suggestion: s,
       selected: selected,
       onTap: () {
@@ -424,6 +425,7 @@ class _MentionPopupState extends State<MentionPopup> {
 
 class _SuggestionRow extends StatelessWidget {
   const _SuggestionRow({
+    super.key,
     required this.suggestion,
     required this.selected,
     required this.onTap,
@@ -438,7 +440,12 @@ class _SuggestionRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ds = context.designSystem ?? DesignSystemTokens.light();
-    final bg = selected ? ds.bgSecondary : const Color(0x00000000);
+    // The popup sits on bgPrimary, so the row wash is that surface's hover.
+    // Fade the wash itself: a transparent black (0x00000000) lerps through a
+    // dark gray on the way to an opaque light fill, which flashes on every
+    // hover in and out.
+    final wash = ds.bgPrimaryHover;
+    final bg = selected ? wash : wash.withValues(alpha: 0);
     return ConstrainedBox(
       constraints: const BoxConstraints(
         minHeight: _MentionPopupState._rowHeight,

@@ -186,6 +186,11 @@ class CodeServerService implements CodeServerPort {
     settings['files.autoSaveDelay'] = 1000;
     settings['files.hotExit'] = 'off';
 
+    // Gutter diff stays on. The bridge extension supplies the original
+    // resource (git's own provider never matches this window's editor URIs).
+    settings['scm.diffDecorations'] = 'all';
+    settings['scm.diffDecorationsGutterVisibility'] = 'always';
+
     // Use the app's code font (Fira Code, with ligatures) so the embedded editor
     // matches the rest of the app; fall back to platform monospaces if the user
     // doesn't have Fira Code installed for the webview to pick up.
@@ -1389,7 +1394,7 @@ final RegExp _portLine = RegExp(r'127\.0\.0\.1:(\d{2,5})');
 /// Version of the bundled bridge extension. Bump it (here + in the package.json
 /// and .vsix manifest below) to force a reinstall of the shipped source; the
 /// installer skips work once `extensions.json` lists this version.
-const String _bridgeExtensionVersion = '0.0.9';
+const String _bridgeExtensionVersion = '0.0.10';
 
 /// `package.json` for the bundled bridge extension. It runs in code-server's
 /// SERVER-SIDE Node extension host (`main`, activated on startup), so it has
@@ -1400,7 +1405,7 @@ const String _bridgeExtensionPackageJson = '''
   "displayName": "Control Center IDE Bridge",
   "description": "Hands in-editor file navigation back to the Control Center app shell so it owns the tabs.",
   "publisher": "control-center",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "engines": { "vscode": "^1.80.0" },
   "extensionKind": ["workspace"],
   "categories": ["Other"],
@@ -1428,7 +1433,7 @@ const String _bridgeVsixManifest = '''
 <?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
   <Metadata>
-    <Identity Language="en-US" Id="cc-ide-bridge" Version="0.0.9" Publisher="control-center"/>
+    <Identity Language="en-US" Id="cc-ide-bridge" Version="0.0.10" Publisher="control-center"/>
     <DisplayName>Control Center IDE Bridge</DisplayName>
     <Description xml:space="preserve">Hands in-editor file navigation to the Control Center app shell.</Description>
     <Tags>__ext_control-center</Tags>
@@ -1452,8 +1457,9 @@ const String _bridgeVsixManifest = '''
 /// Bundled bridge extension source (CommonJS). Each window pins its entry
 /// file; navigation POSTs the target to `CC_IDE_REPORT_URL` (app opens a tab)
 /// and closes the drifted editor. Also reports dirty state, consumes
-/// `CC_IDE_COMMANDS_URL` SSE (`save`), and keeps side bars/panel closed on
-/// activate + user editor focus (skips programmatic selection).
+/// `CC_IDE_COMMANDS_URL` SSE (`save`), keeps side bars/panel closed on
+/// activate + user editor focus (skips programmatic selection), and registers
+/// a working-tree quick-diff provider so the gutter shows git changes.
 const String _bridgeExtensionSource = r'''
 const vscode = require('vscode');
 const http = require('http');
@@ -1667,7 +1673,88 @@ async function revealEntry(entry) {
   } catch (e) {}
 }
 
+// Git's quick-diff provider is scoped to the repository root. In this
+// embedded window that root does not match the editor resource, so the
+// built-in provider never runs and the gutter stays blank. This one has no
+// root filter. The extension host sees the resource as a file URI; the
+// original is the git filesystem's HEAD (index for a tracked file, empty
+// tree for an untracked one) so added, modified and deleted lines mark
+// while the buffer is open.
+const GIT_EMPTY_TREE = '4b825dc642cb6eb9a060e54bf8d69288fbee4904';
+const GIT_IGNORED = 8;
+
+function gitOriginalUri(fileUri, ref) {
+  return fileUri.with({
+    scheme: 'git',
+    path: fileUri.path + '.git',
+    query: JSON.stringify({ path: fileUri.fsPath, ref: ref })
+  });
+}
+
+function isInsideDotGit(fsPath) {
+  const path = require('path');
+  const parts = fsPath.split(path.sep);
+  for (var i = 0; i < parts.length; i++) {
+    if (parts[i] === '.git') return true;
+  }
+  return false;
+}
+
+async function gitApi() {
+  const ext = vscode.extensions.getExtension('vscode.git');
+  if (!ext) return null;
+  const exports = ext.isActive ? ext.exports : await ext.activate();
+  if (!exports || typeof exports.getAPI !== 'function') return null;
+  try { return exports.getAPI(1); } catch (e) { return null; }
+}
+
+async function provideWorkingTreeOriginal(uri) {
+  if (!isFile(uri)) return;
+  const fsPath = uri.fsPath;
+  if (!fsPath || isInsideDotGit(fsPath)) return;
+  try {
+    const fs = require('fs');
+    if (fs.lstatSync(fsPath).isSymbolicLink()) return;
+  } catch (e) { return; }
+  const api = await gitApi();
+  if (!api) return;
+  const fileUri = uri.scheme === 'file' ? uri : vscode.Uri.file(fsPath);
+  const repo = api.getRepository(fileUri);
+  if (!repo || !repo.state) return;
+  const state = repo.state;
+  const merge = state.mergeChanges || [];
+  for (var i = 0; i < merge.length; i++) {
+    if (merge[i].uri && merge[i].uri.fsPath === fsPath) return;
+  }
+  const untracked = state.untrackedChanges || [];
+  for (var j = 0; j < untracked.length; j++) {
+    if (!untracked[j].uri || untracked[j].uri.fsPath !== fsPath) continue;
+    if (untracked[j].status === GIT_IGNORED) return;
+    return gitOriginalUri(fileUri, GIT_EMPTY_TREE);
+  }
+  return gitOriginalUri(fileUri, '');
+}
+
+function installQuickDiff(context) {
+  let reg;
+  function register() {
+    if (reg) reg.dispose();
+    reg = vscode.window.registerQuickDiffProvider(
+      [{ scheme: 'file' }, { scheme: 'vscode-remote' }],
+      { provideOriginalResource: provideWorkingTreeOriginal },
+      'Working tree'
+    );
+  }
+  register();
+  context.subscriptions.push({ dispose: function () { if (reg) reg.dispose(); } });
+  gitApi().then(function (api) {
+    if (!api || typeof api.onDidOpenRepository !== 'function') return;
+    context.subscriptions.push(api.onDidOpenRepository(function () { register(); }));
+  }).catch(function () {});
+}
+
 function activate(context) {
+  installQuickDiff(context);
   hideChromeOnBoot();
   // Chrome can come back after the boot retries. Re-hide when the user actually
   // clicks or moves the caret in the editor — not on programmatic selection

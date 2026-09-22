@@ -1,3 +1,6 @@
+/// @docImport 'package:cc_domain/core/domain/ports/confirmation_port.dart';
+library;
+
 import 'package:cc_domain/core/domain/ports/agent_question_port.dart';
 import 'package:cc_harness/tools.dart';
 
@@ -99,78 +102,29 @@ class AskUserTool extends HarnessTool {
     Map<String, dynamic> args,
     HarnessToolContext context,
   ) async {
-    final question = (args['question'] as String?)?.trim() ?? '';
-    if (question.isEmpty) {
-      return HarnessToolResult.error('ask_user requires a non-empty question.');
-    }
-
-    final options = <AgentQuestionOption>[];
-    final rawOptions = args['options'];
-    if (rawOptions is List) {
-      for (final raw in rawOptions.take(_maxOptions)) {
-        if (raw is! Map) {
-          continue;
-        }
-        final label = (raw['label'] as String?)?.trim();
-        if (label == null || label.isEmpty) {
-          continue;
-        }
-        final description = (raw['description'] as String?)?.trim();
-        options.add(
-          AgentQuestionOption(
-            label: label,
-            description: (description?.isEmpty ?? true) ? null : description,
-          ),
-        );
-      }
-    }
-
-    // A question with no options and no free-text field is unanswerable, so
-    // free text defaults ON when nothing was offered to pick from.
-    final allowFreeText = args['allow_free_text'] as bool? ?? options.isEmpty;
-    if (options.isEmpty && !allowFreeText) {
-      return HarnessToolResult.error(
-        'ask_user needs either options or allow_free_text; a question with '
-        'neither cannot be answered.',
-      );
+    final parsed = AskUserArguments.parse(args, maxOptions: _maxOptions);
+    final error = parsed.error;
+    if (error != null) {
+      return HarnessToolResult.error(error);
     }
 
     final answer = await _port.ask(
       AgentQuestionRequest(
         workspaceId: _workspaceId,
         spaceId: _spaceId,
-        question: question,
-        context: (args['context'] as String?)?.trim(),
-        options: options,
-        allowFreeText: allowFreeText,
-        multiSelect: args['multi_select'] as bool? ?? false,
+        question: parsed.question,
+        context: parsed.context,
+        options: parsed.options,
+        allowFreeText: parsed.allowFreeText,
+        multiSelect: parsed.multiSelect,
         askedByAgentId: _askedByAgentId,
         askedByName: _askedByName,
       ),
     );
 
-    // Null is a timeout (or a client that vanished). Skip is a deliberate
-    // "you pick" and is not an error — the agent should proceed, not retry.
-    if (answer == null) {
-      return HarnessToolResult.error(
-        'No answer: the question timed out or was dismissed. Do not ask '
-        'again. Choose the most reasonable option, state the assumption you '
-        'are proceeding under, and continue.',
-      );
-    }
-    if (answer.skipped) {
-      return HarnessToolResult.success(
-        'The user skipped this question. Choose the most reasonable option, '
-        'state the assumption you are proceeding under, and continue. Do not '
-        'ask again.',
-      );
-    }
-    if (answer.isEmpty) {
-      return HarnessToolResult.success(
-        'The user submitted an empty answer. Proceed with your best judgment '
-        'and say what you assumed.',
-      );
-    }
-    return HarnessToolResult.success(answer.toPromptString());
+    final outcome = AskUserOutcome.fromAnswer(answer);
+    return outcome.isError
+        ? HarnessToolResult.error(outcome.text)
+        : HarnessToolResult.success(outcome.text);
   }
 }

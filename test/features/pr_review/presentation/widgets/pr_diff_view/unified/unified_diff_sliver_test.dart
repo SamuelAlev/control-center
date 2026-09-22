@@ -6,6 +6,7 @@ import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_v
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/pr_diff_document.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_diff_config.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_diff_sliver.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_row_painter.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -526,7 +527,7 @@ void main() {
             ]);
       final store = DiffStructureStore(document: doc, maxTokenFiles: 8);
       final slots = [
-        DiffSlot(
+        const DiffSlot(
           kind: DiffSlotKind.header,
           key: 'hdr:a',
           fileIndex: 0,
@@ -617,6 +618,207 @@ void main() {
       await tester.pump();
 
       expect(sliver.hasSelection, isFalse);
+    });
+  });
+
+  group('diff word and row selection', () {
+    test('double-click range matches a browser word', () {
+      expect(diffWordDisplayRange('hello world', 1), (start: 0, end: 6));
+      expect(diffWordDisplayRange('hello world', 8), (start: 6, end: 11));
+      expect(diffWordDisplayRange('hello world', 5), (start: 5, end: 6));
+      expect(diffWordDisplayRange('foo.bar', 1), (start: 0, end: 3));
+      expect(diffWordDisplayRange('foo.bar', 3), (start: 3, end: 4));
+      expect(diffWordDisplayRange("don't", 3), (start: 0, end: 5));
+      expect(diffWordDisplayRange('foo-bar', 4), (start: 0, end: 7));
+      expect(diffWordDisplayRange('foo--bar', 4), (start: 3, end: 5));
+      expect(diffWordDisplayRange('\thello', 5), (start: 4, end: 9));
+      expect(diffWordDisplayRange('', 0), (start: 0, end: 0));
+    });
+
+    test('tap count follows the platform past a triple-click', () {
+      expect(diffSelectionTapCount(1, TargetPlatform.macOS), 1);
+      expect(diffSelectionTapCount(2, TargetPlatform.macOS), 2);
+      expect(diffSelectionTapCount(3, TargetPlatform.macOS), 3);
+      expect(diffSelectionTapCount(4, TargetPlatform.macOS), 3);
+      expect(diffSelectionTapCount(4, TargetPlatform.linux), 1);
+      expect(diffSelectionTapCount(4, TargetPlatform.windows), 2);
+      expect(diffSelectionTapCount(5, TargetPlatform.windows), 3);
+    });
+  });
+
+  group('mouse clicks select like a browser', () {
+    setUpAll(() => DiffWorkerPool.debugForceInline = true);
+    tearDownAll(() => DiffWorkerPool.debugForceInline = false);
+
+    const headerHeight = 32.0;
+    const lineHeight = 20.0;
+
+    const paintConfig = UnifiedDiffPaintConfig(
+      brightness: Brightness.light,
+      baseStyle: TextStyle(fontSize: 13),
+      gutterBgColor: Color(0xFFF0F0F0),
+      gutterBorderColor: Color(0xFFDDDDDD),
+      expandGapBgColor: Color(0xFFEEEEEE),
+      expandGapBorderColor: Color(0xFFCCCCCC),
+      expandGapTextColor: Color(0xFF666666),
+      commentHighlightColor: Color(0x1A0000FF),
+      commentHighlightActiveColor: Color(0x330000FF),
+      revision: 0,
+    );
+
+    Future<({RenderUnifiedDiffSliver sliver, Offset origin})> pump(
+      WidgetTester tester,
+    ) async {
+      final doc =
+          PrDiffDocument(lineHeight: lineHeight, headerHeight: headerHeight)
+            ..setFiles([
+              PrFile(
+                filename: 'lib/a.dart',
+                status: PrFileStatus.modified,
+                additions: 0,
+                deletions: 0,
+                patch: '@@ -1,2 +1,2 @@\n hello world\n final value\n',
+              ),
+            ]);
+      final store = DiffStructureStore(document: doc, maxTokenFiles: 8);
+      final slots = [
+        const DiffSlot(
+          kind: DiffSlotKind.header,
+          key: 'hdr:a',
+          fileIndex: 0,
+          offset: 0,
+          height: headerHeight,
+        ),
+      ];
+      await tester.pumpWidget(
+        MaterialApp(
+          home: CustomScrollView(
+            slivers: [
+              UnifiedDiffSliver(
+                delegate: SliverChildBuilderDelegate(
+                  (context, i) => SizedBox(
+                    key: ValueKey(slots[i].key),
+                    height: slots[i].height,
+                  ),
+                  childCount: slots.length,
+                ),
+                document: doc,
+                store: store,
+                config: paintConfig,
+                slots: slots,
+              ),
+            ],
+          ),
+        ),
+      );
+      await tester.pump();
+      expect(doc.structureOf(0)!.contents[doc.rawIndexOf(0, 0)], 'hello world');
+      final sliver = tester.renderObject<RenderUnifiedDiffSliver>(
+        find.byType(UnifiedDiffSliver),
+      );
+      return (
+        sliver: sliver,
+        origin: tester.getTopLeft(find.byType(CustomScrollView)),
+      );
+    }
+
+    Offset cell(
+      ({RenderUnifiedDiffSliver sliver, Offset origin}) host,
+      int line,
+      int col, {
+      double fraction = 0.5,
+    }) {
+      final advance = host.sliver.monoAdvanceWidth;
+      final x =
+          host.sliver.gutterWidthOf(0) +
+          kDiffCodePadLeft +
+          (col + fraction) * advance;
+      final y = headerHeight + line * lineHeight + lineHeight / 2;
+      return host.origin + Offset(x, y);
+    }
+
+    Future<void> click(WidgetTester tester, Offset at, {int times = 1}) async {
+      for (var i = 0; i < times; i++) {
+        final gesture = await tester.startGesture(
+          at,
+          kind: PointerDeviceKind.mouse,
+        );
+        await tester.pump();
+        await gesture.up();
+        await tester.pump();
+        if (i + 1 < times) {
+          await tester.pump(const Duration(milliseconds: 30));
+        }
+      }
+    }
+
+    testWidgets('double-click selects the word and its trailing space', (
+      tester,
+    ) async {
+      final host = await pump(tester);
+      await click(tester, cell(host, 0, 2), times: 2);
+      expect(host.sliver.copySelectionText(), 'hello ');
+      expect(host.sliver.selectionRange(), (
+        file: 0,
+        startLine: 0,
+        startCol: 0,
+        endLine: 0,
+        endCol: 6,
+      ));
+    });
+
+    testWidgets('triple-click selects the row', (tester) async {
+      final host = await pump(tester);
+      await click(tester, cell(host, 0, 8), times: 3);
+      expect(host.sliver.copySelectionText(), 'hello world');
+      expect(host.sliver.selectionRange(), (
+        file: 0,
+        startLine: 0,
+        startCol: 0,
+        endLine: 0,
+        endCol: 11,
+      ));
+    });
+
+    testWidgets('a later single click clears the selection', (tester) async {
+      final host = await pump(tester);
+      await click(tester, cell(host, 0, 2), times: 2);
+      expect(host.sliver.hasSelection, isTrue);
+      await tester.pump(const Duration(milliseconds: 350));
+      await click(tester, cell(host, 0, 2));
+      expect(host.sliver.hasSelection, isFalse);
+    });
+
+    testWidgets('a drag still selects characters', (tester) async {
+      final host = await pump(tester);
+      final gesture = await tester.startGesture(
+        cell(host, 0, 0, fraction: 0.2),
+        kind: PointerDeviceKind.mouse,
+      );
+      await tester.pump();
+      await gesture.moveTo(cell(host, 0, 4, fraction: 0.2));
+      await tester.pump();
+      await gesture.up();
+      await tester.pump();
+      expect(host.sliver.copySelectionText(), 'hell');
+    });
+
+    testWidgets('dragging after a double-click extends by word', (
+      tester,
+    ) async {
+      final host = await pump(tester);
+      final start = cell(host, 0, 2);
+      await click(tester, start);
+      final gesture = await tester.startGesture(
+        start,
+        kind: PointerDeviceKind.mouse,
+      );
+      await tester.pump();
+      await gesture.moveTo(cell(host, 0, 8));
+      await tester.pump();
+      await gesture.up();
+      await tester.pump();
+      expect(host.sliver.copySelectionText(), 'hello world');
     });
   });
 }

@@ -268,9 +268,9 @@ Widget _wrap(
     child: MaterialApp(
       localizationsDelegates: [
         ...AppLocalizations.localizationsDelegates,
-        GlobalMaterialLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate, // ignore: deprecated_member_use
         GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate, // ignore: deprecated_member_use
       ],
       supportedLocales: AppLocalizations.supportedLocales,
       locale: const Locale('en'),
@@ -312,7 +312,7 @@ void main() {
           _wrap(
             CustomScrollView(
               controller: controller,
-              cacheExtent: 8000,
+              scrollCacheExtent: const ScrollCacheExtent.pixels(8000),
               slivers: [
                 PrActivityTimeline(
                   pr: _pr(),
@@ -444,7 +444,7 @@ void main() {
         await tester.pumpWidget(
           _wrap(
             CustomScrollView(
-              cacheExtent: 8000,
+              scrollCacheExtent: const ScrollCacheExtent.pixels(8000),
               slivers: [
                 PrActivityTimeline(pr: _pr(), prRef: _prRef),
               ],
@@ -494,7 +494,7 @@ void main() {
           _wrap(
             CustomScrollView(
               controller: controller,
-              cacheExtent: 0,
+              scrollCacheExtent: const ScrollCacheExtent.pixels(0),
               slivers: [
                 PrActivityTimeline(pr: _pr(), prRef: _prRef),
               ],
@@ -568,7 +568,7 @@ void main() {
           _wrap(
             CustomScrollView(
               controller: controller,
-              cacheExtent: 0,
+              scrollCacheExtent: const ScrollCacheExtent.pixels(0),
               slivers: [
                 PrActivityTimeline(pr: _pr(), prRef: _prRef),
               ],

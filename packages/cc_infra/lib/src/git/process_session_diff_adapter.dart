@@ -4,7 +4,7 @@ import 'package:cc_domain/core/domain/ports/session_diff_port.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
 import 'package:cc_domain/features/pr_review/domain/services/diff_parser.dart';
 import 'package:cc_infra/src/git/git_diff_z_parser.dart';
-import 'package:path/path.dart' as p;
+import 'package:cc_infra/src/git/working_tree_capture.dart';
 
 /// A [SessionDiffPort] that shells out to `git` to compute what changed in a
 /// worktree since a snapshot ref.
@@ -29,9 +29,8 @@ class ProcessSessionDiffAdapter implements SessionDiffPort {
     }
     // Diff two trees so brand-new (untracked) files show up — a plain
     // `git diff <tree>` ignores untracked files. When no head ref is given we
-    // snapshot the current working tree (add -A into a throwaway index +
-    // write-tree, never touching the real index/HEAD) and diff against that.
-    final head = headRef ?? await _captureWorkingTree(worktreePath);
+    // snapshot the working tree and diff against that.
+    final head = headRef ?? await captureWorkingTree(worktreePath);
     if (head == null) {
       return const [];
     }
@@ -203,47 +202,6 @@ class ProcessSessionDiffAdapter implements SessionDiffPort {
     return out;
   }
 
-  /// Writes a tree object for the entire current working tree using a TEMPORARY
-  /// index, so it never disturbs the real index or HEAD. Returns the tree SHA,
-  /// or null on failure.
-  Future<String?> _captureWorkingTree(String worktreePath) async {
-    final tmpIndex = p.join(
-      Directory.systemTemp.path,
-      'cc_sessiondiff_index_${worktreePath.hashCode.toUnsigned(32)}_${_counter++}',
-    );
-    try {
-      // Use a COLD (empty) temp index so `git add -A` hashes every path straight
-      // from disk. We deliberately do NOT seed it from the repo's real index:
-      // seeding inherits the real index's stat cache and `git add -A` then
-      // trusts it and skips re-hashing any file whose (size, mtime) still match
-      // the cached entry. In an isolated copy-on-write worktree edited through
-      // code-server that trap fires easily — a same-size edit (or one whose
-      // mtime the CoW clone / editor left matching the seeded entry) is skipped,
-      // so `write-tree` captures the STALE pre-edit blob and the resulting
-      // `git diff HEAD <tree>` shows the wrong (old) lines. A cold index costs an
-      // extra full hash per capture but is always faithful to what's on disk,
-      // which a diff the user reads must be.
-      final env = {'GIT_INDEX_FILE': tmpIndex};
-      final add = await _run(['add', '-A'], worktreePath, env: env);
-      if (add.exitCode != 0) {
-        return null;
-      }
-      final tree = await _run(['write-tree'], worktreePath, env: env);
-      if (tree.exitCode != 0) {
-        return null;
-      }
-      final sha = tree.stdout.trim();
-      return sha.isEmpty ? null : sha;
-    } finally {
-      final f = File(tmpIndex);
-      if (f.existsSync()) {
-        try {
-          f.deleteSync();
-        } catch (_) {}
-      }
-    }
-  }
-
   Future<bool> _isWorktree(String path) async {
     if (!Directory(path).existsSync()) {
       return false;
@@ -269,6 +227,4 @@ class ProcessSessionDiffAdapter implements SessionDiffPort {
       stderr: result.stderr as String,
     );
   }
-
-  static int _counter = 0;
 }

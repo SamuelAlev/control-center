@@ -11,7 +11,7 @@ import 'package:control_center/features/meetings/data/services/aec_delay_estimat
 /// [AecDelayEstimator] calibrates per-session delay (`clockNow` required);
 /// buffer mic so reference leads; set `set_stream_delay_ms`. Consume both raw
 /// streams eagerly (never pause) — backpressure hits controllers only. Null
-/// `processor` → passthrough ([MeetingEchoFilter] remains). Until delay is
+/// `processor` → passthrough (`MeetingEchoFilter` remains). Until delay is
 /// confident, pass mic through AEC3 unbuffered.
 class AecMicFilter implements MicEchoCanceller {
   /// Creates a filter. A `null` [processor] makes every method an identity

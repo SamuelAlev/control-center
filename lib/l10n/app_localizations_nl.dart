@@ -3203,6 +3203,16 @@ class AppLocalizationsNl extends AppLocalizations {
   String get editMessage => 'Bericht bewerken';
 
   @override
+  String get revertToThere => 'Terug naar daar';
+
+  @override
+  String get sendAsNewMessage => 'Verstuur als nieuw bericht';
+
+  @override
+  String get editMessageChoiceBody =>
+      'Terugzetten verbergt de berichten erna en draait de bestanden van de agent terug. Je kunt dat ongedaan maken. Als nieuw bericht versturen laat het gesprek zoals het is.';
+
+  @override
   String get deleteMessage => 'Bericht verwijderen';
 
   @override
@@ -8622,6 +8632,11 @@ class AppLocalizationsNl extends AppLocalizations {
   String get ideReviewCode => 'Code beoordelen';
 
   @override
+  String ideReviewCodeInRepo(String repo) {
+    return 'Code beoordelen ($repo)';
+  }
+
+  @override
   String get ideRevertConfirmTitle => 'Wijzigingen terugdraaien';
 
   @override
@@ -10523,6 +10538,88 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get commitAndSync => 'Committen & synchroniseren';
+
+  @override
+  String get scmSyncChanges => 'Wijzigingen synchroniseren';
+
+  @override
+  String get scmPublishBranch => 'Branch publiceren';
+
+  @override
+  String get scmSyncFailed => 'Synchroniseren mislukt';
+
+  @override
+  String get scmSyncDirty =>
+      'Commit of verwerp wijzigingen voordat je synchroniseert';
+
+  @override
+  String get scmSynced => 'Gesynchroniseerd';
+
+  @override
+  String get scmSelectBranch => 'Selecteer een branch om uit te checken';
+
+  @override
+  String get scmCreateBranch => 'Nieuwe branch maken…';
+
+  @override
+  String get scmCreateBranchFrom => 'Nieuwe branch maken vanaf…';
+
+  @override
+  String get scmCheckoutDetached => 'Los uitchecken…';
+
+  @override
+  String get scmBranchName => 'Branchnaam';
+
+  @override
+  String get scmCreateBranchTitle => 'Branch maken';
+
+  @override
+  String scmFromRef(String ref) {
+    return 'Vanaf ⁨$ref⁩';
+  }
+
+  @override
+  String get scmCheckoutFailed => 'Kan niet van branch wisselen';
+
+  @override
+  String get scmCheckoutDirty =>
+      'Commit of verwerp wijzigingen voordat je van branch wisselt';
+
+  @override
+  String scmSwitchedToBranch(String branch) {
+    return 'Gewisseld naar ⁨$branch⁩';
+  }
+
+  @override
+  String scmDetachedAt(String ref) {
+    return 'Los bij ⁨$ref⁩';
+  }
+
+  @override
+  String get scmDetachedHead => 'Losse HEAD';
+
+  @override
+  String get scmNoBranches => 'Geen overeenkomende branches';
+
+  @override
+  String get scmBranches => 'Branches';
+
+  @override
+  String get scmRemoteBranches => 'Externe branches';
+
+  @override
+  String get scmTags => 'Tags';
+
+  @override
+  String get scmPickStartPoint => 'Selecteer een startpunt';
+
+  @override
+  String get scmSwitchBranch => 'Wissel van branch';
+
+  @override
+  String commitMessageOnBranch(String shortcut, String branch) {
+    return 'Bericht ($shortcut om te committen op “$branch”)';
+  }
 
   @override
   String get committed => 'Gecommit';

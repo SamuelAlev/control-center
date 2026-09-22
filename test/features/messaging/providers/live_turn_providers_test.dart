@@ -57,6 +57,23 @@ void main() {
       expect(cache.get('a'), isNotNull);
       expect(cache.get('c'), isNotNull);
     });
+
+    test('evicts oldest entries past the character budget', () {
+      final cache = TranscriptLruCache(capacity: 10, maxChars: 10);
+      final five = [TextSegment(text: '12345', startedAt: ts)];
+      cache.put('a', five);
+      cache.put('b', five);
+      cache.put('c', five);
+      expect(cache.get('a'), isNull);
+      expect(cache.get('b'), isNotNull);
+      expect(cache.get('c'), isNotNull);
+    });
+
+    test('keeps a single transcript larger than the budget', () {
+      final cache = TranscriptLruCache(capacity: 4, maxChars: 8);
+      cache.put('big', [TextSegment(text: '0123456789', startedAt: ts)]);
+      expect(cache.get('big'), isNotNull);
+    });
   });
 
   group('spaceTurnRelayProvider fold', () {

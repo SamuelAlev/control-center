@@ -72,11 +72,12 @@ class _MeetingToolbarWindowState extends ConsumerState<MeetingToolbarWindow> {
         debugShowCheckedModeBanner: false,
         locale: localeCode != null ? Locale(localeCode) : null,
         supportedLocales: AppLocalizations.supportedLocales,
+        // Same flutter/material.dart delegates as ControlCenterApp.
         localizationsDelegates: const [
           AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate, // ignore: deprecated_member_use
           GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate, // ignore: deprecated_member_use
         ],
         // This sibling window must ignore the engine's current route (the main
         // window's `/workspaces/<id>/…` deep link is shared across windows in

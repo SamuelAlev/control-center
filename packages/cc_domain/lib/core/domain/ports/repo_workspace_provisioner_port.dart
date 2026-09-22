@@ -14,7 +14,7 @@ abstract interface class RepoWorkspaceProvisionerPort {
   /// `agents/<agentSlug>/`; returns that cwd or [fallbackDir] on failure.
   ///
   /// [agentSlug] keys the overlay; [agentConfigDir] targets AGENTS.md+`.agents`.
-  /// Branch from [ticketKey]/[ticketTitle] else `conv/<short-space>`; fetches
+  /// Branch from [ticketKey]/[ticketTitle] else [spaceScratchBranch]; fetches
   /// latest base when remote+token available. [prHeadRef] checks out that ref
   /// on [prBranch] for [prHeadRepoFullName], pristine. [repoAllowlist] null →
   /// all linked repos. [onRepoProvision]/[onRepoSetupScript] fire on fresh
@@ -118,4 +118,15 @@ abstract interface class RepoWorkspaceProvisionerPort {
   /// rows were reaped (overlays + token-bearing `.mcp.json`). Fails safe:
   /// if space existence cannot be determined, the worktree is treated as live.
   Future<int> sweepStale({required String workspaceId});
+}
+
+/// Prefix of the scratch branch a space worktree is created on when the space
+/// has no ticket and is not checking out a pull request.
+const String kSpaceScratchBranchPrefix = 'space/';
+
+/// That branch for [spaceId]: `space/` plus the first eight characters of the
+/// space id (`space/12345678`).
+String spaceScratchBranch(String spaceId) {
+  final short = spaceId.length > 8 ? spaceId.substring(0, 8) : spaceId;
+  return '$kSpaceScratchBranchPrefix$short';
 }

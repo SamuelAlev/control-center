@@ -1342,6 +1342,440 @@ void main() {
       expect(res!['pushed'], isTrue);
       expect(seen, ['user-9']);
     });
+
+    test('a local commit with no upstream is counted as ahead', () async {
+      final wt = await gitWorktreeWithOrigin('wt-status');
+      await git(['push', 'origin', 'HEAD:refs/heads/main'], wt);
+      File(p.join(wt, 'src/app.dart')).writeAsStringSync('// edited\n');
+      await git(['add', '-A'], wt);
+      await git(['commit', '-q', '-m', 'local'], wt);
+
+      final grouped = await svcWith(
+        wt,
+        [],
+      ).repoChangesGrouped('ws', 'repo1', spaceId: 'ch');
+
+      // The push left origin/main even without a tracking config, so the new
+      // commit is one ahead of the published branch.
+      expect(grouped.hasUpstream, isTrue);
+      expect(grouped.ahead, 1);
+      expect(grouped.behind, 0);
+      // The commit is on main itself, so it is not a pull request against main.
+      expect(grouped.aheadOfBase, 0);
+    });
+
+    test('syncBranch publishes the local commit and sets upstream', () async {
+      final wt = await gitWorktreeWithOrigin('wt-sync');
+      await git(['push', 'origin', 'HEAD:refs/heads/main'], wt);
+      File(p.join(wt, 'src/app.dart')).writeAsStringSync('// edited\n');
+      await git(['add', '-A'], wt);
+      await git(['commit', '-q', '-m', 'local'], wt);
+      final seen = <String?>[];
+      final svc = svcWith(wt, seen);
+
+      final res = await svc.syncBranch(
+        workspaceId: 'ws',
+        spaceId: 'ch',
+        repoId: 'repo1',
+        actingUserId: 'user-9',
+      );
+
+      expect(res, isNotNull);
+      expect(res!['pushed'], isTrue, reason: res['error'] as String?);
+      expect(res['dirty'], isFalse);
+      expect(seen, ['user-9']);
+      final grouped = await svc.repoChangesGrouped(
+        'ws',
+        'repo1',
+        spaceId: 'ch',
+      );
+      expect(grouped.hasUpstream, isTrue);
+      expect(grouped.ahead, 0);
+      expect(grouped.behind, 0);
+      expect(grouped.aheadOfBase, 0);
+    });
+
+    test(
+      'a published feature branch stays ahead of the default branch',
+      () async {
+        final wt = await gitWorktreeWithOrigin('wt-pr');
+        await git(['push', 'origin', 'HEAD:refs/heads/main'], wt);
+        await git(['checkout', '-q', '-b', 'space/abc'], wt);
+        File(p.join(wt, 'src/app.dart')).writeAsStringSync('// feature\n');
+        await git(['add', '-A'], wt);
+        await git(['commit', '-q', '-m', 'feature'], wt);
+        await git(['push', '-u', 'origin', 'HEAD:refs/heads/space/abc'], wt);
+
+        final grouped = await svcWith(
+          wt,
+          [],
+        ).repoChangesGrouped('ws', 'repo1', spaceId: 'ch');
+
+        expect(grouped.hasUpstream, isTrue);
+        expect(grouped.ahead, 0);
+        expect(grouped.behind, 0);
+        expect(grouped.aheadOfBase, 1);
+      },
+    );
+
+    test('an unpublished feature branch is counted against the base', () async {
+      final wt = await gitWorktreeWithOrigin('wt-local');
+      await git(['push', 'origin', 'HEAD:refs/heads/main'], wt);
+      await git(['checkout', '-q', '-b', 'space/abc'], wt);
+      File(p.join(wt, 'src/app.dart')).writeAsStringSync('// local\n');
+      await git(['add', '-A'], wt);
+      await git(['commit', '-q', '-m', 'local'], wt);
+
+      final grouped = await svcWith(
+        wt,
+        [],
+      ).repoChangesGrouped('ws', 'repo1', spaceId: 'ch');
+
+      expect(grouped.hasUpstream, isFalse);
+      expect(grouped.ahead, 1);
+      expect(grouped.behind, 0);
+      expect(grouped.aheadOfBase, 1);
+    });
+
+    RepoIdeDataService svcWithPublishedHead(
+      String wt,
+      PublishedBranchHead published,
+    ) => RepoIdeDataService(
+      repoRepository: _FakeRepoRepo(),
+      workspaceRepository: _FakeWorkspaceRepo()..linked['ws'] = {'repo1'},
+      isolatedRepoRepository: _FakeIsolatedRepoRepo()
+        ..bySpace['ws:ch'] = [_worktree('repo1', wt)],
+      fileSearch: DartFileSearch(),
+      publishedBranchHead: published,
+    );
+
+    Future<String> headSha(String root) async {
+      final res = await Process.run('git', [
+        'rev-parse',
+        'HEAD',
+      ], workingDirectory: root);
+      return (res.stdout as String).trim();
+    }
+
+    test(
+      'an open pull request publishes a branch with no remote-tracking ref',
+      () async {
+        final wt = await gitWorktreeWithOrigin('wt-pr-outside');
+        await git(['push', 'origin', 'HEAD:refs/heads/main'], wt);
+        await git(['checkout', '-q', '-b', 'space/abc'], wt);
+        File(p.join(wt, 'src/app.dart')).writeAsStringSync('// one\n');
+        await git(['add', '-A'], wt);
+        await git(['commit', '-q', '-m', 'one'], wt);
+        File(p.join(wt, 'src/app.dart')).writeAsStringSync('// two\n');
+        await git(['add', '-A'], wt);
+        await git(['commit', '-q', '-m', 'two'], wt);
+        final head = await headSha(wt);
+        String? asked;
+        final grouped = await svcWithPublishedHead(wt, ({
+          required workspaceId,
+          required repoId,
+          required branch,
+        }) async {
+          asked = branch;
+          return head;
+        }).repoChangesGrouped('ws', 'repo1', spaceId: 'ch');
+
+        // The forge has the branch (the pull request says so) but this
+        // worktree never fetched origin/space/abc, so git has no upstream.
+        expect(asked, 'space/abc');
+        expect(grouped.hasUpstream, isTrue);
+        expect(grouped.ahead, 0);
+        expect(grouped.behind, 0);
+        expect(grouped.aheadOfBase, 2);
+      },
+    );
+
+    test(
+      'commits after the pull request head stay ahead of the published branch',
+      () async {
+        final wt = await gitWorktreeWithOrigin('wt-pr-ahead');
+        await git(['push', 'origin', 'HEAD:refs/heads/main'], wt);
+        await git(['checkout', '-q', '-b', 'space/abc'], wt);
+        File(p.join(wt, 'src/app.dart')).writeAsStringSync('// published\n');
+        await git(['add', '-A'], wt);
+        await git(['commit', '-q', '-m', 'published'], wt);
+        final published = await headSha(wt);
+        File(p.join(wt, 'src/app.dart')).writeAsStringSync('// local\n');
+        await git(['add', '-A'], wt);
+        await git(['commit', '-q', '-m', 'local'], wt);
+
+        final grouped = await svcWithPublishedHead(wt, ({
+          required workspaceId,
+          required repoId,
+          required branch,
+        }) async {
+          return published;
+        }).repoChangesGrouped('ws', 'repo1', spaceId: 'ch');
+
+        expect(grouped.hasUpstream, isTrue);
+        expect(grouped.ahead, 1);
+        expect(grouped.behind, 0);
+        expect(grouped.aheadOfBase, 2);
+      },
+    );
+
+    test(
+      'a pull request head this checkout lacks is still published',
+      () async {
+        final wt = await gitWorktreeWithOrigin('wt-pr-missing');
+        await git(['push', 'origin', 'HEAD:refs/heads/main'], wt);
+        await git(['checkout', '-q', '-b', 'space/abc'], wt);
+        File(p.join(wt, 'src/app.dart')).writeAsStringSync('// local\n');
+        await git(['add', '-A'], wt);
+        await git(['commit', '-q', '-m', 'local'], wt);
+
+        final grouped = await svcWithPublishedHead(wt, ({
+          required workspaceId,
+          required repoId,
+          required branch,
+        }) async {
+          return 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+        }).repoChangesGrouped('ws', 'repo1', spaceId: 'ch');
+
+        expect(grouped.hasUpstream, isTrue);
+        expect(grouped.ahead, 0);
+        expect(grouped.behind, 1);
+        expect(grouped.aheadOfBase, 1);
+      },
+    );
+
+    test(
+      'a local remote-tracking ref wins over the pull request head',
+      () async {
+        final wt = await gitWorktreeWithOrigin('wt-pr-ref');
+        await git(['push', 'origin', 'HEAD:refs/heads/main'], wt);
+        await git(['checkout', '-q', '-b', 'space/abc'], wt);
+        File(p.join(wt, 'src/app.dart')).writeAsStringSync('// feature\n');
+        await git(['add', '-A'], wt);
+        await git(['commit', '-q', '-m', 'feature'], wt);
+        final parent = await headSha(wt);
+        await git(['push', 'origin', 'HEAD:refs/heads/space/abc'], wt);
+        var asked = false;
+        final grouped = await svcWithPublishedHead(wt, ({
+          required workspaceId,
+          required repoId,
+          required branch,
+        }) async {
+          asked = true;
+          return parent;
+        }).repoChangesGrouped('ws', 'repo1', spaceId: 'ch');
+
+        expect(asked, isFalse);
+        expect(grouped.hasUpstream, isTrue);
+        expect(grouped.ahead, 0);
+        expect(grouped.behind, 0);
+      },
+    );
+
+    test(
+      'a push without tracking does not count published commits as ahead',
+      () async {
+        final wt = await gitWorktreeWithOrigin('wt-pushed');
+        await git(['push', 'origin', 'HEAD:refs/heads/main'], wt);
+        await git(['checkout', '-q', '-b', 'space/abc'], wt);
+        File(p.join(wt, 'src/app.dart')).writeAsStringSync('// one\n');
+        await git(['add', '-A'], wt);
+        await git(['commit', '-q', '-m', 'one'], wt);
+        File(p.join(wt, 'src/app.dart')).writeAsStringSync('// two\n');
+        await git(['add', '-A'], wt);
+        await git(['commit', '-q', '-m', 'two'], wt);
+        await git(['push', 'origin', 'HEAD:refs/heads/space/abc'], wt);
+
+        final grouped = await svcWith(
+          wt,
+          [],
+        ).repoChangesGrouped('ws', 'repo1', spaceId: 'ch');
+
+        expect(grouped.hasUpstream, isTrue);
+        expect(grouped.ahead, 0);
+        expect(grouped.behind, 0);
+        expect(grouped.aheadOfBase, 2);
+      },
+    );
+
+    test('syncBranch rebases commits that arrived upstream', () async {
+      final wt = await gitWorktreeWithOrigin('wt-pull');
+      await git(['push', '-u', 'origin', 'HEAD:refs/heads/main'], wt);
+      final origin = p.join(tmp.path, 'wt-pull-origin.git');
+      final other = p.join(tmp.path, 'wt-pull-other');
+      // A bare `git init` still points HEAD at master. Point it at the branch
+      // we pushed so the clone checks that out.
+      await git(['symbolic-ref', 'HEAD', 'refs/heads/main'], origin);
+      await git(['clone', '-q', origin, other], tmp.path);
+      await git(['config', 'user.email', 'test@example.com'], other);
+      await git(['config', 'user.name', 'Test'], other);
+      await git(['config', 'commit.gpgsign', 'false'], other);
+      File(p.join(other, 'src/app.dart')).writeAsStringSync('// remote\n');
+      await git(['add', '-A'], other);
+      await git(['commit', '-q', '-m', 'remote'], other);
+      await git(['push', 'origin', 'HEAD:refs/heads/main'], other);
+
+      final res = await svcWith(
+        wt,
+        [],
+      ).syncBranch(workspaceId: 'ws', spaceId: 'ch', repoId: 'repo1');
+
+      expect(res, isNotNull);
+      expect(res!['pulled'], isTrue, reason: res['error'] as String?);
+      expect(res['pushed'], isFalse);
+      final head = await Process.run('git', [
+        'rev-parse',
+        'HEAD',
+      ], workingDirectory: wt);
+      final remote = await Process.run('git', [
+        'rev-parse',
+        'origin/main',
+      ], workingDirectory: wt);
+      expect((head.stdout as String).trim(), (remote.stdout as String).trim());
+    });
+
+    RepoIdeDataService svcFor(String wt, _FakeIsolatedRepoRepo isolated) =>
+        RepoIdeDataService(
+          repoRepository: _FakeRepoRepo(),
+          workspaceRepository: _FakeWorkspaceRepo()..linked['ws'] = {'repo1'},
+          isolatedRepoRepository: isolated,
+          fileSearch: DartFileSearch(),
+        );
+
+    _FakeIsolatedRepoRepo isolatedFor(String wt) =>
+        _FakeIsolatedRepoRepo()..bySpace['ws:ch'] = [_worktree('repo1', wt)];
+
+    test('listBranches returns local branches and the current one', () async {
+      final wt = await gitWorktreeWithOrigin('wt-list');
+      await git(['checkout', '-q', '-b', 'feature'], wt);
+      final listed = await svcFor(
+        wt,
+        isolatedFor(wt),
+      ).listBranches(workspaceId: 'ws', spaceId: 'ch', repoId: 'repo1');
+      final refs = (listed!['refs'] as List).cast<Map<String, Object?>>();
+      final names = [for (final r in refs) r['name']];
+      expect(names, containsAll(['main', 'feature']));
+      expect(listed['current'], 'feature');
+      expect(
+        refs.singleWhere((r) => r['name'] == 'feature')['current'],
+        isTrue,
+      );
+    });
+
+    test('checkout records the branch the next push would publish', () async {
+      final wt = await gitWorktreeWithOrigin('wt-co');
+      await git(['checkout', '-q', '-b', 'feature'], wt);
+      await git(['checkout', '-q', 'main'], wt);
+      final isolated = isolatedFor(wt);
+      final res = await svcFor(wt, isolated).checkoutBranch(
+        workspaceId: 'ws',
+        spaceId: 'ch',
+        repoId: 'repo1',
+        branch: 'feature',
+      );
+      expect(res!['ok'], isTrue, reason: '${res['error']}');
+      expect(res['branch'], 'feature');
+      expect(isolated.bySpace['ws:ch']!.single.branch, 'feature');
+    });
+
+    test(
+      'checkout refuses a dirty tree that the other branch would overwrite',
+      () async {
+        final wt = await gitWorktreeWithOrigin('wt-dirty');
+        await git(['checkout', '-q', '-b', 'other'], wt);
+        File(p.join(wt, 'src/app.dart')).writeAsStringSync('other\n');
+        await git(['add', '-A'], wt);
+        await git(['commit', '-q', '-m', 'other'], wt);
+        await git(['checkout', '-q', 'main'], wt);
+        File(p.join(wt, 'src/app.dart')).writeAsStringSync('dirty\n');
+        final res = await svcFor(wt, isolatedFor(wt)).checkoutBranch(
+          workspaceId: 'ws',
+          spaceId: 'ch',
+          repoId: 'repo1',
+          branch: 'other',
+        );
+        expect(res!['ok'], isFalse);
+        expect(res['dirty'], isTrue);
+        final head = await Process.run('git', [
+          'rev-parse',
+          '--abbrev-ref',
+          'HEAD',
+        ], workingDirectory: wt);
+        expect((head.stdout as String).trim(), 'main');
+      },
+    );
+
+    test('creating a branch at HEAD keeps uncommitted work', () async {
+      final wt = await gitWorktreeWithOrigin('wt-wip');
+      File(p.join(wt, 'src/app.dart')).writeAsStringSync('wip\n');
+      final isolated = isolatedFor(wt);
+      final res = await svcFor(wt, isolated).checkoutBranch(
+        workspaceId: 'ws',
+        spaceId: 'ch',
+        repoId: 'repo1',
+        branch: 'wip',
+        create: true,
+      );
+      expect(res!['ok'], isTrue, reason: '${res['error']}');
+      expect(res['branch'], 'wip');
+      expect(isolated.bySpace['ws:ch']!.single.branch, 'wip');
+      expect(File(p.join(wt, 'src/app.dart')).readAsStringSync(), 'wip\n');
+    });
+
+    test(
+      'checkout of a remote-only branch creates a tracking branch',
+      () async {
+        final wt = await gitWorktreeWithOrigin('wt-remote');
+        await git(['checkout', '-q', '-b', 'feature'], wt);
+        await git(['push', 'origin', 'feature'], wt);
+        await git(['checkout', '-q', 'main'], wt);
+        await git(['branch', '-D', 'feature'], wt);
+        final res = await svcFor(wt, isolatedFor(wt)).checkoutBranch(
+          workspaceId: 'ws',
+          spaceId: 'ch',
+          repoId: 'repo1',
+          branch: 'feature',
+        );
+        expect(res!['ok'], isTrue, reason: '${res['error']}');
+        expect(res['branch'], 'feature');
+      },
+    );
+
+    test('checkout rejects a branch name that is not a ref', () async {
+      final wt = await gitWorktreeWithOrigin('wt-bad');
+      final res = await svcFor(wt, isolatedFor(wt)).checkoutBranch(
+        workspaceId: 'ws',
+        spaceId: 'ch',
+        repoId: 'repo1',
+        branch: '../main',
+      );
+      expect(res!['ok'], isFalse);
+      final head = await Process.run('git', [
+        'rev-parse',
+        '--abbrev-ref',
+        'HEAD',
+      ], workingDirectory: wt);
+      expect((head.stdout as String).trim(), 'main');
+    });
+
+    test(
+      'detach stores an empty branch so a later push cannot invent HEAD',
+      () async {
+        final wt = await gitWorktreeWithOrigin('wt-detach');
+        final isolated = isolatedFor(wt);
+        final res = await svcFor(wt, isolated).checkoutBranch(
+          workspaceId: 'ws',
+          spaceId: 'ch',
+          repoId: 'repo1',
+          detach: true,
+          startPoint: 'main',
+        );
+        expect(res!['ok'], isTrue, reason: '${res['error']}');
+        expect(res['detached'], isTrue);
+        expect(res['branch'], '');
+        expect(isolated.bySpace['ws:ch']!.single.branch, '');
+      },
+    );
   });
 }
 
@@ -1421,6 +1855,18 @@ class _FakeIsolatedRepoRepo implements IsolatedRepoRepository {
   @override
   Future<List<IsolatedRepo>> forSpace(String workspaceId, String spaceId) =>
       Future.value(bySpace['$workspaceId:$spaceId'] ?? const []);
+
+  @override
+  Future<void> upsert(IsolatedRepo repo) async {
+    final key = '${repo.workspaceId}:${repo.spaceId}';
+    final list = bySpace.putIfAbsent(key, () => []);
+    final i = list.indexWhere((r) => r.repoId == repo.repoId);
+    if (i >= 0) {
+      list[i] = repo;
+    } else {
+      list.add(repo);
+    }
+  }
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);

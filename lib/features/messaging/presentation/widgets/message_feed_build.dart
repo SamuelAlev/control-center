@@ -77,6 +77,7 @@ extension _BuildMethods on _SpaceMessageFeedState {
 
         final keep = messages.map((m) => m.id).toSet();
         _rowKeys.removeWhere((k, _) => !keep.contains(k));
+        _keptRows.removeWhere((k, _) => !keep.contains(k));
 
         if (items.length != _lastItemCount) {
           if (items.length > _lastItemCount && _follow.loadingOlder) {
@@ -178,25 +179,48 @@ extension _BuildMethods on _SpaceMessageFeedState {
     } else {
       final m = item as MessageItem;
       rowKey = _ensureRowKey(m.message.id);
-      final bubble = SpaceMessageBubble(
-        message: m.message,
-        collapseHeader: m.collapseHeader,
-        onStartThread: widget.onStartThread == null
-            ? null
-            : () => widget.onStartThread!(m.message),
-        onOpenThread: widget.onOpenThread,
-      );
-      content = m.message.id == _highlightedMessageId
-          ? Highlight(child: bubble)
-          : bubble;
+      final highlighted = m.message.id == _highlightedMessageId;
+      final openThread = widget.onOpenThread;
+      final startThread = widget.onStartThread;
+      final kept = _keptRows[m.message.id];
+      if (kept != null &&
+          kept.message == m.message &&
+          kept.collapseHeader == m.collapseHeader &&
+          kept.highlighted == highlighted &&
+          identical(kept.onOpenThread, openThread) &&
+          (kept.onStartThread == null) == (startThread == null)) {
+        content = kept.child;
+      } else {
+        final bubble = SpaceMessageBubble(
+          message: m.message,
+          collapseHeader: m.collapseHeader,
+          onStartThread: startThread == null
+              ? null
+              : () => widget.onStartThread!(m.message),
+          onOpenThread: openThread,
+        );
+        content = highlighted ? Highlight(child: bubble) : bubble;
+        _keptRows[m.message.id] = _KeptFeedRow(
+          message: m.message,
+          collapseHeader: m.collapseHeader,
+          highlighted: highlighted,
+          onOpenThread: openThread,
+          onStartThread: startThread,
+          child: content,
+        );
+      }
     }
-    Widget row = Align(
-      alignment: Alignment.topCenter,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(
-          maxWidth: conversationColumnWidth,
+    // One retained layer per row. Scrolling then composites the cached
+    // raster instead of re-recording every markdown/text bubble on the
+    // way past. The window is only a handful of rows, so the layer count
+    // stays small.
+    Widget row = RepaintBoundary(
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: conversationColumnWidth),
+          child: content,
         ),
-        child: content,
       ),
     );
     if (rowKey != null) {

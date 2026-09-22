@@ -3224,6 +3224,16 @@ class AppLocalizationsEl extends AppLocalizations {
   String get editMessage => 'Επεξεργασία μηνύματος';
 
   @override
+  String get revertToThere => 'Επαναφορά έως εκεί';
+
+  @override
+  String get sendAsNewMessage => 'Αποστολή ως νέο μήνυμα';
+
+  @override
+  String get editMessageChoiceBody =>
+      'Η επαναφορά κρύβει τα μηνύματα μετά από αυτό και επαναφέρει τα αρχεία του πράκτορα. Μπορείτε να την αναιρέσετε. Η αποστολή ως νέο μήνυμα αφήνει τη συζήτηση ως έχει.';
+
+  @override
   String get deleteMessage => 'Διαγραφή μηνύματος';
 
   @override
@@ -8673,6 +8683,11 @@ class AppLocalizationsEl extends AppLocalizations {
   String get ideReviewCode => 'Ανασκόπηση κώδικα';
 
   @override
+  String ideReviewCodeInRepo(String repo) {
+    return 'Ανασκόπηση κώδικα ($repo)';
+  }
+
+  @override
   String get ideRevertConfirmTitle => 'Επαναφορά αλλαγών';
 
   @override
@@ -10585,6 +10600,88 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get commitAndSync => 'Commit και συγχρονισμός';
+
+  @override
+  String get scmSyncChanges => 'Συγχρονισμός αλλαγών';
+
+  @override
+  String get scmPublishBranch => 'Δημοσίευση κλάδου';
+
+  @override
+  String get scmSyncFailed => 'Ο συγχρονισμός απέτυχε';
+
+  @override
+  String get scmSyncDirty =>
+      'Κάντε commit ή απορρίψτε τις αλλαγές πριν τον συγχρονισμό';
+
+  @override
+  String get scmSynced => 'Συγχρονίστηκε';
+
+  @override
+  String get scmSelectBranch => 'Επιλογή κλάδου για εξαγωγή';
+
+  @override
+  String get scmCreateBranch => 'Δημιουργία νέου κλάδου…';
+
+  @override
+  String get scmCreateBranchFrom => 'Δημιουργία νέου κλάδου από…';
+
+  @override
+  String get scmCheckoutDetached => 'Αποσπασμένη εξαγωγή…';
+
+  @override
+  String get scmBranchName => 'Όνομα κλάδου';
+
+  @override
+  String get scmCreateBranchTitle => 'Δημιουργία κλάδου';
+
+  @override
+  String scmFromRef(String ref) {
+    return 'Από ⁨$ref⁩';
+  }
+
+  @override
+  String get scmCheckoutFailed => 'Δεν ήταν δυνατή η αλλαγή κλάδου';
+
+  @override
+  String get scmCheckoutDirty =>
+      'Κάντε υποβολή ή απορρίψτε τις αλλαγές πριν αλλάξετε κλάδο';
+
+  @override
+  String scmSwitchedToBranch(String branch) {
+    return 'Αλλαγή σε ⁨$branch⁩';
+  }
+
+  @override
+  String scmDetachedAt(String ref) {
+    return 'Αποσπασμένο στο ⁨$ref⁩';
+  }
+
+  @override
+  String get scmDetachedHead => 'Αποσπασμένο HEAD';
+
+  @override
+  String get scmNoBranches => 'Κανένας κλάδος δεν ταιριάζει';
+
+  @override
+  String get scmBranches => 'Κλάδοι';
+
+  @override
+  String get scmRemoteBranches => 'Απομακρυσμένοι κλάδοι';
+
+  @override
+  String get scmTags => 'Ετικέτες';
+
+  @override
+  String get scmPickStartPoint => 'Επιλογή σημείου εκκίνησης';
+
+  @override
+  String get scmSwitchBranch => 'Αλλαγή κλάδου';
+
+  @override
+  String commitMessageOnBranch(String shortcut, String branch) {
+    return 'Μήνυμα ($shortcut για commit στο «$branch»)';
+  }
 
   @override
   String get committed => 'Έγινε commit';

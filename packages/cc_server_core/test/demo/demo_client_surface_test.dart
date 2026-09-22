@@ -109,7 +109,10 @@ void main() {
     'worktree.revertFiles',
     'worktree.commitAndPush',
     'worktree.publishBranch',
+    'worktree.syncBranch',
     'worktree.syncToPrHead',
+    'worktree.listBranches',
+    'worktree.checkout',
     'worktree.searchContent',
     // Skills management, behind the skills page's demo notice.
     'skills.analyze',

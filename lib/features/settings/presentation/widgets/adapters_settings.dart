@@ -24,7 +24,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// installed ones and the missing ones alike.
 class AdaptersSettings extends ConsumerStatefulWidget {
   /// Creates a new [AdaptersSettings].
-  const AdaptersSettings({super.key});
+  ///
+  /// [initialAdapterId] pins the rail to that runner on the first frame
+  /// (the credential gate arrives with `claude-code`). Null keeps the
+  /// auto choice: first found, else first in the catalog.
+  const AdaptersSettings({this.initialAdapterId, super.key});
+
+  /// Runner to select on arrival, when the route named one.
+  final String? initialAdapterId;
 
   @override
   ConsumerState<AdaptersSettings> createState() => _AdaptersSettingsState();
@@ -37,6 +44,15 @@ class _AdaptersSettingsState extends ConsumerState<AdaptersSettings> {
   /// the catalog). Auto follows a detection refresh without pinning a stale
   /// id.
   String? _selectedId;
+
+  @override
+  void initState() {
+    super.initState();
+    final initial = widget.initialAdapterId;
+    if (initial != null && initial.isNotEmpty) {
+      _selectedId = initial;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

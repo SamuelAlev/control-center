@@ -3223,6 +3223,16 @@ class AppLocalizationsUk extends AppLocalizations {
   String get editMessage => 'Редагувати повідомлення';
 
   @override
+  String get revertToThere => 'Відкотити туди';
+
+  @override
+  String get sendAsNewMessage => 'Надіслати як нове повідомлення';
+
+  @override
+  String get editMessageChoiceBody =>
+      'Відкат ховає повідомлення після цього й повертає файли агента. Це можна скасувати. Надсилання новим повідомленням лишає розмову як є.';
+
+  @override
   String get deleteMessage => 'Видалити повідомлення';
 
   @override
@@ -8690,6 +8700,11 @@ class AppLocalizationsUk extends AppLocalizations {
   String get ideReviewCode => 'Рев\'ю коду';
 
   @override
+  String ideReviewCodeInRepo(String repo) {
+    return 'Рев\'ю коду ($repo)';
+  }
+
+  @override
   String get ideRevertConfirmTitle => 'Відкотити зміни';
 
   @override
@@ -10598,6 +10613,88 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get commitAndSync => 'Закомітити й синхронізувати';
+
+  @override
+  String get scmSyncChanges => 'Синхронізувати зміни';
+
+  @override
+  String get scmPublishBranch => 'Опублікувати гілку';
+
+  @override
+  String get scmSyncFailed => 'Не вдалося синхронізувати';
+
+  @override
+  String get scmSyncDirty =>
+      'Закомітьте або скасуйте зміни перед синхронізацією';
+
+  @override
+  String get scmSynced => 'Синхронізовано';
+
+  @override
+  String get scmSelectBranch => 'Виберіть гілку для перемикання';
+
+  @override
+  String get scmCreateBranch => 'Створити нову гілку…';
+
+  @override
+  String get scmCreateBranchFrom => 'Створити нову гілку з…';
+
+  @override
+  String get scmCheckoutDetached => 'Від\'єднане перемикання…';
+
+  @override
+  String get scmBranchName => 'Назва гілки';
+
+  @override
+  String get scmCreateBranchTitle => 'Створити гілку';
+
+  @override
+  String scmFromRef(String ref) {
+    return 'З ⁨$ref⁩';
+  }
+
+  @override
+  String get scmCheckoutFailed => 'Не вдалося перемкнути гілку';
+
+  @override
+  String get scmCheckoutDirty =>
+      'Зафіксуйте або скасуйте зміни перед перемиканням гілки';
+
+  @override
+  String scmSwitchedToBranch(String branch) {
+    return 'Перемкнуто на ⁨$branch⁩';
+  }
+
+  @override
+  String scmDetachedAt(String ref) {
+    return 'Від\'єднано на ⁨$ref⁩';
+  }
+
+  @override
+  String get scmDetachedHead => 'Від\'єднаний HEAD';
+
+  @override
+  String get scmNoBranches => 'Немає відповідних гілок';
+
+  @override
+  String get scmBranches => 'Гілки';
+
+  @override
+  String get scmRemoteBranches => 'Віддалені гілки';
+
+  @override
+  String get scmTags => 'Мітки';
+
+  @override
+  String get scmPickStartPoint => 'Виберіть початкову точку';
+
+  @override
+  String get scmSwitchBranch => 'Перемкнути гілку';
+
+  @override
+  String commitMessageOnBranch(String shortcut, String branch) {
+    return 'Повідомлення ($shortcut, щоб закомітити в «$branch»)';
+  }
 
   @override
   String get committed => 'Закомічено';

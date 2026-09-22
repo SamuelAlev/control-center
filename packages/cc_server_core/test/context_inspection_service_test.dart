@@ -80,85 +80,97 @@ void main() {
     await tmp.delete(recursive: true);
   });
 
-  test('segments arrive in declaration order with per-part attribution', () async {
-    final inspection = await buildService().inspect(
-      workspaceId: workspaceId,
-      spaceId: spaceId,
-      agentId: agentId,
-      includeContent: true,
-    );
-
-    expect(inspection.workspaceId, workspaceId);
-    expect(inspection.agentName, 'Ada');
-    expect(inspection.mode, 'chat');
-    expect(inspection.hasContent, isTrue);
-    expect(inspection.windowTokens, greaterThan(0));
-    expect(inspection.workingDirectory, contains(p.join('agents', 'ada')));
-
-    // Order is the load-bearing contract the stacked bar renders.
-    final kinds = [for (final s in inspection.segments) s.kind];
-    final order = [
-      for (final k in ContextSegmentKind.values) if (kinds.contains(k)) k,
-    ];
-    expect(kinds, order);
-
-    // No conversation segment: the client composes it from live messages.
-    expect(kinds, isNot(contains(ContextSegmentKind.conversation)));
-
-    // Segment totals are the sums of their parts.
-    for (final segment in inspection.segments) {
-      expect(
-        segment.tokens,
-        segment.parts.fold<int>(0, (sum, part) => sum + part.tokens),
-        reason: segment.kind.name,
+  test(
+    'segments arrive in declaration order with per-part attribution',
+    () async {
+      final inspection = await buildService().inspect(
+        workspaceId: workspaceId,
+        spaceId: spaceId,
+        agentId: agentId,
+        includeContent: true,
       );
-    }
 
-    // Rules carry the AGENTS.md content verbatim, one part per file.
-    final rules = inspection.segmentFor(ContextSegmentKind.rules)!;
-    final agentsMd = rules.parts.where((p) => p.title == 'AGENTS.md');
-    expect(agentsMd, hasLength(1));
-    expect(agentsMd.single.content, contains('Always test.'));
-    // …plus the agent's own instructions and persona sections.
-    expect(
-      rules.parts.map((p) => p.title),
-      containsAll(['Agent instructions', 'Persona']),
-    );
+      expect(inspection.workspaceId, workspaceId);
+      expect(inspection.agentName, 'Ada');
+      expect(inspection.mode, 'chat');
+      expect(inspection.hasContent, isTrue);
+      expect(inspection.windowTokens, greaterThan(0));
+      expect(inspection.workingDirectory, contains(p.join('agents', 'ada')));
+      // The heal runs before the scan, with the skills attached to the agent.
+      expect(filesystem.skillSyncs, hasLength(1));
+      expect(filesystem.skillSyncs.single.$1, workspaceId);
+      expect(filesystem.skillSyncs.single.$2, 'ada');
+      expect(filesystem.skillSyncs.single.$3, ['review']);
 
-    // Skills: the scanned skill is its own part; with content, the SKILL.md
-    // body is drill-in-able while the count stays the index line's.
-    final skills = inspection.segmentFor(ContextSegmentKind.skills)!;
-    final review = skills.parts.where((p) => p.title == 'review');
-    expect(review, hasLength(1));
-    expect(review.single.content, contains('Do a careful review.'));
+      // Order is the load-bearing contract the stacked bar renders.
+      final kinds = [for (final s in inspection.segments) s.kind];
+      final order = [
+        for (final k in ContextSegmentKind.values)
+          if (kinds.contains(k)) k,
+      ];
+      expect(kinds, order);
 
-    // Tool definitions: the resident built-ins land in toolDefinitions, and
-    // the top-level `task` tool is present.
-    final builtins = inspection.segmentFor(
-      ContextSegmentKind.toolDefinitions,
-    )!;
-    final builtinNames = [for (final p in builtins.parts) p.title];
-    expect(builtinNames, containsAll(['read', 'write', 'bash', 'task']));
+      // No conversation segment: the client composes it from live messages.
+      expect(kinds, isNot(contains(ContextSegmentKind.conversation)));
 
-    // A bridged MCP tool outside the resident set is reported as DEFERRED, not
-    // as absent — it is callable, it just carries no schema until first use.
-    // Reporting it under `mcpTools` would claim a per-request cost no request
-    // pays, which is the exact lie this service exists to prevent.
-    final deferred = inspection.segmentFor(ContextSegmentKind.deferredTools)!;
-    final deferredPart = deferred.parts.singleWhere(
-      (p) => p.title == 'recall_facts',
-    );
-    expect(deferredPart.subtitle, contains('withheld'));
-    expect(
-      inspection.segmentFor(ContextSegmentKind.mcpTools),
-      isNull,
-      reason: 'nothing bridged is resident in this fixture',
-    );
+      // Segment totals are the sums of their parts.
+      for (final segment in inspection.segments) {
+        expect(
+          segment.tokens,
+          segment.parts.fold<int>(0, (sum, part) => sum + part.tokens),
+          reason: segment.kind.name,
+        );
+      }
 
-    // Subagent profiles: one part per type.
-    final subs = inspection.segmentFor(ContextSegmentKind.subagents)!;
-    expect(subs.parts.map((p) => p.title), containsAll(['general', 'explore', 'plan']));
-  });
+      // Rules carry the AGENTS.md content verbatim, one part per file.
+      final rules = inspection.segmentFor(ContextSegmentKind.rules)!;
+      final agentsMd = rules.parts.where((p) => p.title == 'AGENTS.md');
+      expect(agentsMd, hasLength(1));
+      expect(agentsMd.single.content, contains('Always test.'));
+      // …plus the agent's own instructions and persona sections.
+      expect(
+        rules.parts.map((p) => p.title),
+        containsAll(['Agent instructions', 'Persona']),
+      );
+
+      // Skills: the scanned skill is its own part; with content, the SKILL.md
+      // body is drill-in-able while the count stays the index line's.
+      final skills = inspection.segmentFor(ContextSegmentKind.skills)!;
+      final review = skills.parts.where((p) => p.title == 'review');
+      expect(review, hasLength(1));
+      expect(review.single.content, contains('Do a careful review.'));
+
+      // Tool definitions: the resident built-ins land in toolDefinitions, and
+      // the top-level `task` tool is present.
+      final builtins = inspection.segmentFor(
+        ContextSegmentKind.toolDefinitions,
+      )!;
+      final builtinNames = [for (final p in builtins.parts) p.title];
+      expect(builtinNames, containsAll(['read', 'write', 'bash', 'task']));
+
+      // A bridged MCP tool outside the resident set is reported as DEFERRED, not
+      // as absent — it is callable, it just carries no schema until first use.
+      // Reporting it under `mcpTools` would claim a per-request cost no request
+      // pays, which is the exact lie this service exists to prevent.
+      final deferred = inspection.segmentFor(ContextSegmentKind.deferredTools)!;
+      final deferredPart = deferred.parts.singleWhere(
+        (p) => p.title == 'recall_facts',
+      );
+      expect(deferredPart.subtitle, contains('withheld'));
+      expect(
+        inspection.segmentFor(ContextSegmentKind.mcpTools),
+        isNull,
+        reason: 'nothing bridged is resident in this fixture',
+      );
+
+      // Subagent profiles: one part per type.
+      final subs = inspection.segmentFor(ContextSegmentKind.subagents)!;
+      expect(
+        subs.parts.map((p) => p.title),
+        containsAll(['general', 'explore', 'plan']),
+      );
+    },
+  );
 
   test('summary mode carries sizes but no content', () async {
     final inspection = await buildService().inspect(
@@ -222,53 +234,56 @@ void main() {
     );
   });
 
-  test('context.inspect op returns the inspection over the wire shape', () async {
-    final ops = buildContextOps(inspection: buildService());
-    expect(ops, hasLength(1));
-    final op = ops.single;
-    expect(op.name, 'context.inspect');
-    expect(op.kind, RepoOpKind.read);
-    expect(op.requiredArgs, containsAll(['space_id', 'agent_id']));
+  test(
+    'context.inspect op returns the inspection over the wire shape',
+    () async {
+      final ops = buildContextOps(inspection: buildService());
+      expect(ops, hasLength(1));
+      final op = ops.single;
+      expect(op.name, 'context.inspect');
+      expect(op.kind, RepoOpKind.read);
+      expect(op.requiredArgs, containsAll(['space_id', 'agent_id']));
 
-    final data = await op.handler(
-      const RepoOpContext(
-        args: {'space_id': spaceId, 'agent_id': agentId},
-        workspaceId: workspaceId,
-        deviceId: 'device-1',
-        userId: 'user-1',
-      ),
-    );
-    final inspection = ContextInspection.fromJson(
-      (data['inspection'] as Map).cast<String, dynamic>(),
-    );
-    expect(inspection.agentName, 'Ada');
-    expect(inspection.hasContent, isFalse);
-    expect(
-      inspection.segments.map((s) => s.kind),
-      isNot(contains(ContextSegmentKind.conversation)),
-    );
+      final data = await op.handler(
+        const RepoOpContext(
+          args: {'space_id': spaceId, 'agent_id': agentId},
+          workspaceId: workspaceId,
+          deviceId: 'device-1',
+          userId: 'user-1',
+        ),
+      );
+      final inspection = ContextInspection.fromJson(
+        (data['inspection'] as Map).cast<String, dynamic>(),
+      );
+      expect(inspection.agentName, 'Ada');
+      expect(inspection.hasContent, isFalse);
+      expect(
+        inspection.segments.map((s) => s.kind),
+        isNot(contains(ContextSegmentKind.conversation)),
+      );
 
-    final withContent = await op.handler(
-      const RepoOpContext(
-        args: {
-          'space_id': spaceId,
-          'agent_id': agentId,
-          'include_content': true,
-        },
-        workspaceId: workspaceId,
-        deviceId: 'device-1',
-        userId: 'user-1',
-      ),
-    );
-    final full = ContextInspection.fromJson(
-      (withContent['inspection'] as Map).cast<String, dynamic>(),
-    );
-    expect(full.hasContent, isTrue);
-    expect(
-      full.segments.expand((s) => s.parts).any((p) => p.content != null),
-      isTrue,
-    );
-  });
+      final withContent = await op.handler(
+        const RepoOpContext(
+          args: {
+            'space_id': spaceId,
+            'agent_id': agentId,
+            'include_content': true,
+          },
+          workspaceId: workspaceId,
+          deviceId: 'device-1',
+          userId: 'user-1',
+        ),
+      );
+      final full = ContextInspection.fromJson(
+        (withContent['inspection'] as Map).cast<String, dynamic>(),
+      );
+      expect(full.hasContent, isTrue);
+      expect(
+        full.segments.expand((s) => s.parts).any((p) => p.content != null),
+        isTrue,
+      );
+    },
+  );
 
   test('wire round-trip preserves the payload the client renders', () async {
     final inspection = await buildService().inspect(
@@ -367,10 +382,20 @@ class _FakeFilesystem implements WorkspaceFilesystemPort {
       p.join(_root, 'agents', agentSlug);
 
   @override
-  Future<String> spaceDir(
+  Future<String> spaceDir(String workspaceId, String conversationId) async =>
+      p.join(_root, 'conversations', conversationId);
+
+  /// (workspaceId, agentSlug, skillSlugs) recorded from the pre-scan heal.
+  final List<(String, String, List<String>)> skillSyncs = [];
+
+  @override
+  Future<void> syncAgentSkillLinks(
     String workspaceId,
-    String conversationId,
-  ) async => p.join(_root, 'conversations', conversationId);
+    String agentSlug,
+    List<String> skillSlugs,
+  ) async {
+    skillSyncs.add((workspaceId, agentSlug, List.of(skillSlugs)));
+  }
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);

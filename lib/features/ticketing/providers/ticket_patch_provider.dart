@@ -1,4 +1,3 @@
-import 'package:cc_data/cc_data.dart' show ClientSyncEngine;
 import 'package:cc_domain/cc_domain.dart' show UndoClass, newIdempotencyKey;
 import 'package:cc_domain/features/ticketing/domain/entities/ticket_priority.dart';
 import 'package:control_center/core/providers/sync_engine_provider.dart';

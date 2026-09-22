@@ -9399,7 +9399,7 @@ class SpaceReposTableData extends DataClass
   /// only learns at run time (the entry is rendered before it is stored).
   ///
   /// It is the BASE, not the working branch: the worktree still gets its own
-  /// `conv/<space>` branch cut from here, so an agent's commits never land on
+  /// `space/<space>` branch cut from here, so an agent's commits never land on
   /// the branch it was told to start from.
   final String? branch;
 
@@ -10624,6 +10624,18 @@ class $ConversationMessagesTableTable extends ConversationMessagesTable
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _contentCharsMeta = const VerificationMeta(
+    'contentChars',
+  );
+  @override
+  late final GeneratedColumn<int> contentChars = GeneratedColumn<int>(
+    'content_chars',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
   static const VerificationMeta _messageTypeMeta = const VerificationMeta(
     'messageType',
   );
@@ -10646,6 +10658,29 @@ class $ConversationMessagesTableTable extends ConversationMessagesTable
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+  );
+  static const VerificationMeta _listMetadataMeta = const VerificationMeta(
+    'listMetadata',
+  );
+  @override
+  late final GeneratedColumn<String> listMetadata = GeneratedColumn<String>(
+    'list_metadata',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _transcriptCharsMeta = const VerificationMeta(
+    'transcriptChars',
+  );
+  @override
+  late final GeneratedColumn<int> transcriptChars = GeneratedColumn<int>(
+    'transcript_chars',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
   );
   static const VerificationMeta _parentMessageIdMeta = const VerificationMeta(
     'parentMessageId',
@@ -10730,8 +10765,11 @@ class $ConversationMessagesTableTable extends ConversationMessagesTable
     senderId,
     senderType,
     content,
+    contentChars,
     messageType,
     metadata,
+    listMetadata,
+    transcriptChars,
     parentMessageId,
     compacted,
     reverted,
@@ -10799,6 +10837,15 @@ class $ConversationMessagesTableTable extends ConversationMessagesTable
     } else if (isInserting) {
       context.missing(_contentMeta);
     }
+    if (data.containsKey('content_chars')) {
+      context.handle(
+        _contentCharsMeta,
+        contentChars.isAcceptableOrUnknown(
+          data['content_chars']!,
+          _contentCharsMeta,
+        ),
+      );
+    }
     if (data.containsKey('message_type')) {
       context.handle(
         _messageTypeMeta,
@@ -10812,6 +10859,24 @@ class $ConversationMessagesTableTable extends ConversationMessagesTable
       context.handle(
         _metadataMeta,
         metadata.isAcceptableOrUnknown(data['metadata']!, _metadataMeta),
+      );
+    }
+    if (data.containsKey('list_metadata')) {
+      context.handle(
+        _listMetadataMeta,
+        listMetadata.isAcceptableOrUnknown(
+          data['list_metadata']!,
+          _listMetadataMeta,
+        ),
+      );
+    }
+    if (data.containsKey('transcript_chars')) {
+      context.handle(
+        _transcriptCharsMeta,
+        transcriptChars.isAcceptableOrUnknown(
+          data['transcript_chars']!,
+          _transcriptCharsMeta,
+        ),
       );
     }
     if (data.containsKey('parent_message_id')) {
@@ -10889,6 +10954,10 @@ class $ConversationMessagesTableTable extends ConversationMessagesTable
         DriftSqlType.string,
         data['${effectivePrefix}content'],
       )!,
+      contentChars: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}content_chars'],
+      )!,
       messageType: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}message_type'],
@@ -10897,6 +10966,14 @@ class $ConversationMessagesTableTable extends ConversationMessagesTable
         DriftSqlType.string,
         data['${effectivePrefix}metadata'],
       ),
+      listMetadata: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}list_metadata'],
+      ),
+      transcriptChars: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}transcript_chars'],
+      )!,
       parentMessageId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}parent_message_id'],
@@ -10951,11 +11028,35 @@ class ConversationMessagesTableData extends DataClass
   /// Content.
   final String content;
 
+  /// Unicode code points in [content]. SQLite `LENGTH(content)`.
+  ///
+  /// The context meter sums this on every message write. Reading `content`
+  /// itself to measure it pulled every live message body off disk, including
+  /// during a streaming flush that did not change those rows.
+  final int contentChars;
+
   /// Message type.
   final String messageType;
 
   /// Metadata.
   final String? metadata;
+
+  /// [metadata] with its `segments` array removed, or the original text when
+  /// that array is absent.
+  ///
+  /// List watches re-run on every write to this table, including a streaming
+  /// transcript flush. They used to `json_remove` the array in the SELECT, so
+  /// each flush parsed every selected row's transcript. The write stores the
+  /// stripped text here; the list reads the column. [metadata] itself still
+  /// holds the array for the one-shot readers.
+  final String? listMetadata;
+
+  /// `metadata['transcriptChars']` as an integer, or 0 when absent.
+  ///
+  /// Agent turns are measured by this, not by [content]. Keeping it beside
+  /// the row means the meter does not parse each turn's transcript JSON on
+  /// every flush.
+  final int transcriptChars;
 
   /// The message this one continues from, or null for the first in a branch.
   ///
@@ -10997,8 +11098,11 @@ class ConversationMessagesTableData extends DataClass
     required this.senderId,
     required this.senderType,
     required this.content,
+    required this.contentChars,
     required this.messageType,
     this.metadata,
+    this.listMetadata,
+    required this.transcriptChars,
     this.parentMessageId,
     required this.compacted,
     required this.reverted,
@@ -11015,10 +11119,15 @@ class ConversationMessagesTableData extends DataClass
     map['sender_id'] = Variable<String>(senderId);
     map['sender_type'] = Variable<String>(senderType);
     map['content'] = Variable<String>(content);
+    map['content_chars'] = Variable<int>(contentChars);
     map['message_type'] = Variable<String>(messageType);
     if (!nullToAbsent || metadata != null) {
       map['metadata'] = Variable<String>(metadata);
     }
+    if (!nullToAbsent || listMetadata != null) {
+      map['list_metadata'] = Variable<String>(listMetadata);
+    }
+    map['transcript_chars'] = Variable<int>(transcriptChars);
     if (!nullToAbsent || parentMessageId != null) {
       map['parent_message_id'] = Variable<String>(parentMessageId);
     }
@@ -11042,10 +11151,15 @@ class ConversationMessagesTableData extends DataClass
       senderId: Value(senderId),
       senderType: Value(senderType),
       content: Value(content),
+      contentChars: Value(contentChars),
       messageType: Value(messageType),
       metadata: metadata == null && nullToAbsent
           ? const Value.absent()
           : Value(metadata),
+      listMetadata: listMetadata == null && nullToAbsent
+          ? const Value.absent()
+          : Value(listMetadata),
+      transcriptChars: Value(transcriptChars),
       parentMessageId: parentMessageId == null && nullToAbsent
           ? const Value.absent()
           : Value(parentMessageId),
@@ -11073,8 +11187,11 @@ class ConversationMessagesTableData extends DataClass
       senderId: serializer.fromJson<String>(json['senderId']),
       senderType: serializer.fromJson<String>(json['senderType']),
       content: serializer.fromJson<String>(json['content']),
+      contentChars: serializer.fromJson<int>(json['contentChars']),
       messageType: serializer.fromJson<String>(json['messageType']),
       metadata: serializer.fromJson<String?>(json['metadata']),
+      listMetadata: serializer.fromJson<String?>(json['listMetadata']),
+      transcriptChars: serializer.fromJson<int>(json['transcriptChars']),
       parentMessageId: serializer.fromJson<String?>(json['parentMessageId']),
       compacted: serializer.fromJson<bool>(json['compacted']),
       reverted: serializer.fromJson<bool>(json['reverted']),
@@ -11093,8 +11210,11 @@ class ConversationMessagesTableData extends DataClass
       'senderId': serializer.toJson<String>(senderId),
       'senderType': serializer.toJson<String>(senderType),
       'content': serializer.toJson<String>(content),
+      'contentChars': serializer.toJson<int>(contentChars),
       'messageType': serializer.toJson<String>(messageType),
       'metadata': serializer.toJson<String?>(metadata),
+      'listMetadata': serializer.toJson<String?>(listMetadata),
+      'transcriptChars': serializer.toJson<int>(transcriptChars),
       'parentMessageId': serializer.toJson<String?>(parentMessageId),
       'compacted': serializer.toJson<bool>(compacted),
       'reverted': serializer.toJson<bool>(reverted),
@@ -11111,8 +11231,11 @@ class ConversationMessagesTableData extends DataClass
     String? senderId,
     String? senderType,
     String? content,
+    int? contentChars,
     String? messageType,
     Value<String?> metadata = const Value.absent(),
+    Value<String?> listMetadata = const Value.absent(),
+    int? transcriptChars,
     Value<String?> parentMessageId = const Value.absent(),
     bool? compacted,
     bool? reverted,
@@ -11126,8 +11249,11 @@ class ConversationMessagesTableData extends DataClass
     senderId: senderId ?? this.senderId,
     senderType: senderType ?? this.senderType,
     content: content ?? this.content,
+    contentChars: contentChars ?? this.contentChars,
     messageType: messageType ?? this.messageType,
     metadata: metadata.present ? metadata.value : this.metadata,
+    listMetadata: listMetadata.present ? listMetadata.value : this.listMetadata,
+    transcriptChars: transcriptChars ?? this.transcriptChars,
     parentMessageId: parentMessageId.present
         ? parentMessageId.value
         : this.parentMessageId,
@@ -11151,10 +11277,19 @@ class ConversationMessagesTableData extends DataClass
           ? data.senderType.value
           : this.senderType,
       content: data.content.present ? data.content.value : this.content,
+      contentChars: data.contentChars.present
+          ? data.contentChars.value
+          : this.contentChars,
       messageType: data.messageType.present
           ? data.messageType.value
           : this.messageType,
       metadata: data.metadata.present ? data.metadata.value : this.metadata,
+      listMetadata: data.listMetadata.present
+          ? data.listMetadata.value
+          : this.listMetadata,
+      transcriptChars: data.transcriptChars.present
+          ? data.transcriptChars.value
+          : this.transcriptChars,
       parentMessageId: data.parentMessageId.present
           ? data.parentMessageId.value
           : this.parentMessageId,
@@ -11177,8 +11312,11 @@ class ConversationMessagesTableData extends DataClass
           ..write('senderId: $senderId, ')
           ..write('senderType: $senderType, ')
           ..write('content: $content, ')
+          ..write('contentChars: $contentChars, ')
           ..write('messageType: $messageType, ')
           ..write('metadata: $metadata, ')
+          ..write('listMetadata: $listMetadata, ')
+          ..write('transcriptChars: $transcriptChars, ')
           ..write('parentMessageId: $parentMessageId, ')
           ..write('compacted: $compacted, ')
           ..write('reverted: $reverted, ')
@@ -11197,8 +11335,11 @@ class ConversationMessagesTableData extends DataClass
     senderId,
     senderType,
     content,
+    contentChars,
     messageType,
     metadata,
+    listMetadata,
+    transcriptChars,
     parentMessageId,
     compacted,
     reverted,
@@ -11216,8 +11357,11 @@ class ConversationMessagesTableData extends DataClass
           other.senderId == this.senderId &&
           other.senderType == this.senderType &&
           other.content == this.content &&
+          other.contentChars == this.contentChars &&
           other.messageType == this.messageType &&
           other.metadata == this.metadata &&
+          other.listMetadata == this.listMetadata &&
+          other.transcriptChars == this.transcriptChars &&
           other.parentMessageId == this.parentMessageId &&
           other.compacted == this.compacted &&
           other.reverted == this.reverted &&
@@ -11234,8 +11378,11 @@ class ConversationMessagesTableCompanion
   final Value<String> senderId;
   final Value<String> senderType;
   final Value<String> content;
+  final Value<int> contentChars;
   final Value<String> messageType;
   final Value<String?> metadata;
+  final Value<String?> listMetadata;
+  final Value<int> transcriptChars;
   final Value<String?> parentMessageId;
   final Value<bool> compacted;
   final Value<bool> reverted;
@@ -11250,8 +11397,11 @@ class ConversationMessagesTableCompanion
     this.senderId = const Value.absent(),
     this.senderType = const Value.absent(),
     this.content = const Value.absent(),
+    this.contentChars = const Value.absent(),
     this.messageType = const Value.absent(),
     this.metadata = const Value.absent(),
+    this.listMetadata = const Value.absent(),
+    this.transcriptChars = const Value.absent(),
     this.parentMessageId = const Value.absent(),
     this.compacted = const Value.absent(),
     this.reverted = const Value.absent(),
@@ -11267,8 +11417,11 @@ class ConversationMessagesTableCompanion
     required String senderId,
     required String senderType,
     required String content,
+    this.contentChars = const Value.absent(),
     this.messageType = const Value.absent(),
     this.metadata = const Value.absent(),
+    this.listMetadata = const Value.absent(),
+    this.transcriptChars = const Value.absent(),
     this.parentMessageId = const Value.absent(),
     this.compacted = const Value.absent(),
     this.reverted = const Value.absent(),
@@ -11289,8 +11442,11 @@ class ConversationMessagesTableCompanion
     Expression<String>? senderId,
     Expression<String>? senderType,
     Expression<String>? content,
+    Expression<int>? contentChars,
     Expression<String>? messageType,
     Expression<String>? metadata,
+    Expression<String>? listMetadata,
+    Expression<int>? transcriptChars,
     Expression<String>? parentMessageId,
     Expression<bool>? compacted,
     Expression<bool>? reverted,
@@ -11306,8 +11462,11 @@ class ConversationMessagesTableCompanion
       if (senderId != null) 'sender_id': senderId,
       if (senderType != null) 'sender_type': senderType,
       if (content != null) 'content': content,
+      if (contentChars != null) 'content_chars': contentChars,
       if (messageType != null) 'message_type': messageType,
       if (metadata != null) 'metadata': metadata,
+      if (listMetadata != null) 'list_metadata': listMetadata,
+      if (transcriptChars != null) 'transcript_chars': transcriptChars,
       if (parentMessageId != null) 'parent_message_id': parentMessageId,
       if (compacted != null) 'compacted': compacted,
       if (reverted != null) 'reverted': reverted,
@@ -11325,8 +11484,11 @@ class ConversationMessagesTableCompanion
     Value<String>? senderId,
     Value<String>? senderType,
     Value<String>? content,
+    Value<int>? contentChars,
     Value<String>? messageType,
     Value<String?>? metadata,
+    Value<String?>? listMetadata,
+    Value<int>? transcriptChars,
     Value<String?>? parentMessageId,
     Value<bool>? compacted,
     Value<bool>? reverted,
@@ -11342,8 +11504,11 @@ class ConversationMessagesTableCompanion
       senderId: senderId ?? this.senderId,
       senderType: senderType ?? this.senderType,
       content: content ?? this.content,
+      contentChars: contentChars ?? this.contentChars,
       messageType: messageType ?? this.messageType,
       metadata: metadata ?? this.metadata,
+      listMetadata: listMetadata ?? this.listMetadata,
+      transcriptChars: transcriptChars ?? this.transcriptChars,
       parentMessageId: parentMessageId ?? this.parentMessageId,
       compacted: compacted ?? this.compacted,
       reverted: reverted ?? this.reverted,
@@ -11375,11 +11540,20 @@ class ConversationMessagesTableCompanion
     if (content.present) {
       map['content'] = Variable<String>(content.value);
     }
+    if (contentChars.present) {
+      map['content_chars'] = Variable<int>(contentChars.value);
+    }
     if (messageType.present) {
       map['message_type'] = Variable<String>(messageType.value);
     }
     if (metadata.present) {
       map['metadata'] = Variable<String>(metadata.value);
+    }
+    if (listMetadata.present) {
+      map['list_metadata'] = Variable<String>(listMetadata.value);
+    }
+    if (transcriptChars.present) {
+      map['transcript_chars'] = Variable<int>(transcriptChars.value);
     }
     if (parentMessageId.present) {
       map['parent_message_id'] = Variable<String>(parentMessageId.value);
@@ -11414,8 +11588,11 @@ class ConversationMessagesTableCompanion
           ..write('senderId: $senderId, ')
           ..write('senderType: $senderType, ')
           ..write('content: $content, ')
+          ..write('contentChars: $contentChars, ')
           ..write('messageType: $messageType, ')
           ..write('metadata: $metadata, ')
+          ..write('listMetadata: $listMetadata, ')
+          ..write('transcriptChars: $transcriptChars, ')
           ..write('parentMessageId: $parentMessageId, ')
           ..write('compacted: $compacted, ')
           ..write('reverted: $reverted, ')
@@ -84612,8 +84789,11 @@ typedef $$ConversationMessagesTableTableCreateCompanionBuilder =
       required String senderId,
       required String senderType,
       required String content,
+      Value<int> contentChars,
       Value<String> messageType,
       Value<String?> metadata,
+      Value<String?> listMetadata,
+      Value<int> transcriptChars,
       Value<String?> parentMessageId,
       Value<bool> compacted,
       Value<bool> reverted,
@@ -84630,8 +84810,11 @@ typedef $$ConversationMessagesTableTableUpdateCompanionBuilder =
       Value<String> senderId,
       Value<String> senderType,
       Value<String> content,
+      Value<int> contentChars,
       Value<String> messageType,
       Value<String?> metadata,
+      Value<String?> listMetadata,
+      Value<int> transcriptChars,
       Value<String?> parentMessageId,
       Value<bool> compacted,
       Value<bool> reverted,
@@ -84719,6 +84902,11 @@ class $$ConversationMessagesTableTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<int> get contentChars => $composableBuilder(
+    column: $table.contentChars,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<String> get messageType => $composableBuilder(
     column: $table.messageType,
     builder: (column) => ColumnFilters(column),
@@ -84726,6 +84914,16 @@ class $$ConversationMessagesTableTableFilterComposer
 
   ColumnFilters<String> get metadata => $composableBuilder(
     column: $table.metadata,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get listMetadata => $composableBuilder(
+    column: $table.listMetadata,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get transcriptChars => $composableBuilder(
+    column: $table.transcriptChars,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -84825,6 +85023,11 @@ class $$ConversationMessagesTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get contentChars => $composableBuilder(
+    column: $table.contentChars,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get messageType => $composableBuilder(
     column: $table.messageType,
     builder: (column) => ColumnOrderings(column),
@@ -84832,6 +85035,16 @@ class $$ConversationMessagesTableTableOrderingComposer
 
   ColumnOrderings<String> get metadata => $composableBuilder(
     column: $table.metadata,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get listMetadata => $composableBuilder(
+    column: $table.listMetadata,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get transcriptChars => $composableBuilder(
+    column: $table.transcriptChars,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -84897,6 +85110,11 @@ class $$ConversationMessagesTableTableAnnotationComposer
   GeneratedColumn<String> get content =>
       $composableBuilder(column: $table.content, builder: (column) => column);
 
+  GeneratedColumn<int> get contentChars => $composableBuilder(
+    column: $table.contentChars,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<String> get messageType => $composableBuilder(
     column: $table.messageType,
     builder: (column) => column,
@@ -84904,6 +85122,16 @@ class $$ConversationMessagesTableTableAnnotationComposer
 
   GeneratedColumn<String> get metadata =>
       $composableBuilder(column: $table.metadata, builder: (column) => column);
+
+  GeneratedColumn<String> get listMetadata => $composableBuilder(
+    column: $table.listMetadata,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get transcriptChars => $composableBuilder(
+    column: $table.transcriptChars,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get parentMessageId => $composableBuilder(
     column: $table.parentMessageId,
@@ -85002,8 +85230,11 @@ class $$ConversationMessagesTableTableTableManager
                 Value<String> senderId = const Value.absent(),
                 Value<String> senderType = const Value.absent(),
                 Value<String> content = const Value.absent(),
+                Value<int> contentChars = const Value.absent(),
                 Value<String> messageType = const Value.absent(),
                 Value<String?> metadata = const Value.absent(),
+                Value<String?> listMetadata = const Value.absent(),
+                Value<int> transcriptChars = const Value.absent(),
                 Value<String?> parentMessageId = const Value.absent(),
                 Value<bool> compacted = const Value.absent(),
                 Value<bool> reverted = const Value.absent(),
@@ -85018,8 +85249,11 @@ class $$ConversationMessagesTableTableTableManager
                 senderId: senderId,
                 senderType: senderType,
                 content: content,
+                contentChars: contentChars,
                 messageType: messageType,
                 metadata: metadata,
+                listMetadata: listMetadata,
+                transcriptChars: transcriptChars,
                 parentMessageId: parentMessageId,
                 compacted: compacted,
                 reverted: reverted,
@@ -85036,8 +85270,11 @@ class $$ConversationMessagesTableTableTableManager
                 required String senderId,
                 required String senderType,
                 required String content,
+                Value<int> contentChars = const Value.absent(),
                 Value<String> messageType = const Value.absent(),
                 Value<String?> metadata = const Value.absent(),
+                Value<String?> listMetadata = const Value.absent(),
+                Value<int> transcriptChars = const Value.absent(),
                 Value<String?> parentMessageId = const Value.absent(),
                 Value<bool> compacted = const Value.absent(),
                 Value<bool> reverted = const Value.absent(),
@@ -85052,8 +85289,11 @@ class $$ConversationMessagesTableTableTableManager
                 senderId: senderId,
                 senderType: senderType,
                 content: content,
+                contentChars: contentChars,
                 messageType: messageType,
                 metadata: metadata,
+                listMetadata: listMetadata,
+                transcriptChars: transcriptChars,
                 parentMessageId: parentMessageId,
                 compacted: compacted,
                 reverted: reverted,

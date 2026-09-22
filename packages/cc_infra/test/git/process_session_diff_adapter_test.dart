@@ -81,6 +81,55 @@ void main() {
     },
   );
 
+  test(
+    'a tracked file that .gitignore also matches is not a phantom deletion',
+    () async {
+      // web-app tracks `.vscode/launch.json.example` and ignores `.vscode/*`.
+      // The un-ignore rule names `launch.example.json`, which does not match,
+      // so a cold `git add -A` drops the file and the review shows it deleted.
+      const adapter = ProcessSessionDiffAdapter();
+      Directory(p.join(repo.path, '.vscode')).createSync();
+      final launch = File(p.join(repo.path, '.vscode', 'launch.json.example'));
+      launch.writeAsStringSync('{"version":"0.2.0"}\n');
+      File(
+        p.join(repo.path, '.gitignore'),
+      ).writeAsStringSync('.vscode/*\n!.vscode/launch.example.json\n');
+      await _git(['add', '-A'], repo.path);
+      await _git(['add', '-f', '.vscode/launch.json.example'], repo.path);
+      await _git(['commit', '-q', '-m', 'track launch'], repo.path);
+
+      expect(await adapter.changedFiles(repo.path, 'HEAD'), isEmpty);
+
+      launch.writeAsStringSync('{"version":"9.9.9"}\n');
+      File(
+        p.join(repo.path, '.vscode', 'settings.json'),
+      ).writeAsStringSync('local\n');
+      File(p.join(repo.path, 'fresh.txt')).writeAsStringSync('brand new\n');
+
+      final edited = await adapter.changedFiles(repo.path, 'HEAD');
+      final byName = {for (final f in edited) f.filename: f};
+      expect(
+        byName.keys,
+        containsAll(<String>['.vscode/launch.json.example', 'fresh.txt']),
+      );
+      expect(byName.containsKey('.vscode/settings.json'), isFalse);
+      expect(
+        byName['.vscode/launch.json.example']!.status,
+        PrFileStatus.modified,
+      );
+      expect(byName['.vscode/launch.json.example']!.patch, contains('9.9.9'));
+
+      launch.deleteSync();
+      final deleted = await adapter.changedFiles(repo.path, 'HEAD');
+      final after = {for (final f in deleted) f.filename: f};
+      expect(
+        after['.vscode/launch.json.example']!.status,
+        PrFileStatus.removed,
+      );
+      expect(after.containsKey('.vscode/settings.json'), isFalse);
+    },
+  );
+
   test('returns empty for a path that is not a git worktree', () async {
     const adapter = ProcessSessionDiffAdapter();
     final plain = Directory.systemTemp.createTempSync('cc_not_a_repo');

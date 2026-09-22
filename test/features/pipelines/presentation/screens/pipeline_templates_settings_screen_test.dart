@@ -140,9 +140,9 @@ Widget _routedShell(GoRouter router) {
     child: MaterialApp.router(
       localizationsDelegates: const [
         ...AppLocalizations.localizationsDelegates,
-        GlobalMaterialLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate, // ignore: deprecated_member_use
         GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate, // ignore: deprecated_member_use
       ],
       supportedLocales: kSupportedAppLocales,
       routerConfig: router,

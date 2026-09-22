@@ -1,6 +1,4 @@
 import 'package:cc_domain/cc_domain.dart' show UndoClass;
-import 'package:cc_domain/core/domain/entities/review_space_association.dart'
-    show ReviewSpaceAssociation;
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_domain/features/todos/domain/entities/conversation_goal.dart';
 import 'package:cc_domain/features/todos/domain/entities/todo_item.dart';

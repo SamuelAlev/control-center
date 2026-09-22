@@ -35,11 +35,36 @@ class ConversationMessagesTable extends Table {
   /// Content.
   TextColumn get content => text()();
 
+  /// Unicode code points in [content]. SQLite `LENGTH(content)`.
+  ///
+  /// The context meter sums this on every message write. Reading `content`
+  /// itself to measure it pulled every live message body off disk, including
+  /// during a streaming flush that did not change those rows.
+  IntColumn get contentChars => integer().withDefault(const Constant(0))();
+
   /// Message type.
   TextColumn get messageType => text().withDefault(const Constant('text'))();
 
   /// Metadata.
   TextColumn get metadata => text().nullable()();
+
+  /// [metadata] with its `segments` array removed, or the original text when
+  /// that array is absent.
+  ///
+  /// List watches re-run on every write to this table, including a streaming
+  /// transcript flush. They used to `json_remove` the array in the SELECT, so
+  /// each flush parsed every selected row's transcript. The write stores the
+  /// stripped text here; the list reads the column. [metadata] itself still
+  /// holds the array for the one-shot readers.
+  TextColumn get listMetadata => text().nullable()();
+
+  /// `metadata['transcriptChars']` as an integer, or 0 when absent.
+  ///
+  /// Agent turns are measured by this, not by [content]. Keeping it beside
+  /// the row means the meter does not parse each turn's transcript JSON on
+  /// every flush.
+  IntColumn get transcriptChars =>
+      integer().withDefault(const Constant(0))();
 
   /// The message this one continues from, or null for the first in a branch.
   ///

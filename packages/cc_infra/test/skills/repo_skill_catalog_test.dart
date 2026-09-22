@@ -61,10 +61,10 @@ void main() {
     writeSkill('api', 'migrations');
 
     final all = await catalog().listAll();
-    expect(
-      all.map((s) => s.qualifiedName).toList()..sort(),
-      ['api:migrations', 'web-app:forms'],
-    );
+    expect(all.map((s) => s.qualifiedName).toList()..sort(), [
+      'api:migrations',
+      'web-app:forms',
+    ]);
   });
 
   test('resolves a qualified name', () async {
@@ -90,6 +90,8 @@ void main() {
     // Two repos' `testing` are different instructions; picking one silently
     // would apply the wrong service's conventions.
     expect(await catalog().resolve('testing'), isNull);
+    expect(await catalog().isAmbiguous('testing'), isTrue);
+    expect(await catalog().isAmbiguous('api:testing'), isFalse);
   });
 
   test('resolves by slug as well as frontmatter name', () async {

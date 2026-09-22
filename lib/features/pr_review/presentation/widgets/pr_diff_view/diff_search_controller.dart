@@ -244,7 +244,14 @@ class PrDiffSearchController {
     }
 
     searchDebounce?.cancel();
-    onRemoveOverlay(searchOverlay!);
+    // Drop the entry here. Dispose also removes whatever is still inserted,
+    // and OverlayEntry.remove asserts if it runs twice. Nulling also lets the
+    // next open insert a fresh entry — the view only inserts when this is null.
+    final overlay = searchOverlay;
+    searchOverlay = null;
+    if (overlay != null) {
+      onRemoveOverlay(overlay);
+    }
     matchLocations.clear();
     _parsedByFilename.clear();
     _loweredPatchByKey.clear();
@@ -276,8 +283,11 @@ class PrDiffSearchController {
   /// Cleans up timers, overlays and controllers.
   void dispose() {
     searchDebounce?.cancel();
-    searchOverlay?.remove();
+    final overlay = searchOverlay;
     searchOverlay = null;
+    if (overlay != null) {
+      onRemoveOverlay(overlay);
+    }
     searchFocus.dispose();
     searchCtrl.dispose();
   }

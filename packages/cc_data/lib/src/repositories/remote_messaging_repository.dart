@@ -359,6 +359,26 @@ class RemoteMessagingRepository {
         ),
       );
 
+  /// The caller's recent plain-text prompts, oldest first. The server decides
+  /// who "the caller" is; this never takes a user id.
+  Stream<List<String>> watchUserPromptHistory(
+    String workspaceId,
+    String spaceId,
+    String conversationId,
+  ) => _client
+      .subscribe('messaging.watchUserPromptHistory', {
+        'workspace_id': workspaceId,
+        'space_id': spaceId,
+        'conversation_id': conversationId,
+      })
+      .map((data) {
+        final raw = data['prompts'];
+        if (raw is! List) {
+          return const <String>[];
+        }
+        return [for (final item in raw) if (item is String) item];
+      });
+
   /// Live size of a conversation's live region — `{tokens, chars}` — computed
   /// SERVER-side, so a context meter never pulls the conversation to measure
   /// it.

@@ -4,7 +4,7 @@
 /// refused that App picks a different App or a PAT, and background work in
 /// that workspace never silently falls through to the install App.
 enum GithubAuthMode {
-  /// Use this install's GitHub App (the [ProviderAppSettings] identity).
+  /// Use this install's GitHub App (the `ProviderAppSettings` identity).
   inherit,
 
   /// Use a GitHub App configured on this workspace. Missing credentials are

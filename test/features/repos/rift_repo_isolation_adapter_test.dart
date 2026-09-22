@@ -331,7 +331,7 @@ void main() {
     // fetch, the branch and the checkout all run inside it — and so does the
     // default-branch probe, because the copy carries the source's
     // `refs/remotes/origin/*` verbatim and the answer is identical. A repo
-    // provisioned this way collects no `conv/*` branch, no
+    // provisioned this way collects no `space/*` branch, no
     // `.git/worktrees/<name>` entry and no FETCH_HEAD write.
     final rift = _FakeRift();
     final git = _FakeGit();
@@ -1011,7 +1011,7 @@ void main() {
       path: wt.path,
       sourcePath: '/src/repo',
       backend: RepoIsolationBackend.gitWorktree,
-      branch: 'cc/conv/123',
+      branch: 'space/cc/123',
     );
 
     // THE invariant: the capture writes no git object, no commit, no branch.
@@ -1024,7 +1024,7 @@ void main() {
     // The work itself is preserved, outside every checkout.
     final folders = rescues.listSync().whereType<Directory>().toList();
     expect(folders, hasLength(1));
-    expect(p.basename(folders.single.path), startsWith('cc-conv-123-'));
+    expect(p.basename(folders.single.path), startsWith('space-cc-123-'));
     expect(File('${folders.single.path}/changes.patch').existsSync(), isTrue);
     expect(
       File('${folders.single.path}/untracked/new.dart').readAsStringSync(),
@@ -1060,7 +1060,7 @@ void main() {
       path: wt.path,
       sourcePath: '/src/repo',
       backend: RepoIsolationBackend.gitWorktree,
-      branch: 'cc/conv/123',
+      branch: 'space/cc/123',
     );
 
     expect(git.ran((a) => a.contains('diff')), isFalse);
@@ -1083,7 +1083,7 @@ void main() {
       path: wt.path,
       sourcePath: '/src/repo',
       backend: RepoIsolationBackend.gitWorktree,
-      branch: 'cc/conv/123',
+      branch: 'space/cc/123',
     );
 
     expect(git.ran((a) => a.contains('commit')), isFalse);
@@ -1122,7 +1122,7 @@ void main() {
       path: wt.path,
       sourcePath: '/src/repo',
       backend: RepoIsolationBackend.gitWorktree,
-      branch: 'cc/conv/123',
+      branch: 'space/cc/123',
     );
 
     expect(
@@ -1138,7 +1138,7 @@ void main() {
     // future edit that reintroduces `add`/`commit`/`branch <name>` on this
     // path fails here rather than in an operator's checkout — which is where
     // the last several regressions were found. `branch -D` is exempt: that is
-    // the teardown REMOVING the `conv/*` branch it created.
+    // the teardown REMOVING the `space/*` branch it created.
     final wt = Directory('${tmp.path}/ratchet')..createSync();
     final rescues = Directory('${tmp.path}/rescues-ratchet');
     final rift = _FakeRift();
@@ -1162,7 +1162,7 @@ void main() {
       path: wt.path,
       sourcePath: '/src/repo',
       backend: RepoIsolationBackend.gitWorktree,
-      branch: 'cc/conv/123',
+      branch: 'space/cc/123',
     );
 
     const mutating = {'add', 'commit', 'stash', 'checkout', 'push', 'merge'};
@@ -1182,50 +1182,57 @@ void main() {
 
   // -- destroy: the capture never runs against the enclosing repo ------------
 
-  test('destroy does not capture a directory that is not its own checkout', () async {
-    // The bug this guard exists for. Git finds its repository by walking UP
-    // from the working directory, and the server's data dir routinely sits
-    // INSIDE a repo (`<repo>/apps/cc_server/data/…`). So a leftover or
-    // half-provisioned worktree directory answers `status` / `diff` for the
-    // ENCLOSING checkout — which, back when the capture was a commit, is how
-    // "chore: rescued uncommitted work before worktree GC" commits carrying a
-    // whole working tree landed on a user's own branch.
-    final stray = Directory('${tmp.path}/stray')..createSync();
-    final rescues = Directory('${tmp.path}/rescues-stray');
-    final rift = _FakeRift();
-    final git = _FakeGit(
-      responses: {
-        // `stray` is not a checkout; git reports the repo ABOVE it.
-        'rev-parse --show-toplevel': GitResult(
-          exitCode: 0,
-          stdout: '${tmp.path}\n',
-          stderr: '',
-        ),
-        'status --porcelain': const GitResult(
-          exitCode: 0,
-          stdout: ' M lib/foo.dart\n?? new.dart\n',
-          stderr: '',
-        ),
-      },
-    );
-    final adapter = _adapter(rift: rift, git: git, wipRescueDir: rescues.path);
+  test(
+    'destroy does not capture a directory that is not its own checkout',
+    () async {
+      // The bug this guard exists for. Git finds its repository by walking UP
+      // from the working directory, and the server's data dir routinely sits
+      // INSIDE a repo (`<repo>/apps/cc_server/data/…`). So a leftover or
+      // half-provisioned worktree directory answers `status` / `diff` for the
+      // ENCLOSING checkout — which, back when the capture was a commit, is how
+      // "chore: rescued uncommitted work before worktree GC" commits carrying a
+      // whole working tree landed on a user's own branch.
+      final stray = Directory('${tmp.path}/stray')..createSync();
+      final rescues = Directory('${tmp.path}/rescues-stray');
+      final rift = _FakeRift();
+      final git = _FakeGit(
+        responses: {
+          // `stray` is not a checkout; git reports the repo ABOVE it.
+          'rev-parse --show-toplevel': GitResult(
+            exitCode: 0,
+            stdout: '${tmp.path}\n',
+            stderr: '',
+          ),
+          'status --porcelain': const GitResult(
+            exitCode: 0,
+            stdout: ' M lib/foo.dart\n?? new.dart\n',
+            stderr: '',
+          ),
+        },
+      );
+      final adapter = _adapter(
+        rift: rift,
+        git: git,
+        wipRescueDir: rescues.path,
+      );
 
-    await adapter.destroy(
-      path: stray.path,
-      sourcePath: '/src/repo',
-      backend: RepoIsolationBackend.gitWorktree,
-      branch: 'conv/abc',
-    );
+      await adapter.destroy(
+        path: stray.path,
+        sourcePath: '/src/repo',
+        backend: RepoIsolationBackend.gitWorktree,
+        branch: 'space/abc',
+      );
 
-    expect(git.ran((a) => a.contains('diff')), isFalse);
-    expect(git.ran((a) => a.contains('commit')), isFalse);
-    expect(rescues.existsSync(), isFalse);
-    // …and the teardown itself still runs.
-    expect(
-      git.ran((a) => a.contains('worktree') && a.contains('remove')),
-      isTrue,
-    );
-  });
+      expect(git.ran((a) => a.contains('diff')), isFalse);
+      expect(git.ran((a) => a.contains('commit')), isFalse);
+      expect(rescues.existsSync(), isFalse);
+      // …and the teardown itself still runs.
+      expect(
+        git.ran((a) => a.contains('worktree') && a.contains('remove')),
+        isTrue,
+      );
+    },
+  );
 
   test('destroy refuses to capture when the path IS the source repo', () async {
     // A row that recorded the origin instead of the copy. This one passes the
@@ -1249,7 +1256,7 @@ void main() {
       path: src.path,
       sourcePath: src.path,
       backend: RepoIsolationBackend.gitWorktree,
-      branch: 'conv/abc',
+      branch: 'space/abc',
     );
 
     expect(git.ran((a) => a.contains('diff')), isFalse);

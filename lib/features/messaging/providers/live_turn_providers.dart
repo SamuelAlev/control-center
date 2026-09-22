@@ -15,13 +15,23 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// only bounds memory. List watch emissions ship messages WITHOUT their
 /// `segments` payload (`segments_elided`), so this cache — seeded by the live
 /// relay on turn finish and backfilled by [messageTranscriptProvider] — is
-/// where agent-turn bubbles get their transcript from.
+/// where agent-turn bubbles get their transcript from. A miss refetches that
+/// one message; the cache does not have to hold every turn the process has
+/// ever rendered. Tool outputs dominate the bytes, so the bound is both a
+/// count and a character budget.
 class TranscriptLruCache {
-  /// Creates a cache holding at most [capacity] transcripts.
-  TranscriptLruCache({this.capacity = 256});
+  /// Creates a cache holding at most [capacity] transcripts and at most
+  /// [maxChars] characters of segment text.
+  TranscriptLruCache({this.capacity = 32, this.maxChars = 512 * 1024});
 
   /// Maximum number of cached transcripts.
   final int capacity;
+
+  /// Maximum total segment text held. One transcript larger than this is
+  /// still kept (it is the one on screen); it just cannot sit beside others.
+  final int maxChars;
+
+  int _chars = 0;
 
   final LinkedHashMap<String, List<TranscriptSegment>> _entries =
       LinkedHashMap();
@@ -37,14 +47,65 @@ class TranscriptLruCache {
   }
 
   /// Stores [segments] for [messageId], evicting the least-recently used
-  /// entry beyond [capacity].
+  /// entry past [capacity] or [maxChars].
   void put(String messageId, List<TranscriptSegment> segments) {
-    _entries.remove(messageId);
-    _entries[messageId] = List<TranscriptSegment>.unmodifiable(segments);
-    while (_entries.length > capacity) {
-      _entries.remove(_entries.keys.first);
+    final previous = _entries.remove(messageId);
+    if (previous != null) {
+      _chars -= _transcriptChars(previous);
+    }
+    final stored = List<TranscriptSegment>.unmodifiable(segments);
+    _entries[messageId] = stored;
+    _chars += _transcriptChars(stored);
+    while (_entries.length > capacity ||
+        (_chars > maxChars && _entries.length > 1)) {
+      final removed = _entries.remove(_entries.keys.first);
+      if (removed != null) {
+        _chars -= _transcriptChars(removed);
+      }
     }
   }
+}
+
+int _transcriptChars(List<TranscriptSegment> segments) {
+  var total = 0;
+  for (final segment in segments) {
+    switch (segment) {
+      case ReasoningSegment(:final text):
+      case TextSegment(:final text):
+        total += text.length;
+      case ToolSegment(:final toolName, :final outputs, :final inputs):
+        total += toolName.length + outputs.length;
+        if (inputs != null) {
+          total += _valueChars(inputs);
+        }
+      case ErrorSegment(:final message):
+        total += message.length;
+      case ViolationSegment(:final message, :final target):
+        total += message.length + (target?.length ?? 0);
+    }
+  }
+  return total;
+}
+
+int _valueChars(Object? value) {
+  if (value is String) {
+    return value.length;
+  }
+  if (value is List<dynamic>) {
+    var total = 0;
+    for (final item in value) {
+      total += _valueChars(item);
+    }
+    return total;
+  }
+  if (value is Map<dynamic, dynamic>) {
+    var total = 0;
+    for (final item in value.values) {
+      total += _valueChars(item);
+    }
+    return total;
+  }
+  return 0;
 }
 
 /// Process-lifetime transcript cache shared by the relay fold and the

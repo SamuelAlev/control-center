@@ -36,6 +36,7 @@ class _FakeMessagingRepo implements MessagingRepository {
   Future<Space?> getSpaceById(String workspaceId, String spaceId) async => null;
 
   List<Message> messages = const [];
+  bool scanThrows = false;
 
   /// What the last `getMessages` call addressed, so a test can pin that the
   /// conversation is named explicitly rather than smuggled in the space slot.
@@ -48,6 +49,9 @@ class _FakeMessagingRepo implements MessagingRepository {
     String spaceId, {
     String? conversationId,
   }) async {
+    if (scanThrows) {
+      throw StateError('full scan');
+    }
     lastSpaceId = spaceId;
     lastConversationId = conversationId;
     return messages;
@@ -318,6 +322,28 @@ void main() {
 
       final updated = await runLogs.getById('ws-1', 'run-1');
       expect(updated!.outputJson, {'result': 'the real one'});
+    });
+
+    test('fast harvest does not scan the conversation', () async {
+      runLogs.seed(_run());
+      messaging.scanThrows = true;
+      completer.dispose();
+      completer = AgentRunTaskCompleter(
+        eventBus: bus,
+        runLogRepository: runLogs,
+        messagingRepository: messaging,
+        latestAgentContent:
+            ({
+              required String workspaceId,
+              required String conversationId,
+              required String agentId,
+            }) async => 'harvested',
+      )..start();
+
+      await complete('run-1');
+
+      final updated = await runLogs.getById('ws-1', 'run-1');
+      expect(updated!.outputJson, {'result': 'harvested'});
     });
   });
 }

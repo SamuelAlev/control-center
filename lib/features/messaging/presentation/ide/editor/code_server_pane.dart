@@ -2,8 +2,6 @@ import 'package:cc_domain/cc_domain.dart' show RpcErrorCodes;
 import 'package:cc_domain/features/ide/domain/code_server_session.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 import 'package:cc_ui/cc_ui.dart';
-import 'package:control_center/features/messaging/presentation/ide/editor/browser_pane.dart'
-    show BrowserPane;
 // Web iframe surface. The conditional import keeps `dart:ui_web` / `package:web`
 // out of the desktop VM build (which gets the stub and never constructs it).
 import 'package:control_center/features/messaging/presentation/ide/editor/browser_webview_stub.dart'

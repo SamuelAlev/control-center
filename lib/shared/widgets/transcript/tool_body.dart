@@ -107,8 +107,14 @@ bool _isEditTool(String name) => switch (name) {
 };
 
 /// Added/removed line counts for an Edit tool, used for the `+N −N` header
-/// badge. Null when the segment isn't an edit with both strings present.
-({int adds, int dels})? toolDiffStats(ToolSegment seg) {
+/// badge. Null when the segment isn't an edit with both strings present, and
+/// also when a rewrite is heavy enough that counting it now would drop the
+/// frame. In that case the diffs are started and `whenReady` fires once they
+/// have landed in the cache, so the caller can rebuild and read the badge.
+({int adds, int dels})? toolDiffStats(
+  ToolSegment seg, {
+  void Function(Future<void> done)? whenReady,
+}) {
   if (!_isEditTool(normalizeToolName(seg.toolName))) {
     return null;
   }
@@ -118,10 +124,19 @@ bool _isEditTool(String name) => switch (name) {
   }
   var adds = 0;
   var dels = 0;
+  final pending = <Future<LineDiffResult>>[];
   for (final edit in edits) {
-    final r = computeLineDiff(edit.oldText, edit.newText);
-    adds += r.additions;
-    dels += r.deletions;
+    final diff = lineDiffForBuild(edit.oldText, edit.newText);
+    if (diff == null) {
+      pending.add(computeLineDiffAsync(edit.oldText, edit.newText));
+      continue;
+    }
+    adds += diff.additions;
+    dels += diff.deletions;
+  }
+  if (pending.isNotEmpty) {
+    whenReady?.call(Future.wait(pending).then((_) {}));
+    return null;
   }
   return (adds: adds, dels: dels);
 }

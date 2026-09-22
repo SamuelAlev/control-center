@@ -22,7 +22,6 @@ final rootNavigatorKey = GlobalKey<NavigatorState>();
 /// The go_router path-parameter name carrying the active workspace id. Pass this to any route builder to obtain its `:workspaceId` *pattern* form.
 const String workspaceIdParam = ':workspaceId';
 
-
 /// Loading screen shown while we figure out whether onboarding is complete.
 const String splashRoute = '/splash';
 
@@ -37,7 +36,6 @@ const String signedOutRoute = '/signed-out';
 
 /// Workspaces list / picker. Full-screen (outside the workspace shell) — it is where the user chooses or creates the workspace whose context everything else runs in.
 const String workspaceListRoute = '/workspaces';
-
 
 /// The bare workspace root. Redirects to that workspace's inbox.
 String workspaceRoot(String workspaceId) => '/workspaces/$workspaceId';
@@ -68,7 +66,7 @@ String pullRequestsRoute(String workspaceId, {String? repo}) {
 /// branch the user actually means to open a PR from. Dropping it was why that
 /// entry point led to two empty branch pickers: the screen fell back to the
 /// GitHub remote's ref list, which by construction cannot contain a
-/// never-pushed `conv/<id>` worktree branch.
+/// never-pushed `space/<id>` worktree branch.
 String pullRequestsComposeRoute(String workspaceId, {String? spaceId}) {
   final base = '/workspaces/$workspaceId/pull-requests/compose';
   return (spaceId == null || spaceId.isEmpty)
@@ -253,9 +251,21 @@ String settingsServerConnectionRoute(String workspaceId) =>
 String settingsSsoRoute(String workspaceId) =>
     '/workspaces/$workspaceId/settings/server/sso';
 
+/// Query on [settingsAdaptersRoute] that opens one runner's detail pane.
+const settingsAdapterQueryParam = 'adapter';
+
 /// Settings → Server → Model providers & adapters.
-String settingsAdaptersRoute(String workspaceId) =>
-    '/workspaces/$workspaceId/settings/server/providers';
+///
+/// [adapterId] selects that runner on arrival (`claude-code`, for example)
+/// so a caller that is sending someone there to sign in does not land on
+/// whichever runner the page would have opened by itself.
+String settingsAdaptersRoute(String workspaceId, {String? adapterId}) {
+  final path = '/workspaces/$workspaceId/settings/server/providers';
+  if (adapterId == null || adapterId.isEmpty) {
+    return path;
+  }
+  return '$path?$settingsAdapterQueryParam=${Uri.encodeQueryComponent(adapterId)}';
+}
 
 /// Settings → Server → MCP servers (built-in + external).
 String settingsMcpRoute(String workspaceId) =>
@@ -369,7 +379,6 @@ String calendarRoute(String workspaceId) => '/workspaces/$workspaceId/calendar';
 /// Calendar event detail screen for [id].
 String calendarDetailRoute(String workspaceId, String id) =>
     '/workspaces/$workspaceId/calendar/$id';
-
 
 /// Maps a concrete in-shell location to the *logical* route that keybinding `when` clauses and `scope`s are written against (they predate the/ `/workspaces/:id` prefix).
 /// For example `/workspaces/ws-1/tickets/42` → `/tickets/42`. Non-workspace locations (`/onboarding`, the `/workspaces` picker) pass through unchanged.

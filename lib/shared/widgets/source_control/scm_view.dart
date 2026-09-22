@@ -42,6 +42,9 @@ class ScmGroup extends StatelessWidget {
     required this.onToggleCollapse,
     required this.children,
     this.subtitle,
+    this.subtitleWidget,
+    this.syncLabel,
+    this.uppercaseTitle = true,
     this.actions = const [],
   });
 
@@ -50,7 +53,20 @@ class ScmGroup extends StatelessWidget {
 
   /// An optional dimmed second line under the title — the checked-out branch
   /// when the group is a repository. Rendered verbatim (never upper-cased).
+  /// Ignored when [subtitleWidget] is set.
   final String? subtitle;
+
+  /// Replaces [subtitle] when the second line is itself a control, such as
+  /// the branch picker. The header does not upper-case it.
+  final Widget? subtitleWidget;
+
+  /// Ahead/behind counts drawn after [subtitle] (`36↓ 0↑`). A git status
+  /// glyph, so the header paints it left-to-right in every locale.
+  final String? syncLabel;
+
+  /// Section headers ("Changes") are small caps. A repository name is not —
+  /// VS Code leaves that row in the repo's own casing.
+  final bool uppercaseTitle;
 
   /// File count shown as a badge after the title.
   final int count;
@@ -78,6 +94,9 @@ class ScmGroup extends StatelessWidget {
         _ScmGroupHeader(
           title: title,
           subtitle: subtitle,
+          subtitleWidget: subtitleWidget,
+          syncLabel: syncLabel,
+          uppercaseTitle: uppercaseTitle,
           count: count,
           collapsed: collapsed,
           onToggleCollapse: onToggleCollapse,
@@ -94,6 +113,9 @@ class _ScmGroupHeader extends StatefulWidget {
   const _ScmGroupHeader({
     required this.title,
     required this.subtitle,
+    required this.subtitleWidget,
+    required this.syncLabel,
+    required this.uppercaseTitle,
     required this.count,
     required this.collapsed,
     required this.onToggleCollapse,
@@ -103,6 +125,9 @@ class _ScmGroupHeader extends StatefulWidget {
 
   final String title;
   final String? subtitle;
+  final Widget? subtitleWidget;
+  final String? syncLabel;
+  final bool uppercaseTitle;
   final int count;
   final bool collapsed;
   final VoidCallback onToggleCollapse;
@@ -128,39 +153,77 @@ class _ScmGroupHeaderState extends State<_ScmGroupHeader> {
         behavior: HitTestBehavior.opaque,
         child: Padding(
           padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.xs,
+            horizontal: AppSpacing.sm,
             vertical: 5,
           ),
           child: Row(
             children: [
               Icon(
                 widget.collapsed ? AppIcons.chevronRight : AppIcons.chevronDown,
-                size: 14,
+                size: 16,
                 color: t.textTertiary,
               ),
-              const SizedBox(width: 2),
+              const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      widget.title.toUpperCase(),
+                      widget.uppercaseTitle
+                          ? widget.title.toUpperCase()
+                          : widget.title,
                       overflow: TextOverflow.ellipsis,
                       maxLines: 1,
                       style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.3,
-                        color: t.textSecondary,
+                        fontSize: widget.uppercaseTitle ? 11 : 13,
+                        fontWeight: widget.uppercaseTitle
+                            ? FontWeight.w700
+                            : FontWeight.w600,
+                        letterSpacing: widget.uppercaseTitle ? 0.3 : 0,
+                        color: widget.uppercaseTitle
+                            ? t.textSecondary
+                            : t.textPrimary,
                       ),
                     ),
-                    if (widget.subtitle != null && widget.subtitle!.isNotEmpty)
-                      Text(
-                        widget.subtitle!,
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 1,
-                        style: TextStyle(fontSize: 10, color: t.textTertiary),
+                    if (widget.subtitleWidget != null ||
+                        (widget.subtitle != null &&
+                            widget.subtitle!.isNotEmpty) ||
+                        (widget.syncLabel != null &&
+                            widget.syncLabel!.isNotEmpty))
+                      Row(
+                        children: [
+                          if (widget.subtitleWidget != null)
+                            Flexible(child: widget.subtitleWidget!)
+                          else if (widget.subtitle != null &&
+                              widget.subtitle!.isNotEmpty)
+                            Flexible(
+                              child: Text(
+                                widget.subtitle!,
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: t.textTertiary,
+                                ),
+                              ),
+                            ),
+                          if (widget.syncLabel != null &&
+                              widget.syncLabel!.isNotEmpty) ...[
+                            const SizedBox(width: AppSpacing.sm),
+                            // RTL carve-out: ahead/behind counts are a git
+                            // status glyph (`36↓ 0↑`), not prose.
+                            Text(
+                              widget.syncLabel!,
+                              textDirection: TextDirection.ltr,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: t.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                   ],
                 ),
@@ -354,28 +417,26 @@ class ScmIconAction extends StatelessWidget {
         onPressed: action.onPressed,
         semanticLabel: action.tooltip,
         borderRadius: BorderRadius.circular(4),
-        builder:
-            (context, states) => Container(
-              width: 22,
-              height: 22,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color:
-                    states.contains(WidgetState.hovered)
-                        ? t.hover
-                        : const Color(0x00000000),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Icon(
-                action.icon,
-                size: 14,
-                color: enabled
-                    ? (states.contains(WidgetState.hovered)
-                          ? t.fg
-                          : t.textSecondary)
-                    : t.textTertiary,
-              ),
-            ),
+        builder: (context, states) => Container(
+          width: 22,
+          height: 22,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: states.contains(WidgetState.hovered)
+                ? t.hover
+                : const Color(0x00000000),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Icon(
+            action.icon,
+            size: 14,
+            color: enabled
+                ? (states.contains(WidgetState.hovered)
+                      ? t.fg
+                      : t.textSecondary)
+                : t.textTertiary,
+          ),
+        ),
       ),
     );
   }

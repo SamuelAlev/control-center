@@ -3228,6 +3228,16 @@ class AppLocalizationsAr extends AppLocalizations {
   String get editMessage => 'تحرير الرسالة';
 
   @override
+  String get revertToThere => 'التراجع إلى هناك';
+
+  @override
+  String get sendAsNewMessage => 'إرسال كرسالة جديدة';
+
+  @override
+  String get editMessageChoiceBody =>
+      'يؤدي التراجع إلى إخفاء الرسائل بعد هذه الرسالة وإعادة ملفات الوكيل. يمكنك التراجع عن ذلك. الإرسال كرسالة جديدة يُبقي المحادثة كما هي.';
+
+  @override
   String get deleteMessage => 'حذف الرسالة';
 
   @override
@@ -8695,6 +8705,11 @@ class AppLocalizationsAr extends AppLocalizations {
   String get ideReviewCode => 'مراجعة الكود';
 
   @override
+  String ideReviewCodeInRepo(String repo) {
+    return 'مراجعة الكود (⁨$repo⁩)';
+  }
+
+  @override
   String get ideRevertConfirmTitle => 'إرجاع التغييرات';
 
   @override
@@ -10597,6 +10612,87 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get commitAndSync => 'إيداع ومزامنة';
+
+  @override
+  String get scmSyncChanges => 'مزامنة التغييرات';
+
+  @override
+  String get scmPublishBranch => 'نشر الفرع';
+
+  @override
+  String get scmSyncFailed => 'فشلت المزامنة';
+
+  @override
+  String get scmSyncDirty => 'أودِع التغييرات أو تخلَّ عنها قبل المزامنة';
+
+  @override
+  String get scmSynced => 'تمت المزامنة';
+
+  @override
+  String get scmSelectBranch => 'اختر فرعًا للانتقال إليه';
+
+  @override
+  String get scmCreateBranch => 'إنشاء فرع جديد…';
+
+  @override
+  String get scmCreateBranchFrom => 'إنشاء فرع جديد من…';
+
+  @override
+  String get scmCheckoutDetached => 'انتقال منفصل…';
+
+  @override
+  String get scmBranchName => 'اسم الفرع';
+
+  @override
+  String get scmCreateBranchTitle => 'إنشاء فرع';
+
+  @override
+  String scmFromRef(String ref) {
+    return 'من ⁨$ref⁩';
+  }
+
+  @override
+  String get scmCheckoutFailed => 'تعذّر تبديل الفرع';
+
+  @override
+  String get scmCheckoutDirty =>
+      'أكمل الإيداع أو تجاهل التغييرات قبل تبديل الفرع';
+
+  @override
+  String scmSwitchedToBranch(String branch) {
+    return 'تم التبديل إلى ⁨$branch⁩';
+  }
+
+  @override
+  String scmDetachedAt(String ref) {
+    return 'منفصل عند ⁨$ref⁩';
+  }
+
+  @override
+  String get scmDetachedHead => 'HEAD منفصل';
+
+  @override
+  String get scmNoBranches => 'لا توجد فروع مطابقة';
+
+  @override
+  String get scmBranches => 'الفروع';
+
+  @override
+  String get scmRemoteBranches => 'الفروع البعيدة';
+
+  @override
+  String get scmTags => 'الوسوم';
+
+  @override
+  String get scmPickStartPoint => 'اختر نقطة البداية';
+
+  @override
+  String get scmSwitchBranch => 'تبديل الفرع';
+
+  @override
+  String commitMessageOnBranch(String shortcut, String branch) {
+    return 'رسالة ($shortcut للإيداع على “$branch”)';
+  }
 
   @override
   String get committed => 'تم الإيداع';

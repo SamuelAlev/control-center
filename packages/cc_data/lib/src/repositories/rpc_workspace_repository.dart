@@ -2,7 +2,6 @@ import 'package:cc_data/src/repositories/remote_workspace_repository.dart';
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/core/domain/entities/workspace.dart';
-import 'package:cc_domain/core/domain/value_objects/github_auth_mode.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_repository.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 

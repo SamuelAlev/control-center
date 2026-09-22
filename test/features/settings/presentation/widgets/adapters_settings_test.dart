@@ -38,6 +38,7 @@ Future<void> _pump(
   AppPreferences? prefs,
   Size size = const Size(1200, 900),
   List<Override> extraOverrides = const [],
+  String? initialAdapterId,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1.0;
@@ -58,7 +59,7 @@ Future<void> _pump(
           (ref) async => const <ClaudeAccountView>[],
         ),
       ],
-      child: _wrap(const AdaptersSettings()),
+      child: _wrap(AdaptersSettings(initialAdapterId: initialAdapterId)),
     ),
   );
   await tester.pump();
@@ -335,6 +336,16 @@ void main() {
 
       expect(find.byType(ClaudeAccountsSection), findsNothing);
       expect(find.text('Add account'), findsNothing);
+    });
+
+    testWidgets('initialAdapterId opens that runner', (tester) async {
+      await _pump(tester, const [
+        _aider,
+        _claudeCode,
+      ], initialAdapterId: 'claude-code');
+
+      expect(find.byType(ClaudeAccountsSection), findsOneWidget);
+      expect(find.text('/usr/bin/claude'), findsOneWidget);
     });
 
     testWidgets('selecting away from Claude Code hides accounts', (

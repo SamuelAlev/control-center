@@ -28,6 +28,31 @@ class ComposerTextController extends TextEditingController {
   /// controller stays free of a `BuildContext` lookup on every keystroke.
   DesignSystemTokens? tokens;
 
+  /// True for the duration of [replaceAll].
+  ///
+  /// The composer reads this from inside the controller listener, which runs
+  /// synchronously during the assignment, and skips pruning attachments and
+  /// entity picks. A temporary swap — loading a message in to edit, then
+  /// putting the draft back — must not treat the missing tokens as deletions.
+  bool preservingAttachments = false;
+
+  /// Replaces the whole document and puts the caret at the end.
+  ///
+  /// Sets [preservingAttachments] around the assignment so a composer listening
+  /// to this controller keeps attachments and structured mentions that belong
+  /// to the text being swapped out.
+  void replaceAll(String text) {
+    preservingAttachments = true;
+    try {
+      value = TextEditingValue(
+        text: text,
+        selection: TextSelection.collapsed(offset: text.length),
+      );
+    } finally {
+      preservingAttachments = false;
+    }
+  }
+
   @override
   TextSpan buildTextSpan({
     required BuildContext context,

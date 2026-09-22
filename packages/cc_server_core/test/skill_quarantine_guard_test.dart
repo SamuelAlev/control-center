@@ -41,7 +41,9 @@ void main() {
 
   test('returns empty when nothing is quarantined', () async {
     final deps = _Deps(lock: lockWith({'a': SkillScanVerdict.pass}));
-    deps.agents.seed([agent('1', 'ceo', const ['a'])]);
+    deps.agents.seed([
+      agent('1', 'ceo', const ['a']),
+    ]);
     final guard = deps.build();
     expect(await guard.detachQuarantined('ws-1'), isEmpty);
     expect(deps.fs.syncCalls, isEmpty);
@@ -77,7 +79,9 @@ void main() {
         'bad2': SkillScanVerdict.quarantine,
       }),
     );
-    deps.agents.seed([agent('1', 'ceo', const ['bad1', 'bad2'])]);
+    deps.agents.seed([
+      agent('1', 'ceo', const ['bad1', 'bad2']),
+    ]);
     final guard = deps.build();
     expect(await guard.detachQuarantined('ws-1', slug: 'bad2'), ['ceo']);
     // A non-quarantined slug is a no-op even when scoped.
@@ -107,6 +111,24 @@ void main() {
     expect(await guard.isQuarantined('ws-1', 'ok'), isFalse);
     expect(await guard.isQuarantined('ws-1', 'absent'), isFalse);
   });
+
+  test(
+    'mayLink allows a passing or unlocked skill and refuses quarantine',
+    () async {
+      final deps = _Deps(
+        lock: lockWith({
+          'bad': SkillScanVerdict.quarantine,
+          'ok': SkillScanVerdict.pass,
+        }),
+      );
+      final guard = deps.build();
+      // The filesystem filter keeps a slug only when this returns true. A
+      // missing lock row is the seeded-skill case and must stay linkable.
+      expect(await guard.mayLink('ws-1', 'bad'), isFalse);
+      expect(await guard.mayLink('ws-1', 'ok'), isTrue);
+      expect(await guard.mayLink('ws-1', 'absent'), isTrue);
+    },
+  );
 }
 
 /// Collapsed fixture bag: three interface fakes wired together.
@@ -135,8 +157,7 @@ class _FakeBundles implements SkillBundlePort {
   Future<SkillLock> readLock(String workspaceId) async => _lock;
 
   @override
-  dynamic noSuchMethod(Invocation invocation) =>
-      super.noSuchMethod(invocation);
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 /// Fake agent repository: only [watchByWorkspace] is implemented.
@@ -150,8 +171,7 @@ class _FakeAgents implements AgentRepository {
       Stream.value(List.of(_agents));
 
   @override
-  dynamic noSuchMethod(Invocation invocation) =>
-      super.noSuchMethod(invocation);
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 /// Fake filesystem port: records `syncAgentSkillLinks` calls, can fail for a
@@ -174,6 +194,5 @@ class _FakeFs implements WorkspaceFilesystemPort {
   }
 
   @override
-  dynamic noSuchMethod(Invocation invocation) =>
-      super.noSuchMethod(invocation);
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

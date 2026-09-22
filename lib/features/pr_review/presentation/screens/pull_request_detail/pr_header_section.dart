@@ -290,7 +290,9 @@ class _DeferredMarkdownState extends State<_DeferredMarkdown> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) setState(() => _ready = true);
+      if (mounted) {
+        setState(() => _ready = true);
+      }
     });
   }
 

@@ -7,6 +7,7 @@ import 'package:cc_domain/features/messaging/domain/entities/space.dart';
 import 'package:cc_domain/features/messaging/domain/entities/space_participant.dart';
 import 'package:cc_domain/features/messaging/domain/ports/messaging_port.dart';
 import 'package:cc_domain/features/messaging/domain/services/agent_question_service.dart';
+import 'package:cc_domain/features/messaging/domain/services/prompt_history.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/space_activity.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/space_provisioning_status.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/space_provisioning_step.dart';
@@ -239,31 +240,22 @@ final spaceWideMessagesProvider = StreamProvider.autoDispose
 /// The current user's own prompts in one conversation, oldest first — the
 /// composer's terminal-style ↑/↓ recall history.
 ///
-/// Sourced from the conversation stream rather than a local "what I typed"
-/// log so it survives restarts and includes prompts sent from another
-/// surface. Scoped to the CURRENT user: recall is "things I said", and in a
-/// multi-member workspace a teammate's prompt has no business resending under
-/// your name. Consecutive duplicates collapse (a shell's `ignoredups`), so
-/// pressing ↑ steps through distinct prompts.
+/// Computed on the server (`messaging.watchUserPromptHistory`) from this
+/// caller's recent text rows. Subscribing to the whole conversation and
+/// filtering it here re-sent every message on every write, which is what
+/// opening a long thread was paying for an up-arrow.
 final conversationUserHistoryProvider = StreamProvider.autoDispose
     .family<List<String>, ({String spaceId, String conversationId})>((
       ref,
       key,
     ) {
-      final userId = ref.watch(currentUserIdProvider);
       return ref
-          .watch(messagingRepositoryProvider)
-          .watchMessages(
+          .watch(messagingSummariesPortProvider)
+          .watchUserPromptHistory(
             ref.requireWorkspaceId(),
             key.spaceId,
             key.conversationId,
-          )
-          .map((messages) => userHistoryFromMessages(messages, userId))
-          // Same reason as [spaceMessagesProvider]: the subscription re-runs
-          // its query on ANY write to `conversation_messages`, and every
-          // emission would otherwise rebuild the composer for an identical
-          // history.
-          .distinct(listEquals);
+          );
     });
 
 /// Extracts the recallable prompt history from a conversation's messages:
@@ -272,31 +264,17 @@ final conversationUserHistoryProvider = StreamProvider.autoDispose
 /// collapsed.
 @visibleForTesting
 List<String> userHistoryFromMessages(List<Message> messages, String? userId) {
-  final history = <String>[];
-  // The previous prompt in the RAW stream, compacted rows included. Adjacency
-  // for dup-collapse is measured against what was actually sent — a compacted
-  // row sitting between two identical prompts breaks the run (ignoredups
-  // semantics), so folding context away must not silently eat a repeat the
-  // user really re-typed later.
-  String? previousRaw;
-  for (final message in messages) {
-    if (userId == null ||
-        message.senderId != userId ||
-        message.messageType != MessageType.text) {
-      continue;
-    }
-    final content = message.content.trim();
-    if (content.isEmpty) {
-      continue;
-    }
-    final duplicate = content == previousRaw;
-    previousRaw = content;
-    if (message.compacted || duplicate) {
-      continue;
-    }
-    history.add(content);
+  if (userId == null) {
+    return const [];
   }
-  return history;
+  // Same collapse the server applies. Kept here so the attribution rules
+  // (this user, plain text only) stay next to the tests that pin them.
+  return collapsePromptHistory([
+    for (final message in messages)
+      if (message.senderId == userId &&
+          message.messageType == MessageType.text)
+        (content: message.content, compacted: message.compacted),
+  ]);
 }
 
 /// Per-space attention status for the conversation list (the fleet-monitor
@@ -681,6 +659,12 @@ final spaceFeedWindowedProvider = StreamProvider.autoDispose
             ref2.spaceId,
             ref2.conversationId,
             limit: limit,
+          )
+          // Same dedupe as [spaceMessagesProvider]. A transcript flush that
+          // does not change the list projection must not rebuild the feed.
+          .distinct(
+            (a, b) =>
+                a.hasMore == b.hasMore && listEquals(a.messages, b.messages),
           );
     });
 

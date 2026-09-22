@@ -659,6 +659,7 @@ class DemoProfile {
     'memory_fact.watchForWorkspace',
     'memory_policy.watchForWorkspace',
     'messaging.watchConversationTokens',
+    'messaging.watchUserPromptHistory',
     'messaging.watchMessages',
     'messaging.watchMessagesWindow',
     'messaging.watchParticipants',

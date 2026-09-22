@@ -488,10 +488,10 @@ class MobileRigDriver implements RigDriver {
   /// missing-ffmpeg branch can be exercised on a host that has one.
   MobileRigDriver({
     required this.adb,
-    required RigDisplaySize size,
+    required this._size,
     this.onDisplayChanged,
     this._ffmpeg = HostFfmpeg.locate,
-  }) : _size = size;
+  });
 
   /// The device connection.
   final AdbClient adb;

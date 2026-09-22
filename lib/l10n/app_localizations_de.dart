@@ -3215,6 +3215,16 @@ class AppLocalizationsDe extends AppLocalizations {
   String get editMessage => 'Nachricht bearbeiten';
 
   @override
+  String get revertToThere => 'Dorthin zurücksetzen';
+
+  @override
+  String get sendAsNewMessage => 'Als neue Nachricht senden';
+
+  @override
+  String get editMessageChoiceBody =>
+      'Zurücksetzen blendet die Nachrichten danach aus und setzt die Dateien des Agenten zurück. Das lässt sich rückgängig machen. Als neue Nachricht senden lässt die Unterhaltung unverändert.';
+
+  @override
   String get deleteMessage => 'Nachricht löschen';
 
   @override
@@ -8651,6 +8661,11 @@ class AppLocalizationsDe extends AppLocalizations {
   String get ideReviewCode => 'Code überprüfen';
 
   @override
+  String ideReviewCodeInRepo(String repo) {
+    return 'Code überprüfen ($repo)';
+  }
+
+  @override
   String get ideRevertConfirmTitle => 'Änderungen zurücksetzen';
 
   @override
@@ -10556,6 +10571,88 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get commitAndSync => 'Commit & synchronisieren';
+
+  @override
+  String get scmSyncChanges => 'Änderungen synchronisieren';
+
+  @override
+  String get scmPublishBranch => 'Branch veröffentlichen';
+
+  @override
+  String get scmSyncFailed => 'Synchronisierung fehlgeschlagen';
+
+  @override
+  String get scmSyncDirty =>
+      'Änderungen vor dem Synchronisieren committen oder verwerfen';
+
+  @override
+  String get scmSynced => 'Synchronisiert';
+
+  @override
+  String get scmSelectBranch => 'Branch zum Auschecken wählen';
+
+  @override
+  String get scmCreateBranch => 'Neuen Branch erstellen…';
+
+  @override
+  String get scmCreateBranchFrom => 'Neuen Branch erstellen von…';
+
+  @override
+  String get scmCheckoutDetached => 'Losgelöst auschecken…';
+
+  @override
+  String get scmBranchName => 'Branch-Name';
+
+  @override
+  String get scmCreateBranchTitle => 'Branch erstellen';
+
+  @override
+  String scmFromRef(String ref) {
+    return 'Von ⁨$ref⁩';
+  }
+
+  @override
+  String get scmCheckoutFailed => 'Branch konnte nicht gewechselt werden';
+
+  @override
+  String get scmCheckoutDirty =>
+      'Änderungen committen oder verwerfen, bevor der Branch gewechselt wird';
+
+  @override
+  String scmSwitchedToBranch(String branch) {
+    return 'Zu ⁨$branch⁩ gewechselt';
+  }
+
+  @override
+  String scmDetachedAt(String ref) {
+    return 'Losgelöst bei ⁨$ref⁩';
+  }
+
+  @override
+  String get scmDetachedHead => 'Losgelöster HEAD';
+
+  @override
+  String get scmNoBranches => 'Keine passenden Branches';
+
+  @override
+  String get scmBranches => 'Branches';
+
+  @override
+  String get scmRemoteBranches => 'Remote-Branches';
+
+  @override
+  String get scmTags => 'Tags';
+
+  @override
+  String get scmPickStartPoint => 'Startpunkt wählen';
+
+  @override
+  String get scmSwitchBranch => 'Branch wechseln';
+
+  @override
+  String commitMessageOnBranch(String shortcut, String branch) {
+    return 'Nachricht ($shortcut zum Committen auf „$branch“)';
+  }
 
   @override
   String get committed => 'Commit erstellt';

@@ -430,4 +430,28 @@ void main() {
       );
     }
   });
+
+  testWidgets('hovering a tab shows its full label', (tester) async {
+    const label = 'Review code (frontify/web-app)';
+    await tester.pumpWidget(
+      _harness(
+        onTabSelected: (_) {},
+        onReorderDrop: (_, _) {},
+        tabs: const [EditorTab(kind: 'review', label: label)],
+      ),
+    );
+
+    // The cell paints the label twice (visible + the width-reserving twin).
+    // The tooltip is a third copy, and it is not up yet.
+    expect(find.text(label), findsNWidgets(2));
+
+    final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await gesture.addPointer(location: Offset.zero);
+    addTearDown(gesture.removePointer);
+    await gesture.moveTo(tester.getCenter(_label(label)));
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pumpAndSettle();
+
+    expect(find.text(label), findsNWidgets(3));
+  });
 }

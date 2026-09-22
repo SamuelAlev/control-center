@@ -68,6 +68,9 @@ class _RecordingSandbox implements SandboxPort {
       // Let the forwarded events reach the parser before exec resolves.
       await Future<void>.delayed(Duration.zero);
     }
+    // The real sandbox emits exit before `exec` returns. That event must not
+    // end the dispatch: the runner still has to report a 401 or fail over.
+    _current?.add(const SandboxEvent(type: SandboxEventType.exit));
     return 0;
   }
 
@@ -450,6 +453,76 @@ void main() {
       },
     );
 
+    // The process exit used to close the session before this error was
+    // emitted, so the turn persisted as an empty bubble and the sign-in
+    // dialog never opened. The gate holds the same prompt until a new
+    // credential actually lands.
+    test(
+      'an expired sign-in parks for a login and reruns the prompt',
+      () async {
+        final a = account('work');
+        final gate = _RenewGate(a.configDir);
+        final run = await _dispatchClaude(
+          cwd: temp.path,
+          claudeConfigDir: a.configDir,
+          accounts: [a],
+          credentialGate: gate,
+          stdoutPerAttempt: [
+            [_resultError('OAuth access token has expired.', status: 401)],
+            [_textDelta('hello')],
+          ],
+        );
+
+        expect(gate.requests, hasLength(1));
+        expect(
+          gate.requests.single.reason,
+          RunCredentialReason.credentialExpired,
+        );
+        expect(gate.requests.single.lane, RunCredentialLane.claudeCode);
+        expect(gate.requests.single.detail, contains('token has expired'));
+        expect(
+          run.sandbox.execArgs,
+          hasLength(2),
+          reason: 'the prompt was sent again',
+        );
+        expect(run.debug, contains('waiting for a fresh sign-in'));
+        expect(run.log, isEmpty, reason: 'the retried turn succeeded');
+      },
+    );
+
+    test('cancelling the sign-in dialog reports the auth failure', () async {
+      final a = account('work');
+      final run = await _dispatchClaude(
+        cwd: temp.path,
+        claudeConfigDir: a.configDir,
+        accounts: [a],
+        credentialGate: _FakeGate(RunCredentialOutcome.cancelled),
+        stdoutPerAttempt: [
+          [_resultError('OAuth access token has expired.', status: 401)],
+        ],
+      );
+
+      expect(run.sandbox.execArgs, hasLength(1));
+      expect(run.log, contains('token has expired'));
+    });
+
+    test('a resolved gate with no new credential does not relaunch', () async {
+      final a = account('work');
+      final run = await _dispatchClaude(
+        cwd: temp.path,
+        claudeConfigDir: a.configDir,
+        accounts: [a],
+        credentialGate: _FakeGate(RunCredentialOutcome.resolved),
+        stdoutPerAttempt: [
+          [_resultError('OAuth access token has expired.', status: 401)],
+          [_textDelta('should not run')],
+        ],
+      );
+
+      expect(run.sandbox.execArgs, hasLength(1));
+      expect(run.log, contains('token has expired'));
+    });
+
     // Retrying a bad model id or a rejected MCP config on each account in turn
     // would burn the whole pool to reach the same failure.
     test('a NON-capacity error never rotates', () async {
@@ -683,6 +756,28 @@ void main() {
 /// The recheck is still called once, because a gate that never probed would
 /// hide the very thing the session has to get right — re-mirroring the
 /// Keychain before re-reading the account directory.
+/// Signs the account back in before the session's own recheck runs, which is
+/// what a `claude auth login` does between the park and the probe.
+class _RenewGate implements RunCredentialGatePort {
+  _RenewGate(this.dir);
+
+  final String dir;
+  final List<RunCredentialBlockRequest> requests = [];
+
+  @override
+  Future<RunCredentialOutcome> awaitCredentials(
+    RunCredentialBlockRequest request, {
+    required Future<bool> Function() recheck,
+  }) async {
+    requests.add(request);
+    File('$dir/.credentials.json').writeAsStringSync('signed-in-again');
+    final renewed = await recheck();
+    return renewed
+        ? RunCredentialOutcome.resolved
+        : RunCredentialOutcome.timedOut;
+  }
+}
+
 class _FakeGate implements RunCredentialGatePort {
   _FakeGate(this.outcome);
 

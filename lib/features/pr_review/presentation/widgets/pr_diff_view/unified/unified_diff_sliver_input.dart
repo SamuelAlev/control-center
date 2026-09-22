@@ -21,8 +21,121 @@ extension UnifiedDiffSliverInput on RenderUnifiedDiffSliver {
     }
     _selAnchor = null;
     _selFocus = null;
+    _selGranularity = _DiffSelGranularity.character;
+    _pivotStart = null;
+    _pivotEnd = null;
     markNeedsPaint();
     onSelectionChanged?.call();
+  }
+
+  /// Selects the browser-style word under [cell] (double-click).
+  void _selectWordAt((int, int, int) cell) {
+    final text = _codeLineText(cell.$1, cell.$2);
+    if (text == null || text.isEmpty) {
+      _selectLineAt(cell);
+      return;
+    }
+    final range = diffWordDisplayRange(text, cell.$3);
+    if (range.start == range.end) {
+      _selectLineAt(cell);
+      return;
+    }
+    _commitUnitSelection(
+      (cell.$1, cell.$2, range.start),
+      (cell.$1, cell.$2, range.end),
+      _DiffSelGranularity.word,
+    );
+  }
+
+  /// Selects the whole display row under [cell] (triple-click).
+  void _selectLineAt((int, int, int) cell) {
+    final width = _document.displayWidthOf(cell.$1, cell.$2);
+    _commitUnitSelection(
+      (cell.$1, cell.$2, 0),
+      (cell.$1, cell.$2, width),
+      _DiffSelGranularity.line,
+    );
+  }
+
+  void _commitUnitSelection(
+    (int, int, int) start,
+    (int, int, int) end,
+    _DiffSelGranularity granularity,
+  ) {
+    _selAnchor = start;
+    _selFocus = end;
+    _selGranularity = granularity;
+    _pivotStart = start;
+    _pivotEnd = end;
+    markNeedsPaint();
+    onSelectionChanged?.call();
+  }
+
+  /// Grows a double-click selection out to the word under [hit].
+  void _extendSelectionByWord((int, int, int) hit) {
+    final pivotStart = _pivotStart;
+    final pivotEnd = _pivotEnd;
+    if (pivotStart == null || pivotEnd == null) {
+      return;
+    }
+    final text = _codeLineText(hit.$1, hit.$2);
+    if (text == null) {
+      return;
+    }
+    final range = diffWordDisplayRange(text, hit.$3);
+    final unitStart = (hit.$1, hit.$2, range.start);
+    final unitEnd = (hit.$1, hit.$2, range.end);
+    if (_cellBefore(unitStart, pivotStart)) {
+      _selAnchor = pivotEnd;
+      _selFocus = unitStart;
+    } else if (_cellAfter(unitEnd, pivotEnd)) {
+      _selAnchor = pivotStart;
+      _selFocus = unitEnd;
+    } else {
+      _selAnchor = pivotStart;
+      _selFocus = pivotEnd;
+    }
+  }
+
+  /// Grows a triple-click selection out to the row under [hit].
+  void _extendSelectionByLine((int, int, int) hit) {
+    final pivotStart = _pivotStart;
+    final pivotEnd = _pivotEnd;
+    if (pivotStart == null || pivotEnd == null) {
+      return;
+    }
+    final hitLine = (hit.$1, hit.$2, 0);
+    final pivotLine = (pivotStart.$1, pivotStart.$2, 0);
+    final pivotEndLine = (pivotEnd.$1, pivotEnd.$2, 0);
+    if (_cellBefore(hitLine, pivotLine)) {
+      _selAnchor = pivotEnd;
+      _selFocus = hitLine;
+    } else if (_cellAfter(hitLine, pivotEndLine)) {
+      _selAnchor = pivotStart;
+      _selFocus = (hit.$1, hit.$2, _document.displayWidthOf(hit.$1, hit.$2));
+    } else {
+      _selAnchor = pivotStart;
+      _selFocus = pivotEnd;
+    }
+  }
+
+  /// Raw source of a context/addition/deletion display row, or null.
+  String? _codeLineText(int file, int displayLine) {
+    final raw = _document.structureOf(file);
+    if (raw == null) {
+      return null;
+    }
+    final r = _document.rawIndexOf(file, displayLine);
+    if (r < 0 || r >= raw.length) {
+      return null;
+    }
+    final kind = raw.kindAt(r);
+    if (kind != DiffLineKind.context &&
+        kind != DiffLineKind.addition &&
+        kind != DiffLineKind.deletion) {
+      return null;
+    }
+    return raw.contents[r];
   }
 
   /// Active selection as a normalised range in display space, or null.
@@ -50,7 +163,11 @@ extension UnifiedDiffSliverInput on RenderUnifiedDiffSliver {
 
   /// Resolves the `(file, displayLine, displayColumn)` cell at viewport
   /// position `(mainAxisPosition, crossAxisPosition)`.
-  (int, int, int)? cellAt(double mainAxisPosition, double crossAxisPosition) {
+  (int, int, int)? cellAt(
+    double mainAxisPosition,
+    double crossAxisPosition, {
+    bool floorColumn = false,
+  }) {
     if (coversStickyHeader(mainAxisPosition)) {
       return null;
     }
@@ -75,15 +192,35 @@ extension UnifiedDiffSliverInput on RenderUnifiedDiffSliver {
       0,
       1 << 20,
     );
-    return (f, line, columnAt(crossAxisPosition, f, line, subRow));
+    return (
+      f,
+      line,
+      columnAt(crossAxisPosition, f, line, subRow, floorColumn: floorColumn),
+    );
   }
 
   /// Display column under cross-axis x [crossAxisPosition] on `(file, line)`,
   /// clamped to that line's rendered width.
-  int columnAt(double crossAxisPosition, int file, int line, int subRow) {
+  ///
+  /// A drag rounds to the nearest caret. A double- or triple-click floors, so
+  /// the character under the pointer is the one that gets selected.
+  int columnAt(
+    double crossAxisPosition,
+    int file,
+    int line,
+    int subRow, {
+    bool floorColumn = false,
+  }) {
     final double codeStartX = gutterWidthOf(file) + kDiffCodePadLeft;
     final double local = crossAxisPosition - codeStartX + _effectiveHScroll;
-    final int colInRow = local <= 0 ? 0 : (local / _monoAdvance).round();
+    final int colInRow;
+    if (local <= 0) {
+      colInRow = 0;
+    } else if (floorColumn) {
+      colInRow = (local / _monoAdvance).floor();
+    } else {
+      colInRow = (local / _monoAdvance).round();
+    }
     final int base = _config.overflowMode == DiffOverflowMode.wrap
         ? subRow * _colsPerRow
         : 0;
@@ -119,15 +256,33 @@ extension UnifiedDiffSliverInput on RenderUnifiedDiffSliver {
     final bool atStart = file == sf && displayLine == sl;
     final bool atEnd = file == ef && displayLine == el;
     if (atStart && atEnd) {
-      return (math.min(sc, ec), math.max(sc, ec));
+      final lo = math.min(sc, ec);
+      final hi = math.max(sc, ec);
+      if (_coversWholeLine(file, displayLine, lo, hi)) {
+        return (0, null);
+      }
+      return (lo, hi);
     }
     if (atStart) {
       return (sc, null);
     }
     if (atEnd) {
+      if (ec >= _document.displayWidthOf(file, displayLine)) {
+        return (0, null);
+      }
       return (0, ec);
     }
     return (0, null);
+  }
+
+  /// A selection that already owns every column of the row paints to the
+  /// row's right edge, which is how a triple-click reads.
+  bool _coversWholeLine(int file, int displayLine, int start, int end) {
+    final width = _document.displayWidthOf(file, displayLine);
+    if (start > 0 || end < width) {
+      return false;
+    }
+    return end > start || _selGranularity == _DiffSelGranularity.line;
   }
 
   /// Resolves the context/addition/deletion code row at [mainAxisPosition],
@@ -223,4 +378,175 @@ extension UnifiedDiffSliverInput on RenderUnifiedDiffSliver {
     _horizontalScrollOffset = clamped;
     markNeedsPaint();
   }
+}
+
+bool _cellBefore((int, int, int) a, (int, int, int) b) {
+  if (a.$1 != b.$1) {
+    return a.$1 < b.$1;
+  }
+  if (a.$2 != b.$2) {
+    return a.$2 < b.$2;
+  }
+  return a.$3 < b.$3;
+}
+
+bool _cellAfter((int, int, int) a, (int, int, int) b) => _cellBefore(b, a);
+
+/// Maps a raw consecutive-tap count onto the 1–3 action a browser takes on
+/// [platform]. Past a triple-click, macOS keeps selecting the row, Windows
+/// alternates word and row, and the other platforms cycle.
+int diffSelectionTapCount(int rawCount, TargetPlatform platform) {
+  switch (platform) {
+    case TargetPlatform.android:
+    case TargetPlatform.fuchsia:
+    case TargetPlatform.linux:
+      return rawCount <= 3 ? rawCount : (rawCount % 3 == 0 ? 3 : rawCount % 3);
+    case TargetPlatform.iOS:
+    case TargetPlatform.macOS:
+      return math.min(rawCount, 3);
+    case TargetPlatform.windows:
+      return rawCount < 2 ? rawCount : 2 + rawCount % 2;
+  }
+}
+
+/// Display columns `[start, end)` a double-click selects at [displayCol].
+///
+/// Letters, digits and `_` form a word. `'` and `-` join the words on either
+/// side. The whitespace after a word is included, matching a browser. A click
+/// on whitespace or other punctuation selects that run by itself.
+({int start, int end}) diffWordDisplayRange(String content, int displayCol) {
+  if (content.isEmpty) {
+    return (start: 0, end: 0);
+  }
+  final raw = _rawUnitAtDisplayCol(content, displayCol);
+  final range = _wordRawRange(content, raw);
+  return (
+    start: PrDiffDocument.rawColToDisplayCol(content, range.$1),
+    end: PrDiffDocument.rawColToDisplayCol(content, range.$2),
+  );
+}
+
+/// Character whose expanded-tab span contains [displayCol], or the last
+/// character when the column is past the end of [content].
+int _rawUnitAtDisplayCol(String content, int displayCol) {
+  if (displayCol <= 0) {
+    return 0;
+  }
+  var col = 0;
+  for (var i = 0; i < content.length; i++) {
+    final unit = content.codeUnitAt(i);
+    final width = unit == 0x09 ? kDiffTabWidth - (col % kDiffTabWidth) : 1;
+    if (displayCol < col + width) {
+      return i;
+    }
+    col += width;
+  }
+  return content.length - 1;
+}
+
+final RegExp _kUnicodeWordChar = RegExp(r'[\p{L}\p{N}]', unicode: true);
+final RegExp _kUnicodeSpace = RegExp(r'\p{Z}', unicode: true);
+
+bool _isWordUnit(int unit) {
+  if (unit == 0x5F) {
+    return true;
+  }
+  if (unit <= 0x7F) {
+    return (unit >= 0x30 && unit <= 0x39) ||
+        (unit >= 0x41 && unit <= 0x5A) ||
+        (unit >= 0x61 && unit <= 0x7A);
+  }
+  return _kUnicodeWordChar.hasMatch(String.fromCharCode(unit));
+}
+
+bool _isSpaceUnit(int unit) {
+  if (unit == 0x09 || unit == 0x20 || unit == 0xA0) {
+    return true;
+  }
+  if (unit <= 0x7F) {
+    return false;
+  }
+  return _kUnicodeSpace.hasMatch(String.fromCharCode(unit));
+}
+
+bool _isWordJoiner(int unit) => unit == 0x27 || unit == 0x2D || unit == 0x2019;
+
+(int, int) _wordRawRange(String content, int index) {
+  final i = index.clamp(0, content.length - 1);
+  final unit = content.codeUnitAt(i);
+  if (_isWordUnit(unit) || _joinsWord(content, i)) {
+    return _expandWord(content, _isWordUnit(unit) ? i : i - 1);
+  }
+  if (_isSpaceUnit(unit)) {
+    var start = i;
+    var end = i + 1;
+    while (start > 0 && _isSpaceUnit(content.codeUnitAt(start - 1))) {
+      start--;
+    }
+    while (end < content.length && _isSpaceUnit(content.codeUnitAt(end))) {
+      end++;
+    }
+    return (start, end);
+  }
+  var start = i;
+  var end = i + 1;
+  while (start > 0 &&
+      !_isWordUnit(content.codeUnitAt(start - 1)) &&
+      !_isSpaceUnit(content.codeUnitAt(start - 1))) {
+    start--;
+  }
+  while (end < content.length &&
+      !_isWordUnit(content.codeUnitAt(end)) &&
+      !_isSpaceUnit(content.codeUnitAt(end))) {
+    end++;
+  }
+  return (start, end);
+}
+
+/// A `'` or `-` with a word character on both sides belongs to that word.
+bool _joinsWord(String content, int i) {
+  if (!_isWordJoiner(content.codeUnitAt(i))) {
+    return false;
+  }
+  return i > 0 &&
+      i + 1 < content.length &&
+      _isWordUnit(content.codeUnitAt(i - 1)) &&
+      _isWordUnit(content.codeUnitAt(i + 1));
+}
+
+(int, int) _expandWord(String content, int seed) {
+  var start = seed;
+  var end = seed + 1;
+  while (start > 0 && _isWordUnit(content.codeUnitAt(start - 1))) {
+    start--;
+  }
+  while (end < content.length && _isWordUnit(content.codeUnitAt(end))) {
+    end++;
+  }
+  var grew = true;
+  while (grew) {
+    grew = false;
+    if (start >= 2 &&
+        _isWordJoiner(content.codeUnitAt(start - 1)) &&
+        _isWordUnit(content.codeUnitAt(start - 2))) {
+      start -= 2;
+      while (start > 0 && _isWordUnit(content.codeUnitAt(start - 1))) {
+        start--;
+      }
+      grew = true;
+    }
+    if (end + 1 < content.length &&
+        _isWordJoiner(content.codeUnitAt(end)) &&
+        _isWordUnit(content.codeUnitAt(end + 1))) {
+      end += 2;
+      while (end < content.length && _isWordUnit(content.codeUnitAt(end))) {
+        end++;
+      }
+      grew = true;
+    }
+  }
+  while (end < content.length && _isSpaceUnit(content.codeUnitAt(end))) {
+    end++;
+  }
+  return (start, end);
 }

@@ -13,6 +13,7 @@
 library;
 
 export 'src/channel/chunked_relay_codec.dart';
+export 'src/channel/frame_codec.dart' show decodeJsonFrame, encodeJsonFrame;
 export 'src/channel/in_process_rpc_channel.dart';
 export 'src/channel/relay_client_channel.dart';
 export 'src/channel/relay_signaling_channel.dart';

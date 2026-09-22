@@ -1,6 +1,8 @@
 import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/features/messaging/providers/repo_changes_provider.dart';
+import 'package:control_center/features/messaging/providers/repo_file_content_provider.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
@@ -50,63 +52,118 @@ class _ReviewCodePaneState extends ConsumerState<ReviewCodePane> {
   /// scrolled to the widget's `anchorPath`. Mirrors the PR details screen's pattern.
   final GlobalKey<PrDiffViewState> _diffKey = GlobalKey<PrDiffViewState>();
 
-  /// Whether the initial anchor-scroll has fired, so it happens only once per
-  /// changeset load (not on every rebuild / ref-watch).
+  /// The diff's own scroller. [jumpToFile] reads it through
+  /// [PrimaryScrollController]; a bare [CustomScrollView] does not register
+  /// as that controller on desktop (only mobile inherits the route's).
+  final ScrollController _scroll = ScrollController();
+
+  /// Whether the current [ReviewCodePane.anchorPath] has already been asked
+  /// to scroll. Reset when the anchor changes so a later click in Source
+  /// Control moves the same diff.
   bool _anchored = false;
+
+  /// Bumps on each anchor request so a superseded jump does not land later.
+  int _anchorGeneration = 0;
+
+  RepoChangesArgs get _args => (
+    workspaceId: widget.workspaceId,
+    repoId: widget.repoId,
+    spaceId: widget.spaceId,
+  );
+
+  @override
+  void didUpdateWidget(covariant ReviewCodePane oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.anchorPath != widget.anchorPath) {
+      _anchored = false;
+    }
+  }
+
+  @override
+  void dispose() {
+    _anchorGeneration++;
+    _scroll.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final t = context.designSystem ?? DesignSystemTokens.light();
-    final args = (
-      workspaceId: widget.workspaceId,
-      repoId: widget.repoId,
-      spaceId: widget.spaceId,
-    );
-    final async = ref.watch(repoChangesProvider(args));
-
-    return async.when(
-      loading: () => const Center(child: CcSpinner(size: 18, strokeWidth: 2)),
-      error: (_, _) => _empty(t),
-      data: (files) {
-        if (files.isEmpty) {
-          return _empty(t);
-        }
-        // Reset the anchor latch when the changeset identity changes (a refresh)
-        // so the anchor re-applies to the new file list.
-        if (!_anchored) {
-          _scheduleAnchorScroll(files);
-        }
-        // The full branch diff: every changed file in one virtualized view,
-        // exactly as the PR details page renders it. PrDiffView is a sliver, so
-        // it must live inside a viewport — a bare CustomScrollView registers as
-        // the primary scroller, which jumpToFile relies on.
-        return CustomScrollView(
-          slivers: [
-            PrDiffView(key: _diffKey, files: files, comments: const []),
-          ],
-        );
-      },
+    final async = ref.watch(repoChangesProvider(_args));
+    // Keep the previous diff on screen while a poll is in flight. Swapping in
+    // a spinner unmounts the sliver and throws away the scroll position, and
+    // a reload that dropped `value` would paint the tab empty until it landed.
+    final files = async.value;
+    if (files == null) {
+      if (async.hasError) {
+        return _empty(t);
+      }
+      return const Center(child: CcSpinner(size: 18, strokeWidth: 2));
+    }
+    if (files.isEmpty) {
+      return _empty(t);
+    }
+    if (!_anchored) {
+      _scheduleAnchorScroll(files);
+    }
+    // The full branch diff: every changed file in one virtualized view,
+    // exactly as the PR details page renders it. PrDiffView is a sliver, so
+    // it lives in this viewport. The controller is also the primary one:
+    // jumpToFile resolves its target through PrimaryScrollController, and on
+    // desktop a scroll view does not attach to the route's controller.
+    return PrimaryScrollController(
+      controller: _scroll,
+      child: CustomScrollView(
+        controller: _scroll,
+        slivers: [
+          PrDiffView(
+            key: _diffKey,
+            files: files,
+            comments: const [],
+            // Gap rows ("show N lines") fetch the worktree file. Without this
+            // the row is disabled and the tap does nothing.
+            fetchFileContent: (path) => fetchRepoFileContent(
+              ref.read(rpcClientProvider),
+              workspaceId: widget.workspaceId,
+              repoId: widget.repoId,
+              path: path,
+              spaceId: widget.spaceId,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
-  /// Scrolls the diff to the widget's `anchorPath` once the sliver has mounted. The
-  /// virtualized diff computes per-file offsets from measured heights, so the
-  /// jump must run after the frame that builds the sliver. Guarded against a
-  /// missing anchor (→ no-op) and an out-of-range index.
+  /// Scrolls the diff to the widget's `anchorPath` once the sliver has mounted.
+  /// The virtualized diff computes per-file offsets from measured heights, so
+  /// the jump must run after the frame that builds the sliver, and again if
+  /// that frame had no scroll position yet. A missing anchor leaves the diff
+  /// at the top.
   void _scheduleAnchorScroll(List<PrFile> files) {
     final anchorIndex = files.indexWhere(
       (f) => f.filename == widget.anchorPath,
     );
     if (anchorIndex < 0) {
-      // Anchor no longer in the changeset (reverted/renamed) — nothing to do;
-      // the diff opens at the top.
       _anchored = true;
       return;
     }
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _diffKey.currentState?.jumpToFile(anchorIndex);
-      if (mounted) {
-        setState(() => _anchored = true);
+    _anchored = true;
+    final generation = ++_anchorGeneration;
+    _jumpWhenReady(anchorIndex, generation, attempts: 8);
+  }
+
+  void _jumpWhenReady(int index, int generation, {required int attempts}) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted || generation != _anchorGeneration) {
+        return;
+      }
+      final jumped = await _diffKey.currentState?.jumpToFile(index) ?? false;
+      if (!mounted || generation != _anchorGeneration || jumped) {
+        return;
+      }
+      if (attempts > 0) {
+        _jumpWhenReady(index, generation, attempts: attempts - 1);
       }
     });
   }

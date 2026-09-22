@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:cc_host/src/log/cc_host_log.dart';
@@ -37,6 +36,16 @@ class WsRemoteTransport implements RemoteRpcChannelPort {
   final List<Map<String, dynamic>> _pendingIncoming = [];
   bool _closed = false;
   bool _open = false;
+
+  /// Tail of the decode chain. Large frames decode off this isolate, but a
+  /// later small frame must not be delivered ahead of an earlier one: snapshot
+  /// and response order is part of the protocol.
+  Future<void> _decodeChain = Future<void>.value();
+
+  /// True while [_deliverFrame] is on the stack, including across its decode
+  /// await. [close] is called from that path when the pending buffer
+  /// overflows; awaiting the chain from inside it would wait for itself.
+  bool _decoding = false;
 
   void _ensureControllers() {
     _incomingController ??= StreamController<Map<String, dynamic>>.broadcast(
@@ -94,24 +103,37 @@ class WsRemoteTransport implements RemoteRpcChannelPort {
       unawaited(close());
       return;
     }
+    // Started before any await so two frames keep socket order even when the
+    // earlier one is still decoding off-isolate.
+    _decodeChain = _decodeChain.then((_) => _deliverFrame(data));
+  }
+
+  Future<void> _deliverFrame(String data) async {
+    if (_closed) {
+      return;
+    }
+    _decoding = true;
     try {
-      final decoded = jsonDecode(data) as Map<String, dynamic>;
+      final decoded = await decodeJsonFrame(data);
+      if (_closed) {
+        return;
+      }
       final controller = _incomingController;
-      if (controller == null) {
+      if (controller == null || controller.isClosed) {
         return;
       }
       if (controller.hasListener) {
         controller.add(decoded);
+      } else if (_pendingIncoming.length >= _maxPendingFrames) {
+        CcHostLog.warning('WS pending buffer overflow ($label) — closing');
+        unawaited(close());
       } else {
-        if (_pendingIncoming.length >= _maxPendingFrames) {
-          CcHostLog.warning('WS pending buffer overflow ($label) — closing');
-          unawaited(close());
-          return;
-        }
         _pendingIncoming.add(decoded);
       }
     } catch (e) {
       CcHostLog.warning('Malformed WS frame ($label): $e');
+    } finally {
+      _decoding = false;
     }
   }
 
@@ -152,35 +174,42 @@ class WsRemoteTransport implements RemoteRpcChannelPort {
     if (!isOpen) {
       throw StateError('WsRemoteTransport ($label) is not open');
     }
-    final encoded = jsonEncode(frame);
-    if (_outboundBytes + encoded.length > _maxOutboundBytes) {
-      // Saturated. Dropping the frame silently would leave the peer's mirror
-      // quietly wrong; closing makes it reconnect and re-seed, which is the
-      // only outcome that stays honest. Same posture as the >256 KB inbound
-      // frame rule.
-      CcHostLog.warning(
-        'WsRemoteTransport ($label): peer is not draining '
-        '($_outboundBytes bytes queued) — closing so it re-seeds',
-      );
-      unawaited(close());
-      throw StateError('WsRemoteTransport ($label) outbound buffer is full');
-    }
-    _outboundBytes += encoded.length;
-    // Writes are serialized through `addStream`, whose future completes only
-    // once the socket has ACCEPTED the bytes. That is the only backpressure
-    // signal dart:io's WebSocket exposes (it has no `flush`, no
-    // `bufferedAmount`), and a WebSocket is ordered anyway so serializing
-    // costs nothing that was not already implied.
+    // Encode before the socket write, but do not hold this isolate for a
+    // multi-megabyte snapshot. [encodeJsonFrame] stays inline under 50KB
+    // and moves the rest to another isolate. The future is started now and
+    // attached to [_sendChain] before the first await below, so two sends
+    // still leave the socket in call order when their encodes finish
+    // out of order.
+    final encodedFuture = encodeJsonFrame(frame);
     final queued = _sendChain.then((_) async {
+      final encoded = await encodedFuture;
       if (_closed || _socket.readyState != WebSocket.open) {
         return;
       }
-      await _socket.addStream(Stream<String>.value(encoded));
+      if (_outboundBytes + encoded.length > _maxOutboundBytes) {
+        // Saturated. Dropping the frame silently would leave the peer's
+        // mirror quietly wrong; closing makes it reconnect and re-seed,
+        // which is the only outcome that stays honest.
+        CcHostLog.warning(
+          'WsRemoteTransport ($label): peer is not draining '
+          '($_outboundBytes bytes queued) — closing so it re-seeds',
+        );
+        unawaited(close());
+        throw StateError('WsRemoteTransport ($label) outbound buffer is full');
+      }
+      _outboundBytes += encoded.length;
+      try {
+        // `addStream`'s future completes only once the socket has ACCEPTED
+        // the bytes. That is the only backpressure signal dart:io's
+        // WebSocket exposes.
+        await _socket.addStream(Stream<String>.value(encoded));
+      } finally {
+        _outboundBytes -= encoded.length;
+      }
     });
-    _sendChain = queued.then(
-      (_) => _outboundBytes -= encoded.length,
-      onError: (Object _) => _outboundBytes -= encoded.length,
-    );
+    // A failed send must not wedge every later frame behind a completed
+    // error. The caller of this send still observes the error via [queued].
+    _sendChain = queued.catchError((Object _) {});
     await queued;
   }
 
@@ -192,6 +221,9 @@ class WsRemoteTransport implements RemoteRpcChannelPort {
     _closed = true;
     _open = false;
     await _socketSub?.cancel();
+    if (!_decoding) {
+      await _decodeChain;
+    }
     _stateController?.add(RemoteChannelState.closed);
     try {
       await _socket.close();

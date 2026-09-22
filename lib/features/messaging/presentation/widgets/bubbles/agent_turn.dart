@@ -61,6 +61,19 @@ class _AgentTurnState extends ConsumerState<AgentTurn> {
   /// per token like the old subscription+`setState` did.
   late LiveTranscriptController _live;
 
+  /// The structure slot currently in the tree. Reused while the turn is live
+  /// so a list flush — which rewrites the stored text the body is not reading
+  /// — does not rebuild the transcript. A finished turn, a font change, or a
+  /// different message installs a new slot.
+  Widget? _structureSlot;
+  String? _slotMessageId;
+  String? _slotFont;
+
+  /// Latest message and font. The slot's builder reads these when the segment
+  /// list actually changes, including after a flush that did not rebuild it.
+  late Message _shown;
+  late String _shownFont;
+
   @override
   void initState() {
     super.initState();
@@ -75,6 +88,7 @@ class _AgentTurnState extends ConsumerState<AgentTurn> {
     super.didUpdateWidget(old);
     if (old.message.id != widget.message.id) {
       _live.dispose();
+      _structureSlot = null;
       _live = LiveTranscriptController(
         ref.read(activeStreamRegistryProvider),
         widget.message.id,
@@ -115,13 +129,42 @@ class _AgentTurnState extends ConsumerState<AgentTurn> {
     return '$agentName: $capped';
   }
 
+  /// The transcript slot. While the turn is live the list projection catches
+  /// up a beat later than the registry; rebuilding the body off that
+  /// projection walks every segment again for text the open row already has.
+  Widget _structureSlotFor() {
+    final message = _shown;
+    final liveProjection =
+        _live.isLive && message.metadata?['streamComplete'] != true;
+    if (_structureSlot != null &&
+        liveProjection &&
+        _slotMessageId == message.id &&
+        _slotFont == _shownFont) {
+      return _structureSlot!;
+    }
+    _slotMessageId = message.id;
+    _slotFont = _shownFont;
+    return _structureSlot = ValueListenableBuilder<int>(
+      valueListenable: _live.structure,
+      builder: (context, _, _) =>
+          _TurnBody(message: _shown, live: _live, codeFont: _shownFont),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final message = widget.message;
+    final message = _shown = widget.message;
+    _shownFont = widget.codeFont;
     final tokens = resolveTokens(context);
-    final agentAsync = ref.watch(agentDetailProvider(message.senderId));
+    // Only the name is painted. Watching the whole agent future rebuilt the
+    // transcript whenever any other field on the agent settled.
     final agentName =
-        agentAsync.value?.name ?? message.senderId.substring(0, 4);
+        ref.watch(
+          agentDetailProvider(
+            message.senderId,
+          ).select((async) => async.asData?.value?.name),
+        ) ??
+        message.senderId.substring(0, 4);
 
     // The in-reply-to caption attributes a wake/consult/delegation turn to the
     // agent that triggered it, so multi-agent rooms read as a conversation.
@@ -186,15 +229,9 @@ class _AgentTurnState extends ConsumerState<AgentTurn> {
                 // Only the body area rebuilds on structural stream changes
                 // (and, per delta, only the open row inside TranscriptFlow) —
                 // the header, trailer and Semantics stay out of the live
-                // update path entirely.
-                ValueListenableBuilder<int>(
-                  valueListenable: _live.structure,
-                  builder: (context, _, _) => _TurnBody(
-                    message: message,
-                    live: _live,
-                    codeFont: widget.codeFont,
-                  ),
-                ),
+                // update path entirely. The slot itself is reused across list
+                // flushes; see [_structureSlotFor].
+                _structureSlotFor(),
                 _AgentTrailer(
                   message: message,
                   codeFont: widget.codeFont,

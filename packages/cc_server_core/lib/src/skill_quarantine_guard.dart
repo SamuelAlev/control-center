@@ -76,10 +76,22 @@ class SkillQuarantineGuard {
     return detached;
   }
 
-  /// Whether [slug] is quarantined in [workspaceId] per the lock — the verdict
-  /// source the runtime wires into the filesystem link filter.
+  /// Whether [slug] is quarantined in [workspaceId] per the lock.
+  ///
+  /// A skill with no lock entry is not quarantined. Seeded workspace skills
+  /// predate the lock and must stay linkable.
   Future<bool> isQuarantined(String workspaceId, String slug) async {
     final lock = await _bundles.readLock(workspaceId);
     return lock.skills[slug]?.scanVerdict == SkillScanVerdict.quarantine;
   }
+
+  /// Whether [slug] may be symlinked into an agent's prompt-visible skills dir.
+  ///
+  /// This is the predicate the filesystem link filter expects: true keeps the
+  /// link, false drops it. It is the inverse of [isQuarantined]. Wiring
+  /// [isQuarantined] itself in that slot treats every healthy skill as
+  /// refused, so the agent's attached skills never reach the prompt and only
+  /// their names survive.
+  Future<bool> mayLink(String workspaceId, String slug) async =>
+      !await isQuarantined(workspaceId, slug);
 }

@@ -246,6 +246,15 @@ class RpcMessagingRepository
             ),
           );
 
+  /// [MessagingSummariesPort.watchUserPromptHistory] — the caller's recent
+  /// prompts, so the composer does not subscribe to the whole conversation.
+  @override
+  Stream<List<String>> watchUserPromptHistory(
+    String workspaceId,
+    String spaceId,
+    String conversationId,
+  ) => _remote.watchUserPromptHistory(workspaceId, spaceId, conversationId);
+
   /// [MessagingSummariesPort.watchConversationTokens] — aggregated
   /// SERVER-side, because folding it here would mean subscribing to the whole
   /// conversation to produce two integers.

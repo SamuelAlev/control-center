@@ -1,16 +1,19 @@
 /// The commit half of the VS Code-style Source Control surface: a commit
-/// message field joined to a split button whose primary action commits (and
-/// pushes) and whose chevron opens the other commit variants.
+/// message field joined to a split button whose primary action commits and
+/// whose chevron opens the other commit variants.
 ///
 /// Shared by the PR workbench tab and the messaging IDE panel so "commit" reads
 /// and behaves identically wherever it appears. Like the `ScmGroup` /
-/// `ScmFileRow` rows it sits above, it is cc_ui-pure (`flutter/widgets.dart`
-/// only).
+/// `ScmFileRow` rows it sits above, it stays off Material (`flutter/widgets.dart`
+/// plus `foundation.dart` for the commit-chord glyph).
 library;
 
+import 'package:cc_domain/core/domain/ports/repo_workspace_provisioner_port.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, defaultTargetPlatform;
 import 'package:flutter/widgets.dart';
 
 /// The commit variants the commit box offers, mirroring VS Code's split-button
@@ -19,7 +22,7 @@ enum ScmCommitAction {
   /// Commit the staged index locally — no push.
   commit,
 
-  /// Commit then push to the tracked branch (the default primary action).
+  /// Commit then push to the tracked branch.
   commitAndPush,
 
   /// Amend the previous commit (keeps its message when the box is empty).
@@ -38,9 +41,36 @@ typedef ScmCommitMenuItem = ({
   bool enabled,
 });
 
-/// The commit message field + "Commit & push" split button, pinned above the
-/// changed-file groups. The primary button pushes; the chevron opens a [CcMenu]
-/// of the other commit variants (commit-only, amend, commit & sync).
+/// What replaces the Commit button when the working tree is clean.
+///
+/// VS Code swaps the button rather than leaving a disabled Commit: Publish
+/// branch when the branch has no upstream, Sync changes when it is ahead or
+/// behind. Null keeps the disabled Commit (the PR workbench tab).
+class ScmIdleAction {
+  /// Creates an [ScmIdleAction].
+  const ScmIdleAction({
+    required this.label,
+    required this.icon,
+    required this.onPressed,
+    this.enabled = true,
+  });
+
+  /// Button label, already localized ("Publish branch", "Sync changes 2↓").
+  final String label;
+
+  /// Leading icon.
+  final IconData icon;
+
+  /// Runs the action.
+  final VoidCallback onPressed;
+
+  /// Whether the button accepts a press.
+  final bool enabled;
+}
+
+/// The commit message field + Commit split button, pinned above the
+/// changed-file groups. The primary button commits locally; the chevron opens
+/// a [CcMenu] of the other variants (commit & push, amend, commit & sync).
 /// Enablement is re-derived on every keystroke so an empty message greys the
 /// commit actions out.
 class ScmCommitBox extends StatelessWidget {
@@ -50,8 +80,11 @@ class ScmCommitBox extends StatelessWidget {
     required this.controller,
     required this.busy,
     required this.stagedCount,
+    required this.unstagedCount,
     required this.canPush,
     required this.onAction,
+    this.branch,
+    this.idleAction,
     this.dense = false,
     this.padding = const EdgeInsets.fromLTRB(
       AppSpacing.sm,
@@ -68,15 +101,29 @@ class ScmCommitBox extends StatelessWidget {
   /// Whether a commit is in flight (disables the field and the actions).
   final bool busy;
 
-  /// How many files are staged — nothing but an amend can run at zero.
+  /// How many files are in the git index.
   final int stagedCount;
 
+  /// Working-tree changes that are not in the index, including untracked
+  /// files. When this is non-zero and [stagedCount] is zero, commit stays
+  /// available: the caller stages everything before committing (VS Code's
+  /// `git.enableSmartCommit`). A non-zero [stagedCount] still commits only
+  /// the index.
+  final int unstagedCount;
+
   /// Whether a push target exists (a forge remote / PR head branch). False
-  /// leaves the push variants disabled but keeps the local commit available.
+  /// leaves the push variants out of the menu but keeps the local commit.
   final bool canPush;
 
   /// Runs the chosen commit variant.
   final ValueChanged<ScmCommitAction> onAction;
+
+  /// Checked-out branch, used in the VS Code message placeholder
+  /// (`Message (⌘↩ to commit on "main")`). Null keeps the shorter hint.
+  final String? branch;
+
+  /// Shown in place of the Commit button when there is nothing to commit.
+  final ScmIdleAction? idleAction;
 
   /// Compact sizing (32px controls) for narrow surfaces like the IDE sidebar.
   final bool dense;
@@ -94,40 +141,43 @@ class ScmCommitBox extends StatelessWidget {
       child: AnimatedBuilder(
         animation: controller,
         builder: (context, _) {
-          final hasStaged = stagedCount > 0;
+          final hasChanges = stagedCount > 0 || unstagedCount > 0;
           final hasMessage = controller.text.trim().isNotEmpty;
           bool enabled(ScmCommitAction action) {
             if (busy) {
               return false;
             }
             return switch (action) {
-              ScmCommitAction.commit => hasStaged && hasMessage,
+              ScmCommitAction.commit => hasChanges && hasMessage,
               ScmCommitAction.commitAndPush =>
-                hasStaged && hasMessage && canPush,
+                hasChanges && hasMessage && canPush,
               ScmCommitAction.commitAndSync =>
-                hasStaged && hasMessage && canPush,
-              // An amend can rewrite just the message, so staged changes are
-              // not required — but there must be something to do.
-              ScmCommitAction.amend => hasStaged || hasMessage,
+                hasChanges && hasMessage && canPush,
+              // An amend can rewrite just the message, so a dirty tree is
+              // not required — but there must be something to do. Unstaged
+              // changes count: the caller stages them into the amend.
+              ScmCommitAction.amend => hasChanges || hasMessage,
             };
           }
 
-          // With no push target the split button commits locally instead of
-          // offering a push it cannot perform — the same button, one honest
-          // action, rather than a permanently disabled primary.
-          final primaryAction = canPush
-              ? ScmCommitAction.commitAndPush
-              : ScmCommitAction.commit;
+          // Commit is the primary action. Push lives in the menu, matching
+          // VS Code's split button (a check, then Commit & push in the chevron).
+          const primaryAction = ScmCommitAction.commit;
           final primaryEnabled = enabled(primaryAction);
+          final branchName = branch?.trim() ?? '';
+          final hint = branchName.isEmpty
+              ? (hasChanges
+                    ? l10n.commitMessageHint
+                    : l10n.stageChangesToCommit)
+              : l10n.commitMessageOnBranch(scmCommitShortcut(), branchName);
+          final idle = !hasChanges ? idleAction : null;
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               CcTextField(
                 controller: controller,
                 size: dense ? CcTextFieldSize.sm : CcTextFieldSize.md,
-                hintText: hasStaged
-                    ? l10n.commitMessageHint
-                    : l10n.stageChangesToCommit,
+                hintText: hint,
                 enabled: !busy,
                 onSubmitted: (_) {
                   if (primaryEnabled) {
@@ -136,38 +186,47 @@ class ScmCommitBox extends StatelessWidget {
                 },
               ),
               SizedBox(height: dense ? AppSpacing.xs : AppSpacing.sm),
-              _CommitSplitButton(
-                label: busy
-                    ? l10n.saving
-                    : (canPush ? l10n.commitAndPush : l10n.commit),
-                busy: busy,
-                dense: dense,
-                primaryEnabled: primaryEnabled,
-                onPrimary: () => onAction(primaryAction),
-                items: [
-                  if (canPush)
+              if (idle != null)
+                CcButton(
+                  variant: CcButtonVariant.primary,
+                  size: dense ? CcButtonSize.sm : CcButtonSize.md,
+                  icon: idle.icon,
+                  loading: busy,
+                  fullWidth: true,
+                  onPressed: !busy && idle.enabled ? idle.onPressed : null,
+                  child: Text(idle.label),
+                )
+              else
+                _CommitSplitButton(
+                  label: busy ? l10n.saving : l10n.commit,
+                  busy: busy,
+                  dense: dense,
+                  primaryEnabled: primaryEnabled,
+                  onPrimary: () => onAction(primaryAction),
+                  items: [
+                    if (canPush)
+                      (
+                        action: ScmCommitAction.commitAndPush,
+                        label: l10n.commitAndPush,
+                        icon: AppIcons.upload,
+                        enabled: enabled(ScmCommitAction.commitAndPush),
+                      ),
+                    if (canPush)
+                      (
+                        action: ScmCommitAction.commitAndSync,
+                        label: l10n.commitAndSync,
+                        icon: AppIcons.repeat,
+                        enabled: enabled(ScmCommitAction.commitAndSync),
+                      ),
                     (
-                      action: ScmCommitAction.commit,
-                      label: l10n.commit,
-                      icon: AppIcons.gitCommitHorizontal,
-                      enabled: enabled(ScmCommitAction.commit),
+                      action: ScmCommitAction.amend,
+                      label: l10n.commitAmend,
+                      icon: AppIcons.squarePen,
+                      enabled: enabled(ScmCommitAction.amend),
                     ),
-                  (
-                    action: ScmCommitAction.amend,
-                    label: l10n.commitAmend,
-                    icon: AppIcons.squarePen,
-                    enabled: enabled(ScmCommitAction.amend),
-                  ),
-                  if (canPush)
-                    (
-                      action: ScmCommitAction.commitAndSync,
-                      label: l10n.commitAndSync,
-                      icon: AppIcons.repeat,
-                      enabled: enabled(ScmCommitAction.commitAndSync),
-                    ),
-                ],
-                onSelected: onAction,
-              ),
+                  ],
+                  onSelected: onAction,
+                ),
             ],
           );
         },
@@ -208,7 +267,7 @@ class _CommitSplitButton extends StatelessWidget {
           child: CcButton(
             variant: CcButtonVariant.primary,
             size: dense ? CcButtonSize.sm : CcButtonSize.md,
-            icon: AppIcons.gitCommitHorizontal,
+            icon: AppIcons.check,
             loading: busy,
             fullWidth: true,
             onPressed: primaryEnabled ? onPrimary : null,
@@ -275,4 +334,61 @@ class _ChevronSegment extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The commit chord shown in the message placeholder. ⌘↩ on Apple platforms,
+/// Ctrl+Enter everywhere else — the same primary modifier the rest of the
+/// app uses.
+String scmCommitShortcut() {
+  return switch (defaultTargetPlatform) {
+    TargetPlatform.macOS || TargetPlatform.iOS => '⌘↩',
+    _ => 'Ctrl+Enter',
+  };
+}
+
+/// The count suffix on VS Code's sync button. Zeros are omitted so a branch
+/// that is only behind reads `36↓`, not `36↓ 0↑`.
+String scmSyncCounts({required int ahead, required int behind}) {
+  return [if (behind > 0) '$behind↓', if (ahead > 0) '$ahead↑'].join(' ');
+}
+
+/// Whether Source Control should offer Create pull request.
+///
+/// Being in sync with the branch's own upstream is not "nothing to propose":
+/// publishing drops [ahead] to 0 while the commits are still ahead of the
+/// default branch, and that is the pull request. [aheadOfBase] is that count.
+/// When the connected server does not report it, a published non-default
+/// branch still qualifies.
+bool scmCanOpenPullRequest({
+  required bool hasForgeRemote,
+  required bool hasExistingPr,
+  required int dirtyFiles,
+  required bool statusKnown,
+  required bool hasUpstream,
+  required int ahead,
+  required int aheadOfBase,
+  required bool aheadOfBaseKnown,
+  required String branch,
+}) {
+  if (!hasForgeRemote) {
+    return false;
+  }
+  if (hasExistingPr || dirtyFiles > 0) {
+    return true;
+  }
+  if (!statusKnown) {
+    return branch.startsWith(kSpaceScratchBranchPrefix);
+  }
+  if (aheadOfBaseKnown) {
+    return aheadOfBase > 0;
+  }
+  if (ahead > 0) {
+    return true;
+  }
+  return hasUpstream && !_scmIsDefaultBranch(branch);
+}
+
+bool _scmIsDefaultBranch(String branch) {
+  final name = branch.trim();
+  return name == 'main' || name == 'master';
 }

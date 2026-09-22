@@ -107,11 +107,7 @@ class CcShikiTokenizer {
     try {
       final lines = _highlighter.codeToTokens(
         code,
-        _options(
-          langId,
-          dark: dark,
-          includeExplanation: includeExplanation,
-        ),
+        _options(langId, dark: dark, includeExplanation: includeExplanation),
       );
       return reattachCarriageReturns(code, lines);
     } on Object {
@@ -125,6 +121,7 @@ class CcShikiTokenizer {
     String code, {
     required String? langId,
     required bool dark,
+    bool includeExplanation = false,
   }) async {
     if (langId == null || code.isEmpty) {
       return null;
@@ -137,12 +134,17 @@ class CcShikiTokenizer {
       }
     }
     if (debugDisableShikiAsync) {
-      return tokenizeSync(code, langId: langId, dark: dark);
+      return tokenizeSync(
+        code,
+        langId: langId,
+        dark: dark,
+        includeExplanation: includeExplanation,
+      );
     }
     try {
       final lines = await _highlighter.codeToTokensAsync(
         code,
-        _options(langId, dark: dark),
+        _options(langId, dark: dark, includeExplanation: includeExplanation),
       );
       return reattachCarriageReturns(code, lines);
     } on Object {

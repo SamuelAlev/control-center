@@ -137,8 +137,10 @@ class PrDiffViewState extends ConsumerState<PrDiffView> {
   bool _splitView = false;
 
   /// Scrolls the diff so file [index] sits at the top.
-  Future<void> jumpToFile(int index) async {
-    await _unifiedKey.currentState?.jumpToFile(index);
+  ///
+  /// False when the diff is not laid out yet (the host should retry).
+  Future<bool> jumpToFile(int index) async {
+    return await _unifiedKey.currentState?.jumpToFile(index) ?? false;
   }
 
   /// Scrolls to [path] in the current diff (expanding a collapsed/preview

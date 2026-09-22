@@ -221,6 +221,15 @@ abstract class McpTool {
   ToolApproval toolApproval(Map<String, dynamic> arguments) =>
       requiresApproval ? ToolApproval.write : ToolApproval.read;
 
+  /// Scope arguments this tool takes from the transport even when the model
+  /// supplied a value.
+  ///
+  /// Empty by default: `agent_id`, `space_id` and `conversation_id` are filled
+  /// only when the caller omitted them, because most tools use those names for
+  /// a TARGET. A tool whose argument means "the run I am in" lists it here so
+  /// the model cannot redirect the call.
+  Set<String> get forcedScopeKeys => const {};
+
   /// The unified-guardrail effect classes this tool can produce (PRD 24 §1).
   /// Every MCP tool DECLARES its worst-case classes; a ratchet test holds the
   /// line. Default is empty (a pure read/query tool); mutating tools (PR

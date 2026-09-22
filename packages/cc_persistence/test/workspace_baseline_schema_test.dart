@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:cc_persistence/database/workspace/workspace_database.dart';
@@ -829,5 +830,159 @@ CREATE TABLE conversation_goals (
         expect(db.schemaVersion, WorkspaceDatabase.currentSchemaVersion);
       },
     );
+
+    test('an existing v10 database gains the sidebar activity index', () async {
+      final dir = await Directory.systemTemp.createTemp('ws_migration_v11_');
+      addTearDown(() => dir.delete(recursive: true));
+      final file = File('${dir.path}/ws.db');
+
+      final setup = WorkspaceDatabase.forTesting(
+        NativeDatabase(file),
+        workspaceId: 'ws',
+      );
+      await setup.customStatement(
+        'DROP INDEX IF EXISTS idx_conversation_messages_live_activity',
+      );
+      await setup.customStatement('PRAGMA user_version = 10');
+      await setup.close();
+
+      final db = WorkspaceDatabase.forTesting(
+        NativeDatabase(file),
+        workspaceId: 'ws',
+      );
+      addTearDown(db.close);
+
+      final names = await db
+          .customSelect(
+            "SELECT name FROM sqlite_master WHERE type = 'index' "
+            "AND name = 'idx_conversation_messages_live_activity'",
+          )
+          .get();
+      expect(names, isNotEmpty);
+      expect(db.schemaVersion, WorkspaceDatabase.currentSchemaVersion);
+    });
+
+    test('an existing v11 database backfills the context-meter counts', () async {
+      final dir = await Directory.systemTemp.createTemp('ws_migration_v12_');
+      addTearDown(() => dir.delete(recursive: true));
+      final file = File('${dir.path}/ws.db');
+
+      final setup = WorkspaceDatabase.forTesting(
+        NativeDatabase(file),
+        workspaceId: 'ws',
+      );
+      await setup.customStatement(
+        "INSERT INTO spaces (id, name, workspace_id) VALUES ('s', 'S', 'ws')",
+      );
+      await setup.customStatement(
+        'INSERT INTO conversations (id, space_id, workspace_id) '
+        "VALUES ('c', 's', 'ws')",
+      );
+      await setup.customStatement(
+        'INSERT INTO conversation_messages ('
+        'id, space_id, conversation_id, sender_id, sender_type, content, metadata'
+        ") VALUES ('m', 's', 'c', 'a', 'agent', 'hello', "
+        '\'{"transcriptChars":380}\')',
+      );
+      await setup.customStatement(
+        'DROP INDEX IF EXISTS idx_conversation_messages_live_chars',
+      );
+      await setup.customStatement(
+        'ALTER TABLE conversation_messages DROP COLUMN content_chars',
+      );
+      await setup.customStatement(
+        'ALTER TABLE conversation_messages DROP COLUMN transcript_chars',
+      );
+      await setup.customStatement('PRAGMA user_version = 11');
+      await setup.close();
+
+      final db = WorkspaceDatabase.forTesting(
+        NativeDatabase(file),
+        workspaceId: 'ws',
+      );
+      addTearDown(db.close);
+
+      final row = await db
+          .customSelect(
+            'SELECT content_chars, transcript_chars '
+            "FROM conversation_messages WHERE id = 'm'",
+          )
+          .getSingle();
+      expect(row.read<int>('content_chars'), 5);
+      expect(row.read<int>('transcript_chars'), 380);
+      final index = await db
+          .customSelect(
+            "SELECT name FROM sqlite_master WHERE type = 'index' "
+            "AND name = 'idx_conversation_messages_live_chars'",
+          )
+          .get();
+      expect(index, isNotEmpty);
+      expect(db.schemaVersion, WorkspaceDatabase.currentSchemaVersion);
+    });
+
+    test('an existing v12 database stores list metadata for the message watch', () async {
+      final dir = await Directory.systemTemp.createTemp('ws_migration_v13_');
+      addTearDown(() => dir.delete(recursive: true));
+      final file = File('${dir.path}/ws.db');
+
+      final setup = WorkspaceDatabase.forTesting(
+        NativeDatabase(file),
+        workspaceId: 'ws',
+      );
+      await setup.customStatement(
+        'INSERT INTO spaces (id, name, workspace_id) VALUES (?, ?, ?)',
+        ['s', 'S', 'ws'],
+      );
+      await setup.customStatement(
+        'INSERT INTO conversations (id, space_id, workspace_id) VALUES (?, ?, ?)',
+        ['c', 's', 'ws'],
+      );
+      await setup.customStatement(
+        'INSERT INTO conversation_messages (id, space_id, conversation_id, sender_id, sender_type, content, metadata) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [
+          'm',
+          's',
+          'c',
+          'a',
+          'agent',
+          'hello',
+          '{"keep":"yes","segments":[{"t":"text"}]}',
+        ],
+      );
+      await setup.customStatement(
+        'ALTER TABLE conversation_messages DROP COLUMN list_metadata',
+      );
+      await setup.customStatement('PRAGMA user_version = 12');
+      await setup.close();
+
+      final db = WorkspaceDatabase.forTesting(
+        NativeDatabase(file),
+        workspaceId: 'ws',
+      );
+      addTearDown(db.close);
+
+      final row = await db
+          .customSelect(
+            'SELECT metadata, list_metadata FROM conversation_messages WHERE id = \'m\'',
+          )
+          .getSingle();
+      final full =
+          jsonDecode(row.read<String>('metadata')) as Map<String, dynamic>;
+      final lite = jsonDecode(row.read<String>('list_metadata'))
+          as Map<String, dynamic>;
+      expect(full['segments'], isA<List<dynamic>>());
+      expect(lite.containsKey('segments'), isFalse);
+      expect(lite['segments_elided'], isTrue);
+      expect(lite['segment_count'], 1);
+      expect(lite['keep'], 'yes');
+      final changes = await db
+          .customSelect(
+            'SELECT COUNT(*) AS n FROM sync_changes WHERE tbl = \'conversation_messages\'',
+          )
+          .getSingle();
+      // The setup insert records one change. The backfill must not add another.
+      expect(changes.read<int>('n'), 1);
+      expect(db.schemaVersion, WorkspaceDatabase.currentSchemaVersion);
+    });
   });
 }

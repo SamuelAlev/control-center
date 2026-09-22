@@ -87,6 +87,13 @@ class _SpaceMessageFeedState extends ConsumerState<SpaceMessageFeed> {
   final _follow = FollowState();
   final _rowKeys = <String, GlobalKey>{};
 
+  /// Bubble widgets reused when a window emission changes some other row.
+  ///
+  /// The list builder runs again for every visible index. Returning the same
+  /// widget instance is what lets the element skip the update, so a streaming
+  /// turn does not re-parse every other bubble in the window.
+  final _keptRows = <String, _KeptFeedRow>{};
+
   /// List extent queries and offscreen-row reveals for deep anchors.
   final _listController = ListController();
 
@@ -319,4 +326,27 @@ class _SpaceMessageFeedState extends ConsumerState<SpaceMessageFeed> {
       l10n: l10n,
     );
   }
+}
+
+/// One feed row's bubble, kept while that message is still in the window.
+///
+/// [child] is the widget handed back to the list. Flutter skips the element
+/// update when the instance is the same, which is the point: only the row
+/// whose message actually changed should build again.
+class _KeptFeedRow {
+  const _KeptFeedRow({
+    required this.message,
+    required this.collapseHeader,
+    required this.highlighted,
+    required this.onOpenThread,
+    required this.onStartThread,
+    required this.child,
+  });
+
+  final Message message;
+  final bool collapseHeader;
+  final bool highlighted;
+  final void Function(String threadId)? onOpenThread;
+  final void Function(Message message)? onStartThread;
+  final Widget child;
 }

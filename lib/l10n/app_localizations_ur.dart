@@ -3178,6 +3178,16 @@ class AppLocalizationsUr extends AppLocalizations {
   String get editMessage => 'پیغام میں ترمیم';
 
   @override
+  String get revertToThere => 'وہاں واپس کریں';
+
+  @override
+  String get sendAsNewMessage => 'نئے پیغام کے طور پر بھیجیں';
+
+  @override
+  String get editMessageChoiceBody =>
+      'واپسی اس پیغام کے بعد والے پیغامات چھپاتی ہے اور ایجنٹ کی فائلیں واپس کرتی ہے۔ آپ اسے کالعدم کر سکتے ہیں۔ نئے پیغام کے طور پر بھیجنا گفتگو کو ویسا ہی چھوڑ دیتا ہے۔';
+
+  @override
   String get deleteMessage => 'پیغام حذف کریں';
 
   @override
@@ -8555,6 +8565,11 @@ class AppLocalizationsUr extends AppLocalizations {
   String get ideReviewCode => 'کوڈ ریویو';
 
   @override
+  String ideReviewCodeInRepo(String repo) {
+    return 'کوڈ ریویو (⁨$repo⁩)';
+  }
+
+  @override
   String get ideRevertConfirmTitle => 'تبدیلیاں واپس کریں';
 
   @override
@@ -10441,6 +10456,87 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get commitAndSync => 'کمیٹ اور سنک';
+
+  @override
+  String get scmSyncChanges => 'تبدیلیاں سنک کریں';
+
+  @override
+  String get scmPublishBranch => 'برانچ شائع کریں';
+
+  @override
+  String get scmSyncFailed => 'سنک ناکام رہا';
+
+  @override
+  String get scmSyncDirty => 'سنک سے پہلے تبدیلیاں کمیٹ کریں یا رد کریں';
+
+  @override
+  String get scmSynced => 'سنک ہو گیا';
+
+  @override
+  String get scmSelectBranch => 'چیک آؤٹ کے لیے شاخ منتخب کریں';
+
+  @override
+  String get scmCreateBranch => 'نئی شاخ بنائیں…';
+
+  @override
+  String get scmCreateBranchFrom => 'سے نئی شاخ بنائیں…';
+
+  @override
+  String get scmCheckoutDetached => 'علیحدہ چیک آؤٹ…';
+
+  @override
+  String get scmBranchName => 'شاخ کا نام';
+
+  @override
+  String get scmCreateBranchTitle => 'شاخ بنائیں';
+
+  @override
+  String scmFromRef(String ref) {
+    return '⁨$ref⁩ سے';
+  }
+
+  @override
+  String get scmCheckoutFailed => 'شاخ تبدیل نہیں ہو سکی';
+
+  @override
+  String get scmCheckoutDirty =>
+      'شاخ بدلنے سے پہلے تبدیلیاں محفوظ کریں یا مسترد کریں';
+
+  @override
+  String scmSwitchedToBranch(String branch) {
+    return '⁨$branch⁩ پر منتقل';
+  }
+
+  @override
+  String scmDetachedAt(String ref) {
+    return '⁨$ref⁩ پر علیحدہ';
+  }
+
+  @override
+  String get scmDetachedHead => 'علیحدہ HEAD';
+
+  @override
+  String get scmNoBranches => 'کوئی مماثل شاخ نہیں';
+
+  @override
+  String get scmBranches => 'شاخیں';
+
+  @override
+  String get scmRemoteBranches => 'دور دراز شاخیں';
+
+  @override
+  String get scmTags => 'ٹیگز';
+
+  @override
+  String get scmPickStartPoint => 'آغاز کا نقطہ منتخب کریں';
+
+  @override
+  String get scmSwitchBranch => 'شاخ تبدیل کریں';
+
+  @override
+  String commitMessageOnBranch(String shortcut, String branch) {
+    return 'پیغام ($shortcut سے “$branch” پر کمیٹ)';
+  }
 
   @override
   String get committed => 'کمیٹ ہو گیا';

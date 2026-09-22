@@ -16,6 +16,32 @@ extension _SpaceFollow on _SpaceScreenState {
     }
     final show = pos.pixels > kFollowPinThreshold;
     if (show != _showJump) _set(() => _showJump = show);
+    _maybeLoadOlder();
+  }
+
+  /// Distance from the oldest edge at which the next page is requested.
+  static const double _loadMoreThreshold = 400;
+
+  /// Grows the subscribed window by one page when the reader is near the
+  /// oldest loaded message. One page in flight at a time: a fling must not
+  /// jump the limit to the cap before the first page has rendered.
+  void _maybeLoadOlder() {
+    if (!_hasMore ||
+        _follow.loadingOlder ||
+        !_scroll.hasClients ||
+        _programmatic) {
+      return;
+    }
+    if (ref.read(remoteFeedWindowProvider(widget.spaceId)) >=
+        kRemoteFeedMaxWindow) {
+      return;
+    }
+    final pos = _scroll.position;
+    if (pos.maxScrollExtent - pos.pixels >= _loadMoreThreshold) {
+      return;
+    }
+    _follow.loadingOlder = true;
+    ref.read(remoteFeedWindowProvider(widget.spaceId).notifier).loadMore();
   }
 
   void _reengageFollowing() {
@@ -78,11 +104,12 @@ extension _SpaceFollow on _SpaceScreenState {
       _newestWasStreaming = false;
       return;
     }
-    final meta = newest.metadata is Map ? newest.metadata as Map : null;
-    final segments = decodeTranscript(meta?['segments']);
-    final isAgentTurn = segments.isNotEmpty;
-    final streaming =
-        isAgentTurn && ((meta?['streamComplete'] as bool?) != true);
+    final meta = newest.metadata is Map<dynamic, dynamic>
+        ? newest.metadata as Map<dynamic, dynamic>
+        : null;
+    // Lite rows have no segments. `streamComplete: false` is what the host
+    // writes for the whole run, including the empty row it inserts first.
+    final streaming = meta?['streamComplete'] == false;
     if (streaming && _announcedStartFor != newest.id) {
       _announcedStartFor = newest.id;
       _announcedDoneFor = null;
@@ -143,6 +170,7 @@ extension _SpaceFollow on _SpaceScreenState {
     );
     _reengageFollowing();
   }
+
   Widget _activeBanner(DesignSystemTokens t) {
     return DecoratedBox(
       decoration: BoxDecoration(

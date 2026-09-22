@@ -60,6 +60,30 @@ class InlineDiffView extends StatefulWidget {
 class _InlineDiffViewState extends State<InlineDiffView> {
   final Set<(String, String?, bool)> _pendingAsync = {};
 
+  /// The pair whose diff is running off this frame, so a rebuild does not
+  /// start a second one.
+  (String, String)? _loadingDiff;
+
+  void _scheduleDiff() {
+    final key = (widget.oldText, widget.newText);
+    if (_loadingDiff == key) {
+      return;
+    }
+    _loadingDiff = key;
+    computeLineDiffAsync(widget.oldText, widget.newText).then((_) {
+      if (!mounted || _loadingDiff != key) {
+        return;
+      }
+      setState(() => _loadingDiff = null);
+    });
+  }
+
+  /// Past this many unified rows the narrow diff mounts only the gutter rows
+  /// inside the viewport. The widget objects are cheap; laying out thousands
+  /// of paragraphs in one frame is not, and the box is at most
+  /// [InlineDiffView.maxHeight] tall.
+  static const int _virtualizeRows = 64;
+
   /// Per-line spans for one side: sync within the grammar's line budget,
   /// async-with-plain-first above it, hard-capped for giant inputs.
   List<List<InlineSpan>> _sideLines(
@@ -107,7 +131,23 @@ class _InlineDiffViewState extends State<InlineDiffView> {
     final theme = Theme.of(context);
     final tokens = widget.tokens;
     final dark = theme.brightness == Brightness.dark;
-    final result = computeLineDiff(widget.oldText, widget.newText);
+    final result = lineDiffForBuild(widget.oldText, widget.newText);
+    if (result == null) {
+      // A rewrite of a long file is tens to hundreds of milliseconds. Paint
+      // the frame, then fill the diff in when the helper isolate returns.
+      _scheduleDiff();
+      final height = widget.maxHeight.isFinite ? widget.maxHeight : 120.0;
+      return Container(
+        height: height,
+        decoration: BoxDecoration(
+          color: tokens.bgPrimary,
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(color: tokens.borderSecondary),
+        ),
+        alignment: Alignment.center,
+        child: CcSpinner(size: 16, color: tokens.textTertiary),
+      );
+    }
     final oldLines = _sideLines(
       widget.oldText,
       languageId: widget.languageId,
@@ -171,17 +211,35 @@ class _InlineDiffViewState extends State<InlineDiffView> {
       );
     }
 
+    final box = BoxDecoration(
+      color: tokens.bgPrimary,
+      borderRadius: BorderRadius.circular(4),
+      border: Border.all(color: tokens.borderSecondary),
+    );
+    // No explicit scrollbar: the app-wide [CcScrollBehavior] injects the
+    // design-system one, wired to this scrollable's controller.
+    // Pinned LTR: diff gutters + code never mirror.
+    if (rows.length > _virtualizeRows && widget.maxHeight.isFinite) {
+      return Container(
+        height: widget.maxHeight,
+        decoration: box,
+        child: Directionality(
+          textDirection: TextDirection.ltr,
+          child: SelectionArea(
+            child: ListView.builder(
+              primary: false,
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              itemCount: rows.length,
+              itemBuilder: (context, index) => rows[index],
+            ),
+          ),
+        ),
+      );
+    }
     return Container(
-      decoration: BoxDecoration(
-        color: tokens.bgPrimary,
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: tokens.borderSecondary),
-      ),
+      decoration: box,
       constraints: BoxConstraints(maxHeight: widget.maxHeight),
-      // No explicit scrollbar: the app-wide [CcScrollBehavior] injects the
-      // design-system one, wired to this scrollable's controller.
       child: Directionality(
-        // Pinned per the carve-out below: diff gutters + code never mirror.
         textDirection: TextDirection.ltr,
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(vertical: 6),

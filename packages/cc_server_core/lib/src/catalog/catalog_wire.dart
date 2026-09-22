@@ -2337,7 +2337,6 @@ Orchestration orchestrationFromWire(Map<String, dynamic> w) => Orchestration(
       : null,
 );
 
-
 /// Maps an [OrchestrationRevision] snapshot to its wire shape.
 Map<String, dynamic> orchestrationRevisionToWire(OrchestrationRevision r) => {
   'id': r.id,
@@ -3018,12 +3017,26 @@ typedef RepoChangesFetcher =
 
 /// Computes a repo's changes split into staged (index vs HEAD) and unstaged
 /// (worktree vs index + untracked) buckets — the VS Code Source Control model.
+///
+/// `hasUpstream`, `ahead` and `behind` describe the branch against its
+/// tracking ref, or against `origin/<branch>` when a push left that ref
+/// without a tracking config. Only a branch the remote does not have falls
+/// back to commits the remote default does not contain. `aheadOfBase` is
+/// commits the default branch does not contain, which stays non-zero after
+/// the branch is published and in sync with itself. Computed from local refs
+/// only; a fetch is `worktree.syncBranch`.
 typedef RepoChangesGroupedFetcher =
-    Future<({List<PrFile> staged, List<PrFile> unstaged})> Function(
-      String workspaceId,
-      String repoId, {
-      String? spaceId,
-    });
+    Future<
+      ({
+        List<PrFile> staged,
+        List<PrFile> unstaged,
+        bool hasUpstream,
+        int ahead,
+        int behind,
+        int aheadOfBase,
+      })
+    >
+    Function(String workspaceId, String repoId, {String? spaceId});
 
 /// Stages or unstages files in a conversation's isolated worktree index (`git
 /// add` / `git reset HEAD`). Empty paths ⇒ all. Returns false when the space
@@ -3191,6 +3204,41 @@ typedef WorktreePublishBranchFn =
       required String repoId,
       String? branchOverride,
       String? actingUserId,
+    });
+
+/// VS Code's Sync for a conversation worktree: fetch the branch, rebase when
+/// the remote moved, then push when this side is ahead or the branch has
+/// never been published. Never commits. Returns
+/// `{pulled, pushed, dirty, error?}` or null when the space has no worktree.
+typedef WorktreeSyncBranchFn =
+    Future<Map<String, Object?>?> Function({
+      required String workspaceId,
+      required String spaceId,
+      required String repoId,
+      String? actingUserId,
+    });
+
+/// Local branches, remote-tracking refs and tags in a conversation worktree.
+/// Returns `{current, detached, refs}` or null when the space has no worktree.
+typedef WorktreeListBranchesFn =
+    Future<Map<String, Object?>?> Function({
+      required String workspaceId,
+      required String spaceId,
+      required String repoId,
+    });
+
+/// Checks a branch out in a conversation worktree, or creates one. Returns
+/// `{ok, branch, detached, dirty, error?}` or null when the space has no
+/// worktree. A detached checkout stores an empty branch.
+typedef WorktreeCheckoutFn =
+    Future<Map<String, Object?>?> Function({
+      required String workspaceId,
+      required String spaceId,
+      required String repoId,
+      String? branch,
+      String? startPoint,
+      bool create,
+      bool detach,
     });
 
 /// Applies an orchestration action (approve / cancel) for `(workspaceId,

@@ -58,11 +58,12 @@ class _SoundscapeMiniPlayerWindowState
         locale: localeOverride,
         supportedLocales: kSupportedAppLocales,
         localeResolutionCallback: resolveAppLocale,
+        // Same flutter/material.dart delegates as ControlCenterApp.
         localizationsDelegates: const [
           AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate, // ignore: deprecated_member_use
           GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate, // ignore: deprecated_member_use
         ],
         // This sibling window must ignore the engine's shared platform route
         // (the main window's deep link), so always render the mini-player.

@@ -286,17 +286,16 @@ class ReverseMuxReader {
 }
 
 /// Host half of the mux: stdout is frames from the guest, stdin is frames
-/// to the guest, each OPEN dials [dialTarget].
+/// to the guest, each OPEN dials `dialTarget`.
 class ReverseMuxHost {
   /// Creates a [ReverseMuxHost].
   ReverseMuxHost({
-    required IOSink stdin,
+    required this._stdin,
     required Stream<List<int>> stdout,
-    required Future<Socket?> Function() dialTarget,
+    required this._dialTarget,
     this.onTraffic,
     Stream<List<int>>? stderr,
-  }) : _stdin = stdin,
-       _dialTarget = dialTarget {
+  }) {
     _stdoutSub = stdout.listen(
       _onStdout,
       onDone: close,
@@ -387,6 +386,8 @@ class ReverseMuxHost {
         await _onOpen(frame.streamId);
       case kReverseMuxData:
         _markTraffic();
+        // Lives in [_streams]; [_drop] and [close] destroy it.
+        // ignore: close_sinks
         final socket = _streams[frame.streamId];
         if (socket == null) {
           return;

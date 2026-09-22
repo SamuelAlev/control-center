@@ -69,10 +69,7 @@ Future<void> grantCdpHeadlessPermissions(
   try {
     await send(
       'Browser.grantPermissions',
-      params: {
-        'permissions': kCdpHeadlessPermissionGrants,
-        if (origin != null) 'origin': origin,
-      },
+      params: {'permissions': kCdpHeadlessPermissionGrants, 'origin': ?origin},
       duringHandshake: duringHandshake,
     );
   } on Object catch (e) {

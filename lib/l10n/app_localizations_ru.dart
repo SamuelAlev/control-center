@@ -3222,6 +3222,16 @@ class AppLocalizationsRu extends AppLocalizations {
   String get editMessage => 'Изменить сообщение';
 
   @override
+  String get revertToThere => 'Откатить дотуда';
+
+  @override
+  String get sendAsNewMessage => 'Отправить как новое сообщение';
+
+  @override
+  String get editMessageChoiceBody =>
+      'Откат скрывает сообщения после этого и возвращает файлы агента. Это можно отменить. Отправка новым сообщением оставляет разговор как есть.';
+
+  @override
   String get deleteMessage => 'Удалить сообщение';
 
   @override
@@ -8690,6 +8700,11 @@ class AppLocalizationsRu extends AppLocalizations {
   String get ideReviewCode => 'Проверить код';
 
   @override
+  String ideReviewCodeInRepo(String repo) {
+    return 'Проверить код ($repo)';
+  }
+
+  @override
   String get ideRevertConfirmTitle => 'Откатить изменения';
 
   @override
@@ -10603,6 +10618,88 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get commitAndSync => 'Коммит и синхронизация';
+
+  @override
+  String get scmSyncChanges => 'Синхронизировать изменения';
+
+  @override
+  String get scmPublishBranch => 'Опубликовать ветку';
+
+  @override
+  String get scmSyncFailed => 'Не удалось синхронизировать';
+
+  @override
+  String get scmSyncDirty =>
+      'Закоммитьте или отмените изменения перед синхронизацией';
+
+  @override
+  String get scmSynced => 'Синхронизировано';
+
+  @override
+  String get scmSelectBranch => 'Выберите ветку для переключения';
+
+  @override
+  String get scmCreateBranch => 'Создать новую ветку…';
+
+  @override
+  String get scmCreateBranchFrom => 'Создать новую ветку из…';
+
+  @override
+  String get scmCheckoutDetached => 'Отсоединённое переключение…';
+
+  @override
+  String get scmBranchName => 'Имя ветки';
+
+  @override
+  String get scmCreateBranchTitle => 'Создать ветку';
+
+  @override
+  String scmFromRef(String ref) {
+    return 'Из ⁨$ref⁩';
+  }
+
+  @override
+  String get scmCheckoutFailed => 'Не удалось переключить ветку';
+
+  @override
+  String get scmCheckoutDirty =>
+      'Зафиксируйте или отмените изменения перед переключением ветки';
+
+  @override
+  String scmSwitchedToBranch(String branch) {
+    return 'Переключено на ⁨$branch⁩';
+  }
+
+  @override
+  String scmDetachedAt(String ref) {
+    return 'Отсоединено на ⁨$ref⁩';
+  }
+
+  @override
+  String get scmDetachedHead => 'Отсоединённый HEAD';
+
+  @override
+  String get scmNoBranches => 'Нет подходящих веток';
+
+  @override
+  String get scmBranches => 'Ветки';
+
+  @override
+  String get scmRemoteBranches => 'Удалённые ветки';
+
+  @override
+  String get scmTags => 'Метки';
+
+  @override
+  String get scmPickStartPoint => 'Выберите начальную точку';
+
+  @override
+  String get scmSwitchBranch => 'Переключить ветку';
+
+  @override
+  String commitMessageOnBranch(String shortcut, String branch) {
+    return 'Сообщение ($shortcut, чтобы закоммитить в «$branch»)';
+  }
 
   @override
   String get committed => 'Закоммичено';

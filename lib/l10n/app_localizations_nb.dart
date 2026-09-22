@@ -3197,6 +3197,16 @@ class AppLocalizationsNb extends AppLocalizations {
   String get editMessage => 'Rediger melding';
 
   @override
+  String get revertToThere => 'Tilbakestill dit';
+
+  @override
+  String get sendAsNewMessage => 'Send som ny melding';
+
+  @override
+  String get editMessageChoiceBody =>
+      'Tilbakestilling skjuler meldingene etter denne og ruller agentens filer tilbake. Du kan angre det. Å sende den som en ny melding lar samtalen stå.';
+
+  @override
   String get deleteMessage => 'Slett melding';
 
   @override
@@ -8589,6 +8599,11 @@ class AppLocalizationsNb extends AppLocalizations {
   String get ideReviewCode => 'Gjennomgå kode';
 
   @override
+  String ideReviewCodeInRepo(String repo) {
+    return 'Gjennomgå kode ($repo)';
+  }
+
+  @override
   String get ideRevertConfirmTitle => 'Tilbakestill endringer';
 
   @override
@@ -10486,6 +10501,88 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get commitAndSync => 'Commit og synkroniser';
+
+  @override
+  String get scmSyncChanges => 'Synkroniser endringer';
+
+  @override
+  String get scmPublishBranch => 'Publiser gren';
+
+  @override
+  String get scmSyncFailed => 'Synkronisering mislyktes';
+
+  @override
+  String get scmSyncDirty =>
+      'Commit eller forkast endringer før du synkroniserer';
+
+  @override
+  String get scmSynced => 'Synkronisert';
+
+  @override
+  String get scmSelectBranch => 'Velg en gren å sjekke ut';
+
+  @override
+  String get scmCreateBranch => 'Opprett ny gren…';
+
+  @override
+  String get scmCreateBranchFrom => 'Opprett ny gren fra…';
+
+  @override
+  String get scmCheckoutDetached => 'Sjekk ut frakoblet…';
+
+  @override
+  String get scmBranchName => 'Grennavn';
+
+  @override
+  String get scmCreateBranchTitle => 'Opprett gren';
+
+  @override
+  String scmFromRef(String ref) {
+    return 'Fra ⁨$ref⁩';
+  }
+
+  @override
+  String get scmCheckoutFailed => 'Kunne ikke bytte gren';
+
+  @override
+  String get scmCheckoutDirty =>
+      'Sjekk inn eller forkast endringer før du bytter gren';
+
+  @override
+  String scmSwitchedToBranch(String branch) {
+    return 'Byttet til ⁨$branch⁩';
+  }
+
+  @override
+  String scmDetachedAt(String ref) {
+    return 'Frakoblet ved ⁨$ref⁩';
+  }
+
+  @override
+  String get scmDetachedHead => 'Frakoblet HEAD';
+
+  @override
+  String get scmNoBranches => 'Ingen samsvarende grener';
+
+  @override
+  String get scmBranches => 'Grener';
+
+  @override
+  String get scmRemoteBranches => 'Eksterne grener';
+
+  @override
+  String get scmTags => 'Tagger';
+
+  @override
+  String get scmPickStartPoint => 'Velg et startpunkt';
+
+  @override
+  String get scmSwitchBranch => 'Bytt gren';
+
+  @override
+  String commitMessageOnBranch(String shortcut, String branch) {
+    return 'Melding ($shortcut for å committe på «$branch»)';
+  }
 
   @override
   String get committed => 'Committet';

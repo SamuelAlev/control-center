@@ -3183,6 +3183,16 @@ class AppLocalizationsHe extends AppLocalizations {
   String get editMessage => 'עריכת הודעה';
 
   @override
+  String get revertToThere => 'שחזור לנקודה ההיא';
+
+  @override
+  String get sendAsNewMessage => 'שליחה כהודעה חדשה';
+
+  @override
+  String get editMessageChoiceBody =>
+      'השחזור מסתיר את ההודעות שאחרי זו ומחזיר את קבצי הסוכן. אפשר לבטל את זה. שליחה כהודעה חדשה משאירה את השיחה כפי שהיא.';
+
+  @override
   String get deleteMessage => 'מחיקת הודעה';
 
   @override
@@ -8579,6 +8589,11 @@ class AppLocalizationsHe extends AppLocalizations {
   String get ideReviewCode => 'סקירת קוד';
 
   @override
+  String ideReviewCodeInRepo(String repo) {
+    return 'סקירת קוד (⁨$repo⁩)';
+  }
+
+  @override
   String get ideRevertConfirmTitle => 'שחזור שינויים';
 
   @override
@@ -10464,6 +10479,87 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get commitAndSync => 'קומיט וסנכרון';
+
+  @override
+  String get scmSyncChanges => 'סנכרון שינויים';
+
+  @override
+  String get scmPublishBranch => 'פרסום הענף';
+
+  @override
+  String get scmSyncFailed => 'הסנכרון נכשל';
+
+  @override
+  String get scmSyncDirty => 'בצע קומיט או בטל שינויים לפני הסנכרון';
+
+  @override
+  String get scmSynced => 'סונכרן';
+
+  @override
+  String get scmSelectBranch => 'בחירת ענף למעבר';
+
+  @override
+  String get scmCreateBranch => 'יצירת ענף חדש…';
+
+  @override
+  String get scmCreateBranchFrom => 'יצירת ענף חדש מתוך…';
+
+  @override
+  String get scmCheckoutDetached => 'מעבר ל-HEAD מנותק…';
+
+  @override
+  String get scmBranchName => 'שם הענף';
+
+  @override
+  String get scmCreateBranchTitle => 'יצירת ענף';
+
+  @override
+  String scmFromRef(String ref) {
+    return 'מתוך ⁨$ref⁩';
+  }
+
+  @override
+  String get scmCheckoutFailed => 'לא ניתן להחליף ענף';
+
+  @override
+  String get scmCheckoutDirty =>
+      'יש לבצע commit או לבטל שינויים לפני החלפת ענף';
+
+  @override
+  String scmSwitchedToBranch(String branch) {
+    return 'עברת אל ⁨$branch⁩';
+  }
+
+  @override
+  String scmDetachedAt(String ref) {
+    return 'מנותק ב-⁨$ref⁩';
+  }
+
+  @override
+  String get scmDetachedHead => 'HEAD מנותק';
+
+  @override
+  String get scmNoBranches => 'אין ענפים תואמים';
+
+  @override
+  String get scmBranches => 'ענפים';
+
+  @override
+  String get scmRemoteBranches => 'ענפים מרוחקים';
+
+  @override
+  String get scmTags => 'תגיות';
+
+  @override
+  String get scmPickStartPoint => 'בחירת נקודת התחלה';
+
+  @override
+  String get scmSwitchBranch => 'החלפת ענף';
+
+  @override
+  String commitMessageOnBranch(String shortcut, String branch) {
+    return 'הודעה ($shortcut לקומיט על “$branch”)';
+  }
 
   @override
   String get committed => 'הקומיט בוצע';

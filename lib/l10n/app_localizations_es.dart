@@ -3218,6 +3218,16 @@ class AppLocalizationsEs extends AppLocalizations {
   String get editMessage => 'Editar mensaje';
 
   @override
+  String get revertToThere => 'Volver allí';
+
+  @override
+  String get sendAsNewMessage => 'Enviar como mensaje nuevo';
+
+  @override
+  String get editMessageChoiceBody =>
+      'Volver oculta los mensajes posteriores y revierte los archivos del agente. Puedes deshacerlo. Enviarlo como mensaje nuevo deja la conversación como está.';
+
+  @override
   String get deleteMessage => 'Eliminar mensaje';
 
   @override
@@ -8649,6 +8659,11 @@ class AppLocalizationsEs extends AppLocalizations {
   String get ideReviewCode => 'Revisar código';
 
   @override
+  String ideReviewCodeInRepo(String repo) {
+    return 'Revisar código ($repo)';
+  }
+
+  @override
   String get ideRevertConfirmTitle => 'Revertir cambios';
 
   @override
@@ -10553,6 +10568,88 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get commitAndSync => 'Confirmar y sincronizar';
+
+  @override
+  String get scmSyncChanges => 'Sincronizar cambios';
+
+  @override
+  String get scmPublishBranch => 'Publicar rama';
+
+  @override
+  String get scmSyncFailed => 'Error al sincronizar';
+
+  @override
+  String get scmSyncDirty =>
+      'Confirma o descarta los cambios antes de sincronizar';
+
+  @override
+  String get scmSynced => 'Sincronizado';
+
+  @override
+  String get scmSelectBranch => 'Seleccionar una rama para cambiar';
+
+  @override
+  String get scmCreateBranch => 'Crear rama nueva…';
+
+  @override
+  String get scmCreateBranchFrom => 'Crear rama nueva desde…';
+
+  @override
+  String get scmCheckoutDetached => 'Cambiar a HEAD separado…';
+
+  @override
+  String get scmBranchName => 'Nombre de la rama';
+
+  @override
+  String get scmCreateBranchTitle => 'Crear rama';
+
+  @override
+  String scmFromRef(String ref) {
+    return 'Desde ⁨$ref⁩';
+  }
+
+  @override
+  String get scmCheckoutFailed => 'No se pudo cambiar de rama';
+
+  @override
+  String get scmCheckoutDirty =>
+      'Confirma o descarta los cambios antes de cambiar de rama';
+
+  @override
+  String scmSwitchedToBranch(String branch) {
+    return 'Cambiado a ⁨$branch⁩';
+  }
+
+  @override
+  String scmDetachedAt(String ref) {
+    return 'Separado en ⁨$ref⁩';
+  }
+
+  @override
+  String get scmDetachedHead => 'HEAD separado';
+
+  @override
+  String get scmNoBranches => 'Ninguna rama coincide';
+
+  @override
+  String get scmBranches => 'Ramas';
+
+  @override
+  String get scmRemoteBranches => 'Ramas remotas';
+
+  @override
+  String get scmTags => 'Etiquetas';
+
+  @override
+  String get scmPickStartPoint => 'Seleccionar un punto de inicio';
+
+  @override
+  String get scmSwitchBranch => 'Cambiar de rama';
+
+  @override
+  String commitMessageOnBranch(String shortcut, String branch) {
+    return 'Mensaje ($shortcut para confirmar en “$branch”)';
+  }
 
   @override
   String get committed => 'Confirmado';

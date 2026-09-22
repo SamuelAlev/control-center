@@ -1,4 +1,4 @@
 # cc_ui components over 1000 lines — shrinking allowlist.
-packages/cc_ui/lib/src/components/cc_filter_menu.dart 1081
-packages/cc_ui/lib/src/components/cc_menu.dart 1405
-packages/cc_ui/lib/src/components/cc_multi_select.dart 1026
+packages/cc_ui/lib/src/components/cc_filter_menu.dart 1069
+packages/cc_ui/lib/src/components/cc_menu.dart 1374
+packages/cc_ui/lib/src/components/cc_multi_select.dart 1006

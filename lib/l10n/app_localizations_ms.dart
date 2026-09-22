@@ -3194,6 +3194,16 @@ class AppLocalizationsMs extends AppLocalizations {
   String get editMessage => 'Sunting mesej';
 
   @override
+  String get revertToThere => 'Kembalikan ke sana';
+
+  @override
+  String get sendAsNewMessage => 'Hantar sebagai mesej baharu';
+
+  @override
+  String get editMessageChoiceBody =>
+      'Mengembalikan menyembunyikan mesej selepas ini dan memulangkan fail ejen. Anda boleh membuat asal. Menghantar sebagai mesej baharu membiarkan perbualan seperti sedia ada.';
+
+  @override
   String get deleteMessage => 'Padam mesej';
 
   @override
@@ -8602,6 +8612,11 @@ class AppLocalizationsMs extends AppLocalizations {
   String get ideReviewCode => 'Semak kod';
 
   @override
+  String ideReviewCodeInRepo(String repo) {
+    return 'Semak kod ($repo)';
+  }
+
+  @override
   String get ideRevertConfirmTitle => 'Kembalikan perubahan';
 
   @override
@@ -10501,6 +10516,87 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get commitAndSync => 'Commit & segerak';
+
+  @override
+  String get scmSyncChanges => 'Segerakkan perubahan';
+
+  @override
+  String get scmPublishBranch => 'Terbitkan cabang';
+
+  @override
+  String get scmSyncFailed => 'Segerak gagal';
+
+  @override
+  String get scmSyncDirty => 'Commit atau buang perubahan sebelum menyegerak';
+
+  @override
+  String get scmSynced => 'Disegerakkan';
+
+  @override
+  String get scmSelectBranch => 'Pilih cawangan untuk checkout';
+
+  @override
+  String get scmCreateBranch => 'Cipta cawangan baharu…';
+
+  @override
+  String get scmCreateBranchFrom => 'Cipta cawangan baharu daripada…';
+
+  @override
+  String get scmCheckoutDetached => 'Checkout tertanggal…';
+
+  @override
+  String get scmBranchName => 'Nama cawangan';
+
+  @override
+  String get scmCreateBranchTitle => 'Cipta cawangan';
+
+  @override
+  String scmFromRef(String ref) {
+    return 'Daripada ⁨$ref⁩';
+  }
+
+  @override
+  String get scmCheckoutFailed => 'Tidak dapat menukar cawangan';
+
+  @override
+  String get scmCheckoutDirty =>
+      'Komit atau buang perubahan sebelum menukar cawangan';
+
+  @override
+  String scmSwitchedToBranch(String branch) {
+    return 'Bertukar ke ⁨$branch⁩';
+  }
+
+  @override
+  String scmDetachedAt(String ref) {
+    return 'Tertanggal di ⁨$ref⁩';
+  }
+
+  @override
+  String get scmDetachedHead => 'HEAD tertanggal';
+
+  @override
+  String get scmNoBranches => 'Tiada cawangan yang sepadan';
+
+  @override
+  String get scmBranches => 'Cawangan';
+
+  @override
+  String get scmRemoteBranches => 'Cawangan jauh';
+
+  @override
+  String get scmTags => 'Tag';
+
+  @override
+  String get scmPickStartPoint => 'Pilih titik mula';
+
+  @override
+  String get scmSwitchBranch => 'Tukar cawangan';
+
+  @override
+  String commitMessageOnBranch(String shortcut, String branch) {
+    return 'Mesej ($shortcut untuk commit pada “$branch”)';
+  }
 
   @override
   String get committed => 'Di-commit';

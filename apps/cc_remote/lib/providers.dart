@@ -4,13 +4,20 @@ import 'dart:convert';
 import 'package:cc_data/cc_data.dart';
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/core/domain/entities/repo.dart';
+import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
+import 'package:cc_domain/core/domain/value_objects/transcript_update_codec.dart';
 import 'package:cc_remote/app_connection.dart';
+import 'package:cc_remote/feed_window.dart';
 import 'package:cc_remote/l10n/remote_locales.dart';
+import 'package:cc_remote/live_turns.dart';
 import 'package:cc_remote/media_proxy.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+export 'package:cc_remote/feed_window.dart';
+export 'package:cc_remote/live_turns.dart';
 
 /// Owns the phone→server connection lifecycle (the cc_rpc connection
 /// supervisor + the stable [RemoteRpcClient] facade). Constructed once;
@@ -247,35 +254,94 @@ final spaceConversationIdProvider = FutureProvider.autoDispose
       return conversation.id;
     });
 
-/// Live messages in a space's standing conversation (`messaging.watchMessages`).
+/// Live window of a space's standing conversation
+/// (`messaging.watchMessagesWindow`).
+///
 /// Family so a conversation screen subscribes to exactly its space and
-/// auto-resubscribes on reconnect.
+/// auto-resubscribes on reconnect. The wire is the newest
+/// [remoteFeedWindowProvider] rows, not the whole thread — a long
+/// conversation used to re-send its history on every write.
 final spaceMessagesProvider = StreamProvider.autoDispose
-    .family<List<MessageDto>, String>((ref, spaceId) {
+    .family<({List<MessageDto> messages, bool hasMore}), String>((
+      ref,
+      spaceId,
+    ) {
       final client = ref.watch(rpcClientProvider).value;
       final workspaceId = ref.watch(activeWorkspaceIdProvider).value;
       final conversationId = ref
           .watch(spaceConversationIdProvider(spaceId))
           .value;
+      final limit = ref.watch(remoteFeedWindowProvider(spaceId));
       if (client == null || workspaceId == null || conversationId == null) {
         return const Stream.empty();
       }
       return RemoteMessagingRepository(client)
-          .watchMessages(workspaceId, spaceId, conversationId)
-          .map(
+          .watchMessagesWindow(
+            workspaceId,
+            spaceId,
+            conversationId,
+            limit: limit,
+          )
+          .map((window) {
             // A QUEUED steering card has not reached the agent yet — the desktop
             // renders it in the steering queue strip below the trail. The phone
             // has no strip (v1), so hide it here rather than showing it as a sent
             // bubble that did nothing. The moment it is injected (or converted
             // at run end) the row re-emits and renders as a normal user bubble.
-            (messages) => [
-              for (final m in messages)
+            final messages = <MessageDto>[
+              for (final m in window.messages)
                 if (!(m.messageType == 'steering' &&
                     m.metadata is Map &&
                     (m.metadata as Map)['steerState'] == 'queued'))
                   m,
-            ],
-          );
+            ];
+            return (
+              messages: messages,
+              hasMore: window.hasMore && limit < kRemoteFeedMaxWindow,
+            );
+          });
+    });
+
+/// Live turn relay for [spaceId], plus one-shot loads of finished transcripts.
+///
+/// List rows omit `segments`. Watching this starts the subscription even when
+/// the thread is empty, so a turn that begins before its row arrives is
+/// already folded when the tile builds. The value itself does not change per
+/// token — tiles listen to one message's stream.
+final phoneTurnRelayProvider = Provider.autoDispose
+    .family<PhoneTurnRelay, String>((ref, spaceId) {
+      final client = ref.watch(rpcClientProvider).value;
+      final workspaceId = ref.watch(activeWorkspaceIdProvider).value;
+      final relay = PhoneTurnRelay(
+        spaceId: spaceId,
+        loadMessage: (messageId) async {
+          if (client == null || workspaceId == null) {
+            return const <TranscriptSegment>[];
+          }
+          final dto = await RemoteMessagingRepository(
+            client,
+          ).getMessageById(workspaceId, messageId);
+          final metadata = dto?.metadata;
+          if (metadata is! Map<dynamic, dynamic>) {
+            return const <TranscriptSegment>[];
+          }
+          return decodeTranscript(metadata['segments']);
+        },
+      );
+      if (client != null) {
+        final sub = RemoteMessagingRepository(client)
+            .watchSpaceTurns(spaceId)
+            .listen((frame) {
+              final event = spaceTurnEventFromWire(frame);
+              if (event != null) {
+                relay.applyEvent(event);
+              }
+            }, onError: (Object _, StackTrace _) {});
+        ref.onDispose(() {
+          unawaited(sub.cancel());
+        });
+      }
+      return relay;
     });
 
 /// Live active run logs for a conversation (`agent_run_log.watchActiveByConversation`)

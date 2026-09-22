@@ -43,7 +43,29 @@ class TranscriptSegmentRow extends ConsumerStatefulWidget {
 class _TranscriptSegmentRowState extends ConsumerState<TranscriptSegmentRow> {
   bool? _userOpen;
 
+  /// A heavy edit's `+N −N` badge is filled in after the diff leaves the
+  /// frame. Keyed by the tool inputs: a live output stream rebuilds this
+  /// header on every chunk, and the edit text is not what those chunks change.
+  String? _watchedDiffKey;
+
   bool get _open => _userOpen ?? _defaultOpen;
+
+  void _onDeferredDiff(Future<void> done) {
+    final seg = widget.segment;
+    final key = seg is ToolSegment
+        ? '${seg.toolCallId}:${identityHashCode(seg.inputs)}'
+        : '';
+    if (_watchedDiffKey == key) {
+      return;
+    }
+    _watchedDiffKey = key;
+    done.whenComplete(() {
+      if (!mounted || _watchedDiffKey != key) {
+        return;
+      }
+      setState(() {});
+    });
+  }
 
   bool get _defaultOpen {
     final seg = widget.segment;
@@ -128,7 +150,7 @@ class _TranscriptSegmentRowState extends ConsumerState<TranscriptSegmentRow> {
   ) {
     final out = <Widget>[];
     if (seg is ToolSegment) {
-      final stats = toolDiffStats(seg);
+      final stats = toolDiffStats(seg, whenReady: _onDeferredDiff);
       if (stats != null && (stats.adds > 0 || stats.dels > 0)) {
         out.add(
           Padding(

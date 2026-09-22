@@ -1,3 +1,6 @@
+/// @docImport 'package:cc_domain/core/domain/events/pr_events.dart';
+library;
+
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/core/domain/entities/github_team_profile.dart';
 import 'package:cc_domain/core/domain/entities/github_user.dart';

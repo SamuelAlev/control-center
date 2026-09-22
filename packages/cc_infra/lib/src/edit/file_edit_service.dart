@@ -156,8 +156,8 @@ class FileEditService implements SnapshotStore {
   /// via a fresh live read, exactly like a version this session never saw.
   final Map<String, Map<String, String>> _snapshotCache = {};
 
-  static const int _maxHashesPerPath = 4;
-  static const int _maxCachedPaths = 256;
+  static const int _maxHashesPerPath = 2;
+  static const int _maxCachedPaths = 48;
 
   /// Caches [content] for [path] keyed by its content hash.
   void _cache(String path, String content) {

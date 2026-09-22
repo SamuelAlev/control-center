@@ -9,6 +9,7 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 
 RunCredentialBlockDto _block({
   String id = 'cg-1',
@@ -142,4 +143,139 @@ void main() {
     // No agent name on this one — the run is still described, not skipped.
     expect(find.text(l10n.credentialGateWaitingRun), findsOneWidget);
   });
+
+  testWidgets('open settings reaches Claude Code and back resumes the run', (
+    tester,
+  ) async {
+    final controller = StreamController<List<RunCredentialBlockDto>>();
+    addTearDown(controller.close);
+    final router = GoRouter(
+      initialLocation: '/workspaces/ws-1/spaces/sp-1',
+      routes: [
+        ShellRoute(
+          builder: (_, _, child) =>
+              Stack(children: [child, const CredentialGateOverlay()]),
+          routes: [
+            GoRoute(
+              path: '/workspaces/:workspaceId/spaces/:spaceId',
+              builder: (_, _) => const Text('space'),
+            ),
+            GoRoute(
+              path: '/workspaces/:workspaceId/settings/server/providers',
+              builder: (_, state) =>
+                  Text('adapters:${state.uri.queryParameters['adapter']}'),
+            ),
+          ],
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          blockedRunsProvider.overrideWith((ref) => controller.stream),
+        ],
+        child: CcTheme(
+          data: CcThemeData.light(),
+          child: MaterialApp.router(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            routerConfig: router,
+          ),
+        ),
+      ),
+    );
+
+    controller.add([
+      _block(
+        reason: RunCredentialReason.signedOut,
+        detail: '[claude] this Claude Code account is signed out.',
+      ),
+    ]);
+    await tester.pumpAndSettle();
+
+    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    await tester.tap(find.text(l10n.credentialGateOpenSettings));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(CcDialog), findsNothing);
+    expect(find.text('adapters:claude-code'), findsOneWidget);
+
+    router.go('/workspaces/ws-1/spaces/sp-1');
+    await tester.pumpAndSettle();
+
+    // Still signed out: the dialog comes back, the run was not dropped.
+    expect(find.text('space'), findsOneWidget);
+    expect(find.byType(CcDialog), findsOneWidget);
+    expect(find.text(l10n.credentialGateSignedOutTitle), findsOneWidget);
+  });
+
+  testWidgets(
+    'leaving settings after the credential lands stays on the space',
+    (tester) async {
+      final controller = StreamController<List<RunCredentialBlockDto>>();
+      addTearDown(controller.close);
+      final router = GoRouter(
+        initialLocation: '/workspaces/ws-1/spaces/sp-1',
+        routes: [
+          ShellRoute(
+            builder: (_, _, child) =>
+                Stack(children: [child, const CredentialGateOverlay()]),
+            routes: [
+              GoRoute(
+                path: '/workspaces/:workspaceId/spaces/:spaceId',
+                builder: (_, _) => const Text('space'),
+              ),
+              GoRoute(
+                path: '/workspaces/:workspaceId/settings/server/providers',
+                builder: (_, state) =>
+                    Text('adapters:${state.uri.queryParameters['adapter']}'),
+              ),
+            ],
+          ),
+        ],
+      );
+      addTearDown(router.dispose);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            blockedRunsProvider.overrideWith((ref) => controller.stream),
+          ],
+          child: CcTheme(
+            data: CcThemeData.light(),
+            child: MaterialApp.router(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              routerConfig: router,
+            ),
+          ),
+        ),
+      );
+
+      controller.add([
+        _block(
+          reason: RunCredentialReason.signedOut,
+          detail: '[claude] this Claude Code account is signed out.',
+        ),
+      ]);
+      await tester.pumpAndSettle();
+
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      await tester.tap(find.text(l10n.credentialGateOpenSettings));
+      await tester.pumpAndSettle();
+      expect(find.text('adapters:claude-code'), findsOneWidget);
+
+      // Signed in while the page was open: the server dropped the block.
+      controller.add(const []);
+      await tester.pump();
+
+      router.go('/workspaces/ws-1/spaces/sp-1');
+      await tester.pumpAndSettle();
+
+      expect(find.text('space'), findsOneWidget);
+      expect(find.byType(CcDialog), findsNothing);
+    },
+  );
 }

@@ -163,6 +163,27 @@ final spaceBranchPullRequestsProvider = FutureProvider.autoDispose
       }
     });
 
+/// PRs the space row in the global sidebar should badge.
+///
+/// A PR reaches a space two ways and only one of them writes a row. [linked]
+/// is the review-space associations. [branchMatched] is every open PR whose
+/// head is a worktree branch of the space — the same join the space panel
+/// uses, which holds however the PR was opened (compose screen, `gh`, the
+/// web UI, an agent terminal). An association wins when both name the same
+/// PR, so it is not counted twice.
+List<PullRequest> pullRequestsForSpaceRow({
+  required List<PullRequest> linked,
+  required Iterable<PullRequest> branchMatched,
+}) {
+  final prs = <String, PullRequest>{
+    for (final pr in linked) '${pr.repoFullName}#${pr.number}': pr,
+  };
+  for (final pr in branchMatched) {
+    prs.putIfAbsent('${pr.repoFullName}#${pr.number}', () => pr);
+  }
+  return prs.values.toList(growable: false);
+}
+
 /// The pull request this conversation opened from `repoId`'s worktree branch,
 /// or null when that branch has no open PR.
 final spaceBranchPullRequestForRepoProvider = Provider.autoDispose

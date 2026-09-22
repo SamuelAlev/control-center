@@ -11,6 +11,7 @@ import 'package:cc_domain/features/messaging/domain/entities/space.dart';
 import 'package:cc_domain/features/messaging/domain/entities/space_participant.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/conversation_repository.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
+import 'package:cc_domain/features/messaging/domain/value_objects/conversation_context_history.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/message_page.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/space_kind.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -914,6 +915,65 @@ void main() {
 
       expect(result, isNot(contains('PARENT SECRET')));
       expect(result, contains('Replying to Scout'));
+    });
+
+    test('paged history keeps summaries and the last turn digest', () async {
+      final repo = _FakeMessagingRepository(const []);
+      var loadedBudget = -1;
+      final useCase = BuildConversationContextUseCase(
+        messagingRepository: repo,
+        contextHistory: ({
+          required String workspaceId,
+          required String spaceId,
+          String? conversationId,
+          required int characterBudget,
+        }) async {
+          loadedBudget = characterBudget;
+          return ConversationContextHistory(
+            messages: [
+              _msg(id: 'u1', senderId: 'user', content: 'recent question'),
+            ],
+            summaries: [
+              _msg(
+                id: 'sum',
+                senderId: 'agent',
+                senderType: SenderType.agent,
+                content: 'EARLIER SUMMARY',
+                type: MessageType.compaction,
+              ),
+            ],
+            lastAgentTurn: _msg(
+              id: 'turn',
+              senderId: 'a1',
+              senderType: SenderType.agent,
+              content: 'did it',
+              type: MessageType.agentTurn,
+              metadata: {
+                'segments': [
+                  {
+                    'type': 'tool',
+                    'toolName': 'Read',
+                    'toolCallId': '1',
+                    'ts': 0,
+                  },
+                ],
+              },
+            ),
+          );
+        },
+      );
+      final result = await useCase.execute(
+        workspaceId: _FakeMessagingRepository.workspaceId,
+        spaceId: 'ch1',
+        selfAgentId: 'a1',
+        selfAgentName: 'Claude',
+        taskDescription: 'go',
+        characterBudget: 250,
+      );
+      expect(loadedBudget, 250);
+      expect(result, contains('EARLIER SUMMARY'));
+      expect(result, contains('recent question'));
+      expect(result, contains('Tools used: Read'));
     });
   });
 }

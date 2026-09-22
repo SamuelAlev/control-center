@@ -10,6 +10,7 @@ import 'package:control_center/features/identity/providers/identity_providers.da
 import 'package:control_center/features/messaging/presentation/utils/provisioning_step_label.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/features/messaging/providers/repo_changes_provider.dart';
+import 'package:control_center/features/messaging/providers/repo_file_content_provider.dart';
 import 'package:control_center/features/messaging/providers/worktree_file_ops_provider.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view.dart';
 import 'package:control_center/features/pr_review/providers/pr_detail_polling_provider.dart';
@@ -34,7 +35,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 ///
 /// Staging is REAL git (`repos.stage` / `repos.unstage` → `git add` /
 /// `git reset`), so a commit ships exactly the staged index — no client-side
-/// selection fiction. The commit footer commits the index as-is.
+/// selection fiction. An empty index commits the working tree (smart commit);
+/// a non-empty index is committed as-is.
 class PrSourceControlTab extends ConsumerStatefulWidget {
   /// Creates a [PrSourceControlTab].
   const PrSourceControlTab({
@@ -189,9 +191,10 @@ class _PrSourceControlTabState extends ConsumerState<PrSourceControlTab> {
     }
   }
 
-  /// Runs the chosen commit [action] against the PR worktree. `paths: []`
-  /// commits the STAGED index as-is (the server no longer `git add -A`s on an
-  /// empty path list); the commit is attributed to the acting human.
+  /// Runs the chosen commit [action] against the PR worktree. A non-empty
+  /// index is committed as-is. An empty index with working-tree changes is
+  /// staged first (`git add -A`, VS Code's smart commit). The commit is
+  /// attributed to the acting human.
   Future<void> _runCommit(
     String spaceId,
     String repoId,
@@ -209,6 +212,27 @@ class _PrSourceControlTabState extends ConsumerState<PrSourceControlTab> {
         action == ScmCommitAction.commitAndPush ||
         action == ScmCommitAction.commitAndSync;
     setState(() => _busy = true);
+    final changes = _lastArgs == null
+        ? null
+        : ref.read(repoChangesGroupedProvider(_lastArgs!)).value;
+    final ready = await stageAllWhenIndexEmpty(
+      ref.read(rpcClientProvider),
+      workspaceId: workspaceId,
+      spaceId: spaceId,
+      repoId: repoId,
+      stagedCount: changes?.staged.length ?? 0,
+      unstagedCount: changes?.unstaged.length ?? 0,
+    );
+    if (!mounted) {
+      return;
+    }
+    if (!ready) {
+      setState(() => _busy = false);
+      CcToastScope.maybeOf(
+        context,
+      )?.show(l10n.commitFailed, variant: CcToastVariant.danger);
+      return;
+    }
     final me = ref.read(currentIdentityProvider).value?.user;
     final res = await commitAndPushWorktree(
       ref.read(rpcClientProvider),
@@ -392,12 +416,13 @@ class _PrSourceControlTabState extends ConsumerState<PrSourceControlTab> {
             final combined = [...staged, ...unstaged];
             final focused = _focusedIndex.clamp(0, combined.length - 1);
             // The commit box sits at the TOP of the changes column (VS Code
-            // layout): message + a "Commit & push" split button whose dropdown
-            // offers the other commit variants.
+            // layout): message + a Commit split button whose dropdown offers
+            // commit & push, commit & sync, and amend.
             final commitBox = ScmCommitBox(
               controller: _message,
               busy: _busy,
               stagedCount: staged.length,
+              unstagedCount: unstaged.length,
               canPush: widget.pr.headRef.isNotEmpty,
               onAction: (action) => _runCommit(spaceId, repoId, action),
             );
@@ -460,6 +485,13 @@ class _PrSourceControlTabState extends ConsumerState<PrSourceControlTab> {
                               key: _diffKey,
                               files: combined,
                               comments: const [],
+                              fetchFileContent: (path) => fetchRepoFileContent(
+                                ref.read(rpcClientProvider),
+                                workspaceId: workspaceId,
+                                repoId: repoId,
+                                path: path,
+                                spaceId: spaceId,
+                              ),
                             ),
                           ],
                         ),

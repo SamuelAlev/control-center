@@ -7,6 +7,7 @@ import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_domain/core/logging/cc_domain_log.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/conversation_repository.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
+import 'package:cc_domain/features/messaging/domain/value_objects/conversation_context_history.dart';
 
 /// Builds conversation context for an agent dispatch by gathering recent
 /// messages, summaries and semantically-relevant history from a space.
@@ -16,11 +17,22 @@ class BuildConversationContextUseCase {
     required this._messagingRepository,
     this._conversationRepository,
     this._embeddingPort,
+    this._contextHistory,
   });
 
   final MessagingRepository _messagingRepository;
   final ConversationRepository? _conversationRepository;
   final EmbeddingPort? _embeddingPort;
+
+  /// Paged history for [execute]. Null keeps the full-conversation scan,
+  /// which tests and hosts without the fast query use.
+  final Future<ConversationContextHistory> Function({
+    required String workspaceId,
+    required String spaceId,
+    String? conversationId,
+    required int characterBudget,
+  })?
+  _contextHistory;
 
   void _log(String message) =>
       CcDomainLog.info('BuildConversationContextUseCase: $message');
@@ -44,11 +56,22 @@ class BuildConversationContextUseCase {
     required int characterBudget,
     String? conversationId,
   }) async {
-    final allMessages = await _messagingRepository.getMessages(
-      workspaceId,
-      spaceId,
-      conversationId: conversationId,
-    );
+    final loadHistory = _contextHistory;
+    final history = loadHistory == null
+        ? null
+        : await loadHistory(
+            workspaceId: workspaceId,
+            spaceId: spaceId,
+            conversationId: conversationId,
+            characterBudget: characterBudget,
+          );
+    final allMessages =
+        history?.messages ??
+        await _messagingRepository.getMessages(
+          workspaceId,
+          spaceId,
+          conversationId: conversationId,
+        );
 
     // Thread seed: the anchor message is the thread's whole parent context.
     String threadSeed = '';
@@ -76,37 +99,25 @@ class BuildConversationContextUseCase {
       }
     }
 
-    if (allMessages.isEmpty) {
+    // Summaries from the paged loader are already complete, including ones
+    // older than the tail. The full scan collects them while it walks.
+    final summaries = <Message>[...?history?.summaries];
+    if (allMessages.isEmpty && summaries.isEmpty) {
       return threadSeed;
     }
 
-    final summaries = <Message>[];
     final verbatimCandidates = <Message>[];
 
     for (final m in allMessages) {
-      // First-class compaction summaries (and legacy compacted system
-      // summaries) stand in for the older history they replaced.
-      if (m.isContextSummary) {
+      if (history == null && m.isContextSummary) {
         summaries.add(m);
         continue;
       }
-
-      if (m.isSystem || m.isTicket || m.isReviewNode) {
-        continue;
+      // See [messageCountsTowardContextBudget]: summaries, system, ticket,
+      // review, queued steering, and compacted rows stay out of the window.
+      if (messageCountsTowardContextBudget(m)) {
+        verbatimCandidates.add(m);
       }
-      // A QUEUED steering row has not reached any agent yet — it renders in
-      // the steering queue strip and is delivered by injection (or converted
-      // to a real message at run end). Letting it into a new run's prompt
-      // here would both leak it ahead of its turn and, for a harness run,
-      // double it: the harness-start flush injects the same row.
-      if (m.isSteeringQueued) {
-        continue;
-      }
-      if (m.compacted) {
-        continue;
-      }
-
-      verbatimCandidates.add(m);
     }
 
     final verbatimWindow = <Message>[];
@@ -172,7 +183,13 @@ class BuildConversationContextUseCase {
       verbatimWindow: verbatimWindow,
       summaries: summaries,
       semanticHits: semanticHits,
-      lastRunDigest: buildLastRunDigest(allMessages),
+      lastRunDigest: buildLastRunDigest(
+        switch (history) {
+          null => allMessages,
+          ConversationContextHistory(:final lastAgentTurn?) => [lastAgentTurn],
+          _ => const <Message>[],
+        },
+      ),
     );
     return threadSeed.isEmpty ? built : '$threadSeed\n\n$built';
   }

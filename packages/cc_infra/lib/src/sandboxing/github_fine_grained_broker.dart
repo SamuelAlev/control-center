@@ -25,10 +25,10 @@ class GitHubFineGrainedTokenBroker implements CredentialBrokerPort {
   /// the server's whole reach rather than access bounded by their own.
   GitHubFineGrainedTokenBroker(
     this._credentials, {
-    Future<GitHubAppClient?> Function({String? workspaceId})? app,
+    this._app,
     this._serverOwnerUserId,
     this._workspacePat,
-  }) : _app = app;
+  });
 
   final CredentialsRepository _credentials;
   final Future<GitHubAppClient?> Function({String? workspaceId})? _app;
@@ -116,37 +116,37 @@ class GitHubFineGrainedTokenBroker implements CredentialBrokerPort {
             'unavailable).',
           );
         } else if (creds.githubToken.isNotEmpty) {
-        // The raw PAT is the SERVER's credential, not this member's.
-        //
-        // Falling back to it for a run acting on someone else's behalf would
-        // hand them the server's whole reach whenever that member simply has
-        // not connected GitHub. A run with no acting user (a webhook, a
-        // reconciler) is the server acting as itself and keeps the fallback,
-        // as does the operator running their own server.
-        final ownerId = await _serverOwnerUserId?.call();
-        final actsForSomeoneElse =
-            actingUserId != null &&
-            actingUserId.isNotEmpty &&
-            (ownerId == null || ownerId.isEmpty || ownerId != actingUserId);
-        if (actsForSomeoneElse) {
-          notes.add(
-            'No GitHub credential for this run: it is acting for a member who '
-            'has not connected GitHub, and this server\'s own token is not '
-            'theirs to use. Ask them to sign in to GitHub in Settings.',
-          );
-          CcInfraLog.warning(
-            'Withholding the server PAT from a run acting for $actingUserId; '
-            'that member has no GitHub credential of their own.',
-          );
-        } else {
-          env['GH_TOKEN'] = creds.githubToken;
-          env['GITHUB_TOKEN'] = creds.githubToken;
-          notes.add(
-            client == null
-                ? 'Fallback: raw PAT (no GitHub App configured).'
-                : 'Fallback: raw PAT (installation-token mint unavailable).',
-          );
-        }
+          // The raw PAT is the SERVER's credential, not this member's.
+          //
+          // Falling back to it for a run acting on someone else's behalf would
+          // hand them the server's whole reach whenever that member simply has
+          // not connected GitHub. A run with no acting user (a webhook, a
+          // reconciler) is the server acting as itself and keeps the fallback,
+          // as does the operator running their own server.
+          final ownerId = await _serverOwnerUserId?.call();
+          final actsForSomeoneElse =
+              actingUserId != null &&
+              actingUserId.isNotEmpty &&
+              (ownerId == null || ownerId.isEmpty || ownerId != actingUserId);
+          if (actsForSomeoneElse) {
+            notes.add(
+              'No GitHub credential for this run: it is acting for a member who '
+              'has not connected GitHub, and this server\'s own token is not '
+              'theirs to use. Ask them to sign in to GitHub in Settings.',
+            );
+            CcInfraLog.warning(
+              'Withholding the server PAT from a run acting for $actingUserId; '
+              'that member has no GitHub credential of their own.',
+            );
+          } else {
+            env['GH_TOKEN'] = creds.githubToken;
+            env['GITHUB_TOKEN'] = creds.githubToken;
+            notes.add(
+              client == null
+                  ? 'Fallback: raw PAT (no GitHub App configured).'
+                  : 'Fallback: raw PAT (installation-token mint unavailable).',
+            );
+          }
         }
       }
     }

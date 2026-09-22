@@ -1,5 +1,13 @@
+import 'dart:async';
 import 'package:cc_domain/core/domain/entities/message.dart';
+import 'package:cc_domain/core/domain/repositories/workspace_settings_repository.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
+import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
+import 'package:cc_domain/features/messaging/domain/services/conversation_title_model.dart';
+import 'package:cc_harness/messages.dart';
+import 'package:cc_harness/provider.dart';
+import 'package:cc_harness_runtime/cc_harness_runtime.dart';
+import 'package:cc_infra/src/dispatch/adapter_one_shot_runner.dart';
 import 'package:cc_infra/src/messaging/conversation_side_channel_service.dart';
 import 'package:test/test.dart';
 
@@ -103,4 +111,134 @@ void main() {
       expect(renderConversationForSideChannel(const []), isEmpty);
     });
   });
+
+  test('paged history does not scan the conversation', () async {
+    final messaging = _ScanMessaging();
+    final settings = _Settings()
+      ..values[kConversationTitleAdapterSettingKey] = 'cc-harness'
+      ..values[kConversationTitleModelSettingKey] = 'anthropic/x';
+    final factory = _Factory()..reply = 'the aside';
+    final service = ConversationSideChannelService(
+      repo: messaging,
+      runner: AdapterOneShotRunner(credentials: _Creds(), factory: factory),
+      settings: settings,
+      sideChannelMessages:
+          ({
+            required String workspaceId,
+            required String spaceId,
+            String? conversationId,
+            required int maxChars,
+          }) async => [_user('from the window')],
+    );
+    final result = await service.aside(
+      workspaceId: 'ws',
+      spaceId: 's',
+      conversationId: 'c',
+      question: 'where are we?',
+    );
+    expect(result.text, 'the aside');
+    expect(factory.calls.single.prompt, contains('User: from the window'));
+    expect(messaging.scanned, isFalse);
+  });
+}
+
+class _ScanMessaging implements MessagingRepository {
+  bool scanned = false;
+
+  @override
+  Future<List<Message>> getMessages(
+    String workspaceId,
+    String spaceId, {
+    String? conversationId,
+  }) async {
+    scanned = true;
+    throw StateError('full scan');
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
+
+class _Settings implements WorkspaceSettingsRepository {
+  final Map<String, String> values = {};
+
+  @override
+  Future<String?> get(String workspaceId, String key) async => values[key];
+
+  @override
+  Future<Map<String, String>> getAll(String workspaceId) async => values;
+
+  @override
+  Stream<Map<String, String>> watchAll(String workspaceId) =>
+      Stream.value(values);
+
+  @override
+  Future<void> set(String workspaceId, String key, String? value) async {
+    if (value == null) {
+      values.remove(key);
+    } else {
+      values[key] = value;
+    }
+  }
+}
+
+class _Creds implements ProviderCredentialStore {
+  @override
+  Future<ProviderCredential?> activeCredential(String providerId) async =>
+      const ProviderCredential(
+        providerId: 'anthropic',
+        method: HarnessAuthMethod.apiKey,
+        apiKey: 'k',
+      );
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) {}
+}
+
+class _Call {
+  _Call(this.prompt);
+  final String prompt;
+}
+
+class _Factory extends HarnessProviderFactory {
+  String reply = '';
+  final List<_Call> calls = [];
+
+  @override
+  LlmProviderPort create({
+    required String providerId,
+    String? model,
+    ProviderCredential? credential,
+    ProviderTokenResolver? tokenResolver,
+  }) {
+    return _Provider(reply, calls);
+  }
+}
+
+class _Provider implements LlmProviderPort {
+  _Provider(this.reply, this.calls);
+  final String reply;
+  final List<_Call> calls;
+
+  @override
+  Stream<LlmEvent> complete({
+    required List<HarnessMessage> messages,
+    List<LlmToolSchema> tools = const [],
+    LlmCompleteConfig config = const LlmCompleteConfig(),
+  }) async* {
+    calls.add(_Call(messages.first.textContent));
+    yield LlmTextDelta(reply);
+  }
+
+  @override
+  String get displayName => 'fake';
+
+  @override
+  String get defaultModel => 'fake-model';
+
+  @override
+  Future<List<ProviderModel>> listModels() async => const [];
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) {}
 }

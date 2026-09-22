@@ -1,3 +1,4 @@
+import 'package:cc_domain/core/domain/ports/agent_question_port.dart';
 import 'package:cc_domain/core/domain/ports/embedding_port.dart';
 import 'package:cc_domain/core/domain/ports/schema_validator_port.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
@@ -55,6 +56,11 @@ McpToolRegistry buildServerMcpRegistry({
   required String newsfeedOwnerUserId,
   required TicketRepository ticketRepository,
   required MessagingRepository messagingRepository,
+  // The in-process waiter behind `ask_user`. Claude and Pi only see MCP
+  // tools, so without this registration a prompt that says "call ask_user"
+  // is a tool the catalogue does not contain — the run says so and guesses.
+  // Same instance the harness tool and `messaging.updateMessage` share.
+  required AgentQuestionPort agentQuestions,
   // Per-conversation todo lists — the [TodoWriteTool]'s persistence backend.
   required TodoRepository todoRepository,
   // Pipeline structured-output contract: [SubmitOutputTool] resolves the
@@ -189,6 +195,10 @@ McpToolRegistry buildServerMcpRegistry({
     ListSpacesTool(repository: messagingRepository),
     GetSpaceMessagesTool(repository: messagingRepository),
     SendSpaceMessageTool(repository: messagingRepository),
+    // Same name as the harness built-in. External clients address it as
+    // `mcp__control-center__ask_user`; the harness registry registers its own
+    // copy first, so this one does not double up on that surface.
+    AskUserTool(port: agentQuestions),
     // Space notes (PRD 16 §11): the shared handoff doc agents read/write.
     GetSpaceNotesTool(
       notesPort: _DaoSpaceNotesPort(workspaceDbs),

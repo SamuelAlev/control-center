@@ -2,6 +2,11 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/widgets.dart';
 
+/// Trailing index / submit mark. Fixed so swapping the numeral for the hover
+/// arrow cannot change the row height. With [AppSpacing.sm] vertical padding
+/// the slot sits inside the 44px row minimum (8 + 28 + 8).
+const _trailingExtent = 28.0;
+
 /// One numbered choice in an `AskUserCard`: label + optional description,
 /// with a trailing index that becomes a submit arrow on hover for
 /// single-select.
@@ -63,7 +68,7 @@ class AskUserOptionRow extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.sm,
-                vertical: AppSpacing.md,
+                vertical: AppSpacing.sm,
               ),
               child: Row(
                 children: [
@@ -159,17 +164,6 @@ class _TrailingMark extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final showArrow = !multiSelect && hovered;
-    if (showArrow) {
-      return SizedBox(
-        width: 28,
-        height: 28,
-        child: ColoredBox(
-          color: tokens.fg,
-          child: Icon(AppIcons.arrowRight, size: 14, color: tokens.bgPrimary),
-        ),
-      );
-    }
-
     final numeral = Text(
       '$index',
       style: CcFonts.code(
@@ -180,21 +174,23 @@ class _TrailingMark extends StatelessWidget {
       ),
     );
 
-    if (!multiSelect) {
-      return SizedBox(width: 28, child: Center(child: numeral));
-    }
-
     return SizedBox(
-      width: 28,
-      height: 28,
+      width: _trailingExtent,
+      height: _trailingExtent,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: selected ? tokens.fg : const Color(0x00000000),
-          border: Border.all(
-            color: selected ? tokens.fg : tokens.borderPrimary,
-          ),
+          color: showArrow || (multiSelect && selected)
+              ? tokens.fg
+              : const Color(0x00000000),
+          border: multiSelect
+              ? Border.all(color: selected ? tokens.fg : tokens.borderPrimary)
+              : null,
         ),
-        child: Center(child: numeral),
+        child: Center(
+          child: showArrow
+              ? Icon(AppIcons.arrowRight, size: 14, color: tokens.bgPrimary)
+              : numeral,
+        ),
       ),
     );
   }

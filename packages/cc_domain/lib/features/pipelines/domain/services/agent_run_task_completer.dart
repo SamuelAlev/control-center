@@ -28,12 +28,22 @@ class AgentRunTaskCompleter {
     required this._eventBus,
     required AgentRunLogRepository runLogRepository,
     required MessagingRepository messagingRepository,
+    this._latestAgentContent,
   }) : _runLogs = runLogRepository,
        _messaging = messagingRepository;
 
   final DomainEventBus _eventBus;
   final AgentRunLogRepository _runLogs;
   final MessagingRepository _messaging;
+
+  /// Newest agent message text, without loading the conversation. Null keeps
+  /// [MessagingRepository.getMessages], which tests use.
+  final Future<String?> Function({
+    required String workspaceId,
+    required String conversationId,
+    required String agentId,
+  })?
+  _latestAgentContent;
 
   StreamSubscription<AgentRunCompleted>? _sub;
 
@@ -148,6 +158,14 @@ class AgentRunTaskCompleter {
     String conversationId,
     String agentId,
   ) async {
+    final load = _latestAgentContent;
+    if (load != null) {
+      return load(
+        workspaceId: workspaceId,
+        conversationId: conversationId,
+        agentId: agentId,
+      );
+    }
     final messages = await _messaging.getMessages(
       workspaceId,
       spaceId ?? '',

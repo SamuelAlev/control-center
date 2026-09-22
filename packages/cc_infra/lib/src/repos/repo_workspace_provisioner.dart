@@ -53,7 +53,7 @@ class SpaceCheckoutScope {
   ///
   /// Distinct from [prBranch], which is the branch a PR head is checked out ON.
   /// This one only moves the starting point: the worktree still gets its own
-  /// `conv/<space>` branch, so nothing an agent commits lands on the base.
+  /// `space/<space>` branch, so nothing an agent commits lands on the base.
   final Map<String, String> repoBranches;
 }
 
@@ -448,7 +448,7 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
         ? BranchTemplateResolver(
             await _branchTemplate(workspaceId),
           ).resolve(type: branchType, ticketKey: ticketKey, title: ticketTitle)
-        : 'conv/${_short(spaceId)}';
+        : spaceScratchBranch(spaceId);
 
     final repoName = repo.remoteName.isNotEmpty ? repo.remoteName : repo.name;
     final name = slugify(repoName).isEmpty ? repo.id : slugify(repoName);
@@ -558,11 +558,7 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
           ),
         );
       } on Object catch (e, st) {
-        CcInfraLog.error(
-          'setup script failed for repo ${repo.id}: $e',
-          e,
-          st,
-        );
+        CcInfraLog.error('setup script failed for repo ${repo.id}: $e', e, st);
         try {
           await _isolation.destroy(
             path: result.path,
@@ -942,8 +938,6 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
       return null;
     }
   }
-
-  static String _short(String id) => id.length > 8 ? id.substring(0, 8) : id;
 }
 
 /// One space's cancellation source plus how many provisioning runs share it.

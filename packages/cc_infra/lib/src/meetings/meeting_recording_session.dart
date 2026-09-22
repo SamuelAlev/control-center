@@ -1,3 +1,6 @@
+/// @docImport 'package:cc_infra/src/meetings/meeting_summary_reconciler.dart';
+library;
+
 import 'dart:async';
 import 'dart:typed_data';
 

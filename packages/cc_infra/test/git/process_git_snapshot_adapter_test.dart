@@ -63,6 +63,31 @@ void main() {
     },
   );
 
+  test('capture keeps a tracked file that gitignore also matches', () async {
+    const adapter = ProcessGitSnapshotAdapter();
+    Directory(p.join(repo.path, '.vscode')).createSync();
+    File(
+      p.join(repo.path, '.vscode', 'launch.json.example'),
+    ).writeAsStringSync('{"version":"0.2.0"}\n');
+    File(
+      p.join(repo.path, '.gitignore'),
+    ).writeAsStringSync('.vscode/*\n!.vscode/launch.example.json\n');
+    await _git(['add', '-A'], repo.path);
+    await _git(['add', '-f', '.vscode/launch.json.example'], repo.path);
+    await _git(['commit', '-q', '-m', 'track launch'], repo.path);
+
+    final snap = await adapter.capture(repo.path);
+    expect(snap, isNotNull);
+    final listed = await Process.run('git', [
+      'ls-tree',
+      '-r',
+      '--name-only',
+      snap!,
+    ], workingDirectory: repo.path);
+    expect(listed.exitCode, 0);
+    expect(listed.stdout, contains('.vscode/launch.json.example'));
+  });
+
   test('capture returns null for a non-git directory', () async {
     const adapter = ProcessGitSnapshotAdapter();
     final plain = Directory.systemTemp.createTempSync('cc_not_git');

@@ -611,6 +611,23 @@ extension _DispatchSessionSubagent on DispatchSession {
 
   Future<String?> _loadSkillBody(String name) async {
     try {
+      final catalog = _repoProjector?.catalog;
+      if (catalog != null) {
+        // A bare name that two repos ship must not fall through to the
+        // overlay scan: both copies are linked there, and the scanner keeps
+        // whichever it sees first.
+        if (await catalog.isAmbiguous(name)) {
+          CcInfraLog.warning(
+            'DispatchSession: skill "$name" is shipped by more than one '
+            'repo; invoke it as <repo>:$name',
+          );
+          return null;
+        }
+        final entry = await catalog.resolve(name);
+        if (entry != null) {
+          return _stripFrontmatter(await File(entry.path).readAsString());
+        }
+      }
       final skills = await const HarnessSkillScanner().scan([
         agentConfigDir,
         agentDirHostPath,
@@ -619,10 +636,6 @@ extension _DispatchSessionSubagent on DispatchSession {
         if (s.name == name) {
           return _stripFrontmatter(await File(s.path).readAsString());
         }
-      }
-      final entry = await _repoProjector?.catalog.resolve(name);
-      if (entry != null) {
-        return _stripFrontmatter(await File(entry.path).readAsString());
       }
     } on Object catch (e) {
       CcInfraLog.warning('DispatchSession: skill load failed: $e');

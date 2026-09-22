@@ -1,5 +1,7 @@
 import 'package:cc_domain/core/domain/ports/agent_question_port.dart';
 import 'package:control_center/features/messaging/presentation/widgets/ask_user/ask_user_card.dart';
+import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -141,6 +143,47 @@ void main() {
     await tester.sendKeyEvent(LogicalKeyboardKey.digit2);
     await tester.pump();
     expect(got?.selectedLabels, ['Engineer']);
+  });
+
+  testWidgets('hovering a choice keeps every row the same height', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      testWrap(
+        const AskUserCard(
+          question: 'Let agents run programs from this workspace copy?',
+          caption: 'Approval required',
+          allowSkip: false,
+          options: [
+            AgentQuestionOption(label: 'Deny', value: 'deny'),
+            AgentQuestionOption(label: 'Approve', value: 'approve'),
+          ],
+        ),
+      ),
+    );
+
+    final deny = find.byKey(const ValueKey('ask-user-option-0'));
+    final approve = find.byKey(const ValueKey('ask-user-option-1'));
+    final denyHeight = tester.getSize(deny).height;
+    final approveHeight = tester.getSize(approve).height;
+    final approveTop = tester.getTopLeft(approve).dy;
+
+    expect(denyHeight, 44);
+    expect(approveHeight, denyHeight);
+
+    final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await gesture.addPointer(location: Offset.zero);
+    addTearDown(gesture.removePointer);
+    await gesture.moveTo(tester.getCenter(deny));
+    await tester.pump();
+
+    expect(
+      find.descendant(of: deny, matching: find.byIcon(AppIcons.arrowRight)),
+      findsOneWidget,
+    );
+    expect(tester.getSize(deny).height, denyHeight);
+    expect(tester.getSize(approve).height, approveHeight);
+    expect(tester.getTopLeft(approve).dy, approveTop);
   });
 
   testWidgets('a permission-style card has no skip', (tester) async {

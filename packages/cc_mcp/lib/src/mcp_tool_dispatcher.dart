@@ -316,7 +316,11 @@ class McpToolDispatcher implements RpcDispatcher {
         ? Map<String, dynamic>.from(rawArgs)
         : <String, dynamic>{};
     if (scope != null) {
-      arguments = scope.apply(arguments, tool.inputSchema);
+      arguments = scope.apply(
+        arguments,
+        tool.inputSchema,
+        force: tool.forcedScopeKeys,
+      );
     }
 
     // Resolve the caller's conversation mode once (server-authoritative) so it

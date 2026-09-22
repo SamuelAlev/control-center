@@ -90,6 +90,27 @@ void main() {
     });
 
     test(
+      'frames stay in arrival order when the earlier one decodes off-isolate',
+      () async {
+        transport.start();
+        final received = <Map<String, dynamic>>[];
+        final done = Completer<void>();
+        final sub = transport.incoming.listen((frame) {
+          received.add(frame);
+          if (received.length == 2 && !done.isCompleted) {
+            done.complete();
+          }
+        });
+        // Above the decode threshold, under the 256KB inbound cap.
+        clientSocket.add(jsonEncode({'id': 1, 'blob': 'x' * 60000}));
+        clientSocket.add(jsonEncode({'id': 2}));
+        await done.future.timeout(const Duration(seconds: 10));
+        await sub.cancel();
+        expect(received.map((frame) => frame['id']).toList(), [1, 2]);
+      },
+    );
+
+    test(
       'a frame buffered before a listener attaches flushes on listen',
       () async {
         transport.start();

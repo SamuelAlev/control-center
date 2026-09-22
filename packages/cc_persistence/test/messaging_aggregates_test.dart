@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cc_harness/context.dart';
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:test/test.dart';
@@ -202,7 +203,12 @@ void main() {
       expect(activity.map((a) => a.spaceId), ['b']);
 
       await repo.unarchiveSpace('ws-1', 'a');
-      activity = await repo.watchSpaceActivity('ws-1').first;
+      // A listener that attaches in the same turn as the write can be handed
+      // the pre-update snapshot; the following emission is the restored row.
+      activity = await repo
+          .watchSpaceActivity('ws-1')
+          .firstWhere((rows) => rows.any((row) => row.spaceId == 'a'))
+          .timeout(const Duration(seconds: 2));
       final a = activity.singleWhere((x) => x.spaceId == 'a');
       expect(a.openQuestionCount, 1);
       expect(a.needsInput, isTrue);
@@ -248,6 +254,112 @@ void main() {
         a.lastMessageAt!.millisecondsSinceEpoch,
         DateTime.utc(2026).millisecondsSinceEpoch,
       );
+    });
+
+    test('the activity plan reads indexes, not every transcript', () async {
+      await msg('u1', atSecond: 0);
+      final rows = await dbs
+          .of('ws-1')
+          .customSelect(
+            'EXPLAIN QUERY PLAN ${MessagingDao.spaceActivitySql}',
+            variables: [Variable.withString('ws-1')],
+          )
+          .get();
+      final plan = rows.map((r) => r.data.values.join(' ')).join('\n');
+      expect(plan, contains('idx_conversation_messages_live_activity'));
+      expect(plan, contains('USING COVERING INDEX'));
+      expect(plan, contains('idx_conversation_messages_messageType'));
+    });
+  });
+
+  group('conversation token totals', () {
+    test('stored counts feed the meter and skip transcript blobs', () async {
+      await repo.sendMessage(
+        workspaceId: 'ws-1',
+        spaceId: 'a',
+        conversationId: 'a',
+        content: 'hello',
+        senderId: 'user-1',
+        senderType: 'user',
+        id: 'text-1',
+      );
+      await repo.sendMessage(
+        workspaceId: 'ws-1',
+        spaceId: 'a',
+        conversationId: 'a',
+        content: '👍',
+        senderId: 'user-1',
+        senderType: 'user',
+        id: 'emoji-1',
+      );
+      await repo.sendMessage(
+        workspaceId: 'ws-1',
+        spaceId: 'a',
+        conversationId: 'a',
+        content: 'body',
+        senderId: 'agent-1',
+        senderType: 'agent',
+        messageType: 'agent_turn',
+        metadata: {'transcriptChars': 380},
+        id: 'turn-1',
+      );
+
+      const estimator = TokenEstimator.instance;
+      final helloTokens = estimator.estimateChars('hello'.length);
+      final emojiTokens = estimator.estimateChars('👍'.runes.length);
+
+      // A listener that attaches in the same turn as a write can be handed
+      // the previous snapshot. Wait for the value this step just wrote.
+      Future<void> expectTotals({required int tokens, required int chars}) {
+        return repo
+            .watchConversationTokens('ws-1', 'a', 'a')
+            .firstWhere(
+              (totals) => totals.tokens == tokens && totals.chars == chars,
+            )
+            .timeout(const Duration(seconds: 2));
+      }
+
+      await expectTotals(
+        tokens: helloTokens + emojiTokens + estimator.estimateChars(380),
+        chars: 'hello'.length + '👍'.runes.length + 'body'.length,
+      );
+
+      await repo.updateMessage(
+        'ws-1',
+        'turn-1',
+        metadata: {'transcriptChars': 760},
+      );
+      await expectTotals(
+        tokens: helloTokens + emojiTokens + estimator.estimateChars(760),
+        chars: 'hello'.length + '👍'.runes.length + 'body'.length,
+      );
+
+      // A content edit must not wipe the transcript count, and must use
+      // SQLite's code-point length (the emoji row is 1, not Dart's 2).
+      await repo.updateMessage('ws-1', 'turn-1', content: 'xy');
+      await expectTotals(
+        tokens: helloTokens + emojiTokens + estimator.estimateChars(760),
+        chars: 'hello'.length + '👍'.runes.length + 'xy'.length,
+      );
+
+      await repo.markCompacted('ws-1', ['turn-1']);
+      await expectTotals(
+        tokens: helloTokens + emojiTokens,
+        chars: 'hello'.length + '👍'.runes.length,
+      );
+
+      final rows = await dbs
+          .of('ws-1')
+          .customSelect(
+            'EXPLAIN QUERY PLAN ${MessagingDao.conversationCharCountsSql}',
+            variables: [Variable.withString('a')],
+          )
+          .get();
+      final plan = rows.map((r) => r.data.values.join(' ')).join('\n');
+      expect(plan, contains('idx_conversation_messages_live_chars'));
+      expect(plan, contains('USING COVERING INDEX'));
+      expect(MessagingDao.conversationCharCountsSql, isNot(contains('json_extract')));
+      expect(MessagingDao.conversationCharCountsSql, isNot(contains('metadata')));
     });
   });
 

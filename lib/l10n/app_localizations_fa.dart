@@ -3180,6 +3180,16 @@ class AppLocalizationsFa extends AppLocalizations {
   String get editMessage => 'ویرایش پیام';
 
   @override
+  String get revertToThere => 'بازگردانی تا آنجا';
+
+  @override
+  String get sendAsNewMessage => 'ارسال به‌عنوان پیام جدید';
+
+  @override
+  String get editMessageChoiceBody =>
+      'بازگردانی پیام‌های بعد از این را پنهان می‌کند و فایل‌های عامل را برمی‌گرداند. می‌توانید آن را واگرد کنید. ارسال به‌عنوان پیام جدید گفتگو را همان‌طور که هست نگه می‌دارد.';
+
+  @override
   String get deleteMessage => 'حذف پیام';
 
   @override
@@ -8554,6 +8564,11 @@ class AppLocalizationsFa extends AppLocalizations {
   String get ideReviewCode => 'بازبینی کد';
 
   @override
+  String ideReviewCodeInRepo(String repo) {
+    return 'بازبینی کد (⁨$repo⁩)';
+  }
+
+  @override
   String get ideRevertConfirmTitle => 'بازگردانی تغییرات';
 
   @override
@@ -10439,6 +10454,88 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get commitAndSync => 'کامیت و همگام‌سازی';
+
+  @override
+  String get scmSyncChanges => 'همگام‌سازی تغییرات';
+
+  @override
+  String get scmPublishBranch => 'انتشار شاخه';
+
+  @override
+  String get scmSyncFailed => 'همگام‌سازی ناموفق بود';
+
+  @override
+  String get scmSyncDirty =>
+      'پیش از همگام‌سازی تغییرات را کامیت کنید یا کنار بگذارید';
+
+  @override
+  String get scmSynced => 'همگام شد';
+
+  @override
+  String get scmSelectBranch => 'یک شاخه برای چک‌اوت انتخاب کنید';
+
+  @override
+  String get scmCreateBranch => 'ایجاد شاخه جدید…';
+
+  @override
+  String get scmCreateBranchFrom => 'ایجاد شاخه جدید از…';
+
+  @override
+  String get scmCheckoutDetached => 'چک‌اوت جدا…';
+
+  @override
+  String get scmBranchName => 'نام شاخه';
+
+  @override
+  String get scmCreateBranchTitle => 'ایجاد شاخه';
+
+  @override
+  String scmFromRef(String ref) {
+    return 'از ⁨$ref⁩';
+  }
+
+  @override
+  String get scmCheckoutFailed => 'تغییر شاخه ممکن نشد';
+
+  @override
+  String get scmCheckoutDirty =>
+      'پیش از تغییر شاخه، تغییرات را ثبت یا لغو کنید';
+
+  @override
+  String scmSwitchedToBranch(String branch) {
+    return 'به ⁨$branch⁩ تغییر کرد';
+  }
+
+  @override
+  String scmDetachedAt(String ref) {
+    return 'جدا در ⁨$ref⁩';
+  }
+
+  @override
+  String get scmDetachedHead => 'HEAD جدا';
+
+  @override
+  String get scmNoBranches => 'شاخه‌ای مطابق نیست';
+
+  @override
+  String get scmBranches => 'شاخه‌ها';
+
+  @override
+  String get scmRemoteBranches => 'شاخه‌های راه دور';
+
+  @override
+  String get scmTags => 'برچسب‌ها';
+
+  @override
+  String get scmPickStartPoint => 'یک نقطه شروع انتخاب کنید';
+
+  @override
+  String get scmSwitchBranch => 'تغییر شاخه';
+
+  @override
+  String commitMessageOnBranch(String shortcut, String branch) {
+    return 'پیام ($shortcut برای کامیت روی «$branch»)';
+  }
 
   @override
   String get committed => 'کامیت شد';

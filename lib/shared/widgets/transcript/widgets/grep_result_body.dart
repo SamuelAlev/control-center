@@ -15,6 +15,11 @@ import 'package:flutter/widgets.dart';
 /// layout out sideways.
 const int _maxLineChars = 500;
 
+/// Past this many hits, or this many files, rows mount through a builder.
+/// Grep opens expanded inside one chat list item, and a repo search is
+/// hundreds of gutter rows the viewport cannot show.
+const int _virtualizeRows = 64;
+
 /// The body of a Grep / Search tool cell: the hits grouped by file, each with
 /// a line-number gutter and the matched substring emphasized over the file's
 /// syntax highlighting, under a compact "N matches · M files" stats line.
@@ -91,23 +96,13 @@ class GrepResultBody extends StatelessWidget {
             // note above/below stay on the ambient direction.
             child: Directionality(
               textDirection: TextDirection.ltr,
-              child: SingleChildScrollView(
-                // The overlay scrollbar hugs the viewport's end edge; this
-                // inset keeps the per-file match count from touching it.
-                padding: const EdgeInsetsDirectional.only(end: 12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    for (final group in result.groups)
-                      _FileGroup(
-                        group: group,
-                        baseStyle: baseStyle,
-                        tokens: tokens,
-                        pattern: pattern,
-                        dark: dark,
-                      ),
-                  ],
-                ),
+              child: _GrepHits(
+                groups: result.groups,
+                baseStyle: baseStyle,
+                tokens: tokens,
+                pattern: pattern,
+                dark: dark,
+                maxHeight: maxHeight,
               ),
             ),
           ),
@@ -127,6 +122,60 @@ class GrepResultBody extends StatelessWidget {
   }
 }
 
+class _GrepHits extends StatelessWidget {
+  const _GrepHits({
+    required this.groups,
+    required this.baseStyle,
+    required this.tokens,
+    required this.pattern,
+    required this.dark,
+    required this.maxHeight,
+  });
+
+  final List<({String path, List<GrepMatch> matches})> groups;
+  final TextStyle baseStyle;
+  final DesignSystemTokens tokens;
+  final String? pattern;
+  final bool dark;
+  final double maxHeight;
+
+  Widget _group(({String path, List<GrepMatch> matches}) group) {
+    return _FileGroup(
+      group: group,
+      baseStyle: baseStyle,
+      tokens: tokens,
+      pattern: pattern,
+      dark: dark,
+      maxHeight: maxHeight,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // The overlay scrollbar hugs the viewport's end edge; this inset keeps
+    // the per-file match count from touching it.
+    const inset = EdgeInsetsDirectional.only(end: 12);
+    if (groups.length > _virtualizeRows && maxHeight.isFinite) {
+      return SizedBox(
+        height: maxHeight,
+        child: ListView.builder(
+          primary: false,
+          padding: inset,
+          itemCount: groups.length,
+          itemBuilder: (context, index) => _group(groups[index]),
+        ),
+      );
+    }
+    return SingleChildScrollView(
+      padding: inset,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [for (final group in groups) _group(group)],
+      ),
+    );
+  }
+}
+
 class _FileGroup extends StatelessWidget {
   const _FileGroup({
     required this.group,
@@ -134,6 +183,7 @@ class _FileGroup extends StatelessWidget {
     required this.tokens,
     required this.pattern,
     required this.dark,
+    required this.maxHeight,
   });
 
   final ({String path, List<GrepMatch> matches}) group;
@@ -141,6 +191,10 @@ class _FileGroup extends StatelessWidget {
   final DesignSystemTokens tokens;
   final String? pattern;
   final bool dark;
+
+  /// Outer block cap. A file past [_virtualizeRows] hits scrolls in a
+  /// viewport short of this so the file header still fits above the hits.
+  final double maxHeight;
 
   /// The pattern compiled for substring emphasis: regex first, literal
   /// fallback when it doesn't compile (a pattern the tool itself rejected
@@ -172,6 +226,37 @@ class _FileGroup extends StatelessWidget {
         );
     final gutterStyle = baseStyle.copyWith(color: tokens.textQuaternary);
     final rx = _emphasis;
+    final matches = group.matches;
+    final hits = matches.length > _virtualizeRows && maxHeight.isFinite
+        ? SizedBox(
+            height: maxHeight > 48 ? maxHeight - 48 : maxHeight,
+            child: ListView.builder(
+              primary: false,
+              itemCount: matches.length,
+              itemBuilder: (context, i) => _row(
+                i,
+                gutterWidth: gutterWidth,
+                gutterStyle: gutterStyle,
+                languageId: languageId,
+                highlightBudget: highlightBudget,
+                emphasis: rx,
+              ),
+            ),
+          )
+        : Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (var i = 0; i < matches.length; i++)
+                _row(
+                  i,
+                  gutterWidth: gutterWidth,
+                  gutterStyle: gutterStyle,
+                  languageId: languageId,
+                  highlightBudget: highlightBudget,
+                  emphasis: rx,
+                ),
+            ],
+          );
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
@@ -211,27 +296,30 @@ class _FileGroup extends StatelessWidget {
               border: Border.all(color: tokens.borderSecondary),
             ),
             padding: const EdgeInsets.symmetric(vertical: 4),
-            child: CcSelectionRegion(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  for (final (i, match) in group.matches.indexed)
-                    _MatchRow(
-                      match: match,
-                      gutterWidth: gutterWidth,
-                      gutterStyle: gutterStyle,
-                      baseStyle: baseStyle,
-                      tokens: tokens,
-                      languageId: i < highlightBudget ? languageId : null,
-                      dark: dark,
-                      emphasis: rx,
-                    ),
-                ],
-              ),
-            ),
+            child: CcSelectionRegion(child: hits),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _row(
+    int index, {
+    required int gutterWidth,
+    required TextStyle gutterStyle,
+    required String? languageId,
+    required int highlightBudget,
+    required RegExp? emphasis,
+  }) {
+    return _MatchRow(
+      match: group.matches[index],
+      gutterWidth: gutterWidth,
+      gutterStyle: gutterStyle,
+      baseStyle: baseStyle,
+      tokens: tokens,
+      languageId: index < highlightBudget ? languageId : null,
+      dark: dark,
+      emphasis: emphasis,
     );
   }
 }

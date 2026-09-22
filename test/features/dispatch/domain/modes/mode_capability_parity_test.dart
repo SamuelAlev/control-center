@@ -90,6 +90,24 @@ void main() {
       }
     });
 
+    test('interaction verbs are on every mode MCP allow-list', () {
+      // The harness pins these by name. The MCP dispatcher does not: it is a
+      // flat allow-list, so a read-tier tool missing from it is refused to
+      // Claude and Pi. That is how a run said `ask_user` was unavailable and
+      // guessed instead of asking.
+      for (final mode in Mode.values) {
+        for (final verb in ModeCapabilityProfile.interactionVerbs) {
+          expect(
+            ModeToolPolicy.isAllowed(verb, mode),
+            isTrue,
+            reason:
+                '${mode.name}: `$verb` is not in the MCP allow-list, so an '
+                'external CLI cannot ask the operator',
+          );
+        }
+      }
+    });
+
     test('every interaction verb names a real harness tool', () {
       // A pinned name that matches no tool is INERT: it pins nothing and
       // nothing fails. That is how this set spent time naming two deleted MCP

@@ -1,13 +1,13 @@
 import 'dart:io';
 
 import 'package:cc_domain/core/domain/ports/git_snapshot_port.dart';
-import 'package:path/path.dart' as p;
+import 'package:cc_infra/src/git/working_tree_capture.dart';
 
 /// A [GitSnapshotPort] that shells out to `git`.
 ///
-/// Capture writes a tree object for the entire working tree using a TEMPORARY
-/// index (via `GIT_INDEX_FILE`), so it never disturbs the real index or HEAD.
-/// Restore replays that tree onto the worktree with `read-tree` +
+/// Capture writes a tree object for the entire working tree using a temporary
+/// index (see [captureWorkingTree]), so it never disturbs the real index or
+/// HEAD. Restore replays that tree onto the worktree with `read-tree` +
 /// `checkout-index -a -f`, which reverts modified and deleted files to the
 /// snapshot. It does NOT delete files created after the snapshot (that would
 /// require `git clean`, which is banned in this repo), so restore is a faithful
@@ -21,30 +21,7 @@ class ProcessGitSnapshotAdapter implements GitSnapshotPort {
     if (!await _isWorktree(worktreePath)) {
       return null;
     }
-    final tmpIndex = p.join(
-      Directory.systemTemp.path,
-      'cc_snap_index_${worktreePath.hashCode.toUnsigned(32)}_${_counter++}',
-    );
-    try {
-      final env = {'GIT_INDEX_FILE': tmpIndex};
-      final add = await _run(['add', '-A'], worktreePath, env: env);
-      if (add.exitCode != 0) {
-        return null;
-      }
-      final tree = await _run(['write-tree'], worktreePath, env: env);
-      if (tree.exitCode != 0) {
-        return null;
-      }
-      final sha = tree.stdout.trim();
-      return sha.isEmpty ? null : sha;
-    } finally {
-      final f = File(tmpIndex);
-      if (f.existsSync()) {
-        try {
-          f.deleteSync();
-        } catch (_) {}
-      }
-    }
+    return captureWorkingTree(worktreePath);
   }
 
   @override
@@ -69,21 +46,13 @@ class ProcessGitSnapshotAdapter implements GitSnapshotPort {
 
   Future<({int exitCode, String stdout, String stderr})> _run(
     List<String> args,
-    String workdir, {
-    Map<String, String>? env,
-  }) async {
-    final result = await Process.run(
-      'git',
-      args,
-      workingDirectory: workdir,
-      environment: env,
-    );
+    String workdir,
+  ) async {
+    final result = await Process.run('git', args, workingDirectory: workdir);
     return (
       exitCode: result.exitCode,
       stdout: result.stdout as String,
       stderr: result.stderr as String,
     );
   }
-
-  static int _counter = 0;
 }

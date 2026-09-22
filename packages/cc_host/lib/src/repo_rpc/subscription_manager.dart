@@ -82,6 +82,24 @@ class SubscriptionManager {
   final Map<String, _Subscription> _subs = {};
   int _counter = 0;
 
+  /// Latest not-yet-sent full snapshot per subscription.
+  ///
+  /// A watch that emits several times in one event-loop turn (a transaction
+  /// that touches several rows, a burst of drift notifications) used to push
+  /// a full snapshot for each. The client replaces its mirror on every
+  /// snapshot, so the intermediate ones are pure encode + decode + rebuild.
+  /// They collapse to the newest.
+  ///
+  /// The flush is an event-queue task, not a microtask. An async stream
+  /// delivers one event per microtask and schedules the next from inside the
+  /// listener, so a microtask queued by that listener runs *between* the
+  /// events of the burst and would send the intermediate snapshot. An
+  /// event-queue task runs only after that microtask chain has drained, which
+  /// is still the same turn the emissions already occupied.
+  final Map<String, ({int rev, Map<String, dynamic> data})> _pendingSnapshots =
+      {};
+  bool _snapshotFlushScheduled = false;
+
   /// Handles `sub/subscribe`. A workspace-scoped query carries its target
   /// `workspace_id` in `params['args']` (the server is stateless — no session
   /// workspace).
@@ -279,16 +297,7 @@ class SubscriptionManager {
           .listen(
             (data) {
               rev++;
-              send({
-                'jsonrpc': '2.0',
-                'method': RpcMethods.subSnapshot,
-                'params': {
-                  'subscriptionId': subId,
-                  'rev': rev,
-                  'full': true,
-                  'data': data,
-                },
-              });
+              _enqueueSnapshot(subId, rev, data);
             },
             onError: (Object e, StackTrace st) {
               // Include the coordinates: without them a doomed watch (a repo
@@ -413,12 +422,54 @@ class SubscriptionManager {
   /// Cancels all subscriptions (session teardown). No client notification.
   Future<void> dispose() async => _cancelAll();
 
+  void _enqueueSnapshot(String subId, int rev, Map<String, dynamic> data) {
+    if (!_subs.containsKey(subId)) {
+      return;
+    }
+    _pendingSnapshots[subId] = (rev: rev, data: data);
+    if (_snapshotFlushScheduled) {
+      return;
+    }
+    _snapshotFlushScheduled = true;
+    // Event queue, not scheduleMicrotask. See [_pendingSnapshots].
+    Future<void>(_flushSnapshots);
+  }
+
+  void _flushSnapshots() {
+    _snapshotFlushScheduled = false;
+    if (_pendingSnapshots.isEmpty) {
+      return;
+    }
+    final batch = Map<String, ({int rev, Map<String, dynamic> data})>.of(
+      _pendingSnapshots,
+    );
+    _pendingSnapshots.clear();
+    for (final entry in batch.entries) {
+      if (!_subs.containsKey(entry.key)) {
+        continue;
+      }
+      final snap = entry.value;
+      send({
+        'jsonrpc': '2.0',
+        'method': RpcMethods.subSnapshot,
+        'params': {
+          'subscriptionId': entry.key,
+          'rev': snap.rev,
+          'full': true,
+          'data': snap.data,
+        },
+      });
+    }
+  }
+
   void _cancel(String subId) {
+    _pendingSnapshots.remove(subId);
     final sub = _subs.remove(subId);
     sub?.cancel();
   }
 
   void _cancelAll() {
+    _pendingSnapshots.clear();
     for (final sub in _subs.values) {
       sub.cancel();
     }

@@ -1,4 +1,3 @@
-import 'package:cc_domain/features/rigs/domain/value_objects/browser_defaults.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_browser_engine.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/widgets.dart';

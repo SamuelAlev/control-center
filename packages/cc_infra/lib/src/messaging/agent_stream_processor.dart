@@ -91,6 +91,10 @@ class _StreamContext {
   Timer? dbFlushTimer;
   bool dbDirty = false;
 
+  /// Message text last written by a mid-turn flush. Unchanged text is left
+  /// out of the next flush so a tool-only update does not reindex search.
+  String? flushedText;
+
   /// When the row first became stale after the last flush — drives the
   /// structural-debounce max-latency guard.
   DateTime? dirtySince;
@@ -110,6 +114,7 @@ class AgentStreamProcessor {
     this._eventBus,
     this._compactionService,
     this._snapshotPort,
+    this._flushMessage,
   });
 
   final AgentDispatchService _agentDispatchService;
@@ -119,6 +124,20 @@ class AgentStreamProcessor {
   final DomainEventBus? _eventBus;
   final ConversationCompactionService? _compactionService;
   final GitSnapshotPort? _snapshotPort;
+
+  /// Mid-turn flush. Null keeps [MessagingRepository.updateMessage], which
+  /// rewrites the list projection on every flush. Production passes a write
+  /// that leaves that projection alone when `projectList` is false, so a
+  /// tool-only flush does not rebuild the open chat.
+  final Future<void> Function(
+    String workspaceId,
+    String messageId, {
+    String? content,
+    required Map<String, dynamic> metadata,
+    required bool projectList,
+  })?
+  _flushMessage;
+
   final _contentExtractor = const JsonContentExtractor();
 
   /// Starts streaming agent events into the transcript message [messageId]
@@ -441,16 +460,35 @@ class AgentStreamProcessor {
     }
     ctx.dbDirty = false;
     ctx.dirtySince = null;
-    ctx.repo.updateMessage(
+    final text = ctx.folder.currentText();
+    // Assigning `content` reindexes the row even when the text did not
+    // change. Tool flushes only grow the transcript, so skip that write.
+    final textChanged = text != ctx.flushedText;
+    ctx.flushedText = text;
+    final metadata = <String, dynamic>{
+      'agentName': ctx.agentName,
+      'streamComplete': false,
+      'segments': ctx.folder.encodeForFlush(),
+      'transcriptChars': ctx.folder.transcriptChars,
+    };
+    final flush = _flushMessage;
+    if (flush == null) {
+      ctx.repo.updateMessage(
+        ctx.workspaceId,
+        ctx.messageId,
+        content: textChanged ? text : null,
+        metadata: metadata,
+      );
+      return;
+    }
+    // The open chat watches the list projection, not this blob. Refreshing
+    // that projection when only the transcript grew rebuilds every bubble.
+    flush(
       ctx.workspaceId,
       ctx.messageId,
-      content: ctx.folder.currentText(),
-      metadata: {
-        'agentName': ctx.agentName,
-        'streamComplete': false,
-        'segments': ctx.folder.encodeForFlush(),
-        'transcriptChars': ctx.folder.transcriptChars,
-      },
+      content: textChanged ? text : null,
+      metadata: metadata,
+      projectList: textChanged,
     );
   }
 

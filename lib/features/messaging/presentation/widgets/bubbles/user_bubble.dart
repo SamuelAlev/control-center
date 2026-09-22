@@ -6,6 +6,7 @@ import 'package:control_center/features/messaging/presentation/widgets/bubbles/b
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/focusable_bubble.dart';
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/message_attachment_refs.dart';
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/message_attachment_strip.dart';
+import 'package:control_center/features/messaging/providers/editing_message_provider.dart';
 import 'package:control_center/features/messaging/providers/message_edit_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
@@ -47,40 +48,18 @@ class UserBubble extends ConsumerWidget {
   /// this message). Null hides the action.
   final VoidCallback? onStartThread;
 
-  /// Opens an edit dialog seeded with the current content; on save, writes the
-  /// edit over RPC (stamps `editedAt`).
-  Future<void> _edit(BuildContext context, WidgetRef ref) async {
-    final l10n = AppLocalizations.of(context);
-    final controller = TextEditingController(text: message.content);
-    final next = await showCcDialog<String>(
-      context: context,
-      builder: (ctx) => CcDialog(
-        title: l10n.editMessage,
-        content: CcTextField(
-          controller: controller,
-          autofocus: true,
-          onSubmitted: (_) => Navigator.pop(ctx, controller.text),
-        ),
-        actions: [
-          CcButton(
-            onPressed: () => Navigator.pop(ctx),
-            variant: CcButtonVariant.secondary,
-            child: Text(l10n.cancel),
-          ),
-          CcButton(
-            onPressed: () => Navigator.pop(ctx, controller.text),
-            child: Text(l10n.save),
-          ),
-        ],
-      ),
-    );
-    controller.dispose();
-    if (next == null) {
-      return;
-    }
-    await ref
-        .read(messageEditControllerProvider)
-        .edit(message, next, undoLabel: l10n.undoLabelMessageEdit);
+  /// Loads this message into the conversation's composer. Sending from there
+  /// writes the edit; the composer parks and restores whatever draft was
+  /// already in the field.
+  void _edit(WidgetRef ref) {
+    ref
+        .read(
+          editingMessageProvider((
+            spaceId: message.spaceId,
+            conversationId: message.conversationId,
+          )).notifier,
+        )
+        .begin(message);
   }
 
   /// Confirms, then soft-deletes the message over RPC.
@@ -125,12 +104,29 @@ class UserBubble extends ConsumerWidget {
     // still loading, treat the message as your own (solo-first default).
     final currentUserId = ref.watch(currentUserIdProvider);
     final isOwn = currentUserId == null || message.senderId == currentUserId;
+    // The directory is the whole roster. A profile edit for someone else
+    // must not rebuild every bubble in the feed.
+    final directoryName = isOwn
+        ? null
+        : ref.watch(
+            usersByIdProvider.select(
+              (async) => async.asData?.value[message.senderId]?.displayName,
+            ),
+          );
     final authorName = isOwn
         ? null
-        : ref.watch(usersByIdProvider).value?[message.senderId]?.displayName ??
+        : directoryName ??
               (message.senderId.length > 8
                   ? message.senderId.substring(0, 8)
                   : message.senderId);
+    // The accent border is the message currently sitting in the composer.
+    final editingId = ref.watch(
+      editingMessageProvider((
+        spaceId: message.spaceId,
+        conversationId: message.conversationId,
+      )).select((editing) => editing?.message.id),
+    );
+    final isEditing = editingId == message.id;
 
     return Padding(
       padding: EdgeInsets.only(top: topPad),
@@ -157,9 +153,7 @@ class UserBubble extends ConsumerWidget {
                     onStartThread: onStartThread,
                     // Edit/delete only for your OWN live message — another
                     // member's words are not yours to rewrite.
-                    onEdit: deleted || !isOwn
-                        ? null
-                        : () => _edit(context, ref),
+                    onEdit: deleted || !isOwn ? null : () => _edit(ref),
                     onDelete: deleted || !isOwn
                         ? null
                         : () => _delete(context, ref),
@@ -192,7 +186,9 @@ class UserBubble extends ConsumerWidget {
                                 color: tokens.bgSecondary,
                                 borderRadius: AppRadii.brMd,
                                 border: Border.all(
-                                  color: tokens.borderSecondary,
+                                  color: isEditing
+                                      ? tokens.accent
+                                      : tokens.borderSecondary,
                                 ),
                               ),
                               child: deleted

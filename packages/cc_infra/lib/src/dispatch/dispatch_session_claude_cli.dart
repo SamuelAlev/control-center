@@ -182,7 +182,11 @@ extension _ClaudeCliMethods on DispatchSession {
     // Whether the attempt that ended the loop already explained itself, so the
     // trailing exit-code line does not repeat it. See [_sawProcessStderr].
     var explained = false;
-    for (var i = 0; i < attempts.length; i++) {
+    // How many times a dead sign-in has already parked this run. Bounded so a
+    // credential that 401s again after a login cannot relaunch forever.
+    var reauthParks = 0;
+    var i = 0;
+    while (i < attempts.length) {
       final attempt = attempts[i];
       ClaudeTerminalError? terminal;
       var producedOutput = false;
@@ -287,7 +291,29 @@ extension _ClaudeCliMethods on DispatchSession {
                 '(${failure.isCapacity ? 'out of plan headroom' : 'credential expired'})',
           ),
         );
+        i++;
         continue;
+      }
+      // The last account's sign-in is dead and the turn has said nothing.
+      // Park for a human to sign in again and re-run this same prompt, rather
+      // than finishing as a blank bubble the operator cannot act on.
+      if (failure != null &&
+          failure.isAuth &&
+          !producedOutput &&
+          reauthParks < 2) {
+        if (attempt.accountId.isNotEmpty) {
+          await _reportClaudeAccountFailure(attempt.accountId, failure);
+        }
+        final detail = redactSecrets('[claude] ${failure.message}');
+        if (await _gateOnExpiredClaudeSignIn(detail: detail)) {
+          reauthParks++;
+          i = 0;
+          explained = false;
+          continue;
+        }
+        addEvent(ErrorEvent(content: detail));
+        explained = true;
+        break;
       }
       if (failure != null) {
         if (accountFailure && attempt.accountId.isNotEmpty) {

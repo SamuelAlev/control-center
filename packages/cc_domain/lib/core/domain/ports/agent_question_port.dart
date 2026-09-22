@@ -145,6 +145,137 @@ class AgentQuestionAnswer {
   }
 }
 
+/// Reads the argument map both `ask_user` callers share: the harness tool and
+/// the MCP tool. One parser so the two surfaces cannot disagree about what a
+/// valid question is.
+class AskUserArguments {
+  const AskUserArguments._({
+    this.error,
+    this.question = '',
+    this.context,
+    this.options = const [],
+    this.allowFreeText = false,
+    this.multiSelect = false,
+  });
+
+  /// Parses [args]. [error] is set when the question cannot be asked; the
+  /// other fields are meaningful only when [error] is null.
+  factory AskUserArguments.parse(
+    Map<String, dynamic> args, {
+    int maxOptions = 8,
+  }) {
+    final question = (args['question'] as String?)?.trim() ?? '';
+    if (question.isEmpty) {
+      return const AskUserArguments._(
+        error: 'ask_user requires a non-empty question.',
+      );
+    }
+
+    final options = <AgentQuestionOption>[];
+    final rawOptions = args['options'];
+    if (rawOptions is List) {
+      for (final raw in rawOptions.take(maxOptions)) {
+        if (raw is! Map) {
+          continue;
+        }
+        final label = (raw['label'] as String?)?.trim();
+        if (label == null || label.isEmpty) {
+          continue;
+        }
+        final description = (raw['description'] as String?)?.trim();
+        options.add(
+          AgentQuestionOption(
+            label: label,
+            description: (description?.isEmpty ?? true) ? null : description,
+          ),
+        );
+      }
+    }
+
+    // A question with no options and no free-text field is unanswerable, so
+    // free text defaults ON when nothing was offered to pick from.
+    final allowFreeText = args['allow_free_text'] as bool? ?? options.isEmpty;
+    if (options.isEmpty && !allowFreeText) {
+      return const AskUserArguments._(
+        error:
+            'ask_user needs either options or allow_free_text; a question with '
+            'neither cannot be answered.',
+      );
+    }
+
+    final rawContext = args['context'];
+    final context = rawContext is String ? rawContext.trim() : null;
+    return AskUserArguments._(
+      question: question,
+      context: (context == null || context.isEmpty) ? null : context,
+      options: options,
+      allowFreeText: allowFreeText,
+      multiSelect: args['multi_select'] as bool? ?? false,
+    );
+  }
+
+  /// Why [parse] refused the arguments, or null when they are usable.
+  final String? error;
+
+  /// The question, as one sentence.
+  final String question;
+
+  /// Why the agent is asking, when it said.
+  final String? context;
+
+  /// Concrete choices. Empty for a free-text question.
+  final List<AgentQuestionOption> options;
+
+  /// Whether the user may type an answer.
+  final bool allowFreeText;
+
+  /// Whether more than one option may be selected.
+  final bool multiSelect;
+}
+
+/// The text an agent should read back after [AgentQuestionPort.ask] returns.
+class AskUserOutcome {
+  /// Creates an [AskUserOutcome].
+  const AskUserOutcome(this.text, {required this.isError});
+
+  /// Maps [answer] onto the sentence the agent continues from.
+  ///
+  /// Null is a timeout. Skip is a deliberate "you pick" and is not an error —
+  /// the agent should proceed, not ask again.
+  factory AskUserOutcome.fromAnswer(AgentQuestionAnswer? answer) {
+    if (answer == null) {
+      return const AskUserOutcome(
+        'No answer: the question timed out or was dismissed. Do not ask '
+        'again. Choose the most reasonable option, state the assumption you '
+        'are proceeding under, and continue.',
+        isError: true,
+      );
+    }
+    if (answer.skipped) {
+      return const AskUserOutcome(
+        'The user skipped this question. Choose the most reasonable option, '
+        'state the assumption you are proceeding under, and continue. Do not '
+        'ask again.',
+        isError: false,
+      );
+    }
+    if (answer.isEmpty) {
+      return const AskUserOutcome(
+        'The user submitted an empty answer. Proceed with your best judgment '
+        'and say what you assumed.',
+        isError: false,
+      );
+    }
+    return AskUserOutcome(answer.toPromptString(), isError: false);
+  }
+
+  /// What the agent reads.
+  final String text;
+
+  /// Whether the turn should treat this as a tool error.
+  final bool isError;
+}
+
 /// Surfaces an agent's question to the user as an interactive form in the
 /// conversation and blocks until the user answers.
 ///

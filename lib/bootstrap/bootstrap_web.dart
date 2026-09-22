@@ -67,7 +67,9 @@ Future<void> bootstrapAndRun() async {
   // Cap the engine image cache well below Flutter's default (~100MB / 1000
   // images) — mirrors the desktop bootstrap; the UI shows mostly small,
   // already-downscaled avatars and thumbnails.
-  PaintingBinding.instance.imageCache.maximumSizeBytes = 48 << 20;
+  PaintingBinding.instance.imageCache
+    ..maximumSize = 400
+    ..maximumSizeBytes = 32 << 20;
 
   // Pre-warm the shiki highlighter (CC themes + the hottest grammars) and opt
   // into the tokenize Web Worker (web/shiki_tokenize_worker.js). Registration

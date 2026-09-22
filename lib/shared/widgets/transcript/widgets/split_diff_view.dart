@@ -78,6 +78,24 @@ class _SplitDiffViewState extends State<SplitDiffView> {
   bool _showAll = false;
   final Set<(String, String?, bool)> _pendingAsync = {};
 
+  /// The pair whose diff is running off this frame, so a rebuild does not
+  /// start a second one.
+  (String, String)? _loadingDiff;
+
+  void _scheduleDiff() {
+    final key = (widget.oldText, widget.newText);
+    if (_loadingDiff == key) {
+      return;
+    }
+    _loadingDiff = key;
+    computeLineDiffAsync(widget.oldText, widget.newText).then((_) {
+      if (!mounted || _loadingDiff != key) {
+        return;
+      }
+      setState(() => _loadingDiff = null);
+    });
+  }
+
   @override
   void didUpdateWidget(covariant SplitDiffView old) {
     super.didUpdateWidget(old);
@@ -141,6 +159,22 @@ class _SplitDiffViewState extends State<SplitDiffView> {
     final tokens = widget.tokens;
     final languageId = widget.languageId;
     final dark = diffBrightnessOf(context) == Brightness.dark;
+    if (lineDiffForBuild(widget.oldText, widget.newText) == null) {
+      // A rewrite of a long file is tens to hundreds of milliseconds. Paint
+      // the frame, then align the rows when the helper isolate returns.
+      _scheduleDiff();
+      final height = widget.maxHeight.isFinite ? widget.maxHeight : 120.0;
+      return Container(
+        height: height,
+        decoration: BoxDecoration(
+          color: tokens.bgPrimary,
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(color: tokens.borderSecondary),
+        ),
+        alignment: Alignment.center,
+        child: CcSpinner(size: 16, color: tokens.textTertiary),
+      );
+    }
     final allRows = computeSplitDiff(widget.oldText, widget.newText);
     final truncated = !_showAll && allRows.length > widget.maxRows;
     final rows = truncated ? allRows.take(widget.maxRows).toList() : allRows;

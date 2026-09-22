@@ -25,4 +25,17 @@ abstract class MessagingSummariesPort {
     String spaceId,
     String conversationId,
   );
+
+  /// The caller's own recent plain-text prompts in one conversation, oldest
+  /// first, for terminal-style ↑/↓ recall.
+  ///
+  /// The composer used to subscribe to `messaging.watchMessages` — the whole
+  /// conversation, re-sent on every write — and then throw away every row
+  /// that was not this user's text. This is that projection: a short list of
+  /// strings, computed next to the rows.
+  Stream<List<String>> watchUserPromptHistory(
+    String workspaceId,
+    String spaceId,
+    String conversationId,
+  );
 }

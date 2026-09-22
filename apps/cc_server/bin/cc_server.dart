@@ -8,7 +8,7 @@ import 'package:cc_server_core/cc_server_core.dart';
 /// Build with `dart build cli`; bundle ships `libsqlite3`.
 ///
 /// Subcommands: `pair` (device + PSK, optional QR); `calendar connect
-/// --workspace <id>` (Google device-code flow); `update` (stage/apply
+/// `--workspace <id>`` (Google device-code flow); `update` (stage/apply
 /// standalone release; never silent); default runs until SIGINT/SIGTERM.
 /// Config: `--data-dir`, `--port`, `--bind` (see [CcServerConfig]).
 Future<void> main(List<String> args) async {

@@ -532,10 +532,7 @@ _RepoScope _resolveRepoScope(PipelineNodeConfig config, PipelineContext ctx) {
   if (at <= 0 || at == entry.length - 1) {
     return (repoId: entry, branch: null);
   }
-  return (
-    repoId: entry.substring(0, at),
-    branch: entry.substring(at + 1),
-  );
+  return (repoId: entry.substring(0, at), branch: entry.substring(at + 1));
 }
 
 /// The roster the room opens with: `extras['agentIds']` (rendered, so a node can
@@ -634,13 +631,10 @@ Mode _resolveMode(PipelineNodeConfig config) {
 /// `<repoId>@<branch>` — the placeholder pass runs over the WHOLE entry, so
 /// either half can come from the trigger (`{{repo_id}}@{{head_ref}}`). The
 /// branch is the BASE, not the working branch: the worktree still gets its own
-/// `conv/<space>` branch cut from it, so nothing an agent commits lands there.
+/// `space/<space>` branch cut from it, so nothing an agent commits lands there.
 /// Private to this file: a conversation IS the checkout, so the node that
 /// opens one is the only node that reads this.
-_RepoScope _resolveScopedRepoIds(
-  List<String> configured,
-  PipelineContext ctx,
-) {
+_RepoScope _resolveScopedRepoIds(List<String> configured, PipelineContext ctx) {
   if (configured.isEmpty) {
     return (ids: const <String>[], branches: const {});
   }

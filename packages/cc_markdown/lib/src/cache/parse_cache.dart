@@ -21,7 +21,7 @@ import 'package:meta/meta.dart';
 final class CcParseCache {
   /// Creates a cache holding at most [maxSize] parses totalling at most
   /// [maxSourceChars] characters of source.
-  CcParseCache({this.maxSize = 200, this.maxSourceChars = 2 * 1024 * 1024});
+  CcParseCache({this.maxSize = 48, this.maxSourceChars = 1024 * 1024});
 
   /// Maximum number of cached parses.
   final int maxSize;
@@ -29,7 +29,7 @@ final class CcParseCache {
   /// Maximum total SOURCE length across cached entries.
   ///
   /// The entry count alone does not bound memory: a 500 KB PR body parses to
-  /// an AST several times its own size, so 200 of those is not 200 small
+  /// an AST several times its own size, so a few dozen of those is not a few dozen small
   /// things. Source length is a cheap, monotone proxy for AST size — the same
   /// dual bound the syntax highlighter's LRU uses (entries AND chars), which
   /// is the model cache in this repo.

@@ -6,7 +6,42 @@ import 'package:cc_infra/src/log/cc_infra_log.dart';
 import 'package:cc_infra/src/skills/repo_skill_catalog.dart';
 import 'package:path/path.dart' as p;
 
-/// The outcome of one projection: what the active repo now contributes.
+/// The name Claude Code's Skill tool registers for one projected skill.
+///
+/// Each child of `.claude/skills` is one skill, and Claude names it after that
+/// child. A slug only one repository ships keeps that slug (`rest-endpoints`).
+/// A slug two repositories both ship is prefixed (`app-server:testing`) — the
+/// spelling a directory-scoped skill already uses — so the bare name cannot
+/// silently run the other repository's instructions. Windows file names cannot
+/// contain `:`, so that host uses `repo__slug`; the prompt lists whichever
+/// name was actually linked.
+String repoSkillInvocationName({
+  required String repo,
+  required String slug,
+  required bool shared,
+}) {
+  if (!shared) {
+    return slug;
+  }
+  final separator = Platform.isWindows ? '__' : ':';
+  return '$repo$separator$slug';
+}
+
+/// One skill linked into the overlay, under the name the Skill tool accepts.
+class _LinkedSkill {
+  const _LinkedSkill({required this.entry, required this.linkName});
+
+  final RepoSkillEntry entry;
+  final String linkName;
+
+  HarnessSkillInfo infoAt(String linkPath) => HarnessSkillInfo(
+    name: linkName,
+    description: entry.description,
+    path: p.join(linkPath, 'SKILL.md'),
+  );
+}
+
+/// The outcome of one projection: what the space's repos now contribute.
 class RepoSkillProjection {
   /// Creates a [RepoSkillProjection].
   const RepoSkillProjection({
@@ -15,15 +50,14 @@ class RepoSkillProjection {
     required this.quarantined,
   });
 
-  /// An empty projection — no repo is active, or it ships no skills.
+  /// An empty projection — the space has no repos, or none of them ship skills.
   static const RepoSkillProjection none = RepoSkillProjection(
     repo: null,
     skills: [],
     quarantined: [],
   );
 
-  /// The repo directory name these skills came from, or null when none is
-  /// active.
+  /// The repo whose instructions were inlined, or null when none is active.
   final String? repo;
 
   /// The projected skills, as the agent will see them.
@@ -38,22 +72,26 @@ class RepoSkillProjection {
 
   /// The block announcing this projection to a running agent.
   ///
-  /// Written to supersede rather than accumulate: the previous repo's index is
-  /// still sitting in the history and cannot be unsaid, so this says plainly
-  /// that it no longer applies.
+  /// Written to supersede rather than accumulate: the previous repo's
+  /// instructions are still sitting in the history and cannot be unsaid, so
+  /// this says plainly that they no longer apply. Skills stay listed, because
+  /// a skill from another checked-out repo is still invocable.
   String get announcement {
-    final repoName = repo;
-    if (repoName == null) {
+    if (repo == null && skills.isEmpty && quarantined.isEmpty) {
       return '';
     }
-    final buffer = StringBuffer(
-      'You are now working in `repos/$repoName`. Its skills are listed '
-      'below and are the ones that apply. Any repo skills announced '
-      'earlier in this conversation belong to a different repo and no '
-      'longer apply.\n',
-    );
+    final buffer = StringBuffer();
+    final repoName = repo;
+    if (repoName != null) {
+      buffer.write(
+        'You are now working in `repos/$repoName`. Its instructions apply. '
+        'Instructions announced earlier for a different repository no longer '
+        'apply.\n',
+      );
+    }
+    buffer.write('\n${RepoSkillProjector.invocationBlurb}\n');
     if (skills.isEmpty) {
-      buffer.write('\n(This repo ships no skills.)');
+      buffer.write('\n(This space\'s repositories ship no skills.)');
     }
     for (final skill in skills) {
       final desc = skill.description.isEmpty ? '' : ' — ${skill.description}';
@@ -68,10 +106,17 @@ class RepoSkillProjection {
   }
 }
 
-/// Projects one repo's skills into the agent's overlay discovery paths
-/// (`.claude/skills` + harness bases). Claude Code watches the dir — mid-session
-/// swap without CLI restart. Only the active repo (cross-repo dumps thrash
-/// context and mis-apply sibling skills).
+/// Projects every checked-out repo's skills into the agent's overlay
+/// (`.claude/skills`). Claude Code's Skill tool only loads that directory in
+/// the working directory — a skill that lives under `repos/<name>/` is reached
+/// through a symlink that leaves the overlay, and Claude refuses to load it.
+/// Linking it here is what makes `rest-endpoints` resolvable in a space that
+/// also has another repo checked out.
+///
+/// A slug only one repo ships is linked under that slug. A slug two repos both
+/// ship is linked as `repo:slug`, so the bare name cannot run the wrong
+/// repo's instructions. The active repo still decides whose root instructions
+/// are inlined into `AGENTS.md`; it does not decide which skills exist.
 class RepoSkillProjector {
   /// Creates a [RepoSkillProjector].
   ///
@@ -129,6 +174,14 @@ class RepoSkillProjector {
   /// whole overlay `AGENTS.md`.
   static const int _maxRepoInstructionBytes = 24000;
 
+  /// How a skill name in the prompt maps onto the Skill tool. Shared by the
+  /// overlay `AGENTS.md` and the steering announcement so they cannot drift.
+  static const String invocationBlurb =
+      'Invoke a skill with the Skill tool using exactly the name shown, or '
+      'by reading its SKILL.md. A skill only one repository ships keeps its '
+      'own name — do not prefix it with the repository. A name shared by '
+      'more than one repository is prefixed with that repository.';
+
   /// The directories the projection is written into, in the order the adapters
   /// read them.
   ///
@@ -136,70 +189,91 @@ class RepoSkillProjector {
   /// symlink to the agent's GLOBAL config dir, which is shared by every space
   /// the agent works in. Writing there would leak one space's repo skills into
   /// all the others and collide with `syncAgentSkillLinks`.
-  static const List<String> projectedDirs = [
-    '.claude/skills',
-  ];
+  static const List<String> projectedDirs = ['.claude/skills'];
 
-  /// Projects [activeRepo]'s skills, replacing whatever was projected before.
+  /// Links every repo's skills into the overlay, and inlines [activeRepo]'s
+  /// instructions.
   ///
-  /// A null [activeRepo] clears the projection. Idempotent: re-projecting the
-  /// same repo re-verifies the links and rewrites nothing else.
+  /// A null or unknown [activeRepo] still links the skills; it only means no
+  /// repository's root instructions are the ones that apply. Idempotent:
+  /// re-projecting re-verifies the links.
   Future<RepoSkillProjection> project(String? activeRepo) async {
-    if (activeRepo == null || activeRepo.isEmpty) {
+    final repoNames = catalog.repos();
+    if (repoNames.isEmpty) {
       await _clear();
       _writeAgentsMd(null, const []);
       _projected = null;
       return RepoSkillProjection.none;
     }
-    final repoRoot = Directory(p.join(reposDir, activeRepo));
-    if (!repoRoot.existsSync()) {
-      _onWarning?.call('RepoSkillProjector: no worktree at ${repoRoot.path}');
-      await _clear();
-      _writeAgentsMd(null, const []);
-      _projected = null;
-      return RepoSkillProjection.none;
+    final active = repoNames.contains(activeRepo) ? activeRepo : null;
+    if (activeRepo != null && activeRepo.isNotEmpty && active == null) {
+      _onWarning?.call(
+        'RepoSkillProjector: no worktree named $activeRepo under $reposDir',
+      );
     }
 
-    final inspected = await catalog.inspect(activeRepo);
-    final admitted = inspected.admitted;
-    final quarantined = inspected.withheld;
+    final admitted = <RepoSkillEntry>[];
+    final quarantined = <String>[];
+    for (final repo in repoNames) {
+      final inspected = await catalog.inspect(repo);
+      admitted.addAll(inspected.admitted);
+      quarantined.addAll(inspected.withheld);
+    }
+    final slugCounts = <String, int>{};
+    for (final skill in admitted) {
+      slugCounts[skill.slug] = (slugCounts[skill.slug] ?? 0) + 1;
+    }
+    final linked =
+        [
+          for (final skill in admitted)
+            _LinkedSkill(
+              entry: skill,
+              linkName: repoSkillInvocationName(
+                repo: skill.repo,
+                slug: skill.slug,
+                shared: (slugCounts[skill.slug] ?? 0) > 1,
+              ),
+            ),
+        ]..sort((a, b) {
+          final byRepo = a.entry.repo.compareTo(b.entry.repo);
+          if (byRepo != 0) {
+            return byRepo;
+          }
+          return a.linkName.compareTo(b.linkName);
+        });
 
     await _clear();
     final projected = <HarnessSkillInfo>[];
+    final written = <_LinkedSkill>[];
     for (final dir in projectedDirs) {
       final target = Directory(p.join(overlayDir, dir))
         ..createSync(recursive: true);
-      for (final skill in admitted) {
-        final linkPath = p.join(target.path, skill.slug);
+      for (final skill in linked) {
+        final linkPath = p.join(target.path, skill.linkName);
         try {
-          Link(linkPath).createSync(skill.dir);
+          Link(linkPath).createSync(skill.entry.dir);
         } on FileSystemException catch (e) {
           _onWarning?.call(
-            'RepoSkillProjector: could not link ${skill.slug}: $e',
+            'RepoSkillProjector: could not link ${skill.linkName}: $e',
           );
           continue;
         }
         if (dir == projectedDirs.first) {
-          projected.add(
-            HarnessSkillInfo(
-              name: skill.name,
-              description: skill.description,
-              path: p.join(linkPath, 'SKILL.md'),
-            ),
-          );
+          projected.add(skill.infoAt(linkPath));
+          written.add(skill);
         }
       }
     }
-    _writeAgentsMd(activeRepo, projected);
-    _projected = activeRepo;
+    _writeAgentsMd(active, written);
+    _projected = active;
     if (quarantined.isNotEmpty) {
       CcInfraLog.warning(
-        'RepoSkillProjector: withheld ${quarantined.length} skill(s) from '
-        '$activeRepo: ${quarantined.join(', ')}',
+        'RepoSkillProjector: withheld ${quarantined.length} skill(s): '
+        '${quarantined.join(', ')}',
       );
     }
     return RepoSkillProjection(
-      repo: activeRepo,
+      repo: active,
       skills: projected,
       quarantined: quarantined,
     );
@@ -219,7 +293,7 @@ class RepoSkillProjector {
   /// provisioner's symlink is safe and self-healing: `_ensureSymlink` deletes
   /// a plain file and re-links on the next dispatch, which runs before this
   /// does.
-  void _writeAgentsMd(String? repo, List<HarnessSkillInfo> skills) {
+  void _writeAgentsMd(String? repo, List<_LinkedSkill> skills) {
     final file = File(p.join(overlayDir, 'AGENTS.md'));
     // Only ever replace the provisioner's SYMLINK, an absent file, or a file
     // this projector already wrote. Anything else is a real file somebody else
@@ -240,31 +314,45 @@ class RepoSkillProjector {
     }
     final base = _baseProfile ??= _readBaseProfile(file);
     final buffer = StringBuffer(base);
-    if (repo != null) {
+    if (repo != null || skills.isNotEmpty) {
       if (base.isNotEmpty) {
         buffer.write('\n\n');
       }
+    }
+    if (repo != null) {
       buffer.write('# Active repository: $repo\n\n');
       buffer.write(
-        'You are working in `repos/$repo`. The instructions and skills below '
-        'are that repo\'s and are the ones that apply. Other repos checked out '
-        'in this space have their own and they do not apply here.\n',
+        'You are working in `repos/$repo`. The instructions below are that '
+        'repository\'s. Skills from every repository checked out in this '
+        'space are listed after them and stay invocable whichever repository '
+        'is active.\n',
       );
       final instructions = _repoInstructions(repo);
       if (instructions.isNotEmpty) {
         buffer.write('\n$instructions\n');
       }
-      if (skills.isNotEmpty) {
-        buffer.write('\n## Skills in `repos/$repo`\n\n');
-        buffer.write('Load one by reading its SKILL.md.\n');
-        for (final skill in skills) {
-          final desc = skill.description.isEmpty
-              ? ''
-              : ' — ${skill.description}';
-          buffer.write('\n- ${skill.name}$desc (${skill.path})');
+    }
+    if (skills.isNotEmpty) {
+      buffer.write('\n## Skills\n\n');
+      buffer.write('${RepoSkillProjector.invocationBlurb}\n');
+      String? currentRepo;
+      for (final skill in skills) {
+        if (skill.entry.repo != currentRepo) {
+          currentRepo = skill.entry.repo;
+          buffer.write('\n### ${skill.entry.repo}\n');
         }
-        buffer.write('\n');
+        final desc = skill.entry.description.isEmpty
+            ? ''
+            : ' — ${skill.entry.description}';
+        final path = p.join(
+          overlayDir,
+          projectedDirs.first,
+          skill.linkName,
+          'SKILL.md',
+        );
+        buffer.write('\n- ${skill.linkName}$desc ($path)');
       }
+      buffer.write('\n');
     }
     try {
       file.parent.createSync(recursive: true);

@@ -96,6 +96,42 @@ void main() {
       },
     );
 
+    test('a burst in one turn collapses to the latest full snapshot', () async {
+      final mgr = _harness();
+      addTearDown(mgr.dispose);
+      mgr.subscribe(
+        id: 1,
+        params: const {
+          'query': 'scoped.watch',
+          'args': {'workspace_id': 'ws-1'},
+        },
+      );
+      await pumpEventQueue(times: 10);
+      final before = mgr.sent
+          .where((f) => f['method'] == RpcMethods.subSnapshot)
+          .length;
+
+      mgr.scopedController.add({
+        'rows': <String>['a'],
+      });
+      mgr.scopedController.add({
+        'rows': <String>['b'],
+      });
+      await pumpEventQueue(times: 10);
+
+      final snaps = mgr.sent
+          .where((f) => f['method'] == RpcMethods.subSnapshot)
+          .toList();
+      expect(snaps.length, before + 1);
+      final params = snaps.last['params'] as Map<String, dynamic>;
+      expect(params['data'], {
+        'rows': ['b'],
+      });
+      // Both emissions counted, so a client that tracks rev still sees a
+      // monotonic increase rather than a reused number.
+      expect(params['rev'], before + 2);
+    });
+
     test('a handler that throws synchronously returns internalError', () {
       final mgr = _harness();
       addTearDown(mgr.dispose);
@@ -308,39 +344,36 @@ void main() {
   });
 
   group('SubscriptionManager workspace existence gate', () {
-    test(
-      'an unregistered workspace is refused as not-found and the handler '
-      'never runs',
-      () async {
-        final mgr = _harness(workspaceExists: (_) async => false);
-        addTearDown(mgr.dispose);
-        final res = mgr.subscribe(
-          id: 1,
-          params: const {
-            'query': 'scoped.watch',
-            'args': {'workspace_id': 'ws-ghost'},
-          },
-        );
-        // The ack lands synchronously; the refusal follows asynchronously as
-        // a sub/error push (the client surfaces it as a stream error).
-        expect(res['error'], isNull);
-        expect((res['result'] as Map)['subscriptionId'], isA<String>());
+    test('an unregistered workspace is refused as not-found and the handler '
+        'never runs', () async {
+      final mgr = _harness(workspaceExists: (_) async => false);
+      addTearDown(mgr.dispose);
+      final res = mgr.subscribe(
+        id: 1,
+        params: const {
+          'query': 'scoped.watch',
+          'args': {'workspace_id': 'ws-ghost'},
+        },
+      );
+      // The ack lands synchronously; the refusal follows asynchronously as
+      // a sub/error push (the client surfaces it as a stream error).
+      expect(res['error'], isNull);
+      expect((res['result'] as Map)['subscriptionId'], isA<String>());
 
-        await pumpEventQueue(times: 10);
-        final error = mgr.sent.lastWhere(
-          (f) => f['method'] == RpcMethods.subError,
-        );
-        expect((error['params'] as Map)['code'], RpcErrorCodes.notFound);
-        // The handler never attached: no snapshot was pushed and nothing is
-        // listening on the scoped stream (attaching opens the workspace's
-        // database — the ghost-file bug this gate exists to prevent).
-        expect(
-          mgr.sent.where((f) => f['method'] == RpcMethods.subSnapshot),
-          isEmpty,
-        );
-        expect(mgr.scopedController.hasListener, isFalse);
-      },
-    );
+      await pumpEventQueue(times: 10);
+      final error = mgr.sent.lastWhere(
+        (f) => f['method'] == RpcMethods.subError,
+      );
+      expect((error['params'] as Map)['code'], RpcErrorCodes.notFound);
+      // The handler never attached: no snapshot was pushed and nothing is
+      // listening on the scoped stream (attaching opens the workspace's
+      // database — the ghost-file bug this gate exists to prevent).
+      expect(
+        mgr.sent.where((f) => f['method'] == RpcMethods.subSnapshot),
+        isEmpty,
+      );
+      expect(mgr.scopedController.hasListener, isFalse);
+    });
 
     test('a registered workspace attaches and emits normally', () async {
       final mgr = _harness(workspaceExists: (_) async => true);
@@ -360,35 +393,32 @@ void main() {
       expect(snapshot['params'], isNotNull);
     });
 
-    test(
-      'unsubscribing while the gate resolves attaches nothing and sends no '
-      'error',
-      () async {
-        final gate = Completer<bool>();
-        final mgr = _harness(workspaceExists: (_) => gate.future);
-        addTearDown(mgr.dispose);
-        final res = mgr.subscribe(
-          id: 1,
-          params: const {
-            'query': 'scoped.watch',
-            'args': {'workspace_id': 'ws-1'},
-          },
-        );
-        final subId = (res['result'] as Map)['subscriptionId'] as String;
-        mgr.unsubscribe(id: 2, params: {'subscriptionId': subId});
-        gate.complete(true);
-        await pumpEventQueue(times: 10);
-        expect(
-          mgr.sent.where((f) => f['method'] == RpcMethods.subError),
-          isEmpty,
-        );
-        expect(
-          mgr.sent.where((f) => f['method'] == RpcMethods.subSnapshot),
-          isEmpty,
-        );
-        expect(mgr.scopedController.hasListener, isFalse);
-      },
-    );
+    test('unsubscribing while the gate resolves attaches nothing and sends no '
+        'error', () async {
+      final gate = Completer<bool>();
+      final mgr = _harness(workspaceExists: (_) => gate.future);
+      addTearDown(mgr.dispose);
+      final res = mgr.subscribe(
+        id: 1,
+        params: const {
+          'query': 'scoped.watch',
+          'args': {'workspace_id': 'ws-1'},
+        },
+      );
+      final subId = (res['result'] as Map)['subscriptionId'] as String;
+      mgr.unsubscribe(id: 2, params: {'subscriptionId': subId});
+      gate.complete(true);
+      await pumpEventQueue(times: 10);
+      expect(
+        mgr.sent.where((f) => f['method'] == RpcMethods.subError),
+        isEmpty,
+      );
+      expect(
+        mgr.sent.where((f) => f['method'] == RpcMethods.subSnapshot),
+        isEmpty,
+      );
+      expect(mgr.scopedController.hasListener, isFalse);
+    });
   });
 
   group('SubscriptionManager membership gate', () {
@@ -471,54 +501,50 @@ void main() {
   });
 
   group('SubscriptionManager.dropWorkspace', () {
-    test(
-      'tears down only the named workspace’s subscriptions with an '
-      'unauthorized sub/error',
-      () async {
-        final mgr = _harness();
-        addTearDown(mgr.dispose);
-        mgr.subscribe(
-          id: 1,
-          params: const {
-            'query': 'scoped.watch',
-            'args': {'workspace_id': 'ws-1'},
-          },
-        );
-        // Global subscription must survive a workspace-scoped drop.
-        mgr.subscribe(id: 2, params: const {'query': 'newsfeed'});
-        await pumpEventQueue(times: 10);
-        mgr.sent.clear();
+    test('tears down only the named workspace’s subscriptions with an '
+        'unauthorized sub/error', () async {
+      final mgr = _harness();
+      addTearDown(mgr.dispose);
+      mgr.subscribe(
+        id: 1,
+        params: const {
+          'query': 'scoped.watch',
+          'args': {'workspace_id': 'ws-1'},
+        },
+      );
+      // Global subscription must survive a workspace-scoped drop.
+      mgr.subscribe(id: 2, params: const {'query': 'newsfeed'});
+      await pumpEventQueue(times: 10);
+      mgr.sent.clear();
 
-        mgr.mgr.dropWorkspace('ws-1');
-        await pumpEventQueue(times: 10);
+      mgr.mgr.dropWorkspace('ws-1');
+      await pumpEventQueue(times: 10);
 
-        final errs = mgr.sent
-            .where((f) => f['method'] == RpcMethods.subError)
-            .toList();
-        expect(errs, hasLength(1));
-        final params = errs.single['params'] as Map<String, dynamic>;
-        expect(params['code'], RpcErrorCodes.unauthorized);
-        expect((params['data'] as Map)['kind'], 'member_removed');
+      final errs = mgr.sent
+          .where((f) => f['method'] == RpcMethods.subError)
+          .toList();
+      expect(errs, hasLength(1));
+      final params = errs.single['params'] as Map<String, dynamic>;
+      expect(params['code'], RpcErrorCodes.unauthorized);
+      expect((params['data'] as Map)['kind'], 'member_removed');
 
-        // The dropped subscription is gone: pushing to its stream emits
-        // nothing more, while the global one stays attached.
-        mgr.scopedController.add({
-          'rows': ['after-revoke'],
-        });
-        mgr.newsfeedController.add(const {'rows': ['global']});
-        await pumpEventQueue(times: 10);
-        final snapshots = mgr.sent
-            .where((f) => f['method'] == RpcMethods.subSnapshot)
-            .toList();
-        expect(snapshots, hasLength(1));
-        expect(
-          (snapshots.single['params'] as Map)['data'],
-          {
-            'rows': ['global'],
-          },
-        );
-      },
-    );
+      // The dropped subscription is gone: pushing to its stream emits
+      // nothing more, while the global one stays attached.
+      mgr.scopedController.add({
+        'rows': ['after-revoke'],
+      });
+      mgr.newsfeedController.add(const {
+        'rows': ['global'],
+      });
+      await pumpEventQueue(times: 10);
+      final snapshots = mgr.sent
+          .where((f) => f['method'] == RpcMethods.subSnapshot)
+          .toList();
+      expect(snapshots, hasLength(1));
+      expect((snapshots.single['params'] as Map)['data'], {
+        'rows': ['global'],
+      });
+    });
   });
 }
 

@@ -431,7 +431,14 @@ class OpenPrPollingService {
     if (branch.isEmpty) {
       return null;
     }
-    final snapshot = await _readPersistedSnapshot(workspaceId);
+    // The source-control poll asks this every few seconds for a branch with
+    // no local upstream. The in-memory snapshot is the same map the sweep
+    // just persisted; reading the cache row again would re-decode the whole
+    // open-PR list on that cadence.
+    final st = _stateFor(workspaceId);
+    final snapshot = st.snapshotLoaded
+        ? st.snapshot
+        : await _readPersistedSnapshot(workspaceId);
     for (final wire in _prsByNumber(snapshot, repoFullName).values) {
       if (wire['head_ref'] == branch) {
         return wire;

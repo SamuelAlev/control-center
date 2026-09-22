@@ -36,6 +36,11 @@ class _ScopeProbeTool extends McpTool {
   }
 }
 
+class _ForcedScopeProbe extends _ScopeProbeTool {
+  @override
+  Set<String> get forcedScopeKeys => const {'space_id', 'agent_id'};
+}
+
 class _EchoTool extends McpTool {
   @override
   String get name => 'echo';
@@ -235,6 +240,37 @@ void main() {
           expect(probe.lastArgs!['space_id'], 'sp-1');
         },
       );
+
+      test('forced scope keys overwrite a model-supplied target', () async {
+        final probe = _ForcedScopeProbe();
+        final scopedDispatcher = McpToolDispatcher(
+          registry: McpToolRegistry([probe]),
+        );
+
+        await scopedDispatcher.handleScopedRequest(
+          JsonRpcRequest(
+            method: 'tools/call',
+            params: {
+              'name': 'scope_probe',
+              'arguments': {
+                'workspace_id': 'ws-foreign',
+                'space_id': 'sp-other',
+                'agent_id': 'agent-other',
+              },
+            },
+            id: 3,
+          ),
+          scope: const McpCallScope(
+            workspaceId: 'ws-own',
+            agentId: 'agent-own',
+            spaceId: 'sp-own',
+          ),
+        );
+
+        expect(probe.lastArgs!['workspace_id'], 'ws-own');
+        expect(probe.lastArgs!['space_id'], 'sp-own');
+        expect(probe.lastArgs!['agent_id'], 'agent-own');
+      });
 
       test(
         'no scope means verbatim arguments (Inspector/user tooling path)',

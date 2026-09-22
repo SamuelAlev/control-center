@@ -136,6 +136,37 @@ void main() {
       expect(calls, ['pr.ensureSpace']);
     });
   });
+
+  group('pullRequestsForSpaceRow', () {
+    test('a branch-matched PR with no association is shown once', () {
+      final pr = _pr(number: 33982, repoFullName: 'Frontify/app-server');
+      final shown = pullRequestsForSpaceRow(
+        linked: const [],
+        branchMatched: [pr],
+      );
+      expect(shown, [pr]);
+      expect(shown.single.isOpen, isTrue);
+    });
+
+    test('the same PR from an association and a branch match counts once', () {
+      final linked = _pr();
+      final shown = pullRequestsForSpaceRow(
+        linked: [linked],
+        branchMatched: [_pr()],
+      );
+      expect(shown, [linked]);
+    });
+
+    test('a second repo\'s branch PR sits beside the linked one', () {
+      final linked = _pr();
+      final branch = _pr(number: 33982, repoFullName: 'Frontify/app-server');
+      final shown = pullRequestsForSpaceRow(
+        linked: [linked],
+        branchMatched: [branch],
+      );
+      expect(shown.map((pr) => pr.number), [412, 33982]);
+    });
+  });
 }
 
 class _FakeReviewSpaces implements ReviewSpaceRepository {

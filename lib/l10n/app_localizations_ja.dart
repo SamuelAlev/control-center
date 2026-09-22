@@ -3137,6 +3137,16 @@ class AppLocalizationsJa extends AppLocalizations {
   String get editMessage => 'メッセージを編集';
 
   @override
+  String get revertToThere => 'そこまで戻す';
+
+  @override
+  String get sendAsNewMessage => '新しいメッセージとして送信';
+
+  @override
+  String get editMessageChoiceBody =>
+      '戻すと、このメッセージより後が隠れ、エージェントのファイルが巻き戻ります。これは元に戻せます。新しいメッセージとして送ると、会話はそのまま残ります。';
+
+  @override
   String get deleteMessage => 'メッセージを削除';
 
   @override
@@ -8409,6 +8419,11 @@ class AppLocalizationsJa extends AppLocalizations {
   String get ideReviewCode => 'コードをレビュー';
 
   @override
+  String ideReviewCodeInRepo(String repo) {
+    return 'コードをレビュー ($repo)';
+  }
+
+  @override
   String get ideRevertConfirmTitle => '変更を元に戻す';
 
   @override
@@ -10269,6 +10284,86 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get commitAndSync => 'コミットして同期';
+
+  @override
+  String get scmSyncChanges => '変更を同期';
+
+  @override
+  String get scmPublishBranch => 'ブランチを公開';
+
+  @override
+  String get scmSyncFailed => '同期に失敗しました';
+
+  @override
+  String get scmSyncDirty => '同期する前に変更をコミットするか破棄してください';
+
+  @override
+  String get scmSynced => '同期しました';
+
+  @override
+  String get scmSelectBranch => 'チェックアウトするブランチを選択';
+
+  @override
+  String get scmCreateBranch => '新しいブランチを作成…';
+
+  @override
+  String get scmCreateBranchFrom => '開始地点から新しいブランチを作成…';
+
+  @override
+  String get scmCheckoutDetached => '切り離してチェックアウト…';
+
+  @override
+  String get scmBranchName => 'ブランチ名';
+
+  @override
+  String get scmCreateBranchTitle => 'ブランチを作成';
+
+  @override
+  String scmFromRef(String ref) {
+    return '⁨$ref⁩ から';
+  }
+
+  @override
+  String get scmCheckoutFailed => 'ブランチを切り替えられませんでした';
+
+  @override
+  String get scmCheckoutDirty => 'ブランチを切り替える前に変更をコミットまたは破棄してください';
+
+  @override
+  String scmSwitchedToBranch(String branch) {
+    return '⁨$branch⁩ に切り替えました';
+  }
+
+  @override
+  String scmDetachedAt(String ref) {
+    return '⁨$ref⁩ で切り離しました';
+  }
+
+  @override
+  String get scmDetachedHead => '切り離された HEAD';
+
+  @override
+  String get scmNoBranches => '一致するブランチがありません';
+
+  @override
+  String get scmBranches => 'ブランチ';
+
+  @override
+  String get scmRemoteBranches => 'リモートブランチ';
+
+  @override
+  String get scmTags => 'タグ';
+
+  @override
+  String get scmPickStartPoint => '開始地点を選択';
+
+  @override
+  String get scmSwitchBranch => 'ブランチを切り替え';
+
+  @override
+  String commitMessageOnBranch(String shortcut, String branch) {
+    return 'メッセージ（$shortcut で “$branch” にコミット）';
+  }
 
   @override
   String get committed => 'コミットしました';

@@ -20,6 +20,7 @@ class ConversationTitleService {
     required this._settings,
     required this._conversationRepo,
     required this._messagingRepo,
+    this._firstHumanContent,
     this._timeout = const Duration(seconds: 20),
     this._maxTokens = 128,
   });
@@ -28,6 +29,16 @@ class ConversationTitleService {
   final WorkspaceSettingsRepository _settings;
   final ConversationRepository _conversationRepo;
   final MessagingRepository _messagingRepo;
+
+  /// Oldest human message text, without loading the conversation. Null keeps
+  /// [MessagingRepository.getMessages], which tests use.
+  final Future<String?> Function({
+    required String workspaceId,
+    required String spaceId,
+    String? conversationId,
+  })?
+  _firstHumanContent;
+
   final Duration _timeout;
   final int _maxTokens;
 
@@ -118,13 +129,25 @@ class ConversationTitleService {
       return;
     }
 
-    final messages = await _messagingRepo.getMessages(
-      workspaceId,
-      spaceId,
-      conversationId: conversation.id,
-    );
-    final firstHuman = messages.where((m) => m.isUser).firstOrNull;
-    final transcript = firstHuman?.content.trim() ?? '';
+    final loadFirst = _firstHumanContent;
+    final String transcript;
+    if (loadFirst == null) {
+      final messages = await _messagingRepo.getMessages(
+        workspaceId,
+        spaceId,
+        conversationId: conversation.id,
+      );
+      transcript =
+          messages.where((m) => m.isUser).firstOrNull?.content.trim() ?? '';
+    } else {
+      transcript =
+          (await loadFirst(
+            workspaceId: workspaceId,
+            spaceId: spaceId,
+            conversationId: conversation.id,
+          ))?.trim() ??
+          '';
+    }
     if (transcript.isEmpty) {
       return;
     }

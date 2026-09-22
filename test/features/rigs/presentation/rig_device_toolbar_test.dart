@@ -132,7 +132,7 @@ void main() {
   testWidgets('an agent in control keeps rotate and home off', (tester) async {
     final repository = await pump(
       tester,
-      RigView(
+      const RigView(
         id: 'ios-1',
         surface: 'ios',
         backendLabel: 'iOS Simulator',

@@ -1,3 +1,6 @@
+/// @docImport 'package:cc_domain/features/soundscape/domain/synth/seeded_prng.dart';
+library;
+
 import 'dart:math' as math;
 
 import 'package:cc_domain/features/soundscape/domain/entities/soundscape_context.dart';

@@ -78,6 +78,21 @@ void main() {
       expect(ctrl.totalMatches, 0);
       expect(ctrl.currentMatchIdx, 0);
       expect(removedEntry, isNotNull);
+      expect(ctrl.searchOverlay, isNull);
+    });
+
+    test('dispose after closeSearch removes the overlay only once', () {
+      final ctrl = create();
+      ctrl.openSearch();
+      final entry = OverlayEntry(builder: (_) => const SizedBox());
+      ctrl.searchOverlay = entry;
+
+      ctrl.closeSearch();
+      expect(removedEntry, entry);
+      removedEntry = null;
+
+      ctrl.dispose();
+      expect(removedEntry, isNull);
     });
 
     test('closeSearch when not open does nothing', () {

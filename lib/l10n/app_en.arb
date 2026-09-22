@@ -2487,7 +2487,19 @@
   },
   "editMessage": "Edit message",
   "@editMessage": {
-    "description": "Title of the dialog for editing a chat message"
+    "description": "Banner shown in the composer while a sent message is loaded back into it for editing"
+  },
+  "revertToThere": "Revert to there",
+  "@revertToThere": {
+    "description": "Choice when sending an edited earlier message: hide everything after it and roll the agent's files back"
+  },
+  "sendAsNewMessage": "Send as a new message",
+  "@sendAsNewMessage": {
+    "description": "Choice when sending an edited earlier message: keep the conversation and send the text as a new message"
+  },
+  "editMessageChoiceBody": "Revert hides the messages after this one and rolls the agent's files back. You can undo that. Sending as a new message leaves the conversation as it is.",
+  "@editMessageChoiceBody": {
+    "description": "Body of the dialog shown when sending a message that was loaded back into the composer"
   },
   "deleteMessage": "Delete message",
   "@deleteMessage": {
@@ -7696,6 +7708,14 @@
   "ideNewTab": "Open editor",
   "ideNewTabMenu": "New tab",
   "ideReviewCode": "Review code",
+  "ideReviewCodeInRepo": "Review code ({repo})",
+  "@ideReviewCodeInRepo": {
+    "placeholders": {
+      "repo": {
+        "type": "String"
+      }
+    }
+  },
   "ideRevertConfirmTitle": "Revert changes",
   "ideRevertUntracked": "Untracked files can't be reverted",
   "ideRevertFailed": "Couldn't revert the files. The conversation worktree may be unavailable.",
@@ -9245,6 +9265,61 @@
   "commit": "Commit",
   "commitAmend": "Commit (amend)",
   "commitAndSync": "Commit & sync",
+  "scmSyncChanges": "Sync changes",
+  "scmPublishBranch": "Publish branch",
+  "scmSyncFailed": "Sync failed",
+  "scmSyncDirty": "Commit or discard changes before syncing",
+  "scmSynced": "Synced",
+  "scmSelectBranch": "Select a branch to checkout",
+  "scmCreateBranch": "Create new branch…",
+  "scmCreateBranchFrom": "Create new branch from…",
+  "scmCheckoutDetached": "Checkout detached…",
+  "scmBranchName": "Branch name",
+  "scmCreateBranchTitle": "Create branch",
+  "scmFromRef": "From ⁨{ref}⁩",
+  "@scmFromRef": {
+    "placeholders": {
+      "ref": {
+        "type": "String"
+      }
+    }
+  },
+  "scmCheckoutFailed": "Couldn't switch branches",
+  "scmCheckoutDirty": "Commit or discard changes before switching branches",
+  "scmSwitchedToBranch": "Switched to ⁨{branch}⁩",
+  "@scmSwitchedToBranch": {
+    "placeholders": {
+      "branch": {
+        "type": "String"
+      }
+    }
+  },
+  "scmDetachedAt": "Detached at ⁨{ref}⁩",
+  "@scmDetachedAt": {
+    "placeholders": {
+      "ref": {
+        "type": "String"
+      }
+    }
+  },
+  "scmDetachedHead": "Detached HEAD",
+  "scmNoBranches": "No matching branches",
+  "scmBranches": "Branches",
+  "scmRemoteBranches": "Remote branches",
+  "scmTags": "Tags",
+  "scmPickStartPoint": "Select a start point",
+  "scmSwitchBranch": "Switch branch",
+  "commitMessageOnBranch": "Message ({shortcut} to commit on “{branch}”)",
+  "@commitMessageOnBranch": {
+    "placeholders": {
+      "shortcut": {
+        "type": "String"
+      },
+      "branch": {
+        "type": "String"
+      }
+    }
+  },
   "committed": "Committed",
   "commitAmended": "Commit amended",
   "commitFailed": "Commit failed",

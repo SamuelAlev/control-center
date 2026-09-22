@@ -140,6 +140,7 @@ class _TicketPickerDialogState extends ConsumerState<_TicketPickerDialog> {
                           ),
                         )
                       : CcScrollArea(
+                          fadeColor: t.bgPrimary,
                           child: ListView.builder(
                             shrinkWrap: true,
                             padding: const EdgeInsets.symmetric(vertical: 6),

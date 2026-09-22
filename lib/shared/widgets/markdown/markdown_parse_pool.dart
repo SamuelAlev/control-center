@@ -34,9 +34,9 @@ class MarkdownParsePool {
 
   /// Cap on the [_seeded] set — bounds memory while covering the working set of
   /// recently-warmed docs so repeated mounts (scroll virtualization) don't
-  /// re-spawn identical parses. Kept below `CcParseCache.maxSize` (200) so a
+  /// re-spawn identical parses. Kept below `CcParseCache.maxSize` (48) so a
   /// "seeded" source is unlikely to have been evicted from the real cache.
-  static const int _seededCap = 128;
+  static const int _seededCap = 24;
 
   // P and R are both `String`: the source goes in verbatim, the parsed document
   // comes back as JSON. A Web Worker cannot transfer a Dart Map either way

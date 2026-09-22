@@ -238,9 +238,9 @@ Widget _wrapComposeScreen(
     child: MaterialApp.router(
       localizationsDelegates: [
         ...AppLocalizations.localizationsDelegates,
-        GlobalMaterialLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate, // ignore: deprecated_member_use
         GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate, // ignore: deprecated_member_use
       ],
       supportedLocales: AppLocalizations.supportedLocales,
       locale: const Locale('en'),
@@ -591,7 +591,7 @@ void main() {
     ) async {
       _setDesktopViewport(tester);
 
-      // The whole point of the fix: the remote has never seen `conv/abc12345`,
+      // The whole point of the fix: the remote has never seen `space/abc12345`,
       // so it must come from the conversation's worktree or not at all.
       await tester.pumpWidget(
         _wrapComposeScreen(
@@ -599,7 +599,7 @@ void main() {
           repo: _testRepo(),
           workspaceId: 'w-1',
           remoteBranches: const ['main'],
-          worktreeBranch: 'conv/abc12345',
+          worktreeBranch: 'space/abc12345',
         ),
       );
       await tester.pumpAndSettle();
@@ -607,7 +607,7 @@ void main() {
       final bar = tester.widget<ComposeBranchBar>(
         find.byType(ComposeBranchBar),
       );
-      expect(bar.localBranch, 'conv/abc12345');
+      expect(bar.localBranch, 'space/abc12345');
     });
 
     testWidgets('pre-selects it as the head so submit can enable', (
@@ -621,7 +621,7 @@ void main() {
           repo: _testRepo(),
           workspaceId: 'w-1',
           remoteBranches: const ['main'],
-          worktreeBranch: 'conv/abc12345',
+          worktreeBranch: 'space/abc12345',
         ),
       );
       await tester.pumpAndSettle();
@@ -629,7 +629,7 @@ void main() {
       final container = ProviderScope.containerOf(
         tester.element(find.byType(ComposeBranchBar)),
       );
-      expect(container.read(composePrProvider).head, 'conv/abc12345');
+      expect(container.read(composePrProvider).head, 'space/abc12345');
     });
 
     testWidgets('prompts to publish a head the remote does not have', (
@@ -643,7 +643,7 @@ void main() {
           repo: _testRepo(),
           workspaceId: 'w-1',
           remoteBranches: const ['main'],
-          worktreeBranch: 'conv/abc12345',
+          worktreeBranch: 'space/abc12345',
         ),
       );
       await tester.pumpAndSettle();
@@ -662,8 +662,8 @@ void main() {
           const ComposePullRequestScreen(spaceId: 'c-1'),
           repo: _testRepo(),
           workspaceId: 'w-1',
-          remoteBranches: const ['main', 'conv/abc12345'],
-          worktreeBranch: 'conv/abc12345',
+          remoteBranches: const ['main', 'space/abc12345'],
+          worktreeBranch: 'space/abc12345',
         ),
       );
       await tester.pumpAndSettle();

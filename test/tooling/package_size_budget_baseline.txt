@@ -2,26 +2,26 @@
 # Exclude *.g.dart, geoip_country_data.dart, emoji_shortcodes.dart.
 # Updated 2026-09-21 after GitHub-per-workspace identity, image diffs,
 # and extracting workspaceGitHub/identity overlay ops to extraOps.
-packages/cc_domain/lib/features/pipelines/domain/services/pipeline_engine.dart  2251
-packages/cc_domain/lib/features/pipelines/domain/templates/builtin_template_seeds.dart  2849
+# Lowered 2026-09-22 to current line counts so the ratchet keeps its floor.
+packages/cc_domain/lib/features/pipelines/domain/services/pipeline_engine.dart  2227
+packages/cc_domain/lib/features/pipelines/domain/templates/builtin_template_seeds.dart  2781
 packages/cc_domain/lib/src/dtos/dtos.dart  4179
-packages/cc_harness/lib/src/loop/agent_loop_runner.dart  1521
-packages/cc_infra/lib/src/chat/chat_bridge_service.dart  1892
-packages/cc_infra/lib/src/dispatch/dispatch_session.dart  2526
-packages/cc_infra/lib/src/ide/code_server_service.dart  1785
-packages/cc_infra/lib/src/messaging/messaging_service.dart  1670
+packages/cc_infra/lib/src/chat/chat_bridge_service.dart  1868
+packages/cc_infra/lib/src/dispatch/dispatch_session.dart  2496
+packages/cc_infra/lib/src/ide/code_server_service.dart  1741
+packages/cc_infra/lib/src/messaging/messaging_service.dart  1657
 packages/cc_infra/lib/src/network/github/github_forge_pr_client.dart  1513
-packages/cc_infra/lib/src/network/github_graphql_client.dart  2488
+packages/cc_infra/lib/src/network/github_graphql_client.dart  2351
 packages/cc_infra/lib/src/network/github_pr_client.dart  2086
-packages/cc_infra/lib/src/network/gitlab/gitlab_forge_pr_client.dart  1681
-packages/cc_infra/lib/src/rigs/cdp_client.dart  2520
-packages/cc_infra/lib/src/rigs/qemu_enclosure_backend.dart  1832
-packages/cc_infra/lib/src/rigs/rig_service.dart  3002
-packages/cc_infra/lib/src/rigs/smolvm_enclosure_backend.dart  2159
-packages/cc_server_core/lib/src/cached_pr_review_repository.dart  2868
-packages/cc_server_core/lib/src/catalog/catalog_wire.dart  3366
-packages/cc_server_core/lib/src/cc_server_runtime.dart  7976
-packages/cc_server_core/lib/src/demo/demo_seeder.dart  2551
-packages/cc_server_core/lib/src/local_rpc_server.dart  2572
-packages/cc_server_core/lib/src/remote_rpc_catalog.dart  16345
-packages/cc_server_core/lib/src/repo_ide_data_service.dart  1728
+packages/cc_infra/lib/src/network/gitlab/gitlab_forge_pr_client.dart  1657
+packages/cc_infra/lib/src/rigs/cdp_client.dart  2509
+packages/cc_infra/lib/src/rigs/qemu_enclosure_backend.dart  1803
+packages/cc_infra/lib/src/rigs/rig_service.dart  2976
+packages/cc_infra/lib/src/rigs/smolvm_enclosure_backend.dart  2088
+packages/cc_server_core/lib/src/cached_pr_review_repository.dart  2812
+packages/cc_server_core/lib/src/catalog/catalog_wire.dart  3299
+packages/cc_server_core/lib/src/cc_server_runtime.dart  7753
+packages/cc_server_core/lib/src/demo/demo_seeder.dart  2534
+packages/cc_server_core/lib/src/local_rpc_server.dart  2511
+packages/cc_server_core/lib/src/remote_rpc_catalog.dart  15999
+packages/cc_server_core/lib/src/repo_ide_data_service.dart  1645

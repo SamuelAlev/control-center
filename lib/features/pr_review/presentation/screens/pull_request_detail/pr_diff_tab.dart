@@ -145,7 +145,9 @@ class _PrDiffTabState extends ConsumerState<PrDiffTab> {
     widget.pendingCommentAnchor?.addListener(_maybeRevealPendingComment);
     _maybeRevealPendingComment();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) setState(() => _listenForPatches = true);
+      if (mounted) {
+        setState(() => _listenForPatches = true);
+      }
     });
   }
 

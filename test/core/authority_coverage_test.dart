@@ -198,6 +198,7 @@ void main() {
       'chat.watchUserLinks', 'conversation.watchForSpace',
       'conversation.watchThreadSummaries', 'dictation.watchPartials',
       'messaging.watchConversationTokens', 'messaging.watchMessages',
+      'messaging.watchUserPromptHistory',
       'messaging.watchMessagesWindow', 'messaging.watchParticipants',
       'messaging.watchSpaceActivity', 'messaging.watchSpaceMessages',
       'messaging.watchSpaceTurns', 'messaging.watchSpaces',

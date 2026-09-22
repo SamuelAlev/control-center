@@ -6,6 +6,7 @@ import 'package:cc_domain/core/domain/value_objects/agent_role.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_run_role.dart';
 import 'package:cc_domain/core/domain/value_objects/entity_ref.dart';
 import 'package:cc_domain/core/domain/value_objects/file_search_hit.dart';
+import 'package:cc_domain/core/domain/value_objects/github_auth_mode.dart';
 import 'package:cc_domain/core/domain/value_objects/message_attachment.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_domain/core/domain/value_objects/output_contract_mode.dart';
@@ -13,7 +14,6 @@ import 'package:cc_domain/core/domain/value_objects/principal.dart';
 import 'package:cc_domain/core/domain/value_objects/retry_meta.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_update.dart';
-import 'package:cc_domain/core/domain/value_objects/github_auth_mode.dart';
 import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
 import 'package:test/test.dart';
 

@@ -3224,6 +3224,16 @@ class AppLocalizationsRo extends AppLocalizations {
   String get editMessage => 'Editează mesajul';
 
   @override
+  String get revertToThere => 'Revino acolo';
+
+  @override
+  String get sendAsNewMessage => 'Trimite ca mesaj nou';
+
+  @override
+  String get editMessageChoiceBody =>
+      'Revenirea ascunde mesajele de după acesta și readuce fișierele agentului. Poți anula asta. Trimiterea ca mesaj nou lasă conversația neschimbată.';
+
+  @override
   String get deleteMessage => 'Șterge mesajul';
 
   @override
@@ -8676,6 +8686,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get ideReviewCode => 'Revizuiește codul';
 
   @override
+  String ideReviewCodeInRepo(String repo) {
+    return 'Revizuiește codul ($repo)';
+  }
+
+  @override
   String get ideRevertConfirmTitle => 'Revino asupra modificărilor';
 
   @override
@@ -10584,6 +10599,88 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get commitAndSync => 'Commit și sincronizare';
+
+  @override
+  String get scmSyncChanges => 'Sincronizează modificările';
+
+  @override
+  String get scmPublishBranch => 'Publică ramura';
+
+  @override
+  String get scmSyncFailed => 'Sincronizarea a eșuat';
+
+  @override
+  String get scmSyncDirty =>
+      'Fă commit sau renunță la modificări înainte de sincronizare';
+
+  @override
+  String get scmSynced => 'Sincronizat';
+
+  @override
+  String get scmSelectBranch => 'Selectează o ramură pentru checkout';
+
+  @override
+  String get scmCreateBranch => 'Creează o ramură nouă…';
+
+  @override
+  String get scmCreateBranchFrom => 'Creează o ramură nouă din…';
+
+  @override
+  String get scmCheckoutDetached => 'Checkout detașat…';
+
+  @override
+  String get scmBranchName => 'Numele ramurii';
+
+  @override
+  String get scmCreateBranchTitle => 'Creează ramura';
+
+  @override
+  String scmFromRef(String ref) {
+    return 'Din ⁨$ref⁩';
+  }
+
+  @override
+  String get scmCheckoutFailed => 'Nu s-a putut schimba ramura';
+
+  @override
+  String get scmCheckoutDirty =>
+      'Fă commit sau renunță la modificări înainte de a schimba ramura';
+
+  @override
+  String scmSwitchedToBranch(String branch) {
+    return 'Schimbat la ⁨$branch⁩';
+  }
+
+  @override
+  String scmDetachedAt(String ref) {
+    return 'Detașat la ⁨$ref⁩';
+  }
+
+  @override
+  String get scmDetachedHead => 'HEAD detașat';
+
+  @override
+  String get scmNoBranches => 'Nicio ramură potrivită';
+
+  @override
+  String get scmBranches => 'Ramuri';
+
+  @override
+  String get scmRemoteBranches => 'Ramuri la distanță';
+
+  @override
+  String get scmTags => 'Etichete';
+
+  @override
+  String get scmPickStartPoint => 'Selectează un punct de pornire';
+
+  @override
+  String get scmSwitchBranch => 'Schimbă ramura';
+
+  @override
+  String commitMessageOnBranch(String shortcut, String branch) {
+    return 'Mesaj ($shortcut pentru commit pe „$branch”)';
+  }
 
   @override
   String get committed => 'Commit făcut';

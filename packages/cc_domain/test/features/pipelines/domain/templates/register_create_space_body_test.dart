@@ -388,7 +388,7 @@ IsolatedRepo _worktree(String repoId, String path) => IsolatedRepo(
   spaceId: 'space-1',
   repoId: repoId,
   path: path,
-  branch: 'conv/abc',
+  branch: 'space/abc',
   backend: RepoIsolationBackend.rift,
   sourcePath: '/src/$repoId',
   createdAt: DateTime(2026),

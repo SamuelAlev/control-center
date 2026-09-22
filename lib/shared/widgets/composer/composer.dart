@@ -71,6 +71,10 @@ class Composer extends ConsumerStatefulWidget {
     this.history,
     this.historyKey,
     this.attachedTop = false,
+    this.focusNode,
+    this.banner,
+    this.clearOnSubmit = true,
+    this.onEscape,
   });
 
   /// Pluggable mention sources, queried in order; results are grouped under
@@ -154,6 +158,26 @@ class Composer extends ConsumerStatefulWidget {
   /// full margin.
   final bool attachedTop;
 
+  /// Focus node for the field. The composer creates and owns one when this is
+  /// null. An external node is not disposed with the composer — the host that
+  /// created it disposes it, and it must outlive this widget.
+  final FocusNode? focusNode;
+
+  /// Optional strip rendered inside the box, above the field. The edit session
+  /// uses it to name what sending will do.
+  final Widget? banner;
+
+  /// When true (the default), a successful submit clears the field, its
+  /// attachments and the recall position before [onSubmit] runs. An edit
+  /// session turns this off: the host restores the parked draft itself, and
+  /// clearing first would throw away attachments that belonged to that draft.
+  final bool clearOnSubmit;
+
+  /// Called instead of blurring when Escape is pressed and the mention popup
+  /// is closed. History recall still yields to this, so a session that owns
+  /// Escape (editing a message) can cancel itself.
+  final VoidCallback? onEscape;
+
   @override
   ConsumerState<Composer> createState() => _ComposerState();
 }
@@ -175,6 +199,10 @@ class _ComposerState extends ConsumerState<Composer> {
   bool _composerFocused = false;
   bool _isEmpty = true;
 
+  /// True when [_focus] was created here and must be disposed here. An
+  /// external [Composer.focusNode] belongs to the host.
+  bool _ownsFocusNode = true;
+
   // Terminal-style prompt recall (see [Composer.history]); the browsing
   // state machine lives in [ComposerHistory], fed at keypress time.
   final ComposerHistory _history = ComposerHistory();
@@ -195,8 +223,7 @@ class _ComposerState extends ConsumerState<Composer> {
     _controller = widget.controller ?? ComposerTextController();
     _bindRefStyling();
     _isEmpty = _controller.text.trim().isEmpty;
-    _focus = FocusNode();
-    _focus.addListener(_onFocusChanged);
+    _bindFocusNode(widget.focusNode);
     if (widget.autofocus) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
@@ -226,6 +253,23 @@ class _ComposerState extends ConsumerState<Composer> {
     if (widget.historyKey != old.historyKey) {
       _history.reset();
     }
+    if (!identical(old.focusNode, widget.focusNode)) {
+      _unbindFocusNode();
+      _bindFocusNode(widget.focusNode);
+    }
+  }
+
+  void _bindFocusNode(FocusNode? external) {
+    _focus = external ?? FocusNode();
+    _ownsFocusNode = external == null;
+    _focus.addListener(_onFocusChanged);
+  }
+
+  void _unbindFocusNode() {
+    _focus.removeListener(_onFocusChanged);
+    if (_ownsFocusNode) {
+      _focus.dispose();
+    }
   }
 
   /// Teaches the controller which `@[file:…]` names this composer can actually
@@ -247,8 +291,7 @@ class _ComposerState extends ConsumerState<Composer> {
     if (widget.controller == null) {
       _controller.dispose();
     }
-    _focus.removeListener(_onFocusChanged);
-    _focus.dispose();
+    _unbindFocusNode();
     super.dispose();
   }
 
@@ -257,12 +300,16 @@ class _ComposerState extends ConsumerState<Composer> {
     final caret = _controller.selection.baseOffset;
     final query = detectMentionQuery(text, caret);
     final isEmpty = text.trim().isEmpty;
-    // Drop structured picks whose inserted token has been edited out, so a
-    // deleted `#`-reference is never re-emitted on submit.
-    if (_picked.isNotEmpty) {
+    // A programmatic replace (an edit session swapping the draft out and
+    // back) must not be read as the user deleting tokens. The flag is set
+    // for the assignment that invoked this listener.
+    final preserving = _preservingAttachments;
+    if (!preserving && _picked.isNotEmpty) {
+      // Drop structured picks whose inserted token has been edited out, so a
+      // deleted `#`-reference is never re-emitted on submit.
       _picked.removeWhere((p) => !_tokenSurvives(text, p.token));
     }
-    final droppedRefs = _pruneDeletedRefs(text);
+    final droppedRefs = preserving ? false : _pruneDeletedRefs(text);
     if (query != _activeQuery || isEmpty != _isEmpty || droppedRefs) {
       setState(() {
         _activeQuery = query;
@@ -275,6 +322,12 @@ class _ComposerState extends ConsumerState<Composer> {
       _popupCtrl.hide();
     }
     _maybeOpenTappedRef(text);
+  }
+
+  bool get _preservingAttachments {
+    final controller = _controller;
+    return controller is ComposerTextController &&
+        controller.preservingAttachments;
   }
 
   /// Removes attachments whose inline reference has been edited out of the
@@ -708,14 +761,18 @@ class _ComposerState extends ConsumerState<Composer> {
         return;
       }
       // Clear immediately so the user sees instant feedback and the
-      // TextField cannot re-insert a newline during the async gap.
-      _controller.clear();
-      _attachments.clear();
-      _picked.clear();
-      _resetDictationSpan();
-      // A sent prompt is history now, not a browsing position: the next ↑
-      // starts from the newest entry again.
-      _history.reset();
+      // TextField cannot re-insert a newline during the async gap. An edit
+      // session opts out: it restores a parked draft after the write, and
+      // clearing first would discard that draft's attachments.
+      if (widget.clearOnSubmit) {
+        _controller.clear();
+        _attachments.clear();
+        _picked.clear();
+        _resetDictationSpan();
+        // A sent prompt is history now, not a browsing position: the next ↑
+        // starts from the newest entry again.
+        _history.reset();
+      }
       await widget.onSubmit(submission);
     } finally {
       _dictationFinalizing = false;
@@ -824,6 +881,14 @@ class _ComposerState extends ConsumerState<Composer> {
         _dismissPopup();
         return KeyEventResult.handled;
       }
+      // A host that owns Escape (the edit session) cancels itself before
+      // recall runs, so the key cannot restore a parked prompt over the
+      // message being edited.
+      final onEscape = widget.onEscape;
+      if (onEscape != null) {
+        onEscape();
+        return KeyEventResult.handled;
+      }
       final draft = _history.isBrowsing ? _history.abandon() : null;
       if (draft != null) {
         _showHistoryEntry(draft);
@@ -869,14 +934,7 @@ class _ComposerState extends ConsumerState<Composer> {
     if (event.logicalKey == LogicalKeyboardKey.enter) {
       if (HardwareKeyboard.instance.isShiftPressed) {
         if (!_popupCtrl.isShowing) {
-          final text = _controller.text;
-          final sel = _controller.selection;
-          final newText =
-              '${text.substring(0, sel.start)}\n${text.substring(sel.end)}';
-          _controller.value = TextEditingValue(
-            text: newText,
-            selection: TextSelection.collapsed(offset: sel.start + 1),
-          );
+          _insertNewline();
         }
         return KeyEventResult.handled;
       }
@@ -888,6 +946,37 @@ class _ComposerState extends ConsumerState<Composer> {
     // When the popup is open, the global handler in MentionPopup eats
     // arrow/Enter/Tab — we just stay out of its way here.
     return KeyEventResult.ignored;
+  }
+
+  /// Inserts a newline at the caret, replacing any selection.
+  ///
+  /// Applied on the controller so Enter can stay "send". The field only
+  /// scrolls the caret into view for edits that arrive through
+  /// [EditableText.userUpdateTextEditingValue], and this path skips that —
+  /// once the draft is taller than [Composer.maxLines] the new line sits
+  /// below the viewport and the caret disappears.
+  void _insertNewline() {
+    final text = _controller.text;
+    final sel = _controller.selection;
+    final caret = sel.start + 1;
+    _controller.value = TextEditingValue(
+      text: '${text.substring(0, sel.start)}\n${text.substring(sel.end)}',
+      selection: TextSelection.collapsed(offset: caret),
+    );
+    final position = TextPosition(offset: caret);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      // The focus node is attached to the field's inner Focus, a descendant
+      // of EditableText, so the state is an ancestor of its context.
+      final editable = _focus.context
+          ?.findAncestorStateOfType<EditableTextState>();
+      if (editable == null || !editable.mounted) {
+        return;
+      }
+      editable.bringIntoView(position);
+    });
   }
 
   /// Handles ↑/↓ for terminal-style recall through the host-supplied
@@ -1028,6 +1117,10 @@ class _ComposerState extends ConsumerState<Composer> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               mainAxisSize: MainAxisSize.min,
               children: [
+                if (widget.banner != null) ...[
+                  widget.banner!,
+                  const SizedBox(height: 6),
+                ],
                 if (_attachments.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 6),

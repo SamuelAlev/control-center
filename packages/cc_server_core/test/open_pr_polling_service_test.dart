@@ -1123,7 +1123,7 @@ void main() {
     test('a branch with no open PR reports null', () async {
       await sweepTwoPrs();
 
-      expect(await lookup('conv/a6fdc05e'), isNull);
+      expect(await lookup('space/a6fdc05e'), isNull);
     });
 
     test('the match is exact — git ref names are case-sensitive', () async {

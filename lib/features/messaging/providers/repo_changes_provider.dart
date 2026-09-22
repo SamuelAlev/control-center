@@ -47,7 +47,33 @@ final repoChangesProvider = FutureProvider.autoDispose
 
 /// A repo's changes split into git's staged (index vs HEAD) and unstaged
 /// (worktree vs index + untracked) buckets — the VS Code Source Control model.
-typedef RepoChanges = ({List<PrFile> staged, List<PrFile> unstaged});
+///
+/// `statusKnown` is false when the connected server does not report branch
+/// status (an older binary). `ahead` / `behind` then stay at 0 and the panel
+/// must not invent a Publish or Sync button from them.
+typedef RepoChanges = ({
+  List<PrFile> staged,
+  List<PrFile> unstaged,
+  bool hasUpstream,
+  int ahead,
+  int behind,
+  int aheadOfBase,
+  bool aheadOfBaseKnown,
+  bool statusKnown,
+});
+
+/// Empty buckets and unknown branch status — the value the panel shows while
+/// the grouped read has not resolved, and the degrade when the op is absent.
+const RepoChanges kEmptyRepoChanges = (
+  staged: <PrFile>[],
+  unstaged: <PrFile>[],
+  hasUpstream: false,
+  ahead: 0,
+  behind: 0,
+  aheadOfBase: 0,
+  aheadOfBaseKnown: false,
+  statusKnown: false,
+);
 
 /// The staged/unstaged split for a repo's worktree, computed on the SERVER
 /// (`repos.changesGrouped`) — see [repoChangesProvider] for the scoping rules.
@@ -66,10 +92,20 @@ final repoChangesGroupedProvider = FutureProvider.autoDispose
             .whereType<Map>()
             .map((f) => _fileFromWire(f.cast<String, dynamic>()))
             .toList();
-        return (staged: parse('staged'), unstaged: parse('unstaged'));
+        final known = data.containsKey('hasUpstream');
+        return (
+          staged: parse('staged'),
+          unstaged: parse('unstaged'),
+          hasUpstream: data['hasUpstream'] as bool? ?? false,
+          ahead: (data['ahead'] as num?)?.toInt() ?? 0,
+          behind: (data['behind'] as num?)?.toInt() ?? 0,
+          aheadOfBase: (data['aheadOfBase'] as num?)?.toInt() ?? 0,
+          aheadOfBaseKnown: data.containsKey('aheadOfBase'),
+          statusKnown: known,
+        );
       } on RemoteRpcException catch (e) {
         if (e.code == RpcErrorCodes.opUnknown) {
-          return (staged: const <PrFile>[], unstaged: const <PrFile>[]);
+          return kEmptyRepoChanges;
         }
         rethrow;
       }

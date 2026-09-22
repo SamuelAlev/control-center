@@ -3198,6 +3198,16 @@ class AppLocalizationsSv extends AppLocalizations {
   String get editMessage => 'Redigera meddelande';
 
   @override
+  String get revertToThere => 'Återställ dit';
+
+  @override
+  String get sendAsNewMessage => 'Skicka som nytt meddelande';
+
+  @override
+  String get editMessageChoiceBody =>
+      'Återställning döljer meddelandena efter det här och rullar tillbaka agentens filer. Du kan ångra det. Att skicka det som ett nytt meddelande lämnar konversationen som den är.';
+
+  @override
   String get deleteMessage => 'Ta bort meddelande';
 
   @override
@@ -8594,6 +8604,11 @@ class AppLocalizationsSv extends AppLocalizations {
   String get ideReviewCode => 'Granska kod';
 
   @override
+  String ideReviewCodeInRepo(String repo) {
+    return 'Granska kod ($repo)';
+  }
+
+  @override
   String get ideRevertConfirmTitle => 'Ångra ändringar';
 
   @override
@@ -10492,6 +10507,88 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get commitAndSync => 'Committa och synka';
+
+  @override
+  String get scmSyncChanges => 'Synka ändringar';
+
+  @override
+  String get scmPublishBranch => 'Publicera gren';
+
+  @override
+  String get scmSyncFailed => 'Synkroniseringen misslyckades';
+
+  @override
+  String get scmSyncDirty =>
+      'Committa eller förkasta ändringar innan du synkar';
+
+  @override
+  String get scmSynced => 'Synkad';
+
+  @override
+  String get scmSelectBranch => 'Välj en gren att checka ut';
+
+  @override
+  String get scmCreateBranch => 'Skapa ny gren…';
+
+  @override
+  String get scmCreateBranchFrom => 'Skapa ny gren från…';
+
+  @override
+  String get scmCheckoutDetached => 'Checka ut fristående…';
+
+  @override
+  String get scmBranchName => 'Grennamn';
+
+  @override
+  String get scmCreateBranchTitle => 'Skapa gren';
+
+  @override
+  String scmFromRef(String ref) {
+    return 'Från ⁨$ref⁩';
+  }
+
+  @override
+  String get scmCheckoutFailed => 'Det gick inte att byta gren';
+
+  @override
+  String get scmCheckoutDirty =>
+      'Checka in eller förkasta ändringar innan du byter gren';
+
+  @override
+  String scmSwitchedToBranch(String branch) {
+    return 'Bytt till ⁨$branch⁩';
+  }
+
+  @override
+  String scmDetachedAt(String ref) {
+    return 'Fristående vid ⁨$ref⁩';
+  }
+
+  @override
+  String get scmDetachedHead => 'Fristående HEAD';
+
+  @override
+  String get scmNoBranches => 'Inga matchande grenar';
+
+  @override
+  String get scmBranches => 'Grenar';
+
+  @override
+  String get scmRemoteBranches => 'Fjärrgrenar';
+
+  @override
+  String get scmTags => 'Taggar';
+
+  @override
+  String get scmPickStartPoint => 'Välj en startpunkt';
+
+  @override
+  String get scmSwitchBranch => 'Byt gren';
+
+  @override
+  String commitMessageOnBranch(String shortcut, String branch) {
+    return 'Meddelande ($shortcut för att committa på ”$branch”)';
+  }
 
   @override
   String get committed => 'Committad';

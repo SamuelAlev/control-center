@@ -122,7 +122,9 @@ class PickerFlyoutPanel extends StatelessWidget {
                       ),
                     ),
                     Container(height: 1, color: t.borderSecondary),
-                    Flexible(child: CcScrollArea(child: list)),
+                    Flexible(
+                      child: CcScrollArea(fadeColor: t.bgPrimary, child: list),
+                    ),
                   ],
                 ),
               ),

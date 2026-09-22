@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:control_center/core/storage/app_support_path_provider.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart' show ProviderContainer;
 import 'package:flutter_test/flutter_test.dart' show TestWidgetsFlutterBinding;
 
 /// Runs once before any test file: temp dir for [AppSupportPathProvider].

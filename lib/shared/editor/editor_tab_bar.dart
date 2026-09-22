@@ -166,7 +166,8 @@ class _EditorTabBarState extends State<EditorTabBar> {
   OverlayEntry? _dragShield;
 
   /// Max width of a single tab cell. Longer labels ellipsize (VS Code parity)
-  /// so one long path can't blow the tab out to the full bar width.
+  /// so one long path can't blow the tab out to the full bar width. Hovering
+  /// the label shows the uncut text.
   static const double _maxTabWidth = 220;
 
   /// Drop-gap width when the dragged tab's cell couldn't be measured (e.g. a
@@ -517,38 +518,44 @@ class _EditorTabBarState extends State<EditorTabBar> {
                           // resizing the cell (which would shift every tab to
                           // its right).
                           Flexible(
-                            child: Stack(
-                              alignment: AlignmentDirectional.centerStart,
-                              children: [
-                                ExcludeSemantics(
-                                  child: Opacity(
-                                    opacity: 0,
-                                    child: Text(
-                                      widget.labels[index],
-                                      maxLines: 1,
-                                      softWrap: false,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
+                            child: CcTooltip(
+                              message: widget.labels[index],
+                              // Below the strip: the bar sits under the window
+                              // chrome, so a tooltip above it has nowhere to go.
+                              placement: CcTooltipPlacement.bottom,
+                              child: Stack(
+                                alignment: AlignmentDirectional.centerStart,
+                                children: [
+                                  ExcludeSemantics(
+                                    child: Opacity(
+                                      opacity: 0,
+                                      child: Text(
+                                        widget.labels[index],
+                                        maxLines: 1,
+                                        softWrap: false,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                        ),
                                       ),
                                     ),
                                   ),
-                                ),
-                                Text(
-                                  widget.labels[index],
-                                  maxLines: 1,
-                                  softWrap: false,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: selected
-                                        ? CcTypography.mediumWeight
-                                        : CcTypography.regularWeight,
-                                    color: labelColor,
+                                  Text(
+                                    widget.labels[index],
+                                    maxLines: 1,
+                                    softWrap: false,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: selected
+                                          ? CcTypography.mediumWeight
+                                          : CcTypography.regularWeight,
+                                      color: labelColor,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
                           if (trailing != null) ...[

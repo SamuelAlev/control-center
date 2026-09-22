@@ -23,6 +23,11 @@ part 'unified_diff_sliver_painting.dart';
 /// the 150ms interaction budget.
 const int _kStructureParseBudgetMs = 8;
 
+/// How far a click series snaps the selection. A plain drag stays on
+/// characters; the second click in a series grabs a word and the third
+/// grabs the row, then a drag extends by that same unit.
+enum _DiffSelGranularity { character, word, line }
+
 /// Sliver widget hosting the unified diff. Code rows are painted directly on a
 /// single canvas; the comparatively rare interactive rows (file headers, gap
 /// affordances, comment threads, composer) are lazily-built sparse children,
@@ -262,31 +267,34 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor {
     ..onTap = _handleGutterTap;
   double? _downMain;
 
-  /// Mouse-only drag recognizer for text selection. On desktop, mouse drag is
-  /// free for selection (scrolling is wheel/trackpad), so this never fights the
+  /// Mouse selection: drag selects characters, a double-click selects the
+  /// word, a triple-click selects the row. One recognizer so the click count
+  /// and the drag share a pointer. Mouse only — touch stays with the
   /// scrollable.
-  late final PanGestureRecognizer _selectRecognizer =
-      PanGestureRecognizer(supportedDevices: const {PointerDeviceKind.mouse})
-        ..onStart = _handleSelectStart
-        ..onUpdate = _handleSelectUpdate
-        ..onEnd = _handleSelectEnd;
-
-  /// Tap recognizer for the code area: a plain click (no drag) clears any
-  /// active text selection. A drag is claimed by `_selectRecognizer`, which
-  /// crosses the pan slop and rejects this recognizer — so click clears and
-  /// drag selects, without either fighting the other.
-  late final TapGestureRecognizer _clearSelectionTapRecognizer =
-      TapGestureRecognizer()..onTap = _handleCodeTap;
+  late final TapAndPanGestureRecognizer _selectRecognizer =
+      TapAndPanGestureRecognizer(
+          supportedDevices: const {PointerDeviceKind.mouse},
+        )
+        ..dragStartBehavior = DragStartBehavior.down
+        ..onTapDown = _handleCodeTapDown
+        ..onTapUp = _handleCodeTapUp
+        ..onDragStart = _handleSelectStart
+        ..onDragUpdate = _handleSelectUpdate
+        ..onDragEnd = _handleSelectEnd;
 
   /// Character-precise selection anchor/focus as
   /// `(fileIndex, displayLine, displayColumn)` — the column is in display
   /// space (tabs expanded), resolved against `_monoAdvance`.
   (int, int, int)? _selAnchor;
   (int, int, int)? _selFocus;
+
+  /// Word or row a double- or triple-click grabbed. A drag keeps this edge
+  /// fixed and extends by the same unit, the way a browser does.
+  (int, int, int)? _pivotStart;
+  (int, int, int)? _pivotEnd;
+  _DiffSelGranularity _selGranularity = _DiffSelGranularity.character;
   double _selDownMain = 0;
   double _selDownCross = 0;
-  double _selAccumDy = 0;
-  double _selAccumDx = 0;
   bool _selMoved = false;
 
   /// Monospace advance for the active base style, used to turn a cross-axis x
@@ -329,7 +337,6 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor {
   /// Whether there is an active selection (for the view's copy shortcut).
   bool get hasSelection => _selAnchor != null && _selFocus != null;
 
-
   /// Monospace advance of the active base style (display column → pixels).
   double get monoAdvanceWidth => _monoAdvance;
 
@@ -338,39 +345,81 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor {
   /// position.
   double get precedingScrollExtent => _precedingScrollExtent;
 
-  void _handleSelectStart(DragStartDetails details) {
+  void _handleCodeTapDown(TapDragDownDetails details) {
+    final count = diffSelectionTapCount(
+      details.consecutiveTapCount,
+      defaultTargetPlatform,
+    );
+    _selMoved = false;
+    if (count <= 1) {
+      _selGranularity = _DiffSelGranularity.character;
+      _pivotStart = null;
+      _pivotEnd = null;
+      return;
+    }
+    final cell = cellAt(_selDownMain, _selDownCross, floorColumn: true);
+    if (cell == null) {
+      return;
+    }
+    if (count == 2) {
+      _selectWordAt(cell);
+    } else {
+      _selectLineAt(cell);
+    }
+  }
+
+  void _handleCodeTapUp(TapDragUpDetails details) {
+    if (diffSelectionTapCount(
+          details.consecutiveTapCount,
+          defaultTargetPlatform,
+        ) !=
+        1) {
+      return;
+    }
+    _handleCodeTap();
+  }
+
+  void _handleSelectStart(TapDragStartDetails details) {
+    if (_selGranularity != _DiffSelGranularity.character) {
+      return;
+    }
     final anchor = cellAt(_selDownMain, _selDownCross);
     if (anchor == null) {
       return;
     }
     _selAnchor = anchor;
     _selFocus = anchor;
-    _selAccumDy = 0;
-    _selAccumDx = 0;
     _selMoved = false;
   }
 
-  void _handleSelectUpdate(DragUpdateDetails details) {
-    _selAccumDy += details.delta.dy;
-    _selAccumDx += details.delta.dx;
-    if (!_selMoved && _selAccumDy.abs() < 2 && _selAccumDx.abs() < 2) {
+  void _handleSelectUpdate(TapDragUpdateDetails details) {
+    final offset = details.localOffsetFromOrigin;
+    if (_selGranularity == _DiffSelGranularity.character &&
+        offset.distance < 2) {
       return;
     }
-    final next = cellAt(
-      _selDownMain + _selAccumDy,
-      _selDownCross + _selAccumDx,
-    );
-    if (next == null) {
+    final hit = cellAt(_selDownMain + offset.dy, _selDownCross + offset.dx);
+    if (hit == null) {
       return;
     }
     _selMoved = true;
-    _selFocus = next;
+    switch (_selGranularity) {
+      case _DiffSelGranularity.character:
+        if (hit == _selFocus) {
+          return;
+        }
+        _selFocus = hit;
+      case _DiffSelGranularity.word:
+        _extendSelectionByWord(hit);
+      case _DiffSelGranularity.line:
+        _extendSelectionByLine(hit);
+    }
     markNeedsPaint();
     onSelectionChanged?.call();
   }
 
-  void _handleSelectEnd(DragEndDetails details) {
-    if (!_selMoved) {
+  void _handleSelectEnd(TapDragEndDetails details) {
+    if (_selGranularity == _DiffSelGranularity.character && !_selMoved) {
       clearSelection();
     } else {
       onSelectionChanged?.call();
@@ -510,7 +559,6 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor {
   void dispose() {
     _tapRecognizer.dispose();
     _selectRecognizer.dispose();
-    _clearSelectionTapRecognizer.dispose();
     geometryListenable.dispose();
     super.dispose();
   }
@@ -556,7 +604,6 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor {
       _selDownMain = entry.mainAxisPosition;
       _selDownCross = entry.crossAxisPosition;
       _selectRecognizer.addPointer(event);
-      _clearSelectionTapRecognizer.addPointer(event);
     }
   }
 

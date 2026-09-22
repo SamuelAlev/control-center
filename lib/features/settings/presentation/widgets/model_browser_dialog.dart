@@ -232,11 +232,11 @@ class _ModelBrowserDialogState extends ConsumerState<ModelBrowserDialog> {
     );
   }
 
-
   Widget _rail(AppLocalizations l10n, List<ModelBrowserGroup> groups) {
     final q = _searchCtl.text;
     final total = groups.fold<int>(0, (n, g) => n + g.matchCount(q));
     return CcScrollArea(
+      fadeColor: context.ds.panel,
       child: ListView(
         children: [
           _railItem(label: l10n.allModels, count: total, id: null),
@@ -298,9 +298,9 @@ class _ModelBrowserDialogState extends ConsumerState<ModelBrowserDialog> {
     );
   }
 
-
   Widget _list(AppLocalizations l10n, List<_Item> items, List<int> selectable) {
     return CcScrollArea(
+      fadeColor: context.ds.panel,
       child: ListView.builder(
         controller: _listCtl,
         itemCount: items.length,
@@ -451,7 +451,6 @@ class _ModelBrowserDialogState extends ConsumerState<ModelBrowserDialog> {
     );
   }
 
-
   /// The highlighted row's full metadata — the detail that does not fit in a
   /// list line (exact prices, output ceiling, the effort vocabulary).
   Widget _footer(AppLocalizations l10n, _Item? focused) {
@@ -502,7 +501,6 @@ class _ModelBrowserDialogState extends ConsumerState<ModelBrowserDialog> {
       ],
     );
   }
-
 
   void _move(int delta, List<_Item> items, List<int> selectable) {
     if (selectable.isEmpty) {

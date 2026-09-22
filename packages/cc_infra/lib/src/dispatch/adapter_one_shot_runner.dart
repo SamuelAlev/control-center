@@ -1,3 +1,6 @@
+/// @docImport 'package:cc_infra/src/dispatch/dispatch_session.dart';
+library;
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -127,7 +130,6 @@ class AdapterOneShotRunner {
     };
   }
 
-
   Future<String?> _runHarness({
     required String? modelId,
     required String systemPrompt,
@@ -180,7 +182,6 @@ class AdapterOneShotRunner {
     return buf.toString();
   }
 
-
   Future<String?> _runPipedCli({
     required Adapter adapter,
     required List<String> args,
@@ -217,7 +218,6 @@ class AdapterOneShotRunner {
       unawaited(tmp.delete(recursive: true).catchError((_) => tmp));
     }
   }
-
 
   Future<String?> _runAcp({
     required Adapter adapter,

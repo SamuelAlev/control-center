@@ -6,10 +6,12 @@
 /// composes them and supplies any overflow-menu items.
 library;
 
+import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/messaging/presentation/widgets/pr_status_badge.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
+import 'package:control_center/features/pr_review/providers/pr_space_provider.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -154,9 +156,10 @@ class SpaceTrailingIndicator extends StatelessWidget {
 
 /// The leading icon for a space row: a spinner while an agent is running,
 /// otherwise the aggregate PR-status badge (with a count of open PRs) when the
-/// conversation is linked to one or more PRs and a pencil glyph as the default
-/// for a space with no PR yet. The PR state hydrates from cache after the
-/// first paint, so the row renders instantly and never blocks.
+/// space is linked to a PR or one of its worktree branches has an open PR, and
+/// a pencil glyph when neither is true. Association state hydrates from cache;
+/// a PR opened outside the app arrives with the branch match. The row renders
+/// immediately and never blocks on either.
 class SpaceLeadingIcon extends ConsumerWidget {
   /// Creates the leading icon.
   const SpaceLeadingIcon({
@@ -184,10 +187,18 @@ class SpaceLeadingIcon extends ConsumerWidget {
     if (running) {
       return CcSpinner(size: 18, color: selected ? t.accentOn : null);
     }
-    final prs = ref.watch(spacePrsProvider(spaceId));
+    final prs = pullRequestsForSpaceRow(
+      linked: ref.watch(spacePrsProvider(spaceId)),
+      branchMatched:
+          ref
+              .watch(spaceBranchPullRequestsProvider(spaceId))
+              .value
+              ?.map((match) => match.pr) ??
+          const <PullRequest>[],
+    );
     final status = PrSidebarStatus.aggregate(prs);
     if (status == null) {
-      // No PR linked yet — a fresh conversation in the editing stage.
+      // Nothing open and nothing linked — a fresh conversation.
       return const Icon(AppIcons.pencil, size: 18);
     }
     final openCount = prs.where((pr) => pr.isOpen).length;

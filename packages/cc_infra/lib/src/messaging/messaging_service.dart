@@ -24,6 +24,7 @@ import 'package:cc_domain/features/messaging/domain/repositories/messaging_repos
 import 'package:cc_domain/features/messaging/domain/services/mention_wake_policy.dart';
 import 'package:cc_domain/features/messaging/domain/services/peer_delegation_guards.dart';
 import 'package:cc_domain/features/messaging/domain/services/space_factory.dart';
+import 'package:cc_domain/features/messaging/domain/value_objects/dispatch_reply_hints.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/space_kind.dart';
 import 'package:cc_harness/context.dart';
 import 'package:cc_infra/src/dispatch/agent_dispatch_service.dart';
@@ -61,9 +62,27 @@ class MessagingService implements MessagingPort {
     this._titleService,
     this._promptAttachments,
     this._cancelProvisioning,
+    this._dispatchReplyHints,
+    this._latestPlanMessage,
   });
 
   final MessagingRepository _repo;
+
+  /// Send-path facts without loading every transcript. Null keeps the
+  /// getMessages scan, which tests and hosts without the fast query use.
+  final Future<DispatchReplyHints> Function({
+    required String workspaceId,
+    required String spaceId,
+    String? conversationId,
+  })?
+  _dispatchReplyHints;
+
+  /// The one plan row a refinement updates. Null keeps the full-history scan.
+  final Future<Message?> Function({
+    required String workspaceId,
+    required String spaceId,
+  })?
+  _latestPlanMessage;
   final AgentRepository? _agentRepo;
 
   /// Gives the human's attachments a body an agent can open — see
@@ -337,7 +356,7 @@ class MessagingService implements MessagingPort {
       metadata: metadata,
       conversationId: conversationId,
     );
-    _embedLastMessage(workspaceId, spaceId, content);
+    _embedLastMessage(workspaceId, messageId, content);
     _notifyMessageReceived(
       workspaceId: workspaceId,
       spaceId: spaceId,
@@ -390,27 +409,27 @@ class MessagingService implements MessagingPort {
     return principals;
   }
 
-  void _embedLastMessage(String workspaceId, String spaceId, String content) {
+  void _embedLastMessage(
+    String workspaceId,
+    String messageId,
+    String content,
+  ) {
     final port = _embeddingPort;
     if (port == null || !port.isReady || content.isEmpty) {
       return;
     }
-    unawaited(
-      _repo.getMessages(workspaceId, spaceId).then((messages) async {
-        final last = messages.lastOrNull;
-        if (last == null || last.content != content) {
-          return;
-        }
-        try {
-          final vec = await port.embed(content);
-          await _repo.updateMessageEmbedding(
-            workspaceId,
-            last.id,
-            Uint8List.view(vec.buffer),
-          );
-        } catch (_) {}
-      }),
-    );
+    // The id is already known. Looking the row up by scanning the
+    // conversation read every transcript just to embed this one string.
+    unawaited(() async {
+      try {
+        final vec = await port.embed(content);
+        await _repo.updateMessageEmbedding(
+          workspaceId,
+          messageId,
+          Uint8List.view(vec.buffer),
+        );
+      } catch (_) {}
+    }());
   }
 
   @override
@@ -559,6 +578,69 @@ class MessagingService implements MessagingPort {
     );
   }
 
+  /// Previous-message and last-agent facts for [dispatchResponderForText].
+  ///
+  /// The injected query reads two indexes. Without it, one getMessages
+  /// scan answers both facts so the fallback still does not load the
+  /// conversation twice.
+  Future<DispatchReplyHints> _replyHints({
+    required String workspaceId,
+    required String spaceId,
+    String? conversationId,
+  }) async {
+    final load = _dispatchReplyHints;
+    if (load != null) {
+      return load(
+        workspaceId: workspaceId,
+        spaceId: spaceId,
+        conversationId: conversationId,
+      );
+    }
+    final priorMessages = await _repo.getMessages(
+      workspaceId,
+      spaceId,
+      conversationId: conversationId,
+    );
+    final previous = priorMessages.length >= 2
+        ? priorMessages[priorMessages.length - 2]
+        : null;
+    final lastAgent = priorMessages.reversed
+        .where(
+          (m) =>
+              m.senderType == SenderType.agent &&
+              (m.messageType == MessageType.text ||
+                  m.messageType == MessageType.agentTurn),
+        )
+        .firstOrNull;
+    return DispatchReplyHints(
+      previousIsPendingPlan:
+          previous != null &&
+          previous.isPlan &&
+          previous.planStatus == 'pending',
+      lastAgentSenderId: lastAgent?.senderId,
+    );
+  }
+
+  /// The plan row a refinement updates, or a StateError when there is none.
+  Future<Message> _planToRefine(String workspaceId, String spaceId) async {
+    final load = _latestPlanMessage;
+    if (load != null) {
+      final plan = await load(workspaceId: workspaceId, spaceId: spaceId);
+      if (plan == null) {
+        throw StateError('No plan found in space $spaceId');
+      }
+      return plan;
+    }
+    final messages = await _repo.getMessages(workspaceId, spaceId);
+    return messages.reversed.firstWhere(
+      (m) => m.isPlan && m.planStatus == 'pending',
+      orElse: () => messages.reversed.firstWhere(
+        (m) => m.isPlan,
+        orElse: () => throw StateError('No plan found in space $spaceId'),
+      ),
+    );
+  }
+
   /// The responder half of a user message: decides which agent(s) should
   /// answer [content] and dispatches them.
   ///
@@ -589,15 +671,12 @@ class MessagingService implements MessagingPort {
       return;
     }
 
-    final priorMessages = await _repo.getMessages(
-      workspaceId,
-      spaceId,
+    final hints = await _replyHints(
+      workspaceId: workspaceId,
+      spaceId: spaceId,
       conversationId: conversationId,
     );
-    final lastMsg = priorMessages.length >= 2
-        ? priorMessages[priorMessages.length - 2]
-        : null;
-    if (lastMsg != null && lastMsg.isPlan && lastMsg.planStatus == 'pending') {
+    if (hints.previousIsPendingPlan) {
       await refinePlan(
         workspaceId: workspaceId,
         spaceId: spaceId,
@@ -641,23 +720,7 @@ class MessagingService implements MessagingPort {
           .where((a) => participantAgentIds.contains(a.id))
           .toList();
 
-      String? lastAgentSenderId;
-      final messages = await _repo.getMessages(
-        workspaceId,
-        spaceId,
-        conversationId: conversationId,
-      );
-      if (messages.isNotEmpty) {
-        final lastAgentMsg = messages.reversed
-            .where(
-              (m) =>
-                  m.senderType == SenderType.agent &&
-                  (m.messageType == MessageType.text ||
-                      m.messageType == MessageType.agentTurn),
-            )
-            .firstOrNull;
-        lastAgentSenderId = lastAgentMsg?.senderId;
-      }
+      final lastAgentSenderId = hints.lastAgentSenderId;
 
       // The conversation's owner, when it has one: a fan-out opens a stream
       // per agent and records whose it is. Without it, a reply typed into
@@ -807,14 +870,7 @@ class MessagingService implements MessagingPort {
     required String spaceId,
     required String feedback,
   }) async {
-    final messages = await _repo.getMessages(workspaceId, spaceId);
-    final pendingPlan = messages.reversed.firstWhere(
-      (m) => m.isPlan && m.planStatus == 'pending',
-      orElse: () => messages.reversed.firstWhere(
-        (m) => m.isPlan,
-        orElse: () => throw StateError('No plan found in space $spaceId'),
-      ),
-    );
+    final pendingPlan = await _planToRefine(workspaceId, spaceId);
 
     final existingMeta = Map<String, dynamic>.from(pendingPlan.metadata ?? {});
     existingMeta['planStatus'] = 'refining';

@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:cc_domain/core/domain/entities/workspace.dart';
-import 'package:cc_domain/core/domain/value_objects/github_auth_mode.dart';
 import 'package:cc_server_core/src/file_secrets_store.dart';
 import 'package:cc_server_core/src/identity/provider_app_settings.dart';
 import 'package:cc_server_core/src/identity/workspace_github_app_settings.dart';

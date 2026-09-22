@@ -143,6 +143,162 @@ Future<WorktreePublishResult?> publishWorktreeBranch(
   }
 }
 
+/// Result of syncing a conversation worktree with its remote branch.
+typedef WorktreeSyncResult = ({
+  bool pulled,
+  bool pushed,
+  bool dirty,
+  String? error,
+});
+
+/// Fetches the conversation branch, rebases when the remote moved, and pushes
+/// when this side is ahead or the branch has never been published. Never
+/// commits. Returns null when the op is unavailable.
+Future<WorktreeSyncResult?> syncWorktreeBranch(
+  RemoteRpcClient rpcClient, {
+  required String workspaceId,
+  required String spaceId,
+  required String repoId,
+}) async {
+  try {
+    final data = await rpcClient.call('worktree.syncBranch', {
+      'workspace_id': workspaceId,
+      'space_id': spaceId,
+      'repo_id': repoId,
+    });
+    if (data['ok'] != true) {
+      return null;
+    }
+    return (
+      pulled: data['pulled'] as bool? ?? false,
+      pushed: data['pushed'] as bool? ?? false,
+      dirty: data['dirty'] as bool? ?? false,
+      error: data['error'] as String?,
+    );
+  } on Exception {
+    return null;
+  }
+}
+
+/// One ref the branch picker can check out.
+typedef WorktreeRefEntry = ({
+  String name,
+  String kind,
+  String sha,
+  DateTime? committedAt,
+  String subject,
+  bool current,
+  String localName,
+});
+
+/// The refs in a conversation worktree.
+typedef WorktreeBranchList = ({
+  String current,
+  bool detached,
+  List<WorktreeRefEntry> refs,
+});
+
+/// What the branch picker asks the server to check out.
+typedef WorktreeCheckoutRequest = ({
+  String? branch,
+  String? startPoint,
+  bool create,
+  bool detach,
+});
+
+/// Result of [checkoutWorktreeBranch].
+typedef WorktreeCheckoutResult = ({
+  bool ok,
+  String branch,
+  bool detached,
+  bool dirty,
+  String? error,
+});
+
+/// Lists branches, remote-tracking refs and tags in the conversation worktree.
+/// Returns null when the op is unavailable or the space owns no worktree.
+Future<WorktreeBranchList?> listWorktreeBranches(
+  RemoteRpcClient rpcClient, {
+  required String workspaceId,
+  required String spaceId,
+  required String repoId,
+}) async {
+  try {
+    final data = await rpcClient.call('worktree.listBranches', {
+      'workspace_id': workspaceId,
+      'space_id': spaceId,
+      'repo_id': repoId,
+    });
+    if (data['ok'] != true) {
+      return null;
+    }
+    final raw = data['refs'];
+    final refs = <WorktreeRefEntry>[];
+    if (raw is List) {
+      for (final item in raw) {
+        if (item is! Map) {
+          continue;
+        }
+        final name = item['name'];
+        final kind = item['kind'];
+        if (name is! String || name.isEmpty || kind is! String) {
+          continue;
+        }
+        final seconds = (item['committedAt'] as num?)?.toInt() ?? 0;
+        refs.add((
+          name: name,
+          kind: kind,
+          sha: item['sha'] as String? ?? '',
+          committedAt: seconds <= 0
+              ? null
+              : DateTime.fromMillisecondsSinceEpoch(seconds * 1000),
+          subject: item['subject'] as String? ?? '',
+          current: item['current'] == true,
+          localName: item['localName'] as String? ?? name,
+        ));
+      }
+    }
+    return (
+      current: data['current'] as String? ?? '',
+      detached: data['detached'] == true,
+      refs: refs,
+    );
+  } on Exception {
+    return null;
+  }
+}
+
+/// Checks a branch out in the conversation worktree, or creates one.
+/// Returns null when the op is unavailable.
+Future<WorktreeCheckoutResult?> checkoutWorktreeBranch(
+  RemoteRpcClient rpcClient, {
+  required String workspaceId,
+  required String spaceId,
+  required String repoId,
+  required WorktreeCheckoutRequest request,
+}) async {
+  try {
+    final data = await rpcClient.call('worktree.checkout', {
+      'workspace_id': workspaceId,
+      'space_id': spaceId,
+      'repo_id': repoId,
+      'branch': ?request.branch,
+      'start_point': ?request.startPoint,
+      'create': request.create,
+      'detach': request.detach,
+    });
+    return (
+      ok: data['ok'] == true,
+      branch: data['branch'] as String? ?? '',
+      detached: data['detached'] == true,
+      dirty: data['dirty'] == true,
+      error: data['error'] as String?,
+    );
+  } on Exception {
+    return null;
+  }
+}
+
 /// Outcome of a [syncWorktreeToPrHead] call.
 ///
 /// Named for the PR flow rather than "worktree sync" in general: `cc_infra`
@@ -179,6 +335,33 @@ Future<PrWorktreeSyncOutcome?> syncWorktreeToPrHead(
   } on Exception {
     return null;
   }
+}
+
+/// Stages every working-tree change when the git index is empty, so the
+/// commit that follows includes them.
+///
+/// This is VS Code's `git.enableSmartCommit`: an empty index commits the
+/// whole working tree (tracked and untracked, `git add -A`), and a non-empty
+/// index is left alone so a partial stage still commits only what was staged.
+/// Returns false when that stage was required and the op failed; returns true
+/// when there was nothing to stage or the index already held changes.
+Future<bool> stageAllWhenIndexEmpty(
+  RemoteRpcClient rpcClient, {
+  required String workspaceId,
+  required String spaceId,
+  required String repoId,
+  required int stagedCount,
+  required int unstagedCount,
+}) async {
+  if (stagedCount > 0 || unstagedCount == 0) {
+    return true;
+  }
+  return stageWorktreeFiles(
+    rpcClient,
+    workspaceId: workspaceId,
+    spaceId: spaceId,
+    repoId: repoId,
+  );
 }
 
 /// Stages [paths] (empty ⇒ all) into the conversation worktree's git index via

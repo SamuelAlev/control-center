@@ -279,6 +279,7 @@ void main() {
     // Git plumbing on the operator's own repositories.
     'worktree.commitAndPush': {'gitCommit', 'gitPush'},
     'worktree.publishBranch': {'gitPush'},
+    'worktree.syncBranch': {'networkEgress', 'gitPush'},
     'worktree.syncToPrHead': {'networkEgress'}, // fetches before it checks out
     // Files outside any worktree (agent/skill definitions on disk).
     'fs.writeAgentFile': {'fileWriteOutsideWorktree'},
@@ -374,6 +375,12 @@ void main() {
         'Restores TRACKED files to HEAD inside the isolated worktree and '
         'reports untracked ones as skipped, so it neither deletes a file nor '
         'writes outside the worktree.',
+    'worktree.checkout':
+        'Switches or creates a branch INSIDE the isolated conversation '
+        'worktree, from refs already there. It does not fetch, push, commit '
+        'or write the source checkout, so none of the git or filesystem '
+        'classes name what it does — the same containment as '
+        '`worktree.writeFile`.',
     'terminal.resize':
         'Changes the PTY window geometry and nothing else. It runs no command '
         'and writes no byte to the shell — declaring `processSpawn` here would '

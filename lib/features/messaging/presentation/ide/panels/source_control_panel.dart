@@ -1,14 +1,18 @@
 import 'dart:async';
 
 import 'package:cc_domain/core/domain/entities/repo.dart';
+import 'package:cc_domain/core/domain/ports/repo_workspace_provisioner_port.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/space_provisioning_status.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/features/identity/providers/identity_providers.dart';
+import 'package:control_center/features/messaging/presentation/ide/panels/scm_branch_menu.dart';
 import 'package:control_center/features/messaging/presentation/utils/provisioning_step_label.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/features/messaging/providers/repo_changes_provider.dart';
+import 'package:control_center/features/messaging/providers/repo_directory_listing_provider.dart';
+import 'package:control_center/features/messaging/providers/repo_file_content_provider.dart';
 import 'package:control_center/features/messaging/providers/space_worktrees_provider.dart';
 import 'package:control_center/features/messaging/providers/worktree_file_ops_provider.dart';
 import 'package:control_center/features/pr_review/providers/pr_space_provider.dart';
@@ -48,8 +52,10 @@ class SourceControlPanel extends ConsumerWidget {
   /// Null when no conversation is open → there is no working tree to report on.
   final String? spaceId;
 
-  /// Called with `(repoId, file)` when a changed file is opened for review.
-  final ValueChanged<({String repoId, PrFile file})> onOpenReview;
+  /// Called with `(repoId, repoFullName, file)` when a changed file is opened
+  /// for review.
+  final ValueChanged<({String repoId, String repoFullName, PrFile file})>
+  onOpenReview;
 
   /// Called with `(repoId, path)` to open a file in the conversation's editor.
   final ValueChanged<({String repoId, String path})> onViewSource;
@@ -167,7 +173,8 @@ class _RepoSection extends ConsumerStatefulWidget {
   /// The conversation worktree's branch — the ref "commit & push" publishes.
   final String branch;
 
-  final ValueChanged<({String repoId, PrFile file})> onOpenReview;
+  final ValueChanged<({String repoId, String repoFullName, PrFile file})>
+  onOpenReview;
   final ValueChanged<({String repoId, String path})> onViewSource;
   final ValueChanged<({String repoId, List<String> paths})> onRevertFiles;
 
@@ -214,9 +221,14 @@ class _RepoSectionState extends ConsumerState<_RepoSection>
   }
 
   void _refresh() {
-    if (mounted) {
-      ref.invalidate(repoChangesGroupedProvider(_args));
+    if (!mounted) {
+      return;
     }
+    // The review tab reads the flat working-tree diff, not this split. Invalidate
+    // both so a poll, stage, or commit updates the open diff with the list.
+    ref
+      ..invalidate(repoChangesGroupedProvider(_args))
+      ..invalidate(repoChangesProvider(_args));
   }
 
   void _syncPolling({required bool active}) {
@@ -255,9 +267,11 @@ class _RepoSectionState extends ConsumerState<_RepoSection>
   }
 
   /// Runs the chosen commit [action] against the conversation's worktree.
-  /// `paths: []` commits the STAGED index as-is, and the push (when asked for)
-  /// goes to the worktree's OWN branch — the server resolves it, which is what
-  /// publishes a conversation branch GitHub has never seen.
+  /// A non-empty index is committed as-is. An empty index with working-tree
+  /// changes is staged first (`git add -A`) — VS Code's smart commit — and
+  /// the push (when asked for) goes to the worktree's OWN branch. The server
+  /// resolves that branch, which is what publishes a conversation branch
+  /// GitHub has never seen.
   Future<void> _runCommit(ScmCommitAction action) async {
     final l10n = AppLocalizations.of(context);
     final message = _message.text.trim();
@@ -269,6 +283,25 @@ class _RepoSectionState extends ConsumerState<_RepoSection>
         action == ScmCommitAction.commitAndPush ||
         action == ScmCommitAction.commitAndSync;
     setState(() => _busy = true);
+    final changes = ref.read(repoChangesGroupedProvider(_args)).value;
+    final ready = await stageAllWhenIndexEmpty(
+      ref.read(rpcClientProvider),
+      workspaceId: widget.workspaceId,
+      spaceId: widget.spaceId,
+      repoId: widget.repo.id,
+      stagedCount: changes?.staged.length ?? 0,
+      unstagedCount: changes?.unstaged.length ?? 0,
+    );
+    if (!mounted) {
+      return;
+    }
+    if (!ready) {
+      setState(() => _busy = false);
+      CcToastScope.maybeOf(
+        context,
+      )?.show(l10n.commitFailed, variant: CcToastVariant.danger);
+      return;
+    }
     final me = ref.read(currentIdentityProvider).value?.user;
     final res = await commitAndPushWorktree(
       ref.read(rpcClientProvider),
@@ -315,6 +348,197 @@ class _RepoSectionState extends ConsumerState<_RepoSection>
     } else {
       toast?.show(res.error ?? l10n.pushFailed, variant: CcToastVariant.danger);
     }
+  }
+
+  /// Ahead/behind for the repo header. Both numbers when the branch tracks a
+  /// remote (`36↓ 0↑`); only the outgoing count when it has never been
+  /// published.
+  String? _syncLabel(RepoChanges changes) {
+    if (!changes.statusKnown) {
+      return null;
+    }
+    if (changes.hasUpstream && (changes.ahead > 0 || changes.behind > 0)) {
+      return '${changes.behind}↓ ${changes.ahead}↑';
+    }
+    if (!changes.hasUpstream && changes.ahead > 0) {
+      return '${changes.ahead}↑';
+    }
+    return null;
+  }
+
+  /// Publish or sync, shown above the commit box whenever the branch is not
+  /// in step with its remote — including while the working tree is dirty.
+  /// A detached HEAD has nothing to push.
+  ScmIdleAction? _syncAction(AppLocalizations l10n, RepoChanges changes) {
+    if (!widget.repo.hasForgeRemote || widget.branch.isEmpty) {
+      return null;
+    }
+    if (!changes.statusKnown) {
+      // An older server does not report ahead/behind. A space scratch branch
+      // is local until it is published — the state a Commit (no push) just
+      // left — so offer the push op that server already has.
+      if (!widget.branch.startsWith(kSpaceScratchBranchPrefix)) {
+        return null;
+      }
+      return ScmIdleAction(
+        label: l10n.scmPublishBranch,
+        icon: AppIcons.upload,
+        onPressed: _runPublish,
+      );
+    }
+    if (!changes.hasUpstream) {
+      return ScmIdleAction(
+        label: l10n.scmPublishBranch,
+        icon: AppIcons.upload,
+        onPressed: _runSync,
+      );
+    }
+    if (changes.ahead == 0 && changes.behind == 0) {
+      return null;
+    }
+    final counts = scmSyncCounts(ahead: changes.ahead, behind: changes.behind);
+    return ScmIdleAction(
+      label: counts.isEmpty
+          ? l10n.scmSyncChanges
+          : '${l10n.scmSyncChanges} $counts',
+      icon: AppIcons.repeat,
+      onPressed: _runSync,
+    );
+  }
+
+  bool _canProposePullRequest(RepoChanges changes, int total, bool hasPr) {
+    return scmCanOpenPullRequest(
+      hasForgeRemote: widget.repo.hasForgeRemote,
+      hasExistingPr: hasPr,
+      dirtyFiles: total,
+      statusKnown: changes.statusKnown,
+      hasUpstream: changes.hasUpstream,
+      ahead: changes.ahead,
+      aheadOfBase: changes.aheadOfBase,
+      aheadOfBaseKnown: changes.aheadOfBaseKnown,
+      branch: widget.branch,
+    );
+  }
+
+  Future<void> _runPublish() async {
+    final l10n = AppLocalizations.of(context);
+    setState(() => _busy = true);
+    final res = await publishWorktreeBranch(
+      ref.read(rpcClientProvider),
+      workspaceId: widget.workspaceId,
+      spaceId: widget.spaceId,
+      repoId: widget.repo.id,
+    );
+    if (!mounted) {
+      return;
+    }
+    setState(() => _busy = false);
+    _refresh();
+    final toast = CcToastScope.maybeOf(context);
+    if (res == null || !res.pushed) {
+      toast?.show(
+        res?.error ?? l10n.pushFailed,
+        variant: CcToastVariant.danger,
+      );
+      return;
+    }
+    ref.invalidate(spaceBranchPullRequestsProvider(widget.spaceId));
+    toast?.show(
+      l10n.branchPublished(widget.branch),
+      variant: CcToastVariant.success,
+    );
+  }
+
+  Future<void> _runSync() async {
+    final l10n = AppLocalizations.of(context);
+    setState(() => _busy = true);
+    final res = await syncWorktreeBranch(
+      ref.read(rpcClientProvider),
+      workspaceId: widget.workspaceId,
+      spaceId: widget.spaceId,
+      repoId: widget.repo.id,
+    );
+    if (!mounted) {
+      return;
+    }
+    setState(() => _busy = false);
+    _refresh();
+    final toast = CcToastScope.maybeOf(context);
+    if (res == null) {
+      toast?.show(l10n.scmSyncFailed, variant: CcToastVariant.danger);
+      return;
+    }
+    if (res.dirty) {
+      toast?.show(l10n.scmSyncDirty, variant: CcToastVariant.danger);
+      return;
+    }
+    if (res.error != null && res.error!.isNotEmpty) {
+      toast?.show(res.error!, variant: CcToastVariant.danger);
+      return;
+    }
+    if (res.pushed) {
+      ref.invalidate(spaceBranchPullRequestsProvider(widget.spaceId));
+      toast?.show(
+        l10n.branchPublished(widget.branch),
+        variant: CcToastVariant.success,
+      );
+      return;
+    }
+    toast?.show(l10n.scmSynced, variant: CcToastVariant.success);
+  }
+
+  Future<void> _checkout(WorktreeCheckoutRequest request) async {
+    final l10n = AppLocalizations.of(context);
+    setState(() => _busy = true);
+    final res = await checkoutWorktreeBranch(
+      ref.read(rpcClientProvider),
+      workspaceId: widget.workspaceId,
+      spaceId: widget.spaceId,
+      repoId: widget.repo.id,
+      request: request,
+    );
+    if (!mounted) {
+      return;
+    }
+    setState(() => _busy = false);
+    final toast = CcToastScope.maybeOf(context);
+    if (res == null || !res.ok) {
+      toast?.show(
+        res?.dirty == true
+            ? l10n.scmCheckoutDirty
+            : (res?.error?.isNotEmpty ?? false)
+            ? res!.error!
+            : l10n.scmCheckoutFailed,
+        variant: CcToastVariant.danger,
+      );
+      return;
+    }
+    ref
+      ..invalidate(
+        spaceWorktreesProvider((
+          workspaceId: widget.workspaceId,
+          spaceId: widget.spaceId,
+        )),
+      )
+      ..invalidate(repoChangesGroupedProvider(_args))
+      ..invalidate(repoChangesProvider(_args))
+      ..invalidate(repoFileContentProvider)
+      ..invalidate(repoDirectoryListingProvider);
+    if (res.detached) {
+      final at = request.startPoint?.trim();
+      toast?.show(
+        l10n.scmDetachedAt(at == null || at.isEmpty ? 'HEAD' : at),
+        variant: CcToastVariant.success,
+      );
+      return;
+    }
+    if (res.branch == widget.branch && !request.create) {
+      return;
+    }
+    toast?.show(
+      l10n.scmSwitchedToBranch(res.branch),
+      variant: CcToastVariant.success,
+    );
   }
 
   Future<void> _createPullRequest(BuildContext context) async {
@@ -388,8 +612,7 @@ class _RepoSectionState extends ConsumerState<_RepoSection>
     final t = context.designSystem ?? DesignSystemTokens.light();
 
     final async = ref.watch(repoChangesGroupedProvider(_args));
-    final changes =
-        async.value ?? (staged: const <PrFile>[], unstaged: const <PrFile>[]);
+    final changes = async.value ?? kEmptyRepoChanges;
     final staged = changes.staged;
     final unstaged = changes.unstaged;
     final total = staged.length + unstaged.length;
@@ -414,12 +637,48 @@ class _RepoSectionState extends ConsumerState<_RepoSection>
         if (f.status != PrFileStatus.added) f.filename,
     ];
 
+    final sync = _syncAction(l10n, changes);
+    final branchLabel = widget.branch.isEmpty
+        ? l10n.scmDetachedHead
+        : widget.branch;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (sync != null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.sm,
+              AppSpacing.xs,
+              AppSpacing.sm,
+              0,
+            ),
+            child: CcButton(
+              variant: CcButtonVariant.primary,
+              size: CcButtonSize.sm,
+              icon: sync.icon,
+              loading: _busy,
+              fullWidth: true,
+              onPressed: _busy ? null : sync.onPressed,
+              child: Text(sync.label),
+            ),
+          ),
         ScmGroup(
           title: widget.repo.fullName,
-          subtitle: widget.branch,
+          subtitle: branchLabel,
+          subtitleWidget: ScmBranchMenu(
+            branch: widget.branch,
+            enabled: !_busy,
+            load: () => listWorktreeBranches(
+              ref.read(rpcClientProvider),
+              workspaceId: widget.workspaceId,
+              spaceId: widget.spaceId,
+              repoId: widget.repo.id,
+            ),
+            onCheckout: _checkout,
+          ),
+          syncLabel: _syncLabel(changes),
+          uppercaseTitle: false,
           count: total,
           collapsed: _collapsed,
           onToggleCollapse: () {
@@ -444,8 +703,19 @@ class _RepoSectionState extends ConsumerState<_RepoSection>
                 child: Center(child: CcSpinner(size: 14)),
               )
             else ...[
-              // The commit box only appears where there is something to commit:
-              // a repo the conversation has not touched keeps one quiet line.
+              // The message field stays up on a clean tree, the way VS Code
+              // does. Publish and Sync sit above this group, and stay there
+              // while the tree is dirty.
+              ScmCommitBox(
+                controller: _message,
+                busy: _busy,
+                dense: true,
+                branch: widget.branch,
+                stagedCount: staged.length,
+                unstagedCount: unstaged.length,
+                canPush: widget.repo.hasForgeRemote && widget.branch.isNotEmpty,
+                onAction: _runCommit,
+              ),
               if (total == 0)
                 Padding(
                   padding: const EdgeInsets.symmetric(
@@ -456,16 +726,8 @@ class _RepoSectionState extends ConsumerState<_RepoSection>
                     l10n.ideSourceControlNoChanges,
                     style: TextStyle(fontSize: 12, color: t.textTertiary),
                   ),
-                )
-              else ...[
-                ScmCommitBox(
-                  controller: _message,
-                  busy: _busy,
-                  dense: true,
-                  stagedCount: staged.length,
-                  canPush: widget.repo.hasForgeRemote,
-                  onAction: _runCommit,
                 ),
+              if (staged.isNotEmpty || unstaged.isNotEmpty) ...[
                 if (staged.isNotEmpty)
                   ScmGroup(
                     title: l10n.stagedChanges,
@@ -514,7 +776,10 @@ class _RepoSectionState extends ConsumerState<_RepoSection>
                     ],
                   ),
               ],
-              if (widget.repo.hasForgeRemote)
+              // A clean, published branch can still be a pull request: the
+              // commits are ahead of the default branch, not of this branch's
+              // own upstream.
+              if (_canProposePullRequest(changes, total, existingPr != null))
                 Padding(
                   padding: const EdgeInsets.fromLTRB(
                     AppSpacing.sm,
@@ -566,7 +831,11 @@ class _RepoSectionState extends ConsumerState<_RepoSection>
       selected: _focused == file.filename,
       onTap: () {
         setState(() => _focused = file.filename);
-        widget.onOpenReview((repoId: widget.repo.id, file: file));
+        widget.onOpenReview((
+          repoId: widget.repo.id,
+          repoFullName: widget.repo.fullName,
+          file: file,
+        ));
       },
       actions: [
         (

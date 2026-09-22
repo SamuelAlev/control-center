@@ -1,9 +1,12 @@
 import 'dart:async';
 
+import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/shared/widgets/composer/composer_models.dart';
 import 'package:control_center/shared/widgets/composer/mention/mention_popup.dart';
 import 'package:control_center/shared/widgets/composer/mention/mention_source.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -236,6 +239,64 @@ void main() {
       // Drain the lagging source's delayed delivery so no timer outlives the
       // test.
       await tester.pump(const Duration(seconds: 5));
+    });
+
+    testWidgets('moving the pointer between rows fades the hover wash '
+        'without dipping through black', (tester) async {
+      await tester.pumpWidget(
+        testWrap(
+          MentionPopup(
+            query: _query('p'),
+            sources: [
+              _ControlledSource(
+                responder: (_) => Stream.value([
+                  _item('plan'),
+                  _item('play'),
+                  _item('pause'),
+                ]),
+              ),
+            ],
+            onSelect: (_) {},
+            onDismiss: () {},
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 80));
+
+      final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await gesture.addPointer();
+      await gesture.moveTo(tester.getCenter(find.text('play')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 30));
+
+      final wash = tester
+          .element(find.byType(MentionPopup))
+          .designSystem!
+          .bgPrimaryHover;
+      final colors = tester
+          .renderObjectList<RenderDecoratedBox>(
+            find.descendant(
+              of: find.byType(AnimatedContainer),
+              matching: find.byType(DecoratedBox),
+            ),
+          )
+          .map((box) => (box.decoration as BoxDecoration).color)
+          .whereType<Color>();
+      expect(colors, isNotEmpty);
+      for (final color in colors) {
+        // Composited over the white popup. A lerp from transparent black
+        // lands near mid-gray here; a fade of the wash stays near white.
+        final overWhite = color.a * color.r + (1 - color.a);
+        expect(overWhite, greaterThan(0.9));
+        expect(
+          (color.r - wash.r).abs(),
+          lessThan(0.02),
+          reason: 'row wash must stay the hover color while its alpha fades',
+        );
+      }
+
+      await gesture.removePointer();
     });
   });
 }
