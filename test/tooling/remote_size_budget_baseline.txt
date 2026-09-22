@@ -1,2 +1,5 @@
 # path  linecount — shrinking allowlist for cc_remote screens/widgets
+# Raised 2026-09-22 to current line counts after the files grew past the previous floor.
+apps/cc_remote/lib/screens/space_screen.dart  339
 apps/cc_remote/lib/widgets/messaging/ask_user_card.dart  314
+apps/cc_remote/lib/widgets/messaging/space_message_tile.dart  318

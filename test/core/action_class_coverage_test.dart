@@ -85,6 +85,7 @@ void main() {
     },
     'rig_close': {'enclosureControl'}, // destroys a machine
     'rig_list': <String>{}, // read-only
+    'ask_user': <String>{}, // blocks on an answer; writes nothing
     // --- Workspace structure (create/mutate repos/spaces/agents/workspaces) ---
     'send_to_agent': {
       'workspaceMutation',

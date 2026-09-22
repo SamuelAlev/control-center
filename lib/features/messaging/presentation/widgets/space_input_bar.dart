@@ -75,7 +75,7 @@ class _SpaceInputBarState extends ConsumerState<SpaceInputBar> {
 
   /// Typing presence (PRD 16 §1): a non-empty draft in this space publishes
   /// `typingInSpaceId`. The composer clears its own text on submit (see
-  /// [Composer]), which fires this same listener and clears it again — no
+  /// `Composer`), which fires this same listener and clears it again — no
   /// separate "clear on send" wiring needed.
   void _onDraftChanged() {
     final hasText = _controller.text.trim().isNotEmpty;

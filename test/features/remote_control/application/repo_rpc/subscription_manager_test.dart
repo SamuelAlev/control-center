@@ -53,7 +53,7 @@ void main() {
       ticketStream.add({
         'tickets': [1, 2],
       });
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue(times: 10);
 
       final snap = pushed.single;
       expect(snap['method'], RpcMethods.subSnapshot);
@@ -122,7 +122,7 @@ void main() {
 
         pushed.clear();
         ticketStream.add({'tickets': []});
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue(times: 10);
         expect(pushed, isEmpty); // subscription was torn down
       },
     );

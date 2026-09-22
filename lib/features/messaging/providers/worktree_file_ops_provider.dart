@@ -144,7 +144,12 @@ Future<WorktreePublishResult?> publishWorktreeBranch(
 }
 
 /// Result of syncing a conversation worktree with its remote branch.
-typedef WorktreeSyncResult = ({
+///
+/// Named for the branch sync rather than "worktree sync" in general:
+/// `cc_infra` has an unrelated rig type of that name, and a client typedef
+/// with the same identifier trips the ratchet that keeps rig infrastructure
+/// out of `lib/`.
+typedef WorktreeBranchSyncResult = ({
   bool pulled,
   bool pushed,
   bool dirty,
@@ -154,7 +159,7 @@ typedef WorktreeSyncResult = ({
 /// Fetches the conversation branch, rebases when the remote moved, and pushes
 /// when this side is ahead or the branch has never been published. Never
 /// commits. Returns null when the op is unavailable.
-Future<WorktreeSyncResult?> syncWorktreeBranch(
+Future<WorktreeBranchSyncResult?> syncWorktreeBranch(
   RemoteRpcClient rpcClient, {
   required String workspaceId,
   required String spaceId,

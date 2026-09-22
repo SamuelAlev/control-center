@@ -34,10 +34,10 @@ Future<void> _pump(WidgetTester tester, {required List<Override> overrides}) {
       overrides: overrides,
       child: CcTheme(
         data: CcThemeData.light(),
-        child: MaterialApp(
+        child: const MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: const Scaffold(
+          home: Scaffold(
             body: SpaceLeadingIcon(
               spaceId: 'space-1',
               running: false,

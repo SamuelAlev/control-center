@@ -952,7 +952,7 @@ class _ComposerState extends ConsumerState<Composer> {
   ///
   /// Applied on the controller so Enter can stay "send". The field only
   /// scrolls the caret into view for edits that arrive through
-  /// [EditableText.userUpdateTextEditingValue], and this path skips that —
+  /// `EditableText.userUpdateTextEditingValue`, and this path skips that —
   /// once the draft is taller than [Composer.maxLines] the new line sits
   /// below the viewport and the caret disappears.
   void _insertNewline() {

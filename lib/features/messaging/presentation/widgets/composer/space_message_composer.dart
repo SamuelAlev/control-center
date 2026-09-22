@@ -196,7 +196,7 @@ class _SpaceMessageComposerState extends ConsumerState<SpaceMessageComposer> {
   @override
   Widget build(BuildContext context) {
     final editing = ref.watch(editingMessageProvider(_key));
-    ref.listen(editingMessageProvider(_key), _onEditChanged);
+    ref.listen<EditingMessage?>(editingMessageProvider(_key), _onEditChanged);
     final isEditing = editing != null;
     return Composer(
       attachedTop: widget.attachedTop,

@@ -547,7 +547,7 @@ void main() {
       },
     );
 
-    Future<void> _reviseAndSend(WidgetTester tester) async {
+    Future<void> reviseAndSend(WidgetTester tester) async {
       await tester.enterText(find.byType(CcTextField), 'revised wording');
       await tester.pump();
       await tester.tap(find.byIcon(AppIcons.arrowUp));
@@ -568,7 +568,7 @@ void main() {
           .read(editingMessageProvider(key).notifier)
           .begin(_editableMessage());
       await tester.pump();
-      await _reviseAndSend(tester);
+      await reviseAndSend(tester);
 
       expect(find.text('Revert to there'), findsOneWidget);
       expect(find.text('Send as a new message'), findsOneWidget);
@@ -601,7 +601,7 @@ void main() {
           .read(editingMessageProvider(key).notifier)
           .begin(_editableMessage());
       await tester.pump();
-      await _reviseAndSend(tester);
+      await reviseAndSend(tester);
 
       await tester.tap(find.text('Send as a new message'));
       await tester.pump();
@@ -623,7 +623,7 @@ void main() {
           .read(editingMessageProvider(key).notifier)
           .begin(_editableMessage());
       await tester.pump();
-      await _reviseAndSend(tester);
+      await reviseAndSend(tester);
 
       await tester.tap(find.text('Cancel'));
       await tester.pump();

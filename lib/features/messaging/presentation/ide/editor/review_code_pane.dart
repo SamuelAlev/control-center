@@ -52,7 +52,7 @@ class _ReviewCodePaneState extends ConsumerState<ReviewCodePane> {
   /// scrolled to the widget's `anchorPath`. Mirrors the PR details screen's pattern.
   final GlobalKey<PrDiffViewState> _diffKey = GlobalKey<PrDiffViewState>();
 
-  /// The diff's own scroller. [jumpToFile] reads it through
+  /// The diff's own scroller. `jumpToFile` reads it through
   /// [PrimaryScrollController]; a bare [CustomScrollView] does not register
   /// as that controller on desktop (only mobile inherits the route's).
   final ScrollController _scroll = ScrollController();

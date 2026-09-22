@@ -1,5 +1,3 @@
-import 'dart:isolate';
-
 import 'package:diff_match_patch/diff_match_patch.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
@@ -89,8 +87,8 @@ int debugLineDiffComputeCount = 0;
 /// When true, [computeLineDiffAsync] diffs on this isolate after yielding.
 ///
 /// Widget tests set this so they never spawn an isolate. Production leaves
-/// it false; the web target also stays inline because `Isolate.run` is not
-/// available there.
+/// it false; the web target also stays inline because a helper isolate is
+/// not available there.
 @visibleForTesting
 bool debugLineDiffForceInline = false;
 
@@ -289,12 +287,18 @@ Future<LineDiffResult> _lineDiffOffload(String oldText, String newText) async {
     return computeLineDiff(oldText, newText);
   }
   try {
-    final result = await Isolate.run(() => _computeLineDiff(oldText, newText));
+    final result = await compute(_lineDiffOffIsolate, (oldText, newText));
     _rememberLineDiff(oldText, newText, result);
     return result;
   } on Object {
     return computeLineDiff(oldText, newText);
   }
+}
+
+/// Entry point for [compute]. Must be a top-level function so the helper
+/// isolate can send it; a closure cannot cross the isolate boundary.
+LineDiffResult _lineDiffOffIsolate((String, String) texts) {
+  return _computeLineDiff(texts.$1, texts.$2);
 }
 
 /// Computes a line-level diff between [oldText] and [newText] using

@@ -214,7 +214,8 @@ class AskUserArguments {
     );
   }
 
-  /// Why [parse] refused the arguments, or null when they are usable.
+  /// Why [AskUserArguments.parse] refused the arguments, or null when they
+  /// are usable.
   final String? error;
 
   /// The question, as one sentence.

@@ -374,7 +374,7 @@ class RepoIdeDataService {
       if (short != headBranch) {
         aheadOfBase ??= count;
       }
-      if (unpushed != null && aheadOfBase != null) {
+      if (aheadOfBase != null) {
         break;
       }
     }

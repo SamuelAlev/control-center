@@ -559,14 +559,19 @@ final class _LeaseStreamQueryStore extends StreamQueryStore {
         _listeners--;
       }
 
+      // Drift invalidates a watch's cached row inside the table-update
+      // listener, before the write future completes. `Stream.multi`'s
+      // controller delivers `add` on a later event-queue turn, so
+      // `await write; await watch().first` reads the pre-write snapshot.
+      // Sync delivery keeps that invalidation on the write's stack.
       final sub = inner.listen(
-        listener.add,
+        listener.addSync,
         onError: (Object error, StackTrace stack) {
-          listener.addError(error, stack);
+          listener.addErrorSync(error, stack);
         },
         onDone: () {
           release();
-          listener.close();
+          listener.closeSync();
         },
       );
       listener.onCancel = () {

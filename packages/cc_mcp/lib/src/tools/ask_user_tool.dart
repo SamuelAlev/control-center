@@ -12,10 +12,10 @@ import 'package:cc_domain/features/mcp/domain/ports/mcp_tool_port.dart';
 /// in-process waiter.
 class AskUserTool extends McpTool {
   /// Creates an [AskUserTool] that blocks on [port].
-  AskUserTool({required AgentQuestionPort port, this.maxOptions = 8})
-    : _port = port;
+  AskUserTool({required this.port, this.maxOptions = 8});
 
-  final AgentQuestionPort _port;
+  /// Where the question is asked. The run waits on this port's answer.
+  final AgentQuestionPort port;
 
   /// Cap on how many options are shown. Matches the harness tool.
   final int maxOptions;
@@ -98,7 +98,7 @@ class AskUserTool extends McpTool {
         'description': 'Let the user pick more than one option.',
       },
     },
-    'required': ['question'],
+    'required': ['workspace_id', 'question'],
   };
 
   @override
@@ -122,7 +122,7 @@ class AskUserTool extends McpTool {
     }
 
     final rawAgent = arguments['agent_id'];
-    final answer = await _port.ask(
+    final answer = await port.ask(
       AgentQuestionRequest(
         workspaceId: workspaceId!,
         spaceId: spaceId!,

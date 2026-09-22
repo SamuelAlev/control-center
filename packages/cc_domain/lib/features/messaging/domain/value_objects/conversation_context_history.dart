@@ -25,6 +25,33 @@ class ConversationContextHistory {
   /// The newest live agent turn, with its transcript, or null when the
   /// conversation has none.
   final Message? lastAgentTurn;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ConversationContextHistory &&
+          _sameMessages(messages, other.messages) &&
+          _sameMessages(summaries, other.summaries) &&
+          lastAgentTurn == other.lastAgentTurn;
+
+  @override
+  int get hashCode => Object.hash(
+    Object.hashAll(messages),
+    Object.hashAll(summaries),
+    lastAgentTurn,
+  );
+}
+
+bool _sameMessages(List<Message> a, List<Message> b) {
+  if (a.length != b.length) {
+    return false;
+  }
+  for (var i = 0; i < a.length; i++) {
+    if (a[i] != b[i]) {
+      return false;
+    }
+  }
+  return true;
 }
 
 /// Whether [message] consumes the dispatch verbatim-window budget.

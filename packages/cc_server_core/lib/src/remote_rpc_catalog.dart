@@ -176,6 +176,7 @@ import 'package:cc_server_core/src/catalog/meeting_ops.dart';
 import 'package:cc_server_core/src/catalog/model_control_ops.dart';
 import 'package:cc_server_core/src/catalog/pr_review_ops.dart';
 import 'package:cc_server_core/src/catalog/terminal_port_ops.dart';
+import 'package:cc_server_core/src/catalog/worktree_branch_ops.dart';
 import 'package:cc_server_core/src/cc_server_runtime.dart'
     show accountPoolKeyForLane;
 import 'package:cc_server_core/src/collab/checker_listener.dart';
@@ -4856,71 +4857,13 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           return {'ok': true, ...res};
         },
       ),
-    // VS Code's Sync: fetch, rebase onto what arrived, then push when this
-    // side is ahead or the branch was never published. Never commits, so
-    // gitCommit would be a false declaration. The fetch is the network, and
-    // the push is gitPush — both are the honest worst case of one button.
-    if (worktreeSync != null)
-      RepoOp(
-        name: 'worktree.syncBranch',
-        kind: RepoOpKind.mutate,
-        actionClasses: const {ActionClass.networkEgress, ActionClass.gitPush},
-        requiredArgs: ['workspace_id', 'space_id', 'repo_id'],
-        handler: (ctx) async {
-          final res = await worktreeSync(
-            workspaceId: ctx.workspaceId!,
-            spaceId: ctx.args['space_id'] as String,
-            repoId: ctx.args['repo_id'] as String,
-            actingUserId: ctx.userId,
-          );
-          if (res == null) {
-            return {'ok': false};
-          }
-          return {'ok': true, ...res};
-        },
-      ),
-    // The branch picker. A read of refs already in the worktree — no fetch,
-    // so it declares nothing. Checkout is a mutation of that same isolated
-    // tree (see the no-effect exemption): it never pushes and never writes
-    // the source checkout.
-    if (worktreeBranches != null)
-      RepoOp(
-        name: 'worktree.listBranches',
-        kind: RepoOpKind.read,
-        requiredArgs: ['workspace_id', 'space_id', 'repo_id'],
-        handler: (ctx) async {
-          final res = await worktreeBranches(
-            workspaceId: ctx.workspaceId!,
-            spaceId: ctx.args['space_id'] as String,
-            repoId: ctx.args['repo_id'] as String,
-          );
-          if (res == null) {
-            return {'ok': false};
-          }
-          return {'ok': true, ...res};
-        },
-      ),
-    if (worktreeCheckoutFn != null)
-      RepoOp(
-        name: 'worktree.checkout',
-        kind: RepoOpKind.mutate,
-        requiredArgs: ['workspace_id', 'space_id', 'repo_id'],
-        handler: (ctx) async {
-          final res = await worktreeCheckoutFn(
-            workspaceId: ctx.workspaceId!,
-            spaceId: ctx.args['space_id'] as String,
-            repoId: ctx.args['repo_id'] as String,
-            branch: ctx.args['branch'] as String?,
-            startPoint: ctx.args['start_point'] as String?,
-            create: ctx.args['create'] as bool? ?? false,
-            detach: ctx.args['detach'] as bool? ?? false,
-          );
-          if (res == null) {
-            return {'ok': false};
-          }
-          return res;
-        },
-      ),
+    // Sync, branch list, and checkout live in [buildWorktreeBranchOps] so
+    // this file's constructor count stays on the freeze.
+    ...buildWorktreeBranchOps(
+      sync: worktreeSync,
+      listBranches: worktreeBranches,
+      checkout: worktreeCheckoutFn,
+    ),
 
     // The MCP HTTP server is a single process-wide listener the SERVER hosts;
     // it is not workspace data, so these ops are `workspaceScoped: false`. They

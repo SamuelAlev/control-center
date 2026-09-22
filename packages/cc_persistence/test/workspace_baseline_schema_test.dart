@@ -16,48 +16,50 @@ import 'helpers/test_database.dart';
 /// because some old step added it would silently stop existing.
 void main() {
   group('workspace baseline schema', () {
-
     // Regression: the first ship of skill_sources relied on the squashed
     // baseline alone, so a database file created before the table existed
     // answered "no such table: skill_sources" at runtime.
-    test('an existing v1 database is migrated to carry skill sources', () async {
-      final dir = await Directory.systemTemp.createTemp('ws_migration_');
-      addTearDown(() => dir.delete(recursive: true));
-      final file = File('${dir.path}/ws.db');
+    test(
+      'an existing v1 database is migrated to carry skill sources',
+      () async {
+        final dir = await Directory.systemTemp.createTemp('ws_migration_');
+        addTearDown(() => dir.delete(recursive: true));
+        final file = File('${dir.path}/ws.db');
 
-      // Build a current database, then rewind it to "v1 without the table"
-      // (DROP TABLE takes its index along) to fake a pre-skill-sources file.
-      final setup = WorkspaceDatabase.forTesting(
-        NativeDatabase(file),
-        workspaceId: 'ws',
-      );
-      await setup.customStatement('DROP TABLE skill_sources');
-      await setup.customStatement('PRAGMA user_version = 1');
-      await setup.close();
+        // Build a current database, then rewind it to "v1 without the table"
+        // (DROP TABLE takes its index along) to fake a pre-skill-sources file.
+        final setup = WorkspaceDatabase.forTesting(
+          NativeDatabase(file),
+          workspaceId: 'ws',
+        );
+        await setup.customStatement('DROP TABLE skill_sources');
+        await setup.customStatement('PRAGMA user_version = 1');
+        await setup.close();
 
-      // Reopening runs the 1->2 step, which must create the table + index.
-      final db = WorkspaceDatabase.forTesting(
-        NativeDatabase(file),
-        workspaceId: 'ws',
-      );
-      addTearDown(db.close);
+        // Reopening runs the 1->2 step, which must create the table + index.
+        final db = WorkspaceDatabase.forTesting(
+          NativeDatabase(file),
+          workspaceId: 'ws',
+        );
+        addTearDown(db.close);
 
-      final rows = await db
-          .customSelect(
-            "SELECT name FROM sqlite_master WHERE type = 'table' "
-            "AND name = 'skill_sources'",
-          )
-          .get();
-      expect(rows, isNotEmpty);
-      final index = await db
-          .customSelect(
-            "SELECT name FROM sqlite_master WHERE type = 'index' "
-            "AND name = 'idx_skill_sources_workspace'",
-          )
-          .get();
-      expect(index, isNotEmpty);
-      expect(db.schemaVersion, WorkspaceDatabase.currentSchemaVersion);
-    });
+        final rows = await db
+            .customSelect(
+              "SELECT name FROM sqlite_master WHERE type = 'table' "
+              "AND name = 'skill_sources'",
+            )
+            .get();
+        expect(rows, isNotEmpty);
+        final index = await db
+            .customSelect(
+              "SELECT name FROM sqlite_master WHERE type = 'index' "
+              "AND name = 'idx_skill_sources_workspace'",
+            )
+            .get();
+        expect(index, isNotEmpty);
+        expect(db.schemaVersion, WorkspaceDatabase.currentSchemaVersion);
+      },
+    );
 
     test('reports the version the code says it is', () {
       final db = createTestDatabase();
@@ -88,10 +90,10 @@ void main() {
         workspaceId: 'ws',
       );
       await setup.customStatement('DROP TABLE repo_script_runs');
-      await setup
-          .customStatement('ALTER TABLE repos DROP COLUMN setup_script');
-      await setup
-          .customStatement('ALTER TABLE repos DROP COLUMN archive_script');
+      await setup.customStatement('ALTER TABLE repos DROP COLUMN setup_script');
+      await setup.customStatement(
+        'ALTER TABLE repos DROP COLUMN archive_script',
+      );
       await setup.customStatement('PRAGMA user_version = 3');
       await setup.close();
 
@@ -218,10 +220,7 @@ void main() {
           .customSelect('PRAGMA table_info(workspace_roles)')
           .get()
           .then((rows) => rows.map((r) => r.read<String>('name')).toSet());
-      expect(
-        roles,
-        containsAll(['id', 'workspace_id', 'name', 'base_preset']),
-      );
+      expect(roles, containsAll(['id', 'workspace_id', 'name', 'base_preset']));
       final policies = await db
           .customSelect('PRAGMA table_info(action_policies)')
           .get()
@@ -341,11 +340,9 @@ void main() {
             .customSelect('SELECT id FROM code_edges')
             .get()
             .then((rows) => rows.map((r) => r.read<String>('id')).toSet());
-        expect(
-          survivors,
-          {'edge-live'},
-          reason: 'unresolved edges are write-only rows; bound ones stay',
-        );
+        expect(survivors, {
+          'edge-live',
+        }, reason: 'unresolved edges are write-only rows; bound ones stay');
         // The migration freed pages SQLite would otherwise keep as freelist
         // forever — the one-time VACUUM in beforeOpen must have returned them.
         final freelist = await db
@@ -467,46 +464,52 @@ void main() {
       expect(createSql.read<String>('sql'), contains('UNIQUE'));
     });
 
-    test('a fresh database carries the audit ip/country/details columns', () async {
-      final db = createTestDatabase();
-      addTearDown(db.close);
+    test(
+      'a fresh database carries the audit ip/country/details columns',
+      () async {
+        final db = createTestDatabase();
+        addTearDown(db.close);
 
-      final rows = await db
-          .customSelect("PRAGMA table_info('user_activity')")
-          .get();
-      final columns = rows.map((r) => r.read<String>('name')).toSet();
+        final rows = await db
+            .customSelect("PRAGMA table_info('user_activity')")
+            .get();
+        final columns = rows.map((r) => r.read<String>('name')).toSet();
 
-      expect(columns, containsAll(<String>['ip', 'country_code', 'details']));
-    });
+        expect(columns, containsAll(<String>['ip', 'country_code', 'details']));
+      },
+    );
 
-    test('an existing v7 database is migrated to carry activity details', () async {
-      final dir = await Directory.systemTemp.createTemp('ws_migration_v8_');
-      addTearDown(() => dir.delete(recursive: true));
-      final file = File('${dir.path}/ws.db');
+    test(
+      'an existing v7 database is migrated to carry activity details',
+      () async {
+        final dir = await Directory.systemTemp.createTemp('ws_migration_v8_');
+        addTearDown(() => dir.delete(recursive: true));
+        final file = File('${dir.path}/ws.db');
 
-      final setup = WorkspaceDatabase.forTesting(
-        NativeDatabase(file),
-        workspaceId: 'ws',
-      );
-      await setup.customStatement(
-        'ALTER TABLE user_activity DROP COLUMN details',
-      );
-      await setup.customStatement('PRAGMA user_version = 7');
-      await setup.close();
+        final setup = WorkspaceDatabase.forTesting(
+          NativeDatabase(file),
+          workspaceId: 'ws',
+        );
+        await setup.customStatement(
+          'ALTER TABLE user_activity DROP COLUMN details',
+        );
+        await setup.customStatement('PRAGMA user_version = 7');
+        await setup.close();
 
-      final db = WorkspaceDatabase.forTesting(
-        NativeDatabase(file),
-        workspaceId: 'ws',
-      );
-      addTearDown(db.close);
+        final db = WorkspaceDatabase.forTesting(
+          NativeDatabase(file),
+          workspaceId: 'ws',
+        );
+        addTearDown(db.close);
 
-      final columns = await db
-          .customSelect("PRAGMA table_info('user_activity')")
-          .get()
-          .then((rows) => rows.map((r) => r.read<String>('name')).toSet());
-      expect(columns, contains('details'));
-      expect(db.schemaVersion, WorkspaceDatabase.currentSchemaVersion);
-    });
+        final columns = await db
+            .customSelect("PRAGMA table_info('user_activity')")
+            .get()
+            .then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+        expect(columns, contains('details'));
+        expect(db.schemaVersion, WorkspaceDatabase.currentSchemaVersion);
+      },
+    );
 
     test('a fresh database keys todos and goals by conversation', () async {
       final db = createTestDatabase();
@@ -526,25 +529,21 @@ void main() {
       expect(goals, isNot(contains('space_id')));
     });
 
-    test(
-      'an existing v8 database drops space-keyed todos and goals',
-      () async {
-        final dir = await Directory.systemTemp.createTemp('ws_migration_v9_');
-        addTearDown(() => dir.delete(recursive: true));
-        final file = File('${dir.path}/ws.db');
+    test('an existing v8 database drops space-keyed todos and goals', () async {
+      final dir = await Directory.systemTemp.createTemp('ws_migration_v9_');
+      addTearDown(() => dir.delete(recursive: true));
+      final file = File('${dir.path}/ws.db');
 
-        final setup = WorkspaceDatabase.forTesting(
-          NativeDatabase(file),
-          workspaceId: 'ws',
-        );
-        await setup.customStatement(
-          "INSERT INTO spaces (id, name, workspace_id) VALUES ('s-1', 's-1', 'ws')",
-        );
-        await setup.customStatement('DROP TABLE IF EXISTS todos');
-        await setup.customStatement(
-          'DROP TABLE IF EXISTS conversation_goals',
-        );
-        await setup.customStatement('''
+      final setup = WorkspaceDatabase.forTesting(
+        NativeDatabase(file),
+        workspaceId: 'ws',
+      );
+      await setup.customStatement(
+        "INSERT INTO spaces (id, name, workspace_id) VALUES ('s-1', 's-1', 'ws')",
+      );
+      await setup.customStatement('DROP TABLE IF EXISTS todos');
+      await setup.customStatement('DROP TABLE IF EXISTS conversation_goals');
+      await setup.customStatement('''
 CREATE TABLE todos (
   id TEXT NOT NULL PRIMARY KEY,
   workspace_id TEXT NOT NULL,
@@ -556,7 +555,7 @@ CREATE TABLE todos (
   updated_at INTEGER NOT NULL
 )
 ''');
-        await setup.customStatement('''
+      await setup.customStatement('''
 CREATE TABLE conversation_goals (
   space_id TEXT NOT NULL PRIMARY KEY REFERENCES spaces (id) ON DELETE CASCADE,
   workspace_id TEXT NOT NULL,
@@ -565,50 +564,49 @@ CREATE TABLE conversation_goals (
   updated_at INTEGER NOT NULL
 )
 ''');
-        await setup.customStatement(
-          "INSERT INTO todos (id, workspace_id, space_id, content, "
-          "created_at, updated_at) VALUES ('t-old', 'ws', 's-1', 'stale', 0, 0)",
-        );
-        await setup.customStatement(
-          "INSERT INTO conversation_goals (space_id, workspace_id, title, "
-          "created_at, updated_at) VALUES ('s-1', 'ws', 'stale goal', 0, 0)",
-        );
-        await setup.customStatement('PRAGMA user_version = 8');
-        await setup.close();
+      await setup.customStatement(
+        'INSERT INTO todos (id, workspace_id, space_id, content, '
+        "created_at, updated_at) VALUES ('t-old', 'ws', 's-1', 'stale', 0, 0)",
+      );
+      await setup.customStatement(
+        'INSERT INTO conversation_goals (space_id, workspace_id, title, '
+        "created_at, updated_at) VALUES ('s-1', 'ws', 'stale goal', 0, 0)",
+      );
+      await setup.customStatement('PRAGMA user_version = 8');
+      await setup.close();
 
-        final db = WorkspaceDatabase.forTesting(
-          NativeDatabase(file),
-          workspaceId: 'ws',
-        );
-        addTearDown(db.close);
+      final db = WorkspaceDatabase.forTesting(
+        NativeDatabase(file),
+        workspaceId: 'ws',
+      );
+      addTearDown(db.close);
 
-        Future<Set<String>> columnsOf(String table) async =>
-            (await db.customSelect("PRAGMA table_info('$table')").get())
-                .map((r) => r.read<String>('name'))
-                .toSet();
+      Future<Set<String>> columnsOf(String table) async =>
+          (await db.customSelect("PRAGMA table_info('$table')").get())
+              .map((r) => r.read<String>('name'))
+              .toSet();
 
-        final todos = await columnsOf('todos');
-        expect(todos, contains('conversation_id'));
-        expect(todos, isNot(contains('space_id')));
-        expect(
-          (await db.customSelect('SELECT COUNT(*) AS n FROM todos').getSingle())
-              .read<int>('n'),
-          0,
-        );
+      final todos = await columnsOf('todos');
+      expect(todos, contains('conversation_id'));
+      expect(todos, isNot(contains('space_id')));
+      expect(
+        (await db.customSelect('SELECT COUNT(*) AS n FROM todos').getSingle())
+            .read<int>('n'),
+        0,
+      );
 
-        final goals = await columnsOf('conversation_goals');
-        expect(goals, contains('conversation_id'));
-        expect(goals, isNot(contains('space_id')));
-        expect(
-          (await db
-                  .customSelect('SELECT COUNT(*) AS n FROM conversation_goals')
-                  .getSingle())
-              .read<int>('n'),
-          0,
-        );
-        expect(db.schemaVersion, WorkspaceDatabase.currentSchemaVersion);
-      },
-    );
+      final goals = await columnsOf('conversation_goals');
+      expect(goals, contains('conversation_id'));
+      expect(goals, isNot(contains('space_id')));
+      expect(
+        (await db
+                .customSelect('SELECT COUNT(*) AS n FROM conversation_goals')
+                .getSingle())
+            .read<int>('n'),
+        0,
+      );
+      expect(db.schemaVersion, WorkspaceDatabase.currentSchemaVersion);
+    });
 
     test('a fresh database carries the generic chat link tables', () async {
       final db = createTestDatabase();
@@ -643,11 +641,17 @@ CREATE TABLE conversation_goals (
       // overwriting `started_at`, and the archive of superseded attempts.
       // Every step-run read maps `attemptHistory`, so a baseline missing it
       // fails the mapper, not just the write.
-      expect(await columnsOf('pipeline_templates'), contains('max_parallel_runs'));
+      expect(
+        await columnsOf('pipeline_templates'),
+        contains('max_parallel_runs'),
+      );
       expect(await columnsOf('pipeline_runs'), contains('attempt_started_at'));
       // Which attempt of a run is current, so the page can say "Attempt 3".
       expect(await columnsOf('pipeline_runs'), contains('attempt_count'));
-      expect(await columnsOf('pipeline_step_runs'), contains('attempt_history'));
+      expect(
+        await columnsOf('pipeline_step_runs'),
+        contains('attempt_history'),
+      );
 
       final indexes =
           (await db
@@ -663,9 +667,7 @@ CREATE TABLE conversation_goals (
       // statuses. Leaving `queued` out would let a repeated trigger queue a
       // second copy of work already waiting.
       expect(
-        indexes
-            .firstWhere((i) => i.$1 == 'uq_pipeline_runs_active_dedup')
-            .$2,
+        indexes.firstWhere((i) => i.$1 == 'uq_pipeline_runs_active_dedup').$2,
         contains("'queued'"),
       );
     });
@@ -968,8 +970,8 @@ CREATE TABLE conversation_goals (
           .getSingle();
       final full =
           jsonDecode(row.read<String>('metadata')) as Map<String, dynamic>;
-      final lite = jsonDecode(row.read<String>('list_metadata'))
-          as Map<String, dynamic>;
+      final lite =
+          jsonDecode(row.read<String>('list_metadata')) as Map<String, dynamic>;
       expect(full['segments'], isA<List<dynamic>>());
       expect(lite.containsKey('segments'), isFalse);
       expect(lite['segments_elided'], isTrue);
