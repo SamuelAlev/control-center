@@ -4323,6 +4323,10 @@
   "prTemplateDefault": "기본",
   "addReviewers": "리뷰어 추가",
   "addAssignees": "담당자 추가",
+  "addLabels": "레이블 추가",
+  "searchLabels": "레이블 검색…",
+  "noMatchingLabels": "일치하는 레이블 없음",
+  "removeLabel": "{label} 제거",
   "searchUsers": "사람 검색…",
   "searchReviewers": "사람과 팀 검색…",
   "usersSectionLabel": "사람",
@@ -4380,6 +4384,7 @@
     }
   },
   "failedToUpdateAssignees": "담당자를 업데이트하지 못했습니다: {error}",
+  "failedToUpdateLabels": "레이블을 업데이트할 수 없습니다: {error}",
   "@failedToUpdateAssignees": {
     "description": "Error when updating assignees fails",
     "placeholders": {

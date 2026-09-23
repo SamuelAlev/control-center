@@ -7584,6 +7584,20 @@ class AppLocalizationsHu extends AppLocalizations {
   String get addAssignees => 'Hozzárendeltek hozzáadása';
 
   @override
+  String get addLabels => 'Címkék hozzáadása';
+
+  @override
+  String get searchLabels => 'Címkék keresése…';
+
+  @override
+  String get noMatchingLabels => 'Nincs egyező címke';
+
+  @override
+  String removeLabel(String label) {
+    return '$label eltávolítása';
+  }
+
+  @override
   String get searchUsers => 'Emberek keresése…';
 
   @override
@@ -7666,6 +7680,11 @@ class AppLocalizationsHu extends AppLocalizations {
   @override
   String failedToUpdateAssignees(String error) {
     return 'Nem sikerült frissíteni a hozzárendelteket: $error';
+  }
+
+  @override
+  String failedToUpdateLabels(String error) {
+    return 'A címkéket nem sikerült frissíteni: $error';
   }
 
   @override

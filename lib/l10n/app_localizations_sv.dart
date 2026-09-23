@@ -7557,6 +7557,20 @@ class AppLocalizationsSv extends AppLocalizations {
   String get addAssignees => 'Lägg till tilldelade';
 
   @override
+  String get addLabels => 'Lägg till etiketter';
+
+  @override
+  String get searchLabels => 'Sök etiketter…';
+
+  @override
+  String get noMatchingLabels => 'Inga matchande etiketter';
+
+  @override
+  String removeLabel(String label) {
+    return 'Ta bort $label';
+  }
+
+  @override
   String get searchUsers => 'Sök personer…';
 
   @override
@@ -7639,6 +7653,11 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String failedToUpdateAssignees(String error) {
     return 'Kunde inte uppdatera tilldelade: $error';
+  }
+
+  @override
+  String failedToUpdateLabels(String error) {
+    return 'Det gick inte att uppdatera etiketterna: $error';
   }
 
   @override

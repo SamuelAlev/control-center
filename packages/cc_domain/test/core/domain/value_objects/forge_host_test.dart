@@ -78,10 +78,7 @@ void main() {
       // The ratchet: a capability added to the class but not to `allNames`
       // would be invisible to the wire, the settings matrix and this test.
       final json = capabilitiesOf(ForgeHost.github).toJson();
-      expect(
-        json.keys.toSet(),
-        {'forge', ...ForgeCapabilities.allNames},
-      );
+      expect(json.keys.toSet(), {'forge', ...ForgeCapabilities.allNames});
     });
 
     test('byName rejects an unknown capability rather than reading false', () {
@@ -100,6 +97,13 @@ void main() {
           expect(restored.byName(name), original.byName(name), reason: name);
         }
       }
+    });
+
+    test('labels are a GitHub and GitLab capability', () {
+      expect(capabilitiesOf(ForgeHost.github).labels, isTrue);
+      expect(capabilitiesOf(ForgeHost.gitlab).labels, isTrue);
+      expect(capabilitiesOf(ForgeHost.bitbucket).labels, isFalse);
+      expect(capabilitiesOf(ForgeHost.local).labels, isFalse);
     });
 
     test('an older wire payload reads missing flags as false', () {

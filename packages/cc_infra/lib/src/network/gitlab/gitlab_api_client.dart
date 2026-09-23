@@ -106,6 +106,17 @@ class GitLabApiClient {
     cancelToken: cancelToken,
   );
 
+  /// Labels defined on [projectId], including labels inherited from ancestor
+  /// groups (GitLab's default). Paginated.
+  Future<List<GitLabLabel>> listLabels(
+    String projectId, {
+    CancelToken? cancelToken,
+  }) => _getPaged(
+    '/projects/$projectId/labels',
+    GitLabLabel.fromJson,
+    cancelToken: cancelToken,
+  );
+
   /// Lists everyone in group [groupPath] (URL-encoded full path), inherited
   /// memberships included. Paginated.
   ///
@@ -331,6 +342,9 @@ class GitLabApiClient {
   /// Updates merge request [iid]. Only non-null fields are sent.
   ///
   /// [stateEvent] is GitLab's lifecycle verb (`close` / `reopen`).
+  /// [addLabels] and [removeLabels] are comma-separated label names — GitLab's
+  /// own spelling of those parameters. A name that contains a comma cannot
+  /// share a value with another name; the caller sends that one alone.
   Future<GitLabMergeRequest?> updateMergeRequest(
     String projectId,
     int iid, {
@@ -339,6 +353,8 @@ class GitLabApiClient {
     String? stateEvent,
     List<int>? assigneeIds,
     List<int>? reviewerIds,
+    String? addLabels,
+    String? removeLabels,
     CancelToken? cancelToken,
   }) async {
     // An empty list is meaningful for the `*_ids` fields — it clears them — so
@@ -349,6 +365,8 @@ class GitLabApiClient {
       'state_event': ?stateEvent,
       'assignee_ids': ?assigneeIds,
       'reviewer_ids': ?reviewerIds,
+      'add_labels': ?addLabels,
+      'remove_labels': ?removeLabels,
     };
     if (payload.isEmpty) {
       return null;

@@ -7613,6 +7613,20 @@ class AppLocalizationsFr extends AppLocalizations {
   String get addAssignees => 'Ajouter des assignés';
 
   @override
+  String get addLabels => 'Ajouter des étiquettes';
+
+  @override
+  String get searchLabels => 'Rechercher des étiquettes…';
+
+  @override
+  String get noMatchingLabels => 'Aucune étiquette correspondante';
+
+  @override
+  String removeLabel(String label) {
+    return 'Retirer $label';
+  }
+
+  @override
   String get searchUsers => 'Rechercher des personnes…';
 
   @override
@@ -7695,6 +7709,11 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String failedToUpdateAssignees(String error) {
     return 'Échec de la mise à jour des assignés : $error';
+  }
+
+  @override
+  String failedToUpdateLabels(String error) {
+    return 'Impossible de mettre à jour les étiquettes : $error';
   }
 
   @override

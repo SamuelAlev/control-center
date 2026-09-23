@@ -7521,6 +7521,20 @@ class AppLocalizationsUr extends AppLocalizations {
   String get addAssignees => 'تفویض شدہ شامل کریں';
 
   @override
+  String get addLabels => 'لیبل شامل کریں';
+
+  @override
+  String get searchLabels => 'لیبل تلاش کریں…';
+
+  @override
+  String get noMatchingLabels => 'کوئی مماثل لیبل نہیں';
+
+  @override
+  String removeLabel(String label) {
+    return '$label ہٹائیں';
+  }
+
+  @override
   String get searchUsers => 'لوگ تلاش کریں…';
 
   @override
@@ -7603,6 +7617,11 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String failedToUpdateAssignees(String error) {
     return 'تفویض شدہ اپ ڈیٹ نہیں ہو سکے: ⁨$error⁩';
+  }
+
+  @override
+  String failedToUpdateLabels(String error) {
+    return 'لیبل اپ ڈیٹ نہیں ہو سکے: $error';
   }
 
   @override

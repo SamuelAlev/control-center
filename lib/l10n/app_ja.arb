@@ -4323,6 +4323,10 @@
   "prTemplateDefault": "デフォルト",
   "addReviewers": "レビュアーを追加",
   "addAssignees": "担当者を追加",
+  "addLabels": "ラベルを追加",
+  "searchLabels": "ラベルを検索…",
+  "noMatchingLabels": "一致するラベルがありません",
+  "removeLabel": "{label} を削除",
   "searchUsers": "ユーザーを検索…",
   "searchReviewers": "ユーザーとチームを検索…",
   "usersSectionLabel": "ユーザー",
@@ -4380,6 +4384,7 @@
     }
   },
   "failedToUpdateAssignees": "担当者を更新できませんでした: {error}",
+  "failedToUpdateLabels": "ラベルを更新できませんでした: {error}",
   "@failedToUpdateAssignees": {
     "description": "Error when updating assignees fails",
     "placeholders": {

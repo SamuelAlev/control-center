@@ -10,6 +10,7 @@ import 'package:cc_domain/features/pr_review/domain/entities/job_run_detail.dart
 import 'package:cc_domain/features/pr_review/domain/entities/pr_code_review_comment.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_commit.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
+import 'package:cc_domain/features/pr_review/domain/entities/pr_label.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_review_submission.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_review_thread_state.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_reviewer.dart';
@@ -1200,6 +1201,90 @@ class GitLabForgePrClient implements ForgePrClient {
       assigneeIds: ids,
       cancelToken: token,
     );
+  }
+
+  @override
+  Future<List<PrLabel>> listLabels({Object? cancelToken}) async {
+    final labels = await _client.listLabels(
+      _projectId,
+      cancelToken: _token(cancelToken),
+    );
+    return [
+      for (final label in labels)
+        if (label.name.isNotEmpty)
+          PrLabel.fromForge(
+            name: label.name,
+            color: label.color,
+            description: label.description,
+          ),
+    ];
+  }
+
+  /// Adds [names] to merge request [prNumber].
+  ///
+  /// GitLab's write parameter is one comma-separated string. A name that
+  /// itself contains a comma cannot ride in that string beside another name,
+  /// so it is sent on its own request.
+  @override
+  Future<void> addLabels({
+    required int prNumber,
+    required List<String> names,
+    Object? cancelToken,
+  }) => _writeLabels(
+    prNumber: prNumber,
+    names: names,
+    add: true,
+    cancelToken: cancelToken,
+  );
+
+  /// Removes [names] from merge request [prNumber]. See [addLabels].
+  @override
+  Future<void> removeLabels({
+    required int prNumber,
+    required List<String> names,
+    Object? cancelToken,
+  }) => _writeLabels(
+    prNumber: prNumber,
+    names: names,
+    add: false,
+    cancelToken: cancelToken,
+  );
+
+  Future<void> _writeLabels({
+    required int prNumber,
+    required List<String> names,
+    required bool add,
+    Object? cancelToken,
+  }) async {
+    if (names.isEmpty) {
+      return;
+    }
+    final token = _token(cancelToken);
+    final plain = <String>[];
+    final commas = <String>[];
+    for (final name in names) {
+      if (name.isEmpty) {
+        continue;
+      }
+      if (name.contains(',')) {
+        commas.add(name);
+      } else {
+        plain.add(name);
+      }
+    }
+    Future<void> send(String value) => _client.updateMergeRequest(
+      _projectId,
+      prNumber,
+      addLabels: add ? value : null,
+      removeLabels: add ? null : value,
+      cancelToken: token,
+    );
+    if (plain.isNotEmpty) {
+      await send(plain.join(','));
+    }
+    for (final name in commas) {
+      await send(name);
+    }
   }
 
   /// Requests reviews on merge request [prNumber].

@@ -7542,6 +7542,20 @@ class AppLocalizationsVi extends AppLocalizations {
   String get addAssignees => 'Thêm người được gán';
 
   @override
+  String get addLabels => 'Thêm nhãn';
+
+  @override
+  String get searchLabels => 'Tìm nhãn…';
+
+  @override
+  String get noMatchingLabels => 'Không có nhãn phù hợp';
+
+  @override
+  String removeLabel(String label) {
+    return 'Xóa $label';
+  }
+
+  @override
   String get searchUsers => 'Tìm người…';
 
   @override
@@ -7624,6 +7638,11 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String failedToUpdateAssignees(String error) {
     return 'Không thể cập nhật người được giao: $error';
+  }
+
+  @override
+  String failedToUpdateLabels(String error) {
+    return 'Không thể cập nhật nhãn: $error';
   }
 
   @override

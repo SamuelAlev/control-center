@@ -7627,6 +7627,20 @@ class AppLocalizationsEl extends AppLocalizations {
   String get addAssignees => 'Προσθήκη ανατεθειμένων';
 
   @override
+  String get addLabels => 'Προσθήκη ετικετών';
+
+  @override
+  String get searchLabels => 'Αναζήτηση ετικετών…';
+
+  @override
+  String get noMatchingLabels => 'Δεν υπάρχουν αντίστοιχες ετικέτες';
+
+  @override
+  String removeLabel(String label) {
+    return 'Αφαίρεση $label';
+  }
+
+  @override
   String get searchUsers => 'Αναζήτηση ατόμων…';
 
   @override
@@ -7709,6 +7723,11 @@ class AppLocalizationsEl extends AppLocalizations {
   @override
   String failedToUpdateAssignees(String error) {
     return 'Δεν ήταν δυνατή η ενημέρωση των ανατεθειμένων: ⁨$error⁩';
+  }
+
+  @override
+  String failedToUpdateLabels(String error) {
+    return 'Δεν ήταν δυνατή η ενημέρωση των ετικετών: $error';
   }
 
   @override

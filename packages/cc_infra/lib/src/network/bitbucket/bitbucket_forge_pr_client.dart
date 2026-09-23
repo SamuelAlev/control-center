@@ -8,6 +8,7 @@ import 'package:cc_domain/features/pr_review/domain/entities/job_run_detail.dart
 import 'package:cc_domain/features/pr_review/domain/entities/pr_code_review_comment.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_commit.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
+import 'package:cc_domain/features/pr_review/domain/entities/pr_label.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_review_submission.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_review_thread_state.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_reviewer.dart';
@@ -1008,6 +1009,28 @@ class BitbucketForgePrClient implements ForgePrClient {
     required List<String> logins,
     Object? cancelToken,
   }) => throw const ForgeUnsupportedError(ForgeHost.bitbucket, 'assignees');
+
+  /// Always throws: a Bitbucket Cloud pull request has no labels.
+  /// Capability: `labels`.
+  @override
+  Future<List<PrLabel>> listLabels({Object? cancelToken}) =>
+      throw const ForgeUnsupportedError(ForgeHost.bitbucket, 'labels');
+
+  /// Always throws: see [listLabels].
+  @override
+  Future<void> addLabels({
+    required int prNumber,
+    required List<String> names,
+    Object? cancelToken,
+  }) => throw const ForgeUnsupportedError(ForgeHost.bitbucket, 'labels');
+
+  /// Always throws: see [listLabels].
+  @override
+  Future<void> removeLabels({
+    required int prNumber,
+    required List<String> names,
+    Object? cancelToken,
+  }) => throw const ForgeUnsupportedError(ForgeHost.bitbucket, 'labels');
 
   /// Adds reviewers to a pull request.
   ///

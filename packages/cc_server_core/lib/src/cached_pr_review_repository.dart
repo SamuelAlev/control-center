@@ -12,6 +12,7 @@ import 'package:cc_domain/features/pr_review/domain/entities/job_run_detail.dart
 import 'package:cc_domain/features/pr_review/domain/entities/pr_code_review_comment.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_commit.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
+import 'package:cc_domain/features/pr_review/domain/entities/pr_label.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_review_submission.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_review_thread_state.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_reviewer.dart';
@@ -63,6 +64,7 @@ class _Kind {
   /// Repo-scoped picker candidate caches (TTL-enveloped), keyed by repo.
   static const assignableUsers = 'assignableUsers';
   static const requestableTeams = 'requestableTeams';
+  static const repoLabels = 'repoLabels';
 
   static const prScoped = <String>[
     prDetail,
@@ -2552,6 +2554,55 @@ class CachedPrReviewRepository implements PrReviewRepository {
     }
     await _client.removeAssignees(prNumber: prNumber, logins: logins);
     await _invalidatePrKinds(prNumber, const [_Kind.prDetail]);
+  }
+
+  /// Labels defined on the repository, TTL-cached like the assignee picker.
+  @override
+  Future<List<PrLabel>> listLabels() async {
+    _requireLabels();
+    final cached = await _readEnvelope(_Kind.repoLabels, _repoFullName);
+    if (cached != null) {
+      return [for (final row in cached) ?PrCacheCodec.labelFromCache(row)];
+    }
+    final labels = await _client.listLabels();
+    await _writeEnvelope(_Kind.repoLabels, _repoFullName, [
+      for (final label in labels) PrCacheCodec.labelToCache(label),
+    ]);
+    return labels;
+  }
+
+  /// Adds labels to a pull request.
+  @override
+  Future<void> addLabels({
+    required int prNumber,
+    required List<String> names,
+  }) async {
+    if (names.isEmpty) {
+      return;
+    }
+    _requireLabels();
+    await _client.addLabels(prNumber: prNumber, names: names);
+    await _invalidatePrKinds(prNumber, const [_Kind.prDetail]);
+  }
+
+  /// Removes labels from a pull request.
+  @override
+  Future<void> removeLabels({
+    required int prNumber,
+    required List<String> names,
+  }) async {
+    if (names.isEmpty) {
+      return;
+    }
+    _requireLabels();
+    await _client.removeLabels(prNumber: prNumber, names: names);
+    await _invalidatePrKinds(prNumber, const [_Kind.prDetail]);
+  }
+
+  void _requireLabels() {
+    if (!_client.capabilities.labels) {
+      throw ForgeUnsupportedError(_client.capabilities.forge, 'labels');
+    }
   }
 
   /// Requests reviewers for a pull request.

@@ -7549,6 +7549,20 @@ class AppLocalizationsTr extends AppLocalizations {
   String get addAssignees => 'Atanan ekle';
 
   @override
+  String get addLabels => 'Etiket ekle';
+
+  @override
+  String get searchLabels => 'Etiket ara…';
+
+  @override
+  String get noMatchingLabels => 'Eşleşen etiket yok';
+
+  @override
+  String removeLabel(String label) {
+    return '$label etiketini kaldır';
+  }
+
+  @override
   String get searchUsers => 'Kişi ara…';
 
   @override
@@ -7631,6 +7645,11 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String failedToUpdateAssignees(String error) {
     return 'Atananlar güncellenemedi: $error';
+  }
+
+  @override
+  String failedToUpdateLabels(String error) {
+    return 'Etiketler güncellenemedi: $error';
   }
 
   @override

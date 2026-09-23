@@ -445,6 +445,8 @@ class DemoProfile {
     'pr_review.uploadContent',
     'pr_review.addAssignees',
     'pr_review.removeAssignees',
+    'pr_review.addLabels',
+    'pr_review.removeLabels',
     'pr_review.requestReviewers',
     'pr_review.removeRequestedReviewers',
     'pr_review.createStack',

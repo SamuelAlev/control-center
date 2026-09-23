@@ -6951,6 +6951,27 @@
   "@addAssignees": {
     "description": "Button to add assignees to a PR"
   },
+  "addLabels": "Add labels",
+  "@addLabels": {
+    "description": "Button to add labels to a pull request"
+  },
+  "searchLabels": "Search labels…",
+  "@searchLabels": {
+    "description": "Search hint in the pull request label picker"
+  },
+  "noMatchingLabels": "No matching labels",
+  "@noMatchingLabels": {
+    "description": "Empty state in the pull request label picker when the search matches nothing"
+  },
+  "removeLabel": "Remove {label}",
+  "@removeLabel": {
+    "description": "Accessible name for the control that removes a label from a pull request",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
   "searchUsers": "Search people…",
   "@searchUsers": {
     "description": "Search hint in the assignee picker"
@@ -7078,6 +7099,15 @@
   "failedToUpdateAssignees": "Couldn't update assignees: {error}",
   "@failedToUpdateAssignees": {
     "description": "Error when updating assignees fails",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "failedToUpdateLabels": "Couldn't update labels: {error}",
+  "@failedToUpdateLabels": {
+    "description": "Error when updating pull request labels fails",
     "placeholders": {
       "error": {
         "type": "String"

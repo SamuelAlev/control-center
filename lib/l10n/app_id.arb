@@ -4323,6 +4323,10 @@
   "prTemplateDefault": "Default",
   "addReviewers": "Tambah peninjau",
   "addAssignees": "Tambah penerima tugas",
+  "addLabels": "Tambah label",
+  "searchLabels": "Cari label…",
+  "noMatchingLabels": "Tidak ada label yang cocok",
+  "removeLabel": "Hapus {label}",
   "searchUsers": "Cari orang…",
   "searchReviewers": "Cari orang dan tim…",
   "usersSectionLabel": "Orang",
@@ -4380,6 +4384,7 @@
     }
   },
   "failedToUpdateAssignees": "Tidak bisa memperbarui assignee: {error}",
+  "failedToUpdateLabels": "Tidak dapat memperbarui label: {error}",
   "@failedToUpdateAssignees": {
     "description": "Error when updating assignees fails",
     "placeholders": {

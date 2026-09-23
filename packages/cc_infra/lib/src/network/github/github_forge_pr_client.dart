@@ -8,6 +8,7 @@ import 'package:cc_domain/features/pr_review/domain/entities/job_run_detail.dart
 import 'package:cc_domain/features/pr_review/domain/entities/pr_code_review_comment.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_commit.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
+import 'package:cc_domain/features/pr_review/domain/entities/pr_label.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_review_submission.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_review_thread_state.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_reviewer.dart';
@@ -1130,6 +1131,50 @@ class GitHubForgePrClient implements ForgePrClient {
       );
     }
   }
+
+  @override
+  Future<List<PrLabel>> listLabels({Object? cancelToken}) async {
+    final labels = await _client.pr.listLabels(
+      owner,
+      repo,
+      cancelToken: _token(cancelToken),
+    );
+    return [
+      for (final label in labels)
+        if (label.name.isNotEmpty)
+          PrLabel.fromForge(
+            name: label.name,
+            color: label.color,
+            description: label.description,
+          ),
+    ];
+  }
+
+  @override
+  Future<void> addLabels({
+    required int prNumber,
+    required List<String> names,
+    Object? cancelToken,
+  }) => _client.pr.addLabels(
+    owner,
+    repo,
+    prNumber: prNumber,
+    names: names,
+    cancelToken: _token(cancelToken),
+  );
+
+  @override
+  Future<void> removeLabels({
+    required int prNumber,
+    required List<String> names,
+    Object? cancelToken,
+  }) => _client.pr.removeLabels(
+    owner,
+    repo,
+    prNumber: prNumber,
+    names: names,
+    cancelToken: _token(cancelToken),
+  );
 
   /// GitHub's per-call assignee ceiling.
   static const int _assigneesPerCall = 10;

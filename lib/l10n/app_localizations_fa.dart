@@ -7522,6 +7522,20 @@ class AppLocalizationsFa extends AppLocalizations {
   String get addAssignees => 'افزودن تخصیص';
 
   @override
+  String get addLabels => 'افزودن برچسب‌ها';
+
+  @override
+  String get searchLabels => 'جستجوی برچسب‌ها…';
+
+  @override
+  String get noMatchingLabels => 'برچسب منطبقی نیست';
+
+  @override
+  String removeLabel(String label) {
+    return 'حذف $label';
+  }
+
+  @override
   String get searchUsers => 'جستجوی افراد…';
 
   @override
@@ -7604,6 +7618,11 @@ class AppLocalizationsFa extends AppLocalizations {
   @override
   String failedToUpdateAssignees(String error) {
     return 'به‌روزرسانی تخصیص‌یافته‌ها ممکن نشد: ⁨$error⁩';
+  }
+
+  @override
+  String failedToUpdateLabels(String error) {
+    return 'برچسب‌ها به‌روزرسانی نشد: $error';
   }
 
   @override

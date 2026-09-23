@@ -756,6 +756,8 @@ class _FakeHost {
       case 'pr_review.updateIssueComment':
       case 'pr_review.addAssignees':
       case 'pr_review.removeAssignees':
+      case 'pr_review.addLabels':
+      case 'pr_review.removeLabels':
       case 'pr_review.requestReviewers':
       case 'pr_review.removeRequestedReviewers':
         sentPrReviewOps.add({'op': op, ...args});

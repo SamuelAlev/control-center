@@ -9,6 +9,7 @@ import 'package:cc_infra/src/network/models/github_check_run.dart';
 import 'package:cc_infra/src/network/models/github_commit.dart';
 import 'package:cc_infra/src/network/models/github_commit_status.dart';
 import 'package:cc_infra/src/network/models/github_issue_comment.dart';
+import 'package:cc_infra/src/network/models/github_label.dart';
 import 'package:cc_infra/src/network/models/github_job_run.dart';
 import 'package:cc_infra/src/network/models/github_pr_stack.dart';
 import 'package:cc_infra/src/network/models/github_pull_request.dart';
@@ -1790,6 +1791,92 @@ class GitHubPrClient {
         data: {'assignees': logins},
         cancelToken: cancelToken,
       );
+    } on DioException catch (e) {
+      if (e.type == DioExceptionType.cancel) {
+        rethrow;
+      }
+      throw mapDioException(e);
+    }
+  }
+
+  /// Lists labels defined on [owner]/[repo]. Paginates fully.
+  Future<List<GitHubLabel>> listLabels(
+    String owner,
+    String repo, {
+    CancelToken? cancelToken,
+  }) async {
+    _requireOwnerRepo(owner, repo);
+    final labels = <GitHubLabel>[];
+    var page = 1;
+    try {
+      while (true) {
+        final response = await _dio.get(
+          '/repos/$owner/$repo/labels',
+          queryParameters: {'per_page': 100, 'page': page},
+          cancelToken: cancelToken,
+        );
+        labels.addAll(_decodeList(response.data, GitHubLabel.fromJson));
+        if (!_hasNextPage(response)) {
+          break;
+        }
+        page++;
+      }
+      return labels;
+    } on DioException catch (e) {
+      if (e.type == DioExceptionType.cancel) {
+        rethrow;
+      }
+      throw mapDioException(e);
+    }
+  }
+
+  /// Adds [names] to the issue/PR. GitHub rejects a name the repository does
+  /// not already define.
+  Future<void> addLabels(
+    String owner,
+    String repo, {
+    required int prNumber,
+    required List<String> names,
+    CancelToken? cancelToken,
+  }) async {
+    _requireOwnerRepo(owner, repo);
+    if (names.isEmpty) {
+      return;
+    }
+    try {
+      await _dio.post(
+        '/repos/$owner/$repo/issues/$prNumber/labels',
+        data: {'labels': names},
+        cancelToken: cancelToken,
+      );
+    } on DioException catch (e) {
+      if (e.type == DioExceptionType.cancel) {
+        rethrow;
+      }
+      throw mapDioException(e);
+    }
+  }
+
+  /// Removes each of [names] from the issue/PR. The name is a path segment,
+  /// so it is percent-encoded (`bug/triage` must not become two segments).
+  Future<void> removeLabels(
+    String owner,
+    String repo, {
+    required int prNumber,
+    required List<String> names,
+    CancelToken? cancelToken,
+  }) async {
+    _requireOwnerRepo(owner, repo);
+    try {
+      for (final name in names) {
+        if (name.isEmpty) {
+          continue;
+        }
+        await _dio.delete(
+          '/repos/$owner/$repo/issues/$prNumber/labels/${Uri.encodeComponent(name)}',
+          cancelToken: cancelToken,
+        );
+      }
     } on DioException catch (e) {
       if (e.type == DioExceptionType.cancel) {
         rethrow;

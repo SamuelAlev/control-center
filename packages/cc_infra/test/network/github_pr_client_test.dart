@@ -560,10 +560,7 @@ void main() {
       );
       final req = b.fake.requests.single;
       expect(req.method, 'POST');
-      expect(
-        req.path,
-        '/repos/$owner/$repo/pulls/5/comments/42/replies',
-      );
+      expect(req.path, '/repos/$owner/$repo/pulls/5/comments/42/replies');
       expect((req.data as Map)['body'], 'reply');
     });
 
@@ -599,10 +596,7 @@ void main() {
       );
       final req = b.fake.requests.single;
       expect(req.method, 'PATCH');
-      expect(
-        req.path,
-        '/repos/$owner/$repo/issues/comments/12',
-      );
+      expect(req.path, '/repos/$owner/$repo/issues/comments/12');
       expect((req.data as Map)['body'], '- [x] done');
       expect(c.id, 12);
       expect(c.body, '- [x] done');
@@ -727,6 +721,58 @@ void main() {
       final req = b.fake.requests.single;
       expect(req.method, 'DELETE');
       expect((req.data as Map)['assignees'], ['a']);
+    });
+
+    test('addLabels is a no-op for an empty name list', () async {
+      final b = build((_) => _json({}));
+      await b.client.addLabels(owner, repo, prNumber: 1, names: const []);
+      expect(b.fake.requests, isEmpty);
+    });
+
+    test('addLabels POSTs the names', () async {
+      final b = build((_) => _json({}, status: 200));
+      await b.client.addLabels(
+        owner,
+        repo,
+        prNumber: 1,
+        names: const ['bug', 'docs'],
+      );
+      final req = b.fake.requests.single;
+      expect(req.method, 'POST');
+      expect(req.path, '/repos/$owner/$repo/issues/1/labels');
+      expect((req.data as Map)['labels'], ['bug', 'docs']);
+    });
+
+    test('removeLabels encodes the name into the path', () async {
+      final b = build((_) => _json({}, status: 200));
+      await b.client.removeLabels(
+        owner,
+        repo,
+        prNumber: 1,
+        names: const ['bug/triage'],
+      );
+      final req = b.fake.requests.single;
+      expect(req.method, 'DELETE');
+      expect(req.path, '/repos/$owner/$repo/issues/1/labels/bug%2Ftriage');
+    });
+
+    test('listLabels paginates and decodes color', () async {
+      var page = 0;
+      final b = build((_) {
+        page++;
+        return _json(
+          [
+            {'name': 'bug$page', 'color': 'd73a4a', 'description': 'Broken'},
+          ],
+          headers: {
+            if (page == 1) 'link': ['<x>; rel="next"'],
+          },
+        );
+      });
+      final labels = await b.client.listLabels(owner, repo);
+      expect(labels.map((label) => label.name), ['bug1', 'bug2']);
+      expect(labels.first.color, 'd73a4a');
+      expect(labels.first.description, 'Broken');
     });
 
     test('requestReviewers is a no-op when both lists are empty', () async {
@@ -1078,8 +1124,7 @@ void main() {
               'status': 'completed',
               'conclusion': 'success',
               'html_url': 'https://github.com/o/c/actions/runs/7/job/101',
-              'check_run_url':
-                  '/repos/o/c/check-runs/555',
+              'check_run_url': '/repos/o/c/check-runs/555',
               'started_at': '2025-01-01T10:00:00Z',
               'completed_at': '2025-01-01T10:05:00Z',
               'steps': [
@@ -1107,10 +1152,7 @@ void main() {
       expect(job.steps.first.conclusion, 'success');
       expect(job.steps.last.status, 'in_progress');
       final req = b.fake.requests.single;
-      expect(
-        req.path,
-        '/repos/$owner/$repo/actions/runs/7/jobs',
-      );
+      expect(req.path, '/repos/$owner/$repo/actions/runs/7/jobs');
       expect(req.queryParameters['per_page'], 100);
     });
 
@@ -1159,10 +1201,7 @@ void main() {
       expect(run!.path, '.github/workflows/ci.yaml');
       expect(run.headSha, 'abc123');
       expect(run.checkSuiteId, 42);
-      expect(
-        b.fake.requests.single.path,
-        '/repos/$owner/$repo/actions/runs/7',
-      );
+      expect(b.fake.requests.single.path, '/repos/$owner/$repo/actions/runs/7');
     });
 
     test('getWorkflowRun returns null on 404', () async {
@@ -1311,20 +1350,14 @@ void main() {
       await b.client.addToStack(owner, repo, 3, const [103]);
       final req = b.fake.requests.single;
       expect(req.method, 'POST');
-      expect(
-        req.path,
-        '/repos/$owner/$repo/stacks/3/add',
-      );
+      expect(req.path, '/repos/$owner/$repo/stacks/3/add');
     });
 
     test('unstack maps a 204 (dissolved stack) to null', () async {
       final b = build((_) => _json(null, status: 204));
       expect(await b.client.unstack(owner, repo, 3), isNull);
       final req = b.fake.requests.single;
-      expect(
-        req.path,
-        '/repos/$owner/$repo/stacks/3/unstack',
-      );
+      expect(req.path, '/repos/$owner/$repo/stacks/3/unstack');
     });
   });
 }

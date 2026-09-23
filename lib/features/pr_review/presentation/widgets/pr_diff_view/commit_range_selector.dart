@@ -164,7 +164,7 @@ class _CommitRangeSelectorState extends ConsumerState<CommitRangeSelector> {
           size: CcButtonSize.sm,
           semanticLabel: l10n.scopeDiffToCommits,
           onPressed: _controller.toggle,
-          trailing: Icon(AppIcons.chevronDown),
+          trailing: const Icon(AppIcons.chevronDown),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [

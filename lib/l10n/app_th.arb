@@ -4532,6 +4532,10 @@
   "prTemplateDefault": "ค่าเริ่มต้น",
   "addReviewers": "เพิ่มผู้รีวิว",
   "addAssignees": "เพิ่มผู้รับมอบหมาย",
+  "addLabels": "เพิ่มป้ายกำกับ",
+  "searchLabels": "ค้นหาป้ายกำกับ…",
+  "noMatchingLabels": "ไม่มีป้ายกำกับที่ตรงกัน",
+  "removeLabel": "นำ {label} ออก",
   "searchUsers": "ค้นหาคน…",
   "searchReviewers": "ค้นหาคนและทีม…",
   "usersSectionLabel": "คน",
@@ -4597,6 +4601,7 @@
     }
   },
   "failedToUpdateAssignees": "อัปเดตผู้รับมอบหมายไม่ได้: {error}",
+  "failedToUpdateLabels": "อัปเดตป้ายกำกับไม่สำเร็จ: {error}",
   "@failedToUpdateAssignees": {
     "description": "Error when updating assignees fails",
     "placeholders": {

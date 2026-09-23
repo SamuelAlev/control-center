@@ -7607,6 +7607,20 @@ class AppLocalizationsDe extends AppLocalizations {
   String get addAssignees => 'Zuständige hinzufügen';
 
   @override
+  String get addLabels => 'Labels hinzufügen';
+
+  @override
+  String get searchLabels => 'Labels suchen…';
+
+  @override
+  String get noMatchingLabels => 'Keine passenden Labels';
+
+  @override
+  String removeLabel(String label) {
+    return '$label entfernen';
+  }
+
+  @override
   String get searchUsers => 'Personen suchen…';
 
   @override
@@ -7689,6 +7703,11 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String failedToUpdateAssignees(String error) {
     return 'Zuständige konnten nicht aktualisiert werden: $error';
+  }
+
+  @override
+  String failedToUpdateLabels(String error) {
+    return 'Labels konnten nicht aktualisiert werden: $error';
   }
 
   @override

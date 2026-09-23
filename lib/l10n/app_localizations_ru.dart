@@ -7640,6 +7640,20 @@ class AppLocalizationsRu extends AppLocalizations {
   String get addAssignees => 'Добавить исполнителей';
 
   @override
+  String get addLabels => 'Добавить метки';
+
+  @override
+  String get searchLabels => 'Искать метки…';
+
+  @override
+  String get noMatchingLabels => 'Нет подходящих меток';
+
+  @override
+  String removeLabel(String label) {
+    return 'Удалить $label';
+  }
+
+  @override
   String get searchUsers => 'Поиск людей…';
 
   @override
@@ -7722,6 +7736,11 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String failedToUpdateAssignees(String error) {
     return 'Не удалось обновить исполнителей: $error';
+  }
+
+  @override
+  String failedToUpdateLabels(String error) {
+    return 'Не удалось обновить метки: $error';
   }
 
   @override

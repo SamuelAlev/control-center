@@ -11,6 +11,7 @@ import 'package:cc_domain/features/pr_review/domain/entities/job_run_detail.dart
 import 'package:cc_domain/features/pr_review/domain/entities/pr_code_review_comment.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_commit.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
+import 'package:cc_domain/features/pr_review/domain/entities/pr_label.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_review_submission.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_reviewer.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_stack.dart';
@@ -717,6 +718,21 @@ class FakePrReviewRepository implements PrReviewRepository {
   Future<void> removeAssignees({
     required int prNumber,
     required List<String> logins,
+  }) async {}
+
+  @override
+  Future<List<PrLabel>> listLabels() async => const [];
+
+  @override
+  Future<void> addLabels({
+    required int prNumber,
+    required List<String> names,
+  }) async {}
+
+  @override
+  Future<void> removeLabels({
+    required int prNumber,
+    required List<String> names,
   }) async {}
 
   @override
@@ -2872,6 +2888,16 @@ void main() {
     test('removeAssignees with empty list returns immediately', () async {
       final repo = _makeRepo(db: db, apiClient: apiClient);
       await repo.removeAssignees(prNumber: 1, logins: const []);
+    });
+
+    test('addLabels with empty list returns immediately', () async {
+      final repo = _makeRepo(db: db, apiClient: apiClient);
+      await repo.addLabels(prNumber: 1, names: const []);
+    });
+
+    test('removeLabels with empty list returns immediately', () async {
+      final repo = _makeRepo(db: db, apiClient: apiClient);
+      await repo.removeLabels(prNumber: 1, names: const []);
     });
 
     test(

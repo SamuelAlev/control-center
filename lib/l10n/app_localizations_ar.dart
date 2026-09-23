@@ -7642,6 +7642,20 @@ class AppLocalizationsAr extends AppLocalizations {
   String get addAssignees => 'إضافة معيّنين';
 
   @override
+  String get addLabels => 'إضافة التسميات';
+
+  @override
+  String get searchLabels => 'البحث في التسميات…';
+
+  @override
+  String get noMatchingLabels => 'لا توجد تسميات مطابقة';
+
+  @override
+  String removeLabel(String label) {
+    return 'إزالة $label';
+  }
+
+  @override
   String get searchUsers => 'البحث عن أشخاص…';
 
   @override
@@ -7724,6 +7738,11 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String failedToUpdateAssignees(String error) {
     return 'تعذر تحديث المعيّنين: ⁨$error⁩';
+  }
+
+  @override
+  String failedToUpdateLabels(String error) {
+    return 'تعذّر تحديث التسميات: $error';
   }
 
   @override

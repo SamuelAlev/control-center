@@ -7604,6 +7604,20 @@ class AppLocalizationsEs extends AppLocalizations {
   String get addAssignees => 'Añadir asignados';
 
   @override
+  String get addLabels => 'Añadir etiquetas';
+
+  @override
+  String get searchLabels => 'Buscar etiquetas…';
+
+  @override
+  String get noMatchingLabels => 'No hay etiquetas coincidentes';
+
+  @override
+  String removeLabel(String label) {
+    return 'Quitar $label';
+  }
+
+  @override
   String get searchUsers => 'Buscar personas…';
 
   @override
@@ -7687,6 +7701,11 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String failedToUpdateAssignees(String error) {
     return 'No se pudieron actualizar los asignados: $error';
+  }
+
+  @override
+  String failedToUpdateLabels(String error) {
+    return 'No se pudieron actualizar las etiquetas: $error';
   }
 
   @override

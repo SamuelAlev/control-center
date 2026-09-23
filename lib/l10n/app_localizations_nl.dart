@@ -7578,6 +7578,20 @@ class AppLocalizationsNl extends AppLocalizations {
   String get addAssignees => 'Toegewezenen toevoegen';
 
   @override
+  String get addLabels => 'Labels toevoegen';
+
+  @override
+  String get searchLabels => 'Labels zoeken…';
+
+  @override
+  String get noMatchingLabels => 'Geen overeenkomende labels';
+
+  @override
+  String removeLabel(String label) {
+    return '$label verwijderen';
+  }
+
+  @override
   String get searchUsers => 'Personen zoeken…';
 
   @override
@@ -7660,6 +7674,11 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String failedToUpdateAssignees(String error) {
     return 'Kan toegewezenen niet bijwerken: $error';
+  }
+
+  @override
+  String failedToUpdateLabels(String error) {
+    return 'Labels bijwerken mislukt: $error';
   }
 
   @override

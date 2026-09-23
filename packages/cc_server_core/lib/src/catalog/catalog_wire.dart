@@ -2711,21 +2711,34 @@ bool isOutOfDiffAnchorRejection(Object error) {
 /// html_url}` wire map) for `(owner, repo, number)`, or null when it can't be
 /// resolved (404/network). Wired from the GitHub client by the composition
 /// root; the catalog handles the SWR caching against the workspace cache.
+///
+/// [actingUserId] and [workspaceId] are the session caller. The fetch has to
+/// run as that person: the no-caller client resolves the GitHub App first, and
+/// an installation token is answered `404` for a private repo it cannot see,
+/// which the chip then renders as a plain link.
 typedef PrPreviewFetcher =
     Future<Map<String, dynamic>?> Function(
       String owner,
       String repo,
-      int number,
-    );
+      int number, {
+      required String actingUserId,
+      String? workspaceId,
+    });
 
 /// Fetches a lightweight commit preview (`{title, short_sha}` wire map) for
 /// `(owner, repo, sha)`, or null when it can't be resolved.
+///
+/// Same caller identity as [PrPreviewFetcher]: a commit on a private repo is
+/// invisible to the GitHub App even when the person reading the markdown can
+/// see it.
 typedef CommitPreviewFetcher =
     Future<Map<String, dynamic>?> Function(
       String owner,
       String repo,
-      String sha,
-    );
+      String sha, {
+      required String actingUserId,
+      String? workspaceId,
+    });
 
 /// Fetches the open pull requests across a workspace's linked GitHub repos,
 /// already enriched with checks and grouped per repo. Runs SERVER-SIDE on the

@@ -7560,6 +7560,20 @@ class AppLocalizationsMs extends AppLocalizations {
   String get addAssignees => 'Tambah penerima tugasan';
 
   @override
+  String get addLabels => 'Tambah label';
+
+  @override
+  String get searchLabels => 'Cari label…';
+
+  @override
+  String get noMatchingLabels => 'Tiada label yang sepadan';
+
+  @override
+  String removeLabel(String label) {
+    return 'Alih keluar $label';
+  }
+
+  @override
   String get searchUsers => 'Cari orang…';
 
   @override
@@ -7642,6 +7656,11 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String failedToUpdateAssignees(String error) {
     return 'Tidak dapat mengemas kini penerima tugasan: $error';
+  }
+
+  @override
+  String failedToUpdateLabels(String error) {
+    return 'Tidak dapat mengemas kini label: $error';
   }
 
   @override

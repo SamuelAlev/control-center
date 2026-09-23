@@ -4323,6 +4323,10 @@
   "prTemplateDefault": "پیش‌فرض",
   "addReviewers": "افزودن بازبین",
   "addAssignees": "افزودن تخصیص",
+  "addLabels": "افزودن برچسب‌ها",
+  "searchLabels": "جستجوی برچسب‌ها…",
+  "noMatchingLabels": "برچسب منطبقی نیست",
+  "removeLabel": "حذف {label}",
   "searchUsers": "جستجوی افراد…",
   "searchReviewers": "جستجوی افراد و تیم‌ها…",
   "usersSectionLabel": "افراد",
@@ -4380,6 +4384,7 @@
     }
   },
   "failedToUpdateAssignees": "به‌روزرسانی تخصیص‌یافته‌ها ممکن نشد: ⁨{error}⁩",
+  "failedToUpdateLabels": "برچسب‌ها به‌روزرسانی نشد: {error}",
   "@failedToUpdateAssignees": {
     "description": "Error when updating assignees fails",
     "placeholders": {

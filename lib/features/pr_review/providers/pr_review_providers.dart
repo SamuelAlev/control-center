@@ -11,6 +11,7 @@ import 'package:cc_domain/features/pr_review/domain/entities/job_run_detail.dart
 import 'package:cc_domain/features/pr_review/domain/entities/pr_code_review_comment.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_commit.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
+import 'package:cc_domain/features/pr_review/domain/entities/pr_label.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_review_submission.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_reviewer.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_timeline_event.dart';
@@ -86,8 +87,8 @@ final prRepoRowProvider = Provider.autoDispose.family<Repo?, PrRef>((ref, pr) {
 /// to a repo it doesn't belong to. The host re-validates the repo link before
 /// serving any row. Resolving null (repos still loading, repo not linked)
 /// keeps callers in their loading state rather than erroring.
-final prRepositoryProvider =
-    Provider.autoDispose.family<PrReviewRepository?, PrRef>((ref, pr) {
+final prRepositoryProvider = Provider.autoDispose
+    .family<PrReviewRepository?, PrRef>((ref, pr) {
       final repo = ref.watch(prRepoRowProvider(pr));
       if (repo == null) {
         return null;
@@ -335,24 +336,26 @@ final prDiffProvider = StreamProvider.autoDispose.family<String, PrRef>((
 /// This is the FULL-patch subscription. Overview must not watch it — use
 /// [prFileIndexProvider] so opening a PR does not decode every hunk on
 /// the UI isolate.
-final prFilesProvider =
-    StreamProvider.autoDispose.family<List<PrFile>, PrRef>((ref, pr) {
-      final controller = StreamController<List<PrFile>>();
-      ref.onDispose(controller.close);
+final prFilesProvider = StreamProvider.autoDispose.family<List<PrFile>, PrRef>((
+  ref,
+  pr,
+) {
+  final controller = StreamController<List<PrFile>>();
+  ref.onDispose(controller.close);
 
-      ref.listen<AsyncValue<PrFilesLoad>>(prFilesLoadProvider(pr), (_, next) {
-        final files = next.value?.files;
-        if (files != null && files.isNotEmpty && !controller.isClosed) {
-          controller.add(List<PrFile>.unmodifiable(files));
-        }
-        final error = next.error;
-        if (error != null && !controller.isClosed) {
-          controller.addError(error, next.stackTrace);
-        }
-      });
+  ref.listen<AsyncValue<PrFilesLoad>>(prFilesLoadProvider(pr), (_, next) {
+    final files = next.value?.files;
+    if (files != null && files.isNotEmpty && !controller.isClosed) {
+      controller.add(List<PrFile>.unmodifiable(files));
+    }
+    final error = next.error;
+    if (error != null && !controller.isClosed) {
+      controller.addError(error, next.stackTrace);
+    }
+  });
 
-      return controller.stream;
-    });
+  return controller.stream;
+});
 
 /// Changed-file index: path, status and +/- counts, no patch bodies.
 ///
@@ -364,8 +367,7 @@ final prFileIndexProvider = StreamProvider.autoDispose
       return _prStream(
         ref,
         pr,
-        (repository) =>
-            repository.watchFiles(pr.number, includePatches: false),
+        (repository) => repository.watchFiles(pr.number, includePatches: false),
       );
     });
 
@@ -478,6 +480,17 @@ final prReviewersProvider = StreamProvider.autoDispose
 final assignableUsersProvider = FutureProvider.autoDispose<List<PrUser>>((ref) {
   return ref.watch(prReviewRepositoryProvider).listAssignableUsers();
 });
+
+/// Labels defined on the pull request's own repository. Backs the sidebar
+/// label picker. PR-keyed so a number never lists another repo's labels.
+final repoLabelsProvider = FutureProvider.autoDispose
+    .family<List<PrLabel>, PrRef>((ref, pr) async {
+      final repository = ref.watch(prRepositoryProvider(pr));
+      if (repository == null) {
+        return const [];
+      }
+      return repository.listLabels();
+    });
 
 /// Reviewer candidates (users + teams) for the reviewer picker.
 final requestableReviewersProvider =
@@ -854,10 +867,7 @@ final prRepoWriteAccessProvider = Provider.autoDispose.family<bool, PrRef>((
 /// Whether the current user may edit the given PR's title/body: the PR author,
 /// or a user with write/admin permission on the repo. Mirrors the derivation
 /// behind the title-bar merge/close actions.
-final prCanEditProvider = Provider.autoDispose.family<bool, PrRef>((
-  ref,
-  pr,
-) {
+final prCanEditProvider = Provider.autoDispose.family<bool, PrRef>((ref, pr) {
   final prEntity = ref.watch(prDetailProvider(pr)).value;
   if (prEntity == null) {
     return false;

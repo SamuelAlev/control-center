@@ -7393,6 +7393,20 @@ class AppLocalizationsKo extends AppLocalizations {
   String get addAssignees => '담당자 추가';
 
   @override
+  String get addLabels => '레이블 추가';
+
+  @override
+  String get searchLabels => '레이블 검색…';
+
+  @override
+  String get noMatchingLabels => '일치하는 레이블 없음';
+
+  @override
+  String removeLabel(String label) {
+    return '$label 제거';
+  }
+
+  @override
   String get searchUsers => '사람 검색…';
 
   @override
@@ -7475,6 +7489,11 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String failedToUpdateAssignees(String error) {
     return '담당자를 업데이트하지 못했습니다: $error';
+  }
+
+  @override
+  String failedToUpdateLabels(String error) {
+    return '레이블을 업데이트할 수 없습니다: $error';
   }
 
   @override

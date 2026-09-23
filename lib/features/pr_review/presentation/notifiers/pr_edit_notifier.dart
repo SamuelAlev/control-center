@@ -4,7 +4,7 @@ import 'package:cc_markdown/cc_markdown.dart';
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// In-flight edit state for a single PR's title/body/assignees/reviewers.
+/// In-flight edit state for a single PR's title/body/assignees/reviewers/labels.
 ///
 /// Keeps the "saving" flags and the optimistic in-flight sets in one place so
 /// each editing widget (title field, body editor, sidebar rows/pickers) stays
@@ -19,6 +19,7 @@ class PrEditState {
     this.savingCommentIds = const {},
     this.pendingAssignees = const {},
     this.pendingReviewers = const {},
+    this.pendingLabels = const {},
   });
 
   /// Whether a title save is in flight.
@@ -44,6 +45,9 @@ class PrEditState {
   /// in flight.
   final Set<String> pendingReviewers;
 
+  /// Label names (lowercased) whose add/remove is in flight.
+  final Set<String> pendingLabels;
+
   /// Returns a copy with the given fields replaced.
   PrEditState copyWith({
     bool? savingTitle,
@@ -54,6 +58,7 @@ class PrEditState {
     Set<int>? savingCommentIds,
     Set<String>? pendingAssignees,
     Set<String>? pendingReviewers,
+    Set<String>? pendingLabels,
   }) {
     return PrEditState(
       savingTitle: savingTitle ?? this.savingTitle,
@@ -65,6 +70,7 @@ class PrEditState {
       savingCommentIds: savingCommentIds ?? this.savingCommentIds,
       pendingAssignees: pendingAssignees ?? this.pendingAssignees,
       pendingReviewers: pendingReviewers ?? this.pendingReviewers,
+      pendingLabels: pendingLabels ?? this.pendingLabels,
     );
   }
 }
@@ -266,6 +272,41 @@ class PrEditNotifier extends Notifier<PrEditState> {
   /// Removes a single assignee (used by the inline remove affordance).
   Future<String?> removeAssignee(String login) =>
       applyAssigneeChanges(remove: [login]);
+
+  /// Applies a label diff in one shot (used by the picker's close).
+  Future<String?> applyLabelChanges({
+    List<String> add = const [],
+    List<String> remove = const [],
+  }) async {
+    if (add.isEmpty && remove.isEmpty) {
+      return null;
+    }
+    final repo = _repo;
+    if (repo == null) {
+      return null;
+    }
+    final keys = {...add, ...remove}.map((name) => name.toLowerCase()).toSet();
+    state = state.copyWith(pendingLabels: {...state.pendingLabels, ...keys});
+    try {
+      if (add.isNotEmpty) {
+        await repo.addLabels(prNumber: prNumber, names: add);
+      }
+      if (remove.isNotEmpty) {
+        await repo.removeLabels(prNumber: prNumber, names: remove);
+      }
+      _refreshDetail();
+      return null;
+    } catch (e) {
+      return _msg(e);
+    } finally {
+      state = state.copyWith(
+        pendingLabels: state.pendingLabels.difference(keys),
+      );
+    }
+  }
+
+  /// Removes a single label (used by the inline remove affordance).
+  Future<String?> removeLabel(String name) => applyLabelChanges(remove: [name]);
 
   /// Applies a reviewer diff in one shot (used by the picker's Save).
   Future<String?> applyReviewerChanges({

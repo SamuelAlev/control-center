@@ -17,6 +17,23 @@ class PrLabel {
   /// Optional description the forge attached to the label.
   final String description;
 
+  /// Builds a label from a forge payload.
+  ///
+  /// Strips a leading `#` from [color] so GitLab's `#RRGGBB` and GitHub's
+  /// 6-digit hex land in the same field.
+  factory PrLabel.fromForge({
+    required String name,
+    String color = '',
+    String description = '',
+  }) {
+    final hex = color.trim();
+    return PrLabel(
+      name: name,
+      color: hex.startsWith('#') ? hex.substring(1) : hex,
+      description: description,
+    );
+  }
+
   /// Equality comparison.
   @override
   bool operator ==(Object other) =>

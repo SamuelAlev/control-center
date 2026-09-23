@@ -13,6 +13,7 @@ import 'dart:ui' show BoxHeightStyle;
 
 import 'package:cc_markdown/src/ast/nodes.dart';
 import 'package:cc_markdown/src/mermaid/render/mermaid_view.dart';
+import 'package:cc_markdown/src/render/emoji_advance.dart';
 import 'package:cc_markdown/src/render/node_builder.dart';
 import 'package:cc_markdown/src/render/render_context.dart';
 import 'package:cc_markdown/src/style/style.dart';
@@ -571,6 +572,12 @@ class _RichInlineTextState extends State<_RichInlineText> {
   /// drifting from a mirrored [TextPainter].
   final GlobalKey _textKey = GlobalKey();
 
+  /// The style and scaler [Text.rich] will paint with, captured at the start
+  /// of [build]. Emoji advance is measured against this so the correction
+  /// matches the font on screen. Only read from [_buildSpans] during build.
+  late TextStyle _paintStyle;
+  late TextScaler _paintScaler;
+
   @override
   void dispose() {
     _disposeRecognizers();
@@ -588,6 +595,12 @@ class _RichInlineTextState extends State<_RichInlineText> {
   @override
   Widget build(BuildContext context) {
     _disposeRecognizers();
+    final incoming = widget.baseStyle;
+    final defaults = DefaultTextStyle.of(context).style;
+    _paintStyle = (incoming == null || incoming.inherit)
+        ? defaults.merge(incoming)
+        : incoming;
+    _paintScaler = MediaQuery.textScalerOf(context);
     final spans = _buildSpans(widget.nodes, widget.baseStyle);
     _collectLinkRanges(spans);
     final text = Text.rich(
@@ -667,7 +680,13 @@ class _RichInlineTextState extends State<_RichInlineText> {
       }
       switch (node) {
         case CcText(:final text):
-          spans.add(TextSpan(text: text));
+          spans.addAll(
+            textSpansTighteningEmoji(
+              text,
+              style: _paintStyle,
+              textScaler: _paintScaler,
+            ),
+          );
         case CcSoftBreak():
           spans.add(
             TextSpan(
@@ -760,7 +779,13 @@ class _RichInlineTextState extends State<_RichInlineText> {
             ),
           );
         case CcInlineHtml(:final raw):
-          spans.add(TextSpan(text: stripHtmlTags(raw)));
+          spans.addAll(
+            textSpansTighteningEmoji(
+              stripHtmlTags(raw),
+              style: _paintStyle,
+              textScaler: _paintScaler,
+            ),
+          );
         case final CcCustomInline custom:
           spans.add(
             WidgetSpan(

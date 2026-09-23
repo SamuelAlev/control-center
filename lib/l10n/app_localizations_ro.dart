@@ -7628,6 +7628,20 @@ class AppLocalizationsRo extends AppLocalizations {
   String get addAssignees => 'Adaugă asignați';
 
   @override
+  String get addLabels => 'Adaugă etichete';
+
+  @override
+  String get searchLabels => 'Caută etichete…';
+
+  @override
+  String get noMatchingLabels => 'Nicio etichetă potrivită';
+
+  @override
+  String removeLabel(String label) {
+    return 'Elimină $label';
+  }
+
+  @override
   String get searchUsers => 'Caută persoane…';
 
   @override
@@ -7710,6 +7724,11 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String failedToUpdateAssignees(String error) {
     return 'Nu s-au putut actualiza asignații: $error';
+  }
+
+  @override
+  String failedToUpdateLabels(String error) {
+    return 'Nu s-au putut actualiza etichetele: $error';
   }
 
   @override

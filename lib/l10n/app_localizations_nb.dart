@@ -7553,6 +7553,20 @@ class AppLocalizationsNb extends AppLocalizations {
   String get addAssignees => 'Legg til tildelte';
 
   @override
+  String get addLabels => 'Legg til etiketter';
+
+  @override
+  String get searchLabels => 'Søk etter etiketter…';
+
+  @override
+  String get noMatchingLabels => 'Ingen samsvarende etiketter';
+
+  @override
+  String removeLabel(String label) {
+    return 'Fjern $label';
+  }
+
+  @override
   String get searchUsers => 'Søk etter personer…';
 
   @override
@@ -7635,6 +7649,11 @@ class AppLocalizationsNb extends AppLocalizations {
   @override
   String failedToUpdateAssignees(String error) {
     return 'Kunne ikke oppdatere tildelte: $error';
+  }
+
+  @override
+  String failedToUpdateLabels(String error) {
+    return 'Kunne ikke oppdatere etiketter: $error';
   }
 
   @override

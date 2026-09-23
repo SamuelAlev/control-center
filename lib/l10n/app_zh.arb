@@ -4323,6 +4323,10 @@
   "prTemplateDefault": "默认",
   "addReviewers": "添加审阅者",
   "addAssignees": "添加经办人",
+  "addLabels": "添加标签",
+  "searchLabels": "搜索标签…",
+  "noMatchingLabels": "没有匹配的标签",
+  "removeLabel": "移除{label}",
   "searchUsers": "搜索人员…",
   "searchReviewers": "搜索人员和团队…",
   "usersSectionLabel": "人员",
@@ -4380,6 +4384,7 @@
     }
   },
   "failedToUpdateAssignees": "无法更新经办人：{error}",
+  "failedToUpdateLabels": "无法更新标签：{error}",
   "@failedToUpdateAssignees": {
     "description": "Error when updating assignees fails",
     "placeholders": {

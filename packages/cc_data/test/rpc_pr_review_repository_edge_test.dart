@@ -155,14 +155,17 @@ void main() {
       expect(await repo().watchFiles(42).first, isEmpty);
     });
 
-    test('watchReviewComments sends include_hunks: false for the index', () async {
-      host.snapshotFor('pr_review.watchReviewComments', {
-        'comments': const <Map<String, dynamic>>[],
-      });
-      await repo().watchReviewComments(42, includeHunks: false).first;
-      expect(host.lastSubscribe!.query, 'pr_review.watchReviewComments');
-      expect(host.lastSubscribe!.args['include_hunks'], false);
-    });
+    test(
+      'watchReviewComments sends include_hunks: false for the index',
+      () async {
+        host.snapshotFor('pr_review.watchReviewComments', {
+          'comments': const <Map<String, dynamic>>[],
+        });
+        await repo().watchReviewComments(42, includeHunks: false).first;
+        expect(host.lastSubscribe!.query, 'pr_review.watchReviewComments');
+        expect(host.lastSubscribe!.args['include_hunks'], false);
+      },
+    );
 
     test('watchFiles sends include_patches: false for the index', () async {
       host.snapshotFor('pr_review.watchFiles', {
@@ -322,8 +325,7 @@ void main() {
         content: '+1',
         add: true,
       );
-      final reviewArgs =
-          host.lastCall('pr_review.toggleReviewReaction')!.args;
+      final reviewArgs = host.lastCall('pr_review.toggleReviewReaction')!.args;
       expect(reviewArgs['review_id'], 4991599055);
       expect(reviewArgs['pr_number'], 42);
       expect(reviewArgs['content'], '+1');
@@ -344,6 +346,14 @@ void main() {
       await r.removeAssignees(prNumber: 42, logins: const ['sam']);
       args = host.lastCall('pr_review.removeAssignees')!.args;
       expect(args['logins'], ['sam']);
+
+      await r.addLabels(prNumber: 42, names: const ['bug']);
+      args = host.lastCall('pr_review.addLabels')!.args;
+      expect(args['names'], ['bug']);
+
+      await r.removeLabels(prNumber: 42, names: const ['bug']);
+      args = host.lastCall('pr_review.removeLabels')!.args;
+      expect(args['names'], ['bug']);
     });
 
     test('close/update pull request forward args', () async {
@@ -409,15 +419,18 @@ void main() {
         expect(args['workspace_id'], 'ws');
       });
 
-      test('createStack sends the ordered numbers and maps the stack', () async {
-        host.callResults['pr_review.createStack'] = {'stack': stackWire};
-        final stack = await repo().createStack(prNumbers: const [101, 102]);
-        expect(stack.baseRef, 'main');
-        expect(
-          host.lastCall('pr_review.createStack')!.args['pull_requests'],
-          [101, 102],
-        );
-      });
+      test(
+        'createStack sends the ordered numbers and maps the stack',
+        () async {
+          host.callResults['pr_review.createStack'] = {'stack': stackWire};
+          final stack = await repo().createStack(prNumbers: const [101, 102]);
+          expect(stack.baseRef, 'main');
+          expect(
+            host.lastCall('pr_review.createStack')!.args['pull_requests'],
+            [101, 102],
+          );
+        },
+      );
 
       test('addToStack forwards the stack number and PRs', () async {
         host.callResults['pr_review.addToStack'] = {'stack': stackWire};
@@ -434,10 +447,7 @@ void main() {
       test('unstack maps a dissolved stack (null) through', () async {
         host.callResults['pr_review.unstack'] = {'stack': null};
         expect(await repo().unstack(stackNumber: 3), isNull);
-        expect(
-          host.lastCall('pr_review.unstack')!.args['stack_number'],
-          3,
-        );
+        expect(host.lastCall('pr_review.unstack')!.args['stack_number'], 3);
       });
     });
 

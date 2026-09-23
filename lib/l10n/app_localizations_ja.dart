@@ -7394,6 +7394,20 @@ class AppLocalizationsJa extends AppLocalizations {
   String get addAssignees => '担当者を追加';
 
   @override
+  String get addLabels => 'ラベルを追加';
+
+  @override
+  String get searchLabels => 'ラベルを検索…';
+
+  @override
+  String get noMatchingLabels => '一致するラベルがありません';
+
+  @override
+  String removeLabel(String label) {
+    return '$label を削除';
+  }
+
+  @override
   String get searchUsers => 'ユーザーを検索…';
 
   @override
@@ -7476,6 +7490,11 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String failedToUpdateAssignees(String error) {
     return '担当者を更新できませんでした: $error';
+  }
+
+  @override
+  String failedToUpdateLabels(String error) {
+    return 'ラベルを更新できませんでした: $error';
   }
 
   @override

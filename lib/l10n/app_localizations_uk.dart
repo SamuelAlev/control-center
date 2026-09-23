@@ -7641,6 +7641,20 @@ class AppLocalizationsUk extends AppLocalizations {
   String get addAssignees => 'Додати виконавців';
 
   @override
+  String get addLabels => 'Додати мітки';
+
+  @override
+  String get searchLabels => 'Шукати мітки…';
+
+  @override
+  String get noMatchingLabels => 'Немає відповідних міток';
+
+  @override
+  String removeLabel(String label) {
+    return 'Вилучити $label';
+  }
+
+  @override
   String get searchUsers => 'Шукати людей…';
 
   @override
@@ -7723,6 +7737,11 @@ class AppLocalizationsUk extends AppLocalizations {
   @override
   String failedToUpdateAssignees(String error) {
     return 'Не вдалося оновити виконавців: $error';
+  }
+
+  @override
+  String failedToUpdateLabels(String error) {
+    return 'Не вдалося оновити мітки: $error';
   }
 
   @override

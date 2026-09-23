@@ -8,6 +8,7 @@ import 'package:cc_domain/features/pr_review/domain/entities/job_run_detail.dart
 import 'package:cc_domain/features/pr_review/domain/entities/pr_code_review_comment.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_commit.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
+import 'package:cc_domain/features/pr_review/domain/entities/pr_label.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_review_submission.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_review_thread_state.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_reviewer.dart';
@@ -354,7 +355,11 @@ abstract interface class ForgePrClient {
   ///
   /// Used for image/SVG diffs. Same endpoints as [getFileContent] with a
   /// bytes response type so rasters are not decoded as UTF-8.
-  Future<Uint8List> getFileBytes(String path, String ref, {Object? cancelToken});
+  Future<Uint8List> getFileBytes(
+    String path,
+    String ref, {
+    Object? cancelToken,
+  });
 
   /// Per-file viewed state for the current viewer, keyed by path.
   /// Capability: `viewedStateSync`.
@@ -552,6 +557,27 @@ abstract interface class ForgePrClient {
   Future<void> removeAssignees({
     required int prNumber,
     required List<String> logins,
+    Object? cancelToken,
+  });
+
+  /// Labels defined on the repository, the set a pull request can wear.
+  /// Capability: `labels`.
+  Future<List<PrLabel>> listLabels({Object? cancelToken});
+
+  /// Adds [names] to the pull request. Capability: `labels`.
+  ///
+  /// Names that the repository does not define are the forge's problem: GitHub
+  /// rejects them, GitLab may create them. Callers offer only [listLabels].
+  Future<void> addLabels({
+    required int prNumber,
+    required List<String> names,
+    Object? cancelToken,
+  });
+
+  /// Removes [names] from the pull request. Capability: `labels`.
+  Future<void> removeLabels({
+    required int prNumber,
+    required List<String> names,
     Object? cancelToken,
   });
 

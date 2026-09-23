@@ -52,6 +52,7 @@ class ForgeCapabilities {
     required this.richUserProfiles,
     required this.serverSidePrHeadRef,
     required this.draftToggle,
+    required this.labels,
   });
 
   /// Reads a descriptor back off the wire. Absent keys read as `false`, so an
@@ -75,6 +76,7 @@ class ForgeCapabilities {
       richUserProfiles: flag('richUserProfiles'),
       serverSidePrHeadRef: flag('serverSidePrHeadRef'),
       draftToggle: flag('draftToggle'),
+      labels: flag('labels'),
     );
   }
 
@@ -147,6 +149,12 @@ class ForgeCapabilities {
   /// affordances are not rendered.
   final bool draftToggle;
 
+  /// Pull requests carry a set of labels that can be listed, added and removed.
+  ///
+  /// When false the sidebar still shows whatever the payload already carried,
+  /// and the add/remove controls are not rendered.
+  final bool labels;
+
   /// Looks up a capability by the name [ForgeUnsupportedError] uses, so the
   /// ratchet test can assert every declared capability is reachable.
   bool byName(String name) => switch (name) {
@@ -165,6 +173,7 @@ class ForgeCapabilities {
     'richUserProfiles' => richUserProfiles,
     'serverSidePrHeadRef' => serverSidePrHeadRef,
     'draftToggle' => draftToggle,
+    'labels' => labels,
     _ => throw ArgumentError.value(name, 'name', 'Unknown forge capability'),
   };
 
@@ -186,6 +195,7 @@ class ForgeCapabilities {
     'richUserProfiles',
     'serverSidePrHeadRef',
     'draftToggle',
+    'labels',
   ];
 
   /// Serializes to the wire (one bool per capability plus the forge).
@@ -218,6 +228,7 @@ const Map<ForgeHost, ForgeCapabilities> kForgeCapabilities = {
     richUserProfiles: true,
     serverSidePrHeadRef: true,
     draftToggle: true,
+    labels: true,
   ),
   // GitLab: draft notes give real batching, approvals + "changes requested"
   // reviewer state give a verdict, pipelines give checks and job detail.
@@ -242,6 +253,7 @@ const Map<ForgeHost, ForgeCapabilities> kForgeCapabilities = {
     // The `Draft: ` title prefix *is* GitLab's draft flag, so toggling it is a
     // title write rather than a dedicated endpoint — but it is a real toggle.
     draftToggle: true,
+    labels: true,
   ),
   // Bitbucket Cloud is the thinnest surface of the three: comments post
   // individually (no draft/pending state), build statuses carry a result and a
@@ -265,6 +277,8 @@ const Map<ForgeHost, ForgeCapabilities> kForgeCapabilities = {
     richUserProfiles: false,
     serverSidePrHeadRef: false,
     draftToggle: false,
+    // Bitbucket Cloud pull requests have no label field.
+    labels: false,
   ),
   ForgeHost.local: ForgeCapabilities(
     forge: ForgeHost.local,
@@ -283,6 +297,7 @@ const Map<ForgeHost, ForgeCapabilities> kForgeCapabilities = {
     richUserProfiles: false,
     serverSidePrHeadRef: false,
     draftToggle: false,
+    labels: false,
   ),
 };
 

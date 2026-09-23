@@ -4323,6 +4323,10 @@
   "prTemplateDefault": "Domyślny",
   "addReviewers": "Dodaj recenzentów",
   "addAssignees": "Dodaj osoby przypisane",
+  "addLabels": "Dodaj etykiety",
+  "searchLabels": "Szukaj etykiet…",
+  "noMatchingLabels": "Brak pasujących etykiet",
+  "removeLabel": "Usuń {label}",
   "searchUsers": "Szukaj osób…",
   "searchReviewers": "Szukaj osób i zespołów…",
   "usersSectionLabel": "Osoby",
@@ -4380,6 +4384,7 @@
     }
   },
   "failedToUpdateAssignees": "Nie udało się zaktualizować osób przypisanych: {error}",
+  "failedToUpdateLabels": "Nie udało się zaktualizować etykiet: {error}",
   "@failedToUpdateAssignees": {
     "description": "Error when updating assignees fails",
     "placeholders": {

@@ -4323,6 +4323,10 @@
   "prTemplateDefault": "افتراضي",
   "addReviewers": "إضافة مراجعين",
   "addAssignees": "إضافة معيّنين",
+  "addLabels": "إضافة التسميات",
+  "searchLabels": "البحث في التسميات…",
+  "noMatchingLabels": "لا توجد تسميات مطابقة",
+  "removeLabel": "إزالة {label}",
   "searchUsers": "البحث عن أشخاص…",
   "searchReviewers": "البحث عن أشخاص وفرق…",
   "usersSectionLabel": "الأشخاص",
@@ -4380,6 +4384,7 @@
     }
   },
   "failedToUpdateAssignees": "تعذر تحديث المعيّنين: ⁨{error}⁩",
+  "failedToUpdateLabels": "تعذّر تحديث التسميات: {error}",
   "@failedToUpdateAssignees": {
     "description": "Error when updating assignees fails",
     "placeholders": {

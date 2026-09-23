@@ -7560,6 +7560,20 @@ class AppLocalizationsId extends AppLocalizations {
   String get addAssignees => 'Tambah penerima tugas';
 
   @override
+  String get addLabels => 'Tambah label';
+
+  @override
+  String get searchLabels => 'Cari label…';
+
+  @override
+  String get noMatchingLabels => 'Tidak ada label yang cocok';
+
+  @override
+  String removeLabel(String label) {
+    return 'Hapus $label';
+  }
+
+  @override
   String get searchUsers => 'Cari orang…';
 
   @override
@@ -7642,6 +7656,11 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String failedToUpdateAssignees(String error) {
     return 'Tidak bisa memperbarui assignee: $error';
+  }
+
+  @override
+  String failedToUpdateLabels(String error) {
+    return 'Tidak dapat memperbarui label: $error';
   }
 
   @override

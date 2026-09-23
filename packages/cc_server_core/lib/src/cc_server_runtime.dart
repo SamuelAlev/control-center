@@ -5878,38 +5878,46 @@ Future<CcServer> runCcServer({
     // Generic workspace-scoped cache (the messaging IDE editor-layout persists
     // + restores per conversation here, so layouts are shared across clients).
     cacheRepository: DaoCacheRepository(workspaceDbs),
-    fetchPrPreview: (owner, repo, number) async {
-      try {
-        final pr = await serverGitHubClient.pr.getPullRequest(
-          owner,
-          repo,
-          number,
-        );
-        if (pr == null) {
-          return null;
-        }
-        return {
-          'title': pr.title,
-          'state': pr.state,
-          'is_draft': pr.isDraft,
-          'is_merged': pr.mergedAt != null,
-          'html_url': pr.htmlUrl,
-        };
-      } catch (_) {
-        return null;
-      }
-    },
-    fetchCommitPreview: (owner, repo, sha) async {
-      try {
-        final commit = await serverGitHubClient.pr.getCommit(owner, repo, sha);
-        if (commit == null) {
-          return null;
-        }
-        return {'title': commit.title, 'short_sha': commit.shortSha};
-      } catch (_) {
-        return null;
-      }
-    },
+    // The caller's client, same reason as `userProfile` above: the no-caller
+    // lane is the GitHub App, and a private repo the installation cannot see
+    // comes back 404. A member with no GitHub credential still falls through
+    // `tokenForActor` to the app identity.
+    fetchPrPreview:
+        (owner, repo, number, {required actingUserId, workspaceId}) async {
+          final client = actingUserId.isEmpty
+              ? serverGitHubClient
+              : githubClientForActor(actingUserId, workspaceId: workspaceId);
+          try {
+            final pr = await client.pr.getPullRequest(owner, repo, number);
+            if (pr == null) {
+              return null;
+            }
+            return {
+              'title': pr.title,
+              'state': pr.state,
+              'is_draft': pr.isDraft,
+              'is_merged': pr.mergedAt != null,
+              'html_url': pr.htmlUrl,
+            };
+          } catch (_) {
+            return null;
+          }
+        },
+    fetchCommitPreview:
+        (owner, repo, sha, {required actingUserId, workspaceId}) async {
+          final client = actingUserId.isEmpty
+              ? serverGitHubClient
+              : githubClientForActor(actingUserId, workspaceId: workspaceId);
+          try {
+            final commit = await client.pr.getCommit(owner, repo, sha);
+            if (commit == null) {
+              return null;
+            }
+            return {'title': commit.title, 'short_sha': commit.shortSha};
+          } catch (_) {
+            return null;
+          }
+        },
     // The headless server hosts its own MCP HTTP server; the `mcp.*` ops drive
     // this control so a connected web/thin client can start/stop/reconfigure it.
     // demo: no MCP server control, so /mcp and /sse are never mounted.

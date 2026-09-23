@@ -11,6 +11,8 @@ class _RecordingRepo extends EmptyPrReviewRepository {
   int updatePrCalls = 0;
   int? lastCommentId;
   String? lastCommentBody;
+  List<String> addedLabels = const [];
+  List<String> removedLabels = const [];
   Completer<void>? gate;
 
   @override
@@ -35,6 +37,22 @@ class _RecordingRepo extends EmptyPrReviewRepository {
   }) async {
     lastCommentId = commentId;
     lastCommentBody = body;
+  }
+
+  @override
+  Future<void> addLabels({
+    required int prNumber,
+    required List<String> names,
+  }) async {
+    addedLabels = names;
+  }
+
+  @override
+  Future<void> removeLabels({
+    required int prNumber,
+    required List<String> names,
+  }) async {
+    removedLabels = names;
   }
 }
 
@@ -116,5 +134,17 @@ void main() {
       container.read(prEditProvider(prRef)).optimisticComments[9],
       '- [x] please rebase',
     );
+  });
+
+  test('applyLabelChanges adds and removes in one pass', () async {
+    final notifier = container.read(prEditProvider(prRef).notifier);
+    final error = await notifier.applyLabelChanges(
+      add: const ['bug'],
+      remove: const ['wip'],
+    );
+    expect(error, isNull);
+    expect(repo.addedLabels, ['bug']);
+    expect(repo.removedLabels, ['wip']);
+    expect(container.read(prEditProvider(prRef)).pendingLabels, isEmpty);
   });
 }

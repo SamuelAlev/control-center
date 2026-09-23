@@ -7528,6 +7528,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addAssignees => 'Add assignees';
 
   @override
+  String get addLabels => 'Add labels';
+
+  @override
+  String get searchLabels => 'Search labels…';
+
+  @override
+  String get noMatchingLabels => 'No matching labels';
+
+  @override
+  String removeLabel(String label) {
+    return 'Remove $label';
+  }
+
+  @override
   String get searchUsers => 'Search people…';
 
   @override
@@ -7610,6 +7624,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String failedToUpdateAssignees(String error) {
     return 'Couldn\'t update assignees: $error';
+  }
+
+  @override
+  String failedToUpdateLabels(String error) {
+    return 'Couldn\'t update labels: $error';
   }
 
   @override

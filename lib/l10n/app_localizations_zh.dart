@@ -7310,6 +7310,20 @@ class AppLocalizationsZh extends AppLocalizations {
   String get addAssignees => '添加经办人';
 
   @override
+  String get addLabels => '添加标签';
+
+  @override
+  String get searchLabels => '搜索标签…';
+
+  @override
+  String get noMatchingLabels => '没有匹配的标签';
+
+  @override
+  String removeLabel(String label) {
+    return '移除$label';
+  }
+
+  @override
   String get searchUsers => '搜索人员…';
 
   @override
@@ -7392,6 +7406,11 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String failedToUpdateAssignees(String error) {
     return '无法更新经办人：$error';
+  }
+
+  @override
+  String failedToUpdateLabels(String error) {
+    return '无法更新标签：$error';
   }
 
   @override
@@ -21703,6 +21722,20 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get addAssignees => '新增負責人';
 
   @override
+  String get addLabels => '新增標籤';
+
+  @override
+  String get searchLabels => '搜尋標籤…';
+
+  @override
+  String get noMatchingLabels => '沒有相符的標籤';
+
+  @override
+  String removeLabel(String label) {
+    return '移除 $label';
+  }
+
+  @override
   String get searchUsers => '搜尋人員…';
 
   @override
@@ -21785,6 +21818,11 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   @override
   String failedToUpdateAssignees(String error) {
     return '無法更新負責人：$error';
+  }
+
+  @override
+  String failedToUpdateLabels(String error) {
+    return '無法更新標籤：$error';
   }
 
   @override

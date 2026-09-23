@@ -4323,6 +4323,10 @@
   "prTemplateDefault": "Implicit",
   "addReviewers": "Adaugă recenzenți",
   "addAssignees": "Adaugă asignați",
+  "addLabels": "Adaugă etichete",
+  "searchLabels": "Caută etichete…",
+  "noMatchingLabels": "Nicio etichetă potrivită",
+  "removeLabel": "Elimină {label}",
   "searchUsers": "Caută persoane…",
   "searchReviewers": "Caută persoane și echipe…",
   "usersSectionLabel": "Persoane",
@@ -4380,6 +4384,7 @@
     }
   },
   "failedToUpdateAssignees": "Nu s-au putut actualiza asignații: {error}",
+  "failedToUpdateLabels": "Nu s-au putut actualiza etichetele: {error}",
   "@failedToUpdateAssignees": {
     "description": "Error when updating assignees fails",
     "placeholders": {

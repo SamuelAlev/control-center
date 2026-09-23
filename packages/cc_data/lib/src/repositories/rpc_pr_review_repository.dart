@@ -302,26 +302,24 @@ class RpcPrReviewRepository implements PrReviewRepository {
       .map((data) => data['diff'] as String? ?? '');
 
   @override
-  Stream<List<PrFile>> watchFiles(
-    int prNumber, {
-    bool includePatches = true,
-  }) => _client
-      .subscribe(
-        'pr_review.watchFiles',
-        _coords({
-          'pr_number': prNumber,
-          if (!includePatches) 'include_patches': false,
-        }),
-      )
-      .asyncMap((data) async {
-        // Full-patch snapshots are the 13k-line payload. Yield so the
-        // Diff tab's chrome can paint before we walk every hunk. The
-        // index (includePatches: false) is small enough to map inline.
-        if (includePatches) {
-          await Future<void>.delayed(Duration.zero);
-        }
-        return _filesFromData(data);
-      });
+  Stream<List<PrFile>> watchFiles(int prNumber, {bool includePatches = true}) =>
+      _client
+          .subscribe(
+            'pr_review.watchFiles',
+            _coords({
+              'pr_number': prNumber,
+              if (!includePatches) 'include_patches': false,
+            }),
+          )
+          .asyncMap((data) async {
+            // Full-patch snapshots are the 13k-line payload. Yield so the
+            // Diff tab's chrome can paint before we walk every hunk. The
+            // index (includePatches: false) is small enough to map inline.
+            if (includePatches) {
+              await Future<void>.delayed(Duration.zero);
+            }
+            return _filesFromData(data);
+          });
 
   @override
   Stream<String> watchFileContent(String path, String ref) => _client
@@ -906,11 +904,7 @@ class RpcPrReviewRepository implements PrReviewRepository {
     required String body,
   }) => _client.call(
     'pr_review.updateIssueComment',
-    _coords({
-      'pr_number': prNumber,
-      'comment_id': commentId,
-      'body': body,
-    }),
+    _coords({'pr_number': prNumber, 'comment_id': commentId, 'body': body}),
   );
 
   @override
@@ -929,6 +923,40 @@ class RpcPrReviewRepository implements PrReviewRepository {
   }) => _client.call(
     'pr_review.removeAssignees',
     _coords({'pr_number': prNumber, 'logins': logins}),
+  );
+
+  @override
+  Future<List<PrLabel>> listLabels() async {
+    final data = await _client.call('pr_review.listLabels', _coords());
+    return ((data['labels'] as List?) ?? const [])
+        .whereType<Map>()
+        .map((row) => PrLabelDto.fromJson(row.cast<String, dynamic>()))
+        .map(
+          (label) => PrLabel(
+            name: label.name,
+            color: label.color,
+            description: label.description,
+          ),
+        )
+        .toList();
+  }
+
+  @override
+  Future<void> addLabels({
+    required int prNumber,
+    required List<String> names,
+  }) => _client.call(
+    'pr_review.addLabels',
+    _coords({'pr_number': prNumber, 'names': names}),
+  );
+
+  @override
+  Future<void> removeLabels({
+    required int prNumber,
+    required List<String> names,
+  }) => _client.call(
+    'pr_review.removeLabels',
+    _coords({'pr_number': prNumber, 'names': names}),
   );
 
   @override

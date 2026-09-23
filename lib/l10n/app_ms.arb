@@ -4323,6 +4323,10 @@
   "prTemplateDefault": "Lalai",
   "addReviewers": "Tambah penyemak",
   "addAssignees": "Tambah penerima tugasan",
+  "addLabels": "Tambah label",
+  "searchLabels": "Cari label…",
+  "noMatchingLabels": "Tiada label yang sepadan",
+  "removeLabel": "Alih keluar {label}",
   "searchUsers": "Cari orang…",
   "searchReviewers": "Cari orang dan pasukan…",
   "usersSectionLabel": "Orang",
@@ -4380,6 +4384,7 @@
     }
   },
   "failedToUpdateAssignees": "Tidak dapat mengemas kini penerima tugasan: {error}",
+  "failedToUpdateLabels": "Tidak dapat mengemas kini label: {error}",
   "@failedToUpdateAssignees": {
     "description": "Error when updating assignees fails",
     "placeholders": {

@@ -13001,6 +13001,30 @@ abstract class AppLocalizations {
   /// **'Add assignees'**
   String get addAssignees;
 
+  /// Button to add labels to a pull request
+  ///
+  /// In en, this message translates to:
+  /// **'Add labels'**
+  String get addLabels;
+
+  /// Search hint in the pull request label picker
+  ///
+  /// In en, this message translates to:
+  /// **'Search labels…'**
+  String get searchLabels;
+
+  /// Empty state in the pull request label picker when the search matches nothing
+  ///
+  /// In en, this message translates to:
+  /// **'No matching labels'**
+  String get noMatchingLabels;
+
+  /// Accessible name for the control that removes a label from a pull request
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {label}'**
+  String removeLabel(String label);
+
   /// Search hint in the assignee picker
   ///
   /// In en, this message translates to:
@@ -13150,6 +13174,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t update assignees: {error}'**
   String failedToUpdateAssignees(String error);
+
+  /// Error when updating pull request labels fails
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t update labels: {error}'**
+  String failedToUpdateLabels(String error);
 
   /// Confirmation prompt when discarding unsaved edits
   ///

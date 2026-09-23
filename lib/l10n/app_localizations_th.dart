@@ -7485,6 +7485,20 @@ class AppLocalizationsTh extends AppLocalizations {
   String get addAssignees => 'เพิ่มผู้รับมอบหมาย';
 
   @override
+  String get addLabels => 'เพิ่มป้ายกำกับ';
+
+  @override
+  String get searchLabels => 'ค้นหาป้ายกำกับ…';
+
+  @override
+  String get noMatchingLabels => 'ไม่มีป้ายกำกับที่ตรงกัน';
+
+  @override
+  String removeLabel(String label) {
+    return 'นำ $label ออก';
+  }
+
+  @override
   String get searchUsers => 'ค้นหาคน…';
 
   @override
@@ -7567,6 +7581,11 @@ class AppLocalizationsTh extends AppLocalizations {
   @override
   String failedToUpdateAssignees(String error) {
     return 'อัปเดตผู้รับมอบหมายไม่ได้: $error';
+  }
+
+  @override
+  String failedToUpdateLabels(String error) {
+    return 'อัปเดตป้ายกำกับไม่สำเร็จ: $error';
   }
 
   @override

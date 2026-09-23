@@ -5,11 +5,13 @@ import 'package:cc_domain/features/pr_review/domain/entities/pr_reviewer.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_user.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/features/forge/providers/forge_providers.dart';
 import 'package:control_center/features/pr_review/presentation/notifiers/pr_checks_ui_notifier.dart';
 import 'package:control_center/features/pr_review/presentation/notifiers/pr_edit_notifier.dart';
 import 'package:control_center/features/pr_review/presentation/utils/diff_file_tree.dart';
 import 'package:control_center/features/pr_review/presentation/utils/review_status_palette.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/assignee_picker_flyout.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/label_picker_flyout.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_complexity_badge.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_detail_skeleton.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_label_wrap.dart';
@@ -60,8 +62,9 @@ class PrSidebar extends ConsumerWidget {
   /// Checks associated with this PR.
   final List<CheckRun> checks;
 
-  /// Whether the current user may edit reviewers/assignees (shows the `+`
-  /// affordances and inline remove buttons).
+  /// Whether the current user may edit reviewers, assignees and labels (shows
+  /// the `+` affordances and inline remove buttons). Labels additionally
+  /// require the forge's `labels` capability.
   final bool canEdit;
 
   /// Optimistic review state for the current user, if a review was just submitted.
@@ -116,6 +119,7 @@ class PrSidebar extends ConsumerWidget {
     final sortedFiles = sortFilesByTreeOrder(files);
     final hasComplexity = files.isNotEmpty;
     final hasShipShowAsk = ref.watch(shipShowAskProvider(prRef)).value != null;
+    final canEditLabels = canEdit && _labelsSupported(ref);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -225,10 +229,22 @@ class PrSidebar extends ConsumerWidget {
           icon: AppIcons.tag,
           label: l10n.labels,
           count: pr.labels.isEmpty ? null : '${pr.labels.length}',
+          trailing: LabelPickerHeader(
+            prRef: prRef,
+            current: pr.labels,
+            enabled: canEditLabels,
+            compact: true,
+          ),
           child: _sectionBody(
             child: pr.labels.isEmpty
                 ? _SidebarEmpty(label: l10n.noLabelsYet)
-                : PrLabelWrap(labels: pr.labels),
+                : PrLabelWrap(
+                    labels: pr.labels,
+                    pendingNames: editState?.pendingLabels ?? const {},
+                    onRemove: canEditLabels
+                        ? (name) => _removeLabel(ref, context, name)
+                        : null,
+                  ),
           ),
         ),
         CollapsibleSidebarSection(
@@ -278,6 +294,35 @@ class PrSidebar extends ConsumerWidget {
       );
     } else {
       notifier.requestTab(kPrActionsTabIndex);
+    }
+  }
+
+  /// Labels are a forge capability. A missing repo row hides the controls
+  /// rather than offering a write the server will refuse.
+  bool _labelsSupported(WidgetRef ref) {
+    if (!canEdit) {
+      return false;
+    }
+    final repo = ref.watch(prRepoRowProvider(prRef));
+    if (repo == null) {
+      return false;
+    }
+    return ref.watch(capabilitiesForProvider(repo.forge)).labels;
+  }
+
+  Future<void> _removeLabel(
+    WidgetRef ref,
+    BuildContext context,
+    String name,
+  ) async {
+    final error = await ref
+        .read(prEditProvider(prRef).notifier)
+        .removeLabel(name);
+    if (error != null && context.mounted) {
+      CcToastScope.of(context).show(
+        AppLocalizations.of(context).failedToUpdateLabels(error),
+        variant: CcToastVariant.danger,
+      );
     }
   }
 
@@ -500,9 +545,7 @@ class _ReviewerRowState extends State<_ReviewerRow> {
                     l10n.reviewedOnBehalfOf(reviewedBy.login),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: CcTypography.caption.copyWith(
-                      color: t.textTertiary,
-                    ),
+                    style: CcTypography.caption.copyWith(color: t.textTertiary),
                   ),
               ],
             ),

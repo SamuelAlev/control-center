@@ -7542,6 +7542,20 @@ class AppLocalizationsHe extends AppLocalizations {
   String get addAssignees => 'הוספת אחראים';
 
   @override
+  String get addLabels => 'הוספת תוויות';
+
+  @override
+  String get searchLabels => 'חיפוש תוויות…';
+
+  @override
+  String get noMatchingLabels => 'אין תוויות תואמות';
+
+  @override
+  String removeLabel(String label) {
+    return 'הסרת $label';
+  }
+
+  @override
   String get searchUsers => 'חיפוש אנשים…';
 
   @override
@@ -7624,6 +7638,11 @@ class AppLocalizationsHe extends AppLocalizations {
   @override
   String failedToUpdateAssignees(String error) {
     return 'לא ניתן לעדכן את האחראים: ⁨$error⁩';
+  }
+
+  @override
+  String failedToUpdateLabels(String error) {
+    return 'לא ניתן לעדכן את התוויות: $error';
   }
 
   @override

@@ -7636,6 +7636,20 @@ class AppLocalizationsCs extends AppLocalizations {
   String get addAssignees => 'Přidat přiřazené';
 
   @override
+  String get addLabels => 'Přidat štítky';
+
+  @override
+  String get searchLabels => 'Hledat štítky…';
+
+  @override
+  String get noMatchingLabels => 'Žádné odpovídající štítky';
+
+  @override
+  String removeLabel(String label) {
+    return 'Odebrat $label';
+  }
+
+  @override
   String get searchUsers => 'Hledat lidi…';
 
   @override
@@ -7718,6 +7732,11 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String failedToUpdateAssignees(String error) {
     return 'Přiřazené se nepodařilo aktualizovat: $error';
+  }
+
+  @override
+  String failedToUpdateLabels(String error) {
+    return 'Štítky se nepodařilo aktualizovat: $error';
   }
 
   @override

@@ -1,4 +1,7 @@
+import 'package:cc_domain/core/domain/entities/repo.dart';
+import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/check_run.dart';
+import 'package:cc_domain/features/pr_review/domain/providers/forge_capabilities.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_label.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_review_submission.dart';
@@ -7,7 +10,9 @@ import 'package:cc_domain/features/pr_review/domain/entities/pr_user.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_domain/features/pr_review/domain/repositories/pr_review_repository.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/features/forge/providers/forge_providers.dart';
 import 'package:control_center/features/pr_review/presentation/notifiers/pr_checks_ui_notifier.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/picker_flyout.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_sidebar.dart';
 import 'package:control_center/features/pr_review/providers/pr_filter_providers.dart';
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
@@ -15,6 +20,7 @@ import 'package:control_center/features/workspaces/providers/workspace_providers
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/github_user_avatar.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -22,6 +28,31 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:riverpod/misc.dart';
 
 PrUser _user(String login) => PrUser(login: login, avatarUrl: '');
+
+Repo _repo({ForgeHost forge = ForgeHost.github}) => Repo(
+  id: 'repo-1',
+  name: 'repo',
+  path: '/tmp/repo',
+  remoteOwner: 'owner',
+  remoteName: 'repo',
+  createdAt: DateTime.utc(2026),
+  updatedAt: DateTime.utc(2026),
+  forge: forge,
+);
+
+List<Override> _editableOverrides(
+  PrSidebar sidebar, {
+  required ForgeHost forge,
+}) {
+  return [
+    ..._overrides(sidebar, const []),
+    prRepoRowProvider(_prRef).overrideWith((ref) => _repo(forge: forge)),
+    prRepositoryProvider(
+      _prRef,
+    ).overrideWith((ref) => const EmptyPrReviewRepository()),
+    forgeCapabilitiesProvider.overrideWith((ref) async => kForgeCapabilities),
+  ];
+}
 
 PrUserReviewer _reviewer(
   PrUser user, {
@@ -128,6 +159,54 @@ void main() {
     expect(find.text('bug'), findsOneWidget);
     expect(find.text('dependencies'), findsOneWidget);
     expect(find.text('No labels yet'), findsNothing);
+  });
+
+  testWidgets('offers label editing when the forge supports labels', (
+    tester,
+  ) async {
+    final pr = _pr(
+      labels: const [PrLabel(name: 'bug', color: 'd73a4a')],
+    );
+    final sidebar = PrSidebar(pr: pr, prRef: _prRef, canEdit: true);
+    final container = ProviderContainer(
+      overrides: _editableOverrides(sidebar, forge: ForgeHost.github),
+    );
+    addTearDown(container.dispose);
+    await tester.pumpWidget(_wrap(sidebar, container: container));
+    await tester.pump();
+
+    final addLabels = tester
+        .widgetList<CompactPickerAddButton>(find.byType(CompactPickerAddButton))
+        .map((button) => button.semanticLabel);
+    expect(addLabels, contains('Add labels'));
+
+    final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await gesture.addPointer();
+    await gesture.moveTo(tester.getCenter(find.text('bug')));
+    await tester.pump();
+    expect(find.byIcon(AppIcons.x), findsOneWidget);
+    await gesture.removePointer();
+  });
+
+  testWidgets('hides label editing when the forge has no labels', (
+    tester,
+  ) async {
+    final pr = _pr(
+      labels: const [PrLabel(name: 'bug', color: 'd73a4a')],
+    );
+    final sidebar = PrSidebar(pr: pr, prRef: _prRef, canEdit: true);
+    final container = ProviderContainer(
+      overrides: _editableOverrides(sidebar, forge: ForgeHost.bitbucket),
+    );
+    addTearDown(container.dispose);
+    await tester.pumpWidget(_wrap(sidebar, container: container));
+    await tester.pump();
+
+    final addLabels = tester
+        .widgetList<CompactPickerAddButton>(find.byType(CompactPickerAddButton))
+        .map((button) => button.semanticLabel);
+    expect(addLabels, isNot(contains('Add labels')));
+    expect(find.text('bug'), findsOneWidget);
   });
 
   testWidgets('shows requested reviewers with pending state', (tester) async {
@@ -692,14 +771,18 @@ void main() {
             prReviewersProvider(
               _prRef,
             ).overrideWith((ref) => Stream.value(const <PrReviewer>[])),
-            prFileIndexProvider(_prRef).overrideWith((ref) => Stream.value(files)),
+            prFileIndexProvider(
+              _prRef,
+            ).overrideWith((ref) => Stream.value(files)),
           ],
           child: MaterialApp(
             localizationsDelegates: [
               ...AppLocalizations.localizationsDelegates,
-              GlobalMaterialLocalizations.delegate, // ignore: deprecated_member_use
+              GlobalMaterialLocalizations
+                  .delegate, // ignore: deprecated_member_use
               GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate, // ignore: deprecated_member_use
+              GlobalCupertinoLocalizations
+                  .delegate, // ignore: deprecated_member_use
             ],
             supportedLocales: AppLocalizations.supportedLocales,
             locale: const Locale('en'),
