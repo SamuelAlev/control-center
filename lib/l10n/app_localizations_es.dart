@@ -2588,6 +2588,17 @@ class AppLocalizationsEs extends AppLocalizations {
   String get agent => 'Agente';
 
   @override
+  String conversationCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count conversaciones',
+      one: '1 conversación',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String agentCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -3611,6 +3622,34 @@ class AppLocalizationsEs extends AppLocalizations {
       one: 'hace 1 hora',
     );
     return '$_temp0';
+  }
+
+  @override
+  String get sidebarAgeNow => 'ahora';
+
+  @override
+  String sidebarAgeMinutes(int count) {
+    return '$count min';
+  }
+
+  @override
+  String sidebarAgeHours(int count) {
+    return '$count h';
+  }
+
+  @override
+  String sidebarAgeDays(int count) {
+    return '$count d';
+  }
+
+  @override
+  String sidebarAgeMonths(int count) {
+    return '$count mes';
+  }
+
+  @override
+  String sidebarAgeYears(int count) {
+    return '$count a';
   }
 
   @override
@@ -9817,6 +9856,82 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get reactionThumbsUp => 'Pulgar arriba';
+
+  @override
+  String get reactionThumbsDown => 'Pulgar abajo';
+
+  @override
+  String get reactionLaugh => 'Risa';
+
+  @override
+  String get reactionHooray => 'Celebración';
+
+  @override
+  String get reactionConfused => 'Confusión';
+
+  @override
+  String get reactionHeart => 'Corazón';
+
+  @override
+  String get reactionRocket => 'Cohete';
+
+  @override
+  String get reactionEyes => 'Ojos';
+
+  @override
+  String get commentReact => 'Reaccionar';
+
+  @override
+  String get commentResolveThread => 'Resolver hilo';
+
+  @override
+  String get commentReopenThread => 'Reabrir hilo';
+
+  @override
+  String get commentCopyLink => 'Copiar enlace al comentario';
+
+  @override
+  String get commentCopyMarkdown => 'Copiar como Markdown';
+
+  @override
+  String get commentCopyThreadMarkdown => 'Copiar hilo como Markdown';
+
+  @override
+  String get commentCopyPrompt => 'Copiar como prompt';
+
+  @override
+  String get commentCopyThreadPrompt => 'Copiar hilo como prompt';
+
+  @override
+  String get commentSendToAgent => 'Enviar al agente';
+
+  @override
+  String get commentDelete => 'Eliminar comentario';
+
+  @override
+  String get commentEdit => 'Editar comentario';
+
+  @override
+  String get commentActions => 'Acciones del comentario';
+
+  @override
+  String get commentDeleteTitle => '¿Eliminar este comentario?';
+
+  @override
+  String get commentDeleteBody => 'Se quita de la pull request.';
+
+  @override
+  String get commentSentToAgent => 'Enviado al agente';
+
+  @override
+  String get commentSendFailed =>
+      'No se pudo enviar este comentario a un agente';
+
+  @override
+  String get commentDeleteFailed => 'No se pudo eliminar este comentario';
+
+  @override
   String get autonomyDialLabel => 'Autonomía';
 
   @override
@@ -14830,6 +14945,40 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get forgeConnectionsThisWorkspace =>
       'Inicia sesión o pega un token para este espacio de trabajo.';
+
+  @override
+  String get stackStartNextPart => 'Empezar la siguiente parte';
+
+  @override
+  String get stackPartNameTitle => 'Nombre de la parte';
+
+  @override
+  String get stackPartNameHint => 'p. ej. migración';
+
+  @override
+  String get stackPublish => 'Publicar la pila';
+
+  @override
+  String get stackCurrentPart => 'Actual';
+
+  @override
+  String get stackSwitchDirty =>
+      'Confirma o descarta los cambios antes de cambiar de parte';
+
+  @override
+  String get stackCutFailed => 'No se pudo empezar la siguiente parte';
+
+  @override
+  String get stackPublishFailed => 'No se pudo publicar la pila';
+
+  @override
+  String get stackPublished => 'La pila se publicó como borradores';
+
+  @override
+  String get stackOpenPullRequest => 'Abrir pull request';
+
+  @override
+  String get stackSection => 'Pila';
 }
 
 /// The translations for Spanish Castilian, as used in Mexico (`es_MX`).

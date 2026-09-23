@@ -14,12 +14,23 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+/// How many runs the queue paints before the next page. Newest first; the
+/// window grows by this many as the reader nears the end of what is shown.
+const int kPipelineRunsPageSize = 50;
+
+/// Distance from the trailing edge, in logical pixels, at which the next page
+/// is revealed. Matches the message feed's load-more threshold so a fling
+/// does not run out of rows before the next page is in the tree.
+const double _kPipelineRunsRevealDistance = 400;
+
 /// The pipeline runs queue: the inbox's shape — a left rail of status filters
 /// (all / running / failed, each with its live count) beside a table of runs.
 ///
-/// The list is a list. Opening a run navigates to its own page
-/// ([pipelineRunRoute]) rather than docking a detail pane here, so the run's
-/// graph gets the full width instead of sharing it with a rail it never needed.
+/// The list is a list, paged. The rail's counts and each queued run's position
+/// are taken from the full workspace list; only the table grows as you scroll.
+/// Opening a run navigates to its own page ([pipelineRunRoute]) rather than
+/// docking a detail pane here, so the run's graph gets the full width instead
+/// of sharing it with a rail it never needed.
 class PipelinesScreen extends ConsumerStatefulWidget {
   /// Creates a [PipelinesScreen].
   const PipelinesScreen({super.key});
@@ -133,6 +144,7 @@ class _PipelinesScreenState extends ConsumerState<PipelinesScreen> {
                   child: visible.isEmpty
                       ? _EmptyFilterState(l10n: l10n, tokens: tokens)
                       : _RunsPane(
+                          filter: _filter,
                           visible: visible,
                           queuePositions: queuePositions,
                           focusedRunId: _focusedRunId,
@@ -152,9 +164,12 @@ class _PipelinesScreenState extends ConsumerState<PipelinesScreen> {
 }
 
 /// The scrolling runs table plus its keyboard scope: ↑/↓ (and j/k) walk the
-/// rows, Enter opens the focused one.
-class _RunsPane extends StatelessWidget {
+/// rows, Enter opens the focused one. The table shows a prefix of [visible]
+/// and grows it when the reader nears the end, or when the keyboard cursor
+/// walks past what is painted.
+class _RunsPane extends StatefulWidget {
   const _RunsPane({
+    required this.filter,
     required this.visible,
     required this.queuePositions,
     required this.focusedRunId,
@@ -164,7 +179,14 @@ class _RunsPane extends StatelessWidget {
     required this.onOpen,
   });
 
+  /// The active status filter. Changing it returns the window to the first
+  /// page and the scroll offset to the top: a filter is a new list.
+  final PipelineRunFilter filter;
+
+  /// The filtered runs, newest first. Longer than the painted prefix while
+  /// older pages are still hidden.
   final List<PipelineRun> visible;
+
   final Map<String, int> queuePositions;
   final String? focusedRunId;
   final Map<String, String> templateNames;
@@ -173,18 +195,143 @@ class _RunsPane extends StatelessWidget {
   final ValueChanged<PipelineRun> onOpen;
 
   @override
+  State<_RunsPane> createState() => _RunsPaneState();
+}
+
+class _RunsPaneState extends State<_RunsPane> {
+  final ScrollController _scroll = ScrollController();
+  final GlobalKey _focusedKey = GlobalKey();
+
+  int _shown = kPipelineRunsPageSize;
+
+  /// Set while a filter change resets the offset, so the clamp that lands the
+  /// old offset on the new list's end is not read as "the reader reached the
+  /// end" and the window does not immediately grow back.
+  bool _suspendReveal = false;
+
+  bool _revealQueued = false;
+
+  @override
+  void didUpdateWidget(_RunsPane oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.filter != widget.filter) {
+      _shown = kPipelineRunsPageSize;
+      _suspendReveal = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) {
+          return;
+        }
+        if (_scroll.hasClients) {
+          _scroll.jumpTo(0);
+        }
+        _suspendReveal = false;
+      });
+    } else {
+      final index = widget.focusedRunId == null
+          ? -1
+          : widget.visible.indexWhere((run) => run.id == widget.focusedRunId);
+      if (index >= _shown) {
+        final page = (index ~/ kPipelineRunsPageSize) + 1;
+        final next = page * kPipelineRunsPageSize;
+        _shown = next > widget.visible.length ? widget.visible.length : next;
+      }
+    }
+    if (oldWidget.focusedRunId != widget.focusedRunId &&
+        widget.focusedRunId != null &&
+        oldWidget.filter == widget.filter) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _revealFocused());
+    }
+  }
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  bool _onScrollNotification(Notification notification) {
+    final ScrollMetrics metrics;
+    final int depth;
+    if (notification is ScrollUpdateNotification) {
+      metrics = notification.metrics;
+      depth = notification.depth;
+    } else if (notification is ScrollMetricsNotification) {
+      metrics = notification.metrics;
+      depth = notification.depth;
+    } else {
+      return false;
+    }
+    if (depth != 0 || metrics.axis != Axis.vertical) {
+      return false;
+    }
+    _considerReveal(metrics);
+    return false;
+  }
+
+  void _considerReveal(ScrollMetrics metrics) {
+    if (_suspendReveal || _revealQueued || _shown >= widget.visible.length) {
+      return;
+    }
+    // A scrollable that has not been laid out yet reports a zero viewport.
+    // Revealing off that would grow the window before the first page's real
+    // extent is known.
+    if (metrics.viewportDimension <= 0) {
+      return;
+    }
+    final remaining = metrics.maxScrollExtent - metrics.pixels;
+    // A list that does not fill the viewport never produces a trailing edge
+    // to approach, so it keeps revealing until it scrolls or runs out.
+    final short = metrics.maxScrollExtent <= _kPipelineRunsRevealDistance;
+    if (!short && remaining > _kPipelineRunsRevealDistance) {
+      return;
+    }
+    _revealQueued = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _revealQueued = false;
+      if (!mounted || _shown >= widget.visible.length) {
+        return;
+      }
+      setState(() {
+        final next = _shown + kPipelineRunsPageSize;
+        _shown = next > widget.visible.length ? widget.visible.length : next;
+      });
+    });
+  }
+
+  void _revealFocused() {
+    final target = _focusedKey.currentContext;
+    if (target == null || !target.mounted) {
+      return;
+    }
+    Scrollable.ensureVisible(
+      target,
+      alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
+    );
+    Scrollable.ensureVisible(
+      target,
+      alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtStart,
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final shown = _shown > widget.visible.length
+        ? widget.visible.length
+        : _shown;
+    final page = widget.visible.take(shown).toList(growable: false);
     return Focus(
       autofocus: true,
       child: CallbackShortcuts(
         bindings: {
           const SingleActivator(LogicalKeyboardKey.arrowDown): () =>
-              onMoveFocus(1),
+              widget.onMoveFocus(1),
           const SingleActivator(LogicalKeyboardKey.arrowUp): () =>
-              onMoveFocus(-1),
-          const SingleActivator(LogicalKeyboardKey.keyJ): () => onMoveFocus(1),
-          const SingleActivator(LogicalKeyboardKey.keyK): () => onMoveFocus(-1),
-          const SingleActivator(LogicalKeyboardKey.enter): onOpenFocused,
+              widget.onMoveFocus(-1),
+          const SingleActivator(LogicalKeyboardKey.keyJ): () =>
+              widget.onMoveFocus(1),
+          const SingleActivator(LogicalKeyboardKey.keyK): () =>
+              widget.onMoveFocus(-1),
+          const SingleActivator(LogicalKeyboardKey.enter): widget.onOpenFocused,
         },
         // Same scroll geometry as the PR queue and the inbox. The bottom
         // spacing sits OUTSIDE the scroll view (as margin, not padding) so
@@ -203,21 +350,28 @@ class _RunsPane extends StatelessWidget {
           padding: const EdgeInsets.only(bottom: AppSpacing.xxl),
           child: CcScrollArea(
             fadeStart: false,
-            child: CustomScrollView(
-              key: const PageStorageKey('pipeline-runs-table'),
-              slivers: [
-                SliverPadding(
-                  padding: const EdgeInsetsDirectional.only(end: AppSpacing.md),
-                  sliver: PipelineRunsTable(
-                    runs: visible,
-                    queuePositions: queuePositions,
-                    now: DateTime.now(),
-                    titleFor: (run) => templateNames[run.templateId],
-                    focusedRunId: focusedRunId,
-                    onOpen: onOpen,
+            child: NotificationListener<Notification>(
+              onNotification: _onScrollNotification,
+              child: CustomScrollView(
+                key: const PageStorageKey('pipeline-runs-table'),
+                controller: _scroll,
+                slivers: [
+                  SliverPadding(
+                    padding: const EdgeInsetsDirectional.only(
+                      end: AppSpacing.md,
+                    ),
+                    sliver: PipelineRunsTable(
+                      runs: page,
+                      queuePositions: widget.queuePositions,
+                      now: DateTime.now(),
+                      titleFor: (run) => widget.templateNames[run.templateId],
+                      focusedRunId: widget.focusedRunId,
+                      focusedRowKey: _focusedKey,
+                      onOpen: widget.onOpen,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

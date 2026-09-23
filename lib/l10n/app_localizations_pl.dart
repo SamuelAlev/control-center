@@ -2600,6 +2600,19 @@ class AppLocalizationsPl extends AppLocalizations {
   String get agent => 'Agent';
 
   @override
+  String conversationCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count rozmowy',
+      many: '$count rozmów',
+      few: '$count rozmowy',
+      one: '$count rozmowa',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String agentCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -3629,6 +3642,34 @@ class AppLocalizationsPl extends AppLocalizations {
       one: '$count godzinę temu',
     );
     return '$_temp0';
+  }
+
+  @override
+  String get sidebarAgeNow => 'teraz';
+
+  @override
+  String sidebarAgeMinutes(int count) {
+    return '$count min';
+  }
+
+  @override
+  String sidebarAgeHours(int count) {
+    return '$count godz.';
+  }
+
+  @override
+  String sidebarAgeDays(int count) {
+    return '$count d';
+  }
+
+  @override
+  String sidebarAgeMonths(int count) {
+    return '$count mies.';
+  }
+
+  @override
+  String sidebarAgeYears(int count) {
+    return '$count l.';
   }
 
   @override
@@ -9883,6 +9924,82 @@ class AppLocalizationsPl extends AppLocalizations {
   }
 
   @override
+  String get reactionThumbsUp => 'Kciuk w górę';
+
+  @override
+  String get reactionThumbsDown => 'Kciuk w dół';
+
+  @override
+  String get reactionLaugh => 'Śmiech';
+
+  @override
+  String get reactionHooray => 'Hurra';
+
+  @override
+  String get reactionConfused => 'Zmieszanie';
+
+  @override
+  String get reactionHeart => 'Serce';
+
+  @override
+  String get reactionRocket => 'Rakieta';
+
+  @override
+  String get reactionEyes => 'Oczy';
+
+  @override
+  String get commentReact => 'Zareaguj';
+
+  @override
+  String get commentResolveThread => 'Rozwiąż wątek';
+
+  @override
+  String get commentReopenThread => 'Otwórz wątek ponownie';
+
+  @override
+  String get commentCopyLink => 'Kopiuj link do komentarza';
+
+  @override
+  String get commentCopyMarkdown => 'Kopiuj jako Markdown';
+
+  @override
+  String get commentCopyThreadMarkdown => 'Kopiuj wątek jako Markdown';
+
+  @override
+  String get commentCopyPrompt => 'Kopiuj jako prompt';
+
+  @override
+  String get commentCopyThreadPrompt => 'Kopiuj wątek jako prompt';
+
+  @override
+  String get commentSendToAgent => 'Wyślij do agenta';
+
+  @override
+  String get commentDelete => 'Usuń komentarz';
+
+  @override
+  String get commentEdit => 'Edytuj komentarz';
+
+  @override
+  String get commentActions => 'Akcje komentarza';
+
+  @override
+  String get commentDeleteTitle => 'Usunąć ten komentarz?';
+
+  @override
+  String get commentDeleteBody => 'Zostanie usunięty z pull requesta.';
+
+  @override
+  String get commentSentToAgent => 'Wysłano do agenta';
+
+  @override
+  String get commentSendFailed =>
+      'Nie udało się wysłać tego komentarza do agenta';
+
+  @override
+  String get commentDeleteFailed => 'Nie udało się usunąć tego komentarza';
+
+  @override
   String get autonomyDialLabel => 'Autonomia';
 
   @override
@@ -14950,4 +15067,38 @@ class AppLocalizationsPl extends AppLocalizations {
   @override
   String get forgeConnectionsThisWorkspace =>
       'Zaloguj się albo wklej token dla tej przestrzeni.';
+
+  @override
+  String get stackStartNextPart => 'Rozpocznij następną część';
+
+  @override
+  String get stackPartNameTitle => 'Nazwa części';
+
+  @override
+  String get stackPartNameHint => 'np. migracja';
+
+  @override
+  String get stackPublish => 'Opublikuj stos';
+
+  @override
+  String get stackCurrentPart => 'Bieżąca';
+
+  @override
+  String get stackSwitchDirty =>
+      'Zatwierdź lub odrzuć zmiany przed przełączeniem części';
+
+  @override
+  String get stackCutFailed => 'Nie udało się rozpocząć następnej części';
+
+  @override
+  String get stackPublishFailed => 'Nie udało się opublikować stosu';
+
+  @override
+  String get stackPublished => 'Stos został opublikowany jako wersje robocze';
+
+  @override
+  String get stackOpenPullRequest => 'Otwórz pull request';
+
+  @override
+  String get stackSection => 'Stos';
 }

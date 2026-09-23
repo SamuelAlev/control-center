@@ -2592,6 +2592,21 @@ class AppLocalizationsAr extends AppLocalizations {
   String get agent => 'الوكيل';
 
   @override
+  String conversationCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count محادثة',
+      many: '$count محادثة',
+      few: '$count محادثات',
+      two: '$count محادثتان',
+      one: '$count محادثة',
+      zero: '$count محادثات',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String agentCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -3618,6 +3633,34 @@ class AppLocalizationsAr extends AppLocalizations {
       zero: 'قبل $count ساعة',
     );
     return '$_temp0';
+  }
+
+  @override
+  String get sidebarAgeNow => 'الآن';
+
+  @override
+  String sidebarAgeMinutes(int count) {
+    return '$count د';
+  }
+
+  @override
+  String sidebarAgeHours(int count) {
+    return '$count س';
+  }
+
+  @override
+  String sidebarAgeDays(int count) {
+    return '$count ي';
+  }
+
+  @override
+  String sidebarAgeMonths(int count) {
+    return '$count ش';
+  }
+
+  @override
+  String sidebarAgeYears(int count) {
+    return '$count سنة';
   }
 
   @override
@@ -9851,6 +9894,81 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String get reactionThumbsUp => 'إبهام لأعلى';
+
+  @override
+  String get reactionThumbsDown => 'إبهام لأسفل';
+
+  @override
+  String get reactionLaugh => 'ضحك';
+
+  @override
+  String get reactionHooray => 'تهليل';
+
+  @override
+  String get reactionConfused => 'حيرة';
+
+  @override
+  String get reactionHeart => 'قلب';
+
+  @override
+  String get reactionRocket => 'صاروخ';
+
+  @override
+  String get reactionEyes => 'عيون';
+
+  @override
+  String get commentReact => 'تفاعل';
+
+  @override
+  String get commentResolveThread => 'حل النقاش';
+
+  @override
+  String get commentReopenThread => 'إعادة فتح النقاش';
+
+  @override
+  String get commentCopyLink => 'نسخ رابط التعليق';
+
+  @override
+  String get commentCopyMarkdown => 'نسخ كـ Markdown';
+
+  @override
+  String get commentCopyThreadMarkdown => 'نسخ النقاش كـ Markdown';
+
+  @override
+  String get commentCopyPrompt => 'نسخ كموجّه';
+
+  @override
+  String get commentCopyThreadPrompt => 'نسخ النقاش كموجّه';
+
+  @override
+  String get commentSendToAgent => 'إرسال إلى الوكيل';
+
+  @override
+  String get commentDelete => 'حذف التعليق';
+
+  @override
+  String get commentEdit => 'تعديل التعليق';
+
+  @override
+  String get commentActions => 'إجراءات التعليق';
+
+  @override
+  String get commentDeleteTitle => 'حذف هذا التعليق؟';
+
+  @override
+  String get commentDeleteBody => 'سيُزال من طلب السحب.';
+
+  @override
+  String get commentSentToAgent => 'أُرسل إلى الوكيل';
+
+  @override
+  String get commentSendFailed => 'تعذر إرسال هذا التعليق إلى وكيل';
+
+  @override
+  String get commentDeleteFailed => 'تعذر حذف هذا التعليق';
+
+  @override
   String get autonomyDialLabel => 'الاستقلالية';
 
   @override
@@ -14951,4 +15069,38 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get forgeConnectionsThisWorkspace =>
       'سجّل الدخول أو الصق رمزًا لمساحة العمل هذه.';
+
+  @override
+  String get stackStartNextPart => 'ابدأ الجزء التالي';
+
+  @override
+  String get stackPartNameTitle => 'اسم الجزء';
+
+  @override
+  String get stackPartNameHint => 'مثال: ترحيل';
+
+  @override
+  String get stackPublish => 'انشر المكدس';
+
+  @override
+  String get stackCurrentPart => 'الحالي';
+
+  @override
+  String get stackSwitchDirty =>
+      'التزم بالتغييرات أو تجاهلها قبل تبديل الأجزاء';
+
+  @override
+  String get stackCutFailed => 'تعذر بدء الجزء التالي';
+
+  @override
+  String get stackPublishFailed => 'تعذر نشر المكدس';
+
+  @override
+  String get stackPublished => 'نُشر المكدس كمسودات';
+
+  @override
+  String get stackOpenPullRequest => 'افتح طلب السحب';
+
+  @override
+  String get stackSection => 'المكدس';
 }

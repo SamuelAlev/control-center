@@ -25,6 +25,7 @@ class PipelineRunsTable extends StatelessWidget {
     required this.titleFor,
     required this.onOpen,
     this.focusedRunId,
+    this.focusedRowKey,
     this.queuePositions = const {},
   });
 
@@ -49,6 +50,10 @@ class PipelineRunsTable extends StatelessWidget {
   /// The run under the keyboard cursor, if any.
   final String? focusedRunId;
 
+  /// Key for the focused row, so the list can scroll it into view as the
+  /// cursor walks onto a row the current page just revealed.
+  final Key? focusedRowKey;
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designSystem ?? DesignSystemTokens.light();
@@ -59,32 +64,36 @@ class PipelineRunsTable extends StatelessWidget {
           pinned: true,
           delegate: _ColumnHeaderDelegate(child: _ColumnHeaderRow()),
         ),
-        SliverToBoxAdapter(
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: tokens.panel,
-              border: Border(
-                left: BorderSide(color: tokens.borderSecondary),
-                right: BorderSide(color: tokens.borderSecondary),
-                bottom: BorderSide(color: tokens.borderSecondary),
-              ),
+        DecoratedSliver(
+          decoration: BoxDecoration(
+            color: tokens.panel,
+            border: Border(
+              left: BorderSide(color: tokens.borderSecondary),
+              right: BorderSide(color: tokens.borderSecondary),
+              bottom: BorderSide(color: tokens.borderSecondary),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                for (var i = 0; i < runs.length; i++) ...[
-                  if (i > 0) CcDivider(color: tokens.borderSoft),
-                  PipelineRunRow(
-                    run: runs[i],
-                    now: now,
-                    title: titleFor(runs[i]),
-                    focused: runs[i].id == focusedRunId,
-                    queuePosition: queuePositions[runs[i].id],
-                    onOpen: () => onOpen(runs[i]),
-                  ),
-                ],
-              ],
-            ),
+          ),
+          // Lazy: the page reveals history a page at a time, and a grown
+          // window must not build every row it has already revealed.
+          sliver: SliverList.separated(
+            itemCount: runs.length,
+            separatorBuilder: (context, index) =>
+                CcDivider(color: tokens.borderSoft),
+            itemBuilder: (context, i) {
+              final run = runs[i];
+              final focused = run.id == focusedRunId;
+              return PipelineRunRow(
+                key: focused && focusedRowKey != null
+                    ? focusedRowKey
+                    : ValueKey<String>(run.id),
+                run: run,
+                now: now,
+                title: titleFor(run),
+                focused: focused,
+                queuePosition: queuePositions[run.id],
+                onOpen: () => onOpen(run),
+              );
+            },
           ),
         ),
       ],

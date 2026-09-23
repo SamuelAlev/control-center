@@ -2593,6 +2593,17 @@ class AppLocalizationsEl extends AppLocalizations {
   String get agent => 'Πράκτορας';
 
   @override
+  String conversationCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count συνομιλίες',
+      one: '$count συνομιλία',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String agentCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -3615,6 +3626,34 @@ class AppLocalizationsEl extends AppLocalizations {
       one: 'πριν από 1 ώρα',
     );
     return '$_temp0';
+  }
+
+  @override
+  String get sidebarAgeNow => 'τώρα';
+
+  @override
+  String sidebarAgeMinutes(int count) {
+    return '$count λ';
+  }
+
+  @override
+  String sidebarAgeHours(int count) {
+    return '$count ώ';
+  }
+
+  @override
+  String sidebarAgeDays(int count) {
+    return '$count η';
+  }
+
+  @override
+  String sidebarAgeMonths(int count) {
+    return '$count μήν';
+  }
+
+  @override
+  String sidebarAgeYears(int count) {
+    return '$count έ';
   }
 
   @override
@@ -9847,6 +9886,82 @@ class AppLocalizationsEl extends AppLocalizations {
   }
 
   @override
+  String get reactionThumbsUp => 'Μου αρέσει';
+
+  @override
+  String get reactionThumbsDown => 'Δεν μου αρέσει';
+
+  @override
+  String get reactionLaugh => 'Γέλιο';
+
+  @override
+  String get reactionHooray => 'Ζήτω';
+
+  @override
+  String get reactionConfused => 'Σύγχυση';
+
+  @override
+  String get reactionHeart => 'Καρδιά';
+
+  @override
+  String get reactionRocket => 'Πύραυλος';
+
+  @override
+  String get reactionEyes => 'Μάτια';
+
+  @override
+  String get commentReact => 'Αντίδραση';
+
+  @override
+  String get commentResolveThread => 'Επίλυση νήματος';
+
+  @override
+  String get commentReopenThread => 'Επαναφορά νήματος';
+
+  @override
+  String get commentCopyLink => 'Αντιγραφή συνδέσμου σχολίου';
+
+  @override
+  String get commentCopyMarkdown => 'Αντιγραφή ως Markdown';
+
+  @override
+  String get commentCopyThreadMarkdown => 'Αντιγραφή νήματος ως Markdown';
+
+  @override
+  String get commentCopyPrompt => 'Αντιγραφή ως προτροπή';
+
+  @override
+  String get commentCopyThreadPrompt => 'Αντιγραφή νήματος ως προτροπή';
+
+  @override
+  String get commentSendToAgent => 'Αποστολή σε πράκτορα';
+
+  @override
+  String get commentDelete => 'Διαγραφή σχολίου';
+
+  @override
+  String get commentEdit => 'Επεξεργασία σχολίου';
+
+  @override
+  String get commentActions => 'Ενέργειες σχολίου';
+
+  @override
+  String get commentDeleteTitle => 'Διαγραφή αυτού του σχολίου;';
+
+  @override
+  String get commentDeleteBody => 'Αφαιρείται από το αίτημα έλξης.';
+
+  @override
+  String get commentSentToAgent => 'Στάλθηκε στον πράκτορα';
+
+  @override
+  String get commentSendFailed =>
+      'Δεν ήταν δυνατή η αποστολή του σχολίου σε πράκτορα';
+
+  @override
+  String get commentDeleteFailed => 'Δεν ήταν δυνατή η διαγραφή του σχολίου';
+
+  @override
   String get autonomyDialLabel => 'Αυτονομία';
 
   @override
@@ -14876,4 +14991,38 @@ class AppLocalizationsEl extends AppLocalizations {
   @override
   String get forgeConnectionsThisWorkspace =>
       'Συνδεθείτε ή επικολλήστε διακριτικό για αυτόν τον χώρο εργασίας.';
+
+  @override
+  String get stackStartNextPart => 'Έναρξη επόμενου μέρους';
+
+  @override
+  String get stackPartNameTitle => 'Όνομα μέρους';
+
+  @override
+  String get stackPartNameHint => 'π.χ. migration';
+
+  @override
+  String get stackPublish => 'Δημοσίευση στοίβας';
+
+  @override
+  String get stackCurrentPart => 'Τρέχον';
+
+  @override
+  String get stackSwitchDirty =>
+      'Κάντε commit ή απορρίψτε τις αλλαγές πριν αλλάξετε μέρη';
+
+  @override
+  String get stackCutFailed => 'Δεν ήταν δυνατή η έναρξη του επόμενου μέρους';
+
+  @override
+  String get stackPublishFailed => 'Δεν ήταν δυνατή η δημοσίευση της στοίβας';
+
+  @override
+  String get stackPublished => 'Η στοίβα δημοσιεύτηκε ως πρόχειρα';
+
+  @override
+  String get stackOpenPullRequest => 'Άνοιγμα pull request';
+
+  @override
+  String get stackSection => 'Στοίβα';
 }

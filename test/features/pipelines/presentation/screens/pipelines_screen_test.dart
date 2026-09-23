@@ -129,6 +129,40 @@ Finder _railCount(String count) => find.descendant(
   matching: find.text(count),
 );
 
+/// The row for the run with [id].
+Finder _runRow(String id) => find.byWidgetPredicate(
+  (widget) => widget is PipelineRunRow && widget.run.id == id,
+);
+
+/// The runs table's scroll position.
+ScrollPosition _runsScroll(WidgetTester tester) {
+  return tester
+      .state<ScrollableState>(
+        find.descendant(
+          of: find.byType(CustomScrollView),
+          matching: find.byType(Scrollable),
+        ),
+      )
+      .position;
+}
+
+/// Jumps to the trailing edge until the window stops growing and the edge
+/// has actually been laid out. One jump reveals a page; the next jump is what
+/// brings that page's tail on screen.
+Future<void> _scrollRunsToEnd(WidgetTester tester) async {
+  final position = _runsScroll(tester);
+  for (var i = 0; i < 6; i++) {
+    final extent = position.maxScrollExtent;
+    position.jumpTo(extent);
+    await tester.pump();
+    await tester.pump();
+    if ((position.maxScrollExtent - extent).abs() < 1 &&
+        (position.maxScrollExtent - position.pixels).abs() < 1) {
+      return;
+    }
+  }
+}
+
 // ── Tests ───────────────────────────────────────────────────────────────────
 
 void main() {
@@ -315,6 +349,77 @@ void main() {
       await _tapFilter(tester, 'All');
       await tester.pumpAndSettle();
       expect(find.byType(PipelineRunRow), findsNWidgets(2));
+    });
+
+    // ── Infinite scroll ───────────────────────────────────────────────────
+
+    testWidgets('paints the first page and reveals the rest at the end', (
+      tester,
+    ) async {
+      final runs = [
+        for (var i = 0; i < kPipelineRunsPageSize + 15; i++) _run(id: 'run-$i'),
+      ];
+      final lastId = runs.last.id;
+
+      await tester.pumpWidget(
+        _wrap(
+          runs: AsyncValue.data(runs),
+          templates: AsyncValue.data([_template()]),
+          workspaceId: _workspaceId,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // The rail counts every run. The table's first page does not: the tail
+      // is absent until the reader reaches the end and the window grows.
+      expect(_railCount('${runs.length}'), findsOneWidget);
+      expect(_runRow('run-0'), findsOneWidget);
+      expect(_runRow(lastId), findsNothing);
+
+      final position = _runsScroll(tester);
+      final firstPageExtent = position.maxScrollExtent;
+      await _scrollRunsToEnd(tester);
+      expect(
+        position.maxScrollExtent,
+        greaterThan(firstPageExtent + 200),
+        reason: 'reaching the end appends the next page',
+      );
+      expect(_runRow(lastId), findsOneWidget);
+    });
+
+    testWidgets('a filter change returns the window to the first page', (
+      tester,
+    ) async {
+      final runs = [
+        for (var i = 0; i < 10; i++)
+          _run(id: 'done-$i', status: PipelineRunStatus.completed),
+        for (var i = 0; i < kPipelineRunsPageSize + 10; i++)
+          _run(id: 'fail-$i', status: PipelineRunStatus.failed),
+      ];
+
+      await tester.pumpWidget(
+        _wrap(
+          runs: AsyncValue.data(runs),
+          templates: AsyncValue.data([_template()]),
+          workspaceId: _workspaceId,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final position = _runsScroll(tester);
+      final firstPageExtent = position.maxScrollExtent;
+      await _scrollRunsToEnd(tester);
+      expect(_runRow('fail-${kPipelineRunsPageSize + 9}'), findsOneWidget);
+
+      await _tapFilter(tester, 'Failed');
+      await tester.pumpAndSettle();
+
+      expect(position.pixels, 0);
+      expect(_runRow('fail-0'), findsOneWidget);
+      // The filtered list is longer than a page, but the window is the first
+      // page again: its extent matches the first page, not the drained list.
+      expect(position.maxScrollExtent, closeTo(firstPageExtent, 8));
+      expect(_railCount('${kPipelineRunsPageSize + 10}'), findsOneWidget);
     });
   });
 }

@@ -586,6 +586,14 @@ void main() {
       expect(c.id, 88);
     });
 
+    test('deleteIssueComment DELETEs /issues/comments/{id}', () async {
+      final b = build((_) => _json({}, status: 204));
+      await b.client.deleteIssueComment(owner, repo, commentId: 12);
+      final req = b.fake.requests.single;
+      expect(req.method, 'DELETE');
+      expect(req.path, '/repos/$owner/$repo/issues/comments/12');
+    });
+
     test('updateIssueComment PATCHes /issues/comments/{id}', () async {
       final b = build((_) => _json({'id': 12, 'body': '- [x] done'}));
       final c = await b.client.updateIssueComment(

@@ -219,6 +219,32 @@ void main() {
       expect(tester.getSize(_wash).height, GitHubUserMention.avatarSize);
     });
 
+    testWidgets('the name is not selectable inside a selection region', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        CcTheme(
+          data: CcThemeData.light(),
+          child: const MaterialApp(
+            home: SelectionArea(
+              child: GitHubUserMention(login: 'octocat', avatarUrl: ''),
+            ),
+          ),
+        ),
+      );
+
+      final cursors = tester
+          .widgetList<MouseRegion>(find.byType(MouseRegion))
+          .map((region) => region.cursor);
+      expect(cursors, contains(SystemMouseCursors.click));
+      expect(cursors, isNot(contains(SystemMouseCursors.text)));
+
+      final disabled = tester
+          .widgetList<SelectionContainer>(find.byType(SelectionContainer))
+          .where((container) => container.delegate == null);
+      expect(disabled, isNotEmpty);
+    });
+
     testWidgets('a team mention has no wash and is not tappable', (
       tester,
     ) async {

@@ -2590,6 +2590,19 @@ class AppLocalizationsRu extends AppLocalizations {
   String get agent => 'Агент';
 
   @override
+  String conversationCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count беседы',
+      many: '$count бесед',
+      few: '$count беседы',
+      one: '$count беседа',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String agentCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -3615,6 +3628,34 @@ class AppLocalizationsRu extends AppLocalizations {
       one: '$count час назад',
     );
     return '$_temp0';
+  }
+
+  @override
+  String get sidebarAgeNow => 'сейчас';
+
+  @override
+  String sidebarAgeMinutes(int count) {
+    return '$count мин';
+  }
+
+  @override
+  String sidebarAgeHours(int count) {
+    return '$count ч';
+  }
+
+  @override
+  String sidebarAgeDays(int count) {
+    return '$count д';
+  }
+
+  @override
+  String sidebarAgeMonths(int count) {
+    return '$count мес.';
+  }
+
+  @override
+  String sidebarAgeYears(int count) {
+    return '$count г';
   }
 
   @override
@@ -9859,6 +9900,82 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
+  String get reactionThumbsUp => 'Палец вверх';
+
+  @override
+  String get reactionThumbsDown => 'Палец вниз';
+
+  @override
+  String get reactionLaugh => 'Смех';
+
+  @override
+  String get reactionHooray => 'Ура';
+
+  @override
+  String get reactionConfused => 'Недоумение';
+
+  @override
+  String get reactionHeart => 'Сердце';
+
+  @override
+  String get reactionRocket => 'Ракета';
+
+  @override
+  String get reactionEyes => 'Глаза';
+
+  @override
+  String get commentReact => 'Отреагировать';
+
+  @override
+  String get commentResolveThread => 'Решить ветку';
+
+  @override
+  String get commentReopenThread => 'Открыть ветку снова';
+
+  @override
+  String get commentCopyLink => 'Копировать ссылку на комментарий';
+
+  @override
+  String get commentCopyMarkdown => 'Копировать как Markdown';
+
+  @override
+  String get commentCopyThreadMarkdown => 'Копировать ветку как Markdown';
+
+  @override
+  String get commentCopyPrompt => 'Копировать как промпт';
+
+  @override
+  String get commentCopyThreadPrompt => 'Копировать ветку как промпт';
+
+  @override
+  String get commentSendToAgent => 'Отправить агенту';
+
+  @override
+  String get commentDelete => 'Удалить комментарий';
+
+  @override
+  String get commentEdit => 'Изменить комментарий';
+
+  @override
+  String get commentActions => 'Действия с комментарием';
+
+  @override
+  String get commentDeleteTitle => 'Удалить этот комментарий?';
+
+  @override
+  String get commentDeleteBody => 'Он будет убран из pull request.';
+
+  @override
+  String get commentSentToAgent => 'Отправлено агенту';
+
+  @override
+  String get commentSendFailed =>
+      'Не удалось отправить этот комментарий агенту';
+
+  @override
+  String get commentDeleteFailed => 'Не удалось удалить этот комментарий';
+
+  @override
   String get autonomyDialLabel => 'Автономия';
 
   @override
@@ -14924,4 +15041,38 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get forgeConnectionsThisWorkspace =>
       'Войдите или вставьте токен для этого пространства.';
+
+  @override
+  String get stackStartNextPart => 'Начать следующую часть';
+
+  @override
+  String get stackPartNameTitle => 'Имя части';
+
+  @override
+  String get stackPartNameHint => 'напр. миграция';
+
+  @override
+  String get stackPublish => 'Опубликовать стек';
+
+  @override
+  String get stackCurrentPart => 'Текущая';
+
+  @override
+  String get stackSwitchDirty =>
+      'Зафиксируйте или отмените изменения перед переключением частей';
+
+  @override
+  String get stackCutFailed => 'Не удалось начать следующую часть';
+
+  @override
+  String get stackPublishFailed => 'Не удалось опубликовать стек';
+
+  @override
+  String get stackPublished => 'Стек опубликован как черновики';
+
+  @override
+  String get stackOpenPullRequest => 'Открыть pull request';
+
+  @override
+  String get stackSection => 'Стек';
 }

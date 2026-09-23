@@ -63,11 +63,7 @@ void main() {
 
     // Sweep in deliberately fractional steps: at every scroll offset the
     // labels hold the top of the viewport while the rows slide beneath.
-    for (
-      var target = 0.0;
-      target <= position.maxScrollExtent;
-      target += 13.7
-    ) {
+    for (var target = 0.0; target <= position.maxScrollExtent; target += 13.7) {
       position.jumpTo(target);
       await tester.pump();
       expect(
@@ -78,15 +74,26 @@ void main() {
       expect(
         tester.getRect(find.byType(PinnedHeaderBleedGuard)).top,
         0,
-        reason: 'offset $target: the pinned header must sit at the viewport top',
+        reason:
+            'offset $target: the pinned header must sit at the viewport top',
       );
     }
 
-    expect(
-      tester.getTopLeft(firstRow).dy,
-      lessThan(0),
-      reason: 'at max extent the first row must have scrolled under the header',
+    // The body is a lazy list, so the first row may have unmounted once it
+    // leaves the cache. While it is still mounted it must have moved up under
+    // the pinned header; either way the header loop above is what pins.
+    final origin = find.byWidgetPredicate(
+      (widget) => widget is PipelineRunRow && widget.run.id == 'run-0',
     );
+    if (origin.evaluate().isNotEmpty) {
+      expect(
+        tester.getTopLeft(origin).dy,
+        lessThan(0),
+        reason:
+            'at max extent the first row must have scrolled under the header',
+      );
+    }
+    expect(find.byType(PipelineRunRow), findsWidgets);
     expect(rowAtRest.top, greaterThan(0));
   });
 

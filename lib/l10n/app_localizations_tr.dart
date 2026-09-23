@@ -2570,6 +2570,17 @@ class AppLocalizationsTr extends AppLocalizations {
   String get agent => 'Ajan';
 
   @override
+  String conversationCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count sohbet',
+      one: '1 sohbet',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String agentCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -3581,6 +3592,34 @@ class AppLocalizationsTr extends AppLocalizations {
       one: '1 saat önce',
     );
     return '$_temp0';
+  }
+
+  @override
+  String get sidebarAgeNow => 'şimdi';
+
+  @override
+  String sidebarAgeMinutes(int count) {
+    return '$count dk';
+  }
+
+  @override
+  String sidebarAgeHours(int count) {
+    return '$count sa';
+  }
+
+  @override
+  String sidebarAgeDays(int count) {
+    return '$count g';
+  }
+
+  @override
+  String sidebarAgeMonths(int count) {
+    return '$count ay';
+  }
+
+  @override
+  String sidebarAgeYears(int count) {
+    return '$count y';
   }
 
   @override
@@ -9751,6 +9790,81 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
+  String get reactionThumbsUp => 'Başparmak yukarı';
+
+  @override
+  String get reactionThumbsDown => 'Başparmak aşağı';
+
+  @override
+  String get reactionLaugh => 'Kahkaha';
+
+  @override
+  String get reactionHooray => 'Yaşasın';
+
+  @override
+  String get reactionConfused => 'Kafası karışık';
+
+  @override
+  String get reactionHeart => 'Kalp';
+
+  @override
+  String get reactionRocket => 'Roket';
+
+  @override
+  String get reactionEyes => 'Gözler';
+
+  @override
+  String get commentReact => 'Tepki ver';
+
+  @override
+  String get commentResolveThread => 'Konuyu çöz';
+
+  @override
+  String get commentReopenThread => 'Konuyu yeniden aç';
+
+  @override
+  String get commentCopyLink => 'Yorum bağlantısını kopyala';
+
+  @override
+  String get commentCopyMarkdown => 'Markdown olarak kopyala';
+
+  @override
+  String get commentCopyThreadMarkdown => 'Konuyu Markdown olarak kopyala';
+
+  @override
+  String get commentCopyPrompt => 'İstem olarak kopyala';
+
+  @override
+  String get commentCopyThreadPrompt => 'Konuyu istem olarak kopyala';
+
+  @override
+  String get commentSendToAgent => 'Aracıya gönder';
+
+  @override
+  String get commentDelete => 'Yorumu sil';
+
+  @override
+  String get commentEdit => 'Yorumu düzenle';
+
+  @override
+  String get commentActions => 'Yorum eylemleri';
+
+  @override
+  String get commentDeleteTitle => 'Bu yorum silinsin mi?';
+
+  @override
+  String get commentDeleteBody => 'Çekme isteğinden kaldırılır.';
+
+  @override
+  String get commentSentToAgent => 'Aracıya gönderildi';
+
+  @override
+  String get commentSendFailed => 'Bu yorum bir aracıya gönderilemedi';
+
+  @override
+  String get commentDeleteFailed => 'Bu yorum silinemedi';
+
+  @override
   String get autonomyDialLabel => 'Özerklik';
 
   @override
@@ -14739,4 +14853,38 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get forgeConnectionsThisWorkspace =>
       'Bu çalışma alanı için oturum açın veya bir belirteç yapıştırın.';
+
+  @override
+  String get stackStartNextPart => 'Sonraki parçayı başlat';
+
+  @override
+  String get stackPartNameTitle => 'Parça adı';
+
+  @override
+  String get stackPartNameHint => 'ör. geçiş';
+
+  @override
+  String get stackPublish => 'Yığını yayınla';
+
+  @override
+  String get stackCurrentPart => 'Geçerli';
+
+  @override
+  String get stackSwitchDirty =>
+      'Parça değiştirmeden önce değişiklikleri işle veya at';
+
+  @override
+  String get stackCutFailed => 'Sonraki parça başlatılamadı';
+
+  @override
+  String get stackPublishFailed => 'Yığın yayınlanamadı';
+
+  @override
+  String get stackPublished => 'Yığın taslak olarak yayınlandı';
+
+  @override
+  String get stackOpenPullRequest => 'Çekme isteğini aç';
+
+  @override
+  String get stackSection => 'Yığın';
 }

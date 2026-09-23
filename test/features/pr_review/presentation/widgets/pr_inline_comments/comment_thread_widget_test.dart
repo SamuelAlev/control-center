@@ -11,6 +11,7 @@ import 'package:control_center/features/pr_review/providers/pr_review_providers.
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -610,8 +611,10 @@ void main() {
       await tester.pump();
 
       expect(find.byType(CcTooltip), findsWidgets);
-      await tester.ensureVisible(find.byIcon(AppIcons.rotateCcw));
-      await tester.tap(find.byIcon(AppIcons.rotateCcw));
+      // The header and the hover toolbar both offer reopen.
+      final reopen = find.byIcon(AppIcons.rotateCcw);
+      await tester.ensureVisible(reopen.first);
+      await tester.tap(reopen.first);
       await tester.pump();
 
       expect(controller.threads.first.resolved, isFalse);
@@ -1061,7 +1064,7 @@ void main() {
       ],
     );
 
-    testWidgets('synced entries render reaction chips and the add pill', (
+    testWidgets('synced entries render reaction chips and the React control', (
       tester,
     ) async {
       final controller = _createController(_prRef);
@@ -1075,7 +1078,8 @@ void main() {
 
       expect(find.text('👍'), findsOneWidget);
       expect(find.text('2'), findsOneWidget);
-      expect(find.byIcon(Icons.emoji_emotions_outlined), findsOneWidget);
+      expect(find.byIcon(AppIcons.smile), findsOneWidget);
+      expect(find.text('React'), findsNothing);
     });
 
     testWidgets('local entries render no reaction bar', (tester) async {
@@ -1086,7 +1090,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byIcon(Icons.emoji_emotions_outlined), findsNothing);
+      expect(find.byIcon(AppIcons.smile), findsNothing);
     });
 
     testWidgets('selecting an emoji toggles the reaction on the server '
@@ -1106,7 +1110,12 @@ void main() {
       );
       await tester.pump();
 
-      await tester.tap(find.byIcon(Icons.emoji_emotions_outlined));
+      final hover = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      addTearDown(hover.removePointer);
+      await hover.addPointer();
+      await hover.moveTo(tester.getCenter(find.text('Looks good')));
+      await tester.pump();
+      await tester.tap(find.byIcon(AppIcons.smile));
       await tester.pumpAndSettle();
       await tester.tap(find.text('🎉'));
       await tester.pumpAndSettle();

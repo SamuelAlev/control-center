@@ -2494,6 +2494,17 @@ class AppLocalizationsZh extends AppLocalizations {
   String get agent => '智能体';
 
   @override
+  String conversationCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 个会话',
+      one: '1 个会话',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String agentCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -3477,6 +3488,34 @@ class AppLocalizationsZh extends AppLocalizations {
       one: '1 小时前',
     );
     return '$_temp0';
+  }
+
+  @override
+  String get sidebarAgeNow => '刚刚';
+
+  @override
+  String sidebarAgeMinutes(int count) {
+    return '$count分钟';
+  }
+
+  @override
+  String sidebarAgeHours(int count) {
+    return '$count小时';
+  }
+
+  @override
+  String sidebarAgeDays(int count) {
+    return '$count天';
+  }
+
+  @override
+  String sidebarAgeMonths(int count) {
+    return '$count个月';
+  }
+
+  @override
+  String sidebarAgeYears(int count) {
+    return '$count年';
   }
 
   @override
@@ -9444,6 +9483,81 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get reactionThumbsUp => '点赞';
+
+  @override
+  String get reactionThumbsDown => '点踩';
+
+  @override
+  String get reactionLaugh => '大笑';
+
+  @override
+  String get reactionHooray => '庆祝';
+
+  @override
+  String get reactionConfused => '困惑';
+
+  @override
+  String get reactionHeart => '爱心';
+
+  @override
+  String get reactionRocket => '火箭';
+
+  @override
+  String get reactionEyes => '眼睛';
+
+  @override
+  String get commentReact => '回应';
+
+  @override
+  String get commentResolveThread => '解决讨论';
+
+  @override
+  String get commentReopenThread => '重新打开讨论';
+
+  @override
+  String get commentCopyLink => '复制评论链接';
+
+  @override
+  String get commentCopyMarkdown => '复制为 Markdown';
+
+  @override
+  String get commentCopyThreadMarkdown => '将讨论复制为 Markdown';
+
+  @override
+  String get commentCopyPrompt => '复制为提示';
+
+  @override
+  String get commentCopyThreadPrompt => '将讨论复制为提示';
+
+  @override
+  String get commentSendToAgent => '发送给代理';
+
+  @override
+  String get commentDelete => '删除评论';
+
+  @override
+  String get commentEdit => '编辑评论';
+
+  @override
+  String get commentActions => '评论操作';
+
+  @override
+  String get commentDeleteTitle => '删除这条评论？';
+
+  @override
+  String get commentDeleteBody => '它会从拉取请求中移除。';
+
+  @override
+  String get commentSentToAgent => '已发送给代理';
+
+  @override
+  String get commentSendFailed => '无法把这条评论发送给代理';
+
+  @override
+  String get commentDeleteFailed => '无法删除这条评论';
+
+  @override
   String get autonomyDialLabel => '自主程度';
 
   @override
@@ -14250,6 +14364,39 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get forgeConnectionsThisWorkspace => '登录或粘贴此工作区的令牌。';
+
+  @override
+  String get stackStartNextPart => '开始下一部分';
+
+  @override
+  String get stackPartNameTitle => '部分名称';
+
+  @override
+  String get stackPartNameHint => '例如 migration';
+
+  @override
+  String get stackPublish => '发布堆叠';
+
+  @override
+  String get stackCurrentPart => '当前';
+
+  @override
+  String get stackSwitchDirty => '切换部分前请提交或放弃更改';
+
+  @override
+  String get stackCutFailed => '无法开始下一部分';
+
+  @override
+  String get stackPublishFailed => '无法发布堆叠';
+
+  @override
+  String get stackPublished => '已将堆叠发布为草稿';
+
+  @override
+  String get stackOpenPullRequest => '打开拉取请求';
+
+  @override
+  String get stackSection => '堆叠';
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -16907,6 +17054,17 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get agent => '代理';
 
   @override
+  String conversationCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 個對話',
+      one: '1 個對話',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String agentCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -17890,6 +18048,34 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
       one: '1 小時前',
     );
     return '$_temp0';
+  }
+
+  @override
+  String get sidebarAgeNow => '剛剛';
+
+  @override
+  String sidebarAgeMinutes(int count) {
+    return '$count分鐘';
+  }
+
+  @override
+  String sidebarAgeHours(int count) {
+    return '$count小時';
+  }
+
+  @override
+  String sidebarAgeDays(int count) {
+    return '$count天';
+  }
+
+  @override
+  String sidebarAgeMonths(int count) {
+    return '$count個月';
+  }
+
+  @override
+  String sidebarAgeYears(int count) {
+    return '$count年';
   }
 
   @override
@@ -23858,6 +24044,81 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   }
 
   @override
+  String get reactionThumbsUp => '讚';
+
+  @override
+  String get reactionThumbsDown => '倒讚';
+
+  @override
+  String get reactionLaugh => '大笑';
+
+  @override
+  String get reactionHooray => '慶祝';
+
+  @override
+  String get reactionConfused => '困惑';
+
+  @override
+  String get reactionHeart => '愛心';
+
+  @override
+  String get reactionRocket => '火箭';
+
+  @override
+  String get reactionEyes => '眼睛';
+
+  @override
+  String get commentReact => '回應';
+
+  @override
+  String get commentResolveThread => '解決討論';
+
+  @override
+  String get commentReopenThread => '重新開啟討論';
+
+  @override
+  String get commentCopyLink => '複製評論連結';
+
+  @override
+  String get commentCopyMarkdown => '複製為 Markdown';
+
+  @override
+  String get commentCopyThreadMarkdown => '將討論複製為 Markdown';
+
+  @override
+  String get commentCopyPrompt => '複製為提示';
+
+  @override
+  String get commentCopyThreadPrompt => '將討論複製為提示';
+
+  @override
+  String get commentSendToAgent => '傳送給代理';
+
+  @override
+  String get commentDelete => '刪除評論';
+
+  @override
+  String get commentEdit => '編輯評論';
+
+  @override
+  String get commentActions => '評論操作';
+
+  @override
+  String get commentDeleteTitle => '刪除這則評論？';
+
+  @override
+  String get commentDeleteBody => '它會從拉取請求中移除。';
+
+  @override
+  String get commentSentToAgent => '已傳送給代理';
+
+  @override
+  String get commentSendFailed => '無法把這則評論傳送給代理';
+
+  @override
+  String get commentDeleteFailed => '無法刪除這則評論';
+
+  @override
   String get autonomyDialLabel => '自主程度';
 
   @override
@@ -28666,4 +28927,37 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get forgeConnectionsThisWorkspace => '登入或貼上此工作區的權杖。';
+
+  @override
+  String get stackStartNextPart => '開始下一部分';
+
+  @override
+  String get stackPartNameTitle => '部分名稱';
+
+  @override
+  String get stackPartNameHint => '例如 migration';
+
+  @override
+  String get stackPublish => '發布堆疊';
+
+  @override
+  String get stackCurrentPart => '目前';
+
+  @override
+  String get stackSwitchDirty => '切換部分前請提交或捨棄變更';
+
+  @override
+  String get stackCutFailed => '無法開始下一部分';
+
+  @override
+  String get stackPublishFailed => '無法發布堆疊';
+
+  @override
+  String get stackPublished => '已將堆疊發布為草稿';
+
+  @override
+  String get stackOpenPullRequest => '開啟拉取請求';
+
+  @override
+  String get stackSection => '堆疊';
 }

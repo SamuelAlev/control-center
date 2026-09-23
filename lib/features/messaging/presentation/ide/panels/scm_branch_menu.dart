@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/features/messaging/providers/space_stack_provider.dart';
 import 'package:control_center/features/messaging/providers/worktree_file_ops_provider.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
@@ -16,6 +19,10 @@ class ScmBranchMenu extends StatefulWidget {
     required this.enabled,
     required this.load,
     required this.onCheckout,
+    this.layers = const [],
+    this.onStartNextPart,
+    this.onCheckoutLayer,
+    this.onPublishStack,
   });
 
   /// Branch stored for this worktree. Empty means a detached HEAD.
@@ -29,6 +36,18 @@ class ScmBranchMenu extends StatefulWidget {
 
   /// Runs the chosen checkout. The menu closes first.
   final Future<void> Function(WorktreeCheckoutRequest request) onCheckout;
+
+  /// Recorded stack layers for this repo, bottom to top.
+  final List<SpaceStackLayer> layers;
+
+  /// Prompts for a part name and cuts the next layer.
+  final Future<void> Function(String name)? onStartNextPart;
+
+  /// Checks out a recorded layer.
+  final Future<void> Function(SpaceStackLayer layer)? onCheckoutLayer;
+
+  /// Publishes the stack once it has two layers.
+  final Future<void> Function()? onPublishStack;
 
   @override
   State<ScmBranchMenu> createState() => _ScmBranchMenuState();
@@ -68,6 +87,22 @@ class _ScmBranchMenuState extends State<ScmBranchMenu> {
       _list = list;
       _loading = false;
     });
+  }
+
+  Future<void> _startNextPart() async {
+    final start = widget.onStartNextPart;
+    if (start == null) {
+      return;
+    }
+    final name = await _askBranchName(
+      context,
+      title: AppLocalizations.of(context).stackPartNameTitle,
+      hint: AppLocalizations.of(context).stackPartNameHint,
+    );
+    if (name == null || !mounted) {
+      return;
+    }
+    await start(name);
   }
 
   Future<void> _create({String? startPoint}) async {
@@ -160,8 +195,9 @@ class _ScmBranchMenuState extends State<ScmBranchMenu> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 140),
+          // The chip caps the row. The name yields so the chevron stays inside
+          // that cap instead of painting past it.
+          Flexible(
             child: Text(
               label,
               // RTL carve-out: a branch name is an LTR token.
@@ -207,6 +243,25 @@ class _ScmBranchMenuState extends State<ScmBranchMenu> {
           icon: AppIcons.plus,
           onSelected: _create,
         ),
+        if (widget.onStartNextPart != null)
+          CcMenuItem(
+            label: l10n.stackStartNextPart,
+            icon: AppIcons.gitBranch,
+            onSelected: () {
+              unawaited(_startNextPart());
+            },
+          ),
+        if (widget.onPublishStack != null && widget.layers.length >= 2)
+          CcMenuItem(
+            label: l10n.stackPublish,
+            icon: AppIcons.gitPullRequestCreate,
+            onSelected: () {
+              final publish = widget.onPublishStack;
+              if (publish != null) {
+                unawaited(publish());
+              }
+            },
+          ),
         CcMenuItem(
           label: l10n.scmCreateBranchFrom,
           icon: AppIcons.gitBranch,
@@ -227,6 +282,29 @@ class _ScmBranchMenuState extends State<ScmBranchMenu> {
             onSelected: () {},
           )
         else ...[
+          if (widget.layers.length >= 2) ...[
+            CcMenuItem.section(l10n.stackSection),
+            for (final layer in _stackInOrder(widget.layers))
+              CcMenuItem(
+                label: layer.prNumber == null
+                    ? layer.label
+                    : '${layer.label} #${layer.prNumber}',
+                icon: AppIcons.gitBranch,
+                selected: layer.current,
+                trailingChild: _StackIndexBadge(
+                  position: layer.position + 1,
+                  total: widget.layers.length,
+                ),
+                searchText:
+                    '${layer.branch} ${layer.position + 1}/${widget.layers.length}',
+                onSelected: () {
+                  final checkout = widget.onCheckoutLayer;
+                  if (checkout != null) {
+                    unawaited(checkout(layer));
+                  }
+                },
+              ),
+          ],
           if (locals.isNotEmpty) ...[
             CcMenuItem.section(l10n.scmBranches),
             for (final ref in locals) _refItem(context, ref),
@@ -263,10 +341,72 @@ class _ScmBranchMenuState extends State<ScmBranchMenu> {
   }
 }
 
-Future<String?> _askBranchName(BuildContext context, {String? from}) {
+/// Bottom of the stack first, so the badge reads 1/N, then 2/N.
+List<SpaceStackLayer> _stackInOrder(List<SpaceStackLayer> layers) {
+  final ordered = [...layers]..sort((a, b) => a.position.compareTo(b.position));
+  return ordered;
+}
+
+/// Layers glyph plus `position/total`, the same hairline pill the pull-request
+/// stack badge uses.
+class _StackIndexBadge extends StatelessWidget {
+  const _StackIndexBadge({required this.position, required this.total});
+
+  /// 1-based place in the stack. 1 is the bottom.
+  final int position;
+
+  /// How many layers the stack has.
+  final int total;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designSystem ?? DesignSystemTokens.light();
+    final l10n = AppLocalizations.of(context);
+    return CcTooltip(
+      message: l10n.partOfStack(position, total),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm,
+          vertical: 3,
+        ),
+        decoration: BoxDecoration(
+          color: tokens.panel,
+          borderRadius: BorderRadius.circular(AppRadii.pill),
+          border: Border.all(color: tokens.borderSoft),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(AppIcons.layers, size: 12, color: tokens.textSecondary),
+            const SizedBox(width: AppSpacing.xs),
+            Text(
+              '$position/$total',
+              // RTL carve-out: a stack index is a number pair.
+              textDirection: TextDirection.ltr,
+              style: TextStyle(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w600,
+                color: tokens.textSecondary,
+                decoration: TextDecoration.none,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+Future<String?> _askBranchName(
+  BuildContext context, {
+  String? from,
+  String? title,
+  String? hint,
+}) {
   return showCcDialog<String>(
     context: context,
-    builder: (context) => _BranchNameDialog(from: from),
+    builder: (context) =>
+        _BranchNameDialog(from: from, title: title, hint: hint),
   );
 }
 
@@ -282,9 +422,11 @@ Future<WorktreeRefEntry?> _pickRef(
 }
 
 class _BranchNameDialog extends StatefulWidget {
-  const _BranchNameDialog({this.from});
+  const _BranchNameDialog({this.from, this.title, this.hint});
 
   final String? from;
+  final String? title;
+  final String? hint;
 
   @override
   State<_BranchNameDialog> createState() => _BranchNameDialogState();
@@ -316,7 +458,7 @@ class _BranchNameDialogState extends State<_BranchNameDialog> {
       builder: (context, _) {
         final ready = _name.text.trim().isNotEmpty;
         return CcDialog(
-          title: l10n.scmCreateBranchTitle,
+          title: widget.title ?? l10n.scmCreateBranchTitle,
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -334,7 +476,7 @@ class _BranchNameDialogState extends State<_BranchNameDialog> {
                 controller: _name,
                 autofocus: true,
                 size: CcTextFieldSize.sm,
-                hintText: l10n.scmBranchName,
+                hintText: widget.hint ?? l10n.scmBranchName,
                 onSubmitted: (_) => _submit(),
               ),
               const SizedBox(height: AppSpacing.md),

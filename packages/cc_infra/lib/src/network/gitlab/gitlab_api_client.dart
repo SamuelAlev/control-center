@@ -585,6 +585,22 @@ class GitLabApiClient {
     return data == null ? null : GitLabNote.fromJson(data);
   }
 
+  /// Deletes note [noteId] on merge request [iid].
+  ///
+  /// GitLab uses one note id for both timeline notes and discussion notes, so
+  /// the same call removes a conversation comment and an inline thread reply.
+  Future<void> deleteMergeRequestNote(
+    String projectId,
+    int iid, {
+    required int noteId,
+    CancelToken? cancelToken,
+  }) async {
+    await _dio.delete<dynamic>(
+      '/projects/$projectId/merge_requests/$iid/notes/$noteId',
+      cancelToken: cancelToken,
+    );
+  }
+
   /// Opens a new discussion on merge request [iid].
   ///
   /// Supplying [position] makes it an inline (diff-anchored) thread; omitting

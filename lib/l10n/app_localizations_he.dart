@@ -2560,6 +2560,19 @@ class AppLocalizationsHe extends AppLocalizations {
   String get agent => 'סוכן';
 
   @override
+  String conversationCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count שיחות',
+      many: '$count שיחות',
+      two: '$count שיחות',
+      one: '$count שיחה',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String agentCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -3569,6 +3582,34 @@ class AppLocalizationsHe extends AppLocalizations {
       one: 'לפני שעה',
     );
     return '$_temp0';
+  }
+
+  @override
+  String get sidebarAgeNow => 'עכשיו';
+
+  @override
+  String sidebarAgeMinutes(int count) {
+    return '$count דק׳';
+  }
+
+  @override
+  String sidebarAgeHours(int count) {
+    return '$count שע׳';
+  }
+
+  @override
+  String sidebarAgeDays(int count) {
+    return '$count י׳';
+  }
+
+  @override
+  String sidebarAgeMonths(int count) {
+    return '$count חו׳';
+  }
+
+  @override
+  String sidebarAgeYears(int count) {
+    return '$count ש׳';
   }
 
   @override
@@ -9727,6 +9768,81 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
+  String get reactionThumbsUp => 'אגודל למעלה';
+
+  @override
+  String get reactionThumbsDown => 'אגודל למטה';
+
+  @override
+  String get reactionLaugh => 'צחוק';
+
+  @override
+  String get reactionHooray => 'הידד';
+
+  @override
+  String get reactionConfused => 'בלבול';
+
+  @override
+  String get reactionHeart => 'לב';
+
+  @override
+  String get reactionRocket => 'רקטה';
+
+  @override
+  String get reactionEyes => 'עיניים';
+
+  @override
+  String get commentReact => 'תגובה';
+
+  @override
+  String get commentResolveThread => 'פתרון השרשור';
+
+  @override
+  String get commentReopenThread => 'פתיחת השרשור מחדש';
+
+  @override
+  String get commentCopyLink => 'העתקת קישור לתגובה';
+
+  @override
+  String get commentCopyMarkdown => 'העתקה כ-Markdown';
+
+  @override
+  String get commentCopyThreadMarkdown => 'העתקת השרשור כ-Markdown';
+
+  @override
+  String get commentCopyPrompt => 'העתקה כהנחיה';
+
+  @override
+  String get commentCopyThreadPrompt => 'העתקת השרשור כהנחיה';
+
+  @override
+  String get commentSendToAgent => 'שליחה לסוכן';
+
+  @override
+  String get commentDelete => 'מחיקת תגובה';
+
+  @override
+  String get commentEdit => 'עריכת תגובה';
+
+  @override
+  String get commentActions => 'פעולות תגובה';
+
+  @override
+  String get commentDeleteTitle => 'למחוק את התגובה הזו?';
+
+  @override
+  String get commentDeleteBody => 'היא תוסר מבקשת המשיכה.';
+
+  @override
+  String get commentSentToAgent => 'נשלח לסוכן';
+
+  @override
+  String get commentSendFailed => 'לא ניתן לשלוח את התגובה לסוכן';
+
+  @override
+  String get commentDeleteFailed => 'לא ניתן למחוק את התגובה';
+
+  @override
   String get autonomyDialLabel => 'אוטונומיה';
 
   @override
@@ -14741,4 +14857,38 @@ class AppLocalizationsHe extends AppLocalizations {
   @override
   String get forgeConnectionsThisWorkspace =>
       'היכנסו או הדביקו אסימון למרחב העבודה הזה.';
+
+  @override
+  String get stackStartNextPart => 'התחלת החלק הבא';
+
+  @override
+  String get stackPartNameTitle => 'שם החלק';
+
+  @override
+  String get stackPartNameHint => 'למשל migration';
+
+  @override
+  String get stackPublish => 'פרסום המחסנית';
+
+  @override
+  String get stackCurrentPart => 'נוכחי';
+
+  @override
+  String get stackSwitchDirty =>
+      'בצעו commit או בטלו שינויים לפני מעבר בין חלקים';
+
+  @override
+  String get stackCutFailed => 'לא ניתן להתחיל את החלק הבא';
+
+  @override
+  String get stackPublishFailed => 'לא ניתן לפרסם את המחסנית';
+
+  @override
+  String get stackPublished => 'המחסנית פורסמה כטיוטות';
+
+  @override
+  String get stackOpenPullRequest => 'פתיחת בקשת משיכה';
+
+  @override
+  String get stackSection => 'מחסנית';
 }

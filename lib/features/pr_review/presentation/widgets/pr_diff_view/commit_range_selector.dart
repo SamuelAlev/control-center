@@ -307,7 +307,10 @@ class _VersionBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: checked ? t.accent.withValues(alpha: 0.12) : t.bgPrimary,
+        // bgTertiary, not the page fill: on the diff toolbar the trigger sits
+        // on bgPrimary, and a matching badge disappears so the title looks
+        // like it starts in the middle of the control.
+        color: checked ? t.accent.withValues(alpha: 0.12) : t.bgTertiary,
         borderRadius: AppRadii.brSm,
         border: Border.all(
           color: checked ? t.accent.withValues(alpha: 0.3) : t.borderSecondary,

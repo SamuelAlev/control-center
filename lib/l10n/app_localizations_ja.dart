@@ -2526,6 +2526,17 @@ class AppLocalizationsJa extends AppLocalizations {
   String get agent => 'エージェント';
 
   @override
+  String conversationCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 件の会話',
+      one: '1 件の会話',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String agentCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -3516,6 +3527,34 @@ class AppLocalizationsJa extends AppLocalizations {
       one: '1時間前',
     );
     return '$_temp0';
+  }
+
+  @override
+  String get sidebarAgeNow => 'たった今';
+
+  @override
+  String sidebarAgeMinutes(int count) {
+    return '$count分';
+  }
+
+  @override
+  String sidebarAgeHours(int count) {
+    return '$count時間';
+  }
+
+  @override
+  String sidebarAgeDays(int count) {
+    return '$count日';
+  }
+
+  @override
+  String sidebarAgeMonths(int count) {
+    return '$countか月';
+  }
+
+  @override
+  String sidebarAgeYears(int count) {
+    return '$count年';
   }
 
   @override
@@ -9546,6 +9585,81 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String get reactionThumbsUp => 'いいね';
+
+  @override
+  String get reactionThumbsDown => 'よくないね';
+
+  @override
+  String get reactionLaugh => '笑い';
+
+  @override
+  String get reactionHooray => 'やったー';
+
+  @override
+  String get reactionConfused => '困惑';
+
+  @override
+  String get reactionHeart => 'ハート';
+
+  @override
+  String get reactionRocket => 'ロケット';
+
+  @override
+  String get reactionEyes => '目';
+
+  @override
+  String get commentReact => 'リアクション';
+
+  @override
+  String get commentResolveThread => 'スレッドを解決';
+
+  @override
+  String get commentReopenThread => 'スレッドを再開';
+
+  @override
+  String get commentCopyLink => 'コメントへのリンクをコピー';
+
+  @override
+  String get commentCopyMarkdown => 'Markdown としてコピー';
+
+  @override
+  String get commentCopyThreadMarkdown => 'スレッドを Markdown としてコピー';
+
+  @override
+  String get commentCopyPrompt => 'プロンプトとしてコピー';
+
+  @override
+  String get commentCopyThreadPrompt => 'スレッドをプロンプトとしてコピー';
+
+  @override
+  String get commentSendToAgent => 'エージェントに送る';
+
+  @override
+  String get commentDelete => 'コメントを削除';
+
+  @override
+  String get commentEdit => 'コメントを編集';
+
+  @override
+  String get commentActions => 'コメントの操作';
+
+  @override
+  String get commentDeleteTitle => 'このコメントを削除しますか？';
+
+  @override
+  String get commentDeleteBody => 'プルリクエストから取り除かれます。';
+
+  @override
+  String get commentSentToAgent => 'エージェントに送りました';
+
+  @override
+  String get commentSendFailed => 'このコメントをエージェントに送れませんでした';
+
+  @override
+  String get commentDeleteFailed => 'このコメントを削除できませんでした';
+
+  @override
   String get autonomyDialLabel => '自律度';
 
   @override
@@ -14422,4 +14536,37 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get forgeConnectionsThisWorkspace => 'このワークスペース用にサインインするかトークンを貼り付けます。';
+
+  @override
+  String get stackStartNextPart => '次のパートを始める';
+
+  @override
+  String get stackPartNameTitle => 'パート名';
+
+  @override
+  String get stackPartNameHint => '例: migration';
+
+  @override
+  String get stackPublish => 'スタックを公開';
+
+  @override
+  String get stackCurrentPart => '現在';
+
+  @override
+  String get stackSwitchDirty => 'パートを切り替える前に変更をコミットするか破棄してください';
+
+  @override
+  String get stackCutFailed => '次のパートを始められませんでした';
+
+  @override
+  String get stackPublishFailed => 'スタックを公開できませんでした';
+
+  @override
+  String get stackPublished => 'スタックを下書きとして公開しました';
+
+  @override
+  String get stackOpenPullRequest => 'プルリクエストを開く';
+
+  @override
+  String get stackSection => 'スタック';
 }

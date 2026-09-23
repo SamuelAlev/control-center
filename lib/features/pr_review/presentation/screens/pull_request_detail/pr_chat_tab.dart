@@ -2,6 +2,8 @@ import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/conversation_pane.dart';
 import 'package:control_center/features/pr_review/providers/pr_space_provider.dart';
+import 'package:control_center/features/pr_review/providers/send_comment_to_agent.dart';
+import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/widgets.dart';
@@ -24,6 +26,16 @@ class PrChatTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final t = context.designSystem ?? DesignSystemTokens.light();
+    final workspaceId = ref.watch(activeWorkspaceIdProvider);
+    final focus = workspaceId == null
+        ? null
+        : ref.watch(
+            prChatFocusProvider((
+              workspaceId: workspaceId,
+              repoFullName: pr.repoFullName,
+              number: pr.number,
+            )),
+          );
     final spaceAsync = ref.watch(prSpaceProvider(pr));
     return spaceAsync.when(
       loading: () => Center(
@@ -88,7 +100,10 @@ class PrChatTab extends ConsumerWidget {
         );
       },
       // Commit & push now lives in its own Source Control tab, not under chat.
-      data: (spaceId) => ConversationPane(spaceId: spaceId),
+      data: (spaceId) => ConversationPane(
+        spaceId: spaceId,
+        conversationId: focus?.conversationId,
+      ),
     );
   }
 }

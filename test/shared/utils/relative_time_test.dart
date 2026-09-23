@@ -64,6 +64,34 @@ void main() {
     );
   });
 
+  testWidgets('compact age uses short units', (tester) async {
+    await pump(tester);
+    final l10n = AppLocalizations.of(ctx);
+    final now = DateTime.now();
+    expect(formatCompactAge(ctx, null), '');
+    expect(formatCompactAge(ctx, now), l10n.sidebarAgeNow);
+    expect(
+      formatCompactAge(ctx, now.subtract(const Duration(minutes: 12))),
+      l10n.sidebarAgeMinutes(12),
+    );
+    expect(
+      formatCompactAge(ctx, now.subtract(const Duration(hours: 6))),
+      l10n.sidebarAgeHours(6),
+    );
+    expect(
+      formatCompactAge(ctx, now.subtract(const Duration(days: 3))),
+      l10n.sidebarAgeDays(3),
+    );
+    expect(
+      formatCompactAge(ctx, now.subtract(const Duration(days: 90))),
+      l10n.sidebarAgeMonths(3),
+    );
+    expect(
+      formatCompactAge(ctx, now.subtract(const Duration(days: 400))),
+      l10n.sidebarAgeYears(1),
+    );
+  });
+
   testWidgets('follows the ambient locale (not English-only)', (tester) async {
     await pump(tester, locale: const Locale('fr'));
     final french = formatRelativeTime(

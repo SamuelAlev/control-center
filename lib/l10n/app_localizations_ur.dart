@@ -2556,6 +2556,17 @@ class AppLocalizationsUr extends AppLocalizations {
   String get agent => 'ایجنٹ';
 
   @override
+  String conversationCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count گفتگوئیں',
+      one: '$count گفتگو',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String agentCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -3564,6 +3575,34 @@ class AppLocalizationsUr extends AppLocalizations {
       one: '1 گھنٹہ پہلے',
     );
     return '$_temp0';
+  }
+
+  @override
+  String get sidebarAgeNow => 'ابھی';
+
+  @override
+  String sidebarAgeMinutes(int count) {
+    return '$count منٹ';
+  }
+
+  @override
+  String sidebarAgeHours(int count) {
+    return '$count گھ';
+  }
+
+  @override
+  String sidebarAgeDays(int count) {
+    return '$count دن';
+  }
+
+  @override
+  String sidebarAgeMonths(int count) {
+    return '$count مہ';
+  }
+
+  @override
+  String sidebarAgeYears(int count) {
+    return '$count سال';
   }
 
   @override
@@ -9710,6 +9749,82 @@ class AppLocalizationsUr extends AppLocalizations {
   }
 
   @override
+  String get reactionThumbsUp => 'انگوٹھا اوپر';
+
+  @override
+  String get reactionThumbsDown => 'انگوٹھا نیچے';
+
+  @override
+  String get reactionLaugh => 'ہنسی';
+
+  @override
+  String get reactionHooray => 'واہ';
+
+  @override
+  String get reactionConfused => 'الجھن';
+
+  @override
+  String get reactionHeart => 'دل';
+
+  @override
+  String get reactionRocket => 'راکٹ';
+
+  @override
+  String get reactionEyes => 'آنکھیں';
+
+  @override
+  String get commentReact => 'ردعمل';
+
+  @override
+  String get commentResolveThread => 'تھریڈ حل کریں';
+
+  @override
+  String get commentReopenThread => 'تھریڈ دوبارہ کھولیں';
+
+  @override
+  String get commentCopyLink => 'تبصرے کا لنک نقل کریں';
+
+  @override
+  String get commentCopyMarkdown => 'Markdown کے طور پر نقل کریں';
+
+  @override
+  String get commentCopyThreadMarkdown =>
+      'تھریڈ کو Markdown کے طور پر نقل کریں';
+
+  @override
+  String get commentCopyPrompt => 'پرامپٹ کے طور پر نقل کریں';
+
+  @override
+  String get commentCopyThreadPrompt => 'تھریڈ کو پرامپٹ کے طور پر نقل کریں';
+
+  @override
+  String get commentSendToAgent => 'ایجنٹ کو بھیجیں';
+
+  @override
+  String get commentDelete => 'تبصرہ حذف کریں';
+
+  @override
+  String get commentEdit => 'تبصرہ ترمیم کریں';
+
+  @override
+  String get commentActions => 'تبصرے کے اقدامات';
+
+  @override
+  String get commentDeleteTitle => 'یہ تبصرہ حذف کریں؟';
+
+  @override
+  String get commentDeleteBody => 'یہ پل ریکوئسٹ سے ہٹ جاتا ہے۔';
+
+  @override
+  String get commentSentToAgent => 'ایجنٹ کو بھیج دیا گیا';
+
+  @override
+  String get commentSendFailed => 'یہ تبصرہ ایجنٹ کو نہیں بھیجا جا سکا';
+
+  @override
+  String get commentDeleteFailed => 'یہ تبصرہ حذف نہیں ہو سکا';
+
+  @override
   String get autonomyDialLabel => 'خود مختاری';
 
   @override
@@ -14680,4 +14795,38 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String get forgeConnectionsThisWorkspace =>
       'اس ورک اسپیس کے لیے سائن ان کریں یا ٹوکن چسپاں کریں۔';
+
+  @override
+  String get stackStartNextPart => 'اگلا حصہ شروع کریں';
+
+  @override
+  String get stackPartNameTitle => 'حصے کا نام';
+
+  @override
+  String get stackPartNameHint => 'مثلاً migration';
+
+  @override
+  String get stackPublish => 'اسٹیک شائع کریں';
+
+  @override
+  String get stackCurrentPart => 'موجودہ';
+
+  @override
+  String get stackSwitchDirty =>
+      'حصے بدلنے سے پہلے تبدیلیاں کمٹ کریں یا چھوڑ دیں';
+
+  @override
+  String get stackCutFailed => 'اگلا حصہ شروع نہیں ہو سکا';
+
+  @override
+  String get stackPublishFailed => 'اسٹیک شائع نہیں ہو سکی';
+
+  @override
+  String get stackPublished => 'اسٹیک مسودوں کے طور پر شائع ہو گئی';
+
+  @override
+  String get stackOpenPullRequest => 'پل ریکوئسٹ کھولیں';
+
+  @override
+  String get stackSection => 'اسٹیک';
 }

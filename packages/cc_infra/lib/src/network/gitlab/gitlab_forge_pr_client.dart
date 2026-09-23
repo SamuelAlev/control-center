@@ -888,6 +888,46 @@ class GitLabForgePrClient implements ForgePrClient {
     );
   }
 
+  @override
+  Future<void> deleteIssueComment({
+    required int prNumber,
+    required String commentId,
+    Object? cancelToken,
+  }) async {
+    await _client.deleteMergeRequestNote(
+      _projectId,
+      prNumber,
+      noteId: _noteId(commentId),
+      cancelToken: _token(cancelToken),
+    );
+  }
+
+  @override
+  Future<void> deleteReviewComment({
+    required int prNumber,
+    required String commentId,
+    Object? cancelToken,
+  }) async {
+    // Inline threads are discussion notes. GitLab deletes both with the note id.
+    await deleteIssueComment(
+      prNumber: prNumber,
+      commentId: commentId,
+      cancelToken: cancelToken,
+    );
+  }
+
+  static int _noteId(String commentId) {
+    final noteId = int.tryParse(commentId.trim());
+    if (noteId == null || noteId <= 0) {
+      throw ArgumentError.value(
+        commentId,
+        'commentId',
+        'GitLab note ids are integers',
+      );
+    }
+    return noteId;
+  }
+
   /// Submits a verdict on merge request [prNumber].
   ///
   /// Publishes pending draft notes first (`pendingReviewBatching`). Mapping:

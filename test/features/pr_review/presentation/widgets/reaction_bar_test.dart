@@ -2,6 +2,7 @@ import 'package:cc_domain/features/pr_review/domain/entities/reaction_group.dart
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/reaction_bar.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -38,7 +39,20 @@ void main() {
 
     expect(find.text('👍'), findsOneWidget);
     expect(find.text('2'), findsOneWidget);
-    expect(find.text('React'), findsOneWidget);
+    expect(find.byIcon(AppIcons.smile), findsOneWidget);
+    expect(find.text('React'), findsNothing);
+
+    final chipTip = tester.widget<CcTooltip>(
+      find.ancestor(of: find.text('👍'), matching: find.byType(CcTooltip)),
+    );
+    expect(chipTip.message, 'Thumbs up · kenny');
+    final addTip = tester.widget<CcTooltip>(
+      find.ancestor(
+        of: find.byIcon(AppIcons.smile),
+        matching: find.byType(CcTooltip),
+      ),
+    );
+    expect(addTip.message, 'Add reaction');
   });
 
   testWidgets('tapping a reacted chip toggles it off and drops the count', (
@@ -74,7 +88,7 @@ void main() {
   AnimatedContainer pillContainer(WidgetTester tester) =>
       tester.widget<AnimatedContainer>(
         find.ancestor(
-          of: find.text('React'),
+          of: find.byIcon(AppIcons.smile),
           matching: find.byType(AnimatedContainer),
         ),
       );
@@ -96,6 +110,10 @@ void main() {
     );
 
     final rest = pillDecoration(tester);
+    expect(
+      tester.getSize(find.byWidget(pillContainer(tester))).width,
+      lessThan(48),
+    );
     expect(rest.color, const Color(0x00000000));
     expect(
       rest.border!.top.color,
@@ -105,7 +123,7 @@ void main() {
     final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
     addTearDown(gesture.removePointer);
     await gesture.addPointer();
-    await gesture.moveTo(tester.getCenter(find.text('React')));
+    await gesture.moveTo(tester.getCenter(find.byIcon(AppIcons.smile)));
     await tester.pump();
 
     final hovered = pillDecoration(tester);
@@ -127,11 +145,34 @@ void main() {
     );
 
     // Touch tap: no pointer hover, so any highlight must come from `open`.
-    await tester.tap(find.text('React'));
+    await tester.tap(find.byIcon(AppIcons.smile));
     await tester.pump();
 
-    // The emoji grid opened.
+    // The emoji grid opened, with a name tooltip and no content-key label.
     expect(find.text('👍'), findsOneWidget);
+    expect(find.text('+1'), findsNothing);
+    expect(
+      tester
+          .widget<CcTooltip>(
+            find.ancestor(
+              of: find.text('👍'),
+              matching: find.byType(CcTooltip),
+            ),
+          )
+          .message,
+      'Thumbs up',
+    );
+    expect(
+      tester
+          .widget<CcTooltip>(
+            find.ancestor(
+              of: find.text('👀'),
+              matching: find.byType(CcTooltip),
+            ),
+          )
+          .message,
+      'Eyes',
+    );
 
     final decoration = pillDecoration(tester);
     expect(decoration.color, tokens.hover);

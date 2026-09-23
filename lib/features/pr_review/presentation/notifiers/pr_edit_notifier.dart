@@ -20,6 +20,8 @@ class PrEditState {
     this.pendingAssignees = const {},
     this.pendingReviewers = const {},
     this.pendingLabels = const {},
+    this.hiddenIssueCommentIds = const {},
+    this.hiddenReviewCommentIds = const {},
   });
 
   /// Whether a title save is in flight.
@@ -48,6 +50,14 @@ class PrEditState {
   /// Label names (lowercased) whose add/remove is in flight.
   final Set<String> pendingLabels;
 
+  /// Conversation comments hidden while a delete is in flight (and after it
+  /// succeeds, until the stream drops them). Restored if the forge refuses.
+  final Set<int> hiddenIssueCommentIds;
+
+  /// Inline review comments hidden the same way. A separate set: the two
+  /// forges number them independently, so id 12 is not one comment.
+  final Set<int> hiddenReviewCommentIds;
+
   /// Returns a copy with the given fields replaced.
   PrEditState copyWith({
     bool? savingTitle,
@@ -59,6 +69,8 @@ class PrEditState {
     Set<String>? pendingAssignees,
     Set<String>? pendingReviewers,
     Set<String>? pendingLabels,
+    Set<int>? hiddenIssueCommentIds,
+    Set<int>? hiddenReviewCommentIds,
   }) {
     return PrEditState(
       savingTitle: savingTitle ?? this.savingTitle,
@@ -71,6 +83,10 @@ class PrEditState {
       pendingAssignees: pendingAssignees ?? this.pendingAssignees,
       pendingReviewers: pendingReviewers ?? this.pendingReviewers,
       pendingLabels: pendingLabels ?? this.pendingLabels,
+      hiddenIssueCommentIds:
+          hiddenIssueCommentIds ?? this.hiddenIssueCommentIds,
+      hiddenReviewCommentIds:
+          hiddenReviewCommentIds ?? this.hiddenReviewCommentIds,
     );
   }
 }
@@ -232,6 +248,55 @@ class PrEditNotifier extends Notifier<PrEditState> {
       state = state.copyWith(
         savingCommentIds: state.savingCommentIds.difference({commentId}),
       );
+    }
+  }
+
+  /// Deletes a conversation comment. Hides it immediately and restores it if
+  /// the forge refuses (the usual reason: the caller is not the author and
+  /// does not have write access).
+  Future<String?> deleteIssueComment({required int commentId}) {
+    return _deleteComment(
+      commentId: commentId,
+      hidden: state.hiddenIssueCommentIds,
+      write: (ids) => state.copyWith(hiddenIssueCommentIds: ids),
+      send: (repo) =>
+          repo.deleteIssueComment(prNumber: prNumber, commentId: commentId),
+      refresh: () => ref.invalidate(prIssueCommentsProvider(pr)),
+    );
+  }
+
+  /// Deletes one inline review comment. Same hide-then-restore as
+  /// [deleteIssueComment].
+  Future<String?> deleteReviewComment({required int commentId}) {
+    return _deleteComment(
+      commentId: commentId,
+      hidden: state.hiddenReviewCommentIds,
+      write: (ids) => state.copyWith(hiddenReviewCommentIds: ids),
+      send: (repo) =>
+          repo.deleteReviewComment(prNumber: prNumber, commentId: commentId),
+      refresh: () => ref.invalidate(prReviewCommentsProvider(pr)),
+    );
+  }
+
+  Future<String?> _deleteComment({
+    required int commentId,
+    required Set<int> hidden,
+    required PrEditState Function(Set<int> ids) write,
+    required Future<void> Function(PrReviewRepository repo) send,
+    required void Function() refresh,
+  }) async {
+    final repo = _repo;
+    if (repo == null || hidden.contains(commentId)) {
+      return null;
+    }
+    state = write({...hidden, commentId});
+    try {
+      await send(repo);
+      refresh();
+      return null;
+    } catch (e) {
+      state = write(hidden);
+      return _msg(e);
     }
   }
 

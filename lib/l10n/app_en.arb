@@ -1789,6 +1789,15 @@
   "@agent": {
     "description": "Agent"
   },
+  "conversationCount": "{count, plural, =1{1 conversation} other{{count} conversations}}",
+  "@conversationCount": {
+    "description": "Sidebar label for how many conversations a space holds",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "agentCount": "{count, plural, =1{1 agent} other{{count} agents}}",
   "@agentCount": {
     "description": "Agent count label",
@@ -2935,6 +2944,55 @@
   "hoursAgo": "{count, plural, =1{1 hour ago} other{{count} hours ago}}",
   "@hoursAgo": {
     "description": "Relative time: hours ago with ICU plural",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sidebarAgeNow": "now",
+  "@sidebarAgeNow": {
+    "description": "Compact sidebar age: under a minute"
+  },
+  "sidebarAgeMinutes": "{count}m",
+  "@sidebarAgeMinutes": {
+    "description": "Compact sidebar age in minutes",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sidebarAgeHours": "{count}h",
+  "@sidebarAgeHours": {
+    "description": "Compact sidebar age in hours",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sidebarAgeDays": "{count}d",
+  "@sidebarAgeDays": {
+    "description": "Compact sidebar age in days",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sidebarAgeMonths": "{count}mo",
+  "@sidebarAgeMonths": {
+    "description": "Compact sidebar age in months",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sidebarAgeYears": "{count}y",
+  "@sidebarAgeYears": {
+    "description": "Compact sidebar age in years",
     "placeholders": {
       "count": {
         "type": "int"
@@ -8536,6 +8594,31 @@
       }
     }
   },
+  "reactionThumbsUp": "Thumbs up",
+  "reactionThumbsDown": "Thumbs down",
+  "reactionLaugh": "Laugh",
+  "reactionHooray": "Hooray",
+  "reactionConfused": "Confused",
+  "reactionHeart": "Heart",
+  "reactionRocket": "Rocket",
+  "reactionEyes": "Eyes",
+  "commentReact": "React",
+  "commentResolveThread": "Resolve thread",
+  "commentReopenThread": "Reopen thread",
+  "commentCopyLink": "Copy link to comment",
+  "commentCopyMarkdown": "Copy as Markdown",
+  "commentCopyThreadMarkdown": "Copy thread as Markdown",
+  "commentCopyPrompt": "Copy as prompt",
+  "commentCopyThreadPrompt": "Copy thread as prompt",
+  "commentSendToAgent": "Send to agent",
+  "commentDelete": "Delete comment",
+  "commentEdit": "Edit comment",
+  "commentActions": "Comment actions",
+  "commentDeleteTitle": "Delete this comment?",
+  "commentDeleteBody": "This removes it from the pull request.",
+  "commentSentToAgent": "Sent to the agent",
+  "commentSendFailed": "Couldn't send this comment to an agent",
+  "commentDeleteFailed": "Couldn't delete this comment",
   "autonomyDialLabel": "Autonomy",
   "autonomyProposeOnly": "Propose only",
   "autonomyActWithApproval": "Act with approval",
@@ -13443,5 +13526,49 @@
   "forgeConnectionsThisWorkspace": "Sign in or paste a token for this workspace.",
   "@forgeConnectionsThisWorkspace": {
     "description": "Code hosting card subtitle on Workspace \u2192 Profile"
+  },
+  "stackStartNextPart": "Start next part",
+  "@stackStartNextPart": {
+    "description": "Menu item that cuts the next branch in this space's stack"
+  },
+  "stackPartNameTitle": "Part name",
+  "@stackPartNameTitle": {
+    "description": "Title of the dialog that names the next stack part"
+  },
+  "stackPartNameHint": "e.g. migration",
+  "@stackPartNameHint": {
+    "description": "Example part name"
+  },
+  "stackPublish": "Publish stack",
+  "@stackPublish": {
+    "description": "Button that pushes the stack and opens its pull requests"
+  },
+  "stackCurrentPart": "Current",
+  "@stackCurrentPart": {
+    "description": "Marker on the stack layer that is checked out"
+  },
+  "stackSwitchDirty": "Commit or discard changes before switching parts",
+  "@stackSwitchDirty": {
+    "description": "Shown when a stack move is refused because the checkout is dirty"
+  },
+  "stackCutFailed": "Couldn't start the next part",
+  "@stackCutFailed": {
+    "description": "Toast when cutting a stack part fails"
+  },
+  "stackPublishFailed": "Couldn't publish the stack",
+  "@stackPublishFailed": {
+    "description": "Toast when publishing a stack fails"
+  },
+  "stackPublished": "Published the stack as drafts",
+  "@stackPublished": {
+    "description": "Toast when the stack's pull requests were opened"
+  },
+  "stackOpenPullRequest": "Open pull request",
+  "@stackOpenPullRequest": {
+    "description": "Menu item that opens a stack layer's pull request"
+  },
+  "stackSection": "Stack",
+  "@stackSection": {
+    "description": "Section heading for the layers of a branch stack"
   }
 }

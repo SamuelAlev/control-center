@@ -2573,6 +2573,17 @@ class AppLocalizationsNl extends AppLocalizations {
   String get agent => 'Agent';
 
   @override
+  String conversationCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count gesprekken',
+      one: '1 gesprek',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String agentCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -3589,6 +3600,34 @@ class AppLocalizationsNl extends AppLocalizations {
       one: '1 uur geleden',
     );
     return '$_temp0';
+  }
+
+  @override
+  String get sidebarAgeNow => 'nu';
+
+  @override
+  String sidebarAgeMinutes(int count) {
+    return '${count}m';
+  }
+
+  @override
+  String sidebarAgeHours(int count) {
+    return '${count}u';
+  }
+
+  @override
+  String sidebarAgeDays(int count) {
+    return '${count}d';
+  }
+
+  @override
+  String sidebarAgeMonths(int count) {
+    return '$count mnd';
+  }
+
+  @override
+  String sidebarAgeYears(int count) {
+    return '${count}j';
   }
 
   @override
@@ -9788,6 +9827,82 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get reactionThumbsUp => 'Duim omhoog';
+
+  @override
+  String get reactionThumbsDown => 'Duim omlaag';
+
+  @override
+  String get reactionLaugh => 'Lachen';
+
+  @override
+  String get reactionHooray => 'Hoera';
+
+  @override
+  String get reactionConfused => 'Verward';
+
+  @override
+  String get reactionHeart => 'Hart';
+
+  @override
+  String get reactionRocket => 'Raket';
+
+  @override
+  String get reactionEyes => 'Ogen';
+
+  @override
+  String get commentReact => 'Reageren';
+
+  @override
+  String get commentResolveThread => 'Thread oplossen';
+
+  @override
+  String get commentReopenThread => 'Thread heropenen';
+
+  @override
+  String get commentCopyLink => 'Link naar opmerking kopiëren';
+
+  @override
+  String get commentCopyMarkdown => 'Kopiëren als Markdown';
+
+  @override
+  String get commentCopyThreadMarkdown => 'Thread kopiëren als Markdown';
+
+  @override
+  String get commentCopyPrompt => 'Kopiëren als prompt';
+
+  @override
+  String get commentCopyThreadPrompt => 'Thread kopiëren als prompt';
+
+  @override
+  String get commentSendToAgent => 'Naar agent sturen';
+
+  @override
+  String get commentDelete => 'Opmerking verwijderen';
+
+  @override
+  String get commentEdit => 'Opmerking bewerken';
+
+  @override
+  String get commentActions => 'Opmerkingacties';
+
+  @override
+  String get commentDeleteTitle => 'Deze opmerking verwijderen?';
+
+  @override
+  String get commentDeleteBody => 'Hij wordt uit de pull request gehaald.';
+
+  @override
+  String get commentSentToAgent => 'Naar de agent gestuurd';
+
+  @override
+  String get commentSendFailed =>
+      'Kon deze opmerking niet naar een agent sturen';
+
+  @override
+  String get commentDeleteFailed => 'Kon deze opmerking niet verwijderen';
+
+  @override
   String get autonomyDialLabel => 'Autonomie';
 
   @override
@@ -14788,4 +14903,38 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get forgeConnectionsThisWorkspace =>
       'Meld je aan of plak een token voor deze werkruimte.';
+
+  @override
+  String get stackStartNextPart => 'Volgend deel starten';
+
+  @override
+  String get stackPartNameTitle => 'Deelnaam';
+
+  @override
+  String get stackPartNameHint => 'bijv. migratie';
+
+  @override
+  String get stackPublish => 'Stapel publiceren';
+
+  @override
+  String get stackCurrentPart => 'Huidig';
+
+  @override
+  String get stackSwitchDirty =>
+      'Commit of verwerp wijzigingen voordat je van deel wisselt';
+
+  @override
+  String get stackCutFailed => 'Het volgende deel kon niet worden gestart';
+
+  @override
+  String get stackPublishFailed => 'De stapel kon niet worden gepubliceerd';
+
+  @override
+  String get stackPublished => 'De stapel is als concepten gepubliceerd';
+
+  @override
+  String get stackOpenPullRequest => 'Pull request openen';
+
+  @override
+  String get stackSection => 'Stapel';
 }

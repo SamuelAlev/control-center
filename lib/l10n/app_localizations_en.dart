@@ -2563,6 +2563,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agent => 'Agent';
 
   @override
+  String conversationCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count conversations',
+      one: '1 conversation',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String agentCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -3571,6 +3582,34 @@ class AppLocalizationsEn extends AppLocalizations {
       one: '1 hour ago',
     );
     return '$_temp0';
+  }
+
+  @override
+  String get sidebarAgeNow => 'now';
+
+  @override
+  String sidebarAgeMinutes(int count) {
+    return '${count}m';
+  }
+
+  @override
+  String sidebarAgeHours(int count) {
+    return '${count}h';
+  }
+
+  @override
+  String sidebarAgeDays(int count) {
+    return '${count}d';
+  }
+
+  @override
+  String sidebarAgeMonths(int count) {
+    return '${count}mo';
+  }
+
+  @override
+  String sidebarAgeYears(int count) {
+    return '${count}y';
   }
 
   @override
@@ -9723,6 +9762,81 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get reactionThumbsUp => 'Thumbs up';
+
+  @override
+  String get reactionThumbsDown => 'Thumbs down';
+
+  @override
+  String get reactionLaugh => 'Laugh';
+
+  @override
+  String get reactionHooray => 'Hooray';
+
+  @override
+  String get reactionConfused => 'Confused';
+
+  @override
+  String get reactionHeart => 'Heart';
+
+  @override
+  String get reactionRocket => 'Rocket';
+
+  @override
+  String get reactionEyes => 'Eyes';
+
+  @override
+  String get commentReact => 'React';
+
+  @override
+  String get commentResolveThread => 'Resolve thread';
+
+  @override
+  String get commentReopenThread => 'Reopen thread';
+
+  @override
+  String get commentCopyLink => 'Copy link to comment';
+
+  @override
+  String get commentCopyMarkdown => 'Copy as Markdown';
+
+  @override
+  String get commentCopyThreadMarkdown => 'Copy thread as Markdown';
+
+  @override
+  String get commentCopyPrompt => 'Copy as prompt';
+
+  @override
+  String get commentCopyThreadPrompt => 'Copy thread as prompt';
+
+  @override
+  String get commentSendToAgent => 'Send to agent';
+
+  @override
+  String get commentDelete => 'Delete comment';
+
+  @override
+  String get commentEdit => 'Edit comment';
+
+  @override
+  String get commentActions => 'Comment actions';
+
+  @override
+  String get commentDeleteTitle => 'Delete this comment?';
+
+  @override
+  String get commentDeleteBody => 'This removes it from the pull request.';
+
+  @override
+  String get commentSentToAgent => 'Sent to the agent';
+
+  @override
+  String get commentSendFailed => 'Couldn\'t send this comment to an agent';
+
+  @override
+  String get commentDeleteFailed => 'Couldn\'t delete this comment';
+
+  @override
   String get autonomyDialLabel => 'Autonomy';
 
   @override
@@ -14697,6 +14811,40 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get forgeConnectionsThisWorkspace =>
       'Sign in or paste a token for this workspace.';
+
+  @override
+  String get stackStartNextPart => 'Start next part';
+
+  @override
+  String get stackPartNameTitle => 'Part name';
+
+  @override
+  String get stackPartNameHint => 'e.g. migration';
+
+  @override
+  String get stackPublish => 'Publish stack';
+
+  @override
+  String get stackCurrentPart => 'Current';
+
+  @override
+  String get stackSwitchDirty =>
+      'Commit or discard changes before switching parts';
+
+  @override
+  String get stackCutFailed => 'Couldn\'t start the next part';
+
+  @override
+  String get stackPublishFailed => 'Couldn\'t publish the stack';
+
+  @override
+  String get stackPublished => 'Published the stack as drafts';
+
+  @override
+  String get stackOpenPullRequest => 'Open pull request';
+
+  @override
+  String get stackSection => 'Stack';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

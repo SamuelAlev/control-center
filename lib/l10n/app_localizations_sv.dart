@@ -2576,6 +2576,17 @@ class AppLocalizationsSv extends AppLocalizations {
   String get agent => 'Agent';
 
   @override
+  String conversationCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count samtal',
+      one: '1 samtal',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String agentCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -3584,6 +3595,34 @@ class AppLocalizationsSv extends AppLocalizations {
       one: '1 timme sedan',
     );
     return '$_temp0';
+  }
+
+  @override
+  String get sidebarAgeNow => 'nu';
+
+  @override
+  String sidebarAgeMinutes(int count) {
+    return '$count min';
+  }
+
+  @override
+  String sidebarAgeHours(int count) {
+    return '$count tim';
+  }
+
+  @override
+  String sidebarAgeDays(int count) {
+    return '$count d';
+  }
+
+  @override
+  String sidebarAgeMonths(int count) {
+    return '$count mån';
+  }
+
+  @override
+  String sidebarAgeYears(int count) {
+    return '$count år';
   }
 
   @override
@@ -9757,6 +9796,82 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get reactionThumbsUp => 'Tumme upp';
+
+  @override
+  String get reactionThumbsDown => 'Tumme ner';
+
+  @override
+  String get reactionLaugh => 'Skratt';
+
+  @override
+  String get reactionHooray => 'Hurra';
+
+  @override
+  String get reactionConfused => 'Förvirrad';
+
+  @override
+  String get reactionHeart => 'Hjärta';
+
+  @override
+  String get reactionRocket => 'Raket';
+
+  @override
+  String get reactionEyes => 'Ögon';
+
+  @override
+  String get commentReact => 'Reagera';
+
+  @override
+  String get commentResolveThread => 'Lös tråden';
+
+  @override
+  String get commentReopenThread => 'Öppna tråden igen';
+
+  @override
+  String get commentCopyLink => 'Kopiera länk till kommentaren';
+
+  @override
+  String get commentCopyMarkdown => 'Kopiera som Markdown';
+
+  @override
+  String get commentCopyThreadMarkdown => 'Kopiera tråden som Markdown';
+
+  @override
+  String get commentCopyPrompt => 'Kopiera som prompt';
+
+  @override
+  String get commentCopyThreadPrompt => 'Kopiera tråden som prompt';
+
+  @override
+  String get commentSendToAgent => 'Skicka till agent';
+
+  @override
+  String get commentDelete => 'Ta bort kommentar';
+
+  @override
+  String get commentEdit => 'Redigera kommentar';
+
+  @override
+  String get commentActions => 'Kommentaråtgärder';
+
+  @override
+  String get commentDeleteTitle => 'Ta bort den här kommentaren?';
+
+  @override
+  String get commentDeleteBody => 'Den tas bort från pull requesten.';
+
+  @override
+  String get commentSentToAgent => 'Skickad till agenten';
+
+  @override
+  String get commentSendFailed =>
+      'Kunde inte skicka den här kommentaren till en agent';
+
+  @override
+  String get commentDeleteFailed => 'Kunde inte ta bort den här kommentaren';
+
+  @override
   String get autonomyDialLabel => 'Autonomi';
 
   @override
@@ -14749,4 +14864,38 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get forgeConnectionsThisWorkspace =>
       'Logga in eller klistra in en token för det här arbetsområdet.';
+
+  @override
+  String get stackStartNextPart => 'Starta nästa del';
+
+  @override
+  String get stackPartNameTitle => 'Delens namn';
+
+  @override
+  String get stackPartNameHint => 't.ex. migrering';
+
+  @override
+  String get stackPublish => 'Publicera stacken';
+
+  @override
+  String get stackCurrentPart => 'Aktuell';
+
+  @override
+  String get stackSwitchDirty =>
+      'Checka in eller släng ändringar innan du byter del';
+
+  @override
+  String get stackCutFailed => 'Nästa del kunde inte startas';
+
+  @override
+  String get stackPublishFailed => 'Stacken kunde inte publiceras';
+
+  @override
+  String get stackPublished => 'Stacken publicerades som utkast';
+
+  @override
+  String get stackOpenPullRequest => 'Öppna pull request';
+
+  @override
+  String get stackSection => 'Stack';
 }

@@ -851,6 +851,33 @@ void main() {
     expect(rift.calls, contains('gc'));
   });
 
+  test('git worktree destroy deletes every recorded stack branch', () async {
+    final git = _FakeGit();
+    final adapter = _adapter(rift: _FakeRift(available: false), git: git);
+
+    await adapter.destroy(
+      path: '/iso/repo',
+      sourcePath: '/src/repo',
+      backend: RepoIsolationBackend.gitWorktree,
+      branch: 'space/abcd1234/ui',
+      branches: const [
+        'space/abcd1234',
+        'space/abcd1234/ui',
+        'space/abcd1234/polish',
+      ],
+    );
+
+    final deleted = [
+      for (final args in git.runs)
+        if (args.length == 3 && args[0] == 'branch' && args[1] == '-D') args[2],
+    ];
+    expect(deleted, [
+      'space/abcd1234/ui',
+      'space/abcd1234',
+      'space/abcd1234/polish',
+    ]);
+  });
+
   test(
     'destroy rift backend — remove throws non-missing error, gc still runs',
     () async {

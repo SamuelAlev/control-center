@@ -1,7 +1,9 @@
 import 'package:cc_domain/features/pr_review/domain/entities/reaction_group.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/reaction_label.dart';
 import 'package:control_center/l10n/app_localizations.dart';
-import 'package:flutter/material.dart';
+import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:flutter/widgets.dart';
 
 /// Shared pill geometry: reaction chips and the add-reaction pill must render
 /// at exactly the same height, so both containers fix it here instead of
@@ -16,6 +18,7 @@ class ReactionBar extends StatefulWidget {
     super.key,
     required this.reactions,
     required this.onToggle,
+    this.showAdder = true,
   });
 
   /// Current reaction groups.
@@ -23,6 +26,12 @@ class ReactionBar extends StatefulWidget {
 
   /// Called to toggle a reaction on or off. Returns a future that completes when the server round-trip finishes.
   final Future<void> Function(String content, {required bool add}) onToggle;
+
+  /// Whether the add-reaction control is drawn.
+  ///
+  /// Comment surfaces put React on the hover toolbar and pass false here, so
+  /// a comment with no reactions does not grow a second control under the body.
+  final bool showAdder;
 
   @override
   State<ReactionBar> createState() => _ReactionBarState();
@@ -103,6 +112,9 @@ class _ReactionBarState extends State<ReactionBar> {
   @override
   Widget build(BuildContext context) {
     final reactions = _current;
+    if (reactions.isEmpty && !widget.showAdder) {
+      return const SizedBox.shrink();
+    }
     return Wrap(
       spacing: 4,
       runSpacing: 4,
@@ -113,9 +125,10 @@ class _ReactionBarState extends State<ReactionBar> {
             group: group,
             onTap: () => _handleToggle(group.content, !group.userReacted),
           ),
-        _ReactionPopoverChip(
-          onSelected: (content) => _handleToggle(content, true),
-        ),
+        if (widget.showAdder)
+          _ReactionPopoverChip(
+            onSelected: (content) => _handleToggle(content, true),
+          ),
       ],
     );
   }
@@ -149,78 +162,73 @@ class _ReactionPopoverChipState extends State<_ReactionPopoverChip> {
       toggleOnTargetTap: false,
       overlayBuilder: (context, _) => Padding(
         padding: const EdgeInsets.all(6),
-        child: _ReactionGrid(
+        child: GitHubReactionPalette(
           onSelected: (content) {
             widget.onSelected(content);
             _controller.hide();
           },
         ),
       ),
-      target: CcTappable(
-        onPressed: _controller.toggle,
-        borderRadius: BorderRadius.circular(999),
-        semanticLabel: AppLocalizations.of(context).reactionAddTooltip,
-        builder: (context, states) => ListenableBuilder(
-          listenable: _controller,
-          builder: (context, _) =>
-              _AddReactionChipBody(states: states, open: _controller.isOpen),
+      target: CcTooltip(
+        message: AppLocalizations.of(context).reactionAddTooltip,
+        child: CcTappable(
+          onPressed: _controller.toggle,
+          borderRadius: BorderRadius.circular(999),
+          semanticLabel: AppLocalizations.of(context).reactionAddTooltip,
+          builder: (context, states) => ListenableBuilder(
+            listenable: _controller,
+            builder: (context, _) =>
+                _AddReactionChipBody(states: states, open: _controller.isOpen),
+          ),
         ),
       ),
     );
   }
 }
 
-class _ReactionGrid extends StatelessWidget {
-  const _ReactionGrid({required this.onSelected});
+/// The GitHub reaction set, in one row. Comment reactions are stored on the
+/// forge, so an emoji GitHub does not accept cannot be offered.
+class GitHubReactionPalette extends StatelessWidget {
+  /// Creates a [GitHubReactionPalette].
+  const GitHubReactionPalette({super.key, required this.onSelected});
 
+  /// Called with the GitHub content key (`+1`, `heart`, …).
   final void Function(String content) onSelected;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designSystem ?? DesignSystemTokens.light();
+    final l10n = AppLocalizations.of(context);
     const reactions = ReactionGroup.supportedReactions;
-    const columns = 4;
-    final rows = (reactions.length / columns).ceil();
 
-    return Column(
+    return Row(
       mainAxisSize: MainAxisSize.min,
-      children: List.generate(rows, (row) {
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: List.generate(columns, (col) {
-            final idx = row * columns + col;
-            if (idx >= reactions.length) {
-              return const SizedBox(width: 36, height: 36);
-            }
-            final r = reactions[idx];
-            return CcTappable(
-              onPressed: () => onSelected(r.content),
-              builder: (context, states) {
-                final hovered = states.contains(WidgetState.hovered);
-                return CcTooltip(
-                  message: r.content,
-                  child: AnimatedContainer(
-                    duration: CcMotion.resolve(context, CcMotion.fast),
-                    curve: CcMotion.standard,
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      // Alpha-0 (not transparent-black) so the wash lerps in.
-                      color: hovered ? tokens.hover : const Color(0x00000000),
-                    ),
-                    child: Center(
-                      child: Text(
-                        r.emoji,
-                        style: const TextStyle(fontSize: 20),
-                      ),
-                    ),
+      children: [
+        for (final r in reactions)
+          CcTappable(
+            onPressed: () => onSelected(r.content),
+            semanticLabel: prReactionLabel(l10n, r.content),
+            builder: (context, states) {
+              final hovered = states.contains(WidgetState.hovered);
+              return CcTooltip(
+                message: prReactionLabel(l10n, r.content),
+                child: AnimatedContainer(
+                  duration: CcMotion.resolve(context, CcMotion.fast),
+                  curve: CcMotion.standard,
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    // Alpha-0 (not transparent-black) so the wash lerps in.
+                    color: hovered ? tokens.hover : const Color(0x00000000),
                   ),
-                );
-              },
-            );
-          }),
-        );
-      }),
+                  child: Center(
+                    child: Text(r.emoji, style: const TextStyle(fontSize: 20)),
+                  ),
+                ),
+              );
+            },
+          ),
+      ],
     );
   }
 }
@@ -235,17 +243,18 @@ class _ReactionChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designSystem ?? DesignSystemTokens.light();
     final accent = tokens.fgBrandPrimary;
-
-    String? tooltip;
-    if (group.usernames.isNotEmpty) {
-      tooltip = group.usernames.join(', ');
-    }
+    final tooltip = prReactionChipTooltip(
+      AppLocalizations.of(context),
+      group.content,
+      group.usernames,
+    );
 
     return CcTooltip(
-      message: tooltip ?? '',
+      message: tooltip,
       child: CcTappable(
         onPressed: onTap,
         borderRadius: BorderRadius.circular(999),
+        semanticLabel: tooltip,
         builder: (context, states) {
           final hovered = states.contains(WidgetState.hovered);
           final pressed = states.contains(WidgetState.pressed);
@@ -361,22 +370,10 @@ class _AddReactionChipBody extends StatelessWidget {
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: border),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.emoji_emotions_outlined, size: 14, color: fg),
-          const SizedBox(width: 3),
-          Text(
-            AppLocalizations.of(context).react,
-            style: CcTypography.caption.copyWith(
-              color: fg,
-              fontWeight: FontWeight.w600,
-              fontSize: 11,
-              height: 1,
-            ),
-          ),
-        ],
-      ),
+      // No alignment: a positioned child expands to the max constraint, and
+      // this pill sits in a stretched column, so the smiley would span the
+      // whole row.
+      child: Icon(AppIcons.smile, size: 14, color: fg),
     );
 
     // Flat 1px press nudge, same vocabulary as CcButton.

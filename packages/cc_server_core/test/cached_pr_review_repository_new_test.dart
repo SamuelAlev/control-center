@@ -709,6 +709,18 @@ class FakePrReviewRepository implements PrReviewRepository {
   }) async {}
 
   @override
+  Future<void> deleteIssueComment({
+    required int prNumber,
+    required int commentId,
+  }) async {}
+
+  @override
+  Future<void> deleteReviewComment({
+    required int prNumber,
+    required int commentId,
+  }) async {}
+
+  @override
   Future<void> addAssignees({
     required int prNumber,
     required List<String> logins,

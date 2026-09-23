@@ -22,3 +22,30 @@ final spaceWorktreesProvider = FutureProvider.autoDispose
           .watch(isolatedRepoRepositoryProvider)
           .forSpace(args.workspaceId, args.spaceId);
     });
+
+/// The one branch checked out for a space, when every worktree agrees.
+///
+/// Several repos on different branches yield null: the sidebar must not pick
+/// one and present it as the space's branch. A failed read yields null so the
+/// row stays a single line.
+final spaceSidebarBranchProvider = FutureProvider.autoDispose
+    .family<String?, SpaceWorktreesArgs>((ref, args) async {
+      try {
+        final rows = await ref.watch(
+          spaceWorktreesProvider((
+            workspaceId: args.workspaceId,
+            spaceId: args.spaceId,
+          )).future,
+        );
+        final branches = <String>{
+          for (final row in rows)
+            if (row.branch.isNotEmpty) row.branch,
+        };
+        if (branches.length != 1) {
+          return null;
+        }
+        return branches.single;
+      } on Object {
+        return null;
+      }
+    });

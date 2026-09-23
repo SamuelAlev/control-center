@@ -89,9 +89,8 @@ class AppSidebarHeader extends StatelessWidget {
 
     // One row: workspace chip (left, ellipsizing) then search. The chip's
     // hover pill spans the full content width like the nav-item pills below;
-    // the alignment with the group-label text ("WORKSPACE") comes from the
-    // chip's own 10px internal horizontal padding (see _ChipButton), not
-    // from an outer inset.
+    // the name lines up with those labels from the chip's own 10px internal
+    // horizontal padding (see _ChipButton), not from an outer inset.
     return Padding(
       padding: const EdgeInsetsDirectional.fromSTEB(
         0,

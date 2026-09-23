@@ -11,6 +11,7 @@ import 'package:control_center/features/messaging/providers/space_adapter_enforc
 import 'package:control_center/features/settings/providers/adapter_preferences_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -288,6 +289,31 @@ void main() {
         ),
         findsOneWidget,
       );
+    });
+
+    testWidgets('hovering the badge shows the tooltip without throwing', (
+      tester,
+    ) async {
+      await _pumpBadge(
+        tester,
+        mode: Mode.plan,
+        overrides: _overrides(
+          agents: const [],
+          participants: const [],
+          defaultAdapterId: 'claude-code',
+        ),
+      );
+
+      final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await gesture.addPointer(location: Offset.zero);
+      addTearDown(gesture.removePointer);
+      await tester.pump();
+      await gesture.moveTo(tester.getCenter(find.text('Degraded')));
+      await tester.pump(const Duration(milliseconds: 600));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.textContaining('relies on the sandbox only'), findsOneWidget);
     });
   });
 }

@@ -202,6 +202,10 @@ void main() {
     'set_article_read': <String>{},
     'set_article_saved': <String>{},
     'set_cohort_summary': <String>{},
+    'stack_checkout': <String>{},
+    'stack_cut': <String>{},
+    'stack_publish': {'gitPush', 'prCreate'},
+    'stack_status': <String>{},
     'submit_output': <String>{},
     'submit_plan': <String>{},
     'submit_reviewer_verdict': <String>{},
@@ -280,6 +284,7 @@ void main() {
     // Git plumbing on the operator's own repositories.
     'worktree.commitAndPush': {'gitCommit', 'gitPush'},
     'worktree.publishBranch': {'gitPush'},
+    'stack.publish': {'gitPush', 'prCreate'},
     'worktree.syncBranch': {'networkEgress', 'gitPush'},
     'worktree.syncToPrHead': {'networkEgress'}, // fetches before it checks out
     // Files outside any worktree (agent/skill definitions on disk).

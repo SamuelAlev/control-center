@@ -2575,6 +2575,17 @@ class AppLocalizationsHu extends AppLocalizations {
   String get agent => 'Ügynök';
 
   @override
+  String conversationCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count beszélgetés',
+      one: '$count beszélgetés',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String agentCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -3594,6 +3605,34 @@ class AppLocalizationsHu extends AppLocalizations {
       one: '# órája',
     );
     return '$_temp0';
+  }
+
+  @override
+  String get sidebarAgeNow => 'most';
+
+  @override
+  String sidebarAgeMinutes(int count) {
+    return '$count p';
+  }
+
+  @override
+  String sidebarAgeHours(int count) {
+    return '$count ó';
+  }
+
+  @override
+  String sidebarAgeDays(int count) {
+    return '$count n';
+  }
+
+  @override
+  String sidebarAgeMonths(int count) {
+    return '$count hó';
+  }
+
+  @override
+  String sidebarAgeYears(int count) {
+    return '$count é';
   }
 
   @override
@@ -9793,6 +9832,82 @@ class AppLocalizationsHu extends AppLocalizations {
   }
 
   @override
+  String get reactionThumbsUp => 'Felfelé mutató hüvelykujj';
+
+  @override
+  String get reactionThumbsDown => 'Lefelé mutató hüvelykujj';
+
+  @override
+  String get reactionLaugh => 'Nevetés';
+
+  @override
+  String get reactionHooray => 'Hurrá';
+
+  @override
+  String get reactionConfused => 'Zavarodott';
+
+  @override
+  String get reactionHeart => 'Szív';
+
+  @override
+  String get reactionRocket => 'Rakéta';
+
+  @override
+  String get reactionEyes => 'Szemek';
+
+  @override
+  String get commentReact => 'Reagálás';
+
+  @override
+  String get commentResolveThread => 'Szál lezárása';
+
+  @override
+  String get commentReopenThread => 'Szál újranyitása';
+
+  @override
+  String get commentCopyLink => 'Hivatkozás másolása a hozzászóláshoz';
+
+  @override
+  String get commentCopyMarkdown => 'Másolás Markdownként';
+
+  @override
+  String get commentCopyThreadMarkdown => 'Szál másolása Markdownként';
+
+  @override
+  String get commentCopyPrompt => 'Másolás promptként';
+
+  @override
+  String get commentCopyThreadPrompt => 'Szál másolása promptként';
+
+  @override
+  String get commentSendToAgent => 'Küldés az ügynöknek';
+
+  @override
+  String get commentDelete => 'Hozzászólás törlése';
+
+  @override
+  String get commentEdit => 'Hozzászólás szerkesztése';
+
+  @override
+  String get commentActions => 'Hozzászólás műveletei';
+
+  @override
+  String get commentDeleteTitle => 'Törli ezt a hozzászólást?';
+
+  @override
+  String get commentDeleteBody => 'Eltávolítja a pull requestből.';
+
+  @override
+  String get commentSentToAgent => 'Elküldve az ügynöknek';
+
+  @override
+  String get commentSendFailed =>
+      'A hozzászólást nem sikerült elküldeni egy ügynöknek';
+
+  @override
+  String get commentDeleteFailed => 'A hozzászólást nem sikerült törölni';
+
+  @override
   String get autonomyDialLabel => 'Autonómia';
 
   @override
@@ -14797,4 +14912,38 @@ class AppLocalizationsHu extends AppLocalizations {
   @override
   String get forgeConnectionsThisWorkspace =>
       'Jelentkezz be, vagy illessz be tokent ehhez a munkaterülethez.';
+
+  @override
+  String get stackStartNextPart => 'Következő rész indítása';
+
+  @override
+  String get stackPartNameTitle => 'Rész neve';
+
+  @override
+  String get stackPartNameHint => 'pl. migráció';
+
+  @override
+  String get stackPublish => 'Verem közzététele';
+
+  @override
+  String get stackCurrentPart => 'Aktuális';
+
+  @override
+  String get stackSwitchDirty =>
+      'A részek váltása előtt véglegesítse vagy vesse el a változásokat';
+
+  @override
+  String get stackCutFailed => 'A következő részt nem sikerült elindítani';
+
+  @override
+  String get stackPublishFailed => 'A vermet nem sikerült közzétenni';
+
+  @override
+  String get stackPublished => 'A verem piszkozatként lett közzétéve';
+
+  @override
+  String get stackOpenPullRequest => 'Pull request megnyitása';
+
+  @override
+  String get stackSection => 'Verem';
 }

@@ -309,6 +309,21 @@ class BitbucketApiClient {
     return json == null ? null : BitbucketComment.fromJson(json);
   }
 
+  /// Deletes comment [commentId] on pull request [id].
+  Future<void> deletePullRequestComment(
+    String workspace,
+    String repo,
+    int id,
+    int commentId, {
+    CancelToken? cancelToken,
+  }) async {
+    _requireCoordinate(workspace, repo);
+    await _dio.delete<Object?>(
+      '/repositories/$workspace/$repo/pullrequests/$id/comments/$commentId',
+      cancelToken: cancelToken,
+    );
+  }
+
   /// Records the caller's approval of a pull request.
   Future<void> approvePullRequest(
     String workspace,

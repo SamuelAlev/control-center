@@ -434,6 +434,41 @@ void main() {
       },
     );
 
+    testWidgets('tapping a commit opens the diff for that commit only', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(800, 4000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final opened = <String>[];
+      await tester.pumpWidget(
+        _wrap(
+          CustomScrollView(
+            scrollCacheExtent: const ScrollCacheExtent.pixels(8000),
+            slivers: [
+              PrActivityTimeline(
+                pr: _pr(),
+                prRef: _prRef,
+                onOpenCommit: opened.add,
+              ),
+            ],
+          ),
+        ),
+      );
+      await tester.pumpAndSettle(const Duration(seconds: 5));
+
+      await tester.tap(_richTextContaining('845facb'));
+      expect(opened, ['845facb1234']);
+
+      // A compacted run stays a toggle. Expanding it reveals each commit as
+      // its own diff link.
+      await tester.tap(_richTextContaining('pushed 2 commits'));
+      await tester.pump();
+      await tester.tap(_richTextContaining('e07bcc4'));
+      expect(opened, ['845facb1234', 'e07bcc41234']);
+    });
+
     testWidgets(
       'timeline rail is continuous through conversation cards',
       (tester) async {

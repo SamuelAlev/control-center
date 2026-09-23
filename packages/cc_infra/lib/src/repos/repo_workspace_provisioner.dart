@@ -10,6 +10,7 @@ import 'package:cc_domain/core/domain/repositories/isolated_repo_repository.dart
 import 'package:cc_domain/core/domain/repositories/workspace_repository.dart';
 import 'package:cc_domain/core/domain/services/slugify.dart';
 import 'package:cc_domain/core/domain/value_objects/repo_isolation_backend.dart';
+import 'package:cc_domain/features/messaging/domain/repositories/space_stack_repository.dart';
 import 'package:cc_domain/features/settings/domain/services/branch_template_resolver.dart';
 import 'package:cc_harness/cancellation.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
@@ -77,6 +78,7 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
     this._spaceExists,
     this._spaceCheckoutScope,
     this._scripts,
+    this._stacks,
   });
 
   final WorkspaceFilesystemPort _filesystem;
@@ -89,6 +91,10 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
   /// worktree is materialized, archive before one is destroyed). Optional so
   /// hosts without the script feature (and tests) provision exactly as before.
   final RepoScriptPort? _scripts;
+
+  /// Stack layers whose branches must be deleted with the worktree on the
+  /// Windows `git worktree` backend. Rift copies die with the directory.
+  final SpaceStackRepository? _stacks;
 
   /// Resolves the branch-name template for a workspace.
   ///
@@ -720,10 +726,12 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
           sourcePath: row.sourcePath,
           backend: row.backend,
           branch: row.branch,
+          branches: await _stackBranchNames(row),
         );
       } catch (e) {
         CcInfraLog.warning('sweepStale destroy failed for ${row.path}: $e');
       }
+      await _deleteStackRows(row);
       await _registry.deleteById(row.workspaceId, row.id);
       if (spaceGone) {
         orphanedSpaces.add(row.spaceId);
@@ -851,6 +859,23 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
     return removed;
   }
 
+  Future<List<String>> _stackBranchNames(IsolatedRepo row) async {
+    final stacks = _stacks;
+    if (stacks == null) {
+      return const [];
+    }
+    final entries = await stacks.forRepo(
+      row.workspaceId,
+      row.spaceId,
+      row.repoId,
+    );
+    return [for (final entry in entries) entry.branch];
+  }
+
+  Future<void> _deleteStackRows(IsolatedRepo row) async {
+    await _stacks?.deleteForRepo(row.workspaceId, row.spaceId, row.repoId);
+  }
+
   Future<void> _destroyAll(List<IsolatedRepo> rows) async {
     for (final row in rows) {
       // The repo's archive script (when configured) runs while the worktree is
@@ -880,10 +905,12 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
           sourcePath: row.sourcePath,
           backend: row.backend,
           branch: row.branch,
+          branches: await _stackBranchNames(row),
         );
       } catch (e) {
         CcInfraLog.warning('destroy failed for ${row.path}: $e');
       }
+      await _deleteStackRows(row);
       await _registry.deleteById(row.workspaceId, row.id);
     }
   }

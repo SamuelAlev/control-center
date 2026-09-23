@@ -2,6 +2,7 @@ import 'package:cc_domain/core/domain/entities/agent.dart';
 import 'package:cc_domain/core/domain/entities/message.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_skills.dart';
 import 'package:cc_domain/core/domain/value_objects/entity_ref.dart';
+import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_domain/features/messaging/domain/entities/conversation_tree.dart';
 import 'package:cc_domain/features/messaging/domain/ports/messaging_port.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
@@ -11,9 +12,11 @@ import 'package:control_center/features/agents/providers/agent_providers.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_input_bar.dart';
 import 'package:control_center/features/messaging/providers/editing_message_provider.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
+import 'package:control_center/features/settings/providers/adapter_preferences_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -24,6 +27,16 @@ class _TestActiveWorkspaceNotifier extends ActiveWorkspaceIdNotifier {
   final String? _id;
   @override
   String? build() => _id;
+}
+
+class _PlanMode extends ActiveSpaceModeNotifier {
+  @override
+  Mode build() => Mode.plan;
+}
+
+class _ClaudeAdapter extends DefaultChatAdapterNotifier {
+  @override
+  String? build() => 'claude-code';
 }
 
 /// Records what the composer sent, without implementing the other ~30 members
@@ -274,6 +287,85 @@ void main() {
       await tester.pump(const Duration(milliseconds: 200));
 
       expect(find.text('Architect'), findsOneWidget);
+    });
+
+    testWidgets('hovering the degraded badge does not throw', (tester) async {
+      tester.view.physicalSize = const Size(420, 700);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            agentsProvider.overrideWithValue(const AsyncData([])),
+            spacesProvider.overrideWithValue(const AsyncData([])),
+            activeWorkspaceIdProvider.overrideWith(
+              () => _TestActiveWorkspaceNotifier('ws-1'),
+            ),
+            activeSpaceModeProvider.overrideWith(_PlanMode.new),
+            defaultChatAdapterProvider.overrideWith(_ClaudeAdapter.new),
+            workspaceAgentsProvider(
+              'ws-1',
+            ).overrideWith((ref) => Stream.value(const [])),
+            spaceParticipantsProvider(
+              'ch-1',
+            ).overrideWith((ref) => Stream.value(const [])),
+          ],
+          child: CcTheme(
+            data: CcThemeData.light(),
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              builder: (context, child) => Stack(
+                children: [
+                  Overlay(
+                    initialEntries: [
+                      OverlayEntry(builder: (_) => child ?? const SizedBox()),
+                    ],
+                  ),
+                ],
+              ),
+              home: const Scaffold(
+                body: IndexedStack(
+                  index: 0,
+                  sizing: StackFit.expand,
+                  children: [
+                    Align(
+                      alignment: Alignment.bottomCenter,
+                      child: SpaceInputBar(
+                        spaceId: 'ch-1',
+                        conversationId: 'conv-1',
+                      ),
+                    ),
+                    SizedBox.shrink(),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      expect(find.text('Degraded'), findsOneWidget);
+
+      await tester.tap(find.byType(CcTextField));
+      await tester.pump();
+
+      final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await gesture.addPointer(location: Offset.zero);
+      addTearDown(gesture.removePointer);
+      await tester.pump();
+      await gesture.moveTo(tester.getCenter(find.text('Degraded')));
+      await tester.pump(const Duration(milliseconds: 600));
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+      expect(find.textContaining('relies on the sandbox only'), findsOneWidget);
     });
   });
 

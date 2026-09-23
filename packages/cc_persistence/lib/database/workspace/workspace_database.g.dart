@@ -32834,6 +32834,705 @@ class CodeIndexCheckpointsTableCompanion
   }
 }
 
+class $SpaceStackEntriesTableTable extends SpaceStackEntriesTable
+    with TableInfo<$SpaceStackEntriesTableTable, SpaceStackEntriesTableData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SpaceStackEntriesTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _workspaceIdMeta = const VerificationMeta(
+    'workspaceId',
+  );
+  @override
+  late final GeneratedColumn<String> workspaceId = GeneratedColumn<String>(
+    'workspace_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _spaceIdMeta = const VerificationMeta(
+    'spaceId',
+  );
+  @override
+  late final GeneratedColumn<String> spaceId = GeneratedColumn<String>(
+    'space_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _repoIdMeta = const VerificationMeta('repoId');
+  @override
+  late final GeneratedColumn<String> repoId = GeneratedColumn<String>(
+    'repo_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL REFERENCES repos (id) ON DELETE CASCADE',
+  );
+  static const VerificationMeta _positionMeta = const VerificationMeta(
+    'position',
+  );
+  @override
+  late final GeneratedColumn<int> position = GeneratedColumn<int>(
+    'position',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _branchMeta = const VerificationMeta('branch');
+  @override
+  late final GeneratedColumn<String> branch = GeneratedColumn<String>(
+    'branch',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _baseBranchMeta = const VerificationMeta(
+    'baseBranch',
+  );
+  @override
+  late final GeneratedColumn<String> baseBranch = GeneratedColumn<String>(
+    'base_branch',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _prNumberMeta = const VerificationMeta(
+    'prNumber',
+  );
+  @override
+  late final GeneratedColumn<int> prNumber = GeneratedColumn<int>(
+    'pr_number',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _prExternalIdMeta = const VerificationMeta(
+    'prExternalId',
+  );
+  @override
+  late final GeneratedColumn<String> prExternalId = GeneratedColumn<String>(
+    'pr_external_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _rewrittenMeta = const VerificationMeta(
+    'rewritten',
+  );
+  @override
+  late final GeneratedColumn<bool> rewritten = GeneratedColumn<bool>(
+    'rewritten',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("rewritten" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    workspaceId,
+    spaceId,
+    repoId,
+    position,
+    branch,
+    baseBranch,
+    prNumber,
+    prExternalId,
+    rewritten,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'space_stack_entries';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SpaceStackEntriesTableData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('workspace_id')) {
+      context.handle(
+        _workspaceIdMeta,
+        workspaceId.isAcceptableOrUnknown(
+          data['workspace_id']!,
+          _workspaceIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_workspaceIdMeta);
+    }
+    if (data.containsKey('space_id')) {
+      context.handle(
+        _spaceIdMeta,
+        spaceId.isAcceptableOrUnknown(data['space_id']!, _spaceIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_spaceIdMeta);
+    }
+    if (data.containsKey('repo_id')) {
+      context.handle(
+        _repoIdMeta,
+        repoId.isAcceptableOrUnknown(data['repo_id']!, _repoIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_repoIdMeta);
+    }
+    if (data.containsKey('position')) {
+      context.handle(
+        _positionMeta,
+        position.isAcceptableOrUnknown(data['position']!, _positionMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_positionMeta);
+    }
+    if (data.containsKey('branch')) {
+      context.handle(
+        _branchMeta,
+        branch.isAcceptableOrUnknown(data['branch']!, _branchMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_branchMeta);
+    }
+    if (data.containsKey('base_branch')) {
+      context.handle(
+        _baseBranchMeta,
+        baseBranch.isAcceptableOrUnknown(data['base_branch']!, _baseBranchMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_baseBranchMeta);
+    }
+    if (data.containsKey('pr_number')) {
+      context.handle(
+        _prNumberMeta,
+        prNumber.isAcceptableOrUnknown(data['pr_number']!, _prNumberMeta),
+      );
+    }
+    if (data.containsKey('pr_external_id')) {
+      context.handle(
+        _prExternalIdMeta,
+        prExternalId.isAcceptableOrUnknown(
+          data['pr_external_id']!,
+          _prExternalIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('rewritten')) {
+      context.handle(
+        _rewrittenMeta,
+        rewritten.isAcceptableOrUnknown(data['rewritten']!, _rewrittenMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {workspaceId, spaceId, repoId, position},
+    {workspaceId, spaceId, repoId, branch},
+  ];
+  @override
+  SpaceStackEntriesTableData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SpaceStackEntriesTableData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      workspaceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}workspace_id'],
+      )!,
+      spaceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}space_id'],
+      )!,
+      repoId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}repo_id'],
+      )!,
+      position: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}position'],
+      )!,
+      branch: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}branch'],
+      )!,
+      baseBranch: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}base_branch'],
+      )!,
+      prNumber: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}pr_number'],
+      ),
+      prExternalId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}pr_external_id'],
+      ),
+      rewritten: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}rewritten'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $SpaceStackEntriesTableTable createAlias(String alias) {
+    return $SpaceStackEntriesTableTable(attachedDatabase, alias);
+  }
+}
+
+class SpaceStackEntriesTableData extends DataClass
+    implements Insertable<SpaceStackEntriesTableData> {
+  /// Row id (UUID).
+  final String id;
+
+  /// Owning workspace.
+  final String workspaceId;
+
+  /// The space this stack belongs to. Not a foreign key: see the class doc.
+  final String spaceId;
+
+  /// The repo whose checkout holds the stack.
+  final String repoId;
+
+  /// Order in the stack. 0 is the bottom.
+  final int position;
+
+  /// Branch name for this layer.
+  final String branch;
+
+  /// The branch this layer's pull request targets.
+  final String baseBranch;
+
+  /// Forge pull-request number, filled at publish.
+  final int? prNumber;
+
+  /// Forge-neutral pull-request id, filled at publish.
+  final String? prExternalId;
+
+  /// A split rewrote this branch after it was pushed.
+  final bool rewritten;
+
+  /// When the layer was recorded.
+  final DateTime createdAt;
+  const SpaceStackEntriesTableData({
+    required this.id,
+    required this.workspaceId,
+    required this.spaceId,
+    required this.repoId,
+    required this.position,
+    required this.branch,
+    required this.baseBranch,
+    this.prNumber,
+    this.prExternalId,
+    required this.rewritten,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['workspace_id'] = Variable<String>(workspaceId);
+    map['space_id'] = Variable<String>(spaceId);
+    map['repo_id'] = Variable<String>(repoId);
+    map['position'] = Variable<int>(position);
+    map['branch'] = Variable<String>(branch);
+    map['base_branch'] = Variable<String>(baseBranch);
+    if (!nullToAbsent || prNumber != null) {
+      map['pr_number'] = Variable<int>(prNumber);
+    }
+    if (!nullToAbsent || prExternalId != null) {
+      map['pr_external_id'] = Variable<String>(prExternalId);
+    }
+    map['rewritten'] = Variable<bool>(rewritten);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  SpaceStackEntriesTableCompanion toCompanion(bool nullToAbsent) {
+    return SpaceStackEntriesTableCompanion(
+      id: Value(id),
+      workspaceId: Value(workspaceId),
+      spaceId: Value(spaceId),
+      repoId: Value(repoId),
+      position: Value(position),
+      branch: Value(branch),
+      baseBranch: Value(baseBranch),
+      prNumber: prNumber == null && nullToAbsent
+          ? const Value.absent()
+          : Value(prNumber),
+      prExternalId: prExternalId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(prExternalId),
+      rewritten: Value(rewritten),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory SpaceStackEntriesTableData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SpaceStackEntriesTableData(
+      id: serializer.fromJson<String>(json['id']),
+      workspaceId: serializer.fromJson<String>(json['workspaceId']),
+      spaceId: serializer.fromJson<String>(json['spaceId']),
+      repoId: serializer.fromJson<String>(json['repoId']),
+      position: serializer.fromJson<int>(json['position']),
+      branch: serializer.fromJson<String>(json['branch']),
+      baseBranch: serializer.fromJson<String>(json['baseBranch']),
+      prNumber: serializer.fromJson<int?>(json['prNumber']),
+      prExternalId: serializer.fromJson<String?>(json['prExternalId']),
+      rewritten: serializer.fromJson<bool>(json['rewritten']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'workspaceId': serializer.toJson<String>(workspaceId),
+      'spaceId': serializer.toJson<String>(spaceId),
+      'repoId': serializer.toJson<String>(repoId),
+      'position': serializer.toJson<int>(position),
+      'branch': serializer.toJson<String>(branch),
+      'baseBranch': serializer.toJson<String>(baseBranch),
+      'prNumber': serializer.toJson<int?>(prNumber),
+      'prExternalId': serializer.toJson<String?>(prExternalId),
+      'rewritten': serializer.toJson<bool>(rewritten),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  SpaceStackEntriesTableData copyWith({
+    String? id,
+    String? workspaceId,
+    String? spaceId,
+    String? repoId,
+    int? position,
+    String? branch,
+    String? baseBranch,
+    Value<int?> prNumber = const Value.absent(),
+    Value<String?> prExternalId = const Value.absent(),
+    bool? rewritten,
+    DateTime? createdAt,
+  }) => SpaceStackEntriesTableData(
+    id: id ?? this.id,
+    workspaceId: workspaceId ?? this.workspaceId,
+    spaceId: spaceId ?? this.spaceId,
+    repoId: repoId ?? this.repoId,
+    position: position ?? this.position,
+    branch: branch ?? this.branch,
+    baseBranch: baseBranch ?? this.baseBranch,
+    prNumber: prNumber.present ? prNumber.value : this.prNumber,
+    prExternalId: prExternalId.present ? prExternalId.value : this.prExternalId,
+    rewritten: rewritten ?? this.rewritten,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  SpaceStackEntriesTableData copyWithCompanion(
+    SpaceStackEntriesTableCompanion data,
+  ) {
+    return SpaceStackEntriesTableData(
+      id: data.id.present ? data.id.value : this.id,
+      workspaceId: data.workspaceId.present
+          ? data.workspaceId.value
+          : this.workspaceId,
+      spaceId: data.spaceId.present ? data.spaceId.value : this.spaceId,
+      repoId: data.repoId.present ? data.repoId.value : this.repoId,
+      position: data.position.present ? data.position.value : this.position,
+      branch: data.branch.present ? data.branch.value : this.branch,
+      baseBranch: data.baseBranch.present
+          ? data.baseBranch.value
+          : this.baseBranch,
+      prNumber: data.prNumber.present ? data.prNumber.value : this.prNumber,
+      prExternalId: data.prExternalId.present
+          ? data.prExternalId.value
+          : this.prExternalId,
+      rewritten: data.rewritten.present ? data.rewritten.value : this.rewritten,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SpaceStackEntriesTableData(')
+          ..write('id: $id, ')
+          ..write('workspaceId: $workspaceId, ')
+          ..write('spaceId: $spaceId, ')
+          ..write('repoId: $repoId, ')
+          ..write('position: $position, ')
+          ..write('branch: $branch, ')
+          ..write('baseBranch: $baseBranch, ')
+          ..write('prNumber: $prNumber, ')
+          ..write('prExternalId: $prExternalId, ')
+          ..write('rewritten: $rewritten, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    workspaceId,
+    spaceId,
+    repoId,
+    position,
+    branch,
+    baseBranch,
+    prNumber,
+    prExternalId,
+    rewritten,
+    createdAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SpaceStackEntriesTableData &&
+          other.id == this.id &&
+          other.workspaceId == this.workspaceId &&
+          other.spaceId == this.spaceId &&
+          other.repoId == this.repoId &&
+          other.position == this.position &&
+          other.branch == this.branch &&
+          other.baseBranch == this.baseBranch &&
+          other.prNumber == this.prNumber &&
+          other.prExternalId == this.prExternalId &&
+          other.rewritten == this.rewritten &&
+          other.createdAt == this.createdAt);
+}
+
+class SpaceStackEntriesTableCompanion
+    extends UpdateCompanion<SpaceStackEntriesTableData> {
+  final Value<String> id;
+  final Value<String> workspaceId;
+  final Value<String> spaceId;
+  final Value<String> repoId;
+  final Value<int> position;
+  final Value<String> branch;
+  final Value<String> baseBranch;
+  final Value<int?> prNumber;
+  final Value<String?> prExternalId;
+  final Value<bool> rewritten;
+  final Value<DateTime> createdAt;
+  final Value<int> rowid;
+  const SpaceStackEntriesTableCompanion({
+    this.id = const Value.absent(),
+    this.workspaceId = const Value.absent(),
+    this.spaceId = const Value.absent(),
+    this.repoId = const Value.absent(),
+    this.position = const Value.absent(),
+    this.branch = const Value.absent(),
+    this.baseBranch = const Value.absent(),
+    this.prNumber = const Value.absent(),
+    this.prExternalId = const Value.absent(),
+    this.rewritten = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SpaceStackEntriesTableCompanion.insert({
+    required String id,
+    required String workspaceId,
+    required String spaceId,
+    required String repoId,
+    required int position,
+    required String branch,
+    required String baseBranch,
+    this.prNumber = const Value.absent(),
+    this.prExternalId = const Value.absent(),
+    this.rewritten = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       workspaceId = Value(workspaceId),
+       spaceId = Value(spaceId),
+       repoId = Value(repoId),
+       position = Value(position),
+       branch = Value(branch),
+       baseBranch = Value(baseBranch);
+  static Insertable<SpaceStackEntriesTableData> custom({
+    Expression<String>? id,
+    Expression<String>? workspaceId,
+    Expression<String>? spaceId,
+    Expression<String>? repoId,
+    Expression<int>? position,
+    Expression<String>? branch,
+    Expression<String>? baseBranch,
+    Expression<int>? prNumber,
+    Expression<String>? prExternalId,
+    Expression<bool>? rewritten,
+    Expression<DateTime>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (workspaceId != null) 'workspace_id': workspaceId,
+      if (spaceId != null) 'space_id': spaceId,
+      if (repoId != null) 'repo_id': repoId,
+      if (position != null) 'position': position,
+      if (branch != null) 'branch': branch,
+      if (baseBranch != null) 'base_branch': baseBranch,
+      if (prNumber != null) 'pr_number': prNumber,
+      if (prExternalId != null) 'pr_external_id': prExternalId,
+      if (rewritten != null) 'rewritten': rewritten,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SpaceStackEntriesTableCompanion copyWith({
+    Value<String>? id,
+    Value<String>? workspaceId,
+    Value<String>? spaceId,
+    Value<String>? repoId,
+    Value<int>? position,
+    Value<String>? branch,
+    Value<String>? baseBranch,
+    Value<int?>? prNumber,
+    Value<String?>? prExternalId,
+    Value<bool>? rewritten,
+    Value<DateTime>? createdAt,
+    Value<int>? rowid,
+  }) {
+    return SpaceStackEntriesTableCompanion(
+      id: id ?? this.id,
+      workspaceId: workspaceId ?? this.workspaceId,
+      spaceId: spaceId ?? this.spaceId,
+      repoId: repoId ?? this.repoId,
+      position: position ?? this.position,
+      branch: branch ?? this.branch,
+      baseBranch: baseBranch ?? this.baseBranch,
+      prNumber: prNumber ?? this.prNumber,
+      prExternalId: prExternalId ?? this.prExternalId,
+      rewritten: rewritten ?? this.rewritten,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (workspaceId.present) {
+      map['workspace_id'] = Variable<String>(workspaceId.value);
+    }
+    if (spaceId.present) {
+      map['space_id'] = Variable<String>(spaceId.value);
+    }
+    if (repoId.present) {
+      map['repo_id'] = Variable<String>(repoId.value);
+    }
+    if (position.present) {
+      map['position'] = Variable<int>(position.value);
+    }
+    if (branch.present) {
+      map['branch'] = Variable<String>(branch.value);
+    }
+    if (baseBranch.present) {
+      map['base_branch'] = Variable<String>(baseBranch.value);
+    }
+    if (prNumber.present) {
+      map['pr_number'] = Variable<int>(prNumber.value);
+    }
+    if (prExternalId.present) {
+      map['pr_external_id'] = Variable<String>(prExternalId.value);
+    }
+    if (rewritten.present) {
+      map['rewritten'] = Variable<bool>(rewritten.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SpaceStackEntriesTableCompanion(')
+          ..write('id: $id, ')
+          ..write('workspaceId: $workspaceId, ')
+          ..write('spaceId: $spaceId, ')
+          ..write('repoId: $repoId, ')
+          ..write('position: $position, ')
+          ..write('branch: $branch, ')
+          ..write('baseBranch: $baseBranch, ')
+          ..write('prNumber: $prNumber, ')
+          ..write('prExternalId: $prExternalId, ')
+          ..write('rewritten: $rewritten, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $MeetingsTableTable extends MeetingsTable
     with TableInfo<$MeetingsTableTable, MeetingsTableData> {
   @override
@@ -76105,6 +76804,8 @@ abstract class _$WorkspaceDatabase extends GeneratedDatabase {
   late final $CodeFilesTableTable codeFilesTable = $CodeFilesTableTable(this);
   late final $CodeIndexCheckpointsTableTable codeIndexCheckpointsTable =
       $CodeIndexCheckpointsTableTable(this);
+  late final $SpaceStackEntriesTableTable spaceStackEntriesTable =
+      $SpaceStackEntriesTableTable(this);
   late final $MeetingsTableTable meetingsTable = $MeetingsTableTable(this);
   late final $MeetingTranscriptSegmentsTableTable
   meetingTranscriptSegmentsTable = $MeetingTranscriptSegmentsTableTable(this);
@@ -76613,6 +77314,10 @@ abstract class _$WorkspaceDatabase extends GeneratedDatabase {
   late final Index idxIsolatedReposUnit = Index(
     'idx_isolated_repos_unit',
     'CREATE UNIQUE INDEX idx_isolated_repos_unit ON isolated_repos (workspace_id, space_id, repo_id)',
+  );
+  late final Index idxSpaceStackSpace = Index(
+    'idx_space_stack_space',
+    'CREATE INDEX idx_space_stack_space ON space_stack_entries (workspace_id, space_id)',
   );
   late final Index idxMeetingsWorkspaceId = Index(
     'idx_meetings_workspaceId',
@@ -77129,6 +77834,9 @@ abstract class _$WorkspaceDatabase extends GeneratedDatabase {
   late final IsolatedRepoDao isolatedRepoDao = IsolatedRepoDao(
     this as WorkspaceDatabase,
   );
+  late final SpaceStackDao spaceStackDao = SpaceStackDao(
+    this as WorkspaceDatabase,
+  );
   late final MeetingDao meetingDao = MeetingDao(this as WorkspaceDatabase);
   late final CalendarDao calendarDao = CalendarDao(this as WorkspaceDatabase);
   late final VoiceProfileDao voiceProfileDao = VoiceProfileDao(
@@ -77275,6 +77983,7 @@ abstract class _$WorkspaceDatabase extends GeneratedDatabase {
     codeEdgesTable,
     codeFilesTable,
     codeIndexCheckpointsTable,
+    spaceStackEntriesTable,
     meetingsTable,
     meetingTranscriptSegmentsTable,
     meetingActionItemsTable,
@@ -77436,6 +78145,7 @@ abstract class _$WorkspaceDatabase extends GeneratedDatabase {
     idxIsolatedReposChannel,
     idxIsolatedReposTicket,
     idxIsolatedReposUnit,
+    idxSpaceStackSpace,
     idxMeetingsWorkspaceId,
     idxMeetingsCreatedAt,
     idxMeetingSegmentsMeetingId,
@@ -97576,6 +98286,345 @@ typedef $$CodeIndexCheckpointsTableTableProcessedTableManager =
       ),
       CodeIndexCheckpointsTableData,
       PrefetchHooks Function({bool repoId, bool checkoutId})
+    >;
+typedef $$SpaceStackEntriesTableTableCreateCompanionBuilder =
+    SpaceStackEntriesTableCompanion Function({
+      required String id,
+      required String workspaceId,
+      required String spaceId,
+      required String repoId,
+      required int position,
+      required String branch,
+      required String baseBranch,
+      Value<int?> prNumber,
+      Value<String?> prExternalId,
+      Value<bool> rewritten,
+      Value<DateTime> createdAt,
+      Value<int> rowid,
+    });
+typedef $$SpaceStackEntriesTableTableUpdateCompanionBuilder =
+    SpaceStackEntriesTableCompanion Function({
+      Value<String> id,
+      Value<String> workspaceId,
+      Value<String> spaceId,
+      Value<String> repoId,
+      Value<int> position,
+      Value<String> branch,
+      Value<String> baseBranch,
+      Value<int?> prNumber,
+      Value<String?> prExternalId,
+      Value<bool> rewritten,
+      Value<DateTime> createdAt,
+      Value<int> rowid,
+    });
+
+class $$SpaceStackEntriesTableTableFilterComposer
+    extends Composer<_$WorkspaceDatabase, $SpaceStackEntriesTableTable> {
+  $$SpaceStackEntriesTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get workspaceId => $composableBuilder(
+    column: $table.workspaceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get spaceId => $composableBuilder(
+    column: $table.spaceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get repoId => $composableBuilder(
+    column: $table.repoId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get position => $composableBuilder(
+    column: $table.position,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get branch => $composableBuilder(
+    column: $table.branch,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get baseBranch => $composableBuilder(
+    column: $table.baseBranch,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get prNumber => $composableBuilder(
+    column: $table.prNumber,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get prExternalId => $composableBuilder(
+    column: $table.prExternalId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get rewritten => $composableBuilder(
+    column: $table.rewritten,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$SpaceStackEntriesTableTableOrderingComposer
+    extends Composer<_$WorkspaceDatabase, $SpaceStackEntriesTableTable> {
+  $$SpaceStackEntriesTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get workspaceId => $composableBuilder(
+    column: $table.workspaceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get spaceId => $composableBuilder(
+    column: $table.spaceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get repoId => $composableBuilder(
+    column: $table.repoId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get position => $composableBuilder(
+    column: $table.position,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get branch => $composableBuilder(
+    column: $table.branch,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get baseBranch => $composableBuilder(
+    column: $table.baseBranch,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get prNumber => $composableBuilder(
+    column: $table.prNumber,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get prExternalId => $composableBuilder(
+    column: $table.prExternalId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get rewritten => $composableBuilder(
+    column: $table.rewritten,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$SpaceStackEntriesTableTableAnnotationComposer
+    extends Composer<_$WorkspaceDatabase, $SpaceStackEntriesTableTable> {
+  $$SpaceStackEntriesTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get workspaceId => $composableBuilder(
+    column: $table.workspaceId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get spaceId =>
+      $composableBuilder(column: $table.spaceId, builder: (column) => column);
+
+  GeneratedColumn<String> get repoId =>
+      $composableBuilder(column: $table.repoId, builder: (column) => column);
+
+  GeneratedColumn<int> get position =>
+      $composableBuilder(column: $table.position, builder: (column) => column);
+
+  GeneratedColumn<String> get branch =>
+      $composableBuilder(column: $table.branch, builder: (column) => column);
+
+  GeneratedColumn<String> get baseBranch => $composableBuilder(
+    column: $table.baseBranch,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get prNumber =>
+      $composableBuilder(column: $table.prNumber, builder: (column) => column);
+
+  GeneratedColumn<String> get prExternalId => $composableBuilder(
+    column: $table.prExternalId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get rewritten =>
+      $composableBuilder(column: $table.rewritten, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$SpaceStackEntriesTableTableTableManager
+    extends
+        RootTableManager<
+          _$WorkspaceDatabase,
+          $SpaceStackEntriesTableTable,
+          SpaceStackEntriesTableData,
+          $$SpaceStackEntriesTableTableFilterComposer,
+          $$SpaceStackEntriesTableTableOrderingComposer,
+          $$SpaceStackEntriesTableTableAnnotationComposer,
+          $$SpaceStackEntriesTableTableCreateCompanionBuilder,
+          $$SpaceStackEntriesTableTableUpdateCompanionBuilder,
+          (
+            SpaceStackEntriesTableData,
+            BaseReferences<
+              _$WorkspaceDatabase,
+              $SpaceStackEntriesTableTable,
+              SpaceStackEntriesTableData
+            >,
+          ),
+          SpaceStackEntriesTableData,
+          PrefetchHooks Function()
+        > {
+  $$SpaceStackEntriesTableTableTableManager(
+    _$WorkspaceDatabase db,
+    $SpaceStackEntriesTableTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SpaceStackEntriesTableTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$SpaceStackEntriesTableTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$SpaceStackEntriesTableTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> workspaceId = const Value.absent(),
+                Value<String> spaceId = const Value.absent(),
+                Value<String> repoId = const Value.absent(),
+                Value<int> position = const Value.absent(),
+                Value<String> branch = const Value.absent(),
+                Value<String> baseBranch = const Value.absent(),
+                Value<int?> prNumber = const Value.absent(),
+                Value<String?> prExternalId = const Value.absent(),
+                Value<bool> rewritten = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SpaceStackEntriesTableCompanion(
+                id: id,
+                workspaceId: workspaceId,
+                spaceId: spaceId,
+                repoId: repoId,
+                position: position,
+                branch: branch,
+                baseBranch: baseBranch,
+                prNumber: prNumber,
+                prExternalId: prExternalId,
+                rewritten: rewritten,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String workspaceId,
+                required String spaceId,
+                required String repoId,
+                required int position,
+                required String branch,
+                required String baseBranch,
+                Value<int?> prNumber = const Value.absent(),
+                Value<String?> prExternalId = const Value.absent(),
+                Value<bool> rewritten = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SpaceStackEntriesTableCompanion.insert(
+                id: id,
+                workspaceId: workspaceId,
+                spaceId: spaceId,
+                repoId: repoId,
+                position: position,
+                branch: branch,
+                baseBranch: baseBranch,
+                prNumber: prNumber,
+                prExternalId: prExternalId,
+                rewritten: rewritten,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$SpaceStackEntriesTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$WorkspaceDatabase,
+      $SpaceStackEntriesTableTable,
+      SpaceStackEntriesTableData,
+      $$SpaceStackEntriesTableTableFilterComposer,
+      $$SpaceStackEntriesTableTableOrderingComposer,
+      $$SpaceStackEntriesTableTableAnnotationComposer,
+      $$SpaceStackEntriesTableTableCreateCompanionBuilder,
+      $$SpaceStackEntriesTableTableUpdateCompanionBuilder,
+      (
+        SpaceStackEntriesTableData,
+        BaseReferences<
+          _$WorkspaceDatabase,
+          $SpaceStackEntriesTableTable,
+          SpaceStackEntriesTableData
+        >,
+      ),
+      SpaceStackEntriesTableData,
+      PrefetchHooks Function()
     >;
 typedef $$MeetingsTableTableCreateCompanionBuilder =
     MeetingsTableCompanion Function({
@@ -122023,6 +123072,11 @@ class $WorkspaceDatabaseManager {
       $$CodeIndexCheckpointsTableTableTableManager(
         _db,
         _db.codeIndexCheckpointsTable,
+      );
+  $$SpaceStackEntriesTableTableTableManager get spaceStackEntriesTable =>
+      $$SpaceStackEntriesTableTableTableManager(
+        _db,
+        _db.spaceStackEntriesTable,
       );
   $$MeetingsTableTableTableManager get meetingsTable =>
       $$MeetingsTableTableTableManager(_db, _db.meetingsTable);

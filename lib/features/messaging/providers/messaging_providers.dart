@@ -388,6 +388,44 @@ final spaceBusyConversationIdsProvider = Provider.autoDispose
       return {for (final run in runs) ?run.conversationId};
     });
 
+/// Earliest start of an in-flight run on each conversation in the space.
+///
+/// Same space run stream as [spaceBusyConversationIdsProvider]. The sidebar
+/// caption is how long that agent has been running, so the oldest start wins
+/// when a conversation holds more than one active run. A run with no
+/// `conversationId` is dropped, same as the busy-id set.
+final spaceRunStartedAtProvider = Provider.autoDispose
+    .family<Map<String, DateTime>, String>((ref, spaceId) {
+      final workspaceId = _workspaceOwningSpace(ref, spaceId);
+      if (workspaceId == null) {
+        return const <String, DateTime>{};
+      }
+      final runs = ref
+          .watch(
+            spaceActiveRunsProvider((
+              workspaceId: workspaceId,
+              spaceId: spaceId,
+            )),
+          )
+          .asData
+          ?.value;
+      if (runs == null) {
+        return const <String, DateTime>{};
+      }
+      final started = <String, DateTime>{};
+      for (final run in runs) {
+        final id = run.conversationId;
+        if (id == null) {
+          continue;
+        }
+        final current = started[id];
+        if (current == null || run.startedAt.isBefore(current)) {
+          started[id] = run.startedAt;
+        }
+      }
+      return started;
+    });
+
 /// When a run last showed a sign of life: its newest of output, completion and
 /// start. A pending run has only a start, a streaming one has output, a
 /// finished one has all three — so the newest is the honest "this agent was the

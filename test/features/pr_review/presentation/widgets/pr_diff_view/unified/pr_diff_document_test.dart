@@ -443,6 +443,24 @@ void main() {
     });
   });
 
+  group('PrDiffDocument.updateCommentBlockHeight', () {
+    test('grows the file and ignores a sub-pixel change', () {
+      final doc = _doc()..setFiles([_file('a.dart', _realPatch)]);
+      doc.setStructure(0, buildDiffRawLines(_realPatch));
+      doc.setCommentBlocks(0, const [
+        DiffCommentBlock(key: 'composer', anchorLine: 0, height: 0),
+      ]);
+      final before = doc.totalExtent;
+
+      expect(doc.updateCommentBlockHeight(0, 'composer', 40), isTrue);
+      expect(doc.totalExtent, closeTo(before + 40, 0.1));
+      expect(doc.updateCommentBlockHeight(0, 'composer', 40.2), isFalse);
+      expect(doc.totalExtent, closeTo(before + 40, 0.1));
+      expect(doc.updateCommentBlockHeight(0, 'missing', 10), isFalse);
+      expect(doc.updateCommentBlockHeight(3, 'composer', 10), isFalse);
+    });
+  });
+
   group('PrDiffDocument image preview default', () {
     test('image files start previewing', () {
       final doc = _doc()..setFiles([_file('shot.png', '')]);

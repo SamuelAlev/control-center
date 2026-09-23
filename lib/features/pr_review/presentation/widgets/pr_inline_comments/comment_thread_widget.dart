@@ -5,7 +5,10 @@ import 'package:cc_domain/features/pr_review/domain/entities/pr_inline_thread.da
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/theme/app_fonts.dart';
 import 'package:control_center/core/theme/font_settings.dart';
+import 'package:control_center/features/pr_review/presentation/notifiers/pr_edit_notifier.dart';
 import 'package:control_center/features/pr_review/presentation/utils/syntax_highlighter.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/comment_action_model.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/pr_comment_actions.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_comment_field.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_inline_comments/suggestion_blocks.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_inline_comments/suggestion_renderer.dart';
@@ -150,6 +153,20 @@ class _PrInlineThreadBlockState extends ConsumerState<PrInlineThreadBlock> {
     final tokens = context.designSystem ?? DesignSystemTokens.light();
     final thread = widget.thread;
     final prRepo = ref.watch(prRepoRowProvider(widget.controller.pr));
+    final hidden = ref.watch(
+      prEditProvider(
+        widget.controller.pr,
+      ).select((s) => s.hiddenReviewCommentIds),
+    );
+    final visible = [
+      for (final entry in thread.entries)
+        if (entry.serverCommentId == null ||
+            !hidden.contains(entry.serverCommentId))
+          entry,
+    ];
+    if (thread.entries.isNotEmpty && visible.isEmpty) {
+      return const SizedBox.shrink();
+    }
     if (widget.collapsed) {
       return _CollapsedThreadRow(
         thread: thread,
@@ -247,46 +264,66 @@ class _PrInlineThreadBlockState extends ConsumerState<PrInlineThreadBlock> {
               ],
             ),
           ),
-          for (var i = 0; i < thread.entries.length; i++) ...[
+          for (var i = 0; i < visible.length; i++) ...[
             Padding(
               padding: const EdgeInsets.fromLTRB(14, 8, 14, 12),
               child: _InlineEntryTile(
-                entry: thread.entries[i],
+                entry: visible[i],
                 prRef: widget.controller.pr,
                 originalCode: thread.originalCode,
                 filePath: thread.filePath,
                 originalStartLine: thread.line,
-                isEditing: _editingEntryId == thread.entries[i].id,
-                onToggleReaction: thread.entries[i].serverCommentId == null
+                lineEnd: thread.lineEnd,
+                canResolve: widget.canResolve,
+                resolved: thread.resolved,
+                resolveBusy: widget.resolveBusy,
+                onResolve: () => _setResolved(!thread.resolved),
+                thread: [
+                  for (final entry in visible)
+                    (author: entry.author, body: entry.body),
+                ],
+                onDeleteLocal: visible[i].serverCommentId == null
+                    ? () => widget.controller.dismissThread(thread.id)
+                    : null,
+                isEditing: _editingEntryId == visible[i].id,
+                onToggleReaction: visible[i].serverCommentId == null
                     ? null
                     : (content, {required add}) => toggleReaction(
                         ref,
                         ReactionTarget.reviewComment,
-                        commentId: thread.entries[i].serverCommentId!,
+                        commentId: visible[i].serverCommentId!,
                         pr: widget.controller.pr,
                         content: content,
                         add: add,
                       ),
-                onEditStart: thread.isSuggestion && i == 0
-                    ? () =>
-                          setState(() => _editingEntryId = thread.entries[i].id)
+                onEditStart:
+                    thread.isSuggestion &&
+                        i == 0 &&
+                        visible[i].id == thread.entries.first.id
+                    ? () => setState(() => _editingEntryId = visible[i].id)
                     : null,
-                onEditSubmit: thread.isSuggestion && i == 0
+                onEditSubmit:
+                    thread.isSuggestion &&
+                        i == 0 &&
+                        visible[i].id == thread.entries.first.id
                     ? (newBody) {
                         widget.controller.updateEntry(
                           threadId: thread.id,
-                          entryId: thread.entries[i].id,
+                          entryId: visible[i].id,
                           newBody: newBody,
                         );
                         setState(() => _editingEntryId = null);
                       }
                     : null,
-                onEditCancel: thread.isSuggestion && i == 0
+                onEditCancel:
+                    thread.isSuggestion &&
+                        i == 0 &&
+                        visible[i].id == thread.entries.first.id
                     ? () => setState(() => _editingEntryId = null)
                     : null,
               ),
             ),
-            if (i != thread.entries.length - 1) const CcDivider(),
+            if (i != visible.length - 1) const CcDivider(),
           ],
           if (thread.isSuggestion && !thread.resolved) ...[
             const CcDivider(),
@@ -562,6 +599,13 @@ class _InlineEntryTile extends StatelessWidget {
     required this.originalCode,
     this.filePath,
     this.originalStartLine,
+    this.lineEnd,
+    this.canResolve = false,
+    this.resolved = false,
+    this.resolveBusy = false,
+    this.onResolve,
+    this.thread = const [],
+    this.onDeleteLocal,
     this.isEditing = false,
     this.onToggleReaction,
     this.onEditStart,
@@ -576,6 +620,13 @@ class _InlineEntryTile extends StatelessWidget {
   final String originalCode;
   final String? filePath;
   final int? originalStartLine;
+  final int? lineEnd;
+  final bool canResolve;
+  final bool resolved;
+  final bool resolveBusy;
+  final VoidCallback? onResolve;
+  final List<CommentExcerpt> thread;
+  final VoidCallback? onDeleteLocal;
   final bool isEditing;
 
   /// Reaction toggle for a synced review comment; null while the entry is a
@@ -591,84 +642,104 @@ class _InlineEntryTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designSystem ?? DesignSystemTokens.light();
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        GitHubUserAvatar(
-          login: entry.author,
-          avatarUrl: entry.authorAvatarUrl,
-          size: 24,
-          showHoverCard: false,
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Text(
-                    entry.author,
-                    style: CcTypography.caption.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: tokens.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  AppTimestamp(
-                    dateTime: entry.createdAt,
-                    child: Text(
-                      formatRelativeTime(context, entry.createdAt),
+    final published = entry.serverCommentId != null;
+    return PrCommentActions(
+      prRef: prRef,
+      body: entry.body,
+      authorLogin: entry.author,
+      commentId: entry.serverCommentId,
+      reviewComment: true,
+      published: published,
+      path: filePath,
+      startLine: originalStartLine,
+      endLine: lineEnd,
+      thread: thread,
+      canResolve: canResolve,
+      resolved: resolved,
+      resolveBusy: resolveBusy,
+      onResolve: onResolve,
+      onDeleteLocal: onDeleteLocal,
+      onToggleReaction: onToggleReaction,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          GitHubUserAvatar(
+            login: entry.author,
+            avatarUrl: entry.authorAvatarUrl,
+            size: 24,
+            showHoverCard: false,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      entry.author,
                       style: CcTypography.caption.copyWith(
-                        color: tokens.textTertiary,
+                        fontWeight: FontWeight.w700,
+                        color: tokens.textPrimary,
                       ),
                     ),
-                  ),
-                  if (_isSuggestionEntry && onEditStart != null) ...[
-                    const SizedBox(width: 4),
-                    CcIconButton(
-                      onPressed: () {
-                        if (isEditing) {
-                          onEditCancel?.call();
-                        } else {
-                          onEditStart?.call();
-                        }
-                      },
-                      icon: isEditing ? AppIcons.x : AppIcons.pencil,
-                      tooltip: isEditing
-                          ? AppLocalizations.of(context).cancelEdit
-                          : AppLocalizations.of(context).editSuggestion,
+                    const SizedBox(width: 6),
+                    AppTimestamp(
+                      dateTime: entry.createdAt,
+                      child: Text(
+                        formatRelativeTime(context, entry.createdAt),
+                        style: CcTypography.caption.copyWith(
+                          color: tokens.textTertiary,
+                        ),
+                      ),
                     ),
+                    if (_isSuggestionEntry && onEditStart != null) ...[
+                      const SizedBox(width: 4),
+                      CcIconButton(
+                        onPressed: () {
+                          if (isEditing) {
+                            onEditCancel?.call();
+                          } else {
+                            onEditStart?.call();
+                          }
+                        },
+                        icon: isEditing ? AppIcons.x : AppIcons.pencil,
+                        tooltip: isEditing
+                            ? AppLocalizations.of(context).cancelEdit
+                            : AppLocalizations.of(context).editSuggestion,
+                      ),
+                    ],
                   ],
+                ),
+                const SizedBox(height: 4),
+                if (isEditing && onEditSubmit != null)
+                  _SuggestionEditor(
+                    initialBody: entry.body,
+                    filePath: filePath,
+                    onSubmit: onEditSubmit!,
+                    onCancel: onEditCancel ?? () {},
+                  )
+                else
+                  SuggestionAwareMarkdown(
+                    prRef: prRef,
+                    body: entry.body,
+                    originalCode: originalCode,
+                    filePath: filePath,
+                    originalStartLine: originalStartLine,
+                  ),
+                if (onToggleReaction != null && entry.reactions.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  ReactionBar(
+                    reactions: entry.reactions,
+                    showAdder: false,
+                    onToggle: onToggleReaction!,
+                  ),
                 ],
-              ),
-              const SizedBox(height: 4),
-              if (isEditing && onEditSubmit != null)
-                _SuggestionEditor(
-                  initialBody: entry.body,
-                  filePath: filePath,
-                  onSubmit: onEditSubmit!,
-                  onCancel: onEditCancel ?? () {},
-                )
-              else
-                SuggestionAwareMarkdown(
-                  prRef: prRef,
-                  body: entry.body,
-                  originalCode: originalCode,
-                  filePath: filePath,
-                  originalStartLine: originalStartLine,
-                ),
-              if (onToggleReaction != null) ...[
-                const SizedBox(height: 6),
-                ReactionBar(
-                  reactions: entry.reactions,
-                  onToggle: onToggleReaction!,
-                ),
               ],
-            ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

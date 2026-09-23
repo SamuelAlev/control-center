@@ -30,6 +30,9 @@ import 'package:cc_domain/core/domain/repositories/agent_run_cost_history_port.d
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
 import 'package:cc_domain/core/domain/repositories/cache_repository.dart';
 import 'package:cc_domain/core/domain/repositories/isolated_repo_repository.dart';
+import 'package:cc_domain/features/messaging/domain/ports/space_stack_port.dart';
+import 'package:cc_domain/features/messaging/domain/repositories/space_stack_repository.dart';
+import 'package:cc_domain/features/messaging/domain/services/stack_branch_names.dart';
 import 'package:cc_domain/core/domain/repositories/repo_repository.dart';
 import 'package:cc_domain/core/domain/repositories/repo_script_repository.dart';
 import 'package:cc_domain/core/domain/repositories/review_space_repository.dart';
@@ -175,6 +178,7 @@ import 'package:cc_server_core/src/catalog/catalog_wire.dart';
 import 'package:cc_server_core/src/catalog/meeting_ops.dart';
 import 'package:cc_server_core/src/catalog/model_control_ops.dart';
 import 'package:cc_server_core/src/catalog/pr_review_ops.dart';
+import 'package:cc_server_core/src/catalog/space_stack_ops.dart';
 import 'package:cc_server_core/src/catalog/terminal_port_ops.dart';
 import 'package:cc_server_core/src/catalog/worktree_branch_ops.dart';
 import 'package:cc_server_core/src/cc_server_runtime.dart'
@@ -793,6 +797,12 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   // inside the isolated worktree (no fetch). Null ⇒ the ops are omitted.
   WorktreeListBranchesFn? worktreeListBranches,
   WorktreeCheckoutFn? worktreeCheckout,
+  // Stacked branches inside a space's one checkout. Always registered; a null
+  // port answers an empty list and refuses mutations.
+  SpaceStackPort? spaceStack,
+  // Recorded layers, so pr.forSpaceBranches matches every part, not only the
+  // branch currently checked out. Null keeps the single-branch match.
+  SpaceStackRepository? spaceStackRepository,
   // Controls the MCP HTTP server the SERVER hosts (start/stop/reconfigure +
   // status). The MCP server is a host-global process-wide listener (NOT
   // workspace data), so the `mcp.*` ops are declared `workspaceScoped: false`.
@@ -4897,6 +4907,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       listBranches: worktreeBranches,
       checkout: worktreeCheckoutFn,
     ),
+    ...buildSpaceStackOps(stack: spaceStack),
 
     // The MCP HTTP server is a single process-wide listener the SERVER hosts;
     // it is not workspace data, so these ops are `workspaceScoped: false`. They
@@ -10693,10 +10704,10 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           return {'ok': true};
         },
       ),
-    // Open PR(s) from this conversation — matched by head branch, one entry
-    // per space worktree. Branch is the join (`review_spaces` runs the other
-    // way via `pr.ensureSpace`). Server-side so the client holds one PR from
-    // the poller snapshot instead of the whole `pr.watchOpenForWorkspace` list.
+    // Open PR(s) from this conversation — matched by head branch. One space
+    // worktree can carry a stack of branches; every recorded layer matches,
+    // not only the one checked out. Branch is the join (`review_spaces` runs
+    // the other way via `pr.ensureSpace`).
     if (openPrPoller != null)
       RepoOp(
         name: 'pr.forSpaceBranches',
@@ -10722,21 +10733,32 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
             if (repo == null || !repo.hasForgeRemote) {
               continue;
             }
-            final branch = worktree.branch.trim();
-            final pr = await openPrPoller.openPrForHeadBranch(
-              workspaceId: ctx.workspaceId!,
-              repoFullName: repo.fullName,
-              branch: branch,
+            final heads = pullRequestHeadBranches(
+              checkedOut: worktree.branch,
+              stackBranches: spaceStackRepository == null
+                  ? const []
+                  : (await spaceStackRepository.forRepo(
+                      ctx.workspaceId!,
+                      spaceId,
+                      worktree.repoId,
+                    )).map((entry) => entry.branch),
             );
-            if (pr == null) {
-              continue;
+            for (final branch in heads) {
+              final pr = await openPrPoller.openPrForHeadBranch(
+                workspaceId: ctx.workspaceId!,
+                repoFullName: repo.fullName,
+                branch: branch,
+              );
+              if (pr == null) {
+                continue;
+              }
+              matches.add({
+                'repo_id': repo.id,
+                'repo_full_name': repo.fullName,
+                'branch': branch,
+                'pull_request': pr,
+              });
             }
-            matches.add({
-              'repo_id': repo.id,
-              'repo_full_name': repo.fullName,
-              'branch': branch,
-              'pull_request': pr,
-            });
           }
           return {'matches': matches};
         },

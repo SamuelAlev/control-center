@@ -7,6 +7,8 @@ import 'package:cc_domain/core/domain/ports/repo_isolation_port.dart';
 import 'package:cc_domain/core/domain/repositories/isolated_repo_repository.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_repository.dart';
 import 'package:cc_domain/core/domain/value_objects/repo_isolation_backend.dart';
+import 'package:cc_domain/features/messaging/domain/entities/space_stack_entry.dart';
+import 'package:cc_domain/features/messaging/domain/repositories/space_stack_repository.dart';
 import 'package:cc_harness/cancellation.dart';
 import 'package:cc_infra/src/repos/repo_workspace_provisioner.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -16,6 +18,7 @@ import '../../fakes/fake_filesystem_port.dart';
 
 class _FakeIsolation implements RepoIsolationPort {
   final List<String> destroyed = [];
+  final List<({String? branch, List<String> branches})> destroyedStacks = [];
   final List<_ProvisionCall> provisions = [];
 
   /// Fired inside [provision], so a test can stop the run at the exact moment
@@ -62,7 +65,62 @@ class _FakeIsolation implements RepoIsolationPort {
     required String sourcePath,
     required RepoIsolationBackend backend,
     String? branch,
-  }) async => destroyed.add(path);
+    List<String> branches = const [],
+  }) async {
+    destroyed.add(path);
+    destroyedStacks.add((branch: branch, branches: List.of(branches)));
+  }
+}
+
+class _MemoryStacks implements SpaceStackRepository {
+  final List<SpaceStackEntry> rows = [];
+
+  @override
+  Future<List<SpaceStackEntry>> forSpace(
+    String workspaceId,
+    String spaceId,
+  ) async => [
+    for (final row in rows)
+      if (row.workspaceId == workspaceId && row.spaceId == spaceId) row,
+  ];
+
+  @override
+  Future<List<SpaceStackEntry>> forRepo(
+    String workspaceId,
+    String spaceId,
+    String repoId,
+  ) async => [
+    for (final row in rows)
+      if (row.workspaceId == workspaceId &&
+          row.spaceId == spaceId &&
+          row.repoId == repoId)
+        row,
+  ];
+
+  @override
+  Future<void> upsert(SpaceStackEntry entry) async {
+    rows.removeWhere((row) => row.id == entry.id);
+    rows.add(entry);
+  }
+
+  @override
+  Future<void> deleteForRepo(
+    String workspaceId,
+    String spaceId,
+    String repoId,
+  ) async {
+    rows.removeWhere(
+      (row) =>
+          row.workspaceId == workspaceId &&
+          row.spaceId == spaceId &&
+          row.repoId == repoId,
+    );
+  }
+
+  @override
+  Future<void> deleteById(String workspaceId, String id) async {
+    rows.removeWhere((row) => row.workspaceId == workspaceId && row.id == id);
+  }
 }
 
 class _ProvisionCall {
@@ -218,6 +276,7 @@ RepoWorkspaceProvisioner _build({
   Future<String> Function(String workspaceId)? branchTemplate,
   Future<SpaceCheckoutScope?> Function(String workspaceId, String spaceId)?
   spaceCheckoutScope,
+  SpaceStackRepository? stacks,
 }) => RepoWorkspaceProvisioner(
   filesystem: filesystem ?? FakeFilesystemPort(),
   isolation: isolation,
@@ -226,6 +285,7 @@ RepoWorkspaceProvisioner _build({
   githubToken: githubToken ?? (() async => ''),
   branchTemplate: branchTemplate ?? ((_) async => '{type}/{ticket-key}-{slug}'),
   spaceCheckoutScope: spaceCheckoutScope,
+  stacks: stacks,
 );
 
 void main() {
@@ -589,6 +649,78 @@ void main() {
         expect(isolation.destroyed, hasLength(1));
         expect(registry.rows, isEmpty);
         expect(Directory(convRoot).existsSync(), isFalse);
+      } finally {
+        if (tempDir.existsSync()) {
+          tempDir.deleteSync(recursive: true);
+        }
+      }
+    });
+
+    test('releaseSpace deletes every recorded stack branch', () async {
+      final tempDir = Directory.systemTemp.createTempSync(
+        'provisioner_test_stack_',
+      );
+      try {
+        final fs = FakeFilesystemPort()..baseDir = tempDir.path;
+        final isolation = _FakeIsolation();
+        final registry = _FakeRegistry();
+        final stacks = _MemoryStacks();
+        registry.rows.add(
+          IsolatedRepo(
+            id: 'iso-1',
+            workspaceId: 'w-1',
+            spaceId: 'ch-12345678',
+            repoId: 'r-1',
+            path: '${tempDir.path}/wt',
+            branch: 'space/abcd1234/ui',
+            backend: RepoIsolationBackend.gitWorktree,
+            sourcePath: '/src/repo',
+            createdAt: DateTime(2026),
+          ),
+        );
+        for (final entry in [
+          SpaceStackEntry(
+            id: 'bottom',
+            workspaceId: 'w-1',
+            spaceId: 'ch-12345678',
+            repoId: 'r-1',
+            position: 0,
+            branch: 'space/abcd1234',
+            baseBranch: 'main',
+            createdAt: DateTime(2026),
+          ),
+          SpaceStackEntry(
+            id: 'ui',
+            workspaceId: 'w-1',
+            spaceId: 'ch-12345678',
+            repoId: 'r-1',
+            position: 1,
+            branch: 'space/abcd1234/ui',
+            baseBranch: 'space/abcd1234',
+            createdAt: DateTime(2026),
+          ),
+        ]) {
+          await stacks.upsert(entry);
+        }
+        final p = _build(
+          registry: registry,
+          isolation: isolation,
+          filesystem: fs,
+          stacks: stacks,
+        );
+
+        await p.releaseSpace(workspaceId: 'w-1', spaceId: 'ch-12345678');
+
+        expect(isolation.destroyedStacks, hasLength(1));
+        expect(isolation.destroyedStacks.single.branch, 'space/abcd1234/ui');
+        expect(isolation.destroyedStacks.single.branches, [
+          'space/abcd1234',
+          'space/abcd1234/ui',
+        ]);
+        expect(
+          await stacks.forRepo('w-1', 'ch-12345678', 'r-1'),
+          isEmpty,
+        );
       } finally {
         if (tempDir.existsSync()) {
           tempDir.deleteSync(recursive: true);
@@ -1810,6 +1942,7 @@ class _ThrowingIsolation implements RepoIsolationPort {
     required String sourcePath,
     required RepoIsolationBackend backend,
     String? branch,
+    List<String> branches = const [],
   }) async {
     if (path == failOnPath) {
       throw Exception('destroy failed');

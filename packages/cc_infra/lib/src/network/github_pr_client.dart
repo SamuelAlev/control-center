@@ -1067,6 +1067,30 @@ class GitHubPrClient {
     }
   }
 
+  /// Deletes a top-level conversation comment.
+  ///
+  /// GitHub allows this for the author and for anyone with write access on
+  /// the repo. A 403/404 propagates as a mapped exception.
+  Future<void> deleteIssueComment(
+    String owner,
+    String repo, {
+    required int commentId,
+    CancelToken? cancelToken,
+  }) async {
+    _requireOwnerRepo(owner, repo);
+    try {
+      await _dio.delete(
+        '/repos/$owner/$repo/issues/comments/$commentId',
+        cancelToken: cancelToken,
+      );
+    } on DioException catch (e) {
+      if (e.type == DioExceptionType.cancel) {
+        rethrow;
+      }
+      throw mapDioException(e);
+    }
+  }
+
   /// Posts a top-level comment on a pull request's conversation timeline.
   ///
   /// The PR conversation is the issues API (`POST /issues/{n}/comments`), so

@@ -2530,6 +2530,32 @@ class CachedPrReviewRepository implements PrReviewRepository {
     await _invalidatePrKinds(prNumber, const [_Kind.prIssueComments]);
   }
 
+  /// Deletes a top-level conversation comment and drops the cached list.
+  @override
+  Future<void> deleteIssueComment({
+    required int prNumber,
+    required int commentId,
+  }) async {
+    await _client.deleteIssueComment(
+      prNumber: prNumber,
+      commentId: '$commentId',
+    );
+    await _invalidatePrKinds(prNumber, const [_Kind.prIssueComments]);
+  }
+
+  /// Deletes one inline review comment and drops the cached list.
+  @override
+  Future<void> deleteReviewComment({
+    required int prNumber,
+    required int commentId,
+  }) async {
+    await _client.deleteReviewComment(
+      prNumber: prNumber,
+      commentId: '$commentId',
+    );
+    await _invalidatePrKinds(prNumber, const [_Kind.prReviewComments]);
+  }
+
   /// Adds assignees to a pull request.
   @override
   Future<void> addAssignees({

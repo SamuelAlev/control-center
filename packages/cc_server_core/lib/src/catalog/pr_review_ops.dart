@@ -869,6 +869,44 @@ List<RepoOp> buildPrReviewOps({
     },
   ),
   RepoOp(
+    name: 'pr_review.deleteIssueComment',
+    kind: RepoOpKind.mutate,
+    requiredArgs: ['owner', 'repo', 'pr_number', 'comment_id'],
+    handler: (ctx) async {
+      final c = requireRepoCoords(ctx.args);
+      final repo = await resolvePrReviewRepository(
+        ctx.workspaceId!,
+        c.owner,
+        c.repo,
+        userId: ctx.userId,
+      );
+      await repo.deleteIssueComment(
+        prNumber: (ctx.args['pr_number'] as num).toInt(),
+        commentId: (ctx.args['comment_id'] as num).toInt(),
+      );
+      return {'ok': true};
+    },
+  ),
+  RepoOp(
+    name: 'pr_review.deleteReviewComment',
+    kind: RepoOpKind.mutate,
+    requiredArgs: ['owner', 'repo', 'pr_number', 'comment_id'],
+    handler: (ctx) async {
+      final c = requireRepoCoords(ctx.args);
+      final repo = await resolvePrReviewRepository(
+        ctx.workspaceId!,
+        c.owner,
+        c.repo,
+        userId: ctx.userId,
+      );
+      await repo.deleteReviewComment(
+        prNumber: (ctx.args['pr_number'] as num).toInt(),
+        commentId: (ctx.args['comment_id'] as num).toInt(),
+      );
+      return {'ok': true};
+    },
+  ),
+  RepoOp(
     name: 'pr_review.addAssignees',
     kind: RepoOpKind.mutate,
     requiredArgs: ['owner', 'repo', 'pr_number', 'logins'],

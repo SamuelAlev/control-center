@@ -49,8 +49,8 @@ abstract interface class CcFluidHoverTarget {
 ///
 /// Only when every enabled item is a safe target and layout stays stable —
 /// not mixed cards, sparse layouts, or reordering rows. Shared non-interactive
-/// overlay; reduced motion snaps. Scrollables retarget after layout; animate
-/// travel only when the active item changes.
+/// overlay; reduced motion snaps. Scrollables and layout shifts retarget
+/// after layout; animate travel only when the active item changes.
 class CcFluidHover extends StatefulWidget {
   /// Creates a fluid hover group.
   const CcFluidHover({
@@ -149,7 +149,11 @@ class _CcFluidHoverState extends State<CcFluidHover> {
   int _pointerSession = 0;
   bool _pointerInside = false;
   bool _postFramePickScheduled = false;
-  bool _geometryOnlyUpdate = false;
+
+  /// The wash. Geometry updates write here and leave the rows alone: a space
+  /// opening under the pointer changes bounds every frame, and rebuilding the
+  /// group to follow it drops the animation off the refresh rate.
+  final ValueNotifier<_HoverHighlight?> _highlight = ValueNotifier(null);
 
   @override
   void initState() {
@@ -171,6 +175,8 @@ class _CcFluidHoverState extends State<CcFluidHover> {
       if ((_activeIndex ?? -1) >= widget.itemCount) {
         _setActive(null, null);
       }
+      // A shorter or longer list moves the row under a still pointer.
+      _queuePickAfterLayout();
     }
   }
 
@@ -181,6 +187,7 @@ class _CcFluidHoverState extends State<CcFluidHover> {
     if (callbackId != null) {
       SchedulerBinding.instance.cancelFrameCallbackWithId(callbackId);
     }
+    _highlight.dispose();
     super.dispose();
   }
 
@@ -266,6 +273,15 @@ class _CcFluidHoverState extends State<CcFluidHover> {
   }
 
   void _onScroll() => _queuePickAfterLayout();
+
+  /// [SizeChangedLayoutNotification] is dispatched mid-layout. Scheduling the
+  /// pick for after the frame keeps the measurement off the layout phase;
+  /// a synchronous [setState] here would rebuild while the tree is still
+  /// laying out.
+  bool _onDescendantLayout(SizeChangedLayoutNotification _) {
+    _queuePickAfterLayout();
+    return false;
+  }
 
   void _queuePick(Offset position) {
     _pendingPosition = position;
@@ -371,7 +387,14 @@ class _CcFluidHoverState extends State<CcFluidHover> {
   }
 
   Widget _wrapItem(int index, Widget child) {
-    final keyed = KeyedSubtree(key: _itemKeys[index], child: child);
+    // Size changes (a space expanding under the pointer, a sibling collapsing)
+    // must retarget the wash. Pointer events do not fire for a layout shift,
+    // so the highlight would keep the rectangle it measured before the shift
+    // until the cursor moved.
+    final keyed = KeyedSubtree(
+      key: _itemKeys[index],
+      child: SizeChangedLayoutNotifier(child: child),
+    );
     // Boundary and disabled items are still measured (so a nested group can
     // stop the highlight, and keys stay stable) but they must NOT publish an
     // item scope. [CcTappable] inside a scope drops its own hover in favour
@@ -398,84 +421,142 @@ class _CcFluidHoverState extends State<CcFluidHover> {
       return;
     }
     final changed = _activeIndex != index;
-    setState(() {
-      _activeIndex = index;
-      // Same item, new geometry (the row scrolled): snap so the wash does
-      // not trail the row by [CcMotion.fast]. A new item still travels.
-      _geometryOnlyUpdate = !changed && rect != null;
-      if (rect != null) {
-        _displayRect = rect;
-      }
-    });
-    if (changed) {
-      widget.onActiveIndexChanged?.call(index);
+    _activeIndex = index;
+    if (rect != null) {
+      _displayRect = rect;
     }
+    final shown = _displayRect;
+    if (shown != null) {
+      _highlight.value = _HoverHighlight(
+        rect: shown,
+        visible: index != null,
+        // Same item, new geometry (the row grew or scrolled): snap so the
+        // wash does not trail the row by [CcMotion.fast]. A new item travels.
+        snap: !changed,
+        session: _pointerSession,
+      );
+    }
+    if (!changed) {
+      return;
+    }
+    setState(() {});
+    widget.onActiveIndexChanged?.call(index);
   }
 
   @override
   Widget build(BuildContext context) {
-    final travel = _geometryOnlyUpdate
-        ? Duration.zero
-        : CcMotion.resolveTravel(context, CcMotion.fast);
-    final fade = CcMotion.resolveFade(context, CcMotion.fast);
-    final color = widget.highlightColor ?? context.ds.hover;
     final items = <Widget>[
       for (var index = 0; index < widget.itemCount; index++)
         _wrapItem(index, widget.itemBuilder(context, index)),
     ];
 
-    return MouseRegion(
-      cursor: widget.mouseCursor ?? MouseCursor.defer,
-      onEnter: _onEnter,
-      onHover: _onHover,
-      onExit: _onExit,
-      child: NotificationListener<ScrollNotification>(
-        onNotification: (_) {
-          _onScroll();
-          return false;
-        },
-        child: Stack(
-          key: _containerKey,
-          clipBehavior: widget.clipBehavior,
-          children: [
-            widget.layoutBuilder(context, items),
-            if (_displayRect case final Rect rect)
+    return NotificationListener<SizeChangedLayoutNotification>(
+      onNotification: _onDescendantLayout,
+      child: MouseRegion(
+        cursor: widget.mouseCursor ?? MouseCursor.defer,
+        onEnter: _onEnter,
+        onHover: _onHover,
+        onExit: _onExit,
+        child: NotificationListener<ScrollNotification>(
+          onNotification: (_) {
+            _onScroll();
+            return false;
+          },
+          child: Stack(
+            key: _containerKey,
+            clipBehavior: widget.clipBehavior,
+            children: [
+              // A gap or padding change moves items without resizing them.
+              SizeChangedLayoutNotifier(
+                child: widget.layoutBuilder(context, items),
+              ),
               Positioned.fill(
                 child: IgnorePointer(
-                  child: AnimatedOpacity(
-                    key: const ValueKey<String>('cc-fluid-hover-highlight'),
-                    opacity: _activeIndex == null ? 0 : 1,
-                    duration: fade,
-                    curve: CcMotion.standard,
-                    child: TweenAnimationBuilder<Rect>(
-                      key: ValueKey<int>(_pointerSession),
-                      tween: _CcRectTween(begin: rect, end: rect),
-                      duration: travel,
-                      curve: CcMotion.standard,
-                      builder: (context, value, _) => Transform.translate(
-                        key: const ValueKey<String>('cc-fluid-hover-transform'),
-                        offset: value.topLeft,
-                        child: Align(
-                          alignment: Alignment.topLeft,
-                          child: SizedBox(
-                            width: value.width,
-                            height: value.height,
-                            child: DecoratedBox(
-                              decoration: BoxDecoration(
-                                color: color,
-                                borderRadius: widget.borderRadius,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
+                  child: _FluidHoverWash(
+                    highlight: _highlight,
+                    color: widget.highlightColor,
+                    borderRadius: widget.borderRadius,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HoverHighlight {
+  const _HoverHighlight({
+    required this.rect,
+    required this.visible,
+    required this.snap,
+    required this.session,
+  });
+
+  final Rect rect;
+  final bool visible;
+  final bool snap;
+  final int session;
+}
+
+/// The shared wash. Listens to geometry on its own so a row changing size
+/// does not rebuild the items behind it.
+class _FluidHoverWash extends StatelessWidget {
+  const _FluidHoverWash({
+    required this.highlight,
+    required this.color,
+    required this.borderRadius,
+  });
+
+  final ValueNotifier<_HoverHighlight?> highlight;
+  final Color? color;
+  final BorderRadius borderRadius;
+
+  @override
+  Widget build(BuildContext context) {
+    final resolved = color ?? context.ds.hover;
+    return ValueListenableBuilder<_HoverHighlight?>(
+      valueListenable: highlight,
+      builder: (context, highlight, _) {
+        if (highlight == null) {
+          return const SizedBox.shrink();
+        }
+        final travel = highlight.snap
+            ? Duration.zero
+            : CcMotion.resolveTravel(context, CcMotion.fast);
+        final fade = CcMotion.resolveFade(context, CcMotion.fast);
+        return AnimatedOpacity(
+          key: const ValueKey<String>('cc-fluid-hover-highlight'),
+          opacity: highlight.visible ? 1 : 0,
+          duration: fade,
+          curve: CcMotion.standard,
+          child: TweenAnimationBuilder<Rect>(
+            key: ValueKey<int>(highlight.session),
+            tween: _CcRectTween(begin: highlight.rect, end: highlight.rect),
+            duration: travel,
+            curve: CcMotion.standard,
+            builder: (context, value, _) => Transform.translate(
+              key: const ValueKey<String>('cc-fluid-hover-transform'),
+              offset: value.topLeft,
+              child: Align(
+                alignment: Alignment.topLeft,
+                child: SizedBox(
+                  width: value.width,
+                  height: value.height,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: resolved,
+                      borderRadius: borderRadius,
                     ),
                   ),
                 ),
               ),
-          ],
-        ),
-      ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

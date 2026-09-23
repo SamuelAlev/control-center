@@ -2566,6 +2566,17 @@ class AppLocalizationsVi extends AppLocalizations {
   String get agent => 'Agent';
 
   @override
+  String conversationCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count cuộc trò chuyện',
+      one: '1 cuộc trò chuyện',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String agentCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -3575,6 +3586,34 @@ class AppLocalizationsVi extends AppLocalizations {
       one: '1 giờ trước',
     );
     return '$_temp0';
+  }
+
+  @override
+  String get sidebarAgeNow => 'vừa xong';
+
+  @override
+  String sidebarAgeMinutes(int count) {
+    return '$count ph';
+  }
+
+  @override
+  String sidebarAgeHours(int count) {
+    return '$count giờ';
+  }
+
+  @override
+  String sidebarAgeDays(int count) {
+    return '$count ng';
+  }
+
+  @override
+  String sidebarAgeMonths(int count) {
+    return '$count th';
+  }
+
+  @override
+  String sidebarAgeYears(int count) {
+    return '$count năm';
   }
 
   @override
@@ -9734,6 +9773,81 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
+  String get reactionThumbsUp => 'Thích';
+
+  @override
+  String get reactionThumbsDown => 'Không thích';
+
+  @override
+  String get reactionLaugh => 'Cười';
+
+  @override
+  String get reactionHooray => 'Hoan hô';
+
+  @override
+  String get reactionConfused => 'Bối rối';
+
+  @override
+  String get reactionHeart => 'Trái tim';
+
+  @override
+  String get reactionRocket => 'Tên lửa';
+
+  @override
+  String get reactionEyes => 'Mắt';
+
+  @override
+  String get commentReact => 'Thả cảm xúc';
+
+  @override
+  String get commentResolveThread => 'Giải quyết chuỗi';
+
+  @override
+  String get commentReopenThread => 'Mở lại chuỗi';
+
+  @override
+  String get commentCopyLink => 'Sao chép liên kết tới bình luận';
+
+  @override
+  String get commentCopyMarkdown => 'Sao chép dưới dạng Markdown';
+
+  @override
+  String get commentCopyThreadMarkdown => 'Sao chép chuỗi dưới dạng Markdown';
+
+  @override
+  String get commentCopyPrompt => 'Sao chép dưới dạng prompt';
+
+  @override
+  String get commentCopyThreadPrompt => 'Sao chép chuỗi dưới dạng prompt';
+
+  @override
+  String get commentSendToAgent => 'Gửi cho tác nhân';
+
+  @override
+  String get commentDelete => 'Xóa bình luận';
+
+  @override
+  String get commentEdit => 'Sửa bình luận';
+
+  @override
+  String get commentActions => 'Thao tác bình luận';
+
+  @override
+  String get commentDeleteTitle => 'Xóa bình luận này?';
+
+  @override
+  String get commentDeleteBody => 'Bình luận bị gỡ khỏi pull request.';
+
+  @override
+  String get commentSentToAgent => 'Đã gửi cho tác nhân';
+
+  @override
+  String get commentSendFailed => 'Không gửi được bình luận này cho tác nhân';
+
+  @override
+  String get commentDeleteFailed => 'Không xóa được bình luận này';
+
+  @override
   String get autonomyDialLabel => 'Tự chủ';
 
   @override
@@ -14708,4 +14822,38 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get forgeConnectionsThisWorkspace =>
       'Đăng nhập hoặc dán mã thông báo cho không gian làm việc này.';
+
+  @override
+  String get stackStartNextPart => 'Bắt đầu phần tiếp theo';
+
+  @override
+  String get stackPartNameTitle => 'Tên phần';
+
+  @override
+  String get stackPartNameHint => 'vd. migration';
+
+  @override
+  String get stackPublish => 'Xuất bản ngăn xếp';
+
+  @override
+  String get stackCurrentPart => 'Hiện tại';
+
+  @override
+  String get stackSwitchDirty =>
+      'Hãy commit hoặc hủy thay đổi trước khi chuyển phần';
+
+  @override
+  String get stackCutFailed => 'Không bắt đầu được phần tiếp theo';
+
+  @override
+  String get stackPublishFailed => 'Không xuất bản được ngăn xếp';
+
+  @override
+  String get stackPublished => 'Đã xuất bản ngăn xếp dưới dạng bản nháp';
+
+  @override
+  String get stackOpenPullRequest => 'Mở pull request';
+
+  @override
+  String get stackSection => 'Ngăn xếp';
 }

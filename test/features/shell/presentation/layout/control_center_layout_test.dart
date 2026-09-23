@@ -105,9 +105,11 @@ void main() {
     tester.takeException();
     await tester.pump(const Duration(milliseconds: 200));
 
-    // The primary sidebar should render with its top-level items.
+    // The primary sidebar should render with its top-level items. Workspace
+    // destinations have no section header.
     expect(find.byType(AppSidebar), findsOneWidget);
     expect(find.text('Inbox'), findsWidgets);
+    expect(find.text('WORKSPACE'), findsNothing);
     expect(find.text('SPACES'), findsOneWidget);
   });
 

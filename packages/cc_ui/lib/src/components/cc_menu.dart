@@ -26,8 +26,10 @@ import 'package:pointer_interceptor/pointer_interceptor.dart';
 /// [destructive] last, after a [CcMenuItem.divider].
 ///
 /// [selected]: leading check; reserve check gutter for the whole column when any
-/// sibling is selectable. [trailing]: only for a bound shortcut. [searchText]:
-/// extra match terms (e.g. words lifted into a [CcMenuItem.section] heading).
+/// sibling is selectable. [trailing]: only for a bound shortcut.
+/// [trailingChild]: a short status chip in that same slot, used instead of
+/// [trailing]. [searchText]: extra match terms (e.g. words lifted into a
+/// [CcMenuItem.section] heading).
 /// [CcMenuItem.submenu]: one nesting level max; omit shared parent terms from
 /// child labels; only in [showCcMenuAt], not flat [CcMenu].
 @immutable
@@ -39,6 +41,7 @@ class CcMenuItem {
     this.icon,
     this.leading,
     this.trailing,
+    this.trailingChild,
     this.searchText,
     this.selected = false,
     this.destructive = false,
@@ -57,6 +60,7 @@ class CcMenuItem {
     this.enabled = true,
   }) : onSelected = _noop,
        trailing = null,
+       trailingChild = null,
        selected = false,
        destructive = false,
        isDivider = false,
@@ -70,6 +74,7 @@ class CcMenuItem {
       icon = null,
       leading = null,
       trailing = null,
+      trailingChild = null,
       searchText = null,
       selected = false,
       destructive = false,
@@ -94,6 +99,7 @@ class CcMenuItem {
       icon = null,
       leading = null,
       trailing = null,
+      trailingChild = null,
       searchText = null,
       selected = false,
       destructive = false,
@@ -122,6 +128,9 @@ class CcMenuItem {
 
   /// Optional right-aligned keyboard-shortcut hint (e.g. `⌘W`). Purely visual.
   final String? trailing;
+
+  /// Optional right-aligned status chip. Drawn instead of [trailing].
+  final Widget? trailingChild;
 
   /// Extra words a searchable menu matches this row on, never rendered
   /// (synonyms, or a term its section heading lifted out of the label).
@@ -1347,7 +1356,10 @@ class _CcMenuRow extends StatelessWidget {
                     style: CcTypography.bodySm.copyWith(color: color),
                   ),
                 ),
-                if (item.trailing != null) ...[
+                if (item.trailingChild != null) ...[
+                  AppSpacing.hGapMd,
+                  item.trailingChild!,
+                ] else if (item.trailing != null) ...[
                   AppSpacing.hGapMd,
                   Text(
                     item.trailing!,

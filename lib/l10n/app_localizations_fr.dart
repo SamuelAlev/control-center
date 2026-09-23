@@ -2586,6 +2586,17 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agent => 'Agent';
 
   @override
+  String conversationCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count conversations',
+      one: '1 conversation',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String agentCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -3608,6 +3619,34 @@ class AppLocalizationsFr extends AppLocalizations {
       one: 'il y a 1 heure',
     );
     return '$_temp0';
+  }
+
+  @override
+  String get sidebarAgeNow => 'maintenant';
+
+  @override
+  String sidebarAgeMinutes(int count) {
+    return '$count min';
+  }
+
+  @override
+  String sidebarAgeHours(int count) {
+    return '$count h';
+  }
+
+  @override
+  String sidebarAgeDays(int count) {
+    return '$count j';
+  }
+
+  @override
+  String sidebarAgeMonths(int count) {
+    return '$count mois';
+  }
+
+  @override
+  String sidebarAgeYears(int count) {
+    return '$count an';
   }
 
   @override
@@ -9832,6 +9871,82 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get reactionThumbsUp => 'Pouce vers le haut';
+
+  @override
+  String get reactionThumbsDown => 'Pouce vers le bas';
+
+  @override
+  String get reactionLaugh => 'Rire';
+
+  @override
+  String get reactionHooray => 'Hourra';
+
+  @override
+  String get reactionConfused => 'Confus';
+
+  @override
+  String get reactionHeart => 'Cœur';
+
+  @override
+  String get reactionRocket => 'Fusée';
+
+  @override
+  String get reactionEyes => 'Yeux';
+
+  @override
+  String get commentReact => 'Réagir';
+
+  @override
+  String get commentResolveThread => 'Résoudre le fil';
+
+  @override
+  String get commentReopenThread => 'Rouvrir le fil';
+
+  @override
+  String get commentCopyLink => 'Copier le lien du commentaire';
+
+  @override
+  String get commentCopyMarkdown => 'Copier en Markdown';
+
+  @override
+  String get commentCopyThreadMarkdown => 'Copier le fil en Markdown';
+
+  @override
+  String get commentCopyPrompt => 'Copier comme prompt';
+
+  @override
+  String get commentCopyThreadPrompt => 'Copier le fil comme prompt';
+
+  @override
+  String get commentSendToAgent => 'Envoyer à l\'agent';
+
+  @override
+  String get commentDelete => 'Supprimer le commentaire';
+
+  @override
+  String get commentEdit => 'Modifier le commentaire';
+
+  @override
+  String get commentActions => 'Actions du commentaire';
+
+  @override
+  String get commentDeleteTitle => 'Supprimer ce commentaire ?';
+
+  @override
+  String get commentDeleteBody => 'Il est retiré de la pull request.';
+
+  @override
+  String get commentSentToAgent => 'Envoyé à l\'agent';
+
+  @override
+  String get commentSendFailed =>
+      'Impossible d\'envoyer ce commentaire à un agent';
+
+  @override
+  String get commentDeleteFailed => 'Impossible de supprimer ce commentaire';
+
+  @override
   String get autonomyDialLabel => 'Autonomie';
 
   @override
@@ -14861,6 +14976,40 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get forgeConnectionsThisWorkspace =>
       'Connectez-vous ou collez un jeton pour cet espace de travail.';
+
+  @override
+  String get stackStartNextPart => 'Commencer la partie suivante';
+
+  @override
+  String get stackPartNameTitle => 'Nom de la partie';
+
+  @override
+  String get stackPartNameHint => 'p. ex. migration';
+
+  @override
+  String get stackPublish => 'Publier la pile';
+
+  @override
+  String get stackCurrentPart => 'Actuelle';
+
+  @override
+  String get stackSwitchDirty =>
+      'Validez ou abandonnez les changements avant de changer de partie';
+
+  @override
+  String get stackCutFailed => 'Impossible de commencer la partie suivante';
+
+  @override
+  String get stackPublishFailed => 'Impossible de publier la pile';
+
+  @override
+  String get stackPublished => 'La pile a été publiée en brouillons';
+
+  @override
+  String get stackOpenPullRequest => 'Ouvrir la pull request';
+
+  @override
+  String get stackSection => 'Pile';
 }
 
 /// The translations for French, as used in Canada (`fr_CA`).

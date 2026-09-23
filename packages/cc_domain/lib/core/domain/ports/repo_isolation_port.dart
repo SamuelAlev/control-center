@@ -48,11 +48,12 @@ abstract interface class RepoIsolationPort {
 
   /// Destroys a previously provisioned worktree. For the rift backend this
   /// trashes + gc's the copy; for the worktree backend it removes the worktree
-  /// and deletes [branch] from the source.
+  /// and deletes [branch] plus every name in [branches] from the source.
   Future<void> destroy({
     required String path,
     required String sourcePath,
     required RepoIsolationBackend backend,
     String? branch,
+    List<String> branches = const [],
   });
 }

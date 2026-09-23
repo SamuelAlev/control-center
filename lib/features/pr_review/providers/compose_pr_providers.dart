@@ -7,6 +7,7 @@ import 'package:cc_domain/features/pr_review/domain/entities/pr_reviewer.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_user.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/di/providers.dart';
+import 'package:control_center/features/messaging/providers/space_stack_provider.dart';
 import 'package:control_center/features/messaging/providers/worktree_file_ops_provider.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_scope.dart';
@@ -166,6 +167,7 @@ class ComposePrState {
   /// Creates a [ComposePrState].
   const ComposePrState({
     this.base = '',
+    this.baseFromUser = false,
     this.head = '',
     this.title = '',
     this.body = '',
@@ -178,6 +180,11 @@ class ComposePrState {
 
   /// Base branch the PR will merge into.
   final String base;
+
+  /// True once the person picked a base. An automatic fill only writes while
+  /// this is false, so a stacked layer's parent can replace the repo default
+  /// and a later choice sticks.
+  final bool baseFromUser;
 
   /// Head branch carrying the changes.
   final String head;
@@ -216,6 +223,7 @@ class ComposePrState {
   /// a stale error.
   ComposePrState copyWith({
     String? base,
+    bool? baseFromUser,
     String? head,
     String? title,
     String? body,
@@ -228,6 +236,7 @@ class ComposePrState {
   }) {
     return ComposePrState(
       base: base ?? this.base,
+      baseFromUser: baseFromUser ?? this.baseFromUser,
       head: head ?? this.head,
       title: title ?? this.title,
       body: body ?? this.body,
@@ -245,20 +254,19 @@ class ComposePrNotifier extends Notifier<ComposePrState> {
   @override
   ComposePrState build() => const ComposePrState();
 
-  /// Clears the staged base/head branches. Called when the active repo changes:
-  /// the previously-staged branches belong to the old repo and don't exist on
-  /// the new one, so comparing or opening a PR against them would fail (and the
-  /// branch pickers would hold a value absent from their replaced item list).
-  /// The base re-defaults to the new repo's default branch via the screen's
-  /// [defaultBranchProvider] listener once it resolves.
+  /// Clears the staged base/head branches. Called when the active repo changes.
+  /// The base re-defaults through the screen's listeners once they resolve.
   void resetBranches() {
-    if (state.base.isNotEmpty || state.head.isNotEmpty) {
-      state = state.copyWith(base: '', head: '');
+    if (state.base.isNotEmpty || state.head.isNotEmpty || state.baseFromUser) {
+      state = state.copyWith(base: '', baseFromUser: false, head: '');
     }
   }
 
-  /// Sets the base branch.
-  void setBase(String branch) => state = state.copyWith(base: branch);
+  /// Sets the base branch. [fromUser] is false for the automatic fills.
+  void setBase(String branch, {bool fromUser = true}) => state = state.copyWith(
+    base: branch,
+    baseFromUser: fromUser,
+  );
 
   /// Sets the head branch.
   void setHead(String branch) => state = state.copyWith(head: branch);
@@ -402,3 +410,27 @@ final composePrProvider =
     NotifierProvider.autoDispose<ComposePrNotifier, ComposePrState>(
       ComposePrNotifier.new,
     );
+
+/// The parent branch of the checked-out stack layer, when that layer is not
+/// the bottom of the stack. Empty otherwise, so a single-branch space keeps
+/// the repo default as its compose base.
+final stackParentBaseProvider = FutureProvider.autoDispose
+    .family<String, String>((ref, spaceId) async {
+      if (spaceId.isEmpty) {
+        return '';
+      }
+      final layers = await ref.watch(spaceStackProvider(spaceId).future);
+      final head = await ref.watch(worktreeBranchProvider(spaceId).future);
+      final repo = ref.watch(activeRepoProvider);
+      if (head == null || head.isEmpty || repo == null) {
+        return '';
+      }
+      for (final layer in layers) {
+        if (layer.repoId == repo.id &&
+            layer.branch == head &&
+            layer.position > 0) {
+          return layer.baseBranch;
+        }
+      }
+      return '';
+    });

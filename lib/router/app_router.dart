@@ -329,6 +329,11 @@ final routerProvider = Provider<GoRouter>((ref) {
                         pendingCommentId: int.tryParse(
                           state.uri.queryParameters['comment'] ?? '',
                         ),
+                        // `?commits=sha,sha` scopes the diff. Absent means the
+                        // whole pull request.
+                        scopedCommits: prCommitsFromQuery(
+                          state.uri.queryParameters,
+                        ),
                       ),
                     ),
                   );

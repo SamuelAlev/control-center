@@ -41,11 +41,11 @@ lib/features/messaging/presentation/widgets/bubbles/agent_turn.dart  560
 lib/features/messaging/presentation/widgets/bubbles/focusable_bubble.dart  453
 lib/features/messaging/presentation/widgets/bubbles/transcript_flow.dart  515
 lib/features/messaging/presentation/widgets/bubbles/transcript_segment_row.dart  426
-lib/features/messaging/presentation/widgets/conversations_sidebar_section.dart  847
+lib/features/messaging/presentation/widgets/conversations_sidebar_section.dart  619
 lib/features/messaging/presentation/widgets/message_feed.dart  352
 lib/features/messaging/presentation/widgets/space_header.dart  605
 lib/features/messaging/presentation/widgets/space_row_adornments.dart  400
-lib/features/messaging/presentation/widgets/space_sidebar_item.dart  606
+lib/features/messaging/presentation/widgets/space_sidebar_item.dart  371
 lib/features/newsfeed/presentation/screens/article_webview_screen.dart  430
 lib/features/newsfeed/presentation/settings/newsfeed_feeds_section.dart  495
 lib/features/newsfeed/presentation/widgets/adblocker_webview.dart  474

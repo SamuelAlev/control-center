@@ -5,7 +5,10 @@ import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_v
 import 'package:control_center/features/pr_review/providers/diff_view_settings_provider.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/markdown/styled_markdown_body.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -93,6 +96,70 @@ void main() {
       expect(toggledPath, 'lib/test.dart');
       expect(toggledViewed, isTrue);
       expect(find.byIcon(AppIcons.chevronUp), findsOneWidget);
+    });
+
+    testWidgets('cmd or ctrl while hovering an empty patch does not throw', (
+      tester,
+    ) async {
+      // A rename, binary, or mode-only file parses to an empty structure.
+      // cellAt still reports line 0, and the global goto handler used to
+      // index that line when a selection chord arrived with the pointer
+      // resting on the diff. The shared controller is what lets the hover
+      // overlay attach in this harness: the view reads the primary
+      // controller from inside the scrollable, which hides one the scroll
+      // view itself adopted.
+      final controller = ScrollController();
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            codeFontFamilyProvider.overrideWithValue('Fira Code'),
+            diffOverflowModeProvider.overrideWith(DiffOverflowModeNotifier.new),
+          ],
+          child: testWrap(
+            PrimaryScrollController(
+              controller: controller,
+              child: CustomScrollView(
+                controller: controller,
+                primary: false,
+                slivers: [
+                  UnifiedDiffView(
+                    files: [
+                      _testFile(
+                        filename: 'lib/renamed.dart',
+                        status: PrFileStatus.renamed,
+                        patch: '',
+                        additions: 0,
+                        deletions: 0,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final center = tester.getCenter(find.byType(CustomScrollView));
+      final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await gesture.addPointer(location: center);
+      addTearDown(gesture.removePointer);
+      await gesture.moveTo(center + const Offset(8, 4));
+      await tester.pump();
+
+      final modifier = defaultTargetPlatform == TargetPlatform.macOS
+          ? LogicalKeyboardKey.metaLeft
+          : LogicalKeyboardKey.controlLeft;
+      await tester.sendKeyDownEvent(modifier);
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.keyA);
+      await tester.pump();
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.keyA);
+      await tester.sendKeyUpEvent(modifier);
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
     });
 
     testWidgets('dependency lockfiles start collapsed', (tester) async {

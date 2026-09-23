@@ -252,6 +252,8 @@ class DemoProfile {
     'conversation.rename',
     'conversation.archive',
     'space_read.markSpaceRead',
+    'stack.cut',
+    'stack.checkout',
     'notes.update',
     'reactions.toggle',
     'blob.put',
@@ -439,6 +441,8 @@ class DemoProfile {
     'pr_review.closePullRequest',
     'pr_review.updatePullRequest',
     'pr_review.updateIssueComment',
+    'pr_review.deleteIssueComment',
+    'pr_review.deleteReviewComment',
     'pr_review.setPullRequestDraft',
     'pr_review.publishReview',
     'pr_review.commentFindings',
@@ -456,6 +460,10 @@ class DemoProfile {
     // demo seeds its review spaces directly, so the verb is unnecessary here
     // and provisioning is a path a public visitor should not be able to start.
     'pr.ensureSpace',
+    // Pushes every layer and opens a pull request per part. Forbidden by
+    // class as well (gitPush, prCreate); named here so the lockdown ratchet
+    // sees the decision. The client toasts the refusal.
+    'stack.publish',
     // Process control on the host.
     'agents.killProcesses',
     // Pipeline execution. A visitor can otherwise upsert a template whose

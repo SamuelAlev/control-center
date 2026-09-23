@@ -4512,6 +4512,12 @@ abstract class AppLocalizations {
   /// **'Agent'**
   String get agent;
 
+  /// Sidebar label for how many conversations a space holds
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 conversation} other{{count} conversations}}'**
+  String conversationCount(int count);
+
   /// Agent count label
   ///
   /// In en, this message translates to:
@@ -6257,6 +6263,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 hour ago} other{{count} hours ago}}'**
   String hoursAgo(int count);
+
+  /// Compact sidebar age: under a minute
+  ///
+  /// In en, this message translates to:
+  /// **'now'**
+  String get sidebarAgeNow;
+
+  /// Compact sidebar age in minutes
+  ///
+  /// In en, this message translates to:
+  /// **'{count}m'**
+  String sidebarAgeMinutes(int count);
+
+  /// Compact sidebar age in hours
+  ///
+  /// In en, this message translates to:
+  /// **'{count}h'**
+  String sidebarAgeHours(int count);
+
+  /// Compact sidebar age in days
+  ///
+  /// In en, this message translates to:
+  /// **'{count}d'**
+  String sidebarAgeDays(int count);
+
+  /// Compact sidebar age in months
+  ///
+  /// In en, this message translates to:
+  /// **'{count}mo'**
+  String sidebarAgeMonths(int count);
+
+  /// Compact sidebar age in years
+  ///
+  /// In en, this message translates to:
+  /// **'{count}y'**
+  String sidebarAgeYears(int count);
 
   /// No description provided for @images.
   ///
@@ -16811,6 +16853,156 @@ abstract class AppLocalizations {
   /// **'React with {emoji}'**
   String reactionToggleTooltip(String emoji);
 
+  /// No description provided for @reactionThumbsUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Thumbs up'**
+  String get reactionThumbsUp;
+
+  /// No description provided for @reactionThumbsDown.
+  ///
+  /// In en, this message translates to:
+  /// **'Thumbs down'**
+  String get reactionThumbsDown;
+
+  /// No description provided for @reactionLaugh.
+  ///
+  /// In en, this message translates to:
+  /// **'Laugh'**
+  String get reactionLaugh;
+
+  /// No description provided for @reactionHooray.
+  ///
+  /// In en, this message translates to:
+  /// **'Hooray'**
+  String get reactionHooray;
+
+  /// No description provided for @reactionConfused.
+  ///
+  /// In en, this message translates to:
+  /// **'Confused'**
+  String get reactionConfused;
+
+  /// No description provided for @reactionHeart.
+  ///
+  /// In en, this message translates to:
+  /// **'Heart'**
+  String get reactionHeart;
+
+  /// No description provided for @reactionRocket.
+  ///
+  /// In en, this message translates to:
+  /// **'Rocket'**
+  String get reactionRocket;
+
+  /// No description provided for @reactionEyes.
+  ///
+  /// In en, this message translates to:
+  /// **'Eyes'**
+  String get reactionEyes;
+
+  /// No description provided for @commentReact.
+  ///
+  /// In en, this message translates to:
+  /// **'React'**
+  String get commentReact;
+
+  /// No description provided for @commentResolveThread.
+  ///
+  /// In en, this message translates to:
+  /// **'Resolve thread'**
+  String get commentResolveThread;
+
+  /// No description provided for @commentReopenThread.
+  ///
+  /// In en, this message translates to:
+  /// **'Reopen thread'**
+  String get commentReopenThread;
+
+  /// No description provided for @commentCopyLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy link to comment'**
+  String get commentCopyLink;
+
+  /// No description provided for @commentCopyMarkdown.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy as Markdown'**
+  String get commentCopyMarkdown;
+
+  /// No description provided for @commentCopyThreadMarkdown.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy thread as Markdown'**
+  String get commentCopyThreadMarkdown;
+
+  /// No description provided for @commentCopyPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy as prompt'**
+  String get commentCopyPrompt;
+
+  /// No description provided for @commentCopyThreadPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy thread as prompt'**
+  String get commentCopyThreadPrompt;
+
+  /// No description provided for @commentSendToAgent.
+  ///
+  /// In en, this message translates to:
+  /// **'Send to agent'**
+  String get commentSendToAgent;
+
+  /// No description provided for @commentDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete comment'**
+  String get commentDelete;
+
+  /// No description provided for @commentEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit comment'**
+  String get commentEdit;
+
+  /// No description provided for @commentActions.
+  ///
+  /// In en, this message translates to:
+  /// **'Comment actions'**
+  String get commentActions;
+
+  /// No description provided for @commentDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this comment?'**
+  String get commentDeleteTitle;
+
+  /// No description provided for @commentDeleteBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This removes it from the pull request.'**
+  String get commentDeleteBody;
+
+  /// No description provided for @commentSentToAgent.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent to the agent'**
+  String get commentSentToAgent;
+
+  /// No description provided for @commentSendFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t send this comment to an agent'**
+  String get commentSendFailed;
+
+  /// No description provided for @commentDeleteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t delete this comment'**
+  String get commentDeleteFailed;
+
   /// No description provided for @autonomyDialLabel.
   ///
   /// In en, this message translates to:
@@ -24993,6 +25185,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sign in or paste a token for this workspace.'**
   String get forgeConnectionsThisWorkspace;
+
+  /// Menu item that cuts the next branch in this space's stack
+  ///
+  /// In en, this message translates to:
+  /// **'Start next part'**
+  String get stackStartNextPart;
+
+  /// Title of the dialog that names the next stack part
+  ///
+  /// In en, this message translates to:
+  /// **'Part name'**
+  String get stackPartNameTitle;
+
+  /// Example part name
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. migration'**
+  String get stackPartNameHint;
+
+  /// Button that pushes the stack and opens its pull requests
+  ///
+  /// In en, this message translates to:
+  /// **'Publish stack'**
+  String get stackPublish;
+
+  /// Marker on the stack layer that is checked out
+  ///
+  /// In en, this message translates to:
+  /// **'Current'**
+  String get stackCurrentPart;
+
+  /// Shown when a stack move is refused because the checkout is dirty
+  ///
+  /// In en, this message translates to:
+  /// **'Commit or discard changes before switching parts'**
+  String get stackSwitchDirty;
+
+  /// Toast when cutting a stack part fails
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t start the next part'**
+  String get stackCutFailed;
+
+  /// Toast when publishing a stack fails
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t publish the stack'**
+  String get stackPublishFailed;
+
+  /// Toast when the stack's pull requests were opened
+  ///
+  /// In en, this message translates to:
+  /// **'Published the stack as drafts'**
+  String get stackPublished;
+
+  /// Menu item that opens a stack layer's pull request
+  ///
+  /// In en, this message translates to:
+  /// **'Open pull request'**
+  String get stackOpenPullRequest;
+
+  /// Section heading for the layers of a branch stack
+  ///
+  /// In en, this message translates to:
+  /// **'Stack'**
+  String get stackSection;
 }
 
 class _AppLocalizationsDelegate

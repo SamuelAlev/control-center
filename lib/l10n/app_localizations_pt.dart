@@ -2586,6 +2586,17 @@ class AppLocalizationsPt extends AppLocalizations {
   String get agent => 'Agente';
 
   @override
+  String conversationCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count conversas',
+      one: '1 conversa',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String agentCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -3605,6 +3616,34 @@ class AppLocalizationsPt extends AppLocalizations {
       one: 'há 1 hora',
     );
     return '$_temp0';
+  }
+
+  @override
+  String get sidebarAgeNow => 'agora';
+
+  @override
+  String sidebarAgeMinutes(int count) {
+    return '$count min';
+  }
+
+  @override
+  String sidebarAgeHours(int count) {
+    return '$count h';
+  }
+
+  @override
+  String sidebarAgeDays(int count) {
+    return '$count d';
+  }
+
+  @override
+  String sidebarAgeMonths(int count) {
+    return '$count mês';
+  }
+
+  @override
+  String sidebarAgeYears(int count) {
+    return '$count a';
   }
 
   @override
@@ -9801,6 +9840,82 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String get reactionThumbsUp => 'Polegar para cima';
+
+  @override
+  String get reactionThumbsDown => 'Polegar para baixo';
+
+  @override
+  String get reactionLaugh => 'Riso';
+
+  @override
+  String get reactionHooray => 'Viva';
+
+  @override
+  String get reactionConfused => 'Confuso';
+
+  @override
+  String get reactionHeart => 'Coração';
+
+  @override
+  String get reactionRocket => 'Foguete';
+
+  @override
+  String get reactionEyes => 'Olhos';
+
+  @override
+  String get commentReact => 'Reagir';
+
+  @override
+  String get commentResolveThread => 'Resolver fio';
+
+  @override
+  String get commentReopenThread => 'Reabrir fio';
+
+  @override
+  String get commentCopyLink => 'Copiar link do comentário';
+
+  @override
+  String get commentCopyMarkdown => 'Copiar como Markdown';
+
+  @override
+  String get commentCopyThreadMarkdown => 'Copiar fio como Markdown';
+
+  @override
+  String get commentCopyPrompt => 'Copiar como prompt';
+
+  @override
+  String get commentCopyThreadPrompt => 'Copiar fio como prompt';
+
+  @override
+  String get commentSendToAgent => 'Enviar ao agente';
+
+  @override
+  String get commentDelete => 'Excluir comentário';
+
+  @override
+  String get commentEdit => 'Editar comentário';
+
+  @override
+  String get commentActions => 'Ações do comentário';
+
+  @override
+  String get commentDeleteTitle => 'Excluir este comentário?';
+
+  @override
+  String get commentDeleteBody => 'Ele é removido do pull request.';
+
+  @override
+  String get commentSentToAgent => 'Enviado ao agente';
+
+  @override
+  String get commentSendFailed =>
+      'Não foi possível enviar este comentário a um agente';
+
+  @override
+  String get commentDeleteFailed => 'Não foi possível excluir este comentário';
+
+  @override
   String get autonomyDialLabel => 'Autonomia';
 
   @override
@@ -14812,6 +14927,40 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get forgeConnectionsThisWorkspace =>
       'Entre ou cole um token para este espaço de trabalho.';
+
+  @override
+  String get stackStartNextPart => 'Começar a parte seguinte';
+
+  @override
+  String get stackPartNameTitle => 'Nome da parte';
+
+  @override
+  String get stackPartNameHint => 'ex.: migração';
+
+  @override
+  String get stackPublish => 'Publicar a pilha';
+
+  @override
+  String get stackCurrentPart => 'Atual';
+
+  @override
+  String get stackSwitchDirty =>
+      'Faça commit ou descarte as alterações antes de mudar de parte';
+
+  @override
+  String get stackCutFailed => 'Não foi possível começar a parte seguinte';
+
+  @override
+  String get stackPublishFailed => 'Não foi possível publicar a pilha';
+
+  @override
+  String get stackPublished => 'A pilha foi publicada como rascunhos';
+
+  @override
+  String get stackOpenPullRequest => 'Abrir pull request';
+
+  @override
+  String get stackSection => 'Pilha';
 }
 
 /// The translations for Portuguese, as used in Portugal (`pt_PT`).

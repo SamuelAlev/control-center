@@ -28,13 +28,17 @@ PullRequest _openPr() {
   );
 }
 
-Future<void> _pump(WidgetTester tester, {required List<Override> overrides}) {
+Future<void> _pump(
+  WidgetTester tester, {
+  required List<Override> overrides,
+  Widget? absent,
+}) {
   return tester.pumpWidget(
     ProviderScope(
       overrides: overrides,
       child: CcTheme(
         data: CcThemeData.light(),
-        child: const MaterialApp(
+        child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
@@ -42,6 +46,7 @@ Future<void> _pump(WidgetTester tester, {required List<Override> overrides}) {
               spaceId: 'space-1',
               running: false,
               selected: false,
+              absent: absent,
             ),
           ),
         ),
@@ -92,5 +97,51 @@ void main() {
     expect(find.byIcon(AppIcons.pencil), findsOneWidget);
     expect(find.byIcon(AppIcons.gitPullRequest), findsNothing);
     expect(find.text('1'), findsNothing);
+  });
+
+  testWidgets('an absent mark replaces the pencil when the space has no PR', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      absent: const Text('empty'),
+      overrides: [
+        spacePrsProvider('space-1').overrideWithValue(const []),
+        spaceBranchPullRequestsProvider(
+          'space-1',
+        ).overrideWith((ref) async => const []),
+      ],
+    );
+    await tester.pump();
+
+    expect(find.text('empty'), findsOneWidget);
+    expect(find.byIcon(AppIcons.pencil), findsNothing);
+  });
+
+  testWidgets('an open PR still badges the row when an absent mark is set', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      absent: const Text('empty'),
+      overrides: [
+        spacePrsProvider('space-1').overrideWithValue(const []),
+        spaceBranchPullRequestsProvider('space-1').overrideWith(
+          (ref) async => [
+            (
+              repoId: 'repo-1',
+              repoFullName: 'control-center/control-center',
+              branch: 'space/6b2256bb',
+              pr: _openPr(),
+            ),
+          ],
+        ),
+      ],
+    );
+    await tester.pump();
+
+    expect(find.byIcon(AppIcons.gitPullRequest), findsOneWidget);
+    expect(find.text('1'), findsOneWidget);
+    expect(find.text('empty'), findsNothing);
   });
 }

@@ -2595,6 +2595,19 @@ class AppLocalizationsUk extends AppLocalizations {
   String get agent => 'Агент';
 
   @override
+  String conversationCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count розмови',
+      many: '$count розмов',
+      few: '$count розмови',
+      one: '$count розмова',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String agentCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -3616,6 +3629,34 @@ class AppLocalizationsUk extends AppLocalizations {
       one: '$count годину тому',
     );
     return '$_temp0';
+  }
+
+  @override
+  String get sidebarAgeNow => 'зараз';
+
+  @override
+  String sidebarAgeMinutes(int count) {
+    return '$count хв';
+  }
+
+  @override
+  String sidebarAgeHours(int count) {
+    return '$count год';
+  }
+
+  @override
+  String sidebarAgeDays(int count) {
+    return '$count д';
+  }
+
+  @override
+  String sidebarAgeMonths(int count) {
+    return '$count міс.';
+  }
+
+  @override
+  String sidebarAgeYears(int count) {
+    return '$count р';
   }
 
   @override
@@ -9858,6 +9899,81 @@ class AppLocalizationsUk extends AppLocalizations {
   }
 
   @override
+  String get reactionThumbsUp => 'Палець вгору';
+
+  @override
+  String get reactionThumbsDown => 'Палець вниз';
+
+  @override
+  String get reactionLaugh => 'Сміх';
+
+  @override
+  String get reactionHooray => 'Ура';
+
+  @override
+  String get reactionConfused => 'Збентеження';
+
+  @override
+  String get reactionHeart => 'Серце';
+
+  @override
+  String get reactionRocket => 'Ракета';
+
+  @override
+  String get reactionEyes => 'Очі';
+
+  @override
+  String get commentReact => 'Відреагувати';
+
+  @override
+  String get commentResolveThread => 'Вирішити гілку';
+
+  @override
+  String get commentReopenThread => 'Відкрити гілку знову';
+
+  @override
+  String get commentCopyLink => 'Копіювати посилання на коментар';
+
+  @override
+  String get commentCopyMarkdown => 'Копіювати як Markdown';
+
+  @override
+  String get commentCopyThreadMarkdown => 'Копіювати гілку як Markdown';
+
+  @override
+  String get commentCopyPrompt => 'Копіювати як промпт';
+
+  @override
+  String get commentCopyThreadPrompt => 'Копіювати гілку як промпт';
+
+  @override
+  String get commentSendToAgent => 'Надіслати агенту';
+
+  @override
+  String get commentDelete => 'Видалити коментар';
+
+  @override
+  String get commentEdit => 'Редагувати коментар';
+
+  @override
+  String get commentActions => 'Дії з коментарем';
+
+  @override
+  String get commentDeleteTitle => 'Видалити цей коментар?';
+
+  @override
+  String get commentDeleteBody => 'Його буде прибрано з pull request.';
+
+  @override
+  String get commentSentToAgent => 'Надіслано агенту';
+
+  @override
+  String get commentSendFailed => 'Не вдалося надіслати цей коментар агенту';
+
+  @override
+  String get commentDeleteFailed => 'Не вдалося видалити цей коментар';
+
+  @override
   String get autonomyDialLabel => 'Автономність';
 
   @override
@@ -14924,4 +15040,38 @@ class AppLocalizationsUk extends AppLocalizations {
   @override
   String get forgeConnectionsThisWorkspace =>
       'Увійдіть або вставте токен для цього простору.';
+
+  @override
+  String get stackStartNextPart => 'Почати наступну частину';
+
+  @override
+  String get stackPartNameTitle => 'Назва частини';
+
+  @override
+  String get stackPartNameHint => 'напр. міграція';
+
+  @override
+  String get stackPublish => 'Опублікувати стек';
+
+  @override
+  String get stackCurrentPart => 'Поточна';
+
+  @override
+  String get stackSwitchDirty =>
+      'Зафіксуйте або скасуйте зміни перед перемиканням частин';
+
+  @override
+  String get stackCutFailed => 'Не вдалося почати наступну частину';
+
+  @override
+  String get stackPublishFailed => 'Не вдалося опублікувати стек';
+
+  @override
+  String get stackPublished => 'Стек опубліковано як чернетки';
+
+  @override
+  String get stackOpenPullRequest => 'Відкрити pull request';
+
+  @override
+  String get stackSection => 'Стек';
 }

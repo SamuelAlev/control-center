@@ -1,6 +1,8 @@
 import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/features/messaging/domain/entities/conversation.dart';
+import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_domain/features/messaging/domain/entities/space.dart';
+import 'package:cc_domain/features/messaging/domain/entities/space_participant.dart';
 import 'package:cc_domain/features/messaging/domain/ports/messaging_port.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/conversation_repository.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/conversation_status.dart';
@@ -8,9 +10,11 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/messaging/presentation/widgets/conversations_sidebar_section.dart';
+import 'package:control_center/features/messaging/presentation/widgets/space_sidebar_group.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_row_adornments.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_sidebar_item.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
+import 'package:control_center/features/messaging/providers/space_worktrees_provider.dart';
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
 import 'package:control_center/features/pr_review/providers/pr_space_provider.dart';
 import 'package:control_center/features/repos/providers/repo_providers.dart';
@@ -83,6 +87,9 @@ Repo _repo(String id, String fullName) => Repo(
 List<Override> _commonOverrides({
   required List<Space> spaces,
   Set<String> unreadSpaceIds = const {},
+  String? branch,
+  Map<String, List<SpaceParticipant>> participants = const {},
+  Map<String, List<PullRequest>> pullRequests = const {},
 }) => [
   activeWorkspaceIdProvider.overrideWith(_ActiveWorkspaceIdNotifier.new),
   workspaceVisibleSpacesProvider(_workspaceId).overrideWithValue(spaces),
@@ -91,9 +98,13 @@ List<Override> _commonOverrides({
   for (final c in spaces) ...[
     spaceStatusProvider(c.id).overrideWithValue(SpaceStatus.idle),
     spaceUnreadProvider(c.id).overrideWithValue(unreadSpaceIds.contains(c.id)),
-    spacePrsProvider(c.id).overrideWithValue(const []),
+    spacePrsProvider(c.id).overrideWithValue(pullRequests[c.id] ?? const []),
     spaceBranchPullRequestsProvider(c.id).overrideWith((ref) async => const []),
+    spaceParticipantsProvider(c.id).overrideWith(
+      (ref) => Stream.value(participants[c.id] ?? const <SpaceParticipant>[]),
+    ),
   ],
+  spaceSidebarBranchProvider.overrideWith((ref, _) async => branch),
 ];
 
 /// A space with two live conversations — the sidebar lists them under the
@@ -105,6 +116,9 @@ List<Override> _listedConversationOverrides({
     'g-1',
   ).overrideWith((ref) => Stream.value(_twoConversations)),
   spaceBusyConversationIdsProvider('g-1').overrideWithValue(const <String>{}),
+  spaceRunStartedAtProvider(
+    'g-1',
+  ).overrideWithValue(const <String, DateTime>{}),
   for (final c in _twoConversations)
     conversationUnreadProvider((
       spaceId: 'g-1',
@@ -132,8 +146,8 @@ GoRouter _router(String location) => GoRouter(
   ],
 );
 
-Widget _wrap(GoRouter router) => CcTheme(
-  data: CcThemeData.light(),
+Widget _wrap(GoRouter router, {bool reducedMotion = false}) => CcTheme(
+  data: CcThemeData.light(reducedMotion: reducedMotion),
   child: MaterialApp.router(
     routerConfig: router,
     localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -146,6 +160,17 @@ late AppPreferences prefs;
 Finder _overflowTrigger() => find.byWidgetPredicate(
   (widget) => widget is CcIcon && widget.icon == AppIcons.moreVertical,
 );
+
+double _spaceCardHeight(WidgetTester tester, String name) {
+  return tester
+      .getSize(
+        find.ancestor(
+          of: find.text(name),
+          matching: find.byType(SpaceSidebarGroup),
+        ),
+      )
+      .height;
+}
 
 /// Hovers [row] so its overflow trigger takes layout space, then opens the
 /// dropdown. Widget tests default to a touch pointer, so hover is a real
@@ -214,6 +239,132 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
     });
 
+    testWidgets('a space shows its checked-out branch under the name', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: _commonOverrides(
+            spaces: [_space],
+            branch: 'fix/checks-detail-link',
+          ),
+          child: _wrap(_router(spacesRoute(_workspaceId))),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('Dev Team'), findsOneWidget);
+      expect(find.text('fix/checks-detail-link'), findsOneWidget);
+      final branch = tester.getRect(find.text('fix/checks-detail-link'));
+      final row = tester.getRect(
+        find.ancestor(
+          of: find.text('fix/checks-detail-link'),
+          matching: find.byType(SpaceRow),
+        ),
+      );
+      expect(
+        row.top,
+        lessThanOrEqualTo(branch.top),
+        reason: 'The hover wash is the whole row, including the branch.',
+      );
+      expect(row.bottom, greaterThanOrEqualTo(branch.bottom));
+      await tester.pumpWidget(Container());
+      await tester.pump(const Duration(milliseconds: 100));
+    });
+
+    testWidgets('a closed space keeps the open panel vertical spacing', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: _commonOverrides(
+            spaces: [_space, _spaceB],
+            branch: 'conv/6b2256bb',
+          ),
+          child: _wrap(_router(spaceRoute(_workspaceId, 'g-2'))),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final groups = find.byType(SpaceSidebarGroup);
+      expect(groups, findsNWidgets(2));
+
+      double titleInset(int index, String name) {
+        final groupTop = tester.getTopLeft(groups.at(index)).dy;
+        final titleTop = tester
+            .getTopLeft(
+              find.descendant(of: groups.at(index), matching: find.text(name)),
+            )
+            .dy;
+        return titleTop - groupTop;
+      }
+
+      final closed = titleInset(0, 'Dev Team');
+      final open = titleInset(1, 'Ops');
+      expect(closed, open);
+      // Panel inset is [AppSpacing.sm], plus the two-line row's own air.
+      expect(closed, greaterThanOrEqualTo(AppSpacing.sm));
+      expect(closed, lessThan(AppSpacing.md));
+
+      // The inset is part of the row's box. A press paints that box, so it
+      // has to cover the card instead of sitting inside a second background.
+      for (var i = 0; i < 2; i++) {
+        final group = tester.getRect(groups.at(i));
+        final row = tester.getRect(
+          find.descendant(of: groups.at(i), matching: find.byType(SpaceRow)),
+        );
+        expect(row.top, group.top);
+        expect(row.bottom, group.bottom);
+        expect(row.left, group.left);
+        expect(row.right, group.right);
+      }
+
+      await tester.pumpWidget(Container());
+      await tester.pump(const Duration(milliseconds: 100));
+    });
+
+    testWidgets('a space with a pull request shows its icon and count', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: _commonOverrides(
+            spaces: [_space, _spaceB],
+            pullRequests: {
+              'g-1': [
+                PullRequest(
+                  id: 12,
+                  number: 12,
+                  title: 'Open',
+                  body: '',
+                  state: PrState.open,
+                  isDraft: false,
+                  author: null,
+                  createdAt: DateTime(2024),
+                  updatedAt: DateTime(2024),
+                  repoFullName: 'acme/web',
+                  htmlUrl: 'https://example.invalid/acme/web/pull/12',
+                  headRef: 'conv/fb49964',
+                  baseRef: 'main',
+                ),
+              ],
+            },
+          ),
+          child: _wrap(_router(spacesRoute(_workspaceId))),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.byIcon(AppIcons.gitPullRequest), findsOneWidget);
+      expect(find.text('1'), findsOneWidget);
+      expect(find.byType(SpaceStatusMark), findsOneWidget);
+      await tester.pumpWidget(Container());
+      await tester.pump(const Duration(milliseconds: 100));
+    });
+
     testWidgets('space rows share a travelling fluid hover wash', (
       tester,
     ) async {
@@ -269,26 +420,30 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
     });
 
-    testWidgets(
-      'spaces header archive, plus and chevron share even horizontal slots',
-      (tester) async {
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: _commonOverrides(spaces: const []),
-            child: _wrap(_router(spacesRoute(_workspaceId))),
-          ),
-        );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
+    testWidgets('spaces header has no collapse caret and stays open', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: _commonOverrides(spaces: const []),
+          child: _wrap(_router(spacesRoute(_workspaceId))),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
-        final archive = tester.getCenter(find.byIcon(AppIcons.archive));
-        final plus = tester.getCenter(find.byIcon(AppIcons.plus).first);
-        final chevron = tester.getCenter(find.byIcon(AppIcons.chevronDown));
-        expect(plus.dx - archive.dx, closeTo(chevron.dx - plus.dx, 1));
-        await tester.pumpWidget(Container());
-        await tester.pump(const Duration(milliseconds: 100));
-      },
-    );
+      expect(find.byIcon(AppIcons.archive), findsOneWidget);
+      expect(find.byIcon(AppIcons.plus), findsWidgets);
+      expect(find.byIcon(AppIcons.chevronDown), findsNothing);
+      expect(find.text('No spaces yet'), findsOneWidget);
+
+      await tester.tap(find.text('SPACES'));
+      await tester.pump();
+
+      expect(find.text('No spaces yet'), findsOneWidget);
+      await tester.pumpWidget(Container());
+      await tester.pump(const Duration(milliseconds: 100));
+    });
 
     testWidgets('selected space (from URL) still renders', (tester) async {
       await tester.pumpWidget(
@@ -691,17 +846,11 @@ void main() {
       await tester.pumpAndSettle();
     });
 
-    testWidgets('renaming a conversation from the menu renames it', (
-      tester,
-    ) async {
-      final conversations = _FakeConversationRepository();
-
+    testWidgets('a conversation row has no overflow menu', (tester) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
             ..._commonOverrides(spaces: [_space]),
-            messagingServiceProvider.overrideWithValue(_FakeMessagingPort()),
-            conversationRepositoryProvider.overrideWithValue(conversations),
             ..._listedConversationOverrides(),
           ],
           child: _wrap(_router(spaceRoute(_workspaceId, 'g-1'))),
@@ -710,40 +859,35 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      await _openOverflow(tester, find.text('Design review'));
-
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-      await tester.tap(find.text(l10n.renameConversation));
+      final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await mouse.addPointer(location: Offset.zero);
+      addTearDown(mouse.removePointer);
+      await mouse.moveTo(tester.getCenter(find.text('Design review')));
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
 
-      await tester.enterText(find.byType(CcTextField), 'Spec review');
-      await tester.tap(find.text(l10n.save));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      expect(conversations.renameCalls, [
-        (
-          workspaceId: _workspaceId,
-          conversationId: 'conv-2',
-          title: 'Spec review',
-        ),
-      ]);
+      expect(_overflowTrigger(), findsNothing);
+      expect(
+        tester
+            .getSize(
+              find.ancestor(
+                of: find.text('Design review'),
+                matching: find.byType(SpaceRow),
+              ),
+            )
+            .height,
+        kConversationRowExtent,
+      );
       await tester.pumpWidget(Container());
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
     });
 
-    testWidgets('conversation overflow archives the conversation', (
+    testWidgets('the conversation count collapses and expands conversations', (
       tester,
     ) async {
-      final conversations = _FakeConversationRepository();
-
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
             ..._commonOverrides(spaces: [_space]),
-            messagingServiceProvider.overrideWithValue(_FakeMessagingPort()),
-            conversationRepositoryProvider.overrideWithValue(conversations),
             ..._listedConversationOverrides(),
           ],
           child: _wrap(_router(spaceRoute(_workspaceId, 'g-1'))),
@@ -752,18 +896,420 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      await _openOverflow(tester, find.text('Design review'));
-
       final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-      await tester.tap(find.text(l10n.archiveConversation));
+      final label = l10n.conversationCount(2);
+      expect(find.text(label), findsOneWidget);
+      expect(find.text('Design review'), findsOneWidget);
+      final openHeight = _spaceCardHeight(tester, 'Dev Team');
+
+      await tester.tap(find.text(label));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 80));
+
+      // Still mounted while the card clips shut.
+      expect(find.text('Design review'), findsOneWidget);
+      final closingHeight = _spaceCardHeight(tester, 'Dev Team');
+      expect(closingHeight, lessThan(openHeight - 8));
+
+      await tester.pump(const Duration(milliseconds: 200));
+      await tester.pump();
+
+      expect(find.text('Design review'), findsNothing);
+      final closedHeight = _spaceCardHeight(tester, 'Dev Team');
+      expect(closingHeight, greaterThan(closedHeight + 8));
+
+      await tester.tap(find.text(label));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 80));
+
+      expect(find.text('Design review'), findsOneWidget);
+      final openingHeight = _spaceCardHeight(tester, 'Dev Team');
+      expect(openingHeight, greaterThan(closedHeight + 8));
+      expect(openingHeight, lessThan(openHeight - 8));
+
+      await tester.pump(const Duration(milliseconds: 200));
+      await tester.pump();
+
+      expect(find.text('Design review'), findsOneWidget);
+      expect(_spaceCardHeight(tester, 'Dev Team'), greaterThan(openingHeight));
+      await tester.pumpWidget(Container());
+      await tester.pump(const Duration(milliseconds: 100));
+    });
+
+    testWidgets('switching spaces shrinks one card and grows the other', (
+      tester,
+    ) async {
+      final opsThreads = [
+        Conversation(
+          id: 'conv-3',
+          workspaceId: _workspaceId,
+          spaceId: 'g-2',
+          title: 'Ops thread',
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+        ),
+        Conversation(
+          id: 'conv-4',
+          workspaceId: _workspaceId,
+          spaceId: 'g-2',
+          title: 'Ops review',
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+        ),
+      ];
+      final router = _router(spaceRoute(_workspaceId, 'g-1'));
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            ..._commonOverrides(spaces: [_space, _spaceB]),
+            ..._listedConversationOverrides(),
+            spaceConversationsProvider(
+              'g-2',
+            ).overrideWith((ref) => Stream.value(opsThreads)),
+            spaceBusyConversationIdsProvider(
+              'g-2',
+            ).overrideWithValue(const <String>{}),
+            spaceRunStartedAtProvider(
+              'g-2',
+            ).overrideWithValue(const <String, DateTime>{}),
+            for (final c in opsThreads)
+              conversationUnreadProvider((
+                spaceId: 'g-2',
+                conversationId: c.id,
+              )).overrideWithValue(false),
+          ],
+          child: _wrap(router),
+        ),
+      );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(conversations.statusCalls, [
-        (workspaceId: _workspaceId, conversationId: 'conv-2'),
-      ]);
+      final devOpen = _spaceCardHeight(tester, 'Dev Team');
+      final opsClosed = _spaceCardHeight(tester, 'Ops');
+      expect(devOpen, greaterThan(opsClosed + 8));
+
+      await tester.tap(find.text('Ops'));
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 70));
+
+      final devMid = _spaceCardHeight(tester, 'Dev Team');
+      final opsMid = _spaceCardHeight(tester, 'Ops');
+      expect(devMid, lessThan(devOpen - 8));
+      expect(devMid, greaterThan(opsClosed));
+      expect(opsMid, greaterThan(opsClosed + 8));
+      expect(find.text('Design review'), findsOneWidget);
+      expect(find.text('Ops review'), findsOneWidget);
+
+      await tester.pump(const Duration(milliseconds: 250));
+      await tester.pump();
+
+      expect(find.text('Design review'), findsNothing);
+      expect(find.text('Ops review'), findsOneWidget);
+      expect(_spaceCardHeight(tester, 'Dev Team'), lessThan(devMid - 8));
+      expect(_spaceCardHeight(tester, 'Ops'), greaterThan(opsMid + 8));
+      expect(
+        router.routerDelegate.currentConfiguration.uri.toString(),
+        spaceRoute(_workspaceId, 'g-2'),
+      );
       await tester.pumpWidget(Container());
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
+    });
+
+    testWidgets('reduced motion snaps both cards when switching spaces', (
+      tester,
+    ) async {
+      final opsThreads = [
+        Conversation(
+          id: 'conv-3',
+          workspaceId: _workspaceId,
+          spaceId: 'g-2',
+          title: 'Ops thread',
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+        ),
+        Conversation(
+          id: 'conv-4',
+          workspaceId: _workspaceId,
+          spaceId: 'g-2',
+          title: 'Ops review',
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+        ),
+      ];
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            ..._commonOverrides(spaces: [_space, _spaceB]),
+            ..._listedConversationOverrides(),
+            spaceConversationsProvider(
+              'g-2',
+            ).overrideWith((ref) => Stream.value(opsThreads)),
+            spaceBusyConversationIdsProvider(
+              'g-2',
+            ).overrideWithValue(const <String>{}),
+            spaceRunStartedAtProvider(
+              'g-2',
+            ).overrideWithValue(const <String, DateTime>{}),
+            for (final c in opsThreads)
+              conversationUnreadProvider((
+                spaceId: 'g-2',
+                conversationId: c.id,
+              )).overrideWithValue(false),
+          ],
+          child: _wrap(
+            _router(spaceRoute(_workspaceId, 'g-1')),
+            reducedMotion: true,
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await tester.tap(find.text('Ops'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('Design review'), findsNothing);
+      expect(find.text('Ops review'), findsOneWidget);
+
+      // The title row's own inset still eases. The conversation panel must
+      // already be at its snapped height, so nothing moves after that.
+      await tester.pump(const Duration(milliseconds: 80));
+      final dev = _spaceCardHeight(tester, 'Dev Team');
+      final ops = _spaceCardHeight(tester, 'Ops');
+      expect(ops, greaterThan(dev));
+
+      await tester.pump(const Duration(milliseconds: 240));
+      expect(_spaceCardHeight(tester, 'Dev Team'), dev);
+      expect(_spaceCardHeight(tester, 'Ops'), ops);
+      await tester.pumpWidget(Container());
+      await tester.pump(const Duration(milliseconds: 100));
+    });
+
+    testWidgets('reduced motion mid-flight drops the closing conversations', (
+      tester,
+    ) async {
+      final opsThreads = [
+        Conversation(
+          id: 'conv-3',
+          workspaceId: _workspaceId,
+          spaceId: 'g-2',
+          title: 'Ops thread',
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+        ),
+        Conversation(
+          id: 'conv-4',
+          workspaceId: _workspaceId,
+          spaceId: 'g-2',
+          title: 'Ops review',
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+        ),
+      ];
+      final router = _router(spaceRoute(_workspaceId, 'g-1'));
+      var reducedMotion = false;
+      Widget host() => ProviderScope(
+        overrides: [
+          ..._commonOverrides(spaces: [_space, _spaceB]),
+          ..._listedConversationOverrides(),
+          spaceConversationsProvider(
+            'g-2',
+          ).overrideWith((ref) => Stream.value(opsThreads)),
+          spaceBusyConversationIdsProvider(
+            'g-2',
+          ).overrideWithValue(const <String>{}),
+          spaceRunStartedAtProvider(
+            'g-2',
+          ).overrideWithValue(const <String, DateTime>{}),
+          for (final c in opsThreads)
+            conversationUnreadProvider((
+              spaceId: 'g-2',
+              conversationId: c.id,
+            )).overrideWithValue(false),
+        ],
+        child: _wrap(router, reducedMotion: reducedMotion),
+      );
+
+      await tester.pumpWidget(host());
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await tester.tap(find.text('Ops'));
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 40));
+      expect(find.text('Design review'), findsOneWidget);
+
+      reducedMotion = true;
+      await tester.pumpWidget(host());
+      await tester.pump();
+
+      expect(find.text('Design review'), findsNothing);
+      expect(find.text('Ops review'), findsOneWidget);
+      await tester.pumpWidget(Container());
+      await tester.pump(const Duration(milliseconds: 100));
+    });
+
+    testWidgets('tapping a conversation opens the space', (tester) async {
+      final router = _router(
+        spaceRoute(_workspaceId, 'g-1', tab: 'chat:conv-2'),
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            ..._commonOverrides(spaces: [_space]),
+            ..._listedConversationOverrides(),
+          ],
+          child: _wrap(router),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await tester.tap(find.text('Design review'));
+      await tester.pump();
+      await tester.pump();
+
+      final uri = router.routeInformationProvider.value.uri;
+      expect(uri.path, '/workspaces/$_workspaceId/spaces/g-1');
+      expect(uri.queryParameters.containsKey('tab'), isFalse);
+      await tester.pumpWidget(Container());
+      await tester.pump(const Duration(milliseconds: 100));
+    });
+
+    testWidgets('an inactive space hides its conversations and count', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            ..._commonOverrides(spaces: [_space, _spaceB]),
+            ..._listedConversationOverrides(),
+          ],
+          child: _wrap(_router(spaceRoute(_workspaceId, 'g-2'))),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      expect(find.text('Dev Team'), findsOneWidget);
+      expect(find.text(l10n.conversationCount(2)), findsNothing);
+      expect(find.text('Design review'), findsNothing);
+      expect(find.text('Main thread'), findsNothing);
+      await tester.pumpWidget(Container());
+      await tester.pump(const Duration(milliseconds: 100));
+    });
+
+    testWidgets('one conversation adds no count label when the space opens', (
+      tester,
+    ) async {
+      final now = DateTime(2024);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            ..._commonOverrides(spaces: [_space]),
+            spaceConversationsProvider('g-1').overrideWith(
+              (ref) => Stream.value([
+                Conversation(
+                  id: 'conv-1',
+                  workspaceId: _workspaceId,
+                  spaceId: 'g-1',
+                  title: 'Main thread',
+                  createdAt: now,
+                  updatedAt: now,
+                ),
+              ]),
+            ),
+          ],
+          child: _wrap(_router(spaceRoute(_workspaceId, 'g-1'))),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      expect(find.text('Dev Team'), findsOneWidget);
+      expect(find.text(l10n.conversationCount(1)), findsNothing);
+      expect(find.text('Main thread'), findsNothing);
+      await tester.pumpWidget(Container());
+      await tester.pump(const Duration(milliseconds: 100));
+    });
+
+    testWidgets('a running conversation shows how long the run has lasted', (
+      tester,
+    ) async {
+      final now = DateTime.now();
+      final conversations = [
+        Conversation(
+          id: 'conv-1',
+          workspaceId: _workspaceId,
+          spaceId: 'g-1',
+          title: 'Main thread',
+          createdAt: now,
+          updatedAt: now.subtract(const Duration(hours: 8)),
+        ),
+        Conversation(
+          id: 'conv-2',
+          workspaceId: _workspaceId,
+          spaceId: 'g-1',
+          title: 'Design review',
+          createdAt: now,
+          updatedAt: now.subtract(const Duration(hours: 8)),
+        ),
+      ];
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            ..._commonOverrides(spaces: [_space]),
+            spaceConversationsProvider(
+              'g-1',
+            ).overrideWith((ref) => Stream.value(conversations)),
+            spaceBusyConversationIdsProvider(
+              'g-1',
+            ).overrideWithValue(const <String>{}),
+            spaceRunStartedAtProvider('g-1').overrideWithValue({
+              'conv-2': now.subtract(const Duration(hours: 6)),
+            }),
+            for (final c in conversations)
+              conversationUnreadProvider((
+                spaceId: 'g-1',
+                conversationId: c.id,
+              )).overrideWithValue(false),
+          ],
+          child: _wrap(_router(spaceRoute(_workspaceId, 'g-1'))),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      expect(find.text(l10n.sidebarAgeHours(6)), findsOneWidget);
+      expect(find.text(l10n.sidebarAgeHours(8)), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.ancestor(
+            of: find.text('Design review'),
+            matching: find.byType(SpaceRow),
+          ),
+          matching: find.byType(CcSpinner),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.ancestor(
+            of: find.text('Main thread'),
+            matching: find.byType(SpaceRow),
+          ),
+          matching: find.byType(SpaceStatusMark),
+        ),
+        findsOneWidget,
+      );
+      await tester.pumpWidget(Container());
+      await tester.pump(const Duration(milliseconds: 100));
     });
 
     testWidgets(
@@ -781,17 +1327,30 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        Finder indicatorOn(String label) => find.descendant(
+        Finder trailingOn(String label) => find.descendant(
           of: find.ancestor(
             of: find.text(label),
             matching: find.byType(SpaceRow),
           ),
           matching: find.byType(SpaceTrailingIndicator),
         );
+        Finder markOn(String label, Type type) => find.descendant(
+          of: find.ancestor(
+            of: find.text(label),
+            matching: find.byType(SpaceRow),
+          ),
+          matching: find.byType(type),
+        );
 
-        expect(indicatorOn('Dev Team'), findsNothing);
-        expect(indicatorOn('Main thread'), findsOneWidget);
-        expect(indicatorOn('Design review'), findsNothing);
+        expect(trailingOn('Dev Team'), findsNothing);
+        expect(trailingOn('Main thread'), findsNothing);
+        expect(markOn('Main thread', ConversationUnreadMark), findsOneWidget);
+        expect(markOn('Design review', ConversationUnreadMark), findsNothing);
+        expect(markOn('Design review', SpaceStatusMark), findsOneWidget);
+        expect(
+          tester.widget<Text>(find.text('Main thread')).style?.fontSize,
+          kConversationLabelFontSize,
+        );
         await tester.pumpWidget(Container());
         await tester.pumpAndSettle();
       },

@@ -2591,6 +2591,17 @@ class AppLocalizationsIt extends AppLocalizations {
   String get agent => 'Agente';
 
   @override
+  String conversationCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count conversazioni',
+      one: '1 conversazione',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String agentCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -3616,6 +3627,34 @@ class AppLocalizationsIt extends AppLocalizations {
       one: '1 ora fa',
     );
     return '$_temp0';
+  }
+
+  @override
+  String get sidebarAgeNow => 'ora';
+
+  @override
+  String sidebarAgeMinutes(int count) {
+    return '$count min';
+  }
+
+  @override
+  String sidebarAgeHours(int count) {
+    return '$count h';
+  }
+
+  @override
+  String sidebarAgeDays(int count) {
+    return '$count g';
+  }
+
+  @override
+  String sidebarAgeMonths(int count) {
+    return '$count mesi';
+  }
+
+  @override
+  String sidebarAgeYears(int count) {
+    return '$count a';
   }
 
   @override
@@ -9824,6 +9863,82 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String get reactionThumbsUp => 'Pollice in su';
+
+  @override
+  String get reactionThumbsDown => 'Pollice in giù';
+
+  @override
+  String get reactionLaugh => 'Risata';
+
+  @override
+  String get reactionHooray => 'Evviva';
+
+  @override
+  String get reactionConfused => 'Confuso';
+
+  @override
+  String get reactionHeart => 'Cuore';
+
+  @override
+  String get reactionRocket => 'Razzo';
+
+  @override
+  String get reactionEyes => 'Occhi';
+
+  @override
+  String get commentReact => 'Reagisci';
+
+  @override
+  String get commentResolveThread => 'Risolvi il thread';
+
+  @override
+  String get commentReopenThread => 'Riapri il thread';
+
+  @override
+  String get commentCopyLink => 'Copia link al commento';
+
+  @override
+  String get commentCopyMarkdown => 'Copia come Markdown';
+
+  @override
+  String get commentCopyThreadMarkdown => 'Copia il thread come Markdown';
+
+  @override
+  String get commentCopyPrompt => 'Copia come prompt';
+
+  @override
+  String get commentCopyThreadPrompt => 'Copia il thread come prompt';
+
+  @override
+  String get commentSendToAgent => 'Invia all\'agente';
+
+  @override
+  String get commentDelete => 'Elimina commento';
+
+  @override
+  String get commentEdit => 'Modifica commento';
+
+  @override
+  String get commentActions => 'Azioni del commento';
+
+  @override
+  String get commentDeleteTitle => 'Eliminare questo commento?';
+
+  @override
+  String get commentDeleteBody => 'Viene rimosso dalla pull request.';
+
+  @override
+  String get commentSentToAgent => 'Inviato all\'agente';
+
+  @override
+  String get commentSendFailed =>
+      'Impossibile inviare questo commento a un agente';
+
+  @override
+  String get commentDeleteFailed => 'Impossibile eliminare questo commento';
+
+  @override
   String get autonomyDialLabel => 'Autonomia';
 
   @override
@@ -14832,4 +14947,38 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get forgeConnectionsThisWorkspace =>
       'Accedi o incolla un token per questo spazio di lavoro.';
+
+  @override
+  String get stackStartNextPart => 'Inizia la parte successiva';
+
+  @override
+  String get stackPartNameTitle => 'Nome della parte';
+
+  @override
+  String get stackPartNameHint => 'es. migrazione';
+
+  @override
+  String get stackPublish => 'Pubblica lo stack';
+
+  @override
+  String get stackCurrentPart => 'Attuale';
+
+  @override
+  String get stackSwitchDirty =>
+      'Esegui il commit o annulla le modifiche prima di cambiare parte';
+
+  @override
+  String get stackCutFailed => 'Impossibile iniziare la parte successiva';
+
+  @override
+  String get stackPublishFailed => 'Impossibile pubblicare lo stack';
+
+  @override
+  String get stackPublished => 'Lo stack è stato pubblicato come bozze';
+
+  @override
+  String get stackOpenPullRequest => 'Apri la pull request';
+
+  @override
+  String get stackSection => 'Stack';
 }

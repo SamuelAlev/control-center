@@ -18,6 +18,7 @@ import 'package:control_center/features/messaging/providers/messaging_providers.
 import 'package:control_center/features/messaging/providers/repo_changes_provider.dart';
 import 'package:control_center/features/messaging/providers/repo_directory_listing_provider.dart';
 import 'package:control_center/features/messaging/providers/repo_file_content_provider.dart';
+import 'package:control_center/features/messaging/providers/space_stack_provider.dart';
 import 'package:control_center/features/messaging/providers/space_worktrees_provider.dart';
 import 'package:control_center/features/messaging/providers/worktree_file_ops_provider.dart';
 import 'package:control_center/features/pr_review/providers/ide_providers.dart';
@@ -579,6 +580,95 @@ class _RepoSectionState extends ConsumerState<_RepoSection>
     );
   }
 
+  Future<void> _refreshStack() async {
+    ref.invalidate(spaceStackProvider(widget.spaceId));
+    ref.invalidate(
+      spaceWorktreesProvider((
+        workspaceId: widget.workspaceId,
+        spaceId: widget.spaceId,
+      )),
+    );
+  }
+
+  Future<void> _startNextPart(String name) async {
+    setState(() => _busy = true);
+    final l10n = AppLocalizations.of(context);
+    final result = await cutStackLayer(
+      ref.read(rpcClientProvider),
+      workspaceId: widget.workspaceId,
+      spaceId: widget.spaceId,
+      repoId: widget.repo.id,
+      name: name,
+    );
+    await _refreshStack();
+    if (!mounted) {
+      return;
+    }
+    setState(() => _busy = false);
+    if (result.ok) {
+      _refresh();
+      return;
+    }
+    CcToastScope.maybeOf(context)?.show(
+      result.dirty
+          ? l10n.stackSwitchDirty
+          : (result.error ?? l10n.stackCutFailed),
+      variant: CcToastVariant.danger,
+    );
+  }
+
+  Future<void> _checkoutLayer(SpaceStackLayer layer) async {
+    if (layer.current) {
+      return;
+    }
+    setState(() => _busy = true);
+    final l10n = AppLocalizations.of(context);
+    final result = await checkoutStackLayer(
+      ref.read(rpcClientProvider),
+      workspaceId: widget.workspaceId,
+      spaceId: widget.spaceId,
+      repoId: widget.repo.id,
+      branch: layer.branch,
+    );
+    await _refreshStack();
+    if (!mounted) {
+      return;
+    }
+    setState(() => _busy = false);
+    if (result.ok) {
+      _refresh();
+      return;
+    }
+    CcToastScope.maybeOf(context)?.show(
+      result.dirty ? l10n.stackSwitchDirty : l10n.stackCutFailed,
+      variant: CcToastVariant.danger,
+    );
+  }
+
+  Future<void> _publishStack() async {
+    setState(() => _busy = true);
+    final l10n = AppLocalizations.of(context);
+    final result = await publishStack(
+      ref.read(rpcClientProvider),
+      workspaceId: widget.workspaceId,
+      spaceId: widget.spaceId,
+      repoId: widget.repo.id,
+    );
+    ref.invalidate(spaceStackProvider(widget.spaceId));
+    if (!mounted) {
+      return;
+    }
+    setState(() => _busy = false);
+    CcToastScope.maybeOf(context)?.show(
+      result.ok
+          ? l10n.stackPublished
+          : result.dirty
+          ? l10n.stackSwitchDirty
+          : l10n.stackPublishFailed,
+      variant: result.ok ? CcToastVariant.success : CcToastVariant.danger,
+    );
+  }
+
   Future<void> _checkout(WorktreeCheckoutRequest request) async {
     final l10n = AppLocalizations.of(context);
     setState(() => _busy = true);
@@ -710,6 +800,12 @@ class _RepoSectionState extends ConsumerState<_RepoSection>
     final unstaged = changes.unstaged;
     final total = staged.length + unstaged.length;
     final loading = async.isLoading && async.value == null;
+    final stackLayers = [
+      for (final layer
+          in ref.watch(spaceStackProvider(widget.spaceId)).value ??
+              const <SpaceStackLayer>[])
+        if (layer.repoId == widget.repo.id) layer,
+    ];
 
     _syncPolling(active: !_collapsed && TickerMode.valuesOf(context).enabled);
 
@@ -747,6 +843,7 @@ class _RepoSectionState extends ConsumerState<_RepoSection>
               ScmBranchMenu(
                 branch: widget.branch,
                 enabled: !_busy,
+                layers: stackLayers,
                 load: () => listWorktreeBranches(
                   ref.read(rpcClientProvider),
                   workspaceId: widget.workspaceId,
@@ -754,6 +851,9 @@ class _RepoSectionState extends ConsumerState<_RepoSection>
                   repoId: widget.repo.id,
                 ),
                 onCheckout: _checkout,
+                onStartNextPart: _startNextPart,
+                onCheckoutLayer: _checkoutLayer,
+                onPublishStack: stackLayers.length >= 2 ? _publishStack : null,
               ),
               if (syncLabel != null) ...[
                 const SizedBox(width: 4),
@@ -870,6 +970,27 @@ class _RepoSectionState extends ConsumerState<_RepoSection>
               // A clean, published branch can still be a pull request: the
               // commits are ahead of the default branch, not of this branch's
               // own upstream.
+              if (stackLayers.length >= 2)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.sm,
+                    AppSpacing.xs,
+                    AppSpacing.sm,
+                    0,
+                  ),
+                  child: CcButton(
+                    onPressed: _busy
+                        ? null
+                        : () {
+                            unawaited(_publishStack());
+                          },
+                    icon: AppIcons.gitPullRequestCreate,
+                    size: CcButtonSize.sm,
+                    variant: CcButtonVariant.line,
+                    fullWidth: true,
+                    child: Text(l10n.stackPublish),
+                  ),
+                ),
               if (_canProposePullRequest(changes, total, existingPr != null))
                 Padding(
                   padding: const EdgeInsets.fromLTRB(

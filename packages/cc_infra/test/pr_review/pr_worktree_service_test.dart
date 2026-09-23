@@ -98,6 +98,7 @@ class _FakeIsolation implements RepoIsolationPort {
     required String sourcePath,
     required RepoIsolationBackend backend,
     String? branch,
+    List<String> branches = const [],
   }) async {
     destroys.add((
       path: path,

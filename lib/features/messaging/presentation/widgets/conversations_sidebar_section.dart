@@ -2,21 +2,16 @@ import 'dart:async';
 
 import 'package:cc_domain/core/domain/entities/agent.dart';
 import 'package:cc_domain/core/domain/entities/repo.dart';
-import 'package:cc_domain/features/messaging/domain/entities/conversation.dart';
 import 'package:cc_domain/features/messaging/domain/entities/space.dart';
-import 'package:cc_domain/features/messaging/domain/value_objects/conversation_status.dart';
 import 'package:cc_ui/cc_ui.dart';
-import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/agents/providers/agent_providers.dart';
-import 'package:control_center/features/messaging/presentation/ide/editor/messaging_tab_kinds.dart';
-import 'package:control_center/features/messaging/presentation/utils/conversation_display_name.dart';
+import 'package:control_center/features/messaging/presentation/widgets/space_sidebar_group.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_sidebar_item.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/features/repos/providers/repo_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/router/routes.dart';
-import 'package:control_center/shared/editor/host/editor_tab_url_sync.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/utils/relative_time.dart';
 import 'package:flutter/widgets.dart';
@@ -68,6 +63,7 @@ class ConversationsSidebarSection extends ConsumerWidget {
       children: [
         _SidebarSection(
           label: l10n.spaces,
+          collapsible: false,
           action: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -95,11 +91,11 @@ class ConversationsSidebarSection extends ConsumerWidget {
               _EmptyHint(text: l10n.noSpacesYet)
             else
               for (final space in humanSpaces)
-                ..._spaceGroupChildren(
-                  context,
-                  ref,
+                SpaceSidebarGroup(
+                  key: ValueKey(space.id),
                   space: space,
                   routeSpaceId: routeSpaceId,
+                  onOpenSpace: () => _selectAndNavigate(context, ref, space.id),
                 ),
           ],
         ),
@@ -130,232 +126,14 @@ class ConversationsSidebarSection extends ConsumerWidget {
     // provider, keeping the URL the single source of truth.
     GoRouter.of(context).go(spaceRoute(context.currentWorkspaceId!, spaceId));
   }
-
-  /// Flattened [CcSidebarGroup] children for one space: the space row is a
-  /// [CcFluidHoverTarget] sibling of a [CcSidebarBranch] holding any
-  /// conversation rows. Expanded groups sit flush, and the branch is a hover
-  /// boundary so nested conversations keep their own wash. A wrapping
-  /// [Column] would make the whole folder one composite and the list would
-  /// lose travel between spaces.
-  List<Widget> _spaceGroupChildren(
-    BuildContext context,
-    WidgetRef ref, {
-    required Space space,
-    required String? routeSpaceId,
-  }) {
-    final selected = space.id == routeSpaceId;
-    final conversations =
-        ref.watch(spaceConversationsProvider(space.id)).value ??
-        const <Conversation>[];
-    final active = conversations
-        .where((c) => !c.isArchived)
-        .toList(growable: false);
-    final listed = active.length > 1;
-    final busyIds = listed
-        ? ref.watch(spaceBusyConversationIdsProvider(space.id))
-        : const <String>{};
-    final busyHere = listed && active.any((c) => busyIds.contains(c.id));
-    final unreadHere =
-        listed &&
-        active.any(
-          (c) => ref.watch(
-            conversationUnreadProvider((
-              spaceId: space.id,
-              conversationId: c.id,
-            )),
-          ),
-        );
-    void onPress() => _selectAndNavigate(context, ref, space.id);
-    final row = SpaceSidebarItem(
-      space: space,
-      selected: selected,
-      conversationCount: listed ? active.length : null,
-      runningShownOnConversations: busyHere,
-      unreadShownOnConversations: unreadHere,
-      onPress: onPress,
-    );
-    if (!listed) {
-      return [row];
-    }
-
-    final tabKey = selected
-        ? GoRouterState.of(context).uri.queryParameters[editorTabQueryParam]
-        : null;
-    final standingId = selected
-        ? ref.watch(standingConversationIdProvider(space.id)).value
-        : null;
-    bool focused(Conversation c) {
-      if (!selected) {
-        return false;
-      }
-      if (tabKey == null ||
-          tabKey == MessagingTabKinds.chatSpaceTabKey(space.id)) {
-        return c.id == standingId;
-      }
-      return tabKey == MessagingTabKinds.chatTabKey(c.id);
-    }
-
-    return [
-      row,
-      CcSidebarBranch(
-        children: [
-          for (final c in active)
-            _ConversationRow(
-              key: ValueKey(c.id),
-              conversation: c,
-              spaceId: space.id,
-              selected: focused(c),
-              running: busyIds.contains(c.id),
-              canArchive: active.length > 1,
-              onPress: () => GoRouter.of(context).go(
-                spaceRoute(
-                  context.currentWorkspaceId!,
-                  space.id,
-                  tab: MessagingTabKinds.chatTabKey(c.id),
-                ),
-              ),
-            ),
-        ],
-      ),
-    ];
-  }
 }
 
-/// One conversation beneath its space in the global sidebar.
+/// A labelled sidebar section: a branded mono-eyebrow header carrying a
+/// trailing [action], above its [children].
 ///
-/// Built on [SpaceRow] rather than [CcSidebarItem] for one reason: the leading
-/// slot has to hold a SPINNER while this conversation's agent is working, and
-/// [CcSidebarItem] takes an `IconData`, not a widget. [SpaceRow] reproduces the
-/// same look and already handles the rail-mode/width-transition behaviour a
-/// hand-rolled row would get subtly wrong. Implements [CcFluidHoverTarget] so
-/// the enclosing [CcSidebarBranch] can wash the row.
-class _ConversationRow extends ConsumerWidget implements CcFluidHoverTarget {
-  const _ConversationRow({
-    super.key,
-    required this.conversation,
-    required this.spaceId,
-    required this.selected,
-    required this.running,
-    required this.canArchive,
-    required this.onPress,
-  });
-
-  final Conversation conversation;
-  final String spaceId;
-  final bool selected;
-
-  /// Whether an agent run is in flight in THIS conversation.
-  final bool running;
-
-  /// Whether archiving is offered — false for a space's last active
-  /// conversation, which must stay.
-  final bool canArchive;
-
-  final VoidCallback onPress;
-
-  @override
-  bool get fluidHoverEnabled => true;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context);
-    final t = context.designSystem ?? DesignSystemTokens.light();
-    // Indent and tree rail are owned by the enclosing [CcSidebarBranch].
-    return SpaceRow(
-      leading: running
-          // The default accent spinner would vanish into the selected row's
-          // solid brand fill, so it follows the row's content colour.
-          ? CcSpinner(size: 18, color: selected ? t.accentOn : null)
-          : Icon(
-              conversation.isThread
-                  ? AppIcons.gitBranch
-                  : AppIcons.messageSquareText,
-              size: 18,
-            ),
-      label: conversationDisplayName(conversation, l10n),
-      selected: selected,
-      status: running ? SpaceStatus.running : SpaceStatus.idle,
-      // Unread is attributed to THIS conversation when the space lists its
-      // children. The parent space suppresses its own dot in that case so
-      // one unseen reply does not light both rows.
-      unread: ref.watch(
-        conversationUnreadProvider((
-          spaceId: spaceId,
-          conversationId: conversation.id,
-        )),
-      ),
-      leadingHandlesRunning: true,
-      onPress: onPress,
-      menuSemanticLabel: l10n.conversationActions,
-      menuItems: [
-        CcMenuItem(
-          label: l10n.renameConversation,
-          icon: AppIcons.pencil,
-          onSelected: () => unawaited(_rename(context, ref)),
-        ),
-        CcMenuItem(
-          label: l10n.archiveConversation,
-          icon: AppIcons.archive,
-          enabled: canArchive,
-          onSelected: () => unawaited(_archive(context, ref)),
-        ),
-      ],
-    );
-  }
-
-  /// Renames the conversation (the row follows the live watch; the id — and
-  /// so any open tab — never changes).
-  Future<void> _rename(BuildContext context, WidgetRef ref) async {
-    final workspaceId = context.currentWorkspaceId;
-    if (workspaceId == null) {
-      return;
-    }
-    final name = await showRenameDialog(
-      context,
-      title: AppLocalizations.of(context).renameConversation,
-      initialValue: conversation.title,
-    );
-    if (name == null || !context.mounted) {
-      return;
-    }
-    await ref
-        .read(conversationRepositoryProvider)
-        .rename(
-          workspaceId: workspaceId,
-          conversationId: conversation.id,
-          title: name,
-        );
-  }
-
-  Future<void> _archive(BuildContext context, WidgetRef ref) async {
-    if (!canArchive) {
-      return;
-    }
-    final workspaceId = context.currentWorkspaceId;
-    if (workspaceId == null) {
-      return;
-    }
-    await ref
-        .read(conversationRepositoryProvider)
-        .setStatus(
-          workspaceId: workspaceId,
-          conversationId: conversation.id,
-          status: ConversationStatus.archived,
-        );
-    // The row leaves on its own — `spaceConversationsProvider` is a live watch
-    // and every list here filters to active. Navigation only needs handling
-    // when the archived conversation is the one on screen: leaving `?tab=`
-    // pointing at it would hold a tab open for a conversation the sidebar has
-    // already dropped.
-    if (context.mounted && selected) {
-      GoRouter.of(context).go(spaceRoute(workspaceId, spaceId));
-    }
-  }
-}
-
-/// A labelled, collapsible sidebar section: a branded mono-eyebrow header whose
-/// label + rotating chevron toggle the section, carrying a trailing [action]
-/// button, above its [children].
+/// When [collapsible], the label and a rotating chevron toggle the section
+/// (the agent-peer list starts collapsed). Spaces stay open: no caret, and
+/// the label does not toggle.
 ///
 /// [CcSidebarGroup] renders the same eyebrow + chevron treatment when
 /// `collapsible`, but has no slot for a trailing action, so the header is
@@ -366,12 +144,17 @@ class _SidebarSection extends StatefulWidget {
     required this.label,
     required this.children,
     this.action,
+    this.collapsible = true,
     this.initiallyExpanded = true,
   });
 
   final String label;
   final Widget? action;
   final List<Widget> children;
+
+  /// Whether the header caret and label hide [children].
+  final bool collapsible;
+
   final bool initiallyExpanded;
 
   @override
@@ -386,7 +169,17 @@ class _SidebarSectionState extends State<_SidebarSection> {
   @override
   Widget build(BuildContext context) {
     final color = context.designSystem?.textTertiary;
-    final expanded = _expanded;
+    final expanded = !widget.collapsible || _expanded;
+    final labelStyle = CcFonts.code(
+      textStyle: CcTypography.label,
+      family: context.ccTheme?.monoFontFamily,
+    ).copyWith(color: color);
+    final labelText = Text(
+      widget.label.toUpperCase(),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: labelStyle,
+    );
     // No vertical padding of its own: this section is the whole scrolling body
     // of the sidebar, so its edges meet the hairlines above and below, each of
     // which already carries [AppSpacing.xs]. Its own air on top of that read as
@@ -414,24 +207,18 @@ class _SidebarSectionState extends State<_SidebarSection> {
                   padding: const EdgeInsetsDirectional.only(start: 10),
                   child: Row(
                     children: [
-                      // The label is tappable to toggle (a wide hit
-                      // target), with the `+` action and the disclosure
-                      // chevron trailing — in that order (`LABEL  +  ⌄`).
+                      // A collapsible section's label is a wide hit target
+                      // for the toggle. Spaces is not: the label is text,
+                      // and the trailing action sits beside it with no caret.
                       Expanded(
-                        child: CcTappable(
-                          onPressed: _toggle,
-                          borderRadius: AppRadii.brSm,
-                          semanticLabel: widget.label,
-                          builder: (context, states) => Text(
-                            widget.label.toUpperCase(),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: CcFonts.code(
-                              textStyle: CcTypography.label,
-                              family: context.ccTheme?.monoFontFamily,
-                            ).copyWith(color: color),
-                          ),
-                        ),
+                        child: widget.collapsible
+                            ? CcTappable(
+                                onPressed: _toggle,
+                                borderRadius: AppRadii.brSm,
+                                semanticLabel: widget.label,
+                                builder: (context, states) => labelText,
+                              )
+                            : labelText,
                       ),
                       // While transitioning the trailing widgets leave the
                       // layout too (the faded header keeps only its
@@ -439,7 +226,7 @@ class _SidebarSectionState extends State<_SidebarSection> {
                       // fixed-width and would overflow the narrowing row.
                       if (widget.action != null && !transitioning)
                         widget.action!,
-                      if (!transitioning)
+                      if (widget.collapsible && !transitioning)
                         _SectionChevron(
                           expanded: expanded,
                           onToggle: _toggle,
@@ -452,14 +239,19 @@ class _SidebarSectionState extends State<_SidebarSection> {
             );
           },
         ),
-        AnimatedSize(
-          duration: CcMotion.resolve(context, CcMotion.normal),
-          curve: CcMotion.standard,
-          alignment: Alignment.topCenter,
-          child: expanded
-              ? CcSidebarGroup(children: widget.children)
-              : const SizedBox(width: double.infinity, height: 0),
-        ),
+        // Collapsible sections animate their body. Spaces stay open: an
+        // AnimatedSize here restarts while a card inside is changing height.
+        if (widget.collapsible)
+          AnimatedSize(
+            duration: CcMotion.resolve(context, CcMotion.normal),
+            curve: CcMotion.standard,
+            alignment: Alignment.topCenter,
+            child: expanded
+                ? CcSidebarGroup(children: widget.children)
+                : const SizedBox(width: double.infinity, height: 0),
+          )
+        else
+          CcSidebarGroup(children: widget.children),
       ],
     );
   }
@@ -561,7 +353,6 @@ class _EmptyHint extends StatelessWidget {
     );
   }
 }
-
 
 class _SpaceSpec {
   const _SpaceSpec({

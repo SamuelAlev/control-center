@@ -986,5 +986,84 @@ CREATE TABLE conversation_goals (
       expect(changes.read<int>('n'), 1);
       expect(db.schemaVersion, WorkspaceDatabase.currentSchemaVersion);
     });
+
+    test('a fresh database carries the space stack table', () async {
+      final db = createTestDatabase();
+      addTearDown(db.close);
+
+      final rows = await db
+          .customSelect(
+            "SELECT name FROM sqlite_master WHERE type = 'table' "
+            "AND name = 'space_stack_entries'",
+          )
+          .get();
+      expect(rows.map((r) => r.data['name'] as String), ['space_stack_entries']);
+
+      final columns = await db
+          .customSelect("PRAGMA table_info('space_stack_entries')")
+          .get();
+      expect(
+        columns.map((r) => r.read<String>('name')),
+        containsAll(<String>[
+          'workspace_id',
+          'space_id',
+          'repo_id',
+          'position',
+          'branch',
+          'base_branch',
+          'pr_number',
+          'pr_external_id',
+          'rewritten',
+        ]),
+      );
+
+      final createSql = await db
+          .customSelect(
+            "SELECT sql FROM sqlite_master WHERE type = 'table' "
+            "AND name = 'space_stack_entries'",
+          )
+          .getSingle();
+      final sql = createSql.read<String>('sql');
+      expect(sql, contains('UNIQUE'));
+      // space_id stays a plain column: teardown reads the branch names after
+      // the space row is gone, which a cascade would erase first.
+      expect(sql, isNot(contains('REFERENCES spaces')));
+    });
+
+    test('an existing v13 database is migrated to carry space stacks', () async {
+      final dir = await Directory.systemTemp.createTemp('ws_stack_migration_');
+      addTearDown(() => dir.delete(recursive: true));
+      final file = File('${dir.path}/ws.db');
+
+      final setup = WorkspaceDatabase.forTesting(
+        NativeDatabase(file),
+        workspaceId: 'ws',
+      );
+      await setup.customStatement('DROP TABLE space_stack_entries');
+      await setup.customStatement('PRAGMA user_version = 13');
+      await setup.close();
+
+      final db = WorkspaceDatabase.forTesting(
+        NativeDatabase(file),
+        workspaceId: 'ws',
+      );
+      addTearDown(db.close);
+
+      final rows = await db
+          .customSelect(
+            "SELECT name FROM sqlite_master WHERE type = 'table' "
+            "AND name = 'space_stack_entries'",
+          )
+          .get();
+      expect(rows, isNotEmpty);
+      final index = await db
+          .customSelect(
+            "SELECT name FROM sqlite_master WHERE type = 'index' "
+            "AND name = 'idx_space_stack_space'",
+          )
+          .get();
+      expect(index, isNotEmpty);
+      expect(db.schemaVersion, WorkspaceDatabase.currentSchemaVersion);
+    });
   });
 }

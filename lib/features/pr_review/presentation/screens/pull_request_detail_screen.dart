@@ -12,6 +12,7 @@ import 'package:control_center/features/messaging/presentation/ide/editor/browse
 import 'package:control_center/features/messaging/providers/code_server_session_provider.dart';
 import 'package:control_center/features/messaging/providers/editor_layout_cache_provider.dart';
 import 'package:control_center/features/pr_review/presentation/notifiers/pr_checks_ui_notifier.dart';
+import 'package:control_center/features/pr_review/presentation/notifiers/pr_diff_scope_notifier.dart';
 import 'package:control_center/features/pr_review/presentation/review_artifact/pr_review_artifact_tab.dart';
 import 'package:control_center/features/pr_review/presentation/screens/pull_request_detail/pr_chat_tab.dart';
 import 'package:control_center/features/pr_review/presentation/screens/pull_request_detail/pr_checks_tab.dart';
@@ -32,6 +33,7 @@ import 'package:control_center/features/pr_review/providers/pr_detail_polling_pr
 import 'package:control_center/features/pr_review/providers/pr_preview_deployments_provider.dart';
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
 import 'package:control_center/features/pr_review/providers/pr_space_provider.dart';
+import 'package:control_center/features/pr_review/providers/send_comment_to_agent.dart';
 import 'package:control_center/features/repos/providers/repo_providers.dart';
 import 'package:control_center/features/rigs/presentation/browser_engine_logo.dart';
 import 'package:control_center/features/rigs/presentation/rig_tab_audio_controls.dart';
@@ -55,6 +57,7 @@ import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/providers/last_checked_provider.dart';
 import 'package:control_center/shared/widgets/page_wrapper.dart';
 import 'package:control_center/shared/widgets/scoped_shortcuts.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -71,6 +74,7 @@ class PullRequestDetailScreen extends ConsumerStatefulWidget {
     required this.prNumber,
     this.focusedTabKey,
     this.pendingCommentId,
+    this.scopedCommits = const {},
   });
 
   /// Workspace from the route's `:workspaceId` — part of the PR's identity
@@ -93,6 +97,10 @@ class PullRequestDetailScreen extends ConsumerStatefulWidget {
   /// A comment to reveal on open, from the URL's `?comment=` param — the REST
   /// comment id a notification deep-linked to.
   final int? pendingCommentId;
+
+  /// Commits the diff is scoped to, from the URL's `?commits=` param.
+  /// Empty shows the whole pull request.
+  final Set<String> scopedCommits;
 
   @override
   ConsumerState<PullRequestDetailScreen> createState() =>
@@ -165,6 +173,7 @@ class _PullRequestDetailScreenState
           prRef: prRef,
           focusedTabKey: widget.focusedTabKey,
           pendingCommentId: widget.pendingCommentId,
+          scopedCommits: widget.scopedCommits,
         ),
       ),
     );
@@ -178,6 +187,7 @@ class _PrDetailBody extends ConsumerStatefulWidget {
     required this.prRef,
     this.focusedTabKey,
     this.pendingCommentId,
+    this.scopedCommits = const {},
   });
   final PullRequest pr;
   final PrRef prRef;
@@ -187,6 +197,9 @@ class _PrDetailBody extends ConsumerStatefulWidget {
 
   /// A comment to reveal on open, from the URL's `?comment=` param.
   final int? pendingCommentId;
+
+  /// Commits the diff is scoped to, from the URL's `?commits=` param.
+  final Set<String> scopedCommits;
   @override
   ConsumerState<_PrDetailBody> createState() => _PrDetailBodyState();
 }
@@ -279,8 +292,16 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
       writeKey: _writeTabKey,
     );
     // Restore this PR's persisted workbench once the first frame (and thus the
-    // provider reads in [build]) has run.
-    WidgetsBinding.instance.addPostFrameCallback((_) => _restorePersisted());
+    // provider reads in [build]) has run. The URL's commit scope is applied in
+    // that same callback — doing it here would notify listeners while the
+    // route is still building.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      _applyCommits(widget.scopedCommits);
+      unawaited(_restorePersisted());
+    });
   }
 
   @override
@@ -301,8 +322,13 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
         }
       });
     }
+    if (!setEquals(oldWidget.scopedCommits, widget.scopedCommits)) {
+      // Back/forward changed `?commits=`. Applying it now would write the
+      // provider while this element is still updating — the failure that
+      // paints the error widget over the workbench.
+      _scheduleApplyCommits(widget.scopedCommits);
+    }
   }
-
 
   /// Two-way sync between the focused workbench tab and the URL's `?tab=`
   /// param: a tab switch publishes lightweight browser history, while
@@ -314,9 +340,112 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
   ///
   /// A tab press is local editor state. Sending it through `context.go` rebuilt
   /// the whole PR route and every visited workbench body, including the diff.
+  /// The commit scope is folded in from the provider so a tab write cannot
+  /// drop a `?commits=` the router has not echoed yet.
   void _writeTabKey(String? key) {
-    final uri = GoRouterState.of(context).uri;
-    unawaited(updateEditorTabRoute(uri, key));
+    _publishScopeAndTab(tabKey: key);
+  }
+
+  /// True while [_applyCommits] is copying the URL into the provider, so that
+  /// write does not publish the URL it just came from.
+  bool _applyingCommits = false;
+
+  /// Copies [shas] into the diff scope when it differs from what is showing.
+  void _applyCommits(Set<String> shas) {
+    if (setEquals(ref.read(prDiffScopeProvider).selectedShas, shas)) {
+      return;
+    }
+    _applyingCommits = true;
+    try {
+      ref.read(prDiffScopeProvider.notifier).updateSelection(shas);
+    } finally {
+      _applyingCommits = false;
+    }
+  }
+
+  /// The commit set from the latest route update, applied after the frame.
+  ///
+  /// A burst of route updates keeps only the newest set. A non-empty set also
+  /// focuses Diff: a permalink names a commit so the reader can see it, and a
+  /// cleared set leaves whichever tab is already showing.
+  Set<String>? _pendingCommitApply;
+
+  void _scheduleApplyCommits(Set<String> shas) {
+    final first = _pendingCommitApply == null;
+    _pendingCommitApply = Set<String>.of(shas);
+    if (!first) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final pending = _pendingCommitApply;
+      _pendingCommitApply = null;
+      if (!mounted || pending == null) {
+        return;
+      }
+      if (!setEquals(widget.scopedCommits, pending)) {
+        return;
+      }
+      _applyCommits(pending);
+      final tab = widget.focusedTabKey;
+      if (pending.isNotEmpty && (tab == null || tab == PrTabKinds.diff)) {
+        _focusKind(PrTabKinds.diff);
+      }
+    });
+  }
+
+  /// Last location written to the platform route channel.
+  String? _publishedLocation;
+
+  /// One pending URL write, so a burst of selector toggles publishes the
+  /// selection that is current when the frame ends.
+  bool _commitUrlScheduled = false;
+
+  void _scheduleCommitUrl() {
+    if (_commitUrlScheduled) {
+      return;
+    }
+    _commitUrlScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _commitUrlScheduled = false;
+      if (!mounted) {
+        return;
+      }
+      _publishScopeAndTab();
+    });
+  }
+
+  /// Publishes the commit scope and the focused tab on the platform channel.
+  ///
+  /// This must not call [GoRouter.go]. A router navigation rebuilds the PR
+  /// page, so the timeline's "open this commit" press landed back on Overview
+  /// and pushed a history entry. Back then changed `?commits=` during
+  /// [didUpdateWidget] and wrote the provider mid-build.
+  void _publishScopeAndTab({String? tabKey}) {
+    if (!mounted) {
+      return;
+    }
+    final withCommits = Uri.parse(
+      locationWithPrCommits(
+        GoRouterState.of(context).uri,
+        ref.read(prDiffScopeProvider).selectedShas,
+      ),
+    );
+    final location = locationWithEditorTab(
+      withCommits,
+      tabKey ?? activeEditorTabKey(_layout),
+    );
+    if (location == _publishedLocation) {
+      return;
+    }
+    final current = GoRouterState.of(context).uri;
+    final next = Uri.parse(location);
+    if (current.path == next.path &&
+        mapEquals(current.queryParameters, next.queryParameters)) {
+      _publishedLocation = location;
+      return;
+    }
+    _publishedLocation = location;
+    unawaited(SystemNavigator.routeInformationUpdated(uri: next));
   }
 
   /// Focuses the tab of [key] wherever it lives in the split tree. A key that
@@ -445,6 +574,13 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
       setState(() => _setLayout(restored));
     }
     _tabUrl.apply(_layout, widget.focusedTabKey, force: true);
+    // A link that names commits and no other tab opens on the diff. A named
+    // tab keeps that tab; the scope is already applied for when they open it.
+    final tab = widget.focusedTabKey;
+    if (widget.scopedCommits.isNotEmpty &&
+        (tab == null || tab == PrTabKinds.diff)) {
+      _focusKind(PrTabKinds.diff);
+    }
   }
 
   /// English fallback label; the localized label is resolved per-build by the
@@ -572,6 +708,19 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
   /// hand it the file index to jump to.
   void _openFileInDiff(int index) {
     _pendingFileJump.value = index;
+    _focusKind(PrTabKinds.diff);
+  }
+
+  /// The activity timeline asked to open one commit: scope the diff to that
+  /// commit's files and focus the Diff tab at the top of them.
+  void _openCommitInDiff(String sha) {
+    ref.read(prDiffScopeProvider.notifier).updateSelection({sha});
+    // Assigning the same index does not notify. Clear first so a leftover
+    // jump-to-zero still scrolls this open to the top of the commit.
+    if (_pendingFileJump.value == 0) {
+      _pendingFileJump.value = null;
+    }
+    _pendingFileJump.value = 0;
     _focusKind(PrTabKinds.diff);
   }
 
@@ -811,6 +960,7 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
           pr: widget.pr,
           prRef: widget.prRef,
           onOpenFileInDiff: _openFileInDiff,
+          onOpenCommit: _openCommitInDiff,
           onOpenReview: () => _focusKind(PrTabKinds.reviewArtifact),
         );
       case PrTabKinds.diff:
@@ -940,6 +1090,20 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    // Selection changes (the commit menu, a timeline commit, a permalink that
+    // widens back to the whole pull request) publish `?commits=`. An empty
+    // selection removes the param. A change that arrived FROM the URL must
+    // not publish itself back.
+    ref.listen(prDiffScopeProvider, (previous, next) {
+      if (_applyingCommits) {
+        return;
+      }
+      if (previous != null &&
+          setEquals(previous.selectedShas, next.selectedShas)) {
+        return;
+      }
+      _scheduleCommitUrl();
+    });
     // The layout cache is a stable workspace-scoped provider; build the
     // persistence helper once, keyed per PR under the PR layout cache kind.
     _persistence ??= EditorLayoutPersistence(
@@ -956,6 +1120,13 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
 
     // The checks summary (and other surfaces) request the Actions tab via
     // [prChecksUiProvider]; the sentinel index maps to focusing that tab.
+    ref.listen(prChatFocusProvider(widget.prRef), (prev, next) {
+      if (next == null || next.nonce == prev?.nonce) {
+        return;
+      }
+      _focusKind(PrTabKinds.chat);
+    });
+
     ref.listen<PrChecksUiState>(prChecksUiProvider, (prev, next) {
       final requested = next.requestedTabIndex;
       if (requested == null) {

@@ -84,6 +84,10 @@ String pullRequestsComposeRoute(String workspaceId, {String? spaceId}) {
 /// Pass [tab] to open a specific workbench tab (`?tab=<key>`), and [commentId]
 /// to deep-link to one comment (`?comment=<id>`, the numeric REST id).
 ///
+/// Pass [commits] to scope the diff to those SHAs (`?commits=sha,sha`). An
+/// empty set is the whole pull request and adds no param — the unscoped diff
+/// is a URL with no commit search param.
+///
 /// There is deliberately no `thread` parameter: the detail screen already
 /// reassembles threads from their comments, so a thread id in the URL would be
 /// a second source of truth for the same fact — and the two could disagree
@@ -94,14 +98,67 @@ String pullRequestDetailRoute(
   int number, {
   String? tab,
   int? commentId,
+  Set<String> commits = const {},
 }) {
   final base = '/workspaces/$workspaceId/pull-requests/$repoFullName/$number';
   final query = <String>[
     if (tab != null && tab.isNotEmpty) 'tab=${Uri.encodeComponent(tab)}',
     if (commentId != null) 'comment=$commentId',
+    if (commits.isNotEmpty) 'commits=${_encodeCommitShas(commits)}',
   ];
   return query.isEmpty ? base : '$base?${query.join('&')}';
 }
+
+/// Query param naming the commits the diff is scoped to.
+///
+/// Absent, blank, or empty means the whole pull request.
+const String prCommitsQueryParam = 'commits';
+
+/// SHAs named by [prCommitsQueryParam] on [params]. Empty when the diff should
+/// show every commit.
+Set<String> prCommitsFromQuery(Map<String, String> params) {
+  final raw = params[prCommitsQueryParam];
+  if (raw == null || raw.trim().isEmpty) {
+    return const {};
+  }
+  return {
+    for (final part in raw.split(','))
+      if (part.trim().isNotEmpty) part.trim(),
+  };
+}
+
+/// [current] with [prCommitsQueryParam] set to [shas], sorted, or removed when
+/// [shas] is empty. Other query params stay. An empty query is stripped so
+/// the unscoped diff has no search params. SHAs stay comma-separated rather
+/// than percent-encoded, so the param reads as a list.
+String locationWithPrCommits(Uri current, Set<String> shas) {
+  final params = Map<String, String>.of(current.queryParameters)
+    ..remove(prCommitsQueryParam);
+  if (shas.isNotEmpty) {
+    params[prCommitsQueryParam] = (shas.toList()..sort()).join(',');
+  }
+  if (params.isEmpty) {
+    final raw = current.toString();
+    final q = raw.indexOf('?');
+    return q < 0 ? raw : raw.substring(0, q);
+  }
+  final query = params.entries
+      .map((entry) {
+        if (entry.key == prCommitsQueryParam) {
+          final list = entry.value
+              .split(',')
+              .map(Uri.encodeQueryComponent)
+              .join(',');
+          return '${entry.key}=$list';
+        }
+        return '${Uri.encodeQueryComponent(entry.key)}='
+            '${Uri.encodeQueryComponent(entry.value)}';
+      })
+      .join('&');
+  return current.replace(query: query).toString();
+}
+
+String _encodeCommitShas(Set<String> shas) => (shas.toList()..sort()).join(',');
 
 /// Spaces list / conversation surface (no space selected).
 String spacesRoute(String workspaceId) => '/workspaces/$workspaceId/spaces';

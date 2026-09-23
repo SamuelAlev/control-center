@@ -13,6 +13,7 @@ import 'package:control_center/features/pr_review/presentation/utils/syntax_high
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/commit_range_selector.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/pr_diff_toolbar.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/composer_reveal.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/suggestion_composer.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_diff_view.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_row_painter.dart';
@@ -24,6 +25,7 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -437,6 +439,89 @@ void main() {
       await tester.tap(find.byIcon(AppIcons.messageSquarePlus));
       await tester.pump();
       expect(find.byType(PrCommentComposer), findsOneWidget);
+    });
+
+    testWidgets('comment composer grows out of the row', (tester) async {
+      final controller = _createController();
+      await tester.pumpWidget(
+        _wrapSlivers(
+          PrDiffView(
+            files: [_testFile()],
+            comments: const [],
+            inlineCommentsController: controller,
+            showToolbar: false,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final view = tester.state<UnifiedDiffViewState>(
+        find.byType(UnifiedDiffView),
+      );
+      final before = view.debugDocument.totalExtent;
+
+      await tester.tap(find.byIcon(AppIcons.messageSquarePlus));
+      await tester.pump();
+      // The ticker's first frame is the start anchor (elapsed 0).
+      await tester.pump();
+
+      final reveal = find.byType(ComposerReveal);
+      expect(reveal, findsOneWidget);
+      final collapsed = tester.getSize(reveal).height;
+      expect(collapsed, lessThan(8));
+      expect(view.debugDocument.totalExtent, closeTo(before, 1));
+
+      await tester.pump(const Duration(milliseconds: 100));
+      final mid = tester.getSize(reveal).height;
+      expect(mid, greaterThan(collapsed + 12));
+      expect(view.debugDocument.totalExtent, closeTo(before + mid, 1));
+
+      await tester.pump(const Duration(milliseconds: 200));
+      final open = tester.getSize(reveal).height;
+      expect(open, greaterThan(mid));
+      expect(view.debugDocument.totalExtent, closeTo(before + open, 1));
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 80));
+      expect(find.byType(ComposerReveal), findsOneWidget);
+      expect(tester.getSize(reveal).height, lessThan(open - 8));
+
+      await tester.pump(const Duration(milliseconds: 160));
+      expect(find.byType(PrCommentComposer), findsNothing);
+      expect(view.debugDocument.totalExtent, closeTo(before, 1));
+    });
+
+    testWidgets('reduced motion opens the composer at full height', (
+      tester,
+    ) async {
+      final controller = _createController();
+      await tester.pumpWidget(
+        _wrap(
+          MediaQuery(
+            data: const MediaQueryData(disableAnimations: true),
+            child: CustomScrollView(
+              slivers: [
+                PrDiffView(
+                  files: [_testFile()],
+                  comments: const [],
+                  inlineCommentsController: controller,
+                  showToolbar: false,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(find.byIcon(AppIcons.messageSquarePlus));
+      await tester.pump();
+
+      expect(
+        tester.getSize(find.byType(ComposerReveal)).height,
+        greaterThan(48),
+      );
     });
 
     testWidgets('renders added and removed status chips', (tester) async {
@@ -1001,6 +1086,7 @@ void main() {
         await tester.tap(pill);
         await tester.pump();
         expect(find.byType(PrCommentComposer), findsOneWidget);
+        await tester.pumpAndSettle();
 
         final commentField = find.descendant(
           of: find.byType(PrCommentComposer),

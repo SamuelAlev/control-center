@@ -10,6 +10,15 @@ Future<void> _settlePointerFrame(WidgetTester tester) async {
   await tester.pump();
 }
 
+Rect _highlightRect(WidgetTester tester) {
+  return tester.getRect(
+    find.descendant(
+      of: find.byKey(const ValueKey<String>('cc-fluid-hover-transform')),
+      matching: find.byType(DecoratedBox),
+    ),
+  );
+}
+
 void main() {
   testWidgets('nearest vertical item stays active through inter-item gaps', (
     tester,
@@ -459,5 +468,171 @@ void main() {
     expect(find.byKey(const ValueKey('boundary-tap-1-true')), findsOneWidget);
     expect(find.byKey(const ValueKey('boundary-tap-0-true')), findsNothing);
     expect(find.byKey(const ValueKey('boundary-tap-2-true')), findsNothing);
+  });
+
+  testWidgets('a growing hovered item keeps the wash on its new bounds', (
+    tester,
+  ) async {
+    final height = ValueNotifier<double>(48);
+    addTearDown(height.dispose);
+    await tester.pumpWidget(
+      ccTestApp(
+        Align(
+          alignment: Alignment.topCenter,
+          child: SizedBox(
+            width: 120,
+            child: CcFluidHover(
+              itemCount: 1,
+              itemBuilder: (context, index) => ValueListenableBuilder<double>(
+                valueListenable: height,
+                builder: (context, value, _) =>
+                    SizedBox(key: const ValueKey('grow'), height: value),
+              ),
+              layoutBuilder: (context, items) => Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: items,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final pointer = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    final before = tester.getRect(find.byKey(const ValueKey('grow')));
+    await pointer.addPointer(location: before.center);
+    await _settlePointerFrame(tester);
+    expect(_highlightRect(tester), before);
+
+    // The row grows under a still pointer, the way a space expands into its
+    // conversations after a click.
+    height.value = 160;
+    await tester.pump();
+    await tester.pump();
+
+    final after = tester.getRect(find.byKey(const ValueKey('grow')));
+    expect(after.height, 160);
+    expect(_highlightRect(tester), after);
+    expect(
+      tester
+          .widget<TweenAnimationBuilder<Rect>>(
+            find.byType(TweenAnimationBuilder<Rect>),
+          )
+          .duration,
+      Duration.zero,
+      reason: 'Same item, new geometry snaps instead of travelling.',
+    );
+  });
+
+  testWidgets('a growing item does not rebuild the rest of the group', (
+    tester,
+  ) async {
+    final height = ValueNotifier<double>(40);
+    addTearDown(height.dispose);
+    var builds = 0;
+    await tester.pumpWidget(
+      ccTestApp(
+        Align(
+          alignment: Alignment.topCenter,
+          child: SizedBox(
+            width: 120,
+            child: CcFluidHover(
+              itemCount: 2,
+              itemBuilder: (context, index) {
+                builds++;
+                if (index == 0) {
+                  return ValueListenableBuilder<double>(
+                    valueListenable: height,
+                    builder: (context, value, _) =>
+                        SizedBox(key: const ValueKey('grow'), height: value),
+                  );
+                }
+                return const SizedBox(key: ValueKey('other'), height: 40);
+              },
+              layoutBuilder: (context, items) => Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: items,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final pointer = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await pointer.addPointer(
+      location: tester.getCenter(find.byKey(const ValueKey('grow'))),
+    );
+    await _settlePointerFrame(tester);
+    final afterHover = builds;
+
+    // A space opening under the pointer. The wash has to track the new
+    // bounds, and the other rows must not be built again to do it.
+    height.value = 120;
+    await tester.pump();
+    await tester.pump();
+
+    expect(builds, afterHover);
+    expect(
+      _highlightRect(tester).height,
+      tester.getRect(find.byKey(const ValueKey('grow'))).height,
+    );
+  });
+
+  testWidgets('a layout shift retargets the row under a still pointer', (
+    tester,
+  ) async {
+    final heights = ValueNotifier<List<double>>(const [40, 40, 40]);
+    addTearDown(heights.dispose);
+    int? active;
+    await tester.pumpWidget(
+      ccTestApp(
+        Align(
+          alignment: Alignment.topCenter,
+          child: SizedBox(
+            width: 120,
+            child: CcFluidHover(
+              itemCount: 3,
+              onActiveIndexChanged: (index) => active = index,
+              itemBuilder: (context, index) =>
+                  ValueListenableBuilder<List<double>>(
+                    valueListenable: heights,
+                    builder: (context, value, _) => SizedBox(
+                      key: ValueKey('shift-$index'),
+                      height: value[index],
+                    ),
+                  ),
+              layoutBuilder: (context, items) => Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: items,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final pointer = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await pointer.addPointer(
+      location: tester.getCenter(find.byKey(const ValueKey('shift-1'))),
+    );
+    await _settlePointerFrame(tester);
+    expect(active, 1);
+
+    // The row above grows by more than the gap to the pointer, so the
+    // pointer is now inside row 0. No pointer event is sent.
+    heights.value = const [100, 40, 40];
+    await tester.pump();
+    await tester.pump();
+
+    expect(active, 0);
+    await tester.pump(CcMotion.fast);
+    expect(
+      _highlightRect(tester),
+      tester.getRect(find.byKey(const ValueKey('shift-0'))),
+    );
   });
 }

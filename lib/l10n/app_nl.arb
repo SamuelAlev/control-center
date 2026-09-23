@@ -977,6 +977,7 @@
   "@agent": {
     "description": "Agent"
   },
+  "conversationCount": "{count, plural, =1{1 gesprek} other{{count} gesprekken}}",
   "agentCount": "{count, plural, =1{1 agent} other{{count} agents}}",
   "@agentCount": {
     "description": "Agent count label",
@@ -1578,6 +1579,12 @@
     "description": "Locale string for high"
   },
   "hoursAgo": "{count, plural, =1{1 uur geleden} other{{count} uur geleden}}",
+  "sidebarAgeNow": "nu",
+  "sidebarAgeMinutes": "{count}m",
+  "sidebarAgeHours": "{count}u",
+  "sidebarAgeDays": "{count}d",
+  "sidebarAgeMonths": "{count} mnd",
+  "sidebarAgeYears": "{count}j",
   "images": "Afbeeldingen",
   "inactive": "Inactief",
   "@inactive": {
@@ -4875,6 +4882,31 @@
       }
     }
   },
+  "reactionThumbsUp": "Duim omhoog",
+  "reactionThumbsDown": "Duim omlaag",
+  "reactionLaugh": "Lachen",
+  "reactionHooray": "Hoera",
+  "reactionConfused": "Verward",
+  "reactionHeart": "Hart",
+  "reactionRocket": "Raket",
+  "reactionEyes": "Ogen",
+  "commentReact": "Reageren",
+  "commentResolveThread": "Thread oplossen",
+  "commentReopenThread": "Thread heropenen",
+  "commentCopyLink": "Link naar opmerking kopiëren",
+  "commentCopyMarkdown": "Kopiëren als Markdown",
+  "commentCopyThreadMarkdown": "Thread kopiëren als Markdown",
+  "commentCopyPrompt": "Kopiëren als prompt",
+  "commentCopyThreadPrompt": "Thread kopiëren als prompt",
+  "commentSendToAgent": "Naar agent sturen",
+  "commentDelete": "Opmerking verwijderen",
+  "commentEdit": "Opmerking bewerken",
+  "commentActions": "Opmerkingacties",
+  "commentDeleteTitle": "Deze opmerking verwijderen?",
+  "commentDeleteBody": "Hij wordt uit de pull request gehaald.",
+  "commentSentToAgent": "Naar de agent gestuurd",
+  "commentSendFailed": "Kon deze opmerking niet naar een agent sturen",
+  "commentDeleteFailed": "Kon deze opmerking niet verwijderen",
   "autonomyDialLabel": "Autonomie",
   "autonomyProposeOnly": "Alleen voorstellen",
   "autonomyActWithApproval": "Handelen met goedkeuring",
@@ -7895,5 +7927,16 @@
   "workspaceGitHubHasPat": "Er is een achtergrondtoken opgeslagen.",
   "workspaceGitHubNoPat": "Geen achtergrondtoken opgeslagen.",
   "profileOverlayHint": "Deze velden ben jij in deze werkruimte. Lege velden erven naam en e-mail van het account. Van werkruimte wisselen wisselt deze overlay.",
-  "forgeConnectionsThisWorkspace": "Meld je aan of plak een token voor deze werkruimte."
+  "forgeConnectionsThisWorkspace": "Meld je aan of plak een token voor deze werkruimte.",
+  "stackStartNextPart": "Volgend deel starten",
+  "stackPartNameTitle": "Deelnaam",
+  "stackPartNameHint": "bijv. migratie",
+  "stackPublish": "Stapel publiceren",
+  "stackCurrentPart": "Huidig",
+  "stackSwitchDirty": "Commit of verwerp wijzigingen voordat je van deel wisselt",
+  "stackCutFailed": "Het volgende deel kon niet worden gestart",
+  "stackPublishFailed": "De stapel kon niet worden gepubliceerd",
+  "stackPublished": "De stapel is als concepten gepubliceerd",
+  "stackOpenPullRequest": "Pull request openen",
+  "stackSection": "Stapel"
 }

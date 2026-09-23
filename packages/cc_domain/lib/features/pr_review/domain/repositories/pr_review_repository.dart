@@ -262,6 +262,21 @@ abstract class PrReviewRepository {
     required String body,
   });
 
+  /// Deletes a top-level conversation comment. [commentId] is [IssueComment.id].
+  ///
+  /// The forge enforces who may delete: the author, or a caller with write
+  /// access. A refusal comes back as an error rather than a silent no-op.
+  Future<void> deleteIssueComment({
+    required int prNumber,
+    required int commentId,
+  });
+
+  /// Deletes one inline review comment. [commentId] is [PrCodeReviewComment.id].
+  Future<void> deleteReviewComment({
+    required int prNumber,
+    required int commentId,
+  });
+
   /// Add the given user [logins] as assignees on the PR.
   Future<void> addAssignees({
     required int prNumber,
@@ -540,6 +555,18 @@ class EmptyPrReviewRepository implements PrReviewRepository {
     required int prNumber,
     required int commentId,
     required String body,
+  }) async {}
+
+  @override
+  Future<void> deleteIssueComment({
+    required int prNumber,
+    required int commentId,
+  }) async {}
+
+  @override
+  Future<void> deleteReviewComment({
+    required int prNumber,
+    required int commentId,
   }) async {}
 
   @override

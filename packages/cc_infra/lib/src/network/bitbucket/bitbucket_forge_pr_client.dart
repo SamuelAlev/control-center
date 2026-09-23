@@ -754,6 +754,43 @@ class BitbucketForgePrClient implements ForgePrClient {
     );
   }
 
+  @override
+  Future<void> deleteIssueComment({
+    required int prNumber,
+    required String commentId,
+    Object? cancelToken,
+  }) async {
+    final id = int.tryParse(commentId.trim());
+    if (id == null) {
+      throw ArgumentError.value(
+        commentId,
+        'commentId',
+        'Bitbucket comment ids are integers',
+      );
+    }
+    await _client.deletePullRequestComment(
+      owner,
+      repo,
+      prNumber,
+      id,
+      cancelToken: _token(cancelToken),
+    );
+  }
+
+  @override
+  Future<void> deleteReviewComment({
+    required int prNumber,
+    required String commentId,
+    Object? cancelToken,
+  }) {
+    // Bitbucket stores timeline comments and inline comments on one resource.
+    return deleteIssueComment(
+      prNumber: prNumber,
+      commentId: commentId,
+      cancelToken: cancelToken,
+    );
+  }
+
   /// Submits a review verdict.
   ///
   /// Bitbucket has no batched review (`pendingReviewBatching` is false), so a

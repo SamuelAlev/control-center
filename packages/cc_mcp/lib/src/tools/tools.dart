@@ -55,6 +55,7 @@ export 'search_memory_tool.dart';
 export 'send_message_tool.dart';
 export 'send_to_agent_tool.dart';
 export 'set_cohort_summary_tool.dart';
+export 'space_stack_tools.dart';
 export 'start_ai_review_tool.dart';
 export 'submit_output_tool.dart';
 export 'submit_plan_tool.dart';

@@ -974,6 +974,7 @@
   "@agent": {
     "description": "Agent"
   },
+  "conversationCount": "{count, plural, =1{1 conversa} other{{count} conversas}}",
   "agentCount": "{count, plural, =1{1 agente} other{{count} agentes}}",
   "@agentCount": {
     "description": "Agent count label",
@@ -1581,6 +1582,12 @@
     "description": "Locale string for high"
   },
   "hoursAgo": "{count, plural, =1{há 1 hora} other{há {count} horas}}",
+  "sidebarAgeNow": "agora",
+  "sidebarAgeMinutes": "{count} min",
+  "sidebarAgeHours": "{count} h",
+  "sidebarAgeDays": "{count} d",
+  "sidebarAgeMonths": "{count} mês",
+  "sidebarAgeYears": "{count} a",
   "images": "Imagens",
   "inactive": "Inativo",
   "@inactive": {
@@ -4872,6 +4879,31 @@
       }
     }
   },
+  "reactionThumbsUp": "Polegar para cima",
+  "reactionThumbsDown": "Polegar para baixo",
+  "reactionLaugh": "Riso",
+  "reactionHooray": "Viva",
+  "reactionConfused": "Confuso",
+  "reactionHeart": "Coração",
+  "reactionRocket": "Foguete",
+  "reactionEyes": "Olhos",
+  "commentReact": "Reagir",
+  "commentResolveThread": "Resolver fio",
+  "commentReopenThread": "Reabrir fio",
+  "commentCopyLink": "Copiar link do comentário",
+  "commentCopyMarkdown": "Copiar como Markdown",
+  "commentCopyThreadMarkdown": "Copiar fio como Markdown",
+  "commentCopyPrompt": "Copiar como prompt",
+  "commentCopyThreadPrompt": "Copiar fio como prompt",
+  "commentSendToAgent": "Enviar ao agente",
+  "commentDelete": "Excluir comentário",
+  "commentEdit": "Editar comentário",
+  "commentActions": "Ações do comentário",
+  "commentDeleteTitle": "Excluir este comentário?",
+  "commentDeleteBody": "Ele é removido do pull request.",
+  "commentSentToAgent": "Enviado ao agente",
+  "commentSendFailed": "Não foi possível enviar este comentário a um agente",
+  "commentDeleteFailed": "Não foi possível excluir este comentário",
   "autonomyDialLabel": "Autonomia",
   "autonomyProposeOnly": "Somente propor",
   "autonomyActWithApproval": "Agir com aprovação",
@@ -7892,5 +7924,16 @@
   "workspaceGitHubHasPat": "Há um token de segundo plano guardado.",
   "workspaceGitHubNoPat": "Nenhum token de segundo plano guardado.",
   "profileOverlayHint": "Estes campos são você neste espaço. Campos vazios herdam o nome e o e-mail da conta. Trocar de espaço troca esta sobreposição.",
-  "forgeConnectionsThisWorkspace": "Entre ou cole um token para este espaço de trabalho."
+  "forgeConnectionsThisWorkspace": "Entre ou cole um token para este espaço de trabalho.",
+  "stackStartNextPart": "Começar a parte seguinte",
+  "stackPartNameTitle": "Nome da parte",
+  "stackPartNameHint": "ex.: migração",
+  "stackPublish": "Publicar a pilha",
+  "stackCurrentPart": "Atual",
+  "stackSwitchDirty": "Faça commit ou descarte as alterações antes de mudar de parte",
+  "stackCutFailed": "Não foi possível começar a parte seguinte",
+  "stackPublishFailed": "Não foi possível publicar a pilha",
+  "stackPublished": "A pilha foi publicada como rascunhos",
+  "stackOpenPullRequest": "Abrir pull request",
+  "stackSection": "Pilha"
 }

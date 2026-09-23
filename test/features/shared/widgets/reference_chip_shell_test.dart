@@ -1,4 +1,6 @@
+import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/shared/widgets/reference_chip_shell.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -27,6 +29,51 @@ void main() {
 
       await tester.tap(find.text('click me'));
       expect(tapped, isTrue);
+    });
+
+    testWidgets('uses a click cursor and is not selectable', (tester) async {
+      await tester.pumpWidget(
+        testWrap(
+          SelectionArea(
+            child: ReferenceChipShell(child: const Text('#42'), onTap: () {}),
+          ),
+        ),
+      );
+
+      final cursors = tester
+          .widgetList<MouseRegion>(find.byType(MouseRegion))
+          .map((region) => region.cursor);
+      expect(cursors, contains(SystemMouseCursors.click));
+      expect(cursors, isNot(contains(SystemMouseCursors.text)));
+
+      final disabled = tester
+          .widgetList<SelectionContainer>(find.byType(SelectionContainer))
+          .where((container) => container.delegate == null);
+      expect(disabled, isNotEmpty);
+    });
+
+    testWidgets('washes the fill on hover', (tester) async {
+      await tester.pumpWidget(
+        testWrap(ReferenceChipShell(child: const Text('#42'), onTap: () {})),
+      );
+
+      final tokens = DesignSystemTokens.light();
+      BoxDecoration decoration() =>
+          tester
+                  .widget<AnimatedContainer>(find.byType(AnimatedContainer))
+                  .decoration!
+              as BoxDecoration;
+
+      expect(decoration().color, tokens.bgSecondary);
+
+      final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await gesture.addPointer(location: Offset.zero);
+      addTearDown(gesture.removePointer);
+      await tester.pump();
+      await gesture.moveTo(tester.getCenter(find.text('#42')));
+      await tester.pump(const Duration(milliseconds: 120));
+
+      expect(decoration().color, tokens.bgTertiary);
     });
 
     testWidgets('renders complex child widget', (tester) async {

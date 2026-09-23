@@ -26,7 +26,7 @@ import 'package:go_router/go_router.dart';
 /// conditional settings pill row). The workspace switcher and a search
 /// (command-palette) affordance live in the header; the per-user pillars
 /// (newsfeed, observability) + settings live in the footer; workspace
-/// destinations are grouped in the body plus standalone entries.
+/// destinations sit in the body with no section header, always expanded.
 class AppSidebar extends ConsumerWidget {
   /// Creates an [AppSidebar]. [location] is the current router location and
   /// [workspaceId] the active workspace (both sourced from the route), used to
@@ -102,10 +102,9 @@ class AppSidebar extends ConsumerWidget {
       // The workspace nav is a fixed set of destinations, so it is pinned and
       // only the spaces list below it scrolls: one scrollbar, and its thumb
       // reports the length of the space list rather than of the whole panel.
+      // No eyebrow and no caret: these destinations are always shown.
       pinnedChildren: [
         CcSidebarGroup(
-          label: l10n.sidebarGroupWorkspace,
-          collapsible: true,
           children: [
             navItem(
               icon: AppIcons.inbox,

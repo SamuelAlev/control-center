@@ -3,7 +3,11 @@ import 'package:flutter/widgets.dart';
 
 /// Rounded, bordered container used by inline GitHub reference chips
 /// (PR previews, commit previews). Owns the consistent look across types.
-class ReferenceChipShell extends StatelessWidget {
+///
+/// The chip is a control, so it opts out of the surrounding markdown
+/// [SelectionArea]: the title is not selectable and the pointer is a click
+/// cursor. Hover washes the fill the same way the PR header's branch chips do.
+class ReferenceChipShell extends StatefulWidget {
   /// Creates a [ReferenceChipShell].
   const ReferenceChipShell({
     super.key,
@@ -18,20 +22,42 @@ class ReferenceChipShell extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
+  State<ReferenceChipShell> createState() => _ReferenceChipShellState();
+}
+
+class _ReferenceChipShellState extends State<ReferenceChipShell> {
+  bool _hovered = false;
+
+  @override
   Widget build(BuildContext context) {
     final tokens = context.designSystem ?? DesignSystemTokens.light();
-    final border = tokens.borderSecondary;
-    final background = tokens.bgSecondary;
 
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-        decoration: BoxDecoration(
-          color: background,
-          border: Border.all(color: border),
+    return SelectionContainer.disabled(
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        onEnter: (_) => setState(() => _hovered = true),
+        onExit: (_) => setState(() => _hovered = false),
+        child: GestureDetector(
+          onTap: widget.onTap,
+          behavior: HitTestBehavior.opaque,
+          child: Padding(
+            // Outside the border, so the fill doesn't run up to the words.
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 120),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.xs,
+                vertical: AppSpacing.xxs,
+              ),
+              decoration: BoxDecoration(
+                color: _hovered ? tokens.bgTertiary : tokens.bgSecondary,
+                border: Border.all(color: tokens.borderSecondary),
+                borderRadius: AppRadii.brSm,
+              ),
+              child: widget.child,
+            ),
+          ),
         ),
-        child: child,
       ),
     );
   }

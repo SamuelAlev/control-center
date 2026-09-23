@@ -1,5 +1,6 @@
 import 'package:cc_domain/features/pr_review/domain/entities/pr_commit.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Pr diff scope state.
@@ -51,7 +52,10 @@ class PrDiffScopeNotifier extends Notifier<PrDiffScopeState> {
 
   /// Replace the set of selected commit SHAs.
   void updateSelection(Set<String> shas) {
-    state = state.copyWith(selectedShas: shas);
+    if (setEquals(state.selectedShas, shas)) {
+      return;
+    }
+    state = state.copyWith(selectedShas: Set<String>.of(shas));
   }
 
   /// Derive scoped files from commit file maps.

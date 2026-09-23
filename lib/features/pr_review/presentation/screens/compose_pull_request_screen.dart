@@ -149,19 +149,33 @@ class _ComposePullRequestScreenState
     });
 
     // Default the base branch to the repo's default branch once it resolves
-    // (only while the user hasn't picked one yet).
+    // (only while the user hasn't picked one yet). A stacked layer above the
+    // bottom then replaces that with its parent, until the person picks.
+    final spaceId = widget.spaceId;
     ref.listen(defaultBranchProvider, (_, next) {
       final def = next.value;
+      final form = ref.read(composePrProvider);
       if (def != null &&
           def.isNotEmpty &&
-          ref.read(composePrProvider).base.isEmpty) {
-        ref.read(composePrProvider.notifier).setBase(def);
+          form.base.isEmpty &&
+          !form.baseFromUser) {
+        ref.read(composePrProvider.notifier).setBase(def, fromUser: false);
+      }
+    });
+
+    ref.listen(stackParentBaseProvider(spaceId ?? ''), (_, next) {
+      final parent = next.value;
+      final form = ref.read(composePrProvider);
+      if (parent != null &&
+          parent.isNotEmpty &&
+          !form.baseFromUser &&
+          form.base != parent) {
+        ref.read(composePrProvider.notifier).setBase(parent, fromUser: false);
       }
     });
 
     // The conversation's worktree branch — the compare head the user means and
     // the one the remote listing cannot know about until it is published.
-    final spaceId = widget.spaceId;
     final localBranchAsync = spaceId == null || spaceId.isEmpty
         ? const AsyncValue<String?>.data(null)
         : ref.watch(worktreeBranchProvider(spaceId));

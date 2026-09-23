@@ -770,6 +770,7 @@ class RiftRepoIsolationAdapter implements RepoIsolationPort {
     required String sourcePath,
     required RepoIsolationBackend backend,
     String? branch,
+    List<String> branches = const [],
   }) async {
     // Capture any uncommitted agent work BEFORE tearing the worktree down, so
     // a ticket/conversation/PR-end GC never silently discards in-progress
@@ -824,6 +825,12 @@ class RiftRepoIsolationAdapter implements RepoIsolationPort {
         }
         if (branch != null && branch.isNotEmpty) {
           await _git.run(['branch', '-D', branch], workdir: sourcePath);
+        }
+        for (final name in branches) {
+          if (name.isEmpty || name == branch) {
+            continue;
+          }
+          await _git.run(['branch', '-D', name], workdir: sourcePath);
         }
     }
   }

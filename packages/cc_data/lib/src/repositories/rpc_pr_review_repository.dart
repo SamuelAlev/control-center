@@ -908,6 +908,24 @@ class RpcPrReviewRepository implements PrReviewRepository {
   );
 
   @override
+  Future<void> deleteIssueComment({
+    required int prNumber,
+    required int commentId,
+  }) => _client.call(
+    'pr_review.deleteIssueComment',
+    _coords({'pr_number': prNumber, 'comment_id': commentId}),
+  );
+
+  @override
+  Future<void> deleteReviewComment({
+    required int prNumber,
+    required int commentId,
+  }) => _client.call(
+    'pr_review.deleteReviewComment',
+    _coords({'pr_number': prNumber, 'comment_id': commentId}),
+  );
+
+  @override
   Future<void> addAssignees({
     required int prNumber,
     required List<String> logins,

@@ -139,9 +139,6 @@ class CcOverlayAnchor extends StatefulWidget {
 const double kCcOverlayMargin = 8;
 
 class _CcOverlayAnchorState extends State<CcOverlayAnchor> {
-  // Handle on the target's render box so the overlay can read the target's
-  // position/size relative to the host overlay at layout time.
-  final GlobalKey _targetKey = GlobalKey();
   final OverlayPortalController _portal = OverlayPortalController();
 
   // Bounds the post-frame retries used when the target geometry isn't laid out
@@ -183,22 +180,39 @@ class _CcOverlayAnchorState extends State<CcOverlayAnchor> {
     }
   }
 
+  /// The anchor's laid-out box. [OverlayPortal]'s render object is a proxy
+  /// whose child is the target (via a semantics wrapper), so the child box is
+  /// the trigger. A [GlobalKey] on that child is what gets reported twice when
+  /// the portal attaches during a pointer update.
+  RenderBox? _targetRenderBox() {
+    final object = context.findRenderObject();
+    if (object is! RenderBox || !object.attached) {
+      return null;
+    }
+    if (object is RenderProxyBox) {
+      final child = object.child;
+      if (child is RenderBox && child.attached && child.hasSize) {
+        return child;
+      }
+    }
+    return object.hasSize ? object : null;
+  }
+
   @override
   Widget build(BuildContext context) {
     return OverlayPortal(
       controller: _portal,
       overlayChildBuilder: _buildOverlay,
-      child: KeyedSubtree(key: _targetKey, child: widget.target),
+      child: widget.target,
     );
   }
 
-  Widget _buildOverlay(BuildContext context) {
+  Widget _buildOverlay(BuildContext overlayContext) {
     // Resolve the target's rect in the host overlay's coordinate space so the
     // layout delegate can anchor, flip and clamp against the visible viewport.
     final overlayBox =
-        Overlay.of(context).context.findRenderObject() as RenderBox?;
-    final targetBox =
-        _targetKey.currentContext?.findRenderObject() as RenderBox?;
+        Overlay.of(overlayContext).context.findRenderObject() as RenderBox?;
+    final targetBox = _targetRenderBox();
     Rect? targetRect;
     Size? targetSize;
     if (overlayBox != null &&
@@ -225,7 +239,7 @@ class _CcOverlayAnchorState extends State<CcOverlayAnchor> {
       });
     }
 
-    Widget content = widget.overlayBuilder(context, targetSize);
+    Widget content = widget.overlayBuilder(overlayContext, targetSize);
     if (widget.matchTargetWidth && targetSize != null) {
       content = SizedBox(width: targetSize.width, child: content);
     }
@@ -256,7 +270,7 @@ class _CcOverlayAnchorState extends State<CcOverlayAnchor> {
 
     // The layout delegate works in the overlay's physical screen coordinates,
     // so directional anchors resolve here, once, against the ambient direction.
-    final direction = Directionality.of(context);
+    final direction = Directionality.of(overlayContext);
     // Directional anchors make the offset logical too: dx points toward the
     // end of the reading direction, so it mirrors under RTL. Callers using
     // physical Alignment anchors keep a physical dx.
@@ -266,9 +280,12 @@ class _CcOverlayAnchorState extends State<CcOverlayAnchor> {
     final offset = hasDirectionalAnchor && direction == TextDirection.rtl
         ? Offset(-widget.offset.dx, widget.offset.dy)
         : widget.offset;
+    // No geometry yet: an unpositioned panel lands on the follower anchor,
+    // which for a tooltip above a bottom toolbar is the bottom of the screen
+    // — on top of the trigger. The pointer then exits the trigger while the
+    // portal is still attaching. Stay empty until the retry frame has a rect.
     final Widget positioned = targetRect == null
-        // No geometry yet — place by the follower anchor for one frame.
-        ? Align(alignment: widget.followerAnchor, child: content)
+        ? const SizedBox.shrink()
         : CustomSingleChildLayout(
             delegate: _AnchoredOverlayLayout(
               targetRect: targetRect,

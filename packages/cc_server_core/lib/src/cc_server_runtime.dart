@@ -78,6 +78,7 @@ import 'package:cc_domain/features/pipelines/domain/templates/builtin_template_s
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_domain/features/pr_review/domain/ports/forge_pr_client.dart';
 import 'package:cc_domain/features/pr_review/domain/ports/review_publisher_port.dart';
+import 'package:cc_domain/features/pr_review/domain/providers/forge_capabilities.dart';
 import 'package:cc_domain/features/pr_review/domain/providers/forge_provider.dart';
 import 'package:cc_domain/features/pr_review/domain/repositories/pr_lifecycle_repository.dart';
 import 'package:cc_domain/features/pr_review/domain/repositories/review_studio_repository.dart';
@@ -225,6 +226,7 @@ import 'package:cc_server_core/src/skill_analysis_service.dart';
 import 'package:cc_server_core/src/skill_quarantine_guard.dart';
 import 'package:cc_server_core/src/skill_reverify_service.dart';
 import 'package:cc_server_core/src/space_provisioning_service.dart';
+import 'package:cc_server_core/src/space_stack_service.dart';
 import 'package:cc_server_core/src/sync/sync_feed_service.dart';
 import 'package:cc_server_core/src/ticket_sync_webhook_handler.dart';
 import 'package:cc_server_core/src/webhook_delivery_service.dart';
@@ -900,6 +902,7 @@ Future<CcServer> runCcServer({
   );
   final reviewSpaceRepository = DaoReviewSpaceRepository(workspaceDbs);
   final isolatedRepoRepository = DaoIsolatedRepoRepository(workspaceDbs);
+  final spaceStackRepository = DaoSpaceStackRepository(workspaceDbs);
   final voiceProfileRepository = DaoVoiceProfileRepository(workspaceDbs);
   final meetingRepository = DaoMeetingRepository(workspaceDbs);
   final ticketLinkRepository = DaoTicketLinkRepository(workspaceDbs);
@@ -1215,6 +1218,82 @@ Future<CcServer> runCcServer({
           eventBus: eventBus,
         ),
       );
+
+  final spaceStackService = SpaceStackService(
+    isolatedRepos: isolatedRepoRepository,
+    stacks: spaceStackRepository,
+    repos: repoRepository,
+    pinnedBase: (workspaceId, spaceId, repoId) async {
+      final branches = await workspaceDbs
+          .of(workspaceId)
+          .spaceRepoDao
+          .repoBranchesForSpace(workspaceId, spaceId);
+      final branch = branches[repoId];
+      if (branch == null || branch.trim().isEmpty) {
+        return null;
+      }
+      return branch;
+    },
+    tokenFor: (forge, actingUserId, workspaceId) => forgeCredentials
+        .tokenForActor(forge, actingUserId, workspaceId: workspaceId),
+    stacksSupported: (repo) => kForgeCapabilities[repo.forge]?.stacks ?? false,
+    openPullRequest:
+        ({
+          required repo,
+          required workspaceId,
+          required title,
+          required body,
+          required head,
+          required base,
+          required draft,
+          actingUserId,
+        }) async {
+          final client = forgePrClientForRepo(
+            repo,
+            actingUserId: actingUserId,
+            workspaceId: workspaceId,
+          );
+          final pr = await client.createPullRequest(
+            title: title,
+            body: body,
+            headBranch: head,
+            baseBranch: base,
+            draft: draft,
+          );
+          return (number: pr.number, externalId: pr.externalId);
+        },
+    groupStack:
+        ({
+          required repo,
+          required workspaceId,
+          required prNumbers,
+          actingUserId,
+        }) async {
+          final client = forgePrClientForRepo(
+            repo,
+            actingUserId: actingUserId,
+            workspaceId: workspaceId,
+          );
+          final existing = await client.listStacks(prNumber: prNumbers.first);
+          if (existing.isEmpty) {
+            await client.createStack(prNumbers: prNumbers);
+            return;
+          }
+          final have = existing.first.pullRequests
+              .map((entry) => entry.number)
+              .toSet();
+          final missing = [
+            for (final number in prNumbers)
+              if (!have.contains(number)) number,
+          ];
+          if (missing.isNotEmpty) {
+            await client.addToStack(
+              stackNumber: existing.first.number,
+              prNumbers: missing,
+            );
+          }
+        },
+  );
 
   // Activity log (workspace-scoped audit trail). The headless server owns the
   // Drift `activity_log` DAO, so it serves the `activity.watchForEntity`
@@ -2281,6 +2360,7 @@ Future<CcServer> runCcServer({
         repoBranches: branches,
       );
     },
+    stacks: spaceStackRepository,
   );
   // Claude Code logins, one directory each under `<dataDir>/claude-accounts/`.
   //
@@ -4047,6 +4127,10 @@ Future<CcServer> runCcServer({
     ..register(DispatchReviewersTool(service: dispatchReviewersService))
     ..register(FinalizeReviewTool(finalizer: reviewFinalizer))
     ..register(PublishReviewToGithubTool(service: reviewPublisherService))
+    ..register(StackStatusTool(stack: spaceStackService))
+    ..register(StackCutTool(stack: spaceStackService))
+    ..register(StackCheckoutTool(stack: spaceStackService))
+    ..register(StackPublishTool(stack: spaceStackService))
     ..register(
       AddReviewDiagramTool(
         cohorts: reviewCohortRepository,
@@ -5418,6 +5502,8 @@ Future<CcServer> runCcServer({
     // demo: no checkout to switch, and no refs to list.
     worktreeListBranches: demo != null ? null : repoIdeData.listBranches,
     worktreeCheckout: demo != null ? null : repoIdeData.checkoutBranch,
+    spaceStack: spaceStackService,
+    spaceStackRepository: spaceStackRepository,
     // Remote agent-action approvals: the same registry the dispatch/MCP paths
     // publish to, exposed to clients over `confirmation.watchPending` +
     // `confirmation.respond` so a desktop/web/phone user can approve or deny.

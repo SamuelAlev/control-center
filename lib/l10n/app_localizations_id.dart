@@ -2565,6 +2565,17 @@ class AppLocalizationsId extends AppLocalizations {
   String get agent => 'Agen';
 
   @override
+  String conversationCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count percakapan',
+      one: '1 percakapan',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String agentCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -3580,6 +3591,34 @@ class AppLocalizationsId extends AppLocalizations {
       one: '1 jam yang lalu',
     );
     return '$_temp0';
+  }
+
+  @override
+  String get sidebarAgeNow => 'baru';
+
+  @override
+  String sidebarAgeMinutes(int count) {
+    return '$count mnt';
+  }
+
+  @override
+  String sidebarAgeHours(int count) {
+    return '$count jam';
+  }
+
+  @override
+  String sidebarAgeDays(int count) {
+    return '$count hr';
+  }
+
+  @override
+  String sidebarAgeMonths(int count) {
+    return '$count bln';
+  }
+
+  @override
+  String sidebarAgeYears(int count) {
+    return '$count thn';
   }
 
   @override
@@ -9761,6 +9800,81 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
+  String get reactionThumbsUp => 'Jempol ke atas';
+
+  @override
+  String get reactionThumbsDown => 'Jempol ke bawah';
+
+  @override
+  String get reactionLaugh => 'Tertawa';
+
+  @override
+  String get reactionHooray => 'Hore';
+
+  @override
+  String get reactionConfused => 'Bingung';
+
+  @override
+  String get reactionHeart => 'Hati';
+
+  @override
+  String get reactionRocket => 'Roket';
+
+  @override
+  String get reactionEyes => 'Mata';
+
+  @override
+  String get commentReact => 'Reaksi';
+
+  @override
+  String get commentResolveThread => 'Selesaikan utas';
+
+  @override
+  String get commentReopenThread => 'Buka kembali utas';
+
+  @override
+  String get commentCopyLink => 'Salin tautan komentar';
+
+  @override
+  String get commentCopyMarkdown => 'Salin sebagai Markdown';
+
+  @override
+  String get commentCopyThreadMarkdown => 'Salin utas sebagai Markdown';
+
+  @override
+  String get commentCopyPrompt => 'Salin sebagai prompt';
+
+  @override
+  String get commentCopyThreadPrompt => 'Salin utas sebagai prompt';
+
+  @override
+  String get commentSendToAgent => 'Kirim ke agen';
+
+  @override
+  String get commentDelete => 'Hapus komentar';
+
+  @override
+  String get commentEdit => 'Edit komentar';
+
+  @override
+  String get commentActions => 'Tindakan komentar';
+
+  @override
+  String get commentDeleteTitle => 'Hapus komentar ini?';
+
+  @override
+  String get commentDeleteBody => 'Komentar dihapus dari pull request.';
+
+  @override
+  String get commentSentToAgent => 'Terkirim ke agen';
+
+  @override
+  String get commentSendFailed => 'Tidak dapat mengirim komentar ini ke agen';
+
+  @override
+  String get commentDeleteFailed => 'Tidak dapat menghapus komentar ini';
+
+  @override
   String get autonomyDialLabel => 'Otonomi';
 
   @override
@@ -14753,4 +14867,38 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get forgeConnectionsThisWorkspace =>
       'Masuk atau tempel token untuk ruang kerja ini.';
+
+  @override
+  String get stackStartNextPart => 'Mulai bagian berikutnya';
+
+  @override
+  String get stackPartNameTitle => 'Nama bagian';
+
+  @override
+  String get stackPartNameHint => 'mis. migrasi';
+
+  @override
+  String get stackPublish => 'Terbitkan tumpukan';
+
+  @override
+  String get stackCurrentPart => 'Saat ini';
+
+  @override
+  String get stackSwitchDirty =>
+      'Commit atau buang perubahan sebelum berpindah bagian';
+
+  @override
+  String get stackCutFailed => 'Bagian berikutnya tidak dapat dimulai';
+
+  @override
+  String get stackPublishFailed => 'Tumpukan tidak dapat diterbitkan';
+
+  @override
+  String get stackPublished => 'Tumpukan diterbitkan sebagai draf';
+
+  @override
+  String get stackOpenPullRequest => 'Buka pull request';
+
+  @override
+  String get stackSection => 'Tumpukan';
 }

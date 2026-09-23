@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/features/messaging/domain/entities/space.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/features/messaging/presentation/widgets/space_row.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_row_adornments.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/features/repos/providers/repo_providers.dart';
@@ -13,6 +14,8 @@ import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
+export 'package:control_center/features/messaging/presentation/widgets/space_row.dart';
 
 /// Extracts the selected space id from the current [location] path, or null
 /// when not on a `/workspaces/<ws>/spaces/<id>` location. Parses the location
@@ -45,6 +48,11 @@ class SpaceSidebarItem extends ConsumerWidget implements CcFluidHoverTarget {
     required this.space,
     required this.selected,
     required this.onPress,
+    this.leading,
+    this.absentLeading,
+    this.subtitle,
+    this.quietSelection = false,
+    this.cardInset = EdgeInsets.zero,
     this.muted = false,
     this.conversationCount,
     this.runningShownOnConversations = false,
@@ -59,6 +67,22 @@ class SpaceSidebarItem extends ConsumerWidget implements CcFluidHoverTarget {
 
   /// Tap handler (navigation; the URL is the source of truth for selection).
   final VoidCallback onPress;
+
+  /// Replaces the whole leading slot (PR badge, spinner, absent mark).
+  final Widget? leading;
+
+  /// Leading mark when the space has no pull request and is not running.
+  /// Null keeps the pencil. The global sidebar passes the empty dot.
+  final Widget? absentLeading;
+
+  /// Second line under the space name. A checked-out branch.
+  final String? subtitle;
+
+  /// Selected without the solid brand fill. The parent paints the panel.
+  final bool quietSelection;
+
+  /// Vertical air this row's fill paints. The sidebar card inset.
+  final EdgeInsets cardInset;
 
   /// Whether this is a muted agent-DM row: dimmed and with no unread indicator,
   /// so agent chatter stays quiet and never touches the human unread counts.
@@ -114,15 +138,23 @@ class SpaceSidebarItem extends ConsumerWidget implements CcFluidHoverTarget {
     final label = space.name.isNotEmpty ? space.name : l10n.spaceLabel;
     // The leading slot carries the running signal (a spinner), so the trailing
     // indicator stays clear of a redundant running dot.
-    final leading = SpaceLeadingIcon(
-      spaceId: space.id,
-      running: running,
-      selected: selected,
-    );
+    final mark =
+        leading ??
+        SpaceLeadingIcon(
+          spaceId: space.id,
+          running: running,
+          // Quiet selection paints no brand fill, so the status-colored PR
+          // glyph stays. Recolouring is only for the solid selected row.
+          selected: selected && !quietSelection,
+          absent: absentLeading,
+        );
 
     return SpaceRow(
-      leading: leading,
+      leading: mark,
       label: label,
+      subtitle: subtitle,
+      quietSelection: quietSelection,
+      cardInset: cardInset,
       selected: selected,
       status: status,
       unread: unread,
@@ -190,261 +222,6 @@ class SpaceSidebarItem extends ConsumerWidget implements CcFluidHoverTarget {
     }
   }
 }
-
-/// A space navigation row that reproduces [CcSidebarItem]'s exact look — the
-/// solid `bgBrandSolid` fill fading in via opacity + reserved 1px `accent`
-/// border when [selected], with `accentOn` content, the same hover/pressed
-/// washes and padding — so spaces read as first-class sidebar items. It can't
-/// be a [CcSidebarItem] itself because that widget's icon-only API hosts no
-/// [leading] widget (an agent avatar / PR badge / spinner). Implements
-/// [CcFluidHoverTarget] so a [CcSidebarGroup] of space rows shares the same
-/// travelling hover wash as Workspace nav. (The 4px inter-item gap comes from
-/// the enclosing [CcSidebarGroup], same as [CcSidebarItem].)
-class SpaceRow extends StatelessWidget implements CcFluidHoverTarget {
-  /// Creates a [SpaceRow].
-  const SpaceRow({
-    super.key,
-    required this.leading,
-    required this.label,
-    required this.selected,
-    required this.status,
-    required this.unread,
-    required this.leadingHandlesRunning,
-    required this.onPress,
-    this.muted = false,
-    this.count,
-    this.menuItems,
-    this.menuSemanticLabel,
-  });
-
-  /// The leading slot: a spinner while running, else the PR badge / pencil.
-  final Widget leading;
-
-  /// The space display name.
-  final String label;
-
-  /// Whether this is the route's selected space.
-  final bool selected;
-
-  /// The space's live status (drives the trailing indicator).
-  final SpaceStatus status;
-
-  /// Whether the space has unseen agent messages (drives the notification dot
-  /// on idle spaces).
-  final bool unread;
-
-  /// Whether the leading slot already shows the running signal (the space
-  /// leading spins). Suppresses a redundant trailing running dot when true.
-  final bool leadingHandlesRunning;
-
-  /// Whether this is a muted agent-DM row: dimmed label and no trailing
-  /// status/unread indicator.
-  final bool muted;
-
-  /// Optional conversation count, rendered as a quiet chip hugging the label
-  /// (an inventory count, not a notification — it must not compete with the
-  /// accent unread/needs-input signals trailing the row). Null hides it.
-  final int? count;
-
-  /// Hover-revealed overflow actions (rename / archive / …). Null hides the
-  /// trigger. The items themselves are supplied by the row that owns the
-  /// verbs — this widget only hosts the menu.
-  final List<CcMenuItem>? menuItems;
-
-  /// Accessible name for [menuItems]' icon-only trigger.
-  final String? menuSemanticLabel;
-
-  /// Tap handler.
-  final VoidCallback onPress;
-
-  @override
-  bool get fluidHoverEnabled => true;
-
-  /// Hover always reveals the overflow. Focus only does when the last
-  /// interaction was a keyboard traversal — a mouse click focuses the
-  /// trigger (and the menu restores that focus on close), and treating
-  /// that like hover would leave the dots visible after the pointer left.
-  bool _overflowRevealed(Set<WidgetState> states) {
-    if (states.contains(WidgetState.hovered)) {
-      return true;
-    }
-    return states.contains(WidgetState.focused) &&
-        FocusModality.instance.isKeyboard;
-  }
-
-  Color _hoverFill(
-    DesignSystemTokens t,
-    Set<WidgetState> states, {
-    required bool fluidActive,
-  }) {
-    if (states.contains(WidgetState.pressed)) {
-      return t.hoverStrong;
-    }
-    if (states.contains(WidgetState.hovered)) {
-      // The enclosing [CcFluidHover] paints the wash once; the row stays
-      // transparent while it is the nearest target so the overlay is not
-      // double-painted. Own-fill hover is the fallback outside a group.
-      return fluidActive ? t.hover.withValues(alpha: 0) : t.hover;
-    }
-    // Alpha-0 hover colour (not transparent-black), mirroring CcSidebarItem, so
-    // the AnimatedContainer lerps only alpha on hover↔idle (no dark-gray flash).
-    return t.hover.withValues(alpha: 0);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final t = context.designSystem ?? DesignSystemTokens.light();
-    final fg = selected
-        ? t.accentOn
-        : (muted ? t.textTertiary : t.textSecondary);
-    final transitioning = CcSidebarScope.transitioningOf(context) ?? false;
-
-    return CcTappable(
-      onPressed: onPress,
-      borderRadius: AppRadii.brSm,
-      semanticLabel: label,
-      // Mirrors CcSidebarItem: the brand focus ring would vanish against the
-      // selected row's solid brand fill, so on that row the ring is accentOn.
-      focusRingColor: selected ? t.accentOn : null,
-      builder: (context, states) {
-        // Mirrors CcSidebarItem: the brand fill fades in via opacity over
-        // CcMotion.fast, so the foreground lerps with it — same duration and
-        // curve — or a white label flashes on the still-fading wash.
-        return TweenAnimationBuilder<Color?>(
-          duration: CcMotion.fast,
-          curve: CcMotion.standard,
-          tween: ColorTween(end: fg),
-          builder: (context, animatedFg, _) {
-            final contentColor = animatedFg ?? fg;
-            return AnimatedContainer(
-              duration: CcMotion.fast,
-              curve: CcMotion.standard,
-              // Mirrors CcSidebarItem's fixed 32px row height. Padding lives
-              // on the content so the selected overlay (below) is full-bleed.
-              height: kCcSidebarItemExtent,
-              decoration: BoxDecoration(
-                color: _hoverFill(
-                  t,
-                  states,
-                  fluidActive: CcFluidHover.isItemActive(context),
-                ),
-                borderRadius: AppRadii.brSm,
-              ),
-              // A 1px border is reserved on every row (alpha-0 when idle) so
-              // the layout never shifts when [selected] toggles the brand
-              // border on — mirrors CcSidebarItem (invisible in light, a
-              // brighter rim in dark). Foreground so it still rims the
-              // orange overlay rather than sitting behind it.
-              foregroundDecoration: BoxDecoration(
-                border: Border.all(
-                  color: selected ? t.accent : t.accent.withValues(alpha: 0),
-                  width: 1,
-                ),
-                borderRadius: AppRadii.brSm,
-              ),
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  IgnorePointer(
-                    child: AnimatedOpacity(
-                      opacity: selected ? 1 : 0,
-                      duration: CcMotion.fast,
-                      curve: CcMotion.standard,
-                      child: ColoredBox(color: t.bgBrandSolid),
-                    ),
-                  ),
-                  Padding(
-                    // Mirrors CcSidebarItem's 10px start inset so a space
-                    // row's leading glyph lands on the same x=27 line as a
-                    // nav item's icon in both modes. The 1px accent border
-                    // is paint-only and does not inset the child. While the
-                    // width animates the trailing inset drops to 0 so the
-                    // fixed leading glyph + gap can't overflow the
-                    // narrowing row.
-                    padding: EdgeInsetsDirectional.only(
-                      start: 10,
-                      end: transitioning ? 0 : 10,
-                    ),
-                    child: Row(
-                      children: [
-                        IconTheme.merge(
-                          data: IconThemeData(color: contentColor, size: 18),
-                          child: leading,
-                        ),
-                        const SizedBox(width: AppSpacing.sm),
-                        Expanded(
-                          // The label fades while the sidebar's width animates — kept
-                          // in the layout so the row geometry never changes — mirroring
-                          // CcSidebarItem's label fade.
-                          child: AnimatedOpacity(
-                            opacity: transitioning ? 0 : 1,
-                            duration: CcMotion.fast,
-                            curve: CcMotion.standard,
-                            child: Row(
-                              children: [
-                                Flexible(
-                                  child: Text(
-                                    label,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      height: 1.4,
-                                      fontWeight: CcTypography.regularWeight,
-                                      color: contentColor,
-                                    ),
-                                  ),
-                                ),
-                                if (count != null) ...[
-                                  const SizedBox(width: AppSpacing.sm),
-                                  SpaceCountChip(
-                                    count: count!,
-                                    selected: selected,
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                        ),
-                        if (!muted &&
-                            !transitioning &&
-                            SpaceTrailingIndicator.shouldShow(
-                              status: status,
-                              unread: unread,
-                              leadingHandlesRunning: leadingHandlesRunning,
-                            )) ...[
-                          const SizedBox(width: AppSpacing.sm),
-                          SpaceTrailingIndicator(
-                            status: status,
-                            unread: unread,
-                            leadingHandlesRunning: leadingHandlesRunning,
-                            selected: selected,
-                          ),
-                        ],
-                        if (menuItems != null &&
-                            menuItems!.isNotEmpty &&
-                            menuSemanticLabel != null &&
-                            !transitioning)
-                          SpaceRowOverflowMenu(
-                            items: menuItems!,
-                            semanticLabel: menuSemanticLabel!,
-                            color: contentColor,
-                            revealed: _overflowRevealed(states),
-                            selected: selected,
-                          ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-}
-
 
 /// Opens a small single-field rename dialog with [initialValue] prefilled and
 /// returns the trimmed new name — null when cancelled, emptied or unchanged,

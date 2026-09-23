@@ -9,6 +9,7 @@ import 'package:control_center/features/pr_review/presentation/screens/pull_requ
 import 'package:control_center/features/pr_review/presentation/utils/review_status_palette.dart';
 import 'package:control_center/features/pr_review/presentation/utils/scoped_diff_files.dart';
 import 'package:control_center/features/pr_review/presentation/utils/server_review_threads.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_file_tree.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/commit_range_selector.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/diff_settings_button.dart';
@@ -348,7 +349,15 @@ class _PrDiffTabState extends ConsumerState<PrDiffTab> {
     final deletions = scoped.files.fold<int>(0, (s, f) => s + f.deletions);
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
+      // Start edge matches the file-tree filter (`kPrDiffTreeFilterInset`) so
+      // the commit selector sits on the same line as the list it scopes.
+      // The end edge keeps the page margin for the review action.
+      padding: const EdgeInsetsDirectional.fromSTEB(
+        kPrDiffTreeFilterInset,
+        8,
+        24,
+        8,
+      ),
       decoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: t.borderSecondary)),
       ),

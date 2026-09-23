@@ -46,6 +46,7 @@ export 'dao_server_settings_repository.dart';
 export 'dao_skill_scan_repository.dart';
 export 'dao_skill_source_repository.dart';
 export 'dao_space_read_repository.dart';
+export 'dao_space_stack_repository.dart';
 export 'dao_sso_connection_repository.dart';
 export 'dao_ticket_link_repository.dart';
 export 'dao_ticket_repository.dart';

@@ -2558,6 +2558,17 @@ class AppLocalizationsFa extends AppLocalizations {
   String get agent => 'عامل';
 
   @override
+  String conversationCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count گفتگو',
+      one: '1 گفتگو',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String agentCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -3567,6 +3578,34 @@ class AppLocalizationsFa extends AppLocalizations {
       one: '1 ساعت پیش',
     );
     return '$_temp0';
+  }
+
+  @override
+  String get sidebarAgeNow => 'اکنون';
+
+  @override
+  String sidebarAgeMinutes(int count) {
+    return '$count د';
+  }
+
+  @override
+  String sidebarAgeHours(int count) {
+    return '$count س';
+  }
+
+  @override
+  String sidebarAgeDays(int count) {
+    return '$count ر';
+  }
+
+  @override
+  String sidebarAgeMonths(int count) {
+    return '$count ماه';
+  }
+
+  @override
+  String sidebarAgeYears(int count) {
+    return '$count سال';
   }
 
   @override
@@ -9710,6 +9749,81 @@ class AppLocalizationsFa extends AppLocalizations {
   }
 
   @override
+  String get reactionThumbsUp => 'پسندیدن';
+
+  @override
+  String get reactionThumbsDown => 'نپسندیدن';
+
+  @override
+  String get reactionLaugh => 'خنده';
+
+  @override
+  String get reactionHooray => 'هورا';
+
+  @override
+  String get reactionConfused => 'سردرگمی';
+
+  @override
+  String get reactionHeart => 'قلب';
+
+  @override
+  String get reactionRocket => 'موشک';
+
+  @override
+  String get reactionEyes => 'چشم‌ها';
+
+  @override
+  String get commentReact => 'واکنش';
+
+  @override
+  String get commentResolveThread => 'حل رشته';
+
+  @override
+  String get commentReopenThread => 'بازگشایی رشته';
+
+  @override
+  String get commentCopyLink => 'کپی پیوند نظر';
+
+  @override
+  String get commentCopyMarkdown => 'کپی به صورت Markdown';
+
+  @override
+  String get commentCopyThreadMarkdown => 'کپی رشته به صورت Markdown';
+
+  @override
+  String get commentCopyPrompt => 'کپی به صورت دستور';
+
+  @override
+  String get commentCopyThreadPrompt => 'کپی رشته به صورت دستور';
+
+  @override
+  String get commentSendToAgent => 'ارسال به عامل';
+
+  @override
+  String get commentDelete => 'حذف نظر';
+
+  @override
+  String get commentEdit => 'ویرایش نظر';
+
+  @override
+  String get commentActions => 'کنش‌های نظر';
+
+  @override
+  String get commentDeleteTitle => 'این نظر حذف شود؟';
+
+  @override
+  String get commentDeleteBody => 'از درخواست ادغام برداشته می‌شود.';
+
+  @override
+  String get commentSentToAgent => 'برای عامل فرستاده شد';
+
+  @override
+  String get commentSendFailed => 'ارسال این نظر به عامل ممکن نشد';
+
+  @override
+  String get commentDeleteFailed => 'حذف این نظر ممکن نشد';
+
+  @override
   String get autonomyDialLabel => 'خودمختاری';
 
   @override
@@ -14680,4 +14794,38 @@ class AppLocalizationsFa extends AppLocalizations {
   @override
   String get forgeConnectionsThisWorkspace =>
       'وارد شوید یا رمزی برای این فضای کاری جای‌گذاری کنید.';
+
+  @override
+  String get stackStartNextPart => 'شروع بخش بعدی';
+
+  @override
+  String get stackPartNameTitle => 'نام بخش';
+
+  @override
+  String get stackPartNameHint => 'مثلاً migration';
+
+  @override
+  String get stackPublish => 'انتشار پشته';
+
+  @override
+  String get stackCurrentPart => 'فعلی';
+
+  @override
+  String get stackSwitchDirty =>
+      'پیش از جابه‌جایی بخش‌ها تغییرات را ثبت یا کنار بگذارید';
+
+  @override
+  String get stackCutFailed => 'بخش بعدی شروع نشد';
+
+  @override
+  String get stackPublishFailed => 'پشته منتشر نشد';
+
+  @override
+  String get stackPublished => 'پشته به‌صورت پیش‌نویس منتشر شد';
+
+  @override
+  String get stackOpenPullRequest => 'باز کردن پول‌ریکوئست';
+
+  @override
+  String get stackSection => 'پشته';
 }

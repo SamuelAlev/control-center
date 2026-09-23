@@ -270,6 +270,64 @@ void main() {
         '/workspaces/w1/pull-requests/acme/web/-1',
       );
     });
+
+    test('scopes the diff with a commits param and sorts the shas', () {
+      expect(
+        pullRequestDetailRoute('w1', 'acme/web', 42, commits: {'bbb', 'aaa'}),
+        '/workspaces/w1/pull-requests/acme/web/42?commits=aaa,bbb',
+      );
+    });
+
+    test('an empty commit set adds no search params', () {
+      expect(
+        pullRequestDetailRoute('w1', 'acme/web', 42, commits: const {}),
+        '/workspaces/w1/pull-requests/acme/web/42',
+      );
+    });
+  });
+
+  group('pr commit query', () {
+    test('reads a comma-separated commits param', () {
+      expect(prCommitsFromQuery({'commits': 'bbb, aaa'}), {'aaa', 'bbb'});
+    });
+
+    test('an absent or blank param is the whole pull request', () {
+      expect(prCommitsFromQuery(const {}), isEmpty);
+      expect(prCommitsFromQuery({'commits': '  '}), isEmpty);
+      expect(prCommitsFromQuery({'tab': 'diff'}), isEmpty);
+    });
+
+    test('sets commits and keeps the other params', () {
+      expect(
+        locationWithPrCommits(
+          Uri.parse('/workspaces/w1/pull-requests/acme/web/42?tab=diff'),
+          {'def', 'abc'},
+        ),
+        '/workspaces/w1/pull-requests/acme/web/42?tab=diff&commits=abc,def',
+      );
+    });
+
+    test('removing the last commit drops the search params', () {
+      expect(
+        locationWithPrCommits(
+          Uri.parse('/workspaces/w1/pull-requests/acme/web/42?commits=abc'),
+          const {},
+        ),
+        '/workspaces/w1/pull-requests/acme/web/42',
+      );
+    });
+
+    test('removing commits keeps an unrelated param', () {
+      expect(
+        locationWithPrCommits(
+          Uri.parse(
+            '/workspaces/w1/pull-requests/acme/web/42?tab=diff&commits=abc',
+          ),
+          const {},
+        ),
+        '/workspaces/w1/pull-requests/acme/web/42?tab=diff',
+      );
+    });
   });
 
   group('workspace root routes', () {

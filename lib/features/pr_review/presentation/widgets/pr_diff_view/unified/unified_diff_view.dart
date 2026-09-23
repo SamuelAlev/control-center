@@ -16,6 +16,7 @@ import 'package:control_center/features/pr_review/presentation/utils/diff_isolat
 import 'package:control_center/features/pr_review/presentation/utils/server_review_threads.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/diff_keyboard_handler.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/diff_search_controller.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/composer_reveal.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/diff_goto.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/diff_regex_tester_popover.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/diff_slot.dart';
@@ -37,6 +38,7 @@ import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_v
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_row_painter.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_inline_comments/comment_composer_widget.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_inline_comments/comment_thread_widget.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/reaction_label.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_inline_comments/suggestion_blocks.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/sticky_header.dart';
 import 'package:control_center/features/pr_review/providers/diff_view_settings_provider.dart';
@@ -146,7 +148,8 @@ class UnifiedDiffView extends ConsumerStatefulWidget {
 }
 
 /// State for [UnifiedDiffView]; exposes [jumpToFile] for the file tree.
-class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
+class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
+    with SingleTickerProviderStateMixin {
   final GlobalKey _sliverKey = GlobalKey();
   late final PrDiffDocument _document;
   late final DiffStructureStore _store;
@@ -238,6 +241,30 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
   /// a row range), or null when nothing is being composed. Hosted as a
   /// `composer` slot so it reserves exact height like a thread block.
   ComposerRequest? _activeComposer;
+
+  /// Reveal progress for [_activeComposer]. The document's reserved height
+  /// tracks this so the rows below move with the box; the widget tree only
+  /// rebuilds when the motion starts or settles.
+  late final AnimationController _composerReveal;
+  late final CurvedAnimation _composerCurve;
+
+  /// Platform or theme reduced motion. Travel is dropped; a short fade remains.
+  bool _composerReduced = false;
+
+  /// True while the box is collapsing. A new open clears it so a finishing
+  /// reverse cannot remove the composer that replaced it.
+  bool _composerClosing = false;
+
+  /// A post-frame [AnimationController.forward] is already queued.
+  bool _composerRevealScheduled = false;
+
+  /// Settled height of the composer child. Null until the first layout of
+  /// this open. The reveal scales this, it does not guess a second time.
+  double? _composerContentHeight;
+
+  /// Bumped on each open so the measurer reports again even when the new
+  /// composer happens to be the same height as the one it replaced.
+  int _composerOpenSerial = 0;
 
   /// Thread whose conversation is currently focused (its highlight is drawn in
   /// the active colour and its popover is shown).
@@ -351,9 +378,7 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
             DiffCommentBlock(
               key: previewComposerKey,
               anchorLine: -1,
-              height:
-                  _commentHeights[previewComposerKey] ??
-                  _estimateComposerHeight(),
+              height: _composerLayoutHeight(),
             ),
           );
         }
@@ -381,9 +406,7 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
                   _document.offsetOfFile(f) +
                   kFastFileHeaderHeight +
                   _document.previewHeightOf(f),
-              height:
-                  _commentHeights[previewComposerKey] ??
-                  _estimateComposerHeight(),
+              height: _composerSlotHeight(),
               anchorDisplayLine: 0,
             ),
           );
@@ -424,7 +447,7 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
             DiffCommentBlock(
               key: composerKey,
               anchorLine: d,
-              height: _commentHeights[composerKey] ?? _estimateComposerHeight(),
+              height: _composerLayoutHeight(),
             ),
           );
         }
@@ -479,7 +502,7 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
               key: composerKey,
               fileIndex: f,
               offset: below,
-              height: _commentHeights[composerKey] ?? _estimateComposerHeight(),
+              height: _composerSlotHeight(),
               anchorDisplayLine: d,
             ),
           );
@@ -494,6 +517,141 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
   /// the review), so both are taller than they were.
   double _estimateComposerHeight() =>
       (_activeComposer?.kind == PrInlineThreadKind.suggestion) ? 250 : 110;
+
+  /// Height reserved in the document for the open composer.
+  ///
+  /// While the reveal is running this is a fraction of the measured height,
+  /// so the code below the row eases out of the way. Reduced motion and a
+  /// settled composer reserve the full height immediately.
+  double _composerLayoutHeight() {
+    if (_composerReduced || _composerReveal.isCompleted) {
+      return _commentHeights['composer'] ?? _composerFullHeight();
+    }
+    return _composerFullHeight() * _composerCurve.value;
+  }
+
+  /// Slot extent used for culling. The visible slice may still be growing,
+  /// but the child has to stay mounted for the whole box or the bottom is
+  /// collected while it is on screen.
+  double _composerSlotHeight() =>
+      math.max(_composerLayoutHeight(), _composerFullHeight());
+
+  double _composerFullHeight() =>
+      _composerContentHeight ?? _estimateComposerHeight();
+
+  Duration get _composerEnterDuration =>
+      _composerReduced ? CcMotion.fade : CcMotion.slow;
+
+  void _armComposerEntrance() {
+    _haltComposerMotion();
+    _composerOpenSerial++;
+    _commentHeights.remove('composer');
+    _composerReveal.duration = _composerEnterDuration;
+  }
+
+  void _haltComposerMotion() {
+    _composerClosing = false;
+    _composerContentHeight = null;
+    _composerRevealScheduled = false;
+    _composerReveal.stop();
+    if (_composerReveal.value != 0) {
+      _composerReveal.value = 0;
+    }
+  }
+
+  void _scheduleComposerReveal() {
+    if (_composerReveal.isAnimating || _composerReveal.value > 0) {
+      return;
+    }
+    if (_composerRevealScheduled) {
+      return;
+    }
+    _composerRevealScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _composerRevealScheduled = false;
+      if (!mounted || _activeComposer == null || _composerClosing) {
+        return;
+      }
+      if (_composerReveal.isAnimating || _composerReveal.value > 0) {
+        return;
+      }
+      _composerReveal.duration = _composerEnterDuration;
+      _composerReveal.forward();
+    });
+  }
+
+  /// Pushes the reserved composer height to the current reveal progress.
+  ///
+  /// A per-frame setState would rebuild every slot and recompute comment
+  /// highlights for the whole PR. The document update plus a sliver relayout
+  /// moves the rows; [ComposerReveal] paints the box.
+  void _onComposerTick() {
+    final req = _activeComposer;
+    if (req == null || !mounted || _composerReduced) {
+      return;
+    }
+    if (_document.updateCommentBlockHeight(
+      req.fileIndex,
+      'composer',
+      _composerLayoutHeight(),
+    )) {
+      _sliver?.markNeedsLayout();
+    }
+  }
+
+  void _onComposerStatus(AnimationStatus status) {
+    if (!mounted) {
+      return;
+    }
+    if (status == AnimationStatus.dismissed && _composerClosing) {
+      _removeComposer();
+      return;
+    }
+    if (status == AnimationStatus.completed &&
+        _activeComposer != null &&
+        !_composerClosing) {
+      final height = _composerContentHeight;
+      if (height != null) {
+        _commentHeights['composer'] = height;
+      }
+      setState(() => _revision++);
+    }
+  }
+
+  void _onComposerContentMeasured(double height) {
+    if (_composerClosing) {
+      return;
+    }
+    if (_composerContentHeight != null &&
+        (_composerContentHeight! - height).abs() < 0.5) {
+      return;
+    }
+    _composerContentHeight = height;
+    if (_composerReduced || _composerReveal.isCompleted) {
+      _onCommentMeasured('composer', height);
+      if (_composerReduced) {
+        _scheduleComposerReveal();
+      }
+      return;
+    }
+    _scheduleComposerReveal();
+  }
+
+  bool _composerAlreadyOpen(
+    int file,
+    int startLine,
+    int endLine,
+    PrInlineThreadKind kind,
+  ) {
+    final existing = _activeComposer;
+    if (existing == null || _composerClosing) {
+      return false;
+    }
+    return existing.fileIndex == file &&
+        existing.startDisplayLine == startLine &&
+        existing.endDisplayLine == endLine &&
+        existing.kind == kind;
+  }
 
   /// Per-file server-comment spans, memoized against the comment list.
   ///
@@ -782,6 +940,15 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
   @override
   void initState() {
     super.initState();
+    _composerReveal = AnimationController(vsync: this, duration: CcMotion.slow);
+    _composerCurve = CurvedAnimation(
+      parent: _composerReveal,
+      curve: CcMotion.standard,
+      reverseCurve: CcMotion.standard,
+    );
+    _composerReveal
+      ..addListener(_onComposerTick)
+      ..addStatusListener(_onComposerStatus);
     _document = PrDiffDocument(
       lineHeight: kDiffLineHeight,
       headerHeight: kFastFileHeaderHeight,
@@ -982,6 +1149,10 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
       _brightness = brightness;
       _store.isDark = brightness == Brightness.dark;
     }
+    _composerReduced = CcMotion.reduced(context);
+    if (!_composerReveal.isAnimating) {
+      _composerReveal.duration = _composerEnterDuration;
+    }
   }
 
   @override
@@ -1060,6 +1231,11 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
 
   @override
   void dispose() {
+    _composerReveal
+      ..removeListener(_onComposerTick)
+      ..removeStatusListener(_onComposerStatus);
+    _composerCurve.dispose();
+    _composerReveal.dispose();
     _threadHighlightFade?.cancel();
     _gotoLandingFade?.cancel();
     HardwareKeyboard.instance.removeHandler(_keyboard.handleGlobalKey);
@@ -1146,6 +1322,7 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
       if (!widget.files[index].isImage && _activeComposer?.fileIndex == index) {
         _activeComposer = null;
         _commentHeights.remove('composer');
+        _haltComposerMotion();
       }
       if (!_document.isExpanded(index)) {
         _document.setExpanded(index, expanded: true);
@@ -1182,7 +1359,11 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
     if (widget.inlineCommentsController == null) {
       return;
     }
+    if (_composerAlreadyOpen(fileIndex, 0, 0, PrInlineThreadKind.comment)) {
+      return;
+    }
     setState(() {
+      _armComposerEntrance();
       _activeComposer = ComposerRequest(
         fileIndex: fileIndex,
         anchorDisplayLine: 0,
@@ -1196,7 +1377,6 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
         originalCode: '',
         kind: PrInlineThreadKind.comment,
       );
-      _commentHeights.remove('composer');
       _revision++;
     });
   }
@@ -1276,7 +1456,11 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
     if (info == null) {
       return;
     }
+    if (_composerAlreadyOpen(file, lo, hi, kind)) {
+      return;
+    }
     setState(() {
+      _armComposerEntrance();
       _activeComposer = ComposerRequest(
         fileIndex: file,
         anchorDisplayLine: hi,
@@ -1290,7 +1474,6 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
         originalCode: info.originalCode,
         kind: kind,
       );
-      _commentHeights.remove('composer');
       _revision++;
     });
   }
@@ -1312,6 +1495,7 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
         initialComment: comment,
       );
       _commentHeights.remove('composer');
+      _composerContentHeight = null;
       _revision++;
     });
   }
@@ -1334,7 +1518,7 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
       authorBody: body,
       batched: batched,
     );
-    _cancelComposer();
+    _cancelComposer(animate: false);
   }
 
   void _submitSuggestion(
@@ -1357,11 +1541,30 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
       authorBody: body,
       batched: batched,
     );
-    _cancelComposer();
+    _cancelComposer(animate: false);
   }
 
-  void _cancelComposer() {
-    if (!mounted) {
+  /// Dismisses the open composer.
+  ///
+  /// [animate] collapses it back into the row. Submitting skips that: the
+  /// posted thread takes the same anchor on the next frame, and playing both
+  /// would stack a closing box on the new card.
+  void _cancelComposer({bool animate = true}) {
+    if (!mounted || _activeComposer == null) {
+      return;
+    }
+    if (!animate || _composerReduced || _composerReveal.value == 0) {
+      _removeComposer();
+      return;
+    }
+    _composerClosing = true;
+    _composerReveal.duration = CcMotion.exitFor(CcMotion.slow);
+    _composerReveal.reverse();
+  }
+
+  void _removeComposer() {
+    _haltComposerMotion();
+    if (!mounted || _activeComposer == null) {
       return;
     }
     setState(() {
@@ -1548,7 +1751,9 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
   }
 
   bool _handleGotoModifierKey(KeyEvent event) {
-    if (!mounted || widget.splitView) {
+    // Hidden editor tabs stay mounted, so a selection chord in the
+    // conversation must not resolve a span against this diff.
+    if (!mounted || widget.splitView || !_tabVisible) {
       return false;
     }
     if (event is KeyDownEvent &&
@@ -1601,6 +1806,15 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
       return;
     }
     final rawIndex = _document.rawIndexOf(f, line);
+    // cellAt reports line 0 for a collapsed file and for a header hit, and
+    // rawIndexOf echoes that index when the file has no display rows. An
+    // empty patch (rename, binary, mode-only) then has nothing at index 0.
+    // This handler is global, so a Cmd/Ctrl chord in the conversation (select
+    // all, extend a selection) reaches it from a stale hover.
+    if (!_isCodeRow(raw, rawIndex)) {
+      _setGotoSpan(null);
+      return;
+    }
     _setGotoSpan(
       _gatedGotoSpan(
         interactiveSpanAt(
@@ -1991,6 +2205,7 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
       if (!_tabVisible) {
         _pillDrag = null;
         _hoverRow.value = null;
+        _lastHoverGlobal = null;
         _setGotoSpan(null);
         _closeGotoPopover();
       }
@@ -2591,6 +2806,7 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
     if (info == null) {
       return;
     }
+    final l10n = AppLocalizations.of(context);
     final picked = await showMenu<String>(
       context: context,
       position: RelativeRect.fromLTRB(
@@ -2604,7 +2820,10 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
           PopupMenuItem<String>(
             value: g.emoji,
             height: 38,
-            child: Text(g.emoji, style: const TextStyle(fontSize: 20)),
+            child: CcTooltip(
+              message: prReactionLabel(l10n, g.content),
+              child: Text(g.emoji, style: const TextStyle(fontSize: 20)),
+            ),
           ),
       ],
     );
@@ -3116,46 +3335,52 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
             return Material(
               key: ValueKey(slot.key),
               type: MaterialType.transparency,
-              child: HeightReporter(
-                onMeasured: (h) => _onCommentMeasured(slot.key, h),
-                child: req.kind == PrInlineThreadKind.suggestion
-                    ? SuggestionComposer(
-                        originalCode: req.originalCode,
-                        filePath: _document.files[req.fileIndex].filename,
-                        initialComment: req.initialComment,
-                        baseStyle: _baseStyle(
-                          codeFont,
-                          ligatures: codeLigatures,
+              child: ComposerReveal(
+                animation: _composerCurve,
+                reducedMotion: _composerReduced,
+                child: HeightReporter(
+                  key: ValueKey(_composerOpenSerial),
+                  onMeasured: _onComposerContentMeasured,
+                  child: req.kind == PrInlineThreadKind.suggestion
+                      ? SuggestionComposer(
+                          originalCode: req.originalCode,
+                          filePath: _document.files[req.fileIndex].filename,
+                          initialComment: req.initialComment,
+                          baseStyle: _baseStyle(
+                            codeFont,
+                            ligatures: codeLigatures,
+                          ),
+                          reviewInProgress: reviewInProgress,
+                          onSubmit: (suggested, comment) => _submitSuggestion(
+                            req,
+                            suggested,
+                            comment,
+                            batched: false,
+                          ),
+                          onSubmitBatched: canBatch
+                              ? (suggested, comment) => _submitSuggestion(
+                                  req,
+                                  suggested,
+                                  comment,
+                                  batched: true,
+                                )
+                              : null,
+                          onCancel: _cancelComposer,
+                        )
+                      : PrCommentComposer(
+                          prRef: widget.inlineCommentsController?.pr,
+                          reviewInProgress: reviewInProgress,
+                          onSuggest: (comment) =>
+                              _switchComposerToSuggestion(req, comment),
+                          onSubmit: (body) =>
+                              _submitComment(req, body, batched: false),
+                          onSubmitBatched: canBatch
+                              ? (body) =>
+                                    _submitComment(req, body, batched: true)
+                              : null,
+                          onCancel: _cancelComposer,
                         ),
-                        reviewInProgress: reviewInProgress,
-                        onSubmit: (suggested, comment) => _submitSuggestion(
-                          req,
-                          suggested,
-                          comment,
-                          batched: false,
-                        ),
-                        onSubmitBatched: canBatch
-                            ? (suggested, comment) => _submitSuggestion(
-                                req,
-                                suggested,
-                                comment,
-                                batched: true,
-                              )
-                            : null,
-                        onCancel: _cancelComposer,
-                      )
-                    : PrCommentComposer(
-                        prRef: widget.inlineCommentsController?.pr,
-                        reviewInProgress: reviewInProgress,
-                        onSuggest: (comment) =>
-                            _switchComposerToSuggestion(req, comment),
-                        onSubmit: (body) =>
-                            _submitComment(req, body, batched: false),
-                        onSubmitBatched: canBatch
-                            ? (body) => _submitComment(req, body, batched: true)
-                            : null,
-                        onCancel: _cancelComposer,
-                      ),
+                ),
               ),
             );
           case DiffSlotKind.preview:

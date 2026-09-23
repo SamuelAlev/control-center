@@ -2529,6 +2529,17 @@ class AppLocalizationsKo extends AppLocalizations {
   String get agent => '에이전트';
 
   @override
+  String conversationCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count개의 대화',
+      one: '$count개의 대화',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String agentCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -3520,6 +3531,34 @@ class AppLocalizationsKo extends AppLocalizations {
       one: '1시간 전',
     );
     return '$_temp0';
+  }
+
+  @override
+  String get sidebarAgeNow => '방금';
+
+  @override
+  String sidebarAgeMinutes(int count) {
+    return '$count분';
+  }
+
+  @override
+  String sidebarAgeHours(int count) {
+    return '$count시간';
+  }
+
+  @override
+  String sidebarAgeDays(int count) {
+    return '$count일';
+  }
+
+  @override
+  String sidebarAgeMonths(int count) {
+    return '$count개월';
+  }
+
+  @override
+  String sidebarAgeYears(int count) {
+    return '$count년';
   }
 
   @override
@@ -9545,6 +9584,81 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String get reactionThumbsUp => '좋아요';
+
+  @override
+  String get reactionThumbsDown => '싫어요';
+
+  @override
+  String get reactionLaugh => '웃음';
+
+  @override
+  String get reactionHooray => '만세';
+
+  @override
+  String get reactionConfused => '혼란';
+
+  @override
+  String get reactionHeart => '하트';
+
+  @override
+  String get reactionRocket => '로켓';
+
+  @override
+  String get reactionEyes => '눈';
+
+  @override
+  String get commentReact => '반응';
+
+  @override
+  String get commentResolveThread => '스레드 해결';
+
+  @override
+  String get commentReopenThread => '스레드 다시 열기';
+
+  @override
+  String get commentCopyLink => '댓글 링크 복사';
+
+  @override
+  String get commentCopyMarkdown => 'Markdown으로 복사';
+
+  @override
+  String get commentCopyThreadMarkdown => '스레드를 Markdown으로 복사';
+
+  @override
+  String get commentCopyPrompt => '프롬프트로 복사';
+
+  @override
+  String get commentCopyThreadPrompt => '스레드를 프롬프트로 복사';
+
+  @override
+  String get commentSendToAgent => '에이전트에게 보내기';
+
+  @override
+  String get commentDelete => '댓글 삭제';
+
+  @override
+  String get commentEdit => '댓글 편집';
+
+  @override
+  String get commentActions => '댓글 작업';
+
+  @override
+  String get commentDeleteTitle => '이 댓글을 삭제할까요?';
+
+  @override
+  String get commentDeleteBody => '풀 리퀘스트에서 제거됩니다.';
+
+  @override
+  String get commentSentToAgent => '에이전트에게 보냈습니다';
+
+  @override
+  String get commentSendFailed => '이 댓글을 에이전트에게 보내지 못했습니다';
+
+  @override
+  String get commentDeleteFailed => '이 댓글을 삭제하지 못했습니다';
+
+  @override
   String get autonomyDialLabel => '자율성';
 
   @override
@@ -14416,4 +14530,37 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get forgeConnectionsThisWorkspace => '이 작업 공간용으로 로그인하거나 토큰을 붙여넣으세요.';
+
+  @override
+  String get stackStartNextPart => '다음 부분 시작';
+
+  @override
+  String get stackPartNameTitle => '부분 이름';
+
+  @override
+  String get stackPartNameHint => '예: migration';
+
+  @override
+  String get stackPublish => '스택 게시';
+
+  @override
+  String get stackCurrentPart => '현재';
+
+  @override
+  String get stackSwitchDirty => '부분을 전환하기 전에 변경 사항을 커밋하거나 버리세요';
+
+  @override
+  String get stackCutFailed => '다음 부분을 시작하지 못했습니다';
+
+  @override
+  String get stackPublishFailed => '스택을 게시하지 못했습니다';
+
+  @override
+  String get stackPublished => '스택을 초안으로 게시했습니다';
+
+  @override
+  String get stackOpenPullRequest => '풀 리퀘스트 열기';
+
+  @override
+  String get stackSection => '스택';
 }

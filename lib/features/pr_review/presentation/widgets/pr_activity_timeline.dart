@@ -19,6 +19,7 @@ import 'package:control_center/features/pr_review/presentation/utils/diff_file_t
 import 'package:control_center/features/pr_review/presentation/utils/pr_activity_entries.dart';
 import 'package:control_center/features/pr_review/presentation/utils/review_status_palette.dart';
 import 'package:control_center/features/pr_review/presentation/utils/server_review_threads.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/pr_comment_actions.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/outdated_comments.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_inline_comments/comment_thread_widget.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/reaction_bar.dart';
@@ -42,7 +43,8 @@ import 'package:super_sliver_list/super_sliver_list.dart';
 /// a chronological timeline of the opened event, review requests, label
 /// changes, submitted reviews (verdict rows, or comment cards when the
 /// reviewer wrote a summary), top-level conversation comments (bots included)
-/// and pushed commits.
+/// and pushed commits. A commit's hash and title open the Diff tab scoped
+/// to that commit alone.
 ///
 /// Builds as a sliver so off-screen cards are not parsed. Each inline
 /// conversation is its own sliver child (a review with twenty threads
@@ -57,6 +59,7 @@ class PrActivityTimeline extends ConsumerStatefulWidget {
     required this.pr,
     required this.prRef,
     this.onOpenFileInDiff,
+    this.onOpenCommit,
   });
 
   /// The pull request whose activity is shown.
@@ -69,6 +72,10 @@ class PrActivityTimeline extends ConsumerStatefulWidget {
   /// "view in diff" action is pressed, so the detail screen can focus the
   /// Diff tab and jump to that file.
   final ValueChanged<int>? onOpenFileInDiff;
+
+  /// Called with a commit SHA when its hash or title is tapped, so the
+  /// detail screen can focus the Diff tab on that commit's changes.
+  final ValueChanged<String>? onOpenCommit;
 
   @override
   ConsumerState<PrActivityTimeline> createState() => _PrActivityTimelineState();
@@ -323,8 +330,14 @@ class _PrActivityTimelineState extends ConsumerState<PrActivityTimeline> {
               PrOpenedEntry() => _OpenedRow(entry: entry),
               PrReviewRequestEntry() => _ReviewRequestRow(entry: entry),
               PrLabelChangeEntry() => _LabelChangeRow(entry: entry),
-              PrCommitEntry() => _CommitRow(entry: entry),
-              PrCommitGroupEntry() => _CommitGroupRow(entry: entry),
+              PrCommitEntry() => _CommitRow(
+                entry: entry,
+                onOpen: widget.onOpenCommit,
+              ),
+              PrCommitGroupEntry() => _CommitGroupRow(
+                entry: entry,
+                onOpen: widget.onOpenCommit,
+              ),
               PrReviewEntry() when entry.review.body.trim().isEmpty =>
                 _ReviewVerdictRow(entry: entry),
               PrReviewEntry() => _ReviewCard(
@@ -340,8 +353,11 @@ class _PrActivityTimelineState extends ConsumerState<PrActivityTimeline> {
             },
             _RepliesRow(:final replies) => _ReviewReplyRefs(
               replies: replies,
+              prRef: prRef,
               repoFullName: pr.repoFullName,
               onFollow: (reply) => _revealThread(reply.thread.id),
+              onSetResolved: _setResolved,
+              isResolved: _isResolved,
             ),
             _ThreadsIntroRow(:final count) => Padding(
               padding: const EdgeInsetsDirectional.only(bottom: 6, start: 2),
@@ -856,9 +872,12 @@ class _LabelChangeRow extends StatelessWidget {
 }
 
 class _CommitRow extends ConsumerWidget {
-  const _CommitRow({required this.entry});
+  const _CommitRow({required this.entry, this.onOpen});
 
   final PrCommitEntry entry;
+
+  /// Opens the diff scoped to this commit. Null leaves the row plain text.
+  final ValueChanged<String>? onOpen;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -871,19 +890,119 @@ class _CommitRow extends ConsumerWidget {
     return _EventSentence(
       spans: [
         ..._eventSpans(context, sentence, mentions),
-        TextSpan(
-          text: ' ${entry.commit.shortSha}',
-          style: base.copyWith(
-            fontFamily: ref.watch(codeFontFamilyProvider),
-            color: t.textSecondary,
-          ),
-        ),
-        TextSpan(
-          text: ' ${entry.commit.title}',
-          style: base.copyWith(color: t.textTertiary),
+        ..._commitIdentitySpans(
+          context,
+          commit: entry.commit,
+          codeFont: ref.watch(codeFontFamilyProvider),
+          base: base,
+          leadingSpace: true,
+          onOpen: onOpen,
         ),
       ],
       timestamp: entry.timestamp,
+    );
+  }
+}
+
+/// Hash + title of a commit. With [onOpen], both are one button that opens
+/// that commit's diff; otherwise they stay plain text so the sentence wraps
+/// the same way.
+List<InlineSpan> _commitIdentitySpans(
+  BuildContext context, {
+  required PrCommit commit,
+  required String codeFont,
+  required TextStyle base,
+  required ValueChanged<String>? onOpen,
+  bool leadingSpace = false,
+}) {
+  final t = context.designSystem ?? DesignSystemTokens.light();
+  final shaStyle = base.copyWith(fontFamily: codeFont, color: t.textSecondary);
+  final titleStyle = base.copyWith(color: t.textTertiary);
+  if (onOpen == null) {
+    return [
+      TextSpan(
+        text: leadingSpace ? ' ${commit.shortSha}' : commit.shortSha,
+        style: shaStyle,
+      ),
+      if (commit.title.isNotEmpty)
+        TextSpan(text: ' ${commit.title}', style: titleStyle),
+    ];
+  }
+  return [
+    if (leadingSpace) const TextSpan(text: ' '),
+    WidgetSpan(
+      alignment: PlaceholderAlignment.baseline,
+      baseline: TextBaseline.alphabetic,
+      child: _CommitChangesLink(
+        commit: commit,
+        codeFont: codeFont,
+        onOpen: onOpen,
+      ),
+    ),
+  ];
+}
+
+/// The tappable hash and title. Inline so a tap reaches the button inside the
+/// overview's selection region; a long title takes the next line instead of
+/// overflowing the sentence.
+class _CommitChangesLink extends StatelessWidget {
+  const _CommitChangesLink({
+    required this.commit,
+    required this.codeFont,
+    required this.onOpen,
+  });
+
+  final PrCommit commit;
+  final String codeFont;
+  final ValueChanged<String> onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final t = context.designSystem ?? DesignSystemTokens.light();
+    final base = CcTypography.caption.copyWith(height: 1.5);
+    return CcTooltip(
+      message: l10n.viewInDiff,
+      child: CcTappable(
+        onPressed: () => onOpen(commit.sha),
+        semanticLabel: '${l10n.viewInDiff} ${commit.shortSha}',
+        borderRadius: AppRadii.brSm,
+        builder: (context, states) {
+          final hot =
+              states.contains(WidgetState.hovered) ||
+              states.contains(WidgetState.focused) ||
+              states.contains(WidgetState.pressed);
+          final shaColor = hot ? t.textPrimary : t.textSecondary;
+          final titleColor = hot ? t.textSecondary : t.textTertiary;
+          final decoration = hot
+              ? TextDecoration.underline
+              : TextDecoration.none;
+          return Text.rich(
+            TextSpan(
+              children: [
+                TextSpan(
+                  text: commit.shortSha,
+                  style: base.copyWith(
+                    fontFamily: codeFont,
+                    color: shaColor,
+                    decoration: decoration,
+                    decorationColor: shaColor,
+                  ),
+                ),
+                if (commit.title.isNotEmpty)
+                  TextSpan(
+                    text: ' ${commit.title}',
+                    style: base.copyWith(
+                      color: titleColor,
+                      decoration: decoration,
+                      decorationColor: titleColor,
+                    ),
+                  ),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 }
@@ -893,9 +1012,12 @@ class _CommitRow extends ConsumerWidget {
 /// the individual commits open underneath (chevron pairs with the state, per
 /// the never-color-alone rule).
 class _CommitGroupRow extends ConsumerStatefulWidget {
-  const _CommitGroupRow({required this.entry});
+  const _CommitGroupRow({required this.entry, this.onOpen});
 
   final PrCommitGroupEntry entry;
+
+  /// Opens the diff scoped to one commit in the expanded run.
+  final ValueChanged<String>? onOpen;
 
   @override
   ConsumerState<_CommitGroupRow> createState() => _CommitGroupRowState();
@@ -965,19 +1087,13 @@ class _CommitGroupRowState extends ConsumerState<_CommitGroupRow> {
                         const SizedBox(width: 8),
                         Flexible(
                           child: _EventSentence(
-                            spans: [
-                              TextSpan(
-                                text: c.shortSha,
-                                style: base.copyWith(
-                                  fontFamily: ref.watch(codeFontFamilyProvider),
-                                  color: t.textSecondary,
-                                ),
-                              ),
-                              TextSpan(
-                                text: ' ${c.title}',
-                                style: base.copyWith(color: t.textTertiary),
-                              ),
-                            ],
+                            spans: _commitIdentitySpans(
+                              context,
+                              commit: c,
+                              codeFont: ref.watch(codeFontFamilyProvider),
+                              base: base,
+                              onOpen: widget.onOpen,
+                            ),
                             timestamp: c.date,
                           ),
                         ),
@@ -1023,19 +1139,26 @@ class _ReviewVerdictRow extends StatelessWidget {
 /// person answered someone, and their words live in a thread anchored under an
 /// earlier entry. Each row shows what they said and follows back to the
 /// discussion — opening it if it was collapsed or resolved, and scrolling to it.
-class _ReviewReplyRefs extends StatelessWidget {
+class _ReviewReplyRefs extends ConsumerWidget {
   const _ReviewReplyRefs({
     required this.replies,
+    required this.prRef,
     required this.repoFullName,
     required this.onFollow,
+    required this.onSetResolved,
+    required this.isResolved,
   });
 
   final List<ServerReviewReply> replies;
+  final PrRef prRef;
   final String repoFullName;
   final ValueChanged<ServerReviewReply> onFollow;
+  final Future<void> Function(ServerReviewThread thread, bool resolved)
+  onSetResolved;
+  final bool Function(ServerReviewThread thread) isResolved;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final t = context.designSystem ?? DesignSystemTokens.light();
     final l10n = AppLocalizations.of(context);
     return Padding(
@@ -1091,10 +1214,42 @@ class _ReviewReplyRefs extends StatelessWidget {
                   ),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
-                    child: PrBodyMarkdown(
+                    child: PrCommentActions(
+                      prRef: prRef,
                       body: reply.comment.body,
-                      repoFullName: repoFullName,
-                      deferParse: false,
+                      authorLogin: reply.comment.user?.login ?? '',
+                      commentId: reply.comment.id,
+                      reviewComment: true,
+                      path: reply.thread.path,
+                      startLine: reply.thread.startLine,
+                      endLine: reply.thread.endLine,
+                      thread: [
+                        for (final comment in reply.thread.comments)
+                          (
+                            author: comment.user?.login ?? '',
+                            body: comment.body,
+                          ),
+                      ],
+                      canResolve: reply.thread.threadId != null,
+                      resolved: isResolved(reply.thread),
+                      onResolve: () => onSetResolved(
+                        reply.thread,
+                        !isResolved(reply.thread),
+                      ),
+                      onToggleReaction: (content, {required add}) =>
+                          toggleReaction(
+                            ref,
+                            ReactionTarget.reviewComment,
+                            commentId: reply.comment.id,
+                            pr: prRef,
+                            content: content,
+                            add: add,
+                          ),
+                      child: PrBodyMarkdown(
+                        body: reply.comment.body,
+                        repoFullName: repoFullName,
+                        deferParse: false,
+                      ),
                     ),
                   ),
                 ],
@@ -1281,31 +1436,49 @@ class _ReviewCard extends ConsumerWidget {
       ),
       _ => (l10n.commented, AppIcons.messageSquare, null),
     };
-    final card = _ActivityCard(
-      author: review.author,
-      createdAt: review.submittedAt,
+    final reactions = review.reactions;
+    return PrCommentActions(
+      prRef: prRef,
       body: review.body,
-      repoFullName: pr.repoFullName,
-      chip: _VerdictChip(label: chipLabel, icon: chipIcon, color: chipColor),
-      footer: ReactionBar(
-        reactions: review.reactions,
-        onToggle: (content, {required add}) => toggleReaction(
-          ref,
-          ReactionTarget.review,
-          reviewId: review.id,
-          pr: prRef,
-          content: content,
-          add: add,
-        ),
+      authorLogin: review.author?.login ?? '',
+      onToggleReaction: (content, {required add}) => toggleReaction(
+        ref,
+        ReactionTarget.review,
+        reviewId: review.id,
+        pr: prRef,
+        content: content,
+        add: add,
+      ),
+      // Clears the verdict chip in the header.
+      toolbarTop: 32,
+      child: _ActivityCard(
+        author: review.author,
+        createdAt: review.submittedAt,
+        body: review.body,
+        repoFullName: pr.repoFullName,
+        chip: _VerdictChip(label: chipLabel, icon: chipIcon, color: chipColor),
+        footer: reactions.isEmpty
+            ? null
+            : ReactionBar(
+                reactions: reactions,
+                showAdder: false,
+                onToggle: (content, {required add}) => toggleReaction(
+                  ref,
+                  ReactionTarget.review,
+                  reviewId: review.id,
+                  pr: prRef,
+                  content: content,
+                  add: add,
+                ),
+              ),
       ),
     );
-    return card;
   }
 }
 
-/// A top-level conversation comment (human or bot) with its reaction bar.
-/// The bar always renders: with no existing reactions it shows only the
-/// add-reaction popover chip, which is the only way to react to a comment.
+/// A top-level conversation comment. Reactions that already exist stay under
+/// the body; adding one, resolving (never, this is not a thread), copying,
+/// sending to an agent, editing and deleting live on the hover toolbar.
 class _CommentCard extends ConsumerWidget {
   const _CommentCard({
     required this.entry,
@@ -1330,42 +1503,75 @@ class _CommentCard extends ConsumerWidget {
         );
     final isAuthor =
         login.isNotEmpty && comment.user?.login.toLowerCase() == login;
-    final canEdit = isAuthor || ref.watch(prRepoWriteAccessProvider(prRef));
-    return _ActivityCard(
-      author: comment.user,
-      createdAt: comment.createdAt,
-      body: displayBody,
-      repoFullName: pr.repoFullName,
-      onTaskCheckboxChanged: canEdit
-          ? (index, _) {
-              final l10n = AppLocalizations.of(context);
-              final toaster = CcToastScope.of(context);
-              ref
-                  .read(prEditProvider(prRef).notifier)
-                  .toggleCommentTaskListItem(
-                    commentId: comment.id,
-                    currentBody: displayBody,
-                    index: index,
-                  )
-                  .then((error) {
-                    if (error != null && context.mounted) {
-                      toaster.show(
-                        l10n.saveFailed,
-                        variant: CcToastVariant.danger,
-                      );
-                    }
-                  });
-            }
-          : null,
-      footer: ReactionBar(
-        reactions: comment.reactions,
-        onToggle: (content, {required add}) => toggleReaction(
+    // Checking a task box is a write the author and anyone with push access
+    // can persist. Rewriting the comment itself stays with the author; the
+    // toolbar enforces that separately.
+    final canToggleTasks =
+        isAuthor || ref.watch(prRepoWriteAccessProvider(prRef));
+    final parts = pr.repoFullName.split('/');
+    final reactions = comment.reactions;
+    return EditableCommentSlot(
+      initialBody: displayBody,
+      owner: parts.isNotEmpty ? parts.first : '',
+      repo: parts.length > 1 ? parts[1] : '',
+      onSave: (body) => ref
+          .read(prEditProvider(prRef).notifier)
+          .saveIssueComment(commentId: comment.id, body: body),
+      builder: (context, editor, startEdit) => PrCommentActions(
+        prRef: prRef,
+        body: displayBody,
+        authorLogin: comment.user?.login ?? '',
+        commentId: comment.id,
+        onEdit: startEdit,
+        onToggleReaction: (content, {required add}) => toggleReaction(
           ref,
           ReactionTarget.issueComment,
           commentId: comment.id,
           pr: prRef,
           content: content,
           add: add,
+        ),
+        child: _ActivityCard(
+          author: comment.user,
+          createdAt: comment.createdAt,
+          body: displayBody,
+          repoFullName: pr.repoFullName,
+          bodyEditor: editor,
+          onTaskCheckboxChanged: canToggleTasks
+              ? (index, _) {
+                  final l10n = AppLocalizations.of(context);
+                  final toaster = CcToastScope.of(context);
+                  ref
+                      .read(prEditProvider(prRef).notifier)
+                      .toggleCommentTaskListItem(
+                        commentId: comment.id,
+                        currentBody: displayBody,
+                        index: index,
+                      )
+                      .then((error) {
+                        if (error != null && context.mounted) {
+                          toaster.show(
+                            l10n.saveFailed,
+                            variant: CcToastVariant.danger,
+                          );
+                        }
+                      });
+                }
+              : null,
+          footer: reactions.isEmpty
+              ? null
+              : ReactionBar(
+                  reactions: reactions,
+                  showAdder: false,
+                  onToggle: (content, {required add}) => toggleReaction(
+                    ref,
+                    ReactionTarget.issueComment,
+                    commentId: comment.id,
+                    pr: prRef,
+                    content: content,
+                    add: add,
+                  ),
+                ),
         ),
       ),
     );
@@ -1382,6 +1588,7 @@ class _ActivityCard extends ConsumerWidget {
     required this.repoFullName,
     this.chip,
     this.footer,
+    this.bodyEditor,
     this.onTaskCheckboxChanged,
   });
 
@@ -1391,6 +1598,9 @@ class _ActivityCard extends ConsumerWidget {
   final String repoFullName;
   final Widget? chip;
   final Widget? footer;
+
+  /// Replaces the markdown body while the comment is being edited.
+  final Widget? bodyEditor;
   final void Function(int index, bool checked)? onTaskCheckboxChanged;
 
   @override
@@ -1474,12 +1684,14 @@ class _ActivityCard extends ConsumerWidget {
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 6, 12, 10),
-            child: PrBodyMarkdown(
-              body: body,
-              repoFullName: repoFullName,
-              deferParse: false,
-              onTaskCheckboxChanged: onTaskCheckboxChanged,
-            ),
+            child:
+                bodyEditor ??
+                PrBodyMarkdown(
+                  body: body,
+                  repoFullName: repoFullName,
+                  deferParse: false,
+                  onTaskCheckboxChanged: onTaskCheckboxChanged,
+                ),
           ),
           if (footer != null)
             Padding(

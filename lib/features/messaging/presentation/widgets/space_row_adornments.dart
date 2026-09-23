@@ -156,10 +156,11 @@ class SpaceTrailingIndicator extends StatelessWidget {
 
 /// The leading icon for a space row: a spinner while an agent is running,
 /// otherwise the aggregate PR-status badge (with a count of open PRs) when the
-/// space is linked to a PR or one of its worktree branches has an open PR, and
-/// a pencil glyph when neither is true. Association state hydrates from cache;
-/// a PR opened outside the app arrives with the branch match. The row renders
-/// immediately and never blocks on either.
+/// space is linked to a PR or one of its worktree branches has an open PR.
+/// With neither, it shows [absent], or a pencil glyph when [absent] is null.
+/// Association state hydrates from cache; a PR opened outside the app arrives
+/// with the branch match. The row renders immediately and never blocks on
+/// either.
 class SpaceLeadingIcon extends ConsumerWidget {
   /// Creates the leading icon.
   const SpaceLeadingIcon({
@@ -167,6 +168,7 @@ class SpaceLeadingIcon extends ConsumerWidget {
     required this.spaceId,
     required this.running,
     required this.selected,
+    this.absent,
   });
 
   /// The space whose PRs the badge aggregates.
@@ -180,6 +182,9 @@ class SpaceLeadingIcon extends ConsumerWidget {
   /// `accentOn` — and the status-colored PR glyph with them (a gray/green
   /// glyph on the burnt fill fails the 3:1 non-text floor).
   final bool selected;
+
+  /// Mark shown when the space has no pull request. Null keeps the pencil.
+  final Widget? absent;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -199,7 +204,7 @@ class SpaceLeadingIcon extends ConsumerWidget {
     final status = PrSidebarStatus.aggregate(prs);
     if (status == null) {
       // Nothing open and nothing linked — a fresh conversation.
-      return const Icon(AppIcons.pencil, size: 18);
+      return absent ?? const Icon(AppIcons.pencil, size: 18);
     }
     final openCount = prs.where((pr) => pr.isOpen).length;
     final badge = PrStatusBadge(

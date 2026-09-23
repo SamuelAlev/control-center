@@ -2590,6 +2590,19 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agent => 'Agent';
 
   @override
+  String conversationCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count konverzací',
+      many: '$count konverzací',
+      few: '$count konverzace',
+      one: '$count konverzace',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String agentCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -3613,6 +3626,34 @@ class AppLocalizationsCs extends AppLocalizations {
       one: 'před 1 hodinou',
     );
     return '$_temp0';
+  }
+
+  @override
+  String get sidebarAgeNow => 'teď';
+
+  @override
+  String sidebarAgeMinutes(int count) {
+    return '$count min';
+  }
+
+  @override
+  String sidebarAgeHours(int count) {
+    return '$count h';
+  }
+
+  @override
+  String sidebarAgeDays(int count) {
+    return '$count d';
+  }
+
+  @override
+  String sidebarAgeMonths(int count) {
+    return '$count měs.';
+  }
+
+  @override
+  String sidebarAgeYears(int count) {
+    return '$count r';
   }
 
   @override
@@ -9847,6 +9888,81 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get reactionThumbsUp => 'Palec nahoru';
+
+  @override
+  String get reactionThumbsDown => 'Palec dolů';
+
+  @override
+  String get reactionLaugh => 'Smích';
+
+  @override
+  String get reactionHooray => 'Hurá';
+
+  @override
+  String get reactionConfused => 'Zmatek';
+
+  @override
+  String get reactionHeart => 'Srdce';
+
+  @override
+  String get reactionRocket => 'Raketa';
+
+  @override
+  String get reactionEyes => 'Oči';
+
+  @override
+  String get commentReact => 'Reagovat';
+
+  @override
+  String get commentResolveThread => 'Vyřešit vlákno';
+
+  @override
+  String get commentReopenThread => 'Znovu otevřít vlákno';
+
+  @override
+  String get commentCopyLink => 'Kopírovat odkaz na komentář';
+
+  @override
+  String get commentCopyMarkdown => 'Kopírovat jako Markdown';
+
+  @override
+  String get commentCopyThreadMarkdown => 'Kopírovat vlákno jako Markdown';
+
+  @override
+  String get commentCopyPrompt => 'Kopírovat jako výzvu';
+
+  @override
+  String get commentCopyThreadPrompt => 'Kopírovat vlákno jako výzvu';
+
+  @override
+  String get commentSendToAgent => 'Poslat agentovi';
+
+  @override
+  String get commentDelete => 'Smazat komentář';
+
+  @override
+  String get commentEdit => 'Upravit komentář';
+
+  @override
+  String get commentActions => 'Akce komentáře';
+
+  @override
+  String get commentDeleteTitle => 'Smazat tento komentář?';
+
+  @override
+  String get commentDeleteBody => 'Odstraní se z pull requestu.';
+
+  @override
+  String get commentSentToAgent => 'Odesláno agentovi';
+
+  @override
+  String get commentSendFailed => 'Komentář se nepodařilo poslat agentovi';
+
+  @override
+  String get commentDeleteFailed => 'Komentář se nepodařilo smazat';
+
+  @override
   String get autonomyDialLabel => 'Autonomie';
 
   @override
@@ -14900,4 +15016,38 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get forgeConnectionsThisWorkspace =>
       'Přihlaste se nebo vložte token pro tento workspace.';
+
+  @override
+  String get stackStartNextPart => 'Začít další část';
+
+  @override
+  String get stackPartNameTitle => 'Název části';
+
+  @override
+  String get stackPartNameHint => 'např. migrace';
+
+  @override
+  String get stackPublish => 'Publikovat sadu';
+
+  @override
+  String get stackCurrentPart => 'Aktuální';
+
+  @override
+  String get stackSwitchDirty =>
+      'Před přepnutím částí změny zapište nebo zahoďte';
+
+  @override
+  String get stackCutFailed => 'Další část se nepodařilo začít';
+
+  @override
+  String get stackPublishFailed => 'Sadu se nepodařilo publikovat';
+
+  @override
+  String get stackPublished => 'Sada byla publikována jako koncepty';
+
+  @override
+  String get stackOpenPullRequest => 'Otevřít pull request';
+
+  @override
+  String get stackSection => 'Sada';
 }

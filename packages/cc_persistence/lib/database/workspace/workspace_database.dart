@@ -50,6 +50,7 @@ import 'package:cc_persistence/database/daos/skill_scan_dao.dart';
 import 'package:cc_persistence/database/daos/skill_source_dao.dart';
 import 'package:cc_persistence/database/daos/space_extras_dao.dart';
 import 'package:cc_persistence/database/daos/space_repo_dao.dart';
+import 'package:cc_persistence/database/daos/space_stack_dao.dart';
 import 'package:cc_persistence/database/daos/sync_dao.dart';
 import 'package:cc_persistence/database/daos/team_activity_dao.dart';
 import 'package:cc_persistence/database/daos/team_dao.dart';
@@ -140,6 +141,7 @@ import 'package:cc_persistence/database/tables/space_autonomy_table.dart';
 import 'package:cc_persistence/database/tables/space_notes_table.dart';
 import 'package:cc_persistence/database/tables/space_participants.dart';
 import 'package:cc_persistence/database/tables/space_repos.dart';
+import 'package:cc_persistence/database/tables/space_stack_entries.dart';
 import 'package:cc_persistence/database/tables/spaces.dart';
 import 'package:cc_persistence/database/tables/sync_changes_table.dart';
 import 'package:cc_persistence/database/tables/team_activity_log_table.dart';
@@ -222,6 +224,7 @@ part 'workspace_database.g.dart';
     CodeFilesTable,
     CodeIndexCheckpointsTable,
     IsolatedReposTable,
+    SpaceStackEntriesTable,
     MeetingsTable,
     MeetingTranscriptSegmentsTable,
     MeetingActionItemsTable,
@@ -321,6 +324,7 @@ part 'workspace_database.g.dart';
     TeamDao,
     CodeGraphDao,
     IsolatedRepoDao,
+    SpaceStackDao,
     MeetingDao,
     CalendarDao,
     VoiceProfileDao,
@@ -425,7 +429,7 @@ class WorkspaceDatabase extends _$WorkspaceDatabase {
   /// The current workspace schema version, as a const so non-database code
   /// (the server's /healthz build/compat block) can report it without
   /// instantiating a database. Keep in lockstep with [schemaVersion].
-  static const int currentSchemaVersion = 13;
+  static const int currentSchemaVersion = 14;
 
   @override
   int get schemaVersion => currentSchemaVersion;
@@ -680,6 +684,19 @@ class WorkspaceDatabase extends _$WorkspaceDatabase {
           conversationMessagesTable.listMetadata,
         );
         await _backfillListMetadata();
+      },
+    ),
+    // v13 → v14: stacked branches inside one space's checkout. Fresh files
+    // build the table in onCreate; this step carries existing files forward.
+    // createTable is re-run safe (IF NOT EXISTS) because a rewound
+    // user_version replays every later step against a database that already
+    // has the current tables.
+    MigrationStep(
+      13,
+      14,
+      (m) async {
+        await m.createTable(spaceStackEntriesTable);
+        await _createIndexIfMissing(m, idxSpaceStackSpace);
       },
     ),
   ];

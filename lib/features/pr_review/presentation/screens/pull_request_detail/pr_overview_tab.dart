@@ -24,6 +24,7 @@ class PrOverviewTab extends ConsumerWidget {
     required this.pr,
     required this.prRef,
     required this.onOpenFileInDiff,
+    required this.onOpenCommit,
     required this.onOpenReview,
   });
 
@@ -36,6 +37,10 @@ class PrOverviewTab extends ConsumerWidget {
   /// Called with a changed file's tree-order index when its sidebar row is
   /// tapped, so the detail screen can focus the Diff tab and jump to it.
   final ValueChanged<int> onOpenFileInDiff;
+
+  /// Called with a commit SHA when that commit is tapped in the activity
+  /// timeline, so the detail screen can focus the Diff tab on its changes.
+  final ValueChanged<String> onOpenCommit;
 
   /// Focuses the PR review artifact tab (see [PrDetailActions.onOpenReview]).
   final VoidCallback onOpenReview;
@@ -77,6 +82,7 @@ class PrOverviewTab extends ConsumerWidget {
       pr: pr,
       prRef: prRef,
       onOpenFileInDiff: onOpenFileInDiff,
+      onOpenCommit: onOpenCommit,
     );
     final sidebar = PrSidebar(
       pr: pr,

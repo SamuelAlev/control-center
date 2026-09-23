@@ -250,6 +250,7 @@ class _RecordingIsolation implements RepoIsolationPort {
     required String sourcePath,
     required RepoIsolationBackend backend,
     String? branch,
+    List<String> branches = const [],
   }) async {
     destroyed.add(path);
     final dir = Directory(path);

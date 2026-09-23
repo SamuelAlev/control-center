@@ -471,6 +471,24 @@ abstract interface class ForgePrClient {
     Object? cancelToken,
   });
 
+  /// Deletes a top-level conversation comment.
+  ///
+  /// [commentId] is the forge's issue-comment / note id. The forge refuses a
+  /// caller who is neither the author nor a writer; that refusal propagates.
+  Future<void> deleteIssueComment({
+    required int prNumber,
+    required String commentId,
+    Object? cancelToken,
+  });
+
+  /// Deletes one inline review comment. [commentId] is the forge's review
+  /// comment / discussion-note id.
+  Future<void> deleteReviewComment({
+    required int prNumber,
+    required String commentId,
+    Object? cancelToken,
+  });
+
   /// Marks a review thread resolved (or reopens it).
   ///
   /// [threadId] is a [PrReviewThreadState.id], not a comment id. Capability:

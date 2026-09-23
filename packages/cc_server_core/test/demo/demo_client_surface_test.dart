@@ -177,6 +177,9 @@ void main() {
     // public visitor must not start. Source control / terminal / editor /
     // file / rig tabs gate on `isDemoServerProvider` before they would.
     'pr.ensureSpace',
+    // Publish pushes and opens pull requests, which the demo refuses. The
+    // button toasts the error (`publishStack` in space_stack_provider.dart).
+    'stack.publish',
     // PR list paging — four PRs, no second page a visitor reaches.
     'pr.openPageForRepo',
     // Review-findings actions that POST to a forge. The findings themselves

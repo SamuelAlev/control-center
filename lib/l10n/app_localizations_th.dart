@@ -2552,6 +2552,17 @@ class AppLocalizationsTh extends AppLocalizations {
   String get agent => 'เอเจนต์';
 
   @override
+  String conversationCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count การสนทนา',
+      one: '1 การสนทนา',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String agentCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -3555,6 +3566,34 @@ class AppLocalizationsTh extends AppLocalizations {
       one: '1 ชั่วโมงที่แล้ว',
     );
     return '$_temp0';
+  }
+
+  @override
+  String get sidebarAgeNow => 'เมื่อกี้';
+
+  @override
+  String sidebarAgeMinutes(int count) {
+    return '$count น.';
+  }
+
+  @override
+  String sidebarAgeHours(int count) {
+    return '$count ชม.';
+  }
+
+  @override
+  String sidebarAgeDays(int count) {
+    return '$count ว.';
+  }
+
+  @override
+  String sidebarAgeMonths(int count) {
+    return '$count ด.';
+  }
+
+  @override
+  String sidebarAgeYears(int count) {
+    return '$count ปี';
   }
 
   @override
@@ -9663,6 +9702,81 @@ class AppLocalizationsTh extends AppLocalizations {
   }
 
   @override
+  String get reactionThumbsUp => 'ยกนิ้วโป้ง';
+
+  @override
+  String get reactionThumbsDown => 'คว่ำนิ้วโป้ง';
+
+  @override
+  String get reactionLaugh => 'หัวเราะ';
+
+  @override
+  String get reactionHooray => 'เยี่ยม';
+
+  @override
+  String get reactionConfused => 'สับสน';
+
+  @override
+  String get reactionHeart => 'หัวใจ';
+
+  @override
+  String get reactionRocket => 'จรวด';
+
+  @override
+  String get reactionEyes => 'ตา';
+
+  @override
+  String get commentReact => 'แสดงความรู้สึก';
+
+  @override
+  String get commentResolveThread => 'ปิดเธรด';
+
+  @override
+  String get commentReopenThread => 'เปิดเธรดอีกครั้ง';
+
+  @override
+  String get commentCopyLink => 'คัดลอกลิงก์ไปยังความคิดเห็น';
+
+  @override
+  String get commentCopyMarkdown => 'คัดลอกเป็น Markdown';
+
+  @override
+  String get commentCopyThreadMarkdown => 'คัดลอกเธรดเป็น Markdown';
+
+  @override
+  String get commentCopyPrompt => 'คัดลอกเป็นพรอมป์ต์';
+
+  @override
+  String get commentCopyThreadPrompt => 'คัดลอกเธรดเป็นพรอมป์ต์';
+
+  @override
+  String get commentSendToAgent => 'ส่งถึงเอเจนต์';
+
+  @override
+  String get commentDelete => 'ลบความคิดเห็น';
+
+  @override
+  String get commentEdit => 'แก้ไขความคิดเห็น';
+
+  @override
+  String get commentActions => 'การทำงานของความคิดเห็น';
+
+  @override
+  String get commentDeleteTitle => 'ลบความคิดเห็นนี้หรือไม่';
+
+  @override
+  String get commentDeleteBody => 'ระบบจะนำออกจาก pull request';
+
+  @override
+  String get commentSentToAgent => 'ส่งถึงเอเจนต์แล้ว';
+
+  @override
+  String get commentSendFailed => 'ส่งความคิดเห็นนี้ถึงเอเจนต์ไม่ได้';
+
+  @override
+  String get commentDeleteFailed => 'ลบความคิดเห็นนี้ไม่ได้';
+
+  @override
   String get autonomyDialLabel => 'ความเป็นอิสระ';
 
   @override
@@ -14606,4 +14720,37 @@ class AppLocalizationsTh extends AppLocalizations {
   @override
   String get forgeConnectionsThisWorkspace =>
       'เข้าสู่ระบบหรือวางโทเค็นสำหรับพื้นที่ทำงานนี้';
+
+  @override
+  String get stackStartNextPart => 'เริ่มส่วนถัดไป';
+
+  @override
+  String get stackPartNameTitle => 'ชื่อส่วน';
+
+  @override
+  String get stackPartNameHint => 'เช่น migration';
+
+  @override
+  String get stackPublish => 'เผยแพร่สแตก';
+
+  @override
+  String get stackCurrentPart => 'ปัจจุบัน';
+
+  @override
+  String get stackSwitchDirty => 'คอมมิตหรือทิ้งการเปลี่ยนแปลงก่อนสลับส่วน';
+
+  @override
+  String get stackCutFailed => 'เริ่มส่วนถัดไปไม่ได้';
+
+  @override
+  String get stackPublishFailed => 'เผยแพร่สแตกไม่ได้';
+
+  @override
+  String get stackPublished => 'เผยแพร่สแตกเป็นฉบับร่างแล้ว';
+
+  @override
+  String get stackOpenPullRequest => 'เปิดพูลรีเควสต์';
+
+  @override
+  String get stackSection => 'สแตก';
 }

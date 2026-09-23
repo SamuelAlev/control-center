@@ -5,6 +5,7 @@ import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/pr_review/presentation/notifiers/pr_diff_scope_notifier.dart';
 import 'package:control_center/features/pr_review/presentation/utils/diff_file_tree.dart';
+import 'package:control_center/features/pr_review/presentation/utils/scoped_diff_files.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_file_tree.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/diff_goto.dart';
@@ -80,12 +81,38 @@ class TreeOverlay extends ConsumerWidget {
       );
     }
 
-    final rawFiles = ref.watch(prFileIndexProvider(prRef)).value ?? const [];
-    if (rawFiles.isEmpty) {
+    // Same file set the diff body uses. The index is the whole pull request;
+    // a commit selection replaces it with the union of those commits' files.
+    // Building the tree from the index left every PR file in the sidebar
+    // (and jump-to-file indices pointing at the wrong row) after a scope.
+    final scope = ref.watch(prDiffScopeProvider);
+    final index =
+        ref.watch(prFileIndexProvider(prRef)).value ?? const <PrFile>[];
+    final commitsAsync = ref.watch(prCommitsProvider(prRef));
+    final scoped = watchScopedDiffFiles(
+      ref,
+      pr: prRef,
+      scope: scope,
+      commits: commitsAsync.value ?? const [],
+      allFiles: index,
+      isLoading: false,
+    );
+    final waitingForScope =
+        scope.isScoped &&
+        scoped.files.isEmpty &&
+        (scoped.isLoading || !commitsAsync.hasValue);
+    if (waitingForScope) {
+      final tokens = context.designSystem ?? DesignSystemTokens.light();
+      return ColoredBox(
+        color: tokens.bgPrimary,
+        child: const Center(child: CcSpinner()),
+      );
+    }
+    if (scoped.files.isEmpty) {
       return const SizedBox.shrink();
     }
 
-    final files = sortFilesByTreeOrder(rawFiles);
+    final files = sortFilesByTreeOrder(scoped.files);
     final tree = buildDiffFileTree(files);
     return PrDiffFileTree(
       roots: tree,

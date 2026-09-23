@@ -2592,6 +2592,18 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agent => 'Agent';
 
   @override
+  String conversationCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de conversații',
+      few: '$count conversații',
+      one: '$count conversație',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String agentCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -3612,6 +3624,34 @@ class AppLocalizationsRo extends AppLocalizations {
       one: 'acum 1 oră',
     );
     return '$_temp0';
+  }
+
+  @override
+  String get sidebarAgeNow => 'acum';
+
+  @override
+  String sidebarAgeMinutes(int count) {
+    return '$count min';
+  }
+
+  @override
+  String sidebarAgeHours(int count) {
+    return '$count h';
+  }
+
+  @override
+  String sidebarAgeDays(int count) {
+    return '$count z';
+  }
+
+  @override
+  String sidebarAgeMonths(int count) {
+    return '$count luni';
+  }
+
+  @override
+  String sidebarAgeYears(int count) {
+    return '$count ani';
   }
 
   @override
@@ -9847,6 +9887,82 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get reactionThumbsUp => 'Degetul mare în sus';
+
+  @override
+  String get reactionThumbsDown => 'Degetul mare în jos';
+
+  @override
+  String get reactionLaugh => 'Râs';
+
+  @override
+  String get reactionHooray => 'Ura';
+
+  @override
+  String get reactionConfused => 'Confuz';
+
+  @override
+  String get reactionHeart => 'Inimă';
+
+  @override
+  String get reactionRocket => 'Rachetă';
+
+  @override
+  String get reactionEyes => 'Ochi';
+
+  @override
+  String get commentReact => 'Reacționează';
+
+  @override
+  String get commentResolveThread => 'Rezolvă firul';
+
+  @override
+  String get commentReopenThread => 'Redeschide firul';
+
+  @override
+  String get commentCopyLink => 'Copiază linkul comentariului';
+
+  @override
+  String get commentCopyMarkdown => 'Copiază ca Markdown';
+
+  @override
+  String get commentCopyThreadMarkdown => 'Copiază firul ca Markdown';
+
+  @override
+  String get commentCopyPrompt => 'Copiază ca prompt';
+
+  @override
+  String get commentCopyThreadPrompt => 'Copiază firul ca prompt';
+
+  @override
+  String get commentSendToAgent => 'Trimite agentului';
+
+  @override
+  String get commentDelete => 'Șterge comentariul';
+
+  @override
+  String get commentEdit => 'Editează comentariul';
+
+  @override
+  String get commentActions => 'Acțiuni pentru comentariu';
+
+  @override
+  String get commentDeleteTitle => 'Ștergi acest comentariu?';
+
+  @override
+  String get commentDeleteBody => 'Este eliminat din pull request.';
+
+  @override
+  String get commentSentToAgent => 'Trimis agentului';
+
+  @override
+  String get commentSendFailed =>
+      'Nu s-a putut trimite acest comentariu unui agent';
+
+  @override
+  String get commentDeleteFailed => 'Nu s-a putut șterge acest comentariu';
+
+  @override
   String get autonomyDialLabel => 'Autonomie';
 
   @override
@@ -14894,4 +15010,38 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get forgeConnectionsThisWorkspace =>
       'Autentifică-te sau lipește un token pentru acest spațiu de lucru.';
+
+  @override
+  String get stackStartNextPart => 'Începe partea următoare';
+
+  @override
+  String get stackPartNameTitle => 'Numele părții';
+
+  @override
+  String get stackPartNameHint => 'ex. migrare';
+
+  @override
+  String get stackPublish => 'Publică stiva';
+
+  @override
+  String get stackCurrentPart => 'Curentă';
+
+  @override
+  String get stackSwitchDirty =>
+      'Confirmă sau renunță la modificări înainte de a schimba partea';
+
+  @override
+  String get stackCutFailed => 'Partea următoare nu a putut fi începută';
+
+  @override
+  String get stackPublishFailed => 'Stiva nu a putut fi publicată';
+
+  @override
+  String get stackPublished => 'Stiva a fost publicată ca ciorne';
+
+  @override
+  String get stackOpenPullRequest => 'Deschide pull request';
+
+  @override
+  String get stackSection => 'Stivă';
 }

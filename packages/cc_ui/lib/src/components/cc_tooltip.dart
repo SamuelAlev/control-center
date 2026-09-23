@@ -4,6 +4,7 @@ import 'package:cc_ui/src/foundation/cc_elevation.dart';
 import 'package:cc_ui/src/foundation/cc_motion.dart';
 import 'package:cc_ui/src/foundation/cc_overlay_anchor.dart';
 import 'package:cc_ui/src/foundation/cc_typography.dart';
+import 'package:cc_ui/src/primitives/focus_modality.dart';
 import 'package:cc_ui/src/theme/cc_theme.dart';
 import 'package:cc_ui/src/tokens/app_radii.dart';
 import 'package:cc_ui/src/tokens/app_spacing.dart';
@@ -40,7 +41,9 @@ enum _CaretDirection { up, down, left, right }
 /// with [message] is shown, anchored to the [placement] side of the child with
 /// a caret pointing back at it. It is purely descriptive: the panel receives no
 /// focus, holds no interactive content and is dismissed by moving the pointer
-/// away, moving focus away, or pressing Escape while the trigger is focused.
+/// away, moving keyboard focus away, or pressing Escape while the trigger is
+/// focused. A click focuses the trigger too; that pointer focus does not keep
+/// the tooltip up once the pointer leaves.
 /// Motion is suppressed under reduced-motion.
 ///
 /// Supplemental only — never put essential task information or interactive
@@ -108,6 +111,26 @@ class CcTooltip extends StatefulWidget {
   State<CcTooltip> createState() => _CcTooltipState();
 }
 
+/// Modifier keys that don't themselves move focus. Shift stays excluded so
+/// Shift+Tab still counts: Tab is pressed alongside it.
+bool _isFocusModifier(LogicalKeyboardKey key) =>
+    key == LogicalKeyboardKey.meta ||
+    key == LogicalKeyboardKey.metaLeft ||
+    key == LogicalKeyboardKey.metaRight ||
+    key == LogicalKeyboardKey.control ||
+    key == LogicalKeyboardKey.controlLeft ||
+    key == LogicalKeyboardKey.controlRight ||
+    key == LogicalKeyboardKey.alt ||
+    key == LogicalKeyboardKey.altLeft ||
+    key == LogicalKeyboardKey.altRight ||
+    key == LogicalKeyboardKey.shift ||
+    key == LogicalKeyboardKey.shiftLeft ||
+    key == LogicalKeyboardKey.shiftRight ||
+    key == LogicalKeyboardKey.capsLock ||
+    key == LogicalKeyboardKey.fn ||
+    key == LogicalKeyboardKey.numLock ||
+    key == LogicalKeyboardKey.scrollLock;
+
 class _CcTooltipState extends State<CcTooltip> {
   final CcOverlayController _controller = CcOverlayController();
   // Whether the overlay was flipped to the opposite side for lack of room —
@@ -120,6 +143,27 @@ class _CcTooltipState extends State<CcTooltip> {
     null,
   );
   Timer? _timer;
+  // Last value delivered to [onFocusChange]. The framework notifies the focus
+  // node for reasons other than a gain or loss; treating every `false` as
+  // "pointer left" hides the tooltip while its portal is still attaching.
+  bool _focused = false;
+  bool _pointerInside = false;
+
+  // Only keyboard focus pins the tooltip after the pointer leaves. A click
+  // focuses the trigger as well (the sidebar rail does this on purpose, for
+  // its roving tabindex) and that must not leave the name floating over the
+  // panel the pointer has moved into.
+  bool _keyboardPinned = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Registers the global key/pointer handlers before the first interaction.
+    // The pin is sampled at the focus-gain edge, which can otherwise land
+    // before anything has subscribed.
+    // ignore: unnecessary_statements
+    FocusModality.instance;
+  }
 
   @override
   void dispose() {
@@ -133,6 +177,7 @@ class _CcTooltipState extends State<CcTooltip> {
   // Hover reveals after a short dwell so a passing cursor doesn't flash the
   // tooltip.
   void _onEnter() {
+    _pointerInside = true;
     _timer?.cancel();
     _timer = Timer(widget.showDelay, _show);
   }
@@ -144,10 +189,71 @@ class _CcTooltipState extends State<CcTooltip> {
     _show();
   }
 
+  void _onFocusChanged(bool hasFocus) {
+    if (hasFocus == _focused) {
+      return;
+    }
+    _focused = hasFocus;
+    if (hasFocus) {
+      // Sampled at the focus change: a pointer-down has already cleared
+      // keyboard modality, so a click does not pin.
+      _keyboardPinned = _keyboardDroveFocus();
+      if (_keyboardPinned) {
+        _onFocus();
+      }
+      return;
+    }
+    _keyboardPinned = false;
+    _scheduleHide();
+  }
+
   void _onExit() {
+    _pointerInside = false;
     _timer?.cancel();
     _timer = null;
+    // A click on an already-focused trigger does not change focus, so the
+    // pin has to be released here. Pointer-down clears keyboard modality
+    // before this exit.
+    if (!FocusModality.instance.isKeyboard) {
+      _keyboardPinned = false;
+    }
+    _scheduleHide();
+  }
+
+  void _scheduleHide() {
+    // Opening the portal can move the hit target for one frame (the overlay
+    // is in the tree before it has a position). Hiding in that same turn
+    // detaches the portal while it is still being adopted. A re-enter before
+    // the next frame puts [_pointerInside] back and the tooltip stays.
+    //
+    // The callback does not schedule a frame on its own. A trigger whose
+    // child has no hover state of its own (a label, an icon) would otherwise
+    // leave the tooltip up until some unrelated frame, which reads as the
+    // pointer never having left.
+    if (_controller.isOpen) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && !_pointerInside && !_keyboardPinned) {
+          _controller.hide();
+        }
+      });
+      WidgetsBinding.instance.scheduleFrame();
+      return;
+    }
     _controller.hide();
+  }
+
+  // Tab traversal can move focus before [FocusModality]'s key handler runs,
+  // so a pressed non-modifier key counts too. A click has no such key down.
+  bool _keyboardDroveFocus() {
+    if (FocusModality.instance.isKeyboard) {
+      return true;
+    }
+    for (final key in HardwareKeyboard.instance.logicalKeysPressed) {
+      if (!_isFocusModifier(key)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   void _show() {
@@ -214,12 +320,14 @@ class _CcTooltipState extends State<CcTooltip> {
     // intercepted while the tooltip is open so it otherwise propagates.
     return Focus(
       canRequestFocus: false,
-      onFocusChange: (hasFocus) => hasFocus ? _onFocus() : _onExit(),
+      onFocusChange: _onFocusChanged,
       onKeyEvent: (node, event) {
         if (_controller.isOpen &&
             event is KeyDownEvent &&
             event.logicalKey == LogicalKeyboardKey.escape) {
-          _onExit();
+          _timer?.cancel();
+          _timer = null;
+          _controller.hide();
           return KeyEventResult.handled;
         }
         return KeyEventResult.ignored;

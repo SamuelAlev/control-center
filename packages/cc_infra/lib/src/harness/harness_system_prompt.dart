@@ -109,6 +109,14 @@ class HarnessSystemPromptBuilder {
       );
     }
 
+    buffer.write(
+      '\n\nThis space has one checkout per repo. To split work into stacked '
+      'pull requests, commit the current part and call stack_cut. Pass `at` '
+      'when commits already on the branch should move onto the new part. '
+      'stack_publish opens each pull request against the branch below it. '
+      'git checkout -b does not record a part, so the sidebar will not show it.',
+    );
+
     // Repo operating instructions (AGENTS.md, root + nested).
     var agentsMdFiles = const <AgentsMdFilePart>[];
     try {

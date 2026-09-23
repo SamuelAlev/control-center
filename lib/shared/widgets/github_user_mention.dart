@@ -99,7 +99,7 @@ class GitHubUserMention extends StatelessWidget {
     }
 
     if (!canOpenProfile) {
-      return chip();
+      return _unselectable(chip());
     }
 
     // A mention is a link, so it reports state through the design system's
@@ -130,14 +130,21 @@ class GitHubUserMention extends StatelessWidget {
       },
     );
     if (canOpenTeam) {
-      return GitHubTeamHoverTarget(
-        organization: teamParts.first,
-        slug: teamParts.last,
-        child: tappable,
+      return _unselectable(
+        GitHubTeamHoverTarget(
+          organization: teamParts.first,
+          slug: teamParts.last,
+          child: tappable,
+        ),
       );
     }
-    return GitHubUserHoverTarget(login: login, child: tappable);
+    return _unselectable(GitHubUserHoverTarget(login: login, child: tappable));
   }
+
+  /// A mention rides in a markdown [SelectionArea]. Left alone, the name is a
+  /// selectable run and the I-beam covers the click cursor.
+  Widget _unselectable(Widget child) =>
+      SelectionContainer.disabled(child: child);
 
   void _openProfile(BuildContext context) {
     final workspaceId = context.currentWorkspaceId;

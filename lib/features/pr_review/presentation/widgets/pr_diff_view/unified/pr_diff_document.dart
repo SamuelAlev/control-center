@@ -497,7 +497,6 @@ class PrDiffDocument {
     return lo;
   }
 
-
   /// Top offset of file [i] in the unified scroll space.
   double offsetOfFile(int i) => _fenwick.offsetOf(i);
 
@@ -639,7 +638,6 @@ class PrDiffDocument {
     return col;
   }
 
-
   /// File-local Y of the top of code line [line] in file [i] (after the
   /// header and any comment blocks above it). Uses cumulative *visual* rows so
   /// wrapped lines above [line] push it down by their extra rows.
@@ -693,7 +691,6 @@ class PrDiffDocument {
     }
     return lo;
   }
-
 
   /// Installs parsed [structure] for file [i], computes the display→raw row
   /// map (dropping `@@` hunk headers), optionally appends a "Show end of file"
@@ -898,6 +895,37 @@ class PrDiffDocument {
       ..comments = sorted
       ..recomputeComments();
     _refreshHeight(i);
+  }
+
+  /// Updates the reserved height of comment block [key] in file [file].
+  ///
+  /// The open composer drives this every frame so the rows below ease down
+  /// with the reveal, without rebuilding the slot list. Returns false when
+  /// the block is absent or the change is below half a pixel.
+  bool updateCommentBlockHeight(int file, String key, double height) {
+    if (file < 0 || file >= _layouts.length) {
+      return false;
+    }
+    final layout = _layouts[file];
+    final index = layout.comments.indexWhere((block) => block.key == key);
+    if (index < 0) {
+      return false;
+    }
+    final current = layout.comments[index];
+    if ((current.height - height).abs() < 0.5) {
+      return false;
+    }
+    final next = List<DiffCommentBlock>.of(layout.comments);
+    next[index] = DiffCommentBlock(
+      key: current.key,
+      anchorLine: current.anchorLine,
+      height: height,
+    );
+    layout
+      ..comments = next
+      ..recomputeComments();
+    _refreshHeight(file);
+    return true;
   }
 
   /// Index of file matching [filename], or -1.

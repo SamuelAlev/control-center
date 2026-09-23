@@ -974,6 +974,7 @@
   "@agent": {
     "description": "Agent"
   },
+  "conversationCount": "{count, plural, =1{1 conversazione} other{{count} conversazioni}}",
   "agentCount": "{count, plural, =1{1 agente} other{{count} agenti}}",
   "@agentCount": {
     "description": "Agent count label",
@@ -1581,6 +1582,12 @@
     "description": "Locale string for high"
   },
   "hoursAgo": "{count, plural, =1{1 ora fa} other{{count} ore fa}}",
+  "sidebarAgeNow": "ora",
+  "sidebarAgeMinutes": "{count} min",
+  "sidebarAgeHours": "{count} h",
+  "sidebarAgeDays": "{count} g",
+  "sidebarAgeMonths": "{count} mesi",
+  "sidebarAgeYears": "{count} a",
   "images": "Immagini",
   "inactive": "Inattivo",
   "@inactive": {
@@ -4872,6 +4879,31 @@
       }
     }
   },
+  "reactionThumbsUp": "Pollice in su",
+  "reactionThumbsDown": "Pollice in giù",
+  "reactionLaugh": "Risata",
+  "reactionHooray": "Evviva",
+  "reactionConfused": "Confuso",
+  "reactionHeart": "Cuore",
+  "reactionRocket": "Razzo",
+  "reactionEyes": "Occhi",
+  "commentReact": "Reagisci",
+  "commentResolveThread": "Risolvi il thread",
+  "commentReopenThread": "Riapri il thread",
+  "commentCopyLink": "Copia link al commento",
+  "commentCopyMarkdown": "Copia come Markdown",
+  "commentCopyThreadMarkdown": "Copia il thread come Markdown",
+  "commentCopyPrompt": "Copia come prompt",
+  "commentCopyThreadPrompt": "Copia il thread come prompt",
+  "commentSendToAgent": "Invia all'agente",
+  "commentDelete": "Elimina commento",
+  "commentEdit": "Modifica commento",
+  "commentActions": "Azioni del commento",
+  "commentDeleteTitle": "Eliminare questo commento?",
+  "commentDeleteBody": "Viene rimosso dalla pull request.",
+  "commentSentToAgent": "Inviato all'agente",
+  "commentSendFailed": "Impossibile inviare questo commento a un agente",
+  "commentDeleteFailed": "Impossibile eliminare questo commento",
   "autonomyDialLabel": "Autonomia",
   "autonomyProposeOnly": "Solo proposta",
   "autonomyActWithApproval": "Agisci con approvazione",
@@ -7892,5 +7924,16 @@
   "workspaceGitHubHasPat": "È memorizzato un token in background.",
   "workspaceGitHubNoPat": "Nessun token in background memorizzato.",
   "profileOverlayHint": "Questi campi sei tu in questo spazio. I campi vuoti ereditano nome ed e-mail dell'account. Cambiare spazio cambia questo overlay.",
-  "forgeConnectionsThisWorkspace": "Accedi o incolla un token per questo spazio di lavoro."
+  "forgeConnectionsThisWorkspace": "Accedi o incolla un token per questo spazio di lavoro.",
+  "stackStartNextPart": "Inizia la parte successiva",
+  "stackPartNameTitle": "Nome della parte",
+  "stackPartNameHint": "es. migrazione",
+  "stackPublish": "Pubblica lo stack",
+  "stackCurrentPart": "Attuale",
+  "stackSwitchDirty": "Esegui il commit o annulla le modifiche prima di cambiare parte",
+  "stackCutFailed": "Impossibile iniziare la parte successiva",
+  "stackPublishFailed": "Impossibile pubblicare lo stack",
+  "stackPublished": "Lo stack è stato pubblicato come bozze",
+  "stackOpenPullRequest": "Apri la pull request",
+  "stackSection": "Stack"
 }

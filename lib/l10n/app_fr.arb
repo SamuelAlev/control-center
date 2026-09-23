@@ -974,6 +974,7 @@
   "@agent": {
     "description": "Agent"
   },
+  "conversationCount": "{count, plural, =1{1 conversation} other{{count} conversations}}",
   "agentCount": "{count, plural, =1{1 agent} other{{count} agents}}",
   "@agentCount": {
     "description": "Agent count label",
@@ -1581,6 +1582,12 @@
     "description": "Locale string for high"
   },
   "hoursAgo": "{count, plural, =1{il y a 1 heure} other{il y a {count} heures}}",
+  "sidebarAgeNow": "maintenant",
+  "sidebarAgeMinutes": "{count} min",
+  "sidebarAgeHours": "{count} h",
+  "sidebarAgeDays": "{count} j",
+  "sidebarAgeMonths": "{count} mois",
+  "sidebarAgeYears": "{count} an",
   "images": "Images",
   "inactive": "Inactif",
   "@inactive": {
@@ -4869,6 +4876,31 @@
       }
     }
   },
+  "reactionThumbsUp": "Pouce vers le haut",
+  "reactionThumbsDown": "Pouce vers le bas",
+  "reactionLaugh": "Rire",
+  "reactionHooray": "Hourra",
+  "reactionConfused": "Confus",
+  "reactionHeart": "Cœur",
+  "reactionRocket": "Fusée",
+  "reactionEyes": "Yeux",
+  "commentReact": "Réagir",
+  "commentResolveThread": "Résoudre le fil",
+  "commentReopenThread": "Rouvrir le fil",
+  "commentCopyLink": "Copier le lien du commentaire",
+  "commentCopyMarkdown": "Copier en Markdown",
+  "commentCopyThreadMarkdown": "Copier le fil en Markdown",
+  "commentCopyPrompt": "Copier comme prompt",
+  "commentCopyThreadPrompt": "Copier le fil comme prompt",
+  "commentSendToAgent": "Envoyer à l'agent",
+  "commentDelete": "Supprimer le commentaire",
+  "commentEdit": "Modifier le commentaire",
+  "commentActions": "Actions du commentaire",
+  "commentDeleteTitle": "Supprimer ce commentaire ?",
+  "commentDeleteBody": "Il est retiré de la pull request.",
+  "commentSentToAgent": "Envoyé à l'agent",
+  "commentSendFailed": "Impossible d'envoyer ce commentaire à un agent",
+  "commentDeleteFailed": "Impossible de supprimer ce commentaire",
   "autonomyDialLabel": "Autonomie",
   "autonomyProposeOnly": "Proposer uniquement",
   "autonomyActWithApproval": "Agir avec approbation",
@@ -7889,5 +7921,16 @@
   "workspaceGitHubHasPat": "Un jeton d'arrière-plan est enregistré.",
   "workspaceGitHubNoPat": "Aucun jeton d'arrière-plan enregistré.",
   "profileOverlayHint": "Ces champs vous représentent dans cet espace. Les champs vides héritent du nom et de l'e-mail du compte. Changer d'espace change cette superposition.",
-  "forgeConnectionsThisWorkspace": "Connectez-vous ou collez un jeton pour cet espace de travail."
+  "forgeConnectionsThisWorkspace": "Connectez-vous ou collez un jeton pour cet espace de travail.",
+  "stackStartNextPart": "Commencer la partie suivante",
+  "stackPartNameTitle": "Nom de la partie",
+  "stackPartNameHint": "p. ex. migration",
+  "stackPublish": "Publier la pile",
+  "stackCurrentPart": "Actuelle",
+  "stackSwitchDirty": "Validez ou abandonnez les changements avant de changer de partie",
+  "stackCutFailed": "Impossible de commencer la partie suivante",
+  "stackPublishFailed": "Impossible de publier la pile",
+  "stackPublished": "La pile a été publiée en brouillons",
+  "stackOpenPullRequest": "Ouvrir la pull request",
+  "stackSection": "Pile"
 }

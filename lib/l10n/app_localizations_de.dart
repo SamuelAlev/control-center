@@ -2588,6 +2588,17 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agent => 'Agent';
 
   @override
+  String conversationCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Konversationen',
+      one: '1 Konversation',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String agentCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -3608,6 +3619,34 @@ class AppLocalizationsDe extends AppLocalizations {
       one: 'vor 1 Stunde',
     );
     return '$_temp0';
+  }
+
+  @override
+  String get sidebarAgeNow => 'jetzt';
+
+  @override
+  String sidebarAgeMinutes(int count) {
+    return '$count Min.';
+  }
+
+  @override
+  String sidebarAgeHours(int count) {
+    return '$count Std.';
+  }
+
+  @override
+  String sidebarAgeDays(int count) {
+    return '$count T';
+  }
+
+  @override
+  String sidebarAgeMonths(int count) {
+    return '$count Mon.';
+  }
+
+  @override
+  String sidebarAgeYears(int count) {
+    return '$count J';
   }
 
   @override
@@ -9820,6 +9859,82 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get reactionThumbsUp => 'Daumen hoch';
+
+  @override
+  String get reactionThumbsDown => 'Daumen runter';
+
+  @override
+  String get reactionLaugh => 'Lachen';
+
+  @override
+  String get reactionHooray => 'Hurra';
+
+  @override
+  String get reactionConfused => 'Verwirrt';
+
+  @override
+  String get reactionHeart => 'Herz';
+
+  @override
+  String get reactionRocket => 'Rakete';
+
+  @override
+  String get reactionEyes => 'Augen';
+
+  @override
+  String get commentReact => 'Reagieren';
+
+  @override
+  String get commentResolveThread => 'Thread lösen';
+
+  @override
+  String get commentReopenThread => 'Thread wieder öffnen';
+
+  @override
+  String get commentCopyLink => 'Link zum Kommentar kopieren';
+
+  @override
+  String get commentCopyMarkdown => 'Als Markdown kopieren';
+
+  @override
+  String get commentCopyThreadMarkdown => 'Thread als Markdown kopieren';
+
+  @override
+  String get commentCopyPrompt => 'Als Prompt kopieren';
+
+  @override
+  String get commentCopyThreadPrompt => 'Thread als Prompt kopieren';
+
+  @override
+  String get commentSendToAgent => 'An Agent senden';
+
+  @override
+  String get commentDelete => 'Kommentar löschen';
+
+  @override
+  String get commentEdit => 'Kommentar bearbeiten';
+
+  @override
+  String get commentActions => 'Kommentaraktionen';
+
+  @override
+  String get commentDeleteTitle => 'Diesen Kommentar löschen?';
+
+  @override
+  String get commentDeleteBody => 'Er wird aus dem Pull Request entfernt.';
+
+  @override
+  String get commentSentToAgent => 'An den Agenten gesendet';
+
+  @override
+  String get commentSendFailed =>
+      'Kommentar konnte nicht an einen Agenten gesendet werden';
+
+  @override
+  String get commentDeleteFailed => 'Kommentar konnte nicht gelöscht werden';
+
+  @override
   String get autonomyDialLabel => 'Autonomie';
 
   @override
@@ -14832,4 +14947,39 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get forgeConnectionsThisWorkspace =>
       'Melde dich an oder füge ein Token für diesen Workspace ein.';
+
+  @override
+  String get stackStartNextPart => 'Nächsten Teil starten';
+
+  @override
+  String get stackPartNameTitle => 'Name des Teils';
+
+  @override
+  String get stackPartNameHint => 'z. B. Migration';
+
+  @override
+  String get stackPublish => 'Stapel veröffentlichen';
+
+  @override
+  String get stackCurrentPart => 'Aktuell';
+
+  @override
+  String get stackSwitchDirty =>
+      'Änderungen committen oder verwerfen, bevor Teile gewechselt werden';
+
+  @override
+  String get stackCutFailed => 'Der nächste Teil konnte nicht gestartet werden';
+
+  @override
+  String get stackPublishFailed =>
+      'Der Stapel konnte nicht veröffentlicht werden';
+
+  @override
+  String get stackPublished => 'Der Stapel wurde als Entwürfe veröffentlicht';
+
+  @override
+  String get stackOpenPullRequest => 'Pull Request öffnen';
+
+  @override
+  String get stackSection => 'Stapel';
 }
