@@ -5225,6 +5225,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get suggestAChange => 'Föreslå en ändring';
 
   @override
+  String get suggestion => 'Förslag';
+
+  @override
   String get suggestLabel => 'FÖRESLÅ';
 
   @override

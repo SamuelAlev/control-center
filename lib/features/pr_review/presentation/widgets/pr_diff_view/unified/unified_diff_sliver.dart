@@ -135,7 +135,8 @@ class UnifiedDiffSliver extends SliverMultiBoxAdaptorWidget {
 }
 
 /// Render sliver for the unified diff. See [UnifiedDiffSliver].
-class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor {
+class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor
+    implements MouseTrackerAnnotation {
   /// Creates the render object.
   RenderUnifiedDiffSliver({
     required super.childManager,
@@ -442,12 +443,20 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor {
   double revealOffsetForFile(int index) =>
       math.max(0, scrollOffsetForFile(index) - _config.topInset);
 
-  /// Scroll offset that reveals one LINE of file [index].
+  /// Scroll offset that reveals one LINE of file [index] just below the pinned
+  /// file header.
+  ///
+  /// The header docks under the tab strip and paints over the rows that have
+  /// scrolled under it. Stopping at the pin line, the inset
+  /// [revealOffsetForFile] uses for the header itself, hides the row a search
+  /// hit or goto landed on. The header's own height is the rest of the
+  /// clearance.
   double revealOffsetForLine(int index, int displayLine) => math.max(
     0,
     _precedingScrollExtent +
         _document.offsetOfLine(index, displayLine) -
-        _config.topInset,
+        _config.topInset -
+        _document.headerHeight,
   );
 
   /// Whether the sticky file header is currently pinned under the tab strip.
@@ -546,11 +555,15 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor {
   @override
   void attach(PipelineOwner owner) {
     super.attach(owner);
+    _validForMouseTracker = true;
     _store.repaint.addListener(markNeedsPaint);
   }
 
   @override
   void detach() {
+    // Drop out of the tracker before detach so an in-flight hover cannot
+    // call back into a sliver that is leaving the tree.
+    _validForMouseTracker = false;
     _store.repaint.removeListener(markNeedsPaint);
     super.detach();
   }
@@ -578,10 +591,60 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor {
         maxHorizontalScrollExtent > 0;
   }
 
+  /// I-beam over code a drag can select; [MouseCursor.defer] everywhere else
+  /// so the gutter, pill, and gap rows keep their own cursors.
+  @override
+  MouseCursor get cursor => _cursor;
+  MouseCursor _cursor = MouseCursor.defer;
+
+  @override
+  PointerEnterEventListener? get onEnter => null;
+
+  @override
+  PointerExitEventListener? get onExit => _onMouseExit;
+
+  @override
+  bool get validForMouseTracker => _validForMouseTracker;
+  bool _validForMouseTracker = true;
+
+  void _onMouseExit(PointerExitEvent event) {
+    _cursor = MouseCursor.defer;
+  }
+
+  /// Whether [entry] is on code the selection recognizer owns. The gutter is
+  /// a comment target, and headers, gaps, and comment cards are not code.
+  bool _selectsTextAt(SliverHitTestEntry entry) {
+    if (coversStickyHeader(entry.mainAxisPosition)) {
+      return false;
+    }
+    final hit = codeRowAt(entry.mainAxisPosition);
+    if (hit == null) {
+      return false;
+    }
+    return entry.crossAxisPosition >= gutterWidthOf(hit.$1);
+  }
+
+  void _syncSelectionCursor(SliverHitTestEntry entry) {
+    final MouseCursor next = _selectsTextAt(entry)
+        ? SystemMouseCursors.text
+        : MouseCursor.defer;
+    if (_cursor == next) {
+      return;
+    }
+    _cursor = next;
+    // The tracker reads [cursor] on the frame after the hover that changed
+    // it. A repaint is what schedules that read.
+    markNeedsPaint();
+  }
+
   @override
   void handleEvent(PointerEvent event, SliverHitTestEntry entry) {
     if (event is PointerScrollEvent) {
       handlePointerScroll(event);
+      return;
+    }
+    if (event is PointerHoverEvent) {
+      _syncSelectionCursor(entry);
       return;
     }
     if (event is! PointerDownEvent) {

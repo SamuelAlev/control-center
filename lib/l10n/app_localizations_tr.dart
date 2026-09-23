@@ -5223,6 +5223,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get suggestAChange => 'Değişiklik öner';
 
   @override
+  String get suggestion => 'Öneri';
+
+  @override
   String get suggestLabel => 'Öner';
 
   @override

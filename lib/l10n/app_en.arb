@@ -4644,6 +4644,10 @@
   "@suggestAChange": {
     "description": "Header label for the suggestion composer"
   },
+  "suggestion": "Suggestion",
+  "@suggestion": {
+    "description": "Toolbar button that turns a line comment into a code suggestion"
+  },
   "suggestLabel": "SUGGEST",
   "superseded": "Superseded",
   "@superseded": {

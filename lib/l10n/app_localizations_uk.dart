@@ -5280,6 +5280,9 @@ class AppLocalizationsUk extends AppLocalizations {
   String get suggestAChange => 'Запропонувати зміну';
 
   @override
+  String get suggestion => 'Пропозиція';
+
+  @override
   String get suggestLabel => 'Пропозиція';
 
   @override

@@ -2925,6 +2925,7 @@
   "@suggestAChange": {
     "description": "Header label for the suggestion composer"
   },
+  "suggestion": "Sugestão",
   "suggestLabel": "SUGESTÃO",
   "superseded": "Substituído",
   "@superseded": {

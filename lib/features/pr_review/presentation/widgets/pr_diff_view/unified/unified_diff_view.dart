@@ -2259,36 +2259,6 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
                 ),
               );
             }
-            // Click cursor over a commented row: the highlight is clickable
-            // (it opens the conversation), so it has to say so. Translucent and
-            // below the hover tracker, which defers its cursor — so this wins
-            // without taking the pointer away from the pill or the diff.
-            if (hover != null &&
-                _hoveredCommentGroup != null &&
-                _activeComposer == null) {
-              final y = screenYOfLine(hover.$1, hover.$2);
-              if (visible(y)) {
-                // Starts after the gutter: a click THERE opens a new comment
-                // on the row, which is a different act from reopening the
-                // conversation the highlight belongs to.
-                final double left = rect.left + ro.gutterWidthOf(hover.$1);
-                items.add(
-                  Positioned(
-                    left: left,
-                    top: y,
-                    width: math.max(0, rect.right - left),
-                    height:
-                        _document.visualRowsOf(hover.$1, hover.$2) *
-                        kDiffLineHeight,
-                    child: const MouseRegion(
-                      opaque: false,
-                      hitTestBehavior: HitTestBehavior.translucent,
-                      cursor: SystemMouseCursors.click,
-                    ),
-                  ),
-                );
-              }
-            }
             // Gutter "+" pill. It sits at the hovered row and while dragging
             // it tracks the moving end of the range so it follows the cursor.
             final pillDrag = _pillDrag;
@@ -2391,8 +2361,8 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
           opaque: false,
           hitTestBehavior: HitTestBehavior.translucent,
           // Keep the grabbing cursor for the whole drag — the pointer can drift
-          // off the small pill as the range grows. Otherwise defer so the code
-          // area keeps its normal cursor.
+          // off the small pill as the range grows. Otherwise defer so the
+          // sliver's text cursor (and the pill's grab cursor) show through.
           cursor: _pillDrag != null
               ? SystemMouseCursors.grabbing
               : MouseCursor.defer,
@@ -2910,8 +2880,8 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
   /// does not have the first one's timer clear ITS highlight.
   Timer? _threadHighlightFade;
 
-  /// Scrolls the host scrollable so file [index]'s header (or [line]) sits
-  /// at the top.
+  /// Scrolls the host scrollable so file [index]'s header sits just below the
+  /// pinned tab strip, or so [line] sits just below the pinned file header.
   ///
   /// Returns false when the diff has no laid-out scroll position yet, so a
   /// caller can retry on a later frame. A desktop scroll view does not attach

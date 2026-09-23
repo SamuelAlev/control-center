@@ -193,7 +193,7 @@ class RepoIdeDataService {
   /// Bounds for content search so a broad query can't blow up the payload.
   static const _contentMaxMatches = 2000; // total matching lines across repos
   static const _contentMaxPerFile = 50; // matching lines kept per file
-  static const _contentMaxLineChars = 400; // each matching line truncated to
+  static const _contentMaxLineChars = 400; // window kept per matching line
 
   /// Cap on the number of pathspecs (`include`/`exclude` globs) we forward to
   /// `git grep` — a defensive bound so a huge glob list can't overflow argv.
@@ -845,9 +845,9 @@ class RepoIdeDataService {
   ///
   /// Returns raw wire maps grouped per file — `{repoId, relativePath, matches:
   /// [{line, text}]}` — bounded by [_contentMaxMatches] / [_contentMaxPerFile]
-  /// and with each line truncated to [_contentMaxLineChars]. Match ranges are
-  /// computed client-side from `text` + the query (so highlighting stays a
-  /// presentation concern). An empty query yields nothing.
+  /// and with each line windowed to [_contentMaxLineChars] around the match.
+  /// Match ranges are computed client-side from `text` + the query (so
+  /// highlighting stays a presentation concern). An empty query yields nothing.
   ///
   /// [options] toggles case-sensitivity, regex, whole-word and include/exclude
   /// pathspecs. Defaults reproduce the legacy case-insensitive literal search.
@@ -1002,7 +1002,14 @@ class RepoIdeDataService {
         ? 1
         : _contentMaxPathspecs - excludeCount;
     if (includes.isEmpty) {
-      return _grepRoot(root, repoId, _buildGrepArgs(query, options), remaining);
+      return _grepRoot(
+        root,
+        repoId,
+        _buildGrepArgs(query, options),
+        remaining,
+        query: query,
+        options: options,
+      );
     }
     final out = <Map<String, dynamic>>[];
     var total = 0;
@@ -1022,6 +1029,8 @@ class RepoIdeDataService {
           includeOverride: includes.sublist(i, end),
         ),
         remaining - total,
+        query: query,
+        options: options,
       );
       for (final group in grouped) {
         out.add(group);
@@ -1095,19 +1104,92 @@ class RepoIdeDataService {
     return Platform.isWindows ? rel.replaceAll('\\', '/') : rel;
   }
 
+  /// Keeps at most [_contentMaxLineChars] of [text]. A match that already
+  /// fits in the leading window stays put (the client ellipsizes the lead).
+  /// A match past that window is recentered so the payload still contains it;
+  /// without this, a hit on a long line is sliced off before the preview can
+  /// show it. A query our matcher cannot place falls back to the leading
+  /// window — the same bytes the old truncation sent.
+  static String _clipContentLine(
+    String text,
+    String query,
+    SearchContentOptions options,
+  ) {
+    const max = _contentMaxLineChars;
+    if (text.length <= max) {
+      return text;
+    }
+    final match = _firstContentMatch(text, query, options);
+    if (match == null || match.end <= max) {
+      return text.substring(0, max);
+    }
+    const lead = 80;
+    var start = match.start - lead;
+    if (start < 0) {
+      start = 0;
+    }
+    var end = start + max;
+    if (end > text.length) {
+      end = text.length;
+      start = end - max;
+      if (start < 0) {
+        start = 0;
+      }
+    }
+    if (match.start < start) {
+      start = match.start;
+    }
+    if (match.start >= end) {
+      start = match.start;
+      end = text.length < start + max ? text.length : start + max;
+    }
+    return text.substring(start, end);
+  }
+
+  /// First match of [query] in [text], using the same case/regex/word flags
+  /// `git grep` ran with. Null when the pattern is empty or not a Dart regex
+  /// (git's ERE and Dart's regex are not the same dialect).
+  static RegExpMatch? _firstContentMatch(
+    String text,
+    String query,
+    SearchContentOptions options,
+  ) {
+    final q = query.trim();
+    if (q.isEmpty) {
+      return null;
+    }
+    final String pattern;
+    if (options.regex) {
+      pattern = options.wholeWord ? '\\b(?:$q)\\b' : q;
+    } else {
+      final escaped = RegExp.escape(q);
+      pattern = options.wholeWord ? '\\b$escaped\\b' : escaped;
+    }
+    try {
+      return RegExp(
+        pattern,
+        caseSensitive: options.caseSensitive,
+      ).firstMatch(text);
+    } on FormatException {
+      return null;
+    }
+  }
+
   /// Runs the prebuilt `git grep` [grepArgs] in [root] and groups the output
   /// per file (`{repoId, relativePath, matches: [{line, text}]}`), attributing
   /// each group to [repoId]. Bounded by [remaining] total matching lines and
-  /// [_contentMaxPerFile] per file; each line is truncated to
-  /// [_contentMaxLineChars]. Returns empty when [root] is missing, `git grep`
-  /// errors, or [remaining] is already exhausted — a broken checkout can't abort
-  /// a multi-repo search.
+  /// [_contentMaxPerFile] per file; each line is windowed to
+  /// [_contentMaxLineChars] around the match ([_clipContentLine]). Returns
+  /// empty when [root] is missing, `git grep` errors, or [remaining] is
+  /// already exhausted — a broken checkout can't abort a multi-repo search.
   Future<List<Map<String, dynamic>>> _grepRoot(
     String root,
     String repoId,
     List<String> grepArgs,
-    int remaining,
-  ) async {
+    int remaining, {
+    required String query,
+    required SearchContentOptions options,
+  }) async {
     if (remaining <= 0 || !Directory(root).existsSync()) {
       return const [];
     }
@@ -1138,10 +1220,11 @@ class RepoIdeDataService {
       if (lineNo == null) {
         continue;
       }
-      var text = line.substring(secondColon + 1);
-      if (text.length > _contentMaxLineChars) {
-        text = text.substring(0, _contentMaxLineChars);
-      }
+      final text = _clipContentLine(
+        line.substring(secondColon + 1),
+        query,
+        options,
+      );
       final matches = byFile.putIfAbsent(path, () {
         order.add(path);
         return [];

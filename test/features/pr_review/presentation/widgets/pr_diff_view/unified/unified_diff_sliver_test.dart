@@ -621,6 +621,116 @@ void main() {
     });
   });
 
+  group('revealOffsetForLine clears the pinned file header', () {
+    setUpAll(() => DiffWorkerPool.debugForceInline = true);
+    tearDownAll(() => DiffWorkerPool.debugForceInline = false);
+
+    const headerHeight = 32.0;
+    const lineHeight = 20.0;
+    const topInset = 44.0;
+    const displayLine = 30;
+
+    String longPatch() {
+      final buf = StringBuffer('@@ -1,80 +1,80 @@\n');
+      for (var i = 1; i <= 80; i++) {
+        buf.writeln(' line $i');
+      }
+      return buf.toString();
+    }
+
+    testWidgets('the landed row is the first code below the docked header', (
+      tester,
+    ) async {
+      final doc =
+          PrDiffDocument(lineHeight: lineHeight, headerHeight: headerHeight)
+            ..setFiles([
+              PrFile(
+                filename: 'lib/a.dart',
+                status: PrFileStatus.modified,
+                additions: 0,
+                deletions: 0,
+                patch: longPatch(),
+              ),
+            ]);
+      final store = DiffStructureStore(document: doc, maxTokenFiles: 8);
+      const slots = [
+        DiffSlot(
+          kind: DiffSlotKind.header,
+          key: 'hdr:a',
+          fileIndex: 0,
+          offset: 0,
+          height: headerHeight,
+        ),
+      ];
+      const paintConfig = UnifiedDiffPaintConfig(
+        brightness: Brightness.light,
+        baseStyle: TextStyle(fontSize: 13),
+        gutterBgColor: Color(0xFFF0F0F0),
+        gutterBorderColor: Color(0xFFDDDDDD),
+        expandGapBgColor: Color(0xFFEEEEEE),
+        expandGapBorderColor: Color(0xFFCCCCCC),
+        expandGapTextColor: Color(0xFF666666),
+        commentHighlightColor: Color(0x1A0000FF),
+        commentHighlightActiveColor: Color(0x330000FF),
+        revision: 0,
+        topInset: topInset,
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: CustomScrollView(
+            slivers: [
+              UnifiedDiffSliver(
+                delegate: SliverChildBuilderDelegate(
+                  (context, i) => SizedBox(
+                    key: ValueKey(slots[i].key),
+                    height: slots[i].height,
+                  ),
+                  childCount: slots.length,
+                ),
+                document: doc,
+                store: store,
+                config: paintConfig,
+                slots: slots,
+              ),
+            ],
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final sliver = tester.renderObject<RenderUnifiedDiffSliver>(
+        find.byType(UnifiedDiffSliver),
+      );
+      final scrollable = tester.state<ScrollableState>(find.byType(Scrollable));
+      scrollable.position.jumpTo(sliver.revealOffsetForLine(0, displayLine));
+      await tester.pump();
+
+      expect(sliver.stickyHeaderPinned, isTrue);
+
+      // Walk past the docked header. The first code row under it is the one
+      // the jump asked for — a search hit that lands on the pin line itself
+      // is painted underneath that header.
+      var y = 0.0;
+      var passedHeader = false;
+      (int, int)? firstVisible;
+      while (y < 400) {
+        if (sliver.coversStickyHeader(y)) {
+          passedHeader = true;
+        } else if (passedHeader) {
+          final hit = sliver.displayRowAt(y);
+          if (hit != null) {
+            firstVisible = hit;
+            break;
+          }
+        }
+        y += 1;
+      }
+      expect(passedHeader, isTrue);
+      expect(firstVisible, (0, displayLine));
+    });
+  });
+
   group('diff word and row selection', () {
     test('double-click range matches a browser word', () {
       expect(diffWordDisplayRange('hello world', 1), (start: 0, end: 6));
@@ -667,8 +777,9 @@ void main() {
     );
 
     Future<({RenderUnifiedDiffSliver sliver, Offset origin})> pump(
-      WidgetTester tester,
-    ) async {
+      WidgetTester tester, {
+      String patch = '@@ -1,2 +1,2 @@\n hello world\n final value\n',
+    }) async {
       final doc =
           PrDiffDocument(lineHeight: lineHeight, headerHeight: headerHeight)
             ..setFiles([
@@ -677,7 +788,7 @@ void main() {
                 status: PrFileStatus.modified,
                 additions: 0,
                 deletions: 0,
-                patch: '@@ -1,2 +1,2 @@\n hello world\n final value\n',
+                patch: patch,
               ),
             ]);
       final store = DiffStructureStore(document: doc, maxTokenFiles: 8);
@@ -712,7 +823,12 @@ void main() {
         ),
       );
       await tester.pump();
-      expect(doc.structureOf(0)!.contents[doc.rawIndexOf(0, 0)], 'hello world');
+      if (patch.contains('hello world')) {
+        expect(
+          doc.structureOf(0)!.contents[doc.rawIndexOf(0, 0)],
+          'hello world',
+        );
+      }
       final sliver = tester.renderObject<RenderUnifiedDiffSliver>(
         find.byType(UnifiedDiffSliver),
       );
@@ -778,6 +894,8 @@ void main() {
         endLine: 0,
         endCol: 11,
       ));
+      // The line break is one column past the glyphs, not the row edge.
+      expect(host.sliver.selectionColsFor(0, 0), (0, 12));
     });
 
     testWidgets('a later single click clears the selection', (tester) async {
@@ -801,6 +919,95 @@ void main() {
       await gesture.up();
       await tester.pump();
       expect(host.sliver.copySelectionText(), 'hell');
+    });
+
+    testWidgets('a drag that reaches the blank tail stops on the last glyph', (
+      tester,
+    ) async {
+      final host = await pump(tester);
+      final gesture = await tester.startGesture(
+        cell(host, 0, 2, fraction: 0.2),
+        kind: PointerDeviceKind.mouse,
+      );
+      await tester.pump();
+      // Well past the last glyph, in the empty part of the row.
+      await gesture.moveTo(cell(host, 0, 40));
+      await tester.pump();
+      await gesture.up();
+      await tester.pump();
+      expect(host.sliver.copySelectionText(), 'llo world');
+      // Still on this line, so the break is not included: stop on the glyph.
+      expect(host.sliver.selectionColsFor(0, 0), (2, 11));
+    });
+
+    testWidgets('a drag that stays in the blank tail does not paint', (
+      tester,
+    ) async {
+      final host = await pump(tester);
+      final gesture = await tester.startGesture(
+        cell(host, 0, 40),
+        kind: PointerDeviceKind.mouse,
+      );
+      await tester.pump();
+      await gesture.moveBy(const Offset(36, 0));
+      await tester.pump();
+      await gesture.up();
+      await tester.pump();
+      expect(host.sliver.copySelectionText(), isNull);
+      expect(host.sliver.selectionColsFor(0, 0), (null, null));
+    });
+
+    testWidgets('a selection that continues past the line includes the break', (
+      tester,
+    ) async {
+      final host = await pump(tester);
+      final gesture = await tester.startGesture(
+        cell(host, 0, 2, fraction: 0.2),
+        kind: PointerDeviceKind.mouse,
+      );
+      await tester.pump();
+      await gesture.moveTo(cell(host, 1, 3, fraction: 0.2));
+      await tester.pump();
+      await gesture.up();
+      await tester.pump();
+      // One column past "hello world"; the next line stops on the caret.
+      expect(host.sliver.selectionColsFor(0, 0), (2, 12));
+      expect(host.sliver.selectionColsFor(0, 1), (0, 3));
+    });
+
+    testWidgets('double-clicking the last word stays on the word', (
+      tester,
+    ) async {
+      final host = await pump(tester);
+      await click(tester, cell(host, 0, 8), times: 2);
+      expect(host.sliver.copySelectionText(), 'world');
+      expect(host.sliver.selectionColsFor(0, 0), (6, 11));
+    });
+
+    testWidgets('an empty line selection shows the break', (tester) async {
+      final host = await pump(tester, patch: '@@ -1,2 +1,2 @@\n \n hello\n');
+      await click(tester, cell(host, 0, 0), times: 3);
+      expect(host.sliver.selectionRange(), (
+        file: 0,
+        startLine: 0,
+        startCol: 0,
+        endLine: 0,
+        endCol: 0,
+      ));
+      expect(host.sliver.selectionColsFor(0, 0), (0, 1));
+
+      await tester.pump(const Duration(milliseconds: 350));
+      final gesture = await tester.startGesture(
+        cell(host, 0, 0),
+        kind: PointerDeviceKind.mouse,
+      );
+      await tester.pump();
+      await gesture.moveBy(const Offset(48, 0));
+      await tester.pump();
+      await gesture.up();
+      await tester.pump();
+      // An empty row has no glyphs; a same-line drag does not invent a bar.
+      expect(host.sliver.selectionColsFor(0, 0), (null, null));
     });
 
     testWidgets('dragging after a double-click extends by word', (

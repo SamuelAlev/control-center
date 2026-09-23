@@ -170,6 +170,43 @@ void main() {
       );
     });
 
+    testWidgets('a match late in a long line keeps an ellipsis prefix', (
+      tester,
+    ) async {
+      const late = (
+        repoId: 'repo',
+        relativePath: 'lib/popup.dart',
+        lines: [
+          (
+            line: 95,
+            text: 'UNIQUEPREFIX export const getUserPopupConfig = (deps) {}',
+          ),
+        ],
+      );
+      await tester.pumpWidget(
+        _wrap(
+          _panel(onOpenResult: (_, {int? line}) {}),
+          search: (_) => const [late],
+        ),
+      );
+      await tester.pumpAndSettle();
+      await _search(tester, '(deps)');
+
+      final plains = tester
+          .widgetList<RichText>(find.byType(RichText))
+          .map((rich) => rich.text.toPlainText())
+          .toList();
+      expect(
+        plains.any(
+          (text) =>
+              text.startsWith('…') &&
+              text.contains('(deps)') &&
+              !text.contains('UNIQUEPREFIX'),
+        ),
+        isTrue,
+      );
+    });
+
     testWidgets('match rows start at the file icon', (tester) async {
       await tester.pumpWidget(
         _wrap(

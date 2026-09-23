@@ -5268,6 +5268,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get suggestAChange => 'Suggerisci una modifica';
 
   @override
+  String get suggestion => 'Suggerimento';
+
+  @override
   String get suggestLabel => 'SUGGERIMENTO';
 
   @override

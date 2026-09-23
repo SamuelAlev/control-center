@@ -207,6 +207,15 @@ class _PrCommentComposerState extends ConsumerState<PrCommentComposer> {
             maxLines: 8,
             onSubmitted: (_) =>
                 _submit(batched: widget.onSubmitBatched != null),
+            toolbarLeading: [
+              if (widget.onSuggest != null)
+                CcButton(
+                  onPressed: _suggest,
+                  variant: CcButtonVariant.ghost,
+                  size: CcButtonSize.sm,
+                  child: Text(AppLocalizations.of(context).suggestion),
+                ),
+            ],
             footer: (context) => Padding(
               padding: const EdgeInsetsDirectional.only(top: 8, end: 6),
               child: _submitRow(context),
@@ -224,41 +233,18 @@ class _PrCommentComposerState extends ConsumerState<PrCommentComposer> {
     // review at once. The batched one is primary — it is what a reviewer
     // working through a diff almost always means.
     if (widget.onSubmitBatched == null) {
-      if (widget.onSuggest == null) {
-        return Align(
-          alignment: AlignmentDirectional.centerEnd,
-          child: _SendButton(onPressed: () => _submit(batched: false)),
-        );
-      }
-      return Wrap(
-        alignment: WrapAlignment.end,
-        spacing: 6,
-        runSpacing: 6,
-        children: [
-          CcButton(
-            onPressed: _suggest,
-            variant: CcButtonVariant.secondary,
-            size: CcButtonSize.sm,
-            child: Text(l10n.addASuggestion),
-          ),
-          _SendButton(onPressed: () => _submit(batched: false)),
-        ],
+      return Align(
+        alignment: AlignmentDirectional.centerEnd,
+        child: _SendButton(onPressed: () => _submit(batched: false)),
       );
     }
-    // Wrap, not Row: up to four labelled actions do not fit a diff panel
-    // narrowed to a side-by-side window, and a Row would clip the primary one.
+    // Wrap, not Row: the labelled actions do not fit a diff panel narrowed
+    // to a side-by-side window, and a Row would clip the primary one.
     return Wrap(
       alignment: WrapAlignment.end,
       spacing: 6,
       runSpacing: 6,
       children: [
-        if (widget.onSuggest != null)
-          CcButton(
-            onPressed: _suggest,
-            variant: CcButtonVariant.ghost,
-            size: CcButtonSize.sm,
-            child: Text(l10n.addASuggestion),
-          ),
         CcButton(
           onPressed: widget.onCancel,
           variant: CcButtonVariant.ghost,

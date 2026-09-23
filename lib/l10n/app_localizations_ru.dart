@@ -5278,6 +5278,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get suggestAChange => 'Предложить изменение';
 
   @override
+  String get suggestion => 'Предложение';
+
+  @override
   String get suggestLabel => 'ПРЕДЛОЖИТЬ';
 
   @override

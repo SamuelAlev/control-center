@@ -5217,6 +5217,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get suggestAChange => 'Đề xuất thay đổi';
 
   @override
+  String get suggestion => 'Đề xuất';
+
+  @override
   String get suggestLabel => 'ĐỀ XUẤT';
 
   @override

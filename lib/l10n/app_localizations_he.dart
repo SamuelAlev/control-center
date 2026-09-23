@@ -5208,6 +5208,9 @@ class AppLocalizationsHe extends AppLocalizations {
   String get suggestAChange => 'הצע שינוי';
 
   @override
+  String get suggestion => 'הצעה';
+
+  @override
   String get suggestLabel => 'הצעה';
 
   @override

@@ -6,11 +6,9 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/pr_review/presentation/notifiers/pr_diff_scope_notifier.dart';
 import 'package:control_center/features/pr_review/presentation/screens/pull_request_detail/pr_files_tab.dart';
 import 'package:control_center/features/pr_review/presentation/screens/pull_request_detail/pr_sidebar_overlay.dart';
-import 'package:control_center/features/pr_review/presentation/screens/pull_request_detail/pr_tab_chip.dart';
 import 'package:control_center/features/pr_review/presentation/utils/review_status_palette.dart';
 import 'package:control_center/features/pr_review/presentation/utils/scoped_diff_files.dart';
 import 'package:control_center/features/pr_review/presentation/utils/server_review_threads.dart';
-import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_file_tree.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/commit_range_selector.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/diff_settings_button.dart';
@@ -27,11 +25,11 @@ import 'package:control_center/shared/widgets/ready_auto_scroll.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// The PR-detail Diff tab: one toolbar row (tree toggle, commit-range
-/// dropdown, diff stats, view settings) over the diff surface — a resizable
-/// file-tree beside the scrolling diff. The tree toggle persists across
-/// sessions; the tree is also dropped on narrow windows where there is no
-/// room for it.
+/// The PR-detail Diff tab: one toolbar row (commit-range dropdown, diff
+/// stats, view settings) over the diff surface — a resizable file-tree
+/// beside the scrolling diff. The tree toggle lives in the view-settings
+/// flyout and persists across sessions; the tree is also dropped on narrow
+/// windows where there is no room for it.
 class PrDiffTab extends ConsumerStatefulWidget {
   /// Creates a [PrDiffTab].
   const PrDiffTab({
@@ -312,8 +310,8 @@ class _PrDiffTabState extends ConsumerState<PrDiffTab> {
     );
   }
 
-  /// The merged toolbar: tree toggle, commit-range dropdown, scoped diff
-  /// stats, the pending-update chip and the view-settings dropdown.
+  /// The merged toolbar: commit-range dropdown, scoped diff stats, the
+  /// pending-update chip and the view-settings dropdown.
   Widget _buildToolbar(
     BuildContext context, {
     required bool treeVisible,
@@ -350,37 +348,13 @@ class _PrDiffTabState extends ConsumerState<PrDiffTab> {
     final deletions = scoped.files.fold<int>(0, (s, f) => s + f.deletions);
 
     return Container(
-      // Left inset matches the file-tree filter field so the Tree chip
-      // lines up with the input directly below it. Right stays at the
-      // page inset for the Review action.
-      padding: const EdgeInsets.fromLTRB(kPrDiffTreeFilterInset, 8, 24, 8),
+      padding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
       decoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: t.borderSecondary)),
       ),
       child: Row(
         children: [
-          CcTooltip(
-            message: l10n.toggleFileTree,
-            child: PrTabChip(
-              icon: AppIcons.folderTree,
-              label: l10n.treeLabel,
-              fontSize: 12,
-              selected: treeVisible,
-              onTap: () {
-                final notifier = ref.read(prTreeVisibleProvider.notifier);
-                if (treeVisible) {
-                  notifier.setVisible(visible: false);
-                } else {
-                  // Reveal in tree mode (the chip is "Tree"), not whatever mode
-                  // a prior ⌘F left the sidebar in.
-                  setState(() => _sidebarMode = PrDiffSidebarMode.tree);
-                  notifier.setVisible(visible: true);
-                }
-              },
-            ),
-          ),
           if (commits.isNotEmpty) ...[
-            const SizedBox(width: 8),
             CommitRangeSelector(
               commits: commits,
               selectedShas: scope.selectedShas,
@@ -389,8 +363,8 @@ class _PrDiffTabState extends ConsumerState<PrDiffTab> {
                   .updateSelection,
               totalCommitsCount: widget.pr.commitsCount,
             ),
+            const SizedBox(width: 16),
           ],
-          const SizedBox(width: 16),
           Icon(AppIcons.fileText, size: 14, color: t.textTertiary),
           const SizedBox(width: 6),
           Text(
@@ -424,6 +398,17 @@ class _PrDiffTabState extends ConsumerState<PrDiffTab> {
             splitView: splitView,
             onSplitViewChanged: (v) =>
                 ref.read(prDiffSplitViewProvider.notifier).setSplit(split: v),
+            treeVisible: treeVisible,
+            onTreeVisibleChanged: (visible) {
+              if (visible) {
+                // Reveal the file tree, not whatever mode a prior ⌘F left
+                // the sidebar in.
+                setState(() => _sidebarMode = PrDiffSidebarMode.tree);
+              }
+              ref
+                  .read(prTreeVisibleProvider.notifier)
+                  .setVisible(visible: visible);
+            },
           ),
           if (widget.hasDiffUpdate && widget.onRefreshDiff != null) ...[
             const SizedBox(width: 16),

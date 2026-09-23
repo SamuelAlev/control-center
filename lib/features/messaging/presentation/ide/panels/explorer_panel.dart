@@ -4,6 +4,7 @@ import 'package:cc_domain/cc_domain.dart' show FileSearchHit;
 import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/space_provisioning_status.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/features/messaging/presentation/ide/search_line_preview.dart';
 import 'package:control_center/features/messaging/presentation/utils/provisioning_step_label.dart';
 import 'package:control_center/features/messaging/providers/explorer_view_state_provider.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
@@ -865,6 +866,7 @@ class _ExplorerPanelState extends ConsumerState<ExplorerPanel> {
       body = _ContentResults(
         results: results,
         query: query,
+        options: _view.options,
         repoById: repoById,
         onOpenFile: widget.onOpenFile,
       );
@@ -1184,12 +1186,14 @@ class _ContentResults extends StatefulWidget {
   const _ContentResults({
     required this.results,
     required this.query,
+    required this.options,
     required this.repoById,
     required this.onOpenFile,
   });
 
   final List<FileContentMatch> results;
   final String query;
+  final ContentSearchOptions options;
   final Map<String, Repo> repoById;
   final ValueChanged<({String repoId, String path})> onOpenFile;
 
@@ -1234,6 +1238,7 @@ class _ContentResultsState extends State<_ContentResults> {
         return _ContentMatchRow(
           match: row.match!,
           query: widget.query,
+          options: widget.options,
           onTap: () =>
               widget.onOpenFile((repoId: g.repoId, path: g.relativePath)),
         );
@@ -1342,17 +1347,18 @@ class _ContentMatchRow extends StatelessWidget {
   const _ContentMatchRow({
     required this.match,
     required this.query,
+    required this.options,
     required this.onTap,
   });
 
   final ContentMatchLine match;
   final String query;
+  final ContentSearchOptions options;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final t = context.designSystem ?? DesignSystemTokens.light();
-    final display = match.text.trimLeft();
     final base = CcFonts.code(
       textStyle: TextStyle(fontSize: 12, color: t.textSecondary),
     );
@@ -1382,20 +1388,15 @@ class _ContentMatchRow extends StatelessWidget {
                 ),
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
-                  child: RichText(
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    text: TextSpan(
-                      style: base,
-                      children: _highlightSpans(
-                        display,
-                        query,
-                        highlight: TextStyle(
-                          backgroundColor: t.bgWarningSecondary,
-                          color: t.textPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                  child: SearchMatchPreview(
+                    line: match.text,
+                    query: query,
+                    options: options,
+                    style: base,
+                    highlight: TextStyle(
+                      backgroundColor: t.bgWarningSecondary,
+                      color: t.textPrimary,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
@@ -1435,37 +1436,6 @@ class _CountBadge extends StatelessWidget {
   }
 }
 
-/// Splits [text] into spans, wrapping each case-insensitive occurrence of
-/// [query] in [highlight]. Non-matching runs inherit the ambient style.
-List<InlineSpan> _highlightSpans(
-  String text,
-  String query, {
-  required TextStyle highlight,
-}) {
-  if (query.isEmpty) {
-    return [TextSpan(text: text)];
-  }
-  final lower = text.toLowerCase();
-  final q = query.toLowerCase();
-  final spans = <InlineSpan>[];
-  var i = 0;
-  while (i < text.length) {
-    final idx = lower.indexOf(q, i);
-    if (idx < 0) {
-      spans.add(TextSpan(text: text.substring(i)));
-      break;
-    }
-    if (idx > i) {
-      spans.add(TextSpan(text: text.substring(i, idx)));
-    }
-    spans.add(
-      TextSpan(text: text.substring(idx, idx + q.length), style: highlight),
-    );
-    i = idx + q.length;
-  }
-  return spans;
-}
-
 /// A small toggle icon-button for a content-search option (case/regex/word).
 /// Shows a pressed/selected visual when [active].
 class _OptionToggle extends StatelessWidget {
@@ -1491,28 +1461,26 @@ class _OptionToggle extends StatelessWidget {
         onPressed: () => onChanged(!active),
         semanticLabel: tooltip,
         borderRadius: BorderRadius.circular(3),
-        builder:
-            (context, states) => Container(
-              width: 20,
-              height: 20,
-              margin: const EdgeInsets.all(2),
-              decoration: BoxDecoration(
-                color:
-                    (active || states.contains(WidgetState.hovered))
-                        ? t.hover
-                        : const Color(0x00000000),
-                borderRadius: BorderRadius.circular(3),
-              ),
-              child: Icon(
-                icon,
-                size: 13,
-                color: active
-                    ? t.fg
-                    : (states.contains(WidgetState.hovered)
-                          ? t.textSecondary
-                          : t.textTertiary),
-              ),
-            ),
+        builder: (context, states) => Container(
+          width: 20,
+          height: 20,
+          margin: const EdgeInsets.all(2),
+          decoration: BoxDecoration(
+            color: (active || states.contains(WidgetState.hovered))
+                ? t.hover
+                : const Color(0x00000000),
+            borderRadius: BorderRadius.circular(3),
+          ),
+          child: Icon(
+            icon,
+            size: 13,
+            color: active
+                ? t.fg
+                : (states.contains(WidgetState.hovered)
+                      ? t.textSecondary
+                      : t.textTertiary),
+          ),
+        ),
       ),
     );
   }

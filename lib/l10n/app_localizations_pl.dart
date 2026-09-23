@@ -5297,6 +5297,9 @@ class AppLocalizationsPl extends AppLocalizations {
   String get suggestAChange => 'Zasugeruj zmianę';
 
   @override
+  String get suggestion => 'Sugestia';
+
+  @override
   String get suggestLabel => 'SUGESTIA';
 
   @override

@@ -13,6 +13,7 @@ class MarkdownToolbar extends StatelessWidget {
     super.key,
     required this.controller,
     required this.focusNode,
+    this.leading = const <Widget>[],
     this.trailing = const <Widget>[],
     this.alignment = WrapAlignment.start,
   });
@@ -22,6 +23,10 @@ class MarkdownToolbar extends StatelessWidget {
 
   /// The editor's focus node (re-focused after each action).
   final FocusNode focusNode;
+
+  /// Host-supplied buttons placed before the formatting ones, inside the same
+  /// `Wrap`. A suggestion action sits here, immediately left of bold.
+  final List<Widget> leading;
 
   /// Host-supplied buttons appended after the formatting ones, inside the same
   /// `Wrap` so they reflow together on a narrow surface. This is where content
@@ -47,6 +52,7 @@ class MarkdownToolbar extends StatelessWidget {
       runSpacing: 4,
       alignment: alignment,
       children: [
+        ...leading,
         _ToolbarButton(
           icon: AppIcons.bold,
           tooltip: l10n.markdownBold,

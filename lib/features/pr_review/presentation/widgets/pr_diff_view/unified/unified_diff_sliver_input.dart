@@ -228,7 +228,13 @@ extension UnifiedDiffSliverInput on RenderUnifiedDiffSliver {
   }
 
   /// Display-column span `[start, end)` to highlight on `(file, displayLine)`,
-  /// or `(null, null)` if the row is outside the selection.
+  /// or `(null, null)` if the row is outside the selection or the span is a
+  /// caret.
+  ///
+  /// An end of `displayWidth + 1` is the line break: VS Code paints that as
+  /// one character past the last glyph, not as a bar to the row's right edge.
+  /// A selection that merely ends at the last column (the caret is at EOL on
+  /// this line) stops on that glyph.
   (int?, int?) selectionColsFor(int file, int displayLine) {
     final a = _selAnchor;
     final f = _selFocus;
@@ -253,36 +259,40 @@ extension UnifiedDiffSliverInput on RenderUnifiedDiffSliver {
     if (file > ef || (file == ef && displayLine > el)) {
       return (null, null);
     }
+    final width = _document.displayWidthOf(file, displayLine);
     final bool atStart = file == sf && displayLine == sl;
     final bool atEnd = file == ef && displayLine == el;
+    // A line the selection continues past includes its break. A triple-click
+    // does too: VS Code's line selection owns the newline even though the
+    // caret stays on this row. A same-line drag that only reaches EOL does not.
+    final bool includesBreak =
+        !atEnd || _selGranularity == _DiffSelGranularity.line;
     if (atStart && atEnd) {
       final lo = math.min(sc, ec);
       final hi = math.max(sc, ec);
-      if (_coversWholeLine(file, displayLine, lo, hi)) {
-        return (0, null);
+      if (lo == hi) {
+        // Nothing selected. An empty row's line selection still shows the
+        // break, one character wide — there is no glyph to stop on.
+        if (includesBreak && width == 0) {
+          return (0, 1);
+        }
+        return (null, null);
+      }
+      if (includesBreak && hi >= width) {
+        return (lo, width + 1);
       }
       return (lo, hi);
     }
     if (atStart) {
-      return (sc, null);
+      return (sc, width + 1);
     }
     if (atEnd) {
-      if (ec >= _document.displayWidthOf(file, displayLine)) {
-        return (0, null);
+      if (includesBreak && ec >= width) {
+        return (0, width + 1);
       }
       return (0, ec);
     }
-    return (0, null);
-  }
-
-  /// A selection that already owns every column of the row paints to the
-  /// row's right edge, which is how a triple-click reads.
-  bool _coversWholeLine(int file, int displayLine, int start, int end) {
-    final width = _document.displayWidthOf(file, displayLine);
-    if (start > 0 || end < width) {
-      return false;
-    }
-    return end > start || _selGranularity == _DiffSelGranularity.line;
+    return (0, width + 1);
   }
 
   /// Resolves the context/addition/deletion code row at [mainAxisPosition],

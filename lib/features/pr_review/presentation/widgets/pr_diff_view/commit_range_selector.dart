@@ -51,7 +51,6 @@ class _CommitRangeSelectorState extends ConsumerState<CommitRangeSelector> {
   void initState() {
     super.initState();
     _selectedShas = widget.selectedShas;
-    _controller.addListener(_onOverlayChanged);
   }
 
   @override
@@ -62,17 +61,8 @@ class _CommitRangeSelectorState extends ConsumerState<CommitRangeSelector> {
 
   @override
   void dispose() {
-    _controller
-      ..removeListener(_onOverlayChanged)
-      ..dispose();
+    _controller.dispose();
     super.dispose();
-  }
-
-  /// Restyles the trigger when the panel opens/closes.
-  void _onOverlayChanged() {
-    if (mounted) {
-      setState(() {});
-    }
   }
 
   void _emit(Set<String> next) {
@@ -161,40 +151,33 @@ class _CommitRangeSelectorState extends ConsumerState<CommitRangeSelector> {
     final t = context.designSystem ?? DesignSystemTokens.light();
     final l10n = AppLocalizations.of(context);
     final codeFont = ref.watch(codeFontFamilyProvider);
-    final isOpen = _controller.isOpen;
     return CcPopover(
       controller: _controller,
+      // The trigger is a real button, so it owns the tap and the hover.
+      // CcPopover's wrapper would cover that wash and fight the gesture.
+      toggleOnTargetTap: false,
       semanticLabel: l10n.scopeDiffToCommits,
       target: CcTooltip(
         message: l10n.scopeDiffToCommits,
-        child: Container(
-          decoration: BoxDecoration(
-            color: isOpen
-                ? t.bgSecondary
-                : t.bgSecondary.withValues(alpha: 0.6),
-            borderRadius: AppRadii.brSm,
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        child: CcButton(
+          variant: CcButtonVariant.ghost,
+          size: CcButtonSize.sm,
+          semanticLabel: l10n.scopeDiffToCommits,
+          onPressed: _controller.toggle,
+          trailing: Icon(AppIcons.chevronDown),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               _VersionBadge(label: _chipVersionLabel(), codeFont: codeFont),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.sm),
               ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 220),
                 child: Text(
                   _chipLabel(),
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: t.textPrimary,
-                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              const SizedBox(width: 6),
-              Icon(AppIcons.chevronDown, size: 14, color: t.textTertiary),
             ],
           ),
         ),

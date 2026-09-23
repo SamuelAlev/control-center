@@ -1,5 +1,6 @@
 import 'package:cc_ui/src/foundation/cc_component_tokens.dart';
 import 'package:cc_ui/src/foundation/cc_elevation.dart';
+import 'package:cc_ui/src/foundation/cc_motion.dart';
 import 'package:cc_ui/src/foundation/cc_overlay_anchor.dart';
 import 'package:cc_ui/src/foundation/cc_tappable.dart';
 import 'package:cc_ui/src/foundation/cc_typography.dart';
@@ -60,6 +61,13 @@ class CcPopover extends StatefulWidget {
   final bool barrierDismissible;
 
   /// Whether tapping the target toggles the popover.
+  ///
+  /// On, the target is wrapped in a trigger that paints the ghost hover and
+  /// press wash. Turn this off when [target] is itself a button and drive a
+  /// [controller] from that button's `onPressed`: the wrapper is a second
+  /// tappable, so the two recognizers fight over the tap, and an opaque
+  /// target covers the wrapper's wash. The button is what carries the hover
+  /// then.
   final bool toggleOnTargetTap;
 
   /// Whether to shield the panel + barrier with a [PointerInterceptor] so taps
@@ -99,8 +107,29 @@ class _CcPopoverState extends State<CcPopover> {
     final trigger = widget.toggleOnTargetTap
         ? CcTappable(
             onPressed: _controller.toggle,
+            borderRadius: AppRadii.brSm,
             semanticLabel: widget.semanticLabel,
-            builder: (context, states) => widget.target,
+            builder: (context, states) {
+              final t = context.ds;
+              final pressed = states.contains(WidgetState.pressed);
+              final hovered = states.contains(WidgetState.hovered);
+              // Alpha-0 at rest (not transparent black) so the wash lerps
+              // only alpha, the same way a ghost button does.
+              final wash = pressed
+                  ? t.hoverStrong
+                  : hovered
+                  ? t.hover
+                  : t.hover.withValues(alpha: 0);
+              return AnimatedContainer(
+                duration: CcMotion.resolveFade(context, CcMotion.fast),
+                curve: CcMotion.standard,
+                decoration: BoxDecoration(
+                  color: wash,
+                  borderRadius: AppRadii.brSm,
+                ),
+                child: widget.target,
+              );
+            },
           )
         : widget.target;
 

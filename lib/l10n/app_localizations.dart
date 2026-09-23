@@ -9073,6 +9073,12 @@ abstract class AppLocalizations {
   /// **'Suggest a change'**
   String get suggestAChange;
 
+  /// Toolbar button that turns a line comment into a code suggestion
+  ///
+  /// In en, this message translates to:
+  /// **'Suggestion'**
+  String get suggestion;
+
   /// No description provided for @suggestLabel.
   ///
   /// In en, this message translates to:

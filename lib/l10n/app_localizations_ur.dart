@@ -5201,6 +5201,9 @@ class AppLocalizationsUr extends AppLocalizations {
   String get suggestAChange => 'تبدیلی تجویز کریں';
 
   @override
+  String get suggestion => 'تجویز';
+
+  @override
   String get suggestLabel => 'تجویز';
 
   @override

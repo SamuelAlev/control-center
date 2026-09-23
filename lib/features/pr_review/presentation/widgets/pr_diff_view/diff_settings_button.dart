@@ -8,15 +8,16 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// The diff-settings dropdown: a sliders trigger opening a panel with the
-/// split/unified view-mode picker plus the persisted diff rendering toggles
-/// (line wrapping, code ligatures). Replaces the old inline two-segment
-/// toggle.
-class DiffSettingsButton extends ConsumerWidget {
+/// split/unified view-mode picker plus the persisted diff toggles (file
+/// tree, line wrapping, code ligatures).
+class DiffSettingsButton extends ConsumerStatefulWidget {
   /// Creates a [DiffSettingsButton].
   const DiffSettingsButton({
     super.key,
     required this.splitView,
     required this.onSplitViewChanged,
+    required this.treeVisible,
+    required this.onTreeVisibleChanged,
   });
 
   /// Whether split (side-by-side) view is active.
@@ -25,31 +26,46 @@ class DiffSettingsButton extends ConsumerWidget {
   /// Called when the view mode changes.
   final ValueChanged<bool> onSplitViewChanged;
 
+  /// Whether the file-tree sidebar is shown.
+  final bool treeVisible;
+
+  /// Called when the file-tree toggle changes.
+  final ValueChanged<bool> onTreeVisibleChanged;
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final t = context.designSystem ?? DesignSystemTokens.light();
+  ConsumerState<DiffSettingsButton> createState() => _DiffSettingsButtonState();
+}
+
+class _DiffSettingsButtonState extends ConsumerState<DiffSettingsButton> {
+  final CcOverlayController _controller = CcOverlayController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final wrapLines =
         ref.watch(diffOverflowModeProvider) == DiffOverflowMode.wrap;
     final ligatures = ref.watch(fontSettingsProvider).codeFontLigatures;
+    final splitView = widget.splitView;
     return CcPopover(
+      controller: _controller,
+      // The trigger is a real icon button, so it owns the tap and the hover.
+      // CcPopover's wrapper would cover that wash and fight the gesture.
+      toggleOnTargetTap: false,
       targetAnchor: AlignmentDirectional.bottomEnd,
       followerAnchor: AlignmentDirectional.topEnd,
       semanticLabel: l10n.diffViewSettings,
-      target: CcTooltip(
-        message: l10n.diffViewSettings,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-          decoration: BoxDecoration(
-            color: t.bgSecondary.withValues(alpha: 0.6),
-            borderRadius: AppRadii.brSm,
-          ),
-          child: Icon(
-            AppIcons.slidersHorizontal,
-            size: 14,
-            color: t.textSecondary,
-          ),
-        ),
+      target: CcIconButton(
+        icon: AppIcons.slidersHorizontal,
+        size: CcButtonSize.sm,
+        variant: CcButtonVariant.ghost,
+        tooltip: l10n.diffViewSettings,
+        onPressed: _controller.toggle,
       ),
       overlayBuilder: (context, _) => SizedBox(
         width: 280,
@@ -67,7 +83,7 @@ class DiffSettingsButton extends ConsumerWidget {
                       label: l10n.splitViewLabel,
                       tooltip: l10n.splitDiff,
                       active: splitView,
-                      onTap: () => onSplitViewChanged(true),
+                      onTap: () => widget.onSplitViewChanged(true),
                     ),
                   ),
                   const SizedBox(width: AppSpacing.sm),
@@ -77,7 +93,7 @@ class DiffSettingsButton extends ConsumerWidget {
                       label: l10n.unifiedViewLabel,
                       tooltip: l10n.unifiedDiff,
                       active: !splitView,
-                      onTap: () => onSplitViewChanged(false),
+                      onTap: () => widget.onSplitViewChanged(false),
                     ),
                   ),
                 ],
@@ -85,6 +101,11 @@ class DiffSettingsButton extends ConsumerWidget {
             ),
             const CcDivider(),
             const SizedBox(height: AppSpacing.xs),
+            _SettingToggleRow(
+              label: l10n.treeLabel,
+              value: widget.treeVisible,
+              onChanged: widget.onTreeVisibleChanged,
+            ),
             _SettingToggleRow(
               label: l10n.wrapLines,
               value: wrapLines,

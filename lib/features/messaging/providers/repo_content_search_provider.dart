@@ -4,7 +4,8 @@ import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// One matching line within a file: its 1-based `line` number and raw `text`
-/// (already truncated server-side; the view computes highlight ranges).
+/// (windowed server-side when the line is very long; the view ellipsizes the
+/// lead and computes highlight ranges).
 typedef ContentMatchLine = ({int line, String text});
 
 /// A file with one or more content matches, grouped for the Explorer's

@@ -599,6 +599,35 @@ void main() {
       return root;
     }
 
+    test('a match past the line cap stays in the returned text', () async {
+      final late = '${'word ' * 120}(deps)\n';
+      final early = 'needle ${'x' * 500}\n';
+      final root = await gitRepo('a', {'late.dart': late, 'early.dart': early});
+      final ws = _FakeWorkspaceRepo()
+        ..reposByWorkspace['ws'] = [repo('a', root)];
+      final svc = RepoIdeDataService(
+        repoRepository: _FakeRepoRepo(),
+        workspaceRepository: ws,
+        isolatedRepoRepository: _FakeIsolatedRepoRepo(),
+        fileSearch: DartFileSearch(),
+      );
+
+      final lateHits = await svc.searchContent('ws', '(deps)');
+      final lateText =
+          ((lateHits.single['matches'] as List).single as Map)['text']
+              as String;
+      expect(lateText, contains('(deps)'));
+      expect(lateText.length, lessThanOrEqualTo(400));
+      expect(lateText, isNot(startsWith('word word word word word')));
+
+      final earlyHits = await svc.searchContent('ws', 'needle');
+      final earlyText =
+          ((earlyHits.single['matches'] as List).single as Map)['text']
+              as String;
+      expect(earlyText, startsWith('needle'));
+      expect(earlyText.length, 400);
+    });
+
     test('groups literal matches per file with line numbers', () async {
       final root = await gitRepo('a', {
         'lib/service.dart': 'class Service {}\n// needle here\nfinal x = 1;\n',

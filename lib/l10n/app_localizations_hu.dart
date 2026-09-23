@@ -5244,6 +5244,9 @@ class AppLocalizationsHu extends AppLocalizations {
   String get suggestAChange => 'Módosítás javaslása';
 
   @override
+  String get suggestion => 'Javaslat';
+
+  @override
   String get suggestLabel => 'JAVASLAT';
 
   @override

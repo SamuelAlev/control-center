@@ -1,6 +1,5 @@
 import 'package:cc_domain/core/domain/entities/workspace.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_commit.dart';
-import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_user.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_domain/features/pr_review/domain/repositories/pr_review_repository.dart';
@@ -9,8 +8,6 @@ import 'package:control_center/core/constants/app_constants.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:control_center/core/theme/font_settings.dart';
 import 'package:control_center/features/pr_review/presentation/screens/pull_request_detail/pr_diff_tab.dart';
-import 'package:control_center/features/pr_review/presentation/screens/pull_request_detail/pr_tab_chip.dart';
-import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_file_tree.dart';
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
@@ -97,36 +94,51 @@ const _prRef = (workspaceId: 'ws', repoFullName: 'test/repo', number: 42);
 
 void main() {
   group('PrDiffTab merged toolbar', () {
-    testWidgets('renders tree toggle, stats and settings trigger', (
-      tester,
-    ) async {
+    testWidgets('renders stats and settings trigger', (tester) async {
       await tester.pumpWidget(
         _wrap(PrDiffTab(pr: _pr(), prRef: _prRef), prefs: AppPreferences.inMemory()),
       );
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('Tree'), findsOneWidget);
+      expect(find.text('Tree'), findsNothing);
       expect(find.byIcon(AppIcons.slidersHorizontal), findsOneWidget);
       expect(find.text('0 files'), findsOneWidget);
+      expect(
+        tester.widget<CcIconButton>(find.byType(CcIconButton)).variant,
+        CcButtonVariant.ghost,
+      );
       // No commits loaded: the commit-range dropdown stays hidden.
       expect(find.text('All commits'), findsNothing);
 
       await _teardown(tester);
     });
 
-    testWidgets('tree toggle flips and persists the preference', (
+    testWidgets('file-tree switch in settings flips and persists', (
       tester,
     ) async {
       final prefs = AppPreferences.inMemory();
       await tester.pumpWidget(_wrap(PrDiffTab(pr: _pr(), prRef: _prRef), prefs: prefs));
       await tester.pump(const Duration(milliseconds: 100));
 
-      await tester.tap(find.text('Tree'));
+      await tester.tap(find.byIcon(AppIcons.slidersHorizontal));
+      await tester.pump(const Duration(milliseconds: 100));
+
+      final treeRow = find
+          .ancestor(of: find.text('Tree'), matching: find.byType(Row))
+          .first;
+      final treeSwitch = find.descendant(
+        of: treeRow,
+        matching: find.byType(CcSwitch),
+      );
+      expect(treeSwitch, findsOneWidget);
+      expect(tester.widget<CcSwitch>(treeSwitch).value, isTrue);
+
+      await tester.tap(treeSwitch);
       await tester.pump();
 
       expect(prefs.getBool(prTreeVisibleKey), isFalse);
 
-      await tester.tap(find.text('Tree'));
+      await tester.tap(treeSwitch);
       await tester.pump();
 
       expect(prefs.getBool(prTreeVisibleKey), isTrue);
@@ -180,6 +192,12 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.text('All commits'), findsOneWidget);
+      expect(
+        tester
+            .widget<CcButton>(find.widgetWithText(CcButton, 'All commits'))
+            .variant,
+        CcButtonVariant.ghost,
+      );
 
       await tester.tap(find.text('All commits'));
       await tester.pump(const Duration(milliseconds: 100));
@@ -191,44 +209,5 @@ void main() {
       await _teardown(tester);
     });
 
-    testWidgets('tree chip left-aligns with the file filter field', (
-      tester,
-    ) async {
-      tester.view.physicalSize = const Size(1400, 900);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-
-      final files = [
-        PrFile(
-          filename: 'lib/main.dart',
-          status: PrFileStatus.modified,
-          additions: 1,
-          deletions: 0,
-          patch: '',
-        ),
-      ];
-      await tester.pumpWidget(
-        _wrap(
-          PrDiffTab(pr: _pr(), prRef: _prRef),
-          prefs: AppPreferences.inMemory(),
-          overrides: [
-            prFileIndexProvider(_prRef).overrideWith((ref) => Stream.value(files)),
-          ],
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
-
-      expect(find.byType(PrTabChip), findsOneWidget);
-      expect(find.byType(CcTextField), findsOneWidget);
-
-      final chipLeft = tester.getTopLeft(find.byType(PrTabChip)).dx;
-      final fieldLeft = tester.getTopLeft(find.byType(CcTextField)).dx;
-      expect(chipLeft, moreOrLessEquals(fieldLeft, epsilon: 0.5));
-      expect(chipLeft, moreOrLessEquals(kPrDiffTreeFilterInset, epsilon: 0.5));
-
-      await _teardown(tester);
-    });
   });
 }

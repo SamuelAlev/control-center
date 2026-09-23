@@ -5231,6 +5231,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get suggestAChange => 'Usulkan perubahan';
 
   @override
+  String get suggestion => 'Saran';
+
+  @override
   String get suggestLabel => 'USULKAN';
 
   @override

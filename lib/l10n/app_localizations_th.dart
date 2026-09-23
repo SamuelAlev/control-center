@@ -5180,6 +5180,9 @@ class AppLocalizationsTh extends AppLocalizations {
   String get suggestAChange => 'เสนอการเปลี่ยนแปลง';
 
   @override
+  String get suggestion => 'ข้อเสนอแนะ';
+
+  @override
   String get suggestLabel => 'เสนอ';
 
   @override

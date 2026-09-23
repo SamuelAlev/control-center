@@ -5117,6 +5117,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get suggestAChange => '変更を提案';
 
   @override
+  String get suggestion => '提案';
+
+  @override
   String get suggestLabel => '提案';
 
   @override

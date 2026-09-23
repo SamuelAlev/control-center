@@ -5277,6 +5277,9 @@ class AppLocalizationsEl extends AppLocalizations {
   String get suggestAChange => 'Πρόταση αλλαγής';
 
   @override
+  String get suggestion => 'Πρόταση';
+
+  @override
   String get suggestLabel => 'ΠΡΟΤΑΣΗ';
 
   @override

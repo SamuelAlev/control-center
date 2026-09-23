@@ -5201,6 +5201,9 @@ class AppLocalizationsFa extends AppLocalizations {
   String get suggestAChange => 'پیشنهاد یک تغییر';
 
   @override
+  String get suggestion => 'پیشنهاد';
+
+  @override
   String get suggestLabel => 'پیشنهاد';
 
   @override

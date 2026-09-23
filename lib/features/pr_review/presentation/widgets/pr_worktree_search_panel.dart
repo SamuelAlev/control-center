@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/features/messaging/presentation/ide/search_line_preview.dart';
 import 'package:control_center/features/messaging/providers/repo_content_search_provider.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_sidebar_filter_controls.dart';
 import 'package:control_center/features/pr_review/providers/pr_worktree_search_provider.dart';
@@ -392,6 +393,7 @@ class _PrWorktreeSearchPanelState extends ConsumerState<PrWorktreeSearchPanel> {
                   key: ValueKey('m:${group.relativePath}:${match.line}'),
                   match: match,
                   query: _query,
+                  options: _options,
                   onTap: () =>
                       widget.onOpenResult(group.relativePath, line: match.line),
                 );
@@ -800,17 +802,18 @@ class _MatchRow extends StatelessWidget {
     super.key,
     required this.match,
     required this.query,
+    required this.options,
     required this.onTap,
   });
 
   final ContentMatchLine match;
   final String query;
+  final ContentSearchOptions options;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designSystem ?? DesignSystemTokens.light();
-    final display = match.text.trimLeft();
     final base = CcFonts.code(
       textStyle: TextStyle(fontSize: 12, color: tokens.textSecondary),
     );
@@ -838,20 +841,15 @@ class _MatchRow extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: RichText(
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    text: TextSpan(
-                      style: base,
-                      children: _highlightSpans(
-                        display,
-                        query,
-                        highlight: TextStyle(
-                          backgroundColor: tokens.bgWarningSecondary,
-                          color: tokens.textPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                  child: SearchMatchPreview(
+                    line: match.text,
+                    query: query,
+                    options: options,
+                    style: base,
+                    highlight: TextStyle(
+                      backgroundColor: tokens.bgWarningSecondary,
+                      color: tokens.textPrimary,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
@@ -907,66 +905,11 @@ class _OptionToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.designSystem ?? DesignSystemTokens.light();
-    return CcTooltip(
-      message: tooltip,
-      showDelay: const Duration(milliseconds: 400),
-      child: CcTappable(
-        onPressed: () => onChanged(!active),
-        semanticLabel: tooltip,
-        borderRadius: BorderRadius.circular(3),
-        builder: (context, states) => Container(
-          width: 20,
-          height: 20,
-          margin: const EdgeInsets.all(2),
-          decoration: BoxDecoration(
-            color: (active || states.contains(WidgetState.hovered))
-                ? tokens.hover
-                : const Color(0x00000000),
-            borderRadius: BorderRadius.circular(3),
-          ),
-          child: Icon(
-            icon,
-            size: 13,
-            color: active
-                ? tokens.fg
-                : (states.contains(WidgetState.hovered)
-                      ? tokens.textSecondary
-                      : tokens.textTertiary),
-          ),
-        ),
-      ),
+    return PrSuffixIconButton(
+      icon: icon,
+      tooltip: tooltip,
+      active: active,
+      onPressed: () => onChanged(!active),
     );
   }
-}
-
-/// Splits [text] into spans, wrapping each case-insensitive occurrence of
-/// [query] in [highlight]. Non-matching runs inherit the ambient style.
-List<InlineSpan> _highlightSpans(
-  String text,
-  String query, {
-  required TextStyle highlight,
-}) {
-  if (query.isEmpty) {
-    return [TextSpan(text: text)];
-  }
-  final lower = text.toLowerCase();
-  final q = query.toLowerCase();
-  final spans = <InlineSpan>[];
-  var i = 0;
-  while (i < text.length) {
-    final idx = lower.indexOf(q, i);
-    if (idx < 0) {
-      spans.add(TextSpan(text: text.substring(i)));
-      break;
-    }
-    if (idx > i) {
-      spans.add(TextSpan(text: text.substring(i, idx)));
-    }
-    spans.add(
-      TextSpan(text: text.substring(idx, idx + q.length), style: highlight),
-    );
-    i = idx + q.length;
-  }
-  return spans;
 }

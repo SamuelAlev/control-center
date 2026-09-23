@@ -5274,6 +5274,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get suggestAChange => 'Sugerează o modificare';
 
   @override
+  String get suggestion => 'Sugestie';
+
+  @override
   String get suggestLabel => 'SUGEREAZĂ';
 
   @override

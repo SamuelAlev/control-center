@@ -1,5 +1,7 @@
 import 'package:cc_ui/src/components/cc_popover.dart';
 import 'package:cc_ui/src/foundation/cc_overlay_anchor.dart';
+import 'package:cc_ui/src/tokens/design_system_tokens.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -98,5 +100,48 @@ void main() {
 
       expect(find.text('Driven content'), findsOneWidget);
     });
+
+    testWidgets('default trigger washes on hover and press', (tester) async {
+      await tester.pumpWidget(
+        ccTestApp(
+          const Center(
+            child: CcPopover(
+              target: Text('Open'),
+              overlayBuilder: _emptyOverlay,
+            ),
+          ),
+        ),
+      );
+
+      BoxDecoration decoration() {
+        final box = tester.widget<AnimatedContainer>(
+          find.descendant(
+            of: find.byType(CcPopover),
+            matching: find.byType(AnimatedContainer),
+          ),
+        );
+        return box.decoration! as BoxDecoration;
+      }
+
+      final rest = DesignSystemTokens.light().hover.withValues(alpha: 0);
+      expect(decoration().color, rest);
+
+      final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await gesture.addPointer(location: Offset.zero);
+      addTearDown(gesture.removePointer);
+      await gesture.moveTo(tester.getCenter(find.text('Open')));
+      await tester.pumpAndSettle();
+
+      expect(decoration().color, DesignSystemTokens.light().hover);
+
+      await gesture.down(tester.getCenter(find.text('Open')));
+      await tester.pumpAndSettle();
+      expect(decoration().color, DesignSystemTokens.light().hoverStrong);
+      await gesture.up();
+    });
   });
+}
+
+Widget _emptyOverlay(BuildContext context, Size? size) {
+  return const SizedBox.shrink();
 }

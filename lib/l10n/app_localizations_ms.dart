@@ -5229,6 +5229,9 @@ class AppLocalizationsMs extends AppLocalizations {
   String get suggestAChange => 'Cadangkan perubahan';
 
   @override
+  String get suggestion => 'Cadangan';
+
+  @override
   String get suggestLabel => 'CADANGKAN';
 
   @override

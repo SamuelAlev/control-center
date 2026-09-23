@@ -63,9 +63,13 @@ class PrSidebarFilterToggle extends StatelessWidget {
   }
 }
 
-/// A clear (×) affordance for a sidebar text field's suffix. Renders nothing
-/// while the field is empty; clearing empties the controller and notifies
-/// [onCleared] so the host can reset its debounced query.
+/// A clear (×) for a sidebar text field's suffix. Renders nothing while the
+/// field is empty; clearing empties the controller and notifies [onCleared]
+/// so the host can reset its debounced query.
+///
+/// Same compact icon button as the case/regex/word toggles beside it.
+/// [CcIconButton] is the 32px control that sits *outside* the field; dropping
+/// one in this suffix stretches the toolbar and dwarfs those toggles.
 class PrFieldClearButton extends StatelessWidget {
   /// Creates a [PrFieldClearButton].
   const PrFieldClearButton({
@@ -82,7 +86,6 @@ class PrFieldClearButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.designSystem ?? DesignSystemTokens.light();
     final l10n = AppLocalizations.of(context);
     return ValueListenableBuilder<TextEditingValue>(
       valueListenable: controller,
@@ -90,29 +93,77 @@ class PrFieldClearButton extends StatelessWidget {
         if (value.text.isEmpty) {
           return const SizedBox.shrink();
         }
-        return CcTooltip(
-          message: l10n.clear,
-          showDelay: const Duration(milliseconds: 400),
-          child: CcTappable(
-            onPressed: () {
-              controller.clear();
-              onCleared();
-            },
-            mouseCursor: SystemMouseCursors.click,
-            builder: (context, states) => SizedBox(
-              width: 20,
-              height: 20,
-              child: Icon(
-                AppIcons.x,
-                size: 13,
-                color: states.contains(WidgetState.hovered)
-                    ? tokens.textPrimary
-                    : tokens.textTertiary,
-              ),
-            ),
-          ),
+        return PrSuffixIconButton(
+          icon: AppIcons.x,
+          tooltip: l10n.clear,
+          onPressed: () {
+            controller.clear();
+            onCleared();
+          },
         );
       },
+    );
+  }
+}
+
+/// Compact icon button for a sidebar field suffix: a 20px target with the
+/// same hover and press wash as the content-search option toggles.
+class PrSuffixIconButton extends StatelessWidget {
+  /// Creates a [PrSuffixIconButton].
+  const PrSuffixIconButton({
+    super.key,
+    required this.icon,
+    required this.tooltip,
+    required this.onPressed,
+    this.active = false,
+  });
+
+  /// Glyph, drawn at 13px.
+  final IconData icon;
+
+  /// Tooltip and accessible name.
+  final String tooltip;
+
+  /// Tap handler.
+  final VoidCallback onPressed;
+
+  /// Pressed/selected fill, for toggles that stay on.
+  final bool active;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designSystem ?? DesignSystemTokens.light();
+    return CcTooltip(
+      message: tooltip,
+      showDelay: const Duration(milliseconds: 400),
+      child: CcTappable(
+        onPressed: onPressed,
+        semanticLabel: tooltip,
+        borderRadius: BorderRadius.circular(3),
+        builder: (context, states) {
+          final hovered = states.contains(WidgetState.hovered);
+          final pressed = states.contains(WidgetState.pressed);
+          final lit = active || hovered;
+          return Container(
+            width: 20,
+            height: 20,
+            margin: const EdgeInsets.all(2),
+            decoration: BoxDecoration(
+              color: pressed
+                  ? tokens.hoverStrong
+                  : (lit ? tokens.hover : const Color(0x00000000)),
+              borderRadius: BorderRadius.circular(3),
+            ),
+            child: Icon(
+              icon,
+              size: 13,
+              color: active
+                  ? tokens.fg
+                  : (hovered ? tokens.textSecondary : tokens.textTertiary),
+            ),
+          );
+        },
+      ),
     );
   }
 }

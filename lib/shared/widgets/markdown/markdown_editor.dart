@@ -30,10 +30,14 @@ class MarkdownEditor extends StatefulWidget {
     required this.focusNode,
     required this.fieldBuilder,
     required this.previewBuilder,
+    this.toolbarLeading = const <Widget>[],
     this.toolbarTrailing = const <Widget>[],
     this.onAttach,
     this.footer,
   });
+
+  /// Extra buttons placed before the [MarkdownToolbar] formatting actions.
+  final List<Widget> toolbarLeading;
 
   /// Extra buttons appended to the [MarkdownToolbar] (emoji, GIF …).
   final List<Widget> toolbarTrailing;
@@ -133,6 +137,7 @@ class _MarkdownEditorState extends State<MarkdownEditor> {
                       controller: widget.controller,
                       focusNode: widget.focusNode,
                       alignment: WrapAlignment.end,
+                      leading: widget.toolbarLeading,
                       trailing: [
                         ...widget.toolbarTrailing,
                         if (widget.onAttach case final attach?)

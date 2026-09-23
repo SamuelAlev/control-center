@@ -33,6 +33,7 @@ class PrCommentField extends ConsumerStatefulWidget {
     this.onSubmitted,
     this.onAttachImage,
     this.previewMaxHeight = 240,
+    this.toolbarLeading = const <Widget>[],
     this.footer,
   });
 
@@ -72,6 +73,9 @@ class PrCommentField extends ConsumerStatefulWidget {
 
   /// Cap on the preview's height before it scrolls.
   final double previewMaxHeight;
+
+  /// Buttons placed at the start of the formatting toolbar, left of bold.
+  final List<Widget> toolbarLeading;
 
   /// Built beneath the field in both Write and Preview — the host's submit
   /// row, which must not vanish when the reader flips to Preview.
@@ -181,6 +185,7 @@ class _PrCommentFieldState extends ConsumerState<PrCommentField> {
       controller: widget.controller,
       focusNode: widget.focusNode,
       onAttach: widget.onAttachImage,
+      toolbarLeading: widget.toolbarLeading,
       toolbarTrailing: [
         EmojiPopover(onEmojiSelected: _insertAtCursor),
         GifPickerPopover(

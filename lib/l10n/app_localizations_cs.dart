@@ -5275,6 +5275,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get suggestAChange => 'Navrhnout změnu';
 
   @override
+  String get suggestion => 'Návrh';
+
+  @override
   String get suggestLabel => 'NAVRHNOUT';
 
   @override

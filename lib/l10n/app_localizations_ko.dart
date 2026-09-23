@@ -5118,6 +5118,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get suggestAChange => '변경 제안';
 
   @override
+  String get suggestion => '제안';
+
+  @override
   String get suggestLabel => '제안';
 
   @override

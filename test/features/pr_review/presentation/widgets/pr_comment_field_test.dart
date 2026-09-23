@@ -226,6 +226,27 @@ void main() {
       expect(find.text('Preview'), findsOneWidget);
     });
 
+    testWidgets('add a suggestion sits left of bold', (tester) async {
+      await tester.pumpWidget(
+        _host(
+          PrCommentComposer(
+            prRef: null,
+            autofocus: false,
+            onSubmit: (_) {},
+            onSubmitBatched: (_) {},
+            onSuggest: (_) {},
+            onCancel: () {},
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final suggestion = tester.getRect(find.text('Suggestion'));
+      final bold = tester.getRect(_action('Bold'));
+      expect(suggestion.right, lessThanOrEqualTo(bold.left));
+      expect(suggestion.center.dy, closeTo(bold.center.dy, 1));
+    });
+
     testWidgets('the submit row stays reachable from Preview', (tester) async {
       var submitted = '';
       await tester.pumpWidget(

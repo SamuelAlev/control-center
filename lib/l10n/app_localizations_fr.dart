@@ -5268,6 +5268,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get suggestAChange => 'Suggérer une modification';
 
   @override
+  String get suggestion => 'Suggestion';
+
+  @override
   String get suggestLabel => 'SUGGESTION';
 
   @override

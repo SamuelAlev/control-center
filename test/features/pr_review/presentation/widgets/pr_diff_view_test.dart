@@ -24,6 +24,7 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -911,6 +912,49 @@ void main() {
     );
   });
 
+  group('PrDiffView - selection cursor', () {
+    testWidgets('code text uses the text cursor and the gutter does not', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrapSlivers(PrDiffView(files: [_testFile()], comments: const [])),
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+
+      final viewport = tester.getRect(find.byType(CustomScrollView));
+      final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      addTearDown(gesture.removePointer);
+      await gesture.addPointer(location: Offset.zero);
+      await tester.pump();
+
+      MouseCursor? cursor() =>
+          RendererBinding.instance.mouseTracker.debugDeviceActiveCursor(1);
+
+      double? codeY;
+      for (var y = 8.0; y < viewport.height; y += kDiffLineHeight / 2) {
+        await gesture.moveTo(Offset(viewport.left + 200, viewport.top + y));
+        await tester.pump();
+        if (cursor() == SystemMouseCursors.text) {
+          codeY = viewport.top + y;
+          break;
+        }
+      }
+      expect(
+        codeY,
+        isNotNull,
+        reason: 'a code row should show the text cursor',
+      );
+
+      await gesture.moveTo(Offset(viewport.left + 40, codeY!));
+      await tester.pump();
+      expect(
+        cursor(),
+        isNot(SystemMouseCursors.text),
+        reason: 'the gutter is not selectable text',
+      );
+    });
+  });
+
   group('PrDiffView - code suggestions', () {
     testWidgets(
       'creates multiple highlighted suggestion fences from a selected line',
@@ -963,7 +1007,7 @@ void main() {
           matching: find.byType(CcTextField),
         );
         await tester.enterText(commentField, 'Use the guarded form.');
-        final addSuggestion = find.text('Add a suggestion');
+        final addSuggestion = find.text('Suggestion');
         await tester.ensureVisible(addSuggestion);
         await tester.pump();
         await tester.tap(addSuggestion);

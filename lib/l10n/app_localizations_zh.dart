@@ -5059,6 +5059,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get suggestAChange => '建议更改';
 
   @override
+  String get suggestion => '建议';
+
+  @override
   String get suggestLabel => '建议';
 
   @override
@@ -19447,6 +19450,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get suggestAChange => '建議變更';
+
+  @override
+  String get suggestion => '建議';
 
   @override
   String get suggestLabel => '建議';

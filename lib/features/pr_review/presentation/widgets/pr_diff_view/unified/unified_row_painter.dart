@@ -415,8 +415,9 @@ class UnifiedRowPainter {
       }
       if (selStartCol != null) {
         // Character-precise selection: [selStartCol, selEndCol) in display
-        // columns, one rect per wrapped sub-row. A null end means "to the right
-        // edge" (interior fully selected — reads as the newline selected).
+        // columns, one rect per wrapped sub-row. An end one past the line's
+        // display width is the line break (a single extra column), matching
+        // VS Code — the bar does not run to the row's right edge.
         _paintColSpan(
           canvas: canvas,
           y: y,
@@ -555,9 +556,10 @@ class UnifiedRowPainter {
 
   /// Paints a display-column span `[startCol, endCol)` as one rect per wrapped
   /// sub-row (a single rect in scroll mode / for non-wrapping lines). A null
-  /// [endCol] means "to the row's right edge": the viewport edge ([width]) for
-  /// a single visual row, or the line's full [displayWidth] across its wrapped
-  /// sub-rows. The canvas is already translated to content space.
+  /// [endCol] means the span owns the line ending: every sub-row it covers
+  /// fills through the row's right edge, including the blank tail past the
+  /// last glyph and an empty line. The canvas is already translated by
+  /// `-horizontalScrollOffset`, so that edge sits at [width] plus the scroll.
   void _paintColSpan({
     required Canvas canvas,
     required double y,
@@ -569,10 +571,11 @@ class UnifiedRowPainter {
     required Paint paint,
   }) {
     final double codeStartX = gutterWidth + kDiffCodePadLeft;
+    final double edge = width + horizontalScrollOffset;
     if (overflowMode != DiffOverflowMode.wrap || visualRows <= 1) {
-      final double left = codeStartX + startCol * _monoAdvance;
+      final double left = _spanLeft(startCol, endCol == null, codeStartX);
       final double right = endCol == null
-          ? width
+          ? edge
           : codeStartX + endCol * _monoAdvance;
       if (right > left) {
         canvas.drawRect(
@@ -582,17 +585,32 @@ class UnifiedRowPainter {
       }
       return;
     }
-    final int end =
-        endCol ?? (displayWidth > startCol ? displayWidth : startCol + 1);
+    var end = endCol ?? (displayWidth > startCol ? displayWidth : startCol + 1);
+    // The line break is one column past the glyphs. When the text already
+    // fills its last wrap row, that column would open a blank row; keep it
+    // on the content row and let it stick out by one advance.
+    var newlineOnFullRow = false;
+    if (endCol != null &&
+        displayWidth > 0 &&
+        endCol == displayWidth + 1 &&
+        displayWidth % colsPerRow == 0) {
+      end = displayWidth;
+      newlineOnFullRow = true;
+    }
     final int firstRow = startCol ~/ colsPerRow;
     final int lastRow = end <= startCol ? firstRow : (end - 1) ~/ colsPerRow;
     for (var row = firstRow; row <= lastRow; row++) {
       final int rowStartCol = row == firstRow ? startCol % colsPerRow : 0;
-      final int rowEndCol = row == lastRow
-          ? ((end - 1) % colsPerRow) + 1
-          : colsPerRow;
-      final double left = codeStartX + rowStartCol * _monoAdvance;
-      final double right = codeStartX + rowEndCol * _monoAdvance;
+      // A sub-row the selection continues past (or a line ending the span
+      // owns) fills the row. The last sub-row of a partial span stops on
+      // its column.
+      final bool fillsRow = endCol == null || row < lastRow;
+      final double left = _spanLeft(rowStartCol, fillsRow, codeStartX);
+      final double right =
+          (fillsRow
+              ? edge
+              : codeStartX + (((end - 1) % colsPerRow) + 1) * _monoAdvance) +
+          (newlineOnFullRow && row == lastRow ? _monoAdvance : 0);
       final double ry = y + row * kDiffLineHeight;
       if (right > left) {
         canvas.drawRect(
@@ -601,6 +619,16 @@ class UnifiedRowPainter {
         );
       }
     }
+  }
+
+  /// Left edge of a column span. A fill that starts at column 0 includes the
+  /// code padding, so the bar is flush with the gutter instead of stopping
+  /// a pad short of the row.
+  double _spanLeft(int col, bool fillsRow, double codeStartX) {
+    if (col <= 0 && fillsRow) {
+      return gutterWidth;
+    }
+    return codeStartX + col * _monoAdvance;
   }
 
   /// 1.5px accent underline under `[startCol, endCol)` (the hovered token).
