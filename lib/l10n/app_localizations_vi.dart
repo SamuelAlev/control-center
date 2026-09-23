@@ -10500,6 +10500,16 @@ class AppLocalizationsVi extends AppLocalizations {
   String get scmSynced => 'Đã đồng bộ';
 
   @override
+  String get scmPushRefused => 'Push bị từ chối';
+
+  @override
+  String get scmPulledPushRefused => 'Đã kéo về, nhưng push bị từ chối';
+
+  @override
+  String get scmPushRefusedHint =>
+      'Máy chủ từ xa hoặc hook đã từ chối bản cập nhật';
+
+  @override
   String get scmSelectBranch => 'Chọn nhánh để checkout';
 
   @override
@@ -10559,6 +10569,22 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get scmSwitchBranch => 'Chuyển nhánh';
+
+  @override
+  String get scmPullConflictTitle => 'Kéo về sẽ gây xung đột';
+
+  @override
+  String scmPullConflictBody(int count, String branch) {
+    return 'Kéo $count commit vào ⁨$branch⁩ sẽ xung đột với phần việc trong bản làm việc này.';
+  }
+
+  @override
+  String get scmAskAi => 'Nhờ AI';
+
+  @override
+  String scmResolveConflictPrompt(String branch, String repo, int count) {
+    return 'Kéo ⁨$branch⁩ trong ⁨$repo⁩. Nhánh đang chậm $count commit so với upstream và lần kéo xung đột với phần việc cục bộ. Giải quyết xung đột và hoàn tất lần kéo.';
+  }
 
   @override
   String commitMessageOnBranch(String shortcut, String branch) {

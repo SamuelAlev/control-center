@@ -18137,6 +18137,24 @@ abstract class AppLocalizations {
   /// **'Synced'**
   String get scmSynced;
 
+  /// No description provided for @scmPushRefused.
+  ///
+  /// In en, this message translates to:
+  /// **'Push was refused'**
+  String get scmPushRefused;
+
+  /// No description provided for @scmPulledPushRefused.
+  ///
+  /// In en, this message translates to:
+  /// **'Pulled, but the push was refused'**
+  String get scmPulledPushRefused;
+
+  /// No description provided for @scmPushRefusedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The remote or a hook rejected the update'**
+  String get scmPushRefusedHint;
+
   /// No description provided for @scmSelectBranch.
   ///
   /// In en, this message translates to:
@@ -18244,6 +18262,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Switch branch'**
   String get scmSwitchBranch;
+
+  /// No description provided for @scmPullConflictTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pull would conflict'**
+  String get scmPullConflictTitle;
+
+  /// No description provided for @scmPullConflictBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Pulling {count} commits onto ⁨{branch}⁩ would conflict with the work in this checkout.'**
+  String scmPullConflictBody(int count, String branch);
+
+  /// No description provided for @scmAskAi.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask AI'**
+  String get scmAskAi;
+
+  /// No description provided for @scmResolveConflictPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Pull ⁨{branch}⁩ in ⁨{repo}⁩. It is {count} commits behind its upstream, and the pull conflicts with the local work. Resolve the conflicts and finish the pull.'**
+  String scmResolveConflictPrompt(String branch, String repo, int count);
 
   /// No description provided for @commitMessageOnBranch.
   ///

@@ -10657,6 +10657,16 @@ class AppLocalizationsPl extends AppLocalizations {
   String get scmSynced => 'Zsynchronizowano';
 
   @override
+  String get scmPushRefused => 'Push został odrzucony';
+
+  @override
+  String get scmPulledPushRefused => 'Pobrano, ale push został odrzucony';
+
+  @override
+  String get scmPushRefusedHint =>
+      'Zdalne repozytorium lub hook odrzucił aktualizację';
+
+  @override
   String get scmSelectBranch => 'Wybierz gałąź do przełączenia';
 
   @override
@@ -10716,6 +10726,22 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get scmSwitchBranch => 'Przełącz gałąź';
+
+  @override
+  String get scmPullConflictTitle => 'Pobranie spowodowałoby konflikt';
+
+  @override
+  String scmPullConflictBody(int count, String branch) {
+    return 'Pobranie $count commitów do ⁨$branch⁩ kolidowałoby z pracą w tej kopii.';
+  }
+
+  @override
+  String get scmAskAi => 'Poproś AI';
+
+  @override
+  String scmResolveConflictPrompt(String branch, String repo, int count) {
+    return 'Pobierz ⁨$branch⁩ w ⁨$repo⁩. Gałąź jest $count commitów za upstreamem, a pobranie koliduje z lokalną pracą. Rozwiąż konflikty i dokończ pobieranie.';
+  }
 
   @override
   String commitMessageOnBranch(String shortcut, String branch) {

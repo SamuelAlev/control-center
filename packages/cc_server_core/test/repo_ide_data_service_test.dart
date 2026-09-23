@@ -16,6 +16,20 @@ import 'package:cc_server_core/src/repo_ide_data_service.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
+/// A git hook that refuses the push. Unix needs the executable bit; Git for
+/// Windows runs a shebang hook without one.
+Future<void> _installHook(String path, String body) async {
+  final hook = File(path);
+  hook.parent.createSync(recursive: true);
+  hook.writeAsStringSync(body);
+  if (!Platform.isWindows) {
+    final chmod = await Process.run('chmod', ['755', hook.path]);
+    if (chmod.exitCode != 0) {
+      throw StateError('chmod $path: ${chmod.stderr}');
+    }
+  }
+}
+
 void main() {
   late Directory tmp;
 
@@ -1633,6 +1647,186 @@ void main() {
       ], workingDirectory: wt);
       expect((head.stdout as String).trim(), (remote.stdout as String).trim());
     });
+
+    test(
+      'syncBranch reports a conflict and does not start the rebase',
+      () async {
+        final wt = await gitWorktreeWithOrigin('wt-conflict');
+        await git(['push', '-u', 'origin', 'HEAD:refs/heads/main'], wt);
+        final origin = p.join(tmp.path, 'wt-conflict-origin.git');
+        final other = p.join(tmp.path, 'wt-conflict-other');
+        await git(['symbolic-ref', 'HEAD', 'refs/heads/main'], origin);
+        await git(['clone', '-q', origin, other], tmp.path);
+        await git(['config', 'user.email', 'test@example.com'], other);
+        await git(['config', 'user.name', 'Test'], other);
+        await git(['config', 'commit.gpgsign', 'false'], other);
+        File(p.join(other, 'src/app.dart')).writeAsStringSync('remote\n');
+        await git(['add', '-A'], other);
+        await git(['commit', '-q', '-m', 'remote'], other);
+        await git(['push', 'origin', 'HEAD:refs/heads/main'], other);
+        File(p.join(wt, 'src/app.dart')).writeAsStringSync('local\n');
+        await git(['add', '-A'], wt);
+        await git(['commit', '-q', '-m', 'local'], wt);
+        final before = await headSha(wt);
+
+        final res = await svcWith(
+          wt,
+          [],
+        ).syncBranch(workspaceId: 'ws', spaceId: 'ch', repoId: 'repo1');
+
+        expect(res, isNotNull);
+        expect(res!['conflict'], isTrue, reason: '${res['error']}');
+        expect(res['pulled'], isFalse);
+        final head = await Process.run('git', [
+          'rev-parse',
+          'HEAD',
+        ], workingDirectory: wt);
+        expect((head.stdout as String).trim(), before);
+        final status = await Process.run('git', [
+          'status',
+          '--porcelain',
+        ], workingDirectory: wt);
+        expect((status.stdout as String).trim(), isEmpty);
+      },
+    );
+
+    test(
+      'syncBranch reports a conflict when incoming commits touch dirty files',
+      () async {
+        final wt = await gitWorktreeWithOrigin('wt-dirty-conflict');
+        await git(['push', '-u', 'origin', 'HEAD:refs/heads/main'], wt);
+        final origin = p.join(tmp.path, 'wt-dirty-conflict-origin.git');
+        final other = p.join(tmp.path, 'wt-dirty-conflict-other');
+        await git(['symbolic-ref', 'HEAD', 'refs/heads/main'], origin);
+        await git(['clone', '-q', origin, other], tmp.path);
+        await git(['config', 'user.email', 'test@example.com'], other);
+        await git(['config', 'user.name', 'Test'], other);
+        await git(['config', 'commit.gpgsign', 'false'], other);
+        File(p.join(other, 'src/app.dart')).writeAsStringSync('remote\n');
+        await git(['add', '-A'], other);
+        await git(['commit', '-q', '-m', 'remote'], other);
+        await git(['push', 'origin', 'HEAD:refs/heads/main'], other);
+        File(p.join(wt, 'src/app.dart')).writeAsStringSync('dirty\n');
+
+        final res = await svcWith(
+          wt,
+          [],
+        ).syncBranch(workspaceId: 'ws', spaceId: 'ch', repoId: 'repo1');
+
+        expect(res!['conflict'], isTrue);
+        expect(File(p.join(wt, 'src/app.dart')).readAsStringSync(), 'dirty\n');
+      },
+    );
+
+    test(
+      'syncBranch refuses a dirty tree that does not overlap incoming commits',
+      () async {
+        final wt = await gitWorktreeWithOrigin('wt-dirty-aside');
+        await git(['push', '-u', 'origin', 'HEAD:refs/heads/main'], wt);
+        final origin = p.join(tmp.path, 'wt-dirty-aside-origin.git');
+        final other = p.join(tmp.path, 'wt-dirty-aside-other');
+        await git(['symbolic-ref', 'HEAD', 'refs/heads/main'], origin);
+        await git(['clone', '-q', origin, other], tmp.path);
+        await git(['config', 'user.email', 'test@example.com'], other);
+        await git(['config', 'user.name', 'Test'], other);
+        await git(['config', 'commit.gpgsign', 'false'], other);
+        File(p.join(other, 'src/app.dart')).writeAsStringSync('remote\n');
+        await git(['add', '-A'], other);
+        await git(['commit', '-q', '-m', 'remote'], other);
+        await git(['push', 'origin', 'HEAD:refs/heads/main'], other);
+        File(p.join(wt, 'notes.txt')).writeAsStringSync('aside\n');
+
+        final res = await svcWith(
+          wt,
+          [],
+        ).syncBranch(workspaceId: 'ws', spaceId: 'ch', repoId: 'repo1');
+
+        expect(res!['dirty'], isTrue);
+        expect(res['conflict'], isNot(true));
+        expect(File(p.join(wt, 'notes.txt')).readAsStringSync(), 'aside\n');
+      },
+    );
+
+    test(
+      'syncBranch reports a pre-push hook refusal and does not publish',
+      () async {
+        final wt = await gitWorktreeWithOrigin('wt-pre-push');
+        await git(['push', '-u', 'origin', 'HEAD:refs/heads/main'], wt);
+        final origin = p.join(tmp.path, 'wt-pre-push-origin.git');
+        final published = await headSha(wt);
+        File(p.join(wt, 'src/app.dart')).writeAsStringSync('local\n');
+        await git(['add', '-A'], wt);
+        await git(['commit', '-q', '-m', 'local'], wt);
+        // stdout, not stderr: that is where a hook's explanation usually lands,
+        // and reading only stderr used to drop it and report the sync as done.
+        await _installHook(
+          p.join(wt, '.git', 'hooks', 'pre-push'),
+          '#!/bin/sh\necho "branch is protected"\nexit 1\n',
+        );
+
+        final res = await svcWith(
+          wt,
+          [],
+        ).syncBranch(workspaceId: 'ws', spaceId: 'ch', repoId: 'repo1');
+
+        expect(res!['pushed'], isFalse);
+        expect(res['pushRefused'], isTrue);
+        expect(res['pulled'], isNot(true));
+        expect('${res['error']}', contains('branch is protected'));
+        final remote = await Process.run('git', [
+          'rev-parse',
+          'refs/heads/main',
+        ], workingDirectory: origin);
+        expect((remote.stdout as String).trim(), published);
+      },
+    );
+
+    test(
+      'syncBranch keeps a finished pull when the remote rejects the push',
+      () async {
+        final wt = await gitWorktreeWithOrigin('wt-pre-receive');
+        await git(['push', '-u', 'origin', 'HEAD:refs/heads/main'], wt);
+        final origin = p.join(tmp.path, 'wt-pre-receive-origin.git');
+        final other = p.join(tmp.path, 'wt-pre-receive-other');
+        await git(['symbolic-ref', 'HEAD', 'refs/heads/main'], origin);
+        await git(['clone', '-q', origin, other], tmp.path);
+        await git(['config', 'user.email', 'test@example.com'], other);
+        await git(['config', 'user.name', 'Test'], other);
+        await git(['config', 'commit.gpgsign', 'false'], other);
+        File(p.join(other, 'src/app.dart')).writeAsStringSync('remote\n');
+        await git(['add', '-A'], other);
+        await git(['commit', '-q', '-m', 'remote'], other);
+        await git(['push', 'origin', 'HEAD:refs/heads/main'], other);
+        final remoteHead = await headSha(other);
+        File(p.join(wt, 'notes.txt')).writeAsStringSync('local\n');
+        await git(['add', '-A'], wt);
+        await git(['commit', '-q', '-m', 'local'], wt);
+        await _installHook(
+          p.join(origin, 'hooks', 'pre-receive'),
+          '#!/bin/sh\necho "GH006: Protected branch update failed" >&2\nexit 1\n',
+        );
+
+        final res = await svcWith(
+          wt,
+          [],
+        ).syncBranch(workspaceId: 'ws', spaceId: 'ch', repoId: 'repo1');
+
+        expect(res!['pulled'], isTrue);
+        expect(res['pushed'], isFalse);
+        expect(res['pushRefused'], isTrue);
+        expect('${res['error']}', contains('Protected branch update failed'));
+        final remote = await Process.run('git', [
+          'rev-parse',
+          'refs/heads/main',
+        ], workingDirectory: origin);
+        expect((remote.stdout as String).trim(), remoteHead);
+        final status = await Process.run('git', [
+          'status',
+          '--porcelain',
+        ], workingDirectory: wt);
+        expect((status.stdout as String).trim(), isEmpty);
+      },
+    );
 
     RepoIdeDataService svcFor(String wt, _FakeIsolatedRepoRepo isolated) =>
         RepoIdeDataService(

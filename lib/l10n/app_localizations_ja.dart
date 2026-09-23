@@ -10301,6 +10301,15 @@ class AppLocalizationsJa extends AppLocalizations {
   String get scmSynced => '同期しました';
 
   @override
+  String get scmPushRefused => 'プッシュは拒否されました';
+
+  @override
+  String get scmPulledPushRefused => 'プルは完了しましたが、プッシュは拒否されました';
+
+  @override
+  String get scmPushRefusedHint => 'リモートまたはフックが更新を拒否しました';
+
+  @override
   String get scmSelectBranch => 'チェックアウトするブランチを選択';
 
   @override
@@ -10359,6 +10368,22 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get scmSwitchBranch => 'ブランチを切り替え';
+
+  @override
+  String get scmPullConflictTitle => 'プルすると競合します';
+
+  @override
+  String scmPullConflictBody(int count, String branch) {
+    return '⁨$branch⁩ に $count 件のコミットをプルすると、この作業ツリーの変更と競合します。';
+  }
+
+  @override
+  String get scmAskAi => 'AIに頼む';
+
+  @override
+  String scmResolveConflictPrompt(String branch, String repo, int count) {
+    return '⁨$repo⁩ の ⁨$branch⁩ をプルしてください。上流より $count 件遅れており、プルはローカルの作業と競合します。競合を解消してプルを完了してください。';
+  }
 
   @override
   String commitMessageOnBranch(String shortcut, String branch) {

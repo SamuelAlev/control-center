@@ -10556,6 +10556,16 @@ class AppLocalizationsNl extends AppLocalizations {
   String get scmSynced => 'Gesynchroniseerd';
 
   @override
+  String get scmPushRefused => 'Push is geweigerd';
+
+  @override
+  String get scmPulledPushRefused => 'Opgehaald, maar de push is geweigerd';
+
+  @override
+  String get scmPushRefusedHint =>
+      'De remote of een hook heeft de update geweigerd';
+
+  @override
   String get scmSelectBranch => 'Selecteer een branch om uit te checken';
 
   @override
@@ -10615,6 +10625,22 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get scmSwitchBranch => 'Wissel van branch';
+
+  @override
+  String get scmPullConflictTitle => 'Ophalen zou een conflict geven';
+
+  @override
+  String scmPullConflictBody(int count, String branch) {
+    return '$count commits ophalen naar ⁨$branch⁩ zou botsen met het werk in deze kopie.';
+  }
+
+  @override
+  String get scmAskAi => 'Vraag AI';
+
+  @override
+  String scmResolveConflictPrompt(String branch, String repo, int count) {
+    return 'Haal ⁨$branch⁩ op in ⁨$repo⁩. De branch loopt $count commits achter op upstream en het ophalen botst met het lokale werk. Los de conflicten op en rond het ophalen af.';
+  }
 
   @override
   String commitMessageOnBranch(String shortcut, String branch) {

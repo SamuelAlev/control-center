@@ -10618,6 +10618,16 @@ class AppLocalizationsEl extends AppLocalizations {
   String get scmSynced => 'Συγχρονίστηκε';
 
   @override
+  String get scmPushRefused => 'Το push απορρίφθηκε';
+
+  @override
+  String get scmPulledPushRefused => 'Έγινε pull, αλλά το push απορρίφθηκε';
+
+  @override
+  String get scmPushRefusedHint =>
+      'Ο απομακρυσμένος διακομιστής ή ένα hook απέρριψε την ενημέρωση';
+
+  @override
   String get scmSelectBranch => 'Επιλογή κλάδου για εξαγωγή';
 
   @override
@@ -10677,6 +10687,22 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get scmSwitchBranch => 'Αλλαγή κλάδου';
+
+  @override
+  String get scmPullConflictTitle => 'Το pull θα προκαλούσε διένεξη';
+
+  @override
+  String scmPullConflictBody(int count, String branch) {
+    return 'Η ενσωμάτωση $count commits στο ⁨$branch⁩ θα συγκρουόταν με την εργασία σε αυτό το checkout.';
+  }
+
+  @override
+  String get scmAskAi => 'Ρώτησε την AI';
+
+  @override
+  String scmResolveConflictPrompt(String branch, String repo, int count) {
+    return 'Κάνε pull το ⁨$branch⁩ στο ⁨$repo⁩. Είναι $count commits πίσω από το upstream και το pull συγκρούεται με την τοπική εργασία. Επίλυσε τις διενέξεις και ολοκλήρωσε το pull.';
+  }
 
   @override
   String commitMessageOnBranch(String shortcut, String branch) {

@@ -15,13 +15,15 @@ PullRequest _pr({
   int number = 412,
   String repoFullName = 'helix/evalkit',
   String externalId = 'PR_412',
+  String headRef = 'conv/6b2256bb',
+  PrState state = PrState.open,
 }) {
   return PullRequest(
     id: number,
     number: number,
     title: 'Cap eval-run token budget per model family',
     body: '',
-    state: PrState.open,
+    state: state,
     isDraft: false,
     author: null,
     createdAt: DateTime.utc(2026),
@@ -29,6 +31,7 @@ PullRequest _pr({
     repoFullName: repoFullName,
     htmlUrl: 'https://example.invalid/$repoFullName/pull/$number',
     externalId: externalId,
+    headRef: headRef,
   );
 }
 
@@ -139,7 +142,7 @@ void main() {
 
   group('pullRequestsForSpaceRow', () {
     test('a branch-matched PR with no association is shown once', () {
-      final pr = _pr(number: 33982, repoFullName: 'Frontify/app-server');
+      final pr = _pr(number: 33982, repoFullName: 'control-center/control-center');
       final shown = pullRequestsForSpaceRow(
         linked: const [],
         branchMatched: [pr],
@@ -159,12 +162,83 @@ void main() {
 
     test('a second repo\'s branch PR sits beside the linked one', () {
       final linked = _pr();
-      final branch = _pr(number: 33982, repoFullName: 'Frontify/app-server');
+      final branch = _pr(number: 33982, repoFullName: 'control-center/control-center');
       final shown = pullRequestsForSpaceRow(
         linked: [linked],
         branchMatched: [branch],
       );
       expect(shown.map((pr) => pr.number), [412, 33982]);
+    });
+  });
+
+  group('pullRequestForCheckedOutBranch', () {
+    const repoId = 'repo-1';
+    const repo = 'control-center/control-center';
+
+    PullRequest? lookup({
+      String branch = 'conv/6b2256bb',
+      List<SpaceBranchPr> branchMatched = const [],
+      List<PullRequest> linked = const [],
+    }) {
+      return pullRequestForCheckedOutBranch(
+        branch: branch,
+        repoId: repoId,
+        repoFullName: repo,
+        branchMatched: branchMatched,
+        linked: linked,
+      );
+    }
+
+    test('a branch match for the checked-out branch is that pull request', () {
+      final pr = _pr(repoFullName: repo);
+      expect(
+        lookup(
+          branchMatched: [
+            (repoId: repoId, repoFullName: repo, branch: pr.headRef, pr: pr),
+          ],
+        ),
+        pr,
+      );
+    });
+
+    test('a cached match for the previous branch is not this one', () {
+      final previous = _pr(repoFullName: repo, headRef: 'space/other');
+      expect(
+        lookup(
+          branchMatched: [
+            (
+              repoId: repoId,
+              repoFullName: repo,
+              branch: 'space/other',
+              pr: previous,
+            ),
+          ],
+        ),
+        isNull,
+      );
+    });
+
+    test('a linked pull request whose head is this branch counts', () {
+      final pr = _pr(repoFullName: repo);
+      expect(lookup(linked: [pr])?.number, pr.number);
+    });
+
+    test('a linked pull request for another branch does not', () {
+      expect(
+        lookup(
+          linked: [_pr(repoFullName: repo, headRef: 'space/other')],
+        ),
+        isNull,
+      );
+    });
+
+    test('a closed pull request does not block creating a new one', () {
+      expect(
+        lookup(
+          linked: [_pr(repoFullName: repo, state: PrState.closed)],
+        ),
+        isNull,
+      );
     });
   });
 }

@@ -10631,6 +10631,16 @@ class AppLocalizationsUk extends AppLocalizations {
   String get scmSynced => 'Синхронізовано';
 
   @override
+  String get scmPushRefused => 'Push відхилено';
+
+  @override
+  String get scmPulledPushRefused => 'Отримано, але push відхилено';
+
+  @override
+  String get scmPushRefusedHint =>
+      'Віддалена сторона або хук відхилили оновлення';
+
+  @override
   String get scmSelectBranch => 'Виберіть гілку для перемикання';
 
   @override
@@ -10690,6 +10700,22 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get scmSwitchBranch => 'Перемкнути гілку';
+
+  @override
+  String get scmPullConflictTitle => 'Отримання створить конфлікт';
+
+  @override
+  String scmPullConflictBody(int count, String branch) {
+    return 'Отримання $count комітів у ⁨$branch⁩ конфліктуватиме з роботою в цій копії.';
+  }
+
+  @override
+  String get scmAskAi => 'Запитати ШІ';
+
+  @override
+  String scmResolveConflictPrompt(String branch, String repo, int count) {
+    return 'Отримай ⁨$branch⁩ у ⁨$repo⁩. Гілка відстає на $count комітів від upstream, і отримання конфліктує з локальною роботою. Розв\'яжи конфлікти й заверши отримання.';
+  }
 
   @override
   String commitMessageOnBranch(String shortcut, String branch) {

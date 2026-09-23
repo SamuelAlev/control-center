@@ -10496,6 +10496,15 @@ class AppLocalizationsHe extends AppLocalizations {
   String get scmSynced => 'סונכרן';
 
   @override
+  String get scmPushRefused => 'הדחיפה נדחתה';
+
+  @override
+  String get scmPulledPushRefused => 'נמשך, אבל הדחיפה נדחתה';
+
+  @override
+  String get scmPushRefusedHint => 'השרת המרוחק או הוק דחה את העדכון';
+
+  @override
   String get scmSelectBranch => 'בחירת ענף למעבר';
 
   @override
@@ -10555,6 +10564,22 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get scmSwitchBranch => 'החלפת ענף';
+
+  @override
+  String get scmPullConflictTitle => 'משיכה תיצור התנגשות';
+
+  @override
+  String scmPullConflictBody(int count, String branch) {
+    return 'משיכת $count קומיטים אל ⁨$branch⁩ תתנגש עם העבודה בעותק הזה.';
+  }
+
+  @override
+  String get scmAskAi => 'בקש מ-AI';
+
+  @override
+  String scmResolveConflictPrompt(String branch, String repo, int count) {
+    return 'משוך את ⁨$branch⁩ ב-⁨$repo⁩. הוא בפיגור של $count קומיטים מהמקור, והמשיכה מתנגשת עם העבודה המקומית. פתור את ההתנגשויות וסיים את המשיכה.';
+  }
 
   @override
   String commitMessageOnBranch(String shortcut, String branch) {

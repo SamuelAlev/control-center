@@ -10586,6 +10586,17 @@ class AppLocalizationsEs extends AppLocalizations {
   String get scmSynced => 'Sincronizado';
 
   @override
+  String get scmPushRefused => 'El push fue rechazado';
+
+  @override
+  String get scmPulledPushRefused =>
+      'Se trajeron los cambios, pero el push fue rechazado';
+
+  @override
+  String get scmPushRefusedHint =>
+      'El remoto o un hook rechazó la actualización';
+
+  @override
   String get scmSelectBranch => 'Seleccionar una rama para cambiar';
 
   @override
@@ -10645,6 +10656,22 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get scmSwitchBranch => 'Cambiar de rama';
+
+  @override
+  String get scmPullConflictTitle => 'La descarga provocaría un conflicto';
+
+  @override
+  String scmPullConflictBody(int count, String branch) {
+    return 'Traer $count commits a ⁨$branch⁩ entraría en conflicto con el trabajo de esta copia.';
+  }
+
+  @override
+  String get scmAskAi => 'Pedir a la IA';
+
+  @override
+  String scmResolveConflictPrompt(String branch, String repo, int count) {
+    return 'Trae ⁨$branch⁩ en ⁨$repo⁩. Está $count commits por detrás de su upstream y la descarga entra en conflicto con el trabajo local. Resuelve los conflictos y termina la descarga.';
+  }
 
   @override
   String commitMessageOnBranch(String shortcut, String branch) {

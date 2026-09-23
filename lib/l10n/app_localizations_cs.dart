@@ -10620,6 +10620,16 @@ class AppLocalizationsCs extends AppLocalizations {
   String get scmSynced => 'Synchronizováno';
 
   @override
+  String get scmPushRefused => 'Push byl odmítnut';
+
+  @override
+  String get scmPulledPushRefused => 'Staženo, ale push byl odmítnut';
+
+  @override
+  String get scmPushRefusedHint =>
+      'Vzdálený server nebo hook aktualizaci odmítl';
+
+  @override
   String get scmSelectBranch => 'Vyberte větev k přepnutí';
 
   @override
@@ -10679,6 +10689,22 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get scmSwitchBranch => 'Přepnout větev';
+
+  @override
+  String get scmPullConflictTitle => 'Stažení by způsobilo konflikt';
+
+  @override
+  String scmPullConflictBody(int count, String branch) {
+    return 'Stažení $count commitů na ⁨$branch⁩ by kolidovalo s prací v této pracovní kopii.';
+  }
+
+  @override
+  String get scmAskAi => 'Požádat AI';
+
+  @override
+  String scmResolveConflictPrompt(String branch, String repo, int count) {
+    return 'Stáhni ⁨$branch⁩ v ⁨$repo⁩. Větev je o $count commitů pozadu za upstreamem a stažení koliduje s místní prací. Vyřeš konflikty a stažení dokonči.';
+  }
 
   @override
   String commitMessageOnBranch(String shortcut, String branch) {

@@ -303,6 +303,8 @@ void main() {
     'terminal.kill': {'processSpawn'},
     // Launches (or reuses) a code-server process for the space.
     'codeServer.open': {'processSpawn'},
+    // Launches a GUI editor on the host against one conversation worktree.
+    'ide.openSpaceWorktree': {'processSpawn'},
     'fs.deleteAgentDir': {'fileDelete'},
     'fs.writeSkillFile': {'fileWriteOutsideWorktree'},
     'fs.deleteSkillDir': {'fileDelete'},

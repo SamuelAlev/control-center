@@ -4345,6 +4345,39 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           return {'path': path};
         },
       ),
+    // Opens the conversation's existing worktree in an editor on this host.
+    // The path is resolved here; a client-supplied directory would be able to
+    // launch an editor on any path the server can see.
+    if (launcher != null)
+      RepoOp(
+        name: 'ide.openSpaceWorktree',
+        kind: RepoOpKind.mutate,
+        actionClasses: const {ActionClass.processSpawn},
+        requiredArgs: ['space_id', 'repo_id', 'editor_id'],
+        handler: (ctx) async {
+          final spaceId = ctx.args['space_id'] as String;
+          final repoId = ctx.args['repo_id'] as String;
+          final trees = await isolatedRepoRepository.forSpace(
+            ctx.workspaceId!,
+            spaceId,
+          );
+          String? path;
+          for (final tree in trees) {
+            if (tree.repoId == repoId) {
+              path = tree.path;
+              break;
+            }
+          }
+          if (path == null || path.isEmpty) {
+            throw const NotFoundException('no worktree for this repo');
+          }
+          await launcher.openDirectory(
+            editorId: ctx.args['editor_id'] as String,
+            directoryPath: path,
+          );
+          return {'ok': true};
+        },
+      ),
     // Resolves the PR's space worktree (creating + provisioning it if needed)
     // and returns its absolute path WITHOUT launching an editor. The thin
     // client now opens editors through `ide.openPrInEditor`; this op remains

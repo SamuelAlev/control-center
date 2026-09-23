@@ -10629,6 +10629,15 @@ class AppLocalizationsAr extends AppLocalizations {
   String get scmSynced => 'تمت المزامنة';
 
   @override
+  String get scmPushRefused => 'رُفض الدفع';
+
+  @override
+  String get scmPulledPushRefused => 'تم السحب، لكن رُفض الدفع';
+
+  @override
+  String get scmPushRefusedHint => 'رفض الخادم البعيد أو خطاف التحديث';
+
+  @override
   String get scmSelectBranch => 'اختر فرعًا للانتقال إليه';
 
   @override
@@ -10688,6 +10697,22 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get scmSwitchBranch => 'تبديل الفرع';
+
+  @override
+  String get scmPullConflictTitle => 'السحب سيُحدث تعارضًا';
+
+  @override
+  String scmPullConflictBody(int count, String branch) {
+    return 'سحب $count من عمليات الإيداع إلى ⁨$branch⁩ سيتعارض مع العمل في نسخة العمل هذه.';
+  }
+
+  @override
+  String get scmAskAi => 'اسأل الذكاء الاصطناعي';
+
+  @override
+  String scmResolveConflictPrompt(String branch, String repo, int count) {
+    return 'اسحب ⁨$branch⁩ في ⁨$repo⁩. إنه متأخر بـ $count من عمليات الإيداع عن المصدر، والسحب يتعارض مع العمل المحلي. حل التعارضات وأكمل السحب.';
+  }
 
   @override
   String commitMessageOnBranch(String shortcut, String branch) {

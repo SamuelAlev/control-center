@@ -1,13 +1,18 @@
 import 'dart:async';
 
+import 'package:cc_data/cc_data.dart';
+import 'package:cc_domain/core/domain/entities/ide_editor.dart';
 import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/core/domain/ports/repo_workspace_provisioner_port.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/space_provisioning_status.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
+import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/identity/providers/identity_providers.dart';
+import 'package:control_center/features/messaging/presentation/ide/editor/messaging_tab_kinds.dart';
 import 'package:control_center/features/messaging/presentation/ide/panels/scm_branch_menu.dart';
+import 'package:control_center/features/messaging/presentation/ide/panels/scm_pull_conflict_dialog.dart';
 import 'package:control_center/features/messaging/presentation/utils/provisioning_step_label.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/features/messaging/providers/repo_changes_provider.dart';
@@ -15,6 +20,7 @@ import 'package:control_center/features/messaging/providers/repo_directory_listi
 import 'package:control_center/features/messaging/providers/repo_file_content_provider.dart';
 import 'package:control_center/features/messaging/providers/space_worktrees_provider.dart';
 import 'package:control_center/features/messaging/providers/worktree_file_ops_provider.dart';
+import 'package:control_center/features/pr_review/providers/ide_providers.dart';
 import 'package:control_center/features/pr_review/providers/pr_space_provider.dart';
 import 'package:control_center/features/repos/providers/repo_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
@@ -451,6 +457,8 @@ class _RepoSectionState extends ConsumerState<_RepoSection>
 
   Future<void> _runSync() async {
     final l10n = AppLocalizations.of(context);
+    final behind =
+        ref.read(repoChangesGroupedProvider(_args)).value?.behind ?? 0;
     setState(() => _busy = true);
     final res = await syncWorktreeBranch(
       ref.read(rpcClientProvider),
@@ -468,8 +476,40 @@ class _RepoSectionState extends ConsumerState<_RepoSection>
       toast?.show(l10n.scmSyncFailed, variant: CcToastVariant.danger);
       return;
     }
+    if (res.conflict) {
+      final choice = await showScmPullConflictDialog(
+        context,
+        count: behind,
+        branch: widget.branch,
+      );
+      if (!mounted || choice == null) {
+        return;
+      }
+      switch (choice) {
+        case ScmPullConflictOpenIde(:final editor, :final remember):
+          if (remember) {
+            await ref.read(selectedIdeProvider.notifier).set(editor.id);
+          }
+          if (!mounted) {
+            return;
+          }
+          await _openWorktreeInEditor(editor);
+        case ScmPullConflictAskAi():
+          await _askAiToResolve(l10n, behind);
+      }
+      return;
+    }
     if (res.dirty) {
       toast?.show(l10n.scmSyncDirty, variant: CcToastVariant.danger);
+      return;
+    }
+    if (res.pushRefused) {
+      final reason = res.error?.trim() ?? '';
+      toast?.show(
+        reason.isEmpty ? l10n.scmPushRefusedHint : reason,
+        title: res.pulled ? l10n.scmPulledPushRefused : l10n.scmPushRefused,
+        variant: CcToastVariant.danger,
+      );
       return;
     }
     if (res.error != null && res.error!.isNotEmpty) {
@@ -485,6 +525,58 @@ class _RepoSectionState extends ConsumerState<_RepoSection>
       return;
     }
     toast?.show(l10n.scmSynced, variant: CcToastVariant.success);
+  }
+
+  Future<void> _openWorktreeInEditor(IdeEditor editor) async {
+    final l10n = AppLocalizations.of(context);
+    final toast = CcToastScope.maybeOf(context);
+    try {
+      await RemoteIdeRepository(ref.read(rpcClientProvider)).openSpaceWorktree(
+        workspaceId: widget.workspaceId,
+        spaceId: widget.spaceId,
+        repoId: widget.repo.id,
+        editorId: editor.id,
+      );
+    } on Exception catch (e) {
+      toast?.show(
+        l10n.failedToOpenInIde(editor.displayName, '$e'),
+        variant: CcToastVariant.danger,
+      );
+    }
+  }
+
+  /// A new conversation in this space, so the agent edits the same worktree
+  /// the pull would have conflicted in.
+  Future<void> _askAiToResolve(AppLocalizations l10n, int behind) async {
+    final conv = await ref
+        .read(conversationRepositoryProvider)
+        .create(
+          workspaceId: widget.workspaceId,
+          spaceId: widget.spaceId,
+          title: '',
+        );
+    await ref
+        .read(messagingServiceProvider)
+        .sendAndDispatch(
+          widget.workspaceId,
+          widget.spaceId,
+          l10n.scmResolveConflictPrompt(
+            widget.branch,
+            widget.repo.fullName,
+            behind,
+          ),
+          conversationId: conv.id,
+        );
+    if (!mounted) {
+      return;
+    }
+    GoRouter.of(context).go(
+      spaceRoute(
+        widget.workspaceId,
+        widget.spaceId,
+        tab: MessagingTabKinds.chatTabKey(conv.id),
+      ),
+    );
   }
 
   Future<void> _checkout(WorktreeCheckoutRequest request) async {
@@ -523,7 +615,8 @@ class _RepoSectionState extends ConsumerState<_RepoSection>
       ..invalidate(repoChangesGroupedProvider(_args))
       ..invalidate(repoChangesProvider(_args))
       ..invalidate(repoFileContentProvider)
-      ..invalidate(repoDirectoryListingProvider);
+      ..invalidate(repoDirectoryListingProvider)
+      ..invalidate(spaceBranchPullRequestsProvider(widget.spaceId));
     if (res.detached) {
       final at = request.startPoint?.trim();
       toast?.show(
@@ -620,13 +713,16 @@ class _RepoSectionState extends ConsumerState<_RepoSection>
 
     _syncPolling(active: !_collapsed && TickerMode.valuesOf(context).enabled);
 
-    // The PR this conversation already opened from this repo's worktree branch,
-    // if any. Offering "create" for a branch that has one sends the operator to
-    // a compose screen GitHub will refuse.
+    // The open PR for the branch checked out now, not whichever branch the
+    // worktree was on when the join last ran. Offering "create" for a branch
+    // that already has one sends the operator to a compose screen the forge
+    // will refuse.
     final existingPr = ref.watch(
       spaceBranchPullRequestForRepoProvider((
         spaceId: widget.spaceId,
         repoId: widget.repo.id,
+        repoFullName: widget.repo.fullName,
+        branch: widget.branch,
       )),
     );
 
@@ -638,46 +734,42 @@ class _RepoSectionState extends ConsumerState<_RepoSection>
     ];
 
     final sync = _syncAction(l10n, changes);
-    final branchLabel = widget.branch.isEmpty
-        ? l10n.scmDetachedHead
-        : widget.branch;
+    final syncLabel = _syncLabel(changes);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (sync != null)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.sm,
-              AppSpacing.xs,
-              AppSpacing.sm,
-              0,
-            ),
-            child: CcButton(
-              variant: CcButtonVariant.primary,
-              size: CcButtonSize.sm,
-              icon: sync.icon,
-              loading: _busy,
-              fullWidth: true,
-              onPressed: _busy ? null : sync.onPressed,
-              child: Text(sync.label),
-            ),
-          ),
         ScmGroup(
           title: widget.repo.fullName,
-          subtitle: branchLabel,
-          subtitleWidget: ScmBranchMenu(
-            branch: widget.branch,
-            enabled: !_busy,
-            load: () => listWorktreeBranches(
-              ref.read(rpcClientProvider),
-              workspaceId: widget.workspaceId,
-              spaceId: widget.spaceId,
-              repoId: widget.repo.id,
-            ),
-            onCheckout: _checkout,
+          headerTrailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ScmBranchMenu(
+                branch: widget.branch,
+                enabled: !_busy,
+                load: () => listWorktreeBranches(
+                  ref.read(rpcClientProvider),
+                  workspaceId: widget.workspaceId,
+                  spaceId: widget.spaceId,
+                  repoId: widget.repo.id,
+                ),
+                onCheckout: _checkout,
+              ),
+              if (syncLabel != null) ...[
+                const SizedBox(width: 4),
+                ScmHeaderChip(
+                  semanticLabel: sync?.label ?? l10n.scmSyncChanges,
+                  enabled: !_busy && sync != null,
+                  onPressed: sync?.onPressed,
+                  child: Text(
+                    syncLabel,
+                    // RTL carve-out: ahead/behind counts are a git status glyph.
+                    textDirection: TextDirection.ltr,
+                  ),
+                ),
+              ],
+            ],
           ),
-          syncLabel: _syncLabel(changes),
           uppercaseTitle: false,
           count: total,
           collapsed: _collapsed,
@@ -704,8 +796,7 @@ class _RepoSectionState extends ConsumerState<_RepoSection>
               )
             else ...[
               // The message field stays up on a clean tree, the way VS Code
-              // does. Publish and Sync sit above this group, and stay there
-              // while the tree is dirty.
+              // does. Sync is the counts button on the repository row.
               ScmCommitBox(
                 controller: _message,
                 busy: _busy,

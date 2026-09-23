@@ -10519,6 +10519,16 @@ class AppLocalizationsNb extends AppLocalizations {
   String get scmSynced => 'Synkronisert';
 
   @override
+  String get scmPushRefused => 'Push ble avvist';
+
+  @override
+  String get scmPulledPushRefused => 'Hentet, men push ble avvist';
+
+  @override
+  String get scmPushRefusedHint =>
+      'Den andre siden eller en hook avviste oppdateringen';
+
+  @override
   String get scmSelectBranch => 'Velg en gren å sjekke ut';
 
   @override
@@ -10578,6 +10588,22 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get scmSwitchBranch => 'Bytt gren';
+
+  @override
+  String get scmPullConflictTitle => 'Henting ville skapt en konflikt';
+
+  @override
+  String scmPullConflictBody(int count, String branch) {
+    return 'Å hente $count innleggelser til ⁨$branch⁩ ville kollidert med arbeidet i denne kopien.';
+  }
+
+  @override
+  String get scmAskAi => 'Spør KI';
+
+  @override
+  String scmResolveConflictPrompt(String branch, String repo, int count) {
+    return 'Hent ⁨$branch⁩ i ⁨$repo⁩. Den ligger $count innleggelser bak oppstrøms, og hentingen kolliderer med det lokale arbeidet. Løs konfliktene og fullfør hentingen.';
+  }
 
   @override
   String commitMessageOnBranch(String shortcut, String branch) {

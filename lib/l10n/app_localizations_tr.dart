@@ -10516,6 +10516,16 @@ class AppLocalizationsTr extends AppLocalizations {
   String get scmSynced => 'Eşitlendi';
 
   @override
+  String get scmPushRefused => 'Push reddedildi';
+
+  @override
+  String get scmPulledPushRefused => 'Çekildi, ama push reddedildi';
+
+  @override
+  String get scmPushRefusedHint =>
+      'Uzak taraf veya bir kanca güncellemeyi reddetti';
+
+  @override
   String get scmSelectBranch => 'Çıkış yapılacak dalı seç';
 
   @override
@@ -10575,6 +10585,22 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get scmSwitchBranch => 'Dal değiştir';
+
+  @override
+  String get scmPullConflictTitle => 'Çekme çakışma yaratır';
+
+  @override
+  String scmPullConflictBody(int count, String branch) {
+    return '⁨$branch⁩ üzerine $count işleme çekmek bu kopyadaki işle çakışır.';
+  }
+
+  @override
+  String get scmAskAi => 'Yapay zekâya sor';
+
+  @override
+  String scmResolveConflictPrompt(String branch, String repo, int count) {
+    return '⁨$repo⁩ içinde ⁨$branch⁩ dalını çek. Upstream\'in $count işlem gerisindedir ve çekme yerel işle çakışır. Çakışmaları çöz ve çekmeyi bitir.';
+  }
 
   @override
   String commitMessageOnBranch(String shortcut, String branch) {

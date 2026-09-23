@@ -10525,6 +10525,16 @@ class AppLocalizationsSv extends AppLocalizations {
   String get scmSynced => 'Synkad';
 
   @override
+  String get scmPushRefused => 'Push nekades';
+
+  @override
+  String get scmPulledPushRefused => 'Hämtat, men push nekades';
+
+  @override
+  String get scmPushRefusedHint =>
+      'Fjärren eller en hook avvisade uppdateringen';
+
+  @override
   String get scmSelectBranch => 'Välj en gren att checka ut';
 
   @override
@@ -10584,6 +10594,22 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get scmSwitchBranch => 'Byt gren';
+
+  @override
+  String get scmPullConflictTitle => 'Hämtningen skulle skapa en konflikt';
+
+  @override
+  String scmPullConflictBody(int count, String branch) {
+    return 'Att hämta $count incheckningar till ⁨$branch⁩ skulle krocka med arbetet i den här kopian.';
+  }
+
+  @override
+  String get scmAskAi => 'Fråga AI';
+
+  @override
+  String scmResolveConflictPrompt(String branch, String repo, int count) {
+    return 'Hämta ⁨$branch⁩ i ⁨$repo⁩. Den ligger $count incheckningar efter upstream och hämtningen krockar med det lokala arbetet. Lös konflikterna och slutför hämtningen.';
+  }
 
   @override
   String commitMessageOnBranch(String shortcut, String branch) {

@@ -21,8 +21,8 @@ PullRequest _openPr() {
     author: null,
     createdAt: DateTime.utc(2026),
     updatedAt: DateTime.utc(2026),
-    repoFullName: 'Frontify/app-server',
-    htmlUrl: 'https://example.invalid/Frontify/app-server/pull/33982',
+    repoFullName: 'control-center/control-center',
+    htmlUrl: 'https://example.invalid/control-center/control-center/pull/33982',
     headRef: 'space/6b2256bb',
     baseRef: 'main',
   );
@@ -62,7 +62,7 @@ void main() {
           (ref) async => [
             (
               repoId: 'repo-1',
-              repoFullName: 'Frontify/app-server',
+              repoFullName: 'control-center/control-center',
               branch: 'space/6b2256bb',
               pr: _openPr(),
             ),

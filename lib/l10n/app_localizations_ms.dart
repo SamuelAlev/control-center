@@ -10533,6 +10533,15 @@ class AppLocalizationsMs extends AppLocalizations {
   String get scmSynced => 'Disegerakkan';
 
   @override
+  String get scmPushRefused => 'Push ditolak';
+
+  @override
+  String get scmPulledPushRefused => 'Telah ditarik, tetapi push ditolak';
+
+  @override
+  String get scmPushRefusedHint => 'Remote atau cangkuk menolak kemas kini';
+
+  @override
   String get scmSelectBranch => 'Pilih cawangan untuk checkout';
 
   @override
@@ -10592,6 +10601,22 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get scmSwitchBranch => 'Tukar cawangan';
+
+  @override
+  String get scmPullConflictTitle => 'Tarikan akan menimbulkan konflik';
+
+  @override
+  String scmPullConflictBody(int count, String branch) {
+    return 'Menarik $count komit ke ⁨$branch⁩ akan bertembung dengan kerja dalam checkout ini.';
+  }
+
+  @override
+  String get scmAskAi => 'Tanya AI';
+
+  @override
+  String scmResolveConflictPrompt(String branch, String repo, int count) {
+    return 'Tarik ⁨$branch⁩ dalam ⁨$repo⁩. Ia ketinggalan $count komit daripada hulunya, dan tarikan bertembung dengan kerja tempatan. Selesaikan konflik dan selesaikan tarikan.';
+  }
 
   @override
   String commitMessageOnBranch(String shortcut, String branch) {

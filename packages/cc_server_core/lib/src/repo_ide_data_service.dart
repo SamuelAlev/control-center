@@ -1623,11 +1623,12 @@ class RepoIdeDataService {
       'HEAD:refs/heads/$branch',
     ], env: env);
     if (pushRes.exitCode != 0) {
+      final reason = _pushRefusalText(pushRes);
       return {
         'committed': true,
         'pushed': false,
         'headSha': headSha,
-        'error': pushRes.stderr.toString(),
+        'error': ?reason,
       };
     }
     return {'committed': true, 'pushed': true, 'headSha': headSha};
@@ -1705,12 +1706,13 @@ class RepoIdeDataService {
       'HEAD:refs/heads/$branch',
     ], env: env);
     if (pushRes.exitCode != 0) {
+      final reason = _pushRefusalText(pushRes);
       return {
         'branch': branch,
         'headSha': headSha,
         'pushed': false,
         'uncommitted': uncommitted,
-        'error': pushRes.stderr.toString().trim(),
+        'error': ?reason,
       };
     }
     return {
@@ -1727,7 +1729,11 @@ class RepoIdeDataService {
   ///
   /// A dirty tree that still needs the rebase is refused (`dirty: true`) so
   /// uncommitted edits are not clobbered. A rebase conflict aborts and returns
-  /// git's message. Null when the space has no worktree for [repoId].
+  /// git's message. A rejected push — branch protection, a pre-push or
+  /// pre-receive hook, a non-fast-forward — returns `pushRefused: true` with
+  /// the hook or remote's own text, and does not report the sync as done. A
+  /// pull that already landed stays landed. Null when the space has no
+  /// worktree for [repoId].
   Future<Map<String, dynamic>?> syncBranch({
     required String workspaceId,
     required String spaceId,
@@ -1800,20 +1806,36 @@ class RepoIdeDataService {
           ? int.tryParse((behindRes.stdout as String).trim()) ?? 0
           : 0;
       if (behind > 0) {
-        final status = await git(['status', '--porcelain']);
-        final dirty =
-            status.exitCode == 0 && (status.stdout as String).trim().isNotEmpty;
+        final status = await git(['status', '--porcelain', '-z']);
+        final dirtyNames = status.exitCode == 0
+            ? _porcelainPaths(status.stdout as String)
+            : const <String>{};
+        final dirty = dirtyNames.isNotEmpty;
+        if (await _pullWouldConflict(git, dirtyNames)) {
+          // Leave the worktree untouched. The client asks whether a person
+          // or an agent should resolve it.
+          return {
+            'pulled': false,
+            'pushed': false,
+            'dirty': dirty,
+            'conflict': true,
+          };
+        }
         if (dirty) {
           return {'pulled': false, 'pushed': false, 'dirty': true};
         }
         final rebase = await git(['rebase', 'FETCH_HEAD']);
         if (rebase.exitCode != 0) {
           await git(['rebase', '--abort']);
+          final err = (rebase.stderr as String).trim();
+          final conflict =
+              err.contains('CONFLICT') || err.contains('could not apply');
           return {
             'pulled': false,
             'pushed': false,
             'dirty': false,
-            'error': (rebase.stderr as String).trim(),
+            'conflict': conflict,
+            'error': conflict ? null : err,
           };
         }
         pulled = true;
@@ -1838,11 +1860,14 @@ class RepoIdeDataService {
       'HEAD:refs/heads/$branch',
     ], env: env);
     if (pushRes.exitCode != 0) {
+      // The pull, when there was one, already landed. Say so separately from
+      // the refusal so a protected branch does not look like a failed fetch.
       return {
         'pulled': pulled,
         'pushed': false,
         'dirty': false,
-        'error': pushRes.stderr.toString().trim(),
+        'pushRefused': true,
+        'error': ?_pushRefusalText(pushRes),
       };
     }
     return {'pulled': pulled, 'pushed': true, 'dirty': false};
@@ -2298,6 +2323,112 @@ class RepoIdeDataService {
     return false;
   }
 }
+
+/// The part of a rejected `git push` a person can act on: the hook's own
+/// text and git's rejection. Progress and the `To <url>` echo are dropped.
+/// Null when git said nothing — the push is still refused.
+String? _pushRefusalText(ProcessResult result) {
+  final lines = <String>[];
+  void take(Object? raw) {
+    for (final line in raw.toString().split('\n')) {
+      final trimmed = line.trim();
+      if (trimmed.isEmpty || _isPushNoise(trimmed)) {
+        continue;
+      }
+      lines.add(trimmed);
+    }
+  }
+
+  // stderr is git's rejection. A pre-push hook often explains itself on stdout.
+  take(result.stderr);
+  take(result.stdout);
+  if (lines.isEmpty) {
+    return null;
+  }
+  const cap = 8;
+  final picked = lines.length <= cap
+      ? lines
+      : lines.sublist(lines.length - cap);
+  return picked.join('\n');
+}
+
+bool _isPushNoise(String line) {
+  if (line.startsWith('To ') || line.startsWith('to ')) {
+    return true;
+  }
+  const prefixes = [
+    'Enumerating objects',
+    'Counting objects',
+    'Compressing objects',
+    'Writing objects',
+    'Total ',
+    'Delta compression',
+    'remote: Resolving deltas',
+  ];
+  for (final prefix in prefixes) {
+    if (line.startsWith(prefix) || line.startsWith('remote: $prefix')) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/// True when rebasing onto `FETCH_HEAD` would conflict: uncommitted paths the
+/// incoming commits also touch, or a clean merge-tree that still conflicts.
+/// A dirty tree with no overlap is not a conflict — the caller refuses it as
+/// dirty so a rebase cannot clobber it. `merge-tree` exit 1 is the conflict
+/// signal; any other failure is "could not tell", and the rebase reports it.
+Future<bool> _pullWouldConflict(
+  Future<ProcessResult> Function(List<String> args, {Map<String, String>? env})
+  git,
+  Set<String> dirtyNames,
+) async {
+  if (dirtyNames.isNotEmpty) {
+    final incoming = await git([
+      'diff',
+      '--name-only',
+      '-z',
+      'HEAD',
+      'FETCH_HEAD',
+    ]);
+    if (incoming.exitCode == 0 &&
+        dirtyNames.any(_nulPaths(incoming.stdout as String).contains)) {
+      return true;
+    }
+  }
+  final merge = await git([
+    'merge-tree',
+    '--write-tree',
+    '--name-only',
+    'HEAD',
+    'FETCH_HEAD',
+  ]);
+  return merge.exitCode == 1;
+}
+
+/// Paths from `git status --porcelain -z`. A rename's original path is skipped;
+/// the name in the worktree is the one a checkout would overwrite.
+Set<String> _porcelainPaths(String raw) {
+  final names = <String>{};
+  final parts = raw.split('\x00');
+  for (var i = 0; i < parts.length; i++) {
+    final entry = parts[i];
+    if (entry.length < 4) {
+      continue;
+    }
+    names.add(entry.substring(3));
+    final xy = entry.substring(0, 2);
+    if (xy.contains('R') || xy.contains('C')) {
+      i++;
+    }
+  }
+  return names;
+}
+
+Set<String> _nulPaths(String raw) => {
+  for (final part in raw.split('\x00'))
+    if (part.isNotEmpty) part,
+};
 
 /// A branch, remote-tracking ref or tag name that cannot be an option and
 /// cannot escape the ref namespace. `git check-ref-format` still runs on

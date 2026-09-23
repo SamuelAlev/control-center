@@ -10604,6 +10604,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get scmSynced => 'Synchronisé';
 
   @override
+  String get scmPushRefused => 'Le push a été refusé';
+
+  @override
+  String get scmPulledPushRefused => 'Récupéré, mais le push a été refusé';
+
+  @override
+  String get scmPushRefusedHint =>
+      'Le dépôt distant ou un hook a refusé la mise à jour';
+
+  @override
   String get scmSelectBranch => 'Choisir une branche à extraire';
 
   @override
@@ -10663,6 +10673,22 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get scmSwitchBranch => 'Changer de branche';
+
+  @override
+  String get scmPullConflictTitle => 'La récupération provoquerait un conflit';
+
+  @override
+  String scmPullConflictBody(int count, String branch) {
+    return 'Récupérer $count commits sur ⁨$branch⁩ entrerait en conflit avec le travail de cette copie.';
+  }
+
+  @override
+  String get scmAskAi => 'Demander à l\'IA';
+
+  @override
+  String scmResolveConflictPrompt(String branch, String repo, int count) {
+    return 'Récupère ⁨$branch⁩ dans ⁨$repo⁩. Il a $count commits de retard sur son amont, et la récupération entre en conflit avec le travail local. Résous les conflits et termine la récupération.';
+  }
 
   @override
   String commitMessageOnBranch(String shortcut, String branch) {

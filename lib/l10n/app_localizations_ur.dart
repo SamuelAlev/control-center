@@ -10473,6 +10473,15 @@ class AppLocalizationsUr extends AppLocalizations {
   String get scmSynced => 'سنک ہو گیا';
 
   @override
+  String get scmPushRefused => 'پش مسترد ہو گئی';
+
+  @override
+  String get scmPulledPushRefused => 'پل ہو گیا، مگر پش مسترد ہو گئی';
+
+  @override
+  String get scmPushRefusedHint => 'ریموٹ یا ہک نے اپ ڈیٹ مسترد کر دی';
+
+  @override
   String get scmSelectBranch => 'چیک آؤٹ کے لیے شاخ منتخب کریں';
 
   @override
@@ -10532,6 +10541,22 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get scmSwitchBranch => 'شاخ تبدیل کریں';
+
+  @override
+  String get scmPullConflictTitle => 'پل تنازع پیدا کرے گا';
+
+  @override
+  String scmPullConflictBody(int count, String branch) {
+    return '⁨$branch⁩ پر $count کمٹ پل کرنا اس کاپی کے کام سے ٹکرا جائے گا۔';
+  }
+
+  @override
+  String get scmAskAi => 'AI سے پوچھیں';
+
+  @override
+  String scmResolveConflictPrompt(String branch, String repo, int count) {
+    return '⁨$repo⁩ میں ⁨$branch⁩ پل کریں۔ یہ اپ اسٹریم سے $count کمٹ پیچھے ہے اور پل مقامی کام سے ٹکراتا ہے۔ تنازعات حل کریں اور پل مکمل کریں۔';
+  }
 
   @override
   String commitMessageOnBranch(String shortcut, String branch) {

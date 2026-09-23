@@ -10561,6 +10561,16 @@ class AppLocalizationsHu extends AppLocalizations {
   String get scmSynced => 'Szinkronizálva';
 
   @override
+  String get scmPushRefused => 'A push elutasítva';
+
+  @override
+  String get scmPulledPushRefused => 'Letöltve, de a push elutasítva';
+
+  @override
+  String get scmPushRefusedHint =>
+      'A távoli oldal vagy egy hook elutasította a frissítést';
+
+  @override
   String get scmSelectBranch => 'Válassz ágat a váltáshoz';
 
   @override
@@ -10620,6 +10630,22 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get scmSwitchBranch => 'Ág váltása';
+
+  @override
+  String get scmPullConflictTitle => 'A letöltés ütközne';
+
+  @override
+  String scmPullConflictBody(int count, String branch) {
+    return '$count commit letöltése ide: ⁨$branch⁩ ütközne a munkapéldányban lévő munkával.';
+  }
+
+  @override
+  String get scmAskAi => 'AI megkérdezése';
+
+  @override
+  String scmResolveConflictPrompt(String branch, String repo, int count) {
+    return 'Töltsd le a ⁨$branch⁩ ágat itt: ⁨$repo⁩. $count committal le van maradva az upstreamtől, és a letöltés ütközik a helyi munkával. Oldd fel az ütközéseket, és fejezd be a letöltést.';
+  }
 
   @override
   String commitMessageOnBranch(String shortcut, String branch) {

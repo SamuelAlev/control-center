@@ -10300,6 +10300,15 @@ class AppLocalizationsKo extends AppLocalizations {
   String get scmSynced => '동기화됨';
 
   @override
+  String get scmPushRefused => '푸시가 거부되었습니다';
+
+  @override
+  String get scmPulledPushRefused => '풀은 되었지만 푸시는 거부되었습니다';
+
+  @override
+  String get scmPushRefusedHint => '원격 또는 훅이 업데이트를 거부했습니다';
+
+  @override
   String get scmSelectBranch => '체크아웃할 브랜치 선택';
 
   @override
@@ -10358,6 +10367,22 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get scmSwitchBranch => '브랜치 전환';
+
+  @override
+  String get scmPullConflictTitle => '풀하면 충돌이 납니다';
+
+  @override
+  String scmPullConflictBody(int count, String branch) {
+    return '⁨$branch⁩에 커밋 $count개를 풀하면 이 작업 트리의 변경과 충돌합니다.';
+  }
+
+  @override
+  String get scmAskAi => 'AI에게 맡기기';
+
+  @override
+  String scmResolveConflictPrompt(String branch, String repo, int count) {
+    return '⁨$repo⁩의 ⁨$branch⁩을 풀하세요. 업스트림보다 커밋 $count개 뒤처져 있고, 풀이 로컬 작업과 충돌합니다. 충돌을 해결하고 풀을 마치세요.';
+  }
 
   @override
   String commitMessageOnBranch(String shortcut, String branch) {

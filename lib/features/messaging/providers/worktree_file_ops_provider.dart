@@ -153,12 +153,15 @@ typedef WorktreeBranchSyncResult = ({
   bool pulled,
   bool pushed,
   bool dirty,
+  bool conflict,
+  bool pushRefused,
   String? error,
 });
 
 /// Fetches the conversation branch, rebases when the remote moved, and pushes
 /// when this side is ahead or the branch has never been published. Never
-/// commits. Returns null when the op is unavailable.
+/// commits. A rejected push sets `pushRefused` and carries the hook or remote's
+/// text in `error`. Returns null when the op is unavailable.
 Future<WorktreeBranchSyncResult?> syncWorktreeBranch(
   RemoteRpcClient rpcClient, {
   required String workspaceId,
@@ -178,6 +181,9 @@ Future<WorktreeBranchSyncResult?> syncWorktreeBranch(
       pulled: data['pulled'] as bool? ?? false,
       pushed: data['pushed'] as bool? ?? false,
       dirty: data['dirty'] as bool? ?? false,
+      conflict: data['conflict'] as bool? ?? false,
+      // Absent on a server that predates push-refusal reporting.
+      pushRefused: data['pushRefused'] == true,
       error: data['error'] as String?,
     );
   } on Exception {

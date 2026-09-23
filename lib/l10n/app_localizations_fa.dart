@@ -10472,6 +10472,15 @@ class AppLocalizationsFa extends AppLocalizations {
   String get scmSynced => 'همگام شد';
 
   @override
+  String get scmPushRefused => 'پوش رد شد';
+
+  @override
+  String get scmPulledPushRefused => 'کشیده شد، اما پوش رد شد';
+
+  @override
+  String get scmPushRefusedHint => 'ریموت یا یک هوک به‌روزرسانی را رد کرد';
+
+  @override
   String get scmSelectBranch => 'یک شاخه برای چک‌اوت انتخاب کنید';
 
   @override
@@ -10531,6 +10540,22 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get scmSwitchBranch => 'تغییر شاخه';
+
+  @override
+  String get scmPullConflictTitle => 'کشیدن باعث تداخل می‌شود';
+
+  @override
+  String scmPullConflictBody(int count, String branch) {
+    return 'کشیدن $count کامیت روی ⁨$branch⁩ با کار این نسخه‌ی کاری تداخل پیدا می‌کند.';
+  }
+
+  @override
+  String get scmAskAi => 'از هوش مصنوعی بپرس';
+
+  @override
+  String scmResolveConflictPrompt(String branch, String repo, int count) {
+    return '⁨$branch⁩ را در ⁨$repo⁩ بکش. $count کامیت از بالادست عقب است و کشیدن با کار محلی تداخل دارد. تداخل‌ها را حل کن و کشیدن را تمام کن.';
+  }
 
   @override
   String commitMessageOnBranch(String shortcut, String branch) {

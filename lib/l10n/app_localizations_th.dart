@@ -10422,6 +10422,15 @@ class AppLocalizationsTh extends AppLocalizations {
   String get scmSynced => 'ซิงค์แล้ว';
 
   @override
+  String get scmPushRefused => 'การพุชถูกปฏิเสธ';
+
+  @override
+  String get scmPulledPushRefused => 'ดึงมาแล้ว แต่การพุชถูกปฏิเสธ';
+
+  @override
+  String get scmPushRefusedHint => 'รีโมตหรือฮุกปฏิเสธการอัปเดต';
+
+  @override
   String get scmSelectBranch => 'เลือกสาขาที่จะเช็คเอาต์';
 
   @override
@@ -10480,6 +10489,22 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get scmSwitchBranch => 'สลับสาขา';
+
+  @override
+  String get scmPullConflictTitle => 'การดึงจะทำให้เกิดความขัดแย้ง';
+
+  @override
+  String scmPullConflictBody(int count, String branch) {
+    return 'การดึง $count คอมมิตไปที่ ⁨$branch⁩ จะขัดแย้งกับงานในสำเนานี้';
+  }
+
+  @override
+  String get scmAskAi => 'ถาม AI';
+
+  @override
+  String scmResolveConflictPrompt(String branch, String repo, int count) {
+    return 'ดึง ⁨$branch⁩ ใน ⁨$repo⁩ สาขานี้ตามหลังอัปสตรีม $count คอมมิต และการดึงขัดแย้งกับงานในเครื่อง แก้ความขัดแย้งแล้วดึงให้เสร็จ';
+  }
 
   @override
   String commitMessageOnBranch(String shortcut, String branch) {

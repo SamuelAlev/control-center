@@ -3,6 +3,7 @@ import 'package:control_center/features/messaging/providers/worktree_file_ops_pr
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/utils/relative_time.dart';
+import 'package:control_center/shared/widgets/source_control/scm_view.dart';
 import 'package:flutter/widgets.dart';
 
 /// The checked-out branch in a space's source-control header. Opens a picker
@@ -152,23 +153,27 @@ class _ScmBranchMenuState extends State<ScmBranchMenu> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final t = context.designSystem ?? DesignSystemTokens.light();
     final label = widget.branch.isEmpty ? l10n.scmDetachedHead : widget.branch;
-    final target = Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Flexible(
-          child: Text(
-            label,
-            // RTL carve-out: a branch name is an LTR token.
-            textDirection: TextDirection.ltr,
-            overflow: TextOverflow.ellipsis,
-            maxLines: 1,
-            style: TextStyle(fontSize: 11, color: t.textSecondary),
+    final target = ScmHeaderChip(
+      semanticLabel: l10n.scmSwitchBranch,
+      enabled: widget.enabled,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 140),
+            child: Text(
+              label,
+              // RTL carve-out: a branch name is an LTR token.
+              textDirection: TextDirection.ltr,
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
           ),
-        ),
-        Icon(AppIcons.chevronDown, size: 12, color: t.textTertiary),
-      ],
+          const SizedBox(width: 2),
+          const Icon(AppIcons.chevronDown),
+        ],
+      ),
     );
     if (!widget.enabled) {
       return target;

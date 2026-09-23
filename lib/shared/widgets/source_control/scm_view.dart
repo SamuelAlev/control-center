@@ -44,6 +44,7 @@ class ScmGroup extends StatelessWidget {
     this.subtitle,
     this.subtitleWidget,
     this.syncLabel,
+    this.headerTrailing,
     this.uppercaseTitle = true,
     this.actions = const [],
   });
@@ -63,6 +64,10 @@ class ScmGroup extends StatelessWidget {
   /// Ahead/behind counts drawn after [subtitle] (`36↓ 0↑`). A git status
   /// glyph, so the header paints it left-to-right in every locale.
   final String? syncLabel;
+
+  /// Controls on the title row, after the name and before the hover actions.
+  /// The branch picker and the sync counts sit here.
+  final Widget? headerTrailing;
 
   /// Section headers ("Changes") are small caps. A repository name is not —
   /// VS Code leaves that row in the repo's own casing.
@@ -96,6 +101,7 @@ class ScmGroup extends StatelessWidget {
           subtitle: subtitle,
           subtitleWidget: subtitleWidget,
           syncLabel: syncLabel,
+          headerTrailing: headerTrailing,
           uppercaseTitle: uppercaseTitle,
           count: count,
           collapsed: collapsed,
@@ -115,6 +121,7 @@ class _ScmGroupHeader extends StatefulWidget {
     required this.subtitle,
     required this.subtitleWidget,
     required this.syncLabel,
+    required this.headerTrailing,
     required this.uppercaseTitle,
     required this.count,
     required this.collapsed,
@@ -127,6 +134,7 @@ class _ScmGroupHeader extends StatefulWidget {
   final String? subtitle;
   final Widget? subtitleWidget;
   final String? syncLabel;
+  final Widget? headerTrailing;
   final bool uppercaseTitle;
   final int count;
   final bool collapsed;
@@ -186,11 +194,12 @@ class _ScmGroupHeaderState extends State<_ScmGroupHeader> {
                             : t.textPrimary,
                       ),
                     ),
-                    if (widget.subtitleWidget != null ||
-                        (widget.subtitle != null &&
-                            widget.subtitle!.isNotEmpty) ||
-                        (widget.syncLabel != null &&
-                            widget.syncLabel!.isNotEmpty))
+                    if (widget.headerTrailing == null &&
+                        (widget.subtitleWidget != null ||
+                            (widget.subtitle != null &&
+                                widget.subtitle!.isNotEmpty) ||
+                            (widget.syncLabel != null &&
+                                widget.syncLabel!.isNotEmpty)))
                       Row(
                         children: [
                           if (widget.subtitleWidget != null)
@@ -228,6 +237,10 @@ class _ScmGroupHeaderState extends State<_ScmGroupHeader> {
                   ],
                 ),
               ),
+              if (widget.headerTrailing != null) ...[
+                const SizedBox(width: AppSpacing.xs),
+                widget.headerTrailing!,
+              ],
               // Bulk actions appear on hover to keep the header quiet. Their
               // slot is always laid out (opacity, not presence) so revealing
               // them never shifts the title or the count badge.
@@ -392,6 +405,89 @@ class _ScmFileRowState extends State<ScmFileRow> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// A compact text button for the repository header: branch name, sync counts.
+///
+/// When [onPressed] is null the chip is only a visual — the parent (a menu
+/// trigger) owns the tap. A set callback is its own button and wins over the
+/// header's collapse tap.
+class ScmHeaderChip extends StatefulWidget {
+  /// Creates an [ScmHeaderChip].
+  const ScmHeaderChip({
+    super.key,
+    required this.semanticLabel,
+    required this.child,
+    this.onPressed,
+    this.enabled = true,
+  });
+
+  /// Spoken name. Also the tooltip when this chip is itself a button.
+  final String semanticLabel;
+
+  /// The label, already direction-aware (a branch name or `19↓ 0↑`).
+  final Widget child;
+
+  /// Tap handler. Null when a parent control handles the press.
+  final VoidCallback? onPressed;
+
+  /// Dims the chip when a checkout or sync is already running.
+  final bool enabled;
+
+  @override
+  State<ScmHeaderChip> createState() => _ScmHeaderChipState();
+}
+
+class _ScmHeaderChipState extends State<ScmHeaderChip> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.designSystem ?? DesignSystemTokens.light();
+    final box = MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      cursor: widget.enabled && widget.onPressed != null
+          ? SystemMouseCursors.click
+          : MouseCursor.defer,
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 160),
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        decoration: BoxDecoration(
+          color: _hovered && widget.enabled ? t.hover : const Color(0x00000000),
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(color: t.borderSecondary),
+        ),
+        child: IconTheme(
+          data: IconThemeData(
+            size: 12,
+            color: widget.enabled ? t.textTertiary : t.textDisabled,
+          ),
+          child: DefaultTextStyle(
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: widget.enabled ? t.textSecondary : t.textTertiary,
+            ),
+            child: widget.child,
+          ),
+        ),
+      ),
+    );
+    if (widget.onPressed == null) {
+      return box;
+    }
+    return CcTooltip(
+      message: widget.semanticLabel,
+      showDelay: const Duration(milliseconds: 400),
+      child: CcTappable(
+        onPressed: widget.enabled ? widget.onPressed : null,
+        semanticLabel: widget.semanticLabel,
+        borderRadius: BorderRadius.circular(4),
+        builder: (context, _) => box,
       ),
     );
   }

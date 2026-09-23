@@ -9270,6 +9270,9 @@
   "scmSyncFailed": "Sync failed",
   "scmSyncDirty": "Commit or discard changes before syncing",
   "scmSynced": "Synced",
+  "scmPushRefused": "Push was refused",
+  "scmPulledPushRefused": "Pulled, but the push was refused",
+  "scmPushRefusedHint": "The remote or a hook rejected the update",
   "scmSelectBranch": "Select a branch to checkout",
   "scmCreateBranch": "Create new branch…",
   "scmCreateBranchFrom": "Create new branch from…",
@@ -9309,6 +9312,23 @@
   "scmTags": "Tags",
   "scmPickStartPoint": "Select a start point",
   "scmSwitchBranch": "Switch branch",
+  "scmPullConflictTitle": "Pull would conflict",
+  "scmPullConflictBody": "Pulling {count} commits onto ⁨{branch}⁩ would conflict with the work in this checkout.",
+  "@scmPullConflictBody": {
+    "placeholders": {
+      "count": {"type": "int"},
+      "branch": {"type": "String"}
+    }
+  },
+  "scmAskAi": "Ask AI",
+  "scmResolveConflictPrompt": "Pull ⁨{branch}⁩ in ⁨{repo}⁩. It is {count} commits behind its upstream, and the pull conflicts with the local work. Resolve the conflicts and finish the pull.",
+  "@scmResolveConflictPrompt": {
+    "placeholders": {
+      "branch": {"type": "String"},
+      "repo": {"type": "String"},
+      "count": {"type": "int"}
+    }
+  },
   "commitMessageOnBranch": "Message ({shortcut} to commit on “{branch}”)",
   "@commitMessageOnBranch": {
     "placeholders": {

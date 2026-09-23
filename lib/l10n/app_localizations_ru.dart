@@ -10636,6 +10636,16 @@ class AppLocalizationsRu extends AppLocalizations {
   String get scmSynced => 'Синхронизировано';
 
   @override
+  String get scmPushRefused => 'Push отклонён';
+
+  @override
+  String get scmPulledPushRefused => 'Получено, но push отклонён';
+
+  @override
+  String get scmPushRefusedHint =>
+      'Удалённая сторона или хук отклонили обновление';
+
+  @override
   String get scmSelectBranch => 'Выберите ветку для переключения';
 
   @override
@@ -10695,6 +10705,22 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get scmSwitchBranch => 'Переключить ветку';
+
+  @override
+  String get scmPullConflictTitle => 'Получение создаст конфликт';
+
+  @override
+  String scmPullConflictBody(int count, String branch) {
+    return 'Получение $count коммитов в ⁨$branch⁩ конфликтует с работой в этой копии.';
+  }
+
+  @override
+  String get scmAskAi => 'Спросить ИИ';
+
+  @override
+  String scmResolveConflictPrompt(String branch, String repo, int count) {
+    return 'Получи ⁨$branch⁩ в ⁨$repo⁩. Ветка отстаёт на $count коммитов от upstream, и получение конфликтует с локальной работой. Разреши конфликты и заверши получение.';
+  }
 
   @override
   String commitMessageOnBranch(String shortcut, String branch) {

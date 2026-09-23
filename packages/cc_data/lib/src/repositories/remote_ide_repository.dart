@@ -35,6 +35,22 @@ class RemoteIdeRepository {
     }
   }
 
+  /// Opens the conversation worktree for [repoId] in [editorId] on the host.
+  /// The server resolves the path; the client never names a directory.
+  Future<void> openSpaceWorktree({
+    required String workspaceId,
+    required String spaceId,
+    required String repoId,
+    required String editorId,
+  }) async {
+    await _client.call('ide.openSpaceWorktree', {
+      'workspace_id': workspaceId,
+      'space_id': spaceId,
+      'repo_id': repoId,
+      'editor_id': editorId,
+    });
+  }
+
   /// Resolves PR #[prNumber]'s space worktree on the server (creating +
   /// provisioning it if needed — the SAME worktree the in-app workbench edits,
   /// not a separate checkout) and opens it in the editor [editorId] on the host's

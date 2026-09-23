@@ -10617,6 +10617,16 @@ class AppLocalizationsRo extends AppLocalizations {
   String get scmSynced => 'Sincronizat';
 
   @override
+  String get scmPushRefused => 'Push-ul a fost refuzat';
+
+  @override
+  String get scmPulledPushRefused => 'Preluat, dar push-ul a fost refuzat';
+
+  @override
+  String get scmPushRefusedHint =>
+      'Remote-ul sau un hook a respins actualizarea';
+
+  @override
   String get scmSelectBranch => 'Selectează o ramură pentru checkout';
 
   @override
@@ -10676,6 +10686,22 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get scmSwitchBranch => 'Schimbă ramura';
+
+  @override
+  String get scmPullConflictTitle => 'Preluarea ar crea un conflict';
+
+  @override
+  String scmPullConflictBody(int count, String branch) {
+    return 'Preluarea a $count commituri pe ⁨$branch⁩ ar intra în conflict cu lucrul din această copie.';
+  }
+
+  @override
+  String get scmAskAi => 'Întreabă AI';
+
+  @override
+  String scmResolveConflictPrompt(String branch, String repo, int count) {
+    return 'Preia ⁨$branch⁩ în ⁨$repo⁩. Este cu $count commituri în urma upstream-ului, iar preluarea intră în conflict cu lucrul local. Rezolvă conflictele și termină preluarea.';
+  }
 
   @override
   String commitMessageOnBranch(String shortcut, String branch) {

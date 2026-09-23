@@ -11,10 +11,10 @@ ClaudeAccount _account({
   DateTime? credentialExpiresAt,
 }) => ClaudeAccount(
   id: 'acc-1',
-  label: 'samuel.alev@frontify.com',
-  email: 'samuel.alev@frontify.com',
+  label: 'thomas@control-center.com',
+  email: 'thomas@control-center.com',
   subscriptionType: 'enterprise',
-  orgName: 'Frontify AG',
+  orgName: 'Control Center',
   loggedIn: loggedIn,
   credentialExpiresAt: credentialExpiresAt,
 );
@@ -46,7 +46,7 @@ void main() {
     expect(find.text(l10n.claudeAccountExpired), findsNothing);
     expect(
       find.textContaining(
-        'samuel.alev@frontify.com · enterprise · Frontify AG',
+        'thomas@control-center.com · enterprise · Control Center',
       ),
       findsOneWidget,
     );

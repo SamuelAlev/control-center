@@ -10197,6 +10197,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get scmSynced => '已同步';
 
   @override
+  String get scmPushRefused => '推送被拒绝';
+
+  @override
+  String get scmPulledPushRefused => '已拉取，但推送被拒绝';
+
+  @override
+  String get scmPushRefusedHint => '远程或钩子拒绝了这次更新';
+
+  @override
   String get scmSelectBranch => '选择要检出的分支';
 
   @override
@@ -10255,6 +10264,22 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get scmSwitchBranch => '切换分支';
+
+  @override
+  String get scmPullConflictTitle => '拉取会产生冲突';
+
+  @override
+  String scmPullConflictBody(int count, String branch) {
+    return '把 $count 个提交拉到 ⁨$branch⁩ 会和这份工作副本里的改动冲突。';
+  }
+
+  @override
+  String get scmAskAi => '让 AI 处理';
+
+  @override
+  String scmResolveConflictPrompt(String branch, String repo, int count) {
+    return '请拉取 ⁨$repo⁩ 里的 ⁨$branch⁩。它比上游落后 $count 个提交，拉取会和本地改动冲突。请解决冲突并完成拉取。';
+  }
 
   @override
   String commitMessageOnBranch(String shortcut, String branch) {
@@ -24564,6 +24589,15 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get scmSynced => '已同步';
 
   @override
+  String get scmPushRefused => '推送被拒絕';
+
+  @override
+  String get scmPulledPushRefused => '已拉取，但推送被拒絕';
+
+  @override
+  String get scmPushRefusedHint => '遠端或鉤子拒絕了這次更新';
+
+  @override
   String get scmSelectBranch => '選擇要取出的分支';
 
   @override
@@ -24622,6 +24656,22 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get scmSwitchBranch => '切換分支';
+
+  @override
+  String get scmPullConflictTitle => '拉取會產生衝突';
+
+  @override
+  String scmPullConflictBody(int count, String branch) {
+    return '把 $count 個提交拉到 ⁨$branch⁩ 會和這份工作複本裡的改動衝突。';
+  }
+
+  @override
+  String get scmAskAi => '讓 AI 處理';
+
+  @override
+  String scmResolveConflictPrompt(String branch, String repo, int count) {
+    return '請拉取 ⁨$repo⁩ 裡的 ⁨$branch⁩。它比上游落後 $count 個提交，拉取會和本地改動衝突。請解決衝突並完成拉取。';
+  }
 
   @override
   String commitMessageOnBranch(String shortcut, String branch) {

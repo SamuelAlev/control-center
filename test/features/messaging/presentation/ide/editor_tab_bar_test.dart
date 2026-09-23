@@ -432,7 +432,7 @@ void main() {
   });
 
   testWidgets('hovering a tab shows its full label', (tester) async {
-    const label = 'Review code (frontify/web-app)';
+    const label = 'Review code (control-center/control-center)';
     await tester.pumpWidget(
       _harness(
         onTabSelected: (_) {},

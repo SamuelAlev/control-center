@@ -5,6 +5,7 @@ import 'package:cc_rpc/cc_rpc.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/di/providers.dart';
+import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
 import 'package:control_center/features/repos/providers/repo_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -184,17 +185,57 @@ List<PullRequest> pullRequestsForSpaceRow({
   return prs.values.toList(growable: false);
 }
 
-/// The pull request this conversation opened from `repoId`'s worktree branch,
-/// or null when that branch has no open PR.
+/// The open pull request for the branch checked out in this repo, or null.
+///
+/// The family key names that branch. A checkout changes which branch the
+/// worktree is on while the previous join is still cached, and the first
+/// match for the repo would keep offering "create" — or the previous PR —
+/// for a branch that already has one.
 final spaceBranchPullRequestForRepoProvider = Provider.autoDispose
-    .family<PullRequest?, ({String spaceId, String repoId})>((ref, key) {
-      final matches =
-          ref.watch(spaceBranchPullRequestsProvider(key.spaceId)).value ??
-          const [];
-      for (final m in matches) {
-        if (m.repoId == key.repoId) {
-          return m.pr;
-        }
-      }
-      return null;
+    .family<
+      PullRequest?,
+      ({String spaceId, String repoId, String repoFullName, String branch})
+    >((ref, key) {
+      return pullRequestForCheckedOutBranch(
+        branch: key.branch,
+        repoId: key.repoId,
+        repoFullName: key.repoFullName,
+        branchMatched:
+            ref.watch(spaceBranchPullRequestsProvider(key.spaceId)).value ??
+            const [],
+        linked: ref.watch(spacePrsProvider(key.spaceId)),
+      );
     });
+
+/// The open pull request that belongs to the branch now checked out.
+///
+/// [branchMatched] is `pr.forSpaceBranches`: the worktree branch at the time
+/// that read ran. [linked] is the space's review associations, which already
+/// know their head branch. A row for any other branch is ignored, so a
+/// checkout does not keep the previous branch's pull request.
+PullRequest? pullRequestForCheckedOutBranch({
+  required String branch,
+  required String repoId,
+  required String repoFullName,
+  required Iterable<SpaceBranchPr> branchMatched,
+  required Iterable<PullRequest> linked,
+}) {
+  final name = branch.trim();
+  if (name.isEmpty) {
+    return null;
+  }
+  for (final match in branchMatched) {
+    if (match.repoId == repoId &&
+        match.branch == name &&
+        match.pr.isOpen &&
+        match.pr.repoFullName == repoFullName) {
+      return match.pr;
+    }
+  }
+  for (final pr in linked) {
+    if (pr.isOpen && pr.repoFullName == repoFullName && pr.headRef == name) {
+      return pr;
+    }
+  }
+  return null;
+}

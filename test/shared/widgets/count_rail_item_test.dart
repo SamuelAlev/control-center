@@ -18,7 +18,7 @@ void main() {
   testWidgets('ellipsized label keeps the caption line so descenders fit', (
     tester,
   ) async {
-    const label = 'Frontify/testing-suite-playwright';
+    const label = 'control-center/control-center';
     await tester.pumpWidget(
       _wrap(
         const SizedBox(

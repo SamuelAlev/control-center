@@ -10592,6 +10592,16 @@ class AppLocalizationsIt extends AppLocalizations {
   String get scmSynced => 'Sincronizzato';
 
   @override
+  String get scmPushRefused => 'Il push è stato rifiutato';
+
+  @override
+  String get scmPulledPushRefused => 'Scaricato, ma il push è stato rifiutato';
+
+  @override
+  String get scmPushRefusedHint =>
+      'Il remoto o un hook ha rifiutato l\'aggiornamento';
+
+  @override
   String get scmSelectBranch => 'Seleziona un ramo da estrarre';
 
   @override
@@ -10651,6 +10661,22 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get scmSwitchBranch => 'Cambia ramo';
+
+  @override
+  String get scmPullConflictTitle => 'Il pull creerebbe un conflitto';
+
+  @override
+  String scmPullConflictBody(int count, String branch) {
+    return 'Scaricare $count commit su ⁨$branch⁩ andrebbe in conflitto con il lavoro in questa copia.';
+  }
+
+  @override
+  String get scmAskAi => 'Chiedi all\'IA';
+
+  @override
+  String scmResolveConflictPrompt(String branch, String repo, int count) {
+    return 'Scarica ⁨$branch⁩ in ⁨$repo⁩. È indietro di $count commit rispetto all\'upstream e il pull è in conflitto con il lavoro locale. Risolvi i conflitti e completa il pull.';
+  }
 
   @override
   String commitMessageOnBranch(String shortcut, String branch) {

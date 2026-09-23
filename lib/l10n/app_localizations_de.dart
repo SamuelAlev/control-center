@@ -10589,6 +10589,16 @@ class AppLocalizationsDe extends AppLocalizations {
   String get scmSynced => 'Synchronisiert';
 
   @override
+  String get scmPushRefused => 'Push wurde abgelehnt';
+
+  @override
+  String get scmPulledPushRefused => 'Gezogen, aber der Push wurde abgelehnt';
+
+  @override
+  String get scmPushRefusedHint =>
+      'Die Gegenstelle oder ein Hook hat die Aktualisierung abgelehnt';
+
+  @override
   String get scmSelectBranch => 'Branch zum Auschecken wählen';
 
   @override
@@ -10648,6 +10658,22 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get scmSwitchBranch => 'Branch wechseln';
+
+  @override
+  String get scmPullConflictTitle => 'Pull würde Konflikte erzeugen';
+
+  @override
+  String scmPullConflictBody(int count, String branch) {
+    return 'Das Ziehen von $count Commits auf ⁨$branch⁩ würde mit der Arbeit in diesem Checkout kollidieren.';
+  }
+
+  @override
+  String get scmAskAi => 'KI fragen';
+
+  @override
+  String scmResolveConflictPrompt(String branch, String repo, int count) {
+    return 'Ziehe ⁨$branch⁩ in ⁨$repo⁩. Der Branch liegt $count Commits hinter seinem Upstream, und der Pull kollidiert mit der lokalen Arbeit. Löse die Konflikte und schließe den Pull ab.';
+  }
 
   @override
   String commitMessageOnBranch(String shortcut, String branch) {

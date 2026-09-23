@@ -32,6 +32,44 @@ final ideLogoAssetsProvider = FutureProvider<Set<String>>((ref) async {
   };
 });
 
+/// Order used when the user has not chosen an editor. A real editor wins over
+/// a terminal; the first installed id in this list is the default.
+const List<String> kPreferredIdeIds = [
+  'cursor',
+  'vscode',
+  'zed',
+  'windsurf',
+  'antigravity',
+  'intellij',
+  'webstorm',
+  'pycharm',
+  'sublime',
+  'warp',
+];
+
+/// The editor "Open in …" should name: the remembered choice when it is
+/// installed, otherwise the first [kPreferredIdeIds] entry that is.
+IdeEditor? preferredInstalledIde(
+  List<IdeEditor> installed,
+  String? selectedId,
+) {
+  if (selectedId != null) {
+    for (final editor in installed) {
+      if (editor.id == selectedId) {
+        return editor;
+      }
+    }
+  }
+  for (final id in kPreferredIdeIds) {
+    for (final editor in installed) {
+      if (editor.id == id) {
+        return editor;
+      }
+    }
+  }
+  return installed.isEmpty ? null : installed.first;
+}
+
 /// The id of the editor the user last chose for "open in editor", persisted in
 /// [AppPreferences]. `null` until the user picks one — callers fall back to
 /// a sensible installed default.
