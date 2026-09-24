@@ -3301,6 +3301,7 @@
   "squashAndMerge": "Sıkıştır ve birleştir",
   "createMergeCommit": "Birleştirme commit'i oluştur",
   "rebaseAndMerge": "Yeniden temelle ve birleştir",
+  "mergeMethod": "Birleştirme yöntemi",
   "commitTitle": "Commit başlığı",
   "commitDescription": "Commit açıklaması",
   "pullRequestMerged": "Pull request birleştirildi",

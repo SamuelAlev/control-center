@@ -5738,6 +5738,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get rebaseAndMerge => 'Rebase a sloučení';
 
   @override
+  String get mergeMethod => 'Způsob sloučení';
+
+  @override
   String get commitTitle => 'Název commitu';
 
   @override

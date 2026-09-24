@@ -3301,6 +3301,7 @@
   "squashAndMerge": "Squash and merge",
   "createMergeCommit": "مرج کمیٹ بنائیں",
   "rebaseAndMerge": "Rebase and merge",
+  "mergeMethod": "انضمام کا طریقہ",
   "commitTitle": "کمیٹ عنوان",
   "commitDescription": "کمیٹ تفصیل",
   "pullRequestMerged": "Pull request مرج ہو گیا",

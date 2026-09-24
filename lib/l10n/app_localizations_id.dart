@@ -5690,6 +5690,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get rebaseAndMerge => 'Rebase dan gabungkan';
 
   @override
+  String get mergeMethod => 'Metode penggabungan';
+
+  @override
   String get commitTitle => 'Judul commit';
 
   @override

@@ -5634,6 +5634,9 @@ class AppLocalizationsTh extends AppLocalizations {
   String get rebaseAndMerge => 'รีเบสแล้วรวม';
 
   @override
+  String get mergeMethod => 'วิธีการรวม';
+
+  @override
   String get commitTitle => 'ชื่อคอมมิต';
 
   @override

@@ -5666,6 +5666,9 @@ class AppLocalizationsHe extends AppLocalizations {
   String get rebaseAndMerge => 'Rebase ומיזוג';
 
   @override
+  String get mergeMethod => 'שיטת מיזוג';
+
+  @override
   String get commitTitle => 'כותרת הקומיט';
 
   @override

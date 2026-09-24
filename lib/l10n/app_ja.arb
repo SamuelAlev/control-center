@@ -3301,6 +3301,7 @@
   "squashAndMerge": "スカッシュしてマージ",
   "createMergeCommit": "マージコミットを作成",
   "rebaseAndMerge": "リベースしてマージ",
+  "mergeMethod": "マージ方法",
   "commitTitle": "コミットタイトル",
   "commitDescription": "コミットの説明",
   "pullRequestMerged": "プルリクエストをマージしました",

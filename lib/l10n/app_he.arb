@@ -3301,6 +3301,7 @@
   "squashAndMerge": "Squash ומיזוג",
   "createMergeCommit": "יצירת קומיט מיזוג",
   "rebaseAndMerge": "Rebase ומיזוג",
+  "mergeMethod": "שיטת מיזוג",
   "commitTitle": "כותרת הקומיט",
   "commitDescription": "תיאור הקומיט",
   "pullRequestMerged": "בקשת המשיכה מוזגה",

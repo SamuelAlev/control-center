@@ -3301,6 +3301,7 @@
   "squashAndMerge": "Squash a sloučení",
   "createMergeCommit": "Vytvořit merge commit",
   "rebaseAndMerge": "Rebase a sloučení",
+  "mergeMethod": "Způsob sloučení",
   "commitTitle": "Název commitu",
   "commitDescription": "Popis commitu",
   "pullRequestMerged": "Pull request sloučen",

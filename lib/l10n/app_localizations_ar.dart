@@ -5740,6 +5740,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get rebaseAndMerge => 'إعادة تأسيس ودمج';
 
   @override
+  String get mergeMethod => 'طريقة الدمج';
+
+  @override
   String get commitTitle => 'عنوان الإيداع';
 
   @override

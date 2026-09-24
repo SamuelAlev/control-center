@@ -5681,6 +5681,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get rebaseAndMerge => 'Yeniden temelle ve birleştir';
 
   @override
+  String get mergeMethod => 'Birleştirme yöntemi';
+
+  @override
   String get commitTitle => 'Commit başlığı';
 
   @override

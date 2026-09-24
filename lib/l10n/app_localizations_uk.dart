@@ -5743,6 +5743,9 @@ class AppLocalizationsUk extends AppLocalizations {
   String get rebaseAndMerge => 'Перебазувати й злити';
 
   @override
+  String get mergeMethod => 'Спосіб злиття';
+
+  @override
   String get commitTitle => 'Заголовок коміту';
 
   @override

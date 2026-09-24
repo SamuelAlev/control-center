@@ -3430,6 +3430,7 @@
   "squashAndMerge": "สควอชแล้วรวม",
   "createMergeCommit": "สร้างคอมมิตการรวม",
   "rebaseAndMerge": "รีเบสแล้วรวม",
+  "mergeMethod": "วิธีการรวม",
   "commitTitle": "ชื่อคอมมิต",
   "commitDescription": "คำอธิบายคอมมิต",
   "pullRequestMerged": "รวม pull request แล้ว",

@@ -3301,6 +3301,7 @@
   "squashAndMerge": "Объединить и слить",
   "createMergeCommit": "Создать коммит слияния",
   "rebaseAndMerge": "Перебазировать и слить",
+  "mergeMethod": "Способ слияния",
   "commitTitle": "Заголовок коммита",
   "commitDescription": "Описание коммита",
   "pullRequestMerged": "Pull request слит",

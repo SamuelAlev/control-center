@@ -3301,6 +3301,7 @@
   "squashAndMerge": "Squasha och slå samman",
   "createMergeCommit": "Skapa en merge-commit",
   "rebaseAndMerge": "Rebasa och slå samman",
+  "mergeMethod": "Sammanfogningsmetod",
   "commitTitle": "Commit-titel",
   "commitDescription": "Commit-beskrivning",
   "pullRequestMerged": "Pull request sammanslagen",

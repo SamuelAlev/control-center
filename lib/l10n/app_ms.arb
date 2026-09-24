@@ -3301,6 +3301,7 @@
   "squashAndMerge": "Squash dan cantum",
   "createMergeCommit": "Cipta commit cantuman",
   "rebaseAndMerge": "Rebase dan cantum",
+  "mergeMethod": "Kaedah cantuman",
   "commitTitle": "Tajuk commit",
   "commitDescription": "Perihalan commit",
   "pullRequestMerged": "Pull request dicantum",

@@ -5658,6 +5658,9 @@ class AppLocalizationsUr extends AppLocalizations {
   String get rebaseAndMerge => 'Rebase and merge';
 
   @override
+  String get mergeMethod => 'انضمام کا طریقہ';
+
+  @override
   String get commitTitle => 'کمیٹ عنوان';
 
   @override

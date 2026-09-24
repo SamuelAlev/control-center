@@ -3301,6 +3301,7 @@
   "squashAndMerge": "Scal ze squashowaniem",
   "createMergeCommit": "Utwórz commit scalający",
   "rebaseAndMerge": "Rebase i scal",
+  "mergeMethod": "Metoda scalania",
   "commitTitle": "Tytuł commita",
   "commitDescription": "Opis commita",
   "pullRequestMerged": "Scalono pull request",

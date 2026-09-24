@@ -3301,6 +3301,7 @@
   "squashAndMerge": "压缩并合并",
   "createMergeCommit": "创建合并提交",
   "rebaseAndMerge": "变基并合并",
+  "mergeMethod": "合并方式",
   "commitTitle": "提交标题",
   "commitDescription": "提交说明",
   "pullRequestMerged": "已合并 pull request",

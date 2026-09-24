@@ -5740,6 +5740,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get rebaseAndMerge => 'Перебазировать и слить';
 
   @override
+  String get mergeMethod => 'Способ слияния';
+
+  @override
   String get commitTitle => 'Заголовок коммита';
 
   @override

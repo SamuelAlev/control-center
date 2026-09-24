@@ -5728,6 +5728,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get rebaseAndMerge => 'Rebase and merge';
 
   @override
+  String get mergeMethod => 'Metodo di merge';
+
+  @override
   String get commitTitle => 'Commit title';
 
   @override

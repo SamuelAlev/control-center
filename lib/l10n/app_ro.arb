@@ -3301,6 +3301,7 @@
   "squashAndMerge": "Squash and merge",
   "createMergeCommit": "Creează un commit de fuziune",
   "rebaseAndMerge": "Rebase and merge",
+  "mergeMethod": "Metodă de îmbinare",
   "commitTitle": "Titlu commit",
   "commitDescription": "Descriere commit",
   "pullRequestMerged": "Pull request fuzionat",

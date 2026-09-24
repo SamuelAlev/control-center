@@ -5705,6 +5705,9 @@ class AppLocalizationsHu extends AppLocalizations {
   String get rebaseAndMerge => 'Rebase és összefésülés';
 
   @override
+  String get mergeMethod => 'Összefésülési mód';
+
+  @override
   String get commitTitle => 'Commit címe';
 
   @override

@@ -3174,6 +3174,7 @@
   "@rebaseAndMerge": {
     "description": "Merge method: rebase commits onto the base branch"
   },
+  "mergeMethod": "Método de merge",
   "commitTitle": "Commit title",
   "@commitTitle": {
     "description": "Label for the commit title field in the merge flyout"

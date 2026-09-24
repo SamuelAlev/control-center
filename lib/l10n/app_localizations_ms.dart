@@ -5690,6 +5690,9 @@ class AppLocalizationsMs extends AppLocalizations {
   String get rebaseAndMerge => 'Rebase dan cantum';
 
   @override
+  String get mergeMethod => 'Kaedah cantuman';
+
+  @override
   String get commitTitle => 'Tajuk commit';
 
   @override

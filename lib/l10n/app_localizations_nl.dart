@@ -5703,6 +5703,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get rebaseAndMerge => 'Rebase and merge';
 
   @override
+  String get mergeMethod => 'Samenvoegmethode';
+
+  @override
   String get commitTitle => 'Commit title';
 
   @override

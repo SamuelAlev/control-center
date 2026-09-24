@@ -3301,6 +3301,7 @@
   "squashAndMerge": "Squash dan gabungkan",
   "createMergeCommit": "Buat commit merge",
   "rebaseAndMerge": "Rebase dan gabungkan",
+  "mergeMethod": "Metode penggabungan",
   "commitTitle": "Judul commit",
   "commitDescription": "Deskripsi commit",
   "pullRequestMerged": "Pull request digabungkan",

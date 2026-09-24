@@ -3301,6 +3301,7 @@
   "squashAndMerge": "Squash 並合併",
   "createMergeCommit": "建立合併 commit",
   "rebaseAndMerge": "Rebase 並合併",
+  "mergeMethod": "合併方式",
   "commitTitle": "Commit 標題",
   "commitDescription": "Commit 描述",
   "pullRequestMerged": "Pull request 已合併",

@@ -3301,6 +3301,7 @@
   "squashAndMerge": "스쿼시 후 병합",
   "createMergeCommit": "병합 커밋 만들기",
   "rebaseAndMerge": "리베이스 후 병합",
+  "mergeMethod": "병합 방법",
   "commitTitle": "커밋 제목",
   "commitDescription": "커밋 설명",
   "pullRequestMerged": "풀 리퀘스트가 병합되었습니다",

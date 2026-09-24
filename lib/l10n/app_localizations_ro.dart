@@ -5736,6 +5736,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get rebaseAndMerge => 'Rebase and merge';
 
   @override
+  String get mergeMethod => 'Metodă de îmbinare';
+
+  @override
   String get commitTitle => 'Titlu commit';
 
   @override

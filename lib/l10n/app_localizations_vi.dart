@@ -5675,6 +5675,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get rebaseAndMerge => 'Rebase and merge';
 
   @override
+  String get mergeMethod => 'Phương thức hợp nhất';
+
+  @override
   String get commitTitle => 'Tiêu đề commit';
 
   @override

@@ -3301,6 +3301,7 @@
   "squashAndMerge": "Squash és összefésülés",
   "createMergeCommit": "Összefésülési commit létrehozása",
   "rebaseAndMerge": "Rebase és összefésülés",
+  "mergeMethod": "Összefésülési mód",
   "commitTitle": "Commit címe",
   "commitDescription": "Commit leírása",
   "pullRequestMerged": "Pull request összefésülve",

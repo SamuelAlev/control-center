@@ -3301,6 +3301,7 @@
   "squashAndMerge": "سحق ودمج",
   "createMergeCommit": "إنشاء إيداع دمج",
   "rebaseAndMerge": "إعادة تأسيس ودمج",
+  "mergeMethod": "طريقة الدمج",
   "commitTitle": "عنوان الإيداع",
   "commitDescription": "وصف الإيداع",
   "pullRequestMerged": "تم دمج طلب السحب",

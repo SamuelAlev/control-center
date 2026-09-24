@@ -5563,6 +5563,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get rebaseAndMerge => '리베이스 후 병합';
 
   @override
+  String get mergeMethod => '병합 방법';
+
+  @override
   String get commitTitle => '커밋 제목';
 
   @override

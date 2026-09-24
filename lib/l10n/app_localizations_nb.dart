@@ -5685,6 +5685,9 @@ class AppLocalizationsNb extends AppLocalizations {
   String get rebaseAndMerge => 'Rebase og slå sammen';
 
   @override
+  String get mergeMethod => 'Flettemetode';
+
+  @override
   String get commitTitle => 'Commit-tittel';
 
   @override

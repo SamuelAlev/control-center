@@ -5739,6 +5739,9 @@ class AppLocalizationsEl extends AppLocalizations {
   String get rebaseAndMerge => 'Rebase και συγχώνευση';
 
   @override
+  String get mergeMethod => 'Μέθοδος συγχώνευσης';
+
+  @override
   String get commitTitle => 'Τίτλος commit';
 
   @override

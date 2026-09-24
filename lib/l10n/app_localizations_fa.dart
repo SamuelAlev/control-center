@@ -5660,6 +5660,9 @@ class AppLocalizationsFa extends AppLocalizations {
   String get rebaseAndMerge => 'ریبیس و ادغام';
 
   @override
+  String get mergeMethod => 'روش ادغام';
+
+  @override
   String get commitTitle => 'عنوان کامیت';
 
   @override

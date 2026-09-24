@@ -5685,6 +5685,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get rebaseAndMerge => 'Rebasa och slå samman';
 
   @override
+  String get mergeMethod => 'Sammanfogningsmetod';
+
+  @override
   String get commitTitle => 'Commit-titel';
 
   @override

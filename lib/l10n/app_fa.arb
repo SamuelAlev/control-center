@@ -3301,6 +3301,7 @@
   "squashAndMerge": "اسکواش و ادغام",
   "createMergeCommit": "ایجاد کامیت ادغام",
   "rebaseAndMerge": "ریبیس و ادغام",
+  "mergeMethod": "روش ادغام",
   "commitTitle": "عنوان کامیت",
   "commitDescription": "شرح کامیت",
   "pullRequestMerged": "Pull request ادغام شد",

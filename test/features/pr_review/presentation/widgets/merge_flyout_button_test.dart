@@ -193,9 +193,9 @@ void main() {
     expect(find.text('Squash and merge'), findsNothing);
   });
 
-  // ── Merge method chips ─────────────────────────────────────────────────
+  // ── Merge method ───────────────────────────────────────────────────────
 
-  testWidgets('flyout shows three merge method chips', (tester) async {
+  testWidgets('flyout shows the merge method segmented control', (tester) async {
     await tester.pumpWidget(
       _wrap(
         MergeFlyoutButton(
@@ -211,6 +211,10 @@ void main() {
     await tester.tap(find.text('Merge'));
     await tester.pump();
     await _settleTimers(tester);
+    expect(
+      find.byWidgetPredicate((w) => w is CcSegmentedToggle),
+      findsOneWidget,
+    );
     expect(find.text('Squash and merge'), findsOneWidget);
     expect(find.text('Create a merge commit'), findsOneWidget);
     expect(find.text('Rebase and merge'), findsOneWidget);

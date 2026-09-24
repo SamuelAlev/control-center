@@ -64,7 +64,9 @@ class _MergeFlyoutButtonState extends ConsumerState<MergeFlyoutButton> {
   Offset? _overlayOffset;
   _MergeMethod _method = _MergeMethod.squash;
 
-  static const _overlayWidth = 520.0;
+  // The method labels share one full-width track. 520px clips
+  // "Create a merge commit" at the control's body size.
+  static const _overlayWidth = 576.0;
 
   @override
   void initState() {
@@ -359,7 +361,7 @@ class _MergeFlyoutButtonState extends ConsumerState<MergeFlyoutButton> {
                       const SizedBox(height: 10),
 
                       // Merge method selector
-                      _buildMethodSelector(tokens, theme, l10n),
+                      _buildMethodSelector(l10n),
                       const SizedBox(height: 10),
 
                       // Commit title / description
@@ -475,78 +477,22 @@ class _MergeFlyoutButtonState extends ConsumerState<MergeFlyoutButton> {
     );
   }
 
-  Widget _buildMethodSelector(
-    DesignSystemTokens tokens,
-    ThemeData theme,
-    AppLocalizations l10n,
-  ) {
-    return Container(
-      decoration: BoxDecoration(
-        color: tokens.bgSecondary,
-        borderRadius: BorderRadius.circular(2),
-        border: Border.all(color: tokens.borderSecondary),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-      child: Row(
-        children: [
-          _methodChip(
-            label: l10n.squashAndMerge,
-            method: _MergeMethod.squash,
-            tokens: tokens,
-            theme: theme,
-          ),
-          const SizedBox(width: 4),
-          _methodChip(
-            label: l10n.createMergeCommit,
-            method: _MergeMethod.merge,
-            tokens: tokens,
-            theme: theme,
-          ),
-          const SizedBox(width: 4),
-          _methodChip(
-            label: l10n.rebaseAndMerge,
-            method: _MergeMethod.rebase,
-            tokens: tokens,
-            theme: theme,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _methodChip({
-    required String label,
-    required _MergeMethod method,
-    required DesignSystemTokens tokens,
-    required ThemeData theme,
-  }) {
-    final selected = _method == method;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () {
-          setState(() {
-            _method = method;
-            _prefillFields();
-          });
-        },
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
-          decoration: BoxDecoration(
-            color: selected ? tokens.bgPrimary : Colors.transparent,
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            style: CcTypography.caption.copyWith(
-              fontWeight: selected
-                  ? FontWeight.w600
-                  : CcTypography.regularWeight,
-              color: selected ? tokens.textPrimary : tokens.textSecondary,
-            ),
-          ),
-        ),
-      ),
+  Widget _buildMethodSelector(AppLocalizations l10n) {
+    return CcSegmentedToggle<_MergeMethod>(
+      fullWidth: true,
+      semanticLabel: l10n.mergeMethod,
+      value: _method,
+      onChanged: (method) {
+        setState(() {
+          _method = method;
+          _prefillFields();
+        });
+      },
+      segments: [
+        CcSegment(value: _MergeMethod.squash, label: l10n.squashAndMerge),
+        CcSegment(value: _MergeMethod.merge, label: l10n.createMergeCommit),
+        CcSegment(value: _MergeMethod.rebase, label: l10n.rebaseAndMerge),
+      ],
     );
   }
 }

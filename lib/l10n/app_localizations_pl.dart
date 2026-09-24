@@ -5762,6 +5762,9 @@ class AppLocalizationsPl extends AppLocalizations {
   String get rebaseAndMerge => 'Rebase i scal';
 
   @override
+  String get mergeMethod => 'Metoda scalania';
+
+  @override
   String get commitTitle => 'Tytuł commita';
 
   @override

@@ -3301,6 +3301,7 @@
   "squashAndMerge": "Squash και συγχώνευση",
   "createMergeCommit": "Δημιουργία commit συγχώνευσης",
   "rebaseAndMerge": "Rebase και συγχώνευση",
+  "mergeMethod": "Μέθοδος συγχώνευσης",
   "commitTitle": "Τίτλος commit",
   "commitDescription": "Περιγραφή commit",
   "pullRequestMerged": "Το pull request συγχωνεύθηκε",

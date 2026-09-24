@@ -9859,6 +9859,12 @@ abstract class AppLocalizations {
   /// **'Rebase and merge'**
   String get rebaseAndMerge;
 
+  /// Accessibility label for the merge method segmented control
+  ///
+  /// In en, this message translates to:
+  /// **'Merge method'**
+  String get mergeMethod;
+
   /// Label for the commit title field in the merge flyout
   ///
   /// In en, this message translates to:

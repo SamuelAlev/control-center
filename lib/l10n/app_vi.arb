@@ -3301,6 +3301,7 @@
   "squashAndMerge": "Squash and merge",
   "createMergeCommit": "Tạo merge commit",
   "rebaseAndMerge": "Rebase and merge",
+  "mergeMethod": "Phương thức hợp nhất",
   "commitTitle": "Tiêu đề commit",
   "commitDescription": "Mô tả commit",
   "pullRequestMerged": "Đã merge pull request",

@@ -5717,6 +5717,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get rebaseAndMerge => 'Rebase and merge';
 
   @override
+  String get mergeMethod => 'Método de merge';
+
+  @override
   String get commitTitle => 'Commit title';
 
   @override

@@ -5500,6 +5500,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get rebaseAndMerge => '变基并合并';
 
   @override
+  String get mergeMethod => '合并方式';
+
+  @override
   String get commitTitle => '提交标题';
 
   @override
@@ -20057,6 +20060,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get rebaseAndMerge => 'Rebase 並合併';
+
+  @override
+  String get mergeMethod => '合併方式';
 
   @override
   String get commitTitle => 'Commit 標題';

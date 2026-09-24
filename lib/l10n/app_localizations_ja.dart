@@ -5563,6 +5563,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get rebaseAndMerge => 'リベースしてマージ';
 
   @override
+  String get mergeMethod => 'マージ方法';
+
+  @override
   String get commitTitle => 'コミットタイトル';
 
   @override
