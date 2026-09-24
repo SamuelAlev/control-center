@@ -1,6 +1,3 @@
-/// @docImport 'package:control_center/features/messaging/presentation/widgets/space_row.dart';
-library;
-
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_row_adornments.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
@@ -89,7 +86,7 @@ class SpaceRowLayout extends StatelessWidget {
   /// Extra start inset.
   final double indent;
 
-  /// Vertical air the fill paints. See [SpaceRow.cardInset].
+  /// Vertical air the fill paints, matching the space row card inset.
   final EdgeInsets cardInset;
 
   /// Sidebar width is animating, so trailing chrome is hidden.

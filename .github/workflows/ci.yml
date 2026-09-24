@@ -383,7 +383,10 @@ jobs:
         run: bash scripts/release/verify_natives.sh build/natives linux server
 
       - name: Server boot e2e
-        run: cd packages/cc_server_core && dart test --concurrency=2 test/cc_server_e2e_test.dart test/fresh_boot_first_workspace_test.dart test/workspace_seeder_test.dart
+        # Two files boot cc_server at once. Native preflight loads ONNX, and
+        # on a cold runner that stretch blows the 30s default while the other
+        # file is doing the same. 2m still fails a hung boot.
+        run: cd packages/cc_server_core && dart test --concurrency=2 --timeout=2m test/cc_server_e2e_test.dart test/fresh_boot_first_workspace_test.dart test/workspace_seeder_test.dart
         if: steps.gate.outputs.run == 'true'
 
       # First `dart run` compiles the kernel. Do it outside the test's boot timeout.
