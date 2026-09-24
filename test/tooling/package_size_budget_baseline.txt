@@ -13,7 +13,7 @@ packages/cc_infra/lib/src/ide/code_server_service.dart  1828
 packages/cc_infra/lib/src/messaging/messaging_service.dart  1713
 packages/cc_infra/lib/src/network/github/github_forge_pr_client.dart  1586
 packages/cc_infra/lib/src/network/github_graphql_client.dart  2351
-packages/cc_infra/lib/src/network/github_pr_client.dart  2197
+packages/cc_infra/lib/src/network/github_pr_client.dart  2195
 packages/cc_infra/lib/src/network/gitlab/gitlab_forge_pr_client.dart  1782
 packages/cc_infra/lib/src/rigs/cdp_client.dart  2509
 packages/cc_infra/lib/src/rigs/qemu_enclosure_backend.dart  1803
@@ -21,7 +21,7 @@ packages/cc_infra/lib/src/rigs/rig_service.dart  2976
 packages/cc_infra/lib/src/rigs/smolvm_enclosure_backend.dart  2088
 packages/cc_server_core/lib/src/cached_pr_review_repository.dart  2889
 packages/cc_server_core/lib/src/catalog/catalog_wire.dart  3360
-packages/cc_server_core/lib/src/cc_server_runtime.dart  7910
+packages/cc_server_core/lib/src/cc_server_runtime.dart  7893
 packages/cc_server_core/lib/src/demo/demo_seeder.dart  2534
 packages/cc_server_core/lib/src/local_rpc_server.dart  2511
 packages/cc_server_core/lib/src/remote_rpc_catalog.dart  16110

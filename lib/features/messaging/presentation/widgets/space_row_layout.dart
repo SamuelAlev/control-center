@@ -3,6 +3,9 @@ import 'package:control_center/features/messaging/presentation/widgets/space_row
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:flutter/widgets.dart';
 
+export 'package:control_center/features/messaging/presentation/widgets/space_row_adornments.dart'
+    show kSpaceSidebarTrailingControl;
+
 /// Horizontal inset of a space row.
 const double kSpaceSidebarPad = 10;
 
@@ -23,10 +26,6 @@ const double kConversationLabelFontSize = 13;
 
 /// Nested conversation row. Shorter than a space so the list stays tight.
 const double kConversationRowExtent = 24;
-
-/// Box of a trailing control: the overflow trigger, and the slot the
-/// conversations caret centers in, so the two share one vertical axis.
-const double kSpaceSidebarTrailingControl = 22;
 
 /// Width the overflow trigger occupies, including its leading gap.
 const double kSpaceSidebarOverflowSlot = kSpaceSidebarTrailingControl + 4;
@@ -258,8 +257,6 @@ class SpaceRowLayout extends StatelessWidget {
                             ],
                           ],
                         ),
-                        // The branch sits directly under the title: the
-                        // line heights already separate them.
                         if (_twoLine) ...[
                           Text(
                             subtitle!,

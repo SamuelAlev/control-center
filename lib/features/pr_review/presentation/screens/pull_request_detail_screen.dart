@@ -5,12 +5,10 @@ import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_browser_engine.dart';
 import 'package:cc_markdown/cc_markdown.dart' show CcSelectionRegion;
 import 'package:cc_ui/cc_ui.dart';
-import 'package:control_center/core/constants/app_constants.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/browser_pane.dart';
 import 'package:control_center/features/messaging/providers/code_server_session_provider.dart';
-import 'package:control_center/features/messaging/providers/editor_layout_cache_provider.dart';
 import 'package:control_center/features/pr_review/presentation/notifiers/pr_checks_ui_notifier.dart';
 import 'package:control_center/features/pr_review/presentation/notifiers/pr_diff_scope_notifier.dart';
 import 'package:control_center/features/pr_review/presentation/review_artifact/pr_review_artifact_tab.dart';
@@ -1106,12 +1104,7 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
     });
     // The layout cache is a stable workspace-scoped provider; build the
     // persistence helper once, keyed per PR under the PR layout cache kind.
-    _persistence ??= EditorLayoutPersistence(
-      codec: prLayoutCodec,
-      cache: ref.read(editorLayoutCacheRepositoryProvider),
-      cacheKind: prEditorLayoutCacheKind,
-      memo: ref.read(editorLayoutMemoProvider),
-    );
+    _persistence ??= prDetailLayoutPersistence(ref);
     _workspaceId = ref.watch(activeWorkspaceIdProvider);
     _prRepoId = prRepoIdFor(ref, widget.pr);
     // Kept warm so the "+" menu's VM-terminal entry has an answer by the time

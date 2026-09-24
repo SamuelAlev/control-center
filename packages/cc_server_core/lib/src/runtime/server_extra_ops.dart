@@ -14,6 +14,7 @@ import 'package:cc_infra/cc_infra.dart'
 import 'package:cc_persistence/cc_persistence.dart'
     show DaoAgentRepository, DaoUserRepository, DaoWorkspaceRepository;
 import 'package:cc_server_core/src/agents/agent_create_rpc.dart';
+import 'package:cc_server_core/src/catalog/pr_merge_conflict_ops.dart';
 import 'package:cc_server_core/src/chat/chat_connector.dart';
 import 'package:cc_server_core/src/chat/chat_rpc_ops.dart';
 import 'package:cc_server_core/src/code_graph/code_graph_rpc.dart';
@@ -28,6 +29,7 @@ import 'package:cc_server_core/src/identity/workspace_github_rpc.dart';
 import 'package:cc_server_core/src/identity/workspace_profile_rpc.dart';
 import 'package:cc_server_core/src/model_routing/models_dev_rpc.dart';
 import 'package:cc_server_core/src/newsfeed/filter_list_rpc.dart';
+import 'package:cc_server_core/src/pr_review/pr_merge_conflict_service.dart';
 import 'package:cc_server_core/src/soundscape/soundscape_rpc.dart';
 import 'package:cc_server_core/src/weather/weather_rpc.dart';
 import 'package:cc_server_core/src/workspaces/workspace_create_rpc.dart';
@@ -62,6 +64,7 @@ ExtraOpsResult buildServerExtraOps({
   required CodeGraphRepository codeGraphRepository,
   CodeGraphTreePort? codeGraphTree,
   WorkspaceGitHubAppSettings? workspaceGitHubApps,
+  PrMergeConflictService? prMergeConflicts,
 }) {
   final ops = <RepoOp>[
     ...fleetOps,
@@ -95,6 +98,7 @@ ExtraOpsResult buildServerExtraOps({
       codeGraph: codeGraphRepository,
       tree: codeGraphTree,
     ),
+    ...buildPrMergeConflictOps(prMergeConflicts),
   ];
 
   final watches = <WatchQuery>[

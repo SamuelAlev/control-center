@@ -1,5 +1,9 @@
+import 'package:control_center/core/constants/app_constants.dart';
+import 'package:control_center/features/messaging/providers/editor_layout_cache_provider.dart';
 import 'package:control_center/features/pr_review/presentation/screens/pull_request_detail/pr_tab_kinds.dart';
 import 'package:control_center/shared/editor/host/editor_layout_codec.dart';
+import 'package:control_center/shared/editor/host/editor_layout_persistence.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// The PR workbench's [EditorLayoutCodec] configuration.
 ///
@@ -60,3 +64,13 @@ String _aliasLegacyReview(String kind) =>
         kind == PrTabKinds.reviewStudio)
     ? PrTabKinds.reviewArtifact
     : kind;
+
+/// The workbench's layout store: codec, cache kind, and the in-process memo.
+EditorLayoutPersistence prDetailLayoutPersistence(WidgetRef ref) {
+  return EditorLayoutPersistence(
+    codec: prLayoutCodec,
+    cache: ref.read(editorLayoutCacheRepositoryProvider),
+    cacheKind: prEditorLayoutCacheKind,
+    memo: ref.read(editorLayoutMemoProvider),
+  );
+}

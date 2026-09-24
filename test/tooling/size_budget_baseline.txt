@@ -44,7 +44,7 @@ lib/features/messaging/presentation/widgets/bubbles/transcript_segment_row.dart 
 lib/features/messaging/presentation/widgets/conversations_sidebar_section.dart  638
 lib/features/messaging/presentation/widgets/message_feed.dart  352
 lib/features/messaging/presentation/widgets/space_header.dart  605
-lib/features/messaging/presentation/widgets/space_row_adornments.dart  405
+lib/features/messaging/presentation/widgets/space_row_adornments.dart  403
 lib/features/messaging/presentation/widgets/space_sidebar_item.dart  393
 lib/features/newsfeed/presentation/screens/article_webview_screen.dart  430
 lib/features/newsfeed/presentation/settings/newsfeed_feeds_section.dart  495
@@ -88,7 +88,7 @@ lib/features/pr_review/presentation/screens/pull_request_detail/pr_diff_tab.dart
 lib/features/pr_review/presentation/screens/pull_request_detail/pr_files_tab.dart  252
 lib/features/pr_review/presentation/screens/pull_request_detail/pr_header_section.dart  303
 lib/features/pr_review/presentation/screens/pull_request_detail/pr_source_control_tab.dart  753
-lib/features/pr_review/presentation/screens/pull_request_detail_screen.dart  1584
+lib/features/pr_review/presentation/screens/pull_request_detail_screen.dart  1578
 lib/features/pr_review/presentation/screens/pull_request_list_screen.dart  341
 lib/features/pr_review/presentation/widgets/assignee_picker_flyout.dart  362
 lib/features/pr_review/presentation/widgets/comment_action_cluster.dart  384
@@ -97,7 +97,7 @@ lib/features/pr_review/presentation/widgets/compose/compose_pr_pickers.dart  481
 lib/features/pr_review/presentation/widgets/klipy_gif_picker.dart  344
 lib/features/pr_review/presentation/widgets/label_picker_flyout.dart  332
 lib/features/pr_review/presentation/widgets/mention_autocomplete_field.dart  436
-lib/features/pr_review/presentation/widgets/merge_flyout_button.dart  552
+lib/features/pr_review/presentation/widgets/merge_flyout_button.dart  427
 lib/features/pr_review/presentation/widgets/open_in_ide_button.dart  585
 lib/features/pr_review/presentation/widgets/picker_flyout.dart  342
 lib/features/pr_review/presentation/widgets/pr_activity_timeline.dart  1933

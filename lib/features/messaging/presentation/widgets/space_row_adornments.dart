@@ -1,21 +1,20 @@
 /// The leading, trailing and count adornments a space sidebar row is built
-/// from.
-///
-/// Split out of `space_sidebar_item.dart` so that file stays inside the
-/// presentation size budget. These are pure presentation — `SpaceRow`
-/// composes them and supplies any overflow-menu items.
+/// from. Split out of `space_sidebar_item.dart` so that file stays inside the
+/// presentation size budget. `SpaceRow` composes them.
 library;
 
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/messaging/presentation/widgets/pr_status_badge.dart';
-import 'package:control_center/features/messaging/presentation/widgets/space_row_layout.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
 import 'package:control_center/features/pr_review/providers/pr_space_provider.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+/// Side of the overflow trigger and the conversations caret.
+const double kSpaceSidebarTrailingControl = 22;
 
 /// The quiet numeric chip after a space name: how many parallel conversations
 /// the space holds. Neutral tones on purpose — an inventory count, not a
@@ -375,8 +374,6 @@ class _SpaceRowOverflowMenuState extends State<SpaceRowOverflowMenu> {
           borderRadius: AppRadii.brSm,
           focusRingColor: widget.selected ? widget.color : null,
           builder: (context, states) {
-            // The dismiss barrier sits over the trigger and clears hover,
-            // so an open menu has to latch the same wash the press had.
             final active =
                 _menu.isOpen ||
                 states.contains(WidgetState.hovered) ||

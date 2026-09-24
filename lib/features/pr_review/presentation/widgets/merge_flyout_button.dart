@@ -7,6 +7,7 @@ import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_domain/features/pr_review/domain/usecases/evaluate_pr_merge_readiness.dart';
 import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcException;
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/merge_commit_form.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/merge_conflicts_panel.dart';
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
@@ -14,9 +15,6 @@ import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show KeyDownEvent, LogicalKeyboardKey;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-/// Merge method options.
-enum _MergeMethod { squash, merge, rebase }
 
 // Readiness is NOT computed here. `evaluatePrMergeReadiness` in cc_domain owns
 // it, because the server needs the same answer to decide whether to raise a
@@ -65,7 +63,7 @@ class _MergeFlyoutButtonState extends ConsumerState<MergeFlyoutButton> {
   final _buttonKey = GlobalKey();
   bool _merging = false;
   Offset? _overlayOffset;
-  _MergeMethod _method = _MergeMethod.squash;
+  PrMergeMethod _method = PrMergeMethod.squash;
 
   /// GitHub refused a merge of THIS head because it conflicts. The forge's
   /// `mergeable_state` can lag (it is computed asynchronously and the page
@@ -116,14 +114,14 @@ class _MergeFlyoutButtonState extends ConsumerState<MergeFlyoutButton> {
 
   void _prefillFields() {
     switch (_method) {
-      case _MergeMethod.squash:
+      case PrMergeMethod.squash:
         _titleCtrl.text = widget.pr.title;
         _descCtrl.text = widget.pr.body;
-      case _MergeMethod.merge:
+      case PrMergeMethod.merge:
         _titleCtrl.text =
             'Merge pull request #${widget.pr.number} from ${widget.pr.headRef}';
         _descCtrl.text = widget.pr.title;
-      case _MergeMethod.rebase:
+      case PrMergeMethod.rebase:
         _titleCtrl.clear();
         _descCtrl.clear();
     }
@@ -200,11 +198,11 @@ class _MergeFlyoutButtonState extends ConsumerState<MergeFlyoutButton> {
 
   String get _mergeMethodApiName {
     switch (_method) {
-      case _MergeMethod.squash:
+      case PrMergeMethod.squash:
         return 'squash';
-      case _MergeMethod.merge:
+      case PrMergeMethod.merge:
         return 'merge';
-      case _MergeMethod.rebase:
+      case PrMergeMethod.rebase:
         return 'rebase';
     }
   }
@@ -266,8 +264,8 @@ class _MergeFlyoutButtonState extends ConsumerState<MergeFlyoutButton> {
       await repository.mergePullRequest(
         prNumber: widget.prRef.number,
         mergeMethod: _mergeMethodApiName,
-        commitTitle: _method != _MergeMethod.rebase ? _titleCtrl.text : null,
-        commitMessage: _method != _MergeMethod.rebase ? _descCtrl.text : null,
+        commitTitle: _method != PrMergeMethod.rebase ? _titleCtrl.text : null,
+        commitMessage: _method != PrMergeMethod.rebase ? _descCtrl.text : null,
       );
       _close();
       toaster.show(l10n.pullRequestMerged, variant: CcToastVariant.success);
@@ -334,10 +332,8 @@ class _MergeFlyoutButtonState extends ConsumerState<MergeFlyoutButton> {
 
   Widget _buildOverlay(BuildContext overlayCtx) {
     final tokens = context.designSystem!;
-    final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
     final offset = _overlayOffset ?? Offset.zero;
-    final showFields = _method != _MergeMethod.rebase;
 
     // What the forge alone knows first (a conflict or a protection rule is
     // invisible in a check list), then what the local signals still add.
@@ -405,159 +401,26 @@ class _MergeFlyoutButtonState extends ConsumerState<MergeFlyoutButton> {
                           prRef: widget.prRef,
                           onFixStarted: _close,
                         )
-                      : Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            // Title
-                            Text(
-                              l10n.mergePullRequest,
-                              style: CcTypography.body.copyWith(
-                                fontWeight: FontWeight.w700,
-                                color: tokens.textPrimary,
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-
-                            // Merge method selector
-                            _buildMethodSelector(l10n),
-                            const SizedBox(height: 10),
-
-                            // Commit title / description
-                            if (showFields) ...[
-                              _buildTextField(
-                                controller: _titleCtrl,
-                                hintText: l10n.commitTitle,
-                                tokens: tokens,
-                                theme: theme,
-                              ),
-                              const SizedBox(height: 8),
-                              _buildTextField(
-                                controller: _descCtrl,
-                                hintText: l10n.commitDescription,
-                                tokens: tokens,
-                                theme: theme,
-                                maxLines: 4,
-                              ),
-                              const SizedBox(height: 12),
-                            ],
-
-                            // Warnings
-                            if (warnings.isNotEmpty)
-                              Container(
-                                margin: const EdgeInsets.only(bottom: 12),
-                                padding: const EdgeInsets.all(10),
-                                decoration: BoxDecoration(
-                                  color: tokens.bgWarningPrimary,
-                                  borderRadius: BorderRadius.circular(2),
-                                  border: Border.all(
-                                    color: tokens.borderErrorSubtle,
-                                  ),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: warnings
-                                      .map(
-                                        (w) => Row(
-                                          children: [
-                                            Icon(
-                                              AppIcons.alertTriangle,
-                                              size: 14,
-                                              color: tokens.fgWarningPrimary,
-                                            ),
-                                            const SizedBox(width: 6),
-                                            Expanded(
-                                              child: Text(
-                                                w,
-                                                style: CcTypography.caption
-                                                    .copyWith(
-                                                      color:
-                                                          tokens.textTertiary,
-                                                    )
-                                                    .copyWith(
-                                                      color: tokens
-                                                          .textErrorPrimary,
-                                                    ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      )
-                                      .toList(),
-                                ),
-                              ),
-
-                            // Merge button
-                            SizedBox(
-                              width: double.infinity,
-                              child: CcButton(
-                                onPressed: _merging ? null : _merge,
-                                fullWidth: true,
-                                variant: _isOverrideMerge
-                                    ? CcButtonVariant.destructive
-                                    : CcButtonVariant.primary,
-                                child: _merging
-                                    ? CcSpinner(
-                                        size: 16,
-                                        color: tokens.textWhite,
-                                      )
-                                    : Text(
-                                        _isOverrideMerge
-                                            ? l10n.forceMergePullRequest
-                                            : l10n.mergePullRequest,
-                                      ),
-                              ),
-                            ),
-                          ],
+                      : MergeCommitForm(
+                          method: _method,
+                          onMethodChanged: (method) {
+                            setState(() {
+                              _method = method;
+                              _prefillFields();
+                            });
+                          },
+                          titleController: _titleCtrl,
+                          descriptionController: _descCtrl,
+                          warnings: warnings,
+                          merging: _merging,
+                          overrideMerge: _isOverrideMerge,
+                          onMerge: _merge,
                         ),
                 ),
               ),
             ),
           ),
         ),
-      ],
-    );
-  }
-
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String hintText,
-    required DesignSystemTokens tokens,
-    required ThemeData theme,
-    int maxLines = 1,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: tokens.bgSecondary,
-        borderRadius: BorderRadius.circular(2),
-        border: Border.all(color: tokens.borderSecondary),
-      ),
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
-      child: CcTextField(
-        controller: controller,
-        maxLines: maxLines,
-        textStyle: CcTypography.body.copyWith(color: tokens.textPrimary),
-        hintText: hintText,
-        chromeless: true,
-      ),
-    );
-  }
-
-  Widget _buildMethodSelector(AppLocalizations l10n) {
-    return CcSegmentedToggle<_MergeMethod>(
-      fullWidth: true,
-      semanticLabel: l10n.mergeMethod,
-      value: _method,
-      onChanged: (method) {
-        setState(() {
-          _method = method;
-          _prefillFields();
-        });
-      },
-      segments: [
-        CcSegment(value: _MergeMethod.squash, label: l10n.squashAndMerge),
-        CcSegment(value: _MergeMethod.merge, label: l10n.createMergeCommit),
-        CcSegment(value: _MergeMethod.rebase, label: l10n.rebaseAndMerge),
       ],
     );
   }
