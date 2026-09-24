@@ -15,9 +15,8 @@ import 'package:control_center/shared/utils/relative_time.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Air above the title and below the last row. Painted by the space row's
-/// own fill, so a press recolors the card inset with the title instead of
-/// leaving a band of panel color above and below it.
+/// Air above the title and below the last row. The title row keeps both
+/// insets so opening the list does not resize the title block.
 const double _kCardInset = AppSpacing.sm;
 
 /// One space in the global sidebar. The open space sits on a raised panel.
@@ -76,66 +75,92 @@ class SpaceSidebarGroup extends ConsumerWidget implements CcFluidHoverTarget {
     final startedAt = listed
         ? ref.watch(spaceRunStartedAtProvider(space.id))
         : const <String, DateTime>{};
-    // The parent hover item is this whole group, so a pointer on a
-    // conversation would otherwise mark the space row hovered too.
-    final row = CcFluidHover.consumeTappable(
-      SpaceSidebarItem(
-        space: space,
-        selected: selected,
-        quietSelection: selected,
-        subtitle: branch,
-        absentLeading: const SpaceStatusMark(),
-        runningShownOnConversations: childCarriesRunning,
-        unreadShownOnConversations:
-            listed &&
-            active.any(
-              (c) => ref.watch(
-                conversationUnreadProvider((
-                  spaceId: space.id,
-                  conversationId: c.id,
-                )),
-              ),
-            ),
-        // The air under the title stays on the row. Moving it onto the list
-        // when the accordion opens would change the row's height in the
-        // same frames the list is growing.
-        cardInset: const EdgeInsets.only(top: _kCardInset, bottom: _kCardInset),
-        onPress: onOpenSpace,
-      ),
-    );
+    final unreadOnChild =
+        listed &&
+        active.any(
+          (c) => ref.watch(
+            conversationUnreadProvider((
+              spaceId: space.id,
+              conversationId: c.id,
+            )),
+          ),
+        );
     // Every space keeps a reveal, including the closed ones. The open card
     // grows and the card being left shrinks in the same gesture; a reveal
     // that mounts already open has nothing to animate from.
     final showThreads = selected && listed;
-    return SpaceHeightReveal(
-      open: showThreads,
-      selected: selected,
-      fillColor: t.bgTertiary,
-      header: row,
-      child: showThreads
-          ? Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                SpaceConversationsAccordion(
-                  label: l10n.conversationCount(active.length),
-                  children: [
-                    for (final c in active)
-                      _ConversationActivity(
-                        key: ValueKey(c.id),
-                        conversation: c,
-                        spaceId: space.id,
-                        runningSince: startedAt[c.id],
-                        // A conversation row is part of the space, not its
-                        // own destination.
-                        onPress: onOpenSpace,
+    final label = space.name.isNotEmpty ? space.name : l10n.spaceLabel;
+    // One press for the whole card. The title and the conversations are
+    // content on that surface; the disclosure and the overflow menu stay
+    // their own controls.
+    return CcTappable(
+      onPressed: onOpenSpace,
+      borderRadius: AppRadii.brSm,
+      semanticLabel: label,
+      builder: (context, states) {
+        final pressed = states.contains(WidgetState.pressed);
+        final hovered = states.contains(WidgetState.hovered);
+        final menu =
+            hovered ||
+            (states.contains(WidgetState.focused) &&
+                FocusModality.instance.isKeyboard);
+        // The travelling wash already covers this card. A second hover fill
+        // here would stack on it. Press still belongs to this surface.
+        final wash = pressed
+            ? t.hoverStrong
+            : (hovered && !CcFluidHover.isItemActive(context))
+            ? t.hover
+            : const Color(0x00000000);
+        return DecoratedBox(
+          position: DecorationPosition.foreground,
+          decoration: BoxDecoration(color: wash, borderRadius: AppRadii.brSm),
+          child: SpaceHeightReveal(
+            open: showThreads,
+            selected: selected,
+            fillColor: t.bgTertiary,
+            header: SpaceSidebarItem(
+              space: space,
+              selected: selected,
+              quietSelection: selected,
+              subtitle: branch,
+              absentLeading: const SpaceStatusMark(),
+              runningShownOnConversations: childCarriesRunning,
+              unreadShownOnConversations: unreadOnChild,
+              // The air under the title stays on the row. Moving it onto
+              // the list when the accordion opens would change the row's
+              // height in the same frames the list is growing.
+              cardInset: const EdgeInsets.only(
+                top: _kCardInset,
+                bottom: _kCardInset,
+              ),
+              interactive: false,
+              menuRevealed: menu,
+              onPress: onOpenSpace,
+            ),
+            child: showThreads
+                ? Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      SpaceConversationsAccordion(
+                        label: l10n.conversationCount(active.length),
+                        children: [
+                          for (final c in active)
+                            _ConversationActivity(
+                              key: ValueKey(c.id),
+                              conversation: c,
+                              spaceId: space.id,
+                              runningSince: startedAt[c.id],
+                            ),
+                        ],
                       ),
-                  ],
-                ),
-                const SizedBox(height: _kCardInset),
-              ],
-            )
-          : const SizedBox.shrink(),
+                      const SizedBox(height: _kCardInset),
+                    ],
+                  )
+                : const SizedBox.shrink(),
+          ),
+        );
+      },
     );
   }
 }
@@ -146,7 +171,6 @@ class _ConversationActivity extends ConsumerStatefulWidget {
     required this.conversation,
     required this.spaceId,
     required this.runningSince,
-    required this.onPress,
   });
 
   final Conversation conversation;
@@ -154,7 +178,6 @@ class _ConversationActivity extends ConsumerStatefulWidget {
 
   /// When set, the caption is the time since this run started.
   final DateTime? runningSince;
-  final VoidCallback onPress;
 
   @override
   ConsumerState<_ConversationActivity> createState() =>
@@ -213,7 +236,6 @@ class _ConversationActivityState extends ConsumerState<_ConversationActivity> {
       // The leading mark is the unread signal, so the trailing dot stays off.
       unread: false,
       leadingHandlesRunning: true,
-      onPress: widget.onPress,
     );
   }
 }

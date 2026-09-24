@@ -172,6 +172,26 @@ double _spaceCardHeight(WidgetTester tester, String name) {
       .height;
 }
 
+/// The open card grows a row per frame. One elapsed pump draws a single
+/// frame, so a conversation is not inside the card until the reveal catches up.
+Future<void> _pumpOpenCard(WidgetTester tester) async {
+  await tester.pump();
+  for (var i = 0; i < 24; i++) {
+    await tester.pump(const Duration(milliseconds: 32));
+  }
+}
+
+/// Steps the reveal. The clip moves at most 16px per frame, so a single
+/// long [WidgetTester.pump] does not finish the travel.
+Future<void> _elapseReveal(WidgetTester tester, Duration total) async {
+  var left = total.inMilliseconds;
+  while (left > 0) {
+    final step = left < 16 ? left : 16;
+    await tester.pump(Duration(milliseconds: step));
+    left -= step;
+  }
+}
+
 /// Hovers [row] so its overflow trigger takes layout space, then opens the
 /// dropdown. Widget tests default to a touch pointer, so hover is a real
 /// mouse move, matching the production reveal.
@@ -856,8 +876,7 @@ void main() {
           child: _wrap(_router(spaceRoute(_workspaceId, 'g-1'))),
         ),
       );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+      await _pumpOpenCard(tester);
 
       final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
       await mouse.addPointer(location: Offset.zero);
@@ -865,7 +884,19 @@ void main() {
       await mouse.moveTo(tester.getCenter(find.text('Design review')));
       await tester.pump();
 
-      expect(_overflowTrigger(), findsNothing);
+      // The conversation is not its own row menu. The space menu shows
+      // because the pointer is on the card.
+      expect(
+        find.descendant(
+          of: find.ancestor(
+            of: find.text('Design review'),
+            matching: find.byType(SpaceRow),
+          ),
+          matching: _overflowTrigger(),
+        ),
+        findsNothing,
+      );
+      expect(_overflowTrigger(), findsOneWidget);
       expect(
         tester
             .getSize(
@@ -893,8 +924,7 @@ void main() {
           child: _wrap(_router(spaceRoute(_workspaceId, 'g-1'))),
         ),
       );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+      await _pumpOpenCard(tester);
 
       final l10n = await AppLocalizations.delegate.load(const Locale('en'));
       final label = l10n.conversationCount(2);
@@ -903,15 +933,14 @@ void main() {
       final openHeight = _spaceCardHeight(tester, 'Dev Team');
 
       await tester.tap(find.text(label));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 80));
+      await _elapseReveal(tester, const Duration(milliseconds: 48));
 
       // Still mounted while the card clips shut.
       expect(find.text('Design review'), findsOneWidget);
       final closingHeight = _spaceCardHeight(tester, 'Dev Team');
       expect(closingHeight, lessThan(openHeight - 8));
 
-      await tester.pump(const Duration(milliseconds: 200));
+      await _elapseReveal(tester, const Duration(milliseconds: 200));
       await tester.pump();
 
       expect(find.text('Design review'), findsNothing);
@@ -919,15 +948,14 @@ void main() {
       expect(closingHeight, greaterThan(closedHeight + 8));
 
       await tester.tap(find.text(label));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 80));
+      await _elapseReveal(tester, const Duration(milliseconds: 48));
 
       expect(find.text('Design review'), findsOneWidget);
       final openingHeight = _spaceCardHeight(tester, 'Dev Team');
       expect(openingHeight, greaterThan(closedHeight + 8));
       expect(openingHeight, lessThan(openHeight - 8));
 
-      await tester.pump(const Duration(milliseconds: 200));
+      await _elapseReveal(tester, const Duration(milliseconds: 200));
       await tester.pump();
 
       expect(find.text('Design review'), findsOneWidget);
@@ -981,17 +1009,14 @@ void main() {
           child: _wrap(router),
         ),
       );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+      await _pumpOpenCard(tester);
 
       final devOpen = _spaceCardHeight(tester, 'Dev Team');
       final opsClosed = _spaceCardHeight(tester, 'Ops');
       expect(devOpen, greaterThan(opsClosed + 8));
 
       await tester.tap(find.text('Ops'));
-      await tester.pump();
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 70));
+      await _elapseReveal(tester, const Duration(milliseconds: 70));
 
       final devMid = _spaceCardHeight(tester, 'Dev Team');
       final opsMid = _spaceCardHeight(tester, 'Ops');
@@ -1001,7 +1026,7 @@ void main() {
       expect(find.text('Design review'), findsOneWidget);
       expect(find.text('Ops review'), findsOneWidget);
 
-      await tester.pump(const Duration(milliseconds: 250));
+      await _elapseReveal(tester, const Duration(milliseconds: 250));
       await tester.pump();
 
       expect(find.text('Design review'), findsNothing);
@@ -1133,8 +1158,7 @@ void main() {
       );
 
       await tester.pumpWidget(host());
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+      await _pumpOpenCard(tester);
 
       await tester.tap(find.text('Ops'));
       await tester.pump();
@@ -1152,6 +1176,33 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
     });
 
+    testWidgets('the open card is one press target', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            ..._commonOverrides(spaces: [_space]),
+            ..._listedConversationOverrides(),
+          ],
+          child: _wrap(_router(spaceRoute(_workspaceId, 'g-1'))),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      Finder pressesAround(String text) =>
+          find.ancestor(of: find.text(text), matching: find.byType(CcTappable));
+
+      // Title and conversations share the card. The count line keeps its
+      // own disclosure on top of that card.
+      expect(pressesAround('Dev Team'), findsOneWidget);
+      expect(pressesAround('Design review'), findsOneWidget);
+      expect(pressesAround(l10n.conversationCount(2)), findsNWidgets(2));
+
+      await tester.pumpWidget(Container());
+      await tester.pump(const Duration(milliseconds: 100));
+    });
+
     testWidgets('tapping a conversation opens the space', (tester) async {
       final router = _router(
         spaceRoute(_workspaceId, 'g-1', tab: 'chat:conv-2'),
@@ -1165,8 +1216,7 @@ void main() {
           child: _wrap(router),
         ),
       );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+      await _pumpOpenCard(tester);
 
       await tester.tap(find.text('Design review'));
       await tester.pump();

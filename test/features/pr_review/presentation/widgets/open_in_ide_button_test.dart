@@ -91,6 +91,14 @@ class _FakeIdeRepository implements RemoteIdeRepository {
   }
 
   @override
+  Future<void> openSpaceWorktree({
+    required String workspaceId,
+    required String spaceId,
+    required String repoId,
+    required String editorId,
+  }) async {}
+
+  @override
   Future<void> openPrInEditor({
     required String repoFullName,
     required int prNumber,

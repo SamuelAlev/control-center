@@ -98,9 +98,13 @@ class _SpaceHeightRevealState extends State<SpaceHeightReveal>
     super.didChangeDependencies();
     // A preference change mid-flight has to rebuild after this method.
     // Clearing the frozen child here leaves it mounted at height zero.
-    if (!CcMotion.reduced(context) ||
-        _clock?.isActive != true ||
-        _snapScheduled) {
+    // A close that has not started its clock yet is still in flight.
+    final target = widget.open ? 1.0 : 0.0;
+    final settled =
+        _controller.value == target &&
+        _closing == null &&
+        _clock?.isActive != true;
+    if (!CcMotion.reduced(context) || settled || _snapScheduled) {
       return;
     }
     _snapScheduled = true;

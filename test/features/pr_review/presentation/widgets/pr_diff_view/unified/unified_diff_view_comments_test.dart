@@ -19,7 +19,11 @@ import '../../../../../../helpers/test_wrap.dart';
 const _prNumber = 7;
 
 /// The PR identity the inline-comments controller is keyed by.
-const _prRef = (workspaceId: 'ws', repoFullName: 'owner/repo', number: _prNumber);
+const _prRef = (
+  workspaceId: 'ws',
+  repoFullName: 'owner/repo',
+  number: _prNumber,
+);
 
 /// A file whose only hunk adds lines 13..19 — the shape a doc-comment block
 /// takes, and the one a multi-line review comment anchors to.
@@ -145,9 +149,10 @@ void main() {
       await tester.tap(find.text('Please rename this.'));
       await _settle(tester);
 
-      // Expanded: the full card, with the reply box back.
+      // Expanded: the full card, with the reply box back. The thread header
+      // and the hover toolbar each offer reopen.
       expect(find.text('Reply…'), findsOneWidget);
-      expect(find.byIcon(AppIcons.rotateCcw), findsOneWidget);
+      expect(find.byIcon(AppIcons.rotateCcw), findsNWidgets(2));
     });
 
     testWidgets('an open conversation renders expanded', (tester) async {

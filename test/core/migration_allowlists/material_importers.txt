@@ -32,7 +32,6 @@ lib/features/pr_review/presentation/widgets/pr_diff_view/unified/outdated_commen
 lib/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_diff_view.dart
 lib/features/pr_review/presentation/widgets/pr_inline_comments/comment_composer_widget.dart
 lib/features/pr_review/presentation/widgets/pr_table/pr_bulk_action_bar.dart
-lib/features/pr_review/presentation/widgets/reaction_bar.dart
 lib/features/pr_review/presentation/widgets/review_overlay.dart
 lib/features/repos/presentation/settings/repos_settings_view.dart
 lib/features/repos/presentation/widgets/repo_scripts_dialog.dart

@@ -31,7 +31,7 @@ class SpaceRow extends StatelessWidget implements CcFluidHoverTarget {
     this.markGap = kSpaceSidebarMarkGap,
     this.labelFontSize = 14,
     this.extent = kCcSidebarItemExtent,
-    required this.onPress,
+    this.onPress,
     this.muted = false,
     this.quietSelection = false,
     this.indent = 0,
@@ -41,6 +41,7 @@ class SpaceRow extends StatelessWidget implements CcFluidHoverTarget {
     this.count,
     this.menuItems,
     this.menuSemanticLabel,
+    this.menuRevealed = false,
   });
 
   /// The leading slot: a status mark, spinner, PR badge or pencil.
@@ -102,8 +103,13 @@ class SpaceRow extends StatelessWidget implements CcFluidHoverTarget {
   /// Accessible name for [menuItems]' icon-only trigger.
   final String? menuSemanticLabel;
 
-  /// Tap handler.
-  final VoidCallback onPress;
+  /// Tap handler. Null when a parent surface owns the press, so this row
+  /// paints content only and does not take its own hover, focus or cursor.
+  final VoidCallback? onPress;
+
+  /// Shows the overflow trigger even when this row is not itself hovered.
+  /// The enclosing card sets this while the pointer is on the card.
+  final bool menuRevealed;
 
   @override
   bool get fluidHoverEnabled => true;
@@ -148,51 +154,59 @@ class SpaceRow extends StatelessWidget implements CcFluidHoverTarget {
         menuSemanticLabel != null &&
         !transitioning;
 
+    Widget painted(Set<WidgetState> states) {
+      return TweenAnimationBuilder<Color?>(
+        duration: CcMotion.fast,
+        curve: CcMotion.standard,
+        tween: ColorTween(end: fg),
+        builder: (context, animatedFg, _) {
+          return SpaceRowLayout(
+            tokens: t,
+            leading: leading,
+            label: label,
+            contentColor: animatedFg ?? fg,
+            caption: caption,
+            filled: _filled,
+            indent: indent,
+            cardInset: cardInset,
+            transitioning: transitioning,
+            hasMenu: hasMenu,
+            showMenu: hasMenu && (menuRevealed || _overflowRevealed(states)),
+            status: status,
+            unread: unread,
+            leadingHandlesRunning: leadingHandlesRunning,
+            markSlot: markSlot,
+            markGap: markGap,
+            labelFontSize: labelFontSize,
+            extent: extent,
+            muted: muted,
+            hoverColor: onPress == null
+                ? t.hover.withValues(alpha: 0)
+                : _hoverFill(
+                    t,
+                    states,
+                    fluidActive: CcFluidHover.isItemActive(context),
+                  ),
+            subtitle: subtitle,
+            trailingLabel: trailingLabel,
+            count: count,
+            menuItems: menuItems,
+            menuSemanticLabel: menuSemanticLabel,
+          );
+        },
+      );
+    }
+
+    final press = onPress;
+    if (press == null) {
+      return painted(const {});
+    }
     return CcTappable(
-      onPressed: onPress,
+      onPressed: press,
       borderRadius: AppRadii.brSm,
       semanticLabel: label,
       focusRingColor: _filled ? t.accentOn : null,
-      builder: (context, states) {
-        return TweenAnimationBuilder<Color?>(
-          duration: CcMotion.fast,
-          curve: CcMotion.standard,
-          tween: ColorTween(end: fg),
-          builder: (context, animatedFg, _) {
-            return SpaceRowLayout(
-              tokens: t,
-              leading: leading,
-              label: label,
-              contentColor: animatedFg ?? fg,
-              caption: caption,
-              filled: _filled,
-              indent: indent,
-              cardInset: cardInset,
-              transitioning: transitioning,
-              hasMenu: hasMenu,
-              showMenu: hasMenu && _overflowRevealed(states),
-              status: status,
-              unread: unread,
-              leadingHandlesRunning: leadingHandlesRunning,
-              markSlot: markSlot,
-              markGap: markGap,
-              labelFontSize: labelFontSize,
-              extent: extent,
-              muted: muted,
-              hoverColor: _hoverFill(
-                t,
-                states,
-                fluidActive: CcFluidHover.isItemActive(context),
-              ),
-              subtitle: subtitle,
-              trailingLabel: trailingLabel,
-              count: count,
-              menuItems: menuItems,
-              menuSemanticLabel: menuSemanticLabel,
-            );
-          },
-        );
-      },
+      builder: (context, states) => painted(states),
     );
   }
 }

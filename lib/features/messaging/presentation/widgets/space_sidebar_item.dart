@@ -57,6 +57,8 @@ class SpaceSidebarItem extends ConsumerWidget implements CcFluidHoverTarget {
     this.conversationCount,
     this.runningShownOnConversations = false,
     this.unreadShownOnConversations = false,
+    this.interactive = true,
+    this.menuRevealed = false,
   });
 
   /// The space to render.
@@ -118,6 +120,13 @@ class SpaceSidebarItem extends ConsumerWidget implements CcFluidHoverTarget {
   /// the dot here.
   final bool unreadShownOnConversations;
 
+  /// Whether this row is its own press target. False when an enclosing card
+  /// owns the press, so the title is content on that card.
+  final bool interactive;
+
+  /// Shows the overflow trigger from the enclosing card's hover or focus.
+  final bool menuRevealed;
+
   @override
   bool get fluidHoverEnabled => true;
 
@@ -161,7 +170,8 @@ class SpaceSidebarItem extends ConsumerWidget implements CcFluidHoverTarget {
       leadingHandlesRunning: true,
       muted: muted,
       count: conversationCount,
-      onPress: onPress,
+      onPress: interactive ? onPress : null,
+      menuRevealed: menuRevealed,
       menuSemanticLabel: l10n.spaceActions,
       menuItems: [
         CcMenuItem(
