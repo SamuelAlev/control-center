@@ -9,7 +9,7 @@
 //   dart run tool/gen_build_info.dart                     # version from pubspec
 //   dart run tool/gen_build_info.dart --version 1.2.3     # release tag override
 //
-// The committed file carries the unstamped dev identity (0.0.3 / dev); CI
+// The committed file carries the unstamped dev identity (0.0.4 / dev); CI
 // rewrites it in the build job checkout, it is never committed stamped.
 import 'dart:io';
 
@@ -74,7 +74,7 @@ String _template(String version, String sha, String builtAt) =>
 /// client and the server (both link this package), which is what makes the
 /// stale-binary comparison honest. CI stamps them by re-running
 /// `tool/gen_build_info.dart` over this file before building — the committed
-/// values are the unstamped dev identity (`0.0.3` / `dev`), so a local
+/// values are the unstamped dev identity (`0.0.4` / `dev`), so a local
 /// `flutter run` or `dart build cli` is self-consistent too.
 ///
 /// This file is data, not logic: pure Dart, no platform imports and the
