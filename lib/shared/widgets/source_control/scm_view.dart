@@ -37,7 +37,7 @@ class ScmGroup extends StatelessWidget {
   const ScmGroup({
     super.key,
     required this.title,
-    required this.count,
+    this.count,
     required this.collapsed,
     required this.onToggleCollapse,
     required this.children,
@@ -73,8 +73,9 @@ class ScmGroup extends StatelessWidget {
   /// VS Code leaves that row in the repo's own casing.
   final bool uppercaseTitle;
 
-  /// File count shown as a badge after the title.
-  final int count;
+  /// File count shown as a badge after the title. Omitted on a repository
+  /// header, which already has the count on its Changes and Staged groups.
+  final int? count;
 
   /// Whether the group body is collapsed.
   final bool collapsed;
@@ -136,7 +137,7 @@ class _ScmGroupHeader extends StatefulWidget {
   final String? syncLabel;
   final Widget? headerTrailing;
   final bool uppercaseTitle;
-  final int count;
+  final int? count;
   final bool collapsed;
   final VoidCallback onToggleCollapse;
   final List<ScmAction> actions;
@@ -258,8 +259,10 @@ class _ScmGroupHeaderState extends State<_ScmGroupHeader> {
                     ),
                   ),
                 ),
-              const SizedBox(width: 4),
-              _CountBadge(count: widget.count, tokens: t),
+              if (widget.count != null) ...[
+                const SizedBox(width: 4),
+                _CountBadge(count: widget.count!, tokens: t),
+              ],
             ],
           ),
         ),

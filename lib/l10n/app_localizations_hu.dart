@@ -14949,4 +14949,41 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get stackSection => 'Verem';
+
+  @override
+  String get mergeConflictsButton => 'Ütközések';
+
+  @override
+  String mergeConflictsFileCount(int count, String base) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count fájl ütközik ezzel: $base',
+      one: '1 fájl ütközik ezzel: $base',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get mergeConflictsLoading => 'Ütköző fájlok keresése…';
+
+  @override
+  String get mergeConflictsLoadFailed =>
+      'Az ütköző fájlokat nem sikerült listázni';
+
+  @override
+  String get mergeConflictsNoneFound =>
+      'Nem található ütköző fájl. Lehet, hogy a GitHub még frissíti ezt a pull requestet.';
+
+  @override
+  String get askAiToFixConflicts => 'Ütközések feloldása AI-jal';
+
+  @override
+  String get fixConflictsStarted =>
+      'Egy ügynök feloldja az ütközéseket ennek a pull requestnek a csevegésében';
+
+  @override
+  String failedToStartConflictFix(String error) {
+    return 'Az ütközésfeloldást nem sikerült elindítani: $error';
+  }
 }

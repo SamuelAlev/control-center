@@ -7931,5 +7931,13 @@
   "stackPublishFailed": "Der Stapel konnte nicht veröffentlicht werden",
   "stackPublished": "Der Stapel wurde als Entwürfe veröffentlicht",
   "stackOpenPullRequest": "Pull Request öffnen",
-  "stackSection": "Stapel"
+  "stackSection": "Stapel",
+  "mergeConflictsButton": "Konflikte",
+  "mergeConflictsFileCount": "{count, plural, =1{1 Datei steht in Konflikt mit {base}} other{{count} Dateien stehen in Konflikt mit {base}}}",
+  "mergeConflictsLoading": "Konfliktdateien werden gesucht…",
+  "mergeConflictsLoadFailed": "Die Konfliktdateien konnten nicht aufgelistet werden",
+  "mergeConflictsNoneFound": "Keine Konfliktdateien gefunden. GitHub aktualisiert diesen Pull Request möglicherweise noch.",
+  "askAiToFixConflicts": "KI die Konflikte lösen lassen",
+  "fixConflictsStarted": "Ein Agent löst die Konflikte im Chat dieses Pull Requests",
+  "failedToStartConflictFix": "Die Konfliktlösung konnte nicht gestartet werden: {error}"
 }

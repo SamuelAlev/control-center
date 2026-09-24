@@ -4,6 +4,7 @@ import 'package:cc_domain/core/domain/repositories/cache_repository.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 import 'package:control_center/shared/editor/editor_layout_controller.dart';
 import 'package:control_center/shared/editor/host/editor_layout_codec.dart';
+import 'package:control_center/shared/editor/host/editor_layout_memo.dart';
 
 /// Debounced, workspace-scoped persistence of an editor split tree.
 ///
@@ -26,11 +27,16 @@ class EditorLayoutPersistence {
     required this._cache,
     required this._cacheKind,
     this._debounce = const Duration(milliseconds: 400),
+    this._memo,
   });
 
   final EditorLayoutCodec _codec;
   final CacheRepository _cache;
   final String _cacheKind;
+
+  /// In-process copy of every layout read or written, so [peek] can restore
+  /// synchronously. Null keeps the server as the only store.
+  final EditorLayoutMemo? _memo;
   final Duration _debounce;
   Timer? _timer;
 
@@ -64,8 +70,12 @@ class EditorLayoutPersistence {
     // Fire-and-forget, and failure-forgetting: a transient RPC failure drops
     // the write (the next layout change re-schedules one); it must never
     // surface in the UI or the zone's unhandled-error handler.
+    final payload = _codec.encode(l);
+    // Recorded before the RPC: a host that switches away and straight back
+    // restores this, not whatever the server answered earlier.
+    _memo?.put(workspaceId, _cacheKind, cacheKey, payload);
     try {
-      await _cache.put(workspaceId, _cacheKind, cacheKey, _codec.encode(l));
+      await _cache.put(workspaceId, _cacheKind, cacheKey, payload);
     } on RemoteRpcException {
       // Refused / errored server-side — the layout cache is a nicety.
     } on RemoteRpcClientClosedException {
@@ -82,6 +92,10 @@ class EditorLayoutPersistence {
     required String workspaceId,
     required String cacheKey,
   }) async {
+    final warm = peek(workspaceId: workspaceId, cacheKey: cacheKey);
+    if (warm != null) {
+      return warm.layout;
+    }
     final String? payload;
     try {
       payload = await _cache.read(workspaceId, _cacheKind, cacheKey);
@@ -92,10 +106,30 @@ class EditorLayoutPersistence {
     } on TimeoutException {
       return null;
     }
+    // A write since the read started is newer than what the server said.
+    if (_memo?.knows(workspaceId, _cacheKind, cacheKey) == false) {
+      _memo?.put(workspaceId, _cacheKind, cacheKey, payload);
+    }
     if (payload == null) {
       return null;
     }
     return _codec.decode(payload);
+  }
+
+  /// The layout for ([workspaceId], [cacheKey]) when the memo already knows
+  /// it, without a round-trip. Null means unknown: call [restore]. A known
+  /// absence, or an unrestorable payload, comes back as `(layout: null)`, so
+  /// the seed is final.
+  ({EditorLayoutController? layout})? peek({
+    required String workspaceId,
+    required String cacheKey,
+  }) {
+    final memo = _memo;
+    if (memo == null || !memo.knows(workspaceId, _cacheKind, cacheKey)) {
+      return null;
+    }
+    final payload = memo.get(workspaceId, _cacheKind, cacheKey);
+    return (layout: payload == null ? null : _codec.decode(payload));
   }
 
   /// Cancels any pending debounced write. Call from the host's `dispose` after

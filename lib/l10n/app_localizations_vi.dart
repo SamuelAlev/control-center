@@ -14859,4 +14859,39 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get stackSection => 'Ngăn xếp';
+
+  @override
+  String get mergeConflictsButton => 'Xung đột';
+
+  @override
+  String mergeConflictsFileCount(int count, String base) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tệp xung đột với $base',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get mergeConflictsLoading => 'Đang tìm các tệp xung đột…';
+
+  @override
+  String get mergeConflictsLoadFailed => 'Không thể liệt kê các tệp xung đột';
+
+  @override
+  String get mergeConflictsNoneFound =>
+      'Không tìm thấy tệp xung đột. GitHub có thể vẫn đang cập nhật pull request này.';
+
+  @override
+  String get askAiToFixConflicts => 'Nhờ AI sửa xung đột';
+
+  @override
+  String get fixConflictsStarted =>
+      'Một tác tử đang giải quyết xung đột trong cuộc trò chuyện của pull request này';
+
+  @override
+  String failedToStartConflictFix(String error) {
+    return 'Không thể bắt đầu sửa xung đột: $error';
+  }
 }

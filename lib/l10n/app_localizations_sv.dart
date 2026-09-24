@@ -14901,4 +14901,41 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get stackSection => 'Stack';
+
+  @override
+  String get mergeConflictsButton => 'Konflikter';
+
+  @override
+  String mergeConflictsFileCount(int count, String base) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count filer är i konflikt med $base',
+      one: '1 fil är i konflikt med $base',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get mergeConflictsLoading => 'Letar efter filer med konflikter…';
+
+  @override
+  String get mergeConflictsLoadFailed =>
+      'Det gick inte att lista filerna med konflikter';
+
+  @override
+  String get mergeConflictsNoneFound =>
+      'Inga filer med konflikter hittades. GitHub kanske fortfarande uppdaterar denna pull request.';
+
+  @override
+  String get askAiToFixConflicts => 'Be AI lösa konflikterna';
+
+  @override
+  String get fixConflictsStarted =>
+      'En agent löser konflikterna i chatten för denna pull request';
+
+  @override
+  String failedToStartConflictFix(String error) {
+    return 'Det gick inte att starta konfliktlösningen: $error';
+  }
 }

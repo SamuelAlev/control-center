@@ -14831,4 +14831,41 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get stackSection => 'پشته';
+
+  @override
+  String get mergeConflictsButton => 'تعارض‌ها';
+
+  @override
+  String mergeConflictsFileCount(int count, String base) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count فایل با $base تعارض دارند',
+      one: '۱ فایل با $base تعارض دارد',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get mergeConflictsLoading => 'در حال یافتن فایل‌های دارای تعارض…';
+
+  @override
+  String get mergeConflictsLoadFailed =>
+      'فهرست فایل‌های دارای تعارض دریافت نشد';
+
+  @override
+  String get mergeConflictsNoneFound =>
+      'هیچ فایل دارای تعارضی پیدا نشد. ممکن است GitHub هنوز در حال به‌روزرسانی این pull request باشد.';
+
+  @override
+  String get askAiToFixConflicts => 'از هوش مصنوعی بخواهید تعارض‌ها را حل کند';
+
+  @override
+  String get fixConflictsStarted =>
+      'یک عامل در حال حل تعارض‌ها در گفتگوی این pull request است';
+
+  @override
+  String failedToStartConflictFix(String error) {
+    return 'شروع حل تعارض ممکن نشد: $error';
+  }
 }

@@ -14904,4 +14904,40 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get stackSection => 'Tumpukan';
+
+  @override
+  String get mergeConflictsButton => 'Konflik';
+
+  @override
+  String mergeConflictsFileCount(int count, String base) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count file berkonflik dengan $base',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get mergeConflictsLoading => 'Mencari file yang berkonflik…';
+
+  @override
+  String get mergeConflictsLoadFailed =>
+      'Tidak dapat menampilkan file yang berkonflik';
+
+  @override
+  String get mergeConflictsNoneFound =>
+      'Tidak ada file berkonflik. GitHub mungkin masih memperbarui pull request ini.';
+
+  @override
+  String get askAiToFixConflicts => 'Minta AI memperbaiki konflik';
+
+  @override
+  String get fixConflictsStarted =>
+      'Agen sedang menyelesaikan konflik di chat pull request ini';
+
+  @override
+  String failedToStartConflictFix(String error) {
+    return 'Tidak dapat memulai perbaikan konflik: $error';
+  }
 }

@@ -8746,5 +8746,13 @@
   "stackPublishFailed": "Tumpukan tidak dapat diterbitkan",
   "stackPublished": "Tumpukan diterbitkan sebagai draf",
   "stackOpenPullRequest": "Buka pull request",
-  "stackSection": "Tumpukan"
+  "stackSection": "Tumpukan",
+  "mergeConflictsButton": "Konflik",
+  "mergeConflictsFileCount": "{count, plural, other{{count} file berkonflik dengan {base}}}",
+  "mergeConflictsLoading": "Mencari file yang berkonflik…",
+  "mergeConflictsLoadFailed": "Tidak dapat menampilkan file yang berkonflik",
+  "mergeConflictsNoneFound": "Tidak ada file berkonflik. GitHub mungkin masih memperbarui pull request ini.",
+  "askAiToFixConflicts": "Minta AI memperbaiki konflik",
+  "fixConflictsStarted": "Agen sedang menyelesaikan konflik di chat pull request ini",
+  "failedToStartConflictFix": "Tidak dapat memulai perbaikan konflik: {error}"
 }

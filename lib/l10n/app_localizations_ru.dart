@@ -15078,4 +15078,43 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get stackSection => 'Стек';
+
+  @override
+  String get mergeConflictsButton => 'Конфликты';
+
+  @override
+  String mergeConflictsFileCount(int count, String base) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count файла конфликтуют с $base',
+      many: '$count файлов конфликтуют с $base',
+      few: '$count файла конфликтуют с $base',
+      one: '1 файл конфликтует с $base',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get mergeConflictsLoading => 'Поиск конфликтующих файлов…';
+
+  @override
+  String get mergeConflictsLoadFailed =>
+      'Не удалось получить список конфликтующих файлов';
+
+  @override
+  String get mergeConflictsNoneFound =>
+      'Конфликтующие файлы не найдены. Возможно, GitHub ещё обновляет этот pull request.';
+
+  @override
+  String get askAiToFixConflicts => 'Попросить ИИ исправить конфликты';
+
+  @override
+  String get fixConflictsStarted =>
+      'Агент устраняет конфликты в чате этого pull request';
+
+  @override
+  String failedToStartConflictFix(String error) {
+    return 'Не удалось запустить исправление конфликтов: $error';
+  }
 }

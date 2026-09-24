@@ -316,6 +316,49 @@ class PrCloneManager {
     }
   }
 
+  /// The paths that conflict when PR #[prNumber]'s head is merged into
+  /// [baseRef], as the forge would merge it. Empty when the merge is clean.
+  ///
+  /// Reads the refs [ensureCloneAndFetch] stored and never touches a working
+  /// tree: `merge-tree --write-tree` builds the merge in the object store
+  /// only, so this is safe on the shared `--no-checkout` clone. On a blobless
+  /// clone it lazily fetches the blobs of the files both sides changed, which
+  /// is why it runs with the auth env.
+  ///
+  /// Exit 1 is git's "conflicts" answer; any other failure (a missing ref, a
+  /// git older than 2.38) throws rather than reporting a clean merge.
+  Future<List<String>> conflictingFiles({
+    required int prNumber,
+    required String baseRef,
+  }) async {
+    final result = await _git.run(
+      [
+        ..._noCredHelperArgs,
+        '-c',
+        'gc.auto=0',
+        'merge-tree',
+        '--write-tree',
+        '--name-only',
+        '--no-messages',
+        '-z',
+        'refs/remotes/origin/$baseRef',
+        'refs/pr/$prNumber/head',
+      ],
+      workdir: await clonePath(),
+      env: _authEnv,
+    );
+    if (result.exitCode == 0) {
+      return const [];
+    }
+    if (result.exitCode != 1) {
+      throw StateError(
+        'git merge-tree failed (${result.exitCode}): '
+        '${redactSecrets(result.stderr.trim())}',
+      );
+    }
+    return parseMergeTreeConflicts(result.stdout);
+  }
+
   /// Strips ANSI escape codes and the "remote: " prefix from git output.
   static String _sanitize(String line) {
     final noAnsi = line.replaceAll(RegExp(r'\x1B\[[0-9;]*[a-zA-Z]'), '');
@@ -326,4 +369,16 @@ class PrCloneManager {
   Future<String> clonePath() async {
     return _filesystem.prCloneDir(_workspaceId, _owner, _repo);
   }
+}
+
+/// Parses `git merge-tree --write-tree --name-only --no-messages -z` output:
+/// the merged tree's OID, then one NUL-terminated path per conflicted stage.
+/// A path conflicted at several stages is listed once, in git's order.
+List<String> parseMergeTreeConflicts(String stdout) {
+  final parts = stdout.split('\x00');
+  final seen = <String>{};
+  return [
+    for (final part in parts.skip(1))
+      if (part.isNotEmpty && seen.add(part)) part,
+  ];
 }

@@ -1110,6 +1110,7 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
       codec: prLayoutCodec,
       cache: ref.read(editorLayoutCacheRepositoryProvider),
       cacheKind: prEditorLayoutCacheKind,
+      memo: ref.read(editorLayoutMemoProvider),
     );
     _workspaceId = ref.watch(activeWorkspaceIdProvider);
     _prRepoId = prRepoIdFor(ref, widget.pr);

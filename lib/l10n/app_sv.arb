@@ -8746,5 +8746,13 @@
   "stackPublishFailed": "Stacken kunde inte publiceras",
   "stackPublished": "Stacken publicerades som utkast",
   "stackOpenPullRequest": "Öppna pull request",
-  "stackSection": "Stack"
+  "stackSection": "Stack",
+  "mergeConflictsButton": "Konflikter",
+  "mergeConflictsFileCount": "{count, plural, =1{1 fil är i konflikt med {base}} other{{count} filer är i konflikt med {base}}}",
+  "mergeConflictsLoading": "Letar efter filer med konflikter…",
+  "mergeConflictsLoadFailed": "Det gick inte att lista filerna med konflikter",
+  "mergeConflictsNoneFound": "Inga filer med konflikter hittades. GitHub kanske fortfarande uppdaterar denna pull request.",
+  "askAiToFixConflicts": "Be AI lösa konflikterna",
+  "fixConflictsStarted": "En agent löser konflikterna i chatten för denna pull request",
+  "failedToStartConflictFix": "Det gick inte att starta konfliktlösningen: {error}"
 }

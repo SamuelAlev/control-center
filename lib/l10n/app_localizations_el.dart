@@ -15028,4 +15028,42 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get stackSection => 'Στοίβα';
+
+  @override
+  String get mergeConflictsButton => 'Συγκρούσεις';
+
+  @override
+  String mergeConflictsFileCount(int count, String base) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count αρχεία συγκρούονται με το $base',
+      one: '1 αρχείο συγκρούεται με το $base',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get mergeConflictsLoading => 'Αναζήτηση αρχείων σε σύγκρουση…';
+
+  @override
+  String get mergeConflictsLoadFailed =>
+      'Δεν ήταν δυνατή η εμφάνιση των αρχείων σε σύγκρουση';
+
+  @override
+  String get mergeConflictsNoneFound =>
+      'Δεν βρέθηκαν αρχεία σε σύγκρουση. Το GitHub ίσως ενημερώνει ακόμη αυτό το pull request.';
+
+  @override
+  String get askAiToFixConflicts =>
+      'Ζητήστε από την AI να επιλύσει τις συγκρούσεις';
+
+  @override
+  String get fixConflictsStarted =>
+      'Ένας πράκτορας επιλύει τις συγκρούσεις στη συνομιλία αυτού του pull request';
+
+  @override
+  String failedToStartConflictFix(String error) {
+    return 'Δεν ήταν δυνατή η έναρξη επίλυσης: $error';
+  }
 }

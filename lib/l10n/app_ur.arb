@@ -8746,5 +8746,13 @@
   "stackPublishFailed": "اسٹیک شائع نہیں ہو سکی",
   "stackPublished": "اسٹیک مسودوں کے طور پر شائع ہو گئی",
   "stackOpenPullRequest": "پل ریکوئسٹ کھولیں",
-  "stackSection": "اسٹیک"
+  "stackSection": "اسٹیک",
+  "mergeConflictsButton": "تنازعات",
+  "mergeConflictsFileCount": "{count, plural, =1{1 فائل {base} سے متصادم ہے} other{{count} فائلیں {base} سے متصادم ہیں}}",
+  "mergeConflictsLoading": "متصادم فائلیں تلاش کی جا رہی ہیں…",
+  "mergeConflictsLoadFailed": "متصادم فائلوں کی فہرست نہیں مل سکی",
+  "mergeConflictsNoneFound": "کوئی متصادم فائل نہیں ملی۔ ممکن ہے GitHub ابھی اس pull request کو اپ ڈیٹ کر رہا ہو۔",
+  "askAiToFixConflicts": "AI سے تنازعات حل کروائیں",
+  "fixConflictsStarted": "ایک ایجنٹ اس pull request کی چیٹ میں تنازعات حل کر رہا ہے",
+  "failedToStartConflictFix": "تنازعات کا حل شروع نہیں ہو سکا: {error}"
 }

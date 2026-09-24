@@ -14982,6 +14982,43 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get stackSection => 'Pila';
+
+  @override
+  String get mergeConflictsButton => 'Conflictos';
+
+  @override
+  String mergeConflictsFileCount(int count, String base) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count archivos tienen conflictos con $base',
+      one: '1 archivo tiene conflictos con $base',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get mergeConflictsLoading => 'Buscando los archivos en conflicto…';
+
+  @override
+  String get mergeConflictsLoadFailed =>
+      'No se pudieron listar los archivos en conflicto';
+
+  @override
+  String get mergeConflictsNoneFound =>
+      'No se encontraron archivos en conflicto. Puede que GitHub aún esté actualizando esta pull request.';
+
+  @override
+  String get askAiToFixConflicts => 'Pedir a la IA que resuelva los conflictos';
+
+  @override
+  String get fixConflictsStarted =>
+      'Un agente está resolviendo los conflictos en el chat de esta pull request';
+
+  @override
+  String failedToStartConflictFix(String error) {
+    return 'No se pudo iniciar la resolución de conflictos: $error';
+  }
 }
 
 /// The translations for Spanish Castilian, as used in Mexico (`es_MX`).

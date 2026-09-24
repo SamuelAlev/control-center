@@ -8746,5 +8746,13 @@
   "stackPublishFailed": "Не удалось опубликовать стек",
   "stackPublished": "Стек опубликован как черновики",
   "stackOpenPullRequest": "Открыть pull request",
-  "stackSection": "Стек"
+  "stackSection": "Стек",
+  "mergeConflictsButton": "Конфликты",
+  "mergeConflictsFileCount": "{count, plural, =1{1 файл конфликтует с {base}} few{{count} файла конфликтуют с {base}} many{{count} файлов конфликтуют с {base}} other{{count} файла конфликтуют с {base}}}",
+  "mergeConflictsLoading": "Поиск конфликтующих файлов…",
+  "mergeConflictsLoadFailed": "Не удалось получить список конфликтующих файлов",
+  "mergeConflictsNoneFound": "Конфликтующие файлы не найдены. Возможно, GitHub ещё обновляет этот pull request.",
+  "askAiToFixConflicts": "Попросить ИИ исправить конфликты",
+  "fixConflictsStarted": "Агент устраняет конфликты в чате этого pull request",
+  "failedToStartConflictFix": "Не удалось запустить исправление конфликтов: {error}"
 }

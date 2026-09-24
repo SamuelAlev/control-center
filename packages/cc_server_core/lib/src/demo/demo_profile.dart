@@ -438,6 +438,8 @@ class DemoProfile {
     // verbs have no cache write-back, so allowing them would render a button
     // that silently does nothing.
     'pr_review.mergePullRequest',
+    // Resolving conflicts is an agent run on the host that pushes to the forge.
+    'pr_review.fixMergeConflicts',
     'pr_review.closePullRequest',
     'pr_review.updatePullRequest',
     'pr_review.updateIssueComment',

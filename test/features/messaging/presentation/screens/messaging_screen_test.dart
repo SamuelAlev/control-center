@@ -352,6 +352,199 @@ void main() {
     await tester.pumpAndSettle();
   });
 
+  // A press must reach the editor on the next frame: nothing holds the swap
+  // back behind an animation or a timer.
+  testWidgets('a space switch reaches the editor on the next frame', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 600);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    final route = ValueNotifier<String>('ch-1');
+    addTearDown(route.dispose);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          activeWorkspaceIdProvider.overrideWith(
+            () => _TestActiveWorkspaceNotifier(_kWorkspaceId),
+          ),
+          rpcClientProvider.overrideWithValue(_noOpRpcClient()),
+          selectedSpaceIdProvider.overrideWith(
+            () => _TestSelectedSpaceNotifier('ch-1'),
+          ),
+          spacesProvider.overrideWith(
+            (ref) => Stream.value([_testSpaceA, _testSpaceB]),
+          ),
+          workspaceSpacesProvider(
+            _kWorkspaceId,
+          ).overrideWith((ref) => Stream.value([_testSpaceA, _testSpaceB])),
+          agentsProvider.overrideWith((ref) => Stream.value(const [])),
+          workspacesProvider.overrideWith((ref) => Stream.value(const [])),
+          spaceReadRepositoryProvider.overrideWith(
+            (ref) => _FakeSpaceReadRepository(),
+          ),
+          for (final id in ['ch-1', 'ch-2']) ...[
+            spaceParticipantsProvider(
+              id,
+            ).overrideWith((ref) => Stream.value(const [])),
+            spaceFeedWindowedProvider((
+              spaceId: id,
+              conversationId: id,
+            )).overrideWith(
+              (ref) => Stream.value((messages: const [], hasMore: false)),
+            ),
+            spaceMessagesProvider(
+              id,
+            ).overrideWith((ref) => Stream.value(const [])),
+            standingConversationIdProvider(id).overrideWith((ref) async => id),
+          ],
+        ],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: _wrap(
+            ValueListenableBuilder<String>(
+              valueListenable: route,
+              builder: (context, id, _) => MessagingScreen(selectedSpaceId: id),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    String? shown() => tester
+        .widget<MessagingIdeLayout>(find.byType(MessagingIdeLayout))
+        .selectedSpaceId;
+    expect(shown(), 'ch-1');
+
+    route.value = 'ch-2';
+    await tester.pump();
+    await tester.pump();
+    expect(shown(), 'ch-2');
+
+    // And back, on the next frame again.
+    route.value = 'ch-1';
+    await tester.pump();
+    await tester.pump();
+    expect(shown(), 'ch-1');
+
+    await tester.pumpWidget(Container());
+    await tester.pumpAndSettle();
+  });
+
+  // Revisiting a space must not seed a chat-only layout and restore the real
+  // one a round-trip later: that built every tab body twice and flashed the
+  // seed. The client's own copy of the layout is on screen on the first frame.
+  testWidgets('a revisited space restores its layout without a round-trip', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1400, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    final cacheStore = <String, String?>{};
+    final reads = <String>[];
+    final host = FakeRpcHost();
+    host.onCall = (op, args) {
+      switch (op) {
+        case 'terminal.spawn':
+          return {'session_id': 'srv-1'};
+        case 'cache.read':
+          reads.add(args['key'] as String);
+          return {'payload': cacheStore['${args['kind']}/${args['key']}']};
+        case 'cache.write':
+          cacheStore['${args['kind']}/${args['key']}'] =
+              args['payload'] as String?;
+          return const <String, dynamic>{};
+      }
+      return const <String, dynamic>{};
+    };
+    _seedTerminalLayout(cacheStore, 'ch-1');
+
+    final route = ValueNotifier<String>('ch-1');
+    addTearDown(route.dispose);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          activeWorkspaceIdProvider.overrideWith(
+            () => _TestActiveWorkspaceNotifier(_kWorkspaceId),
+          ),
+          rpcClientProvider.overrideWithValue(host.client()),
+          selectedSpaceIdProvider.overrideWith(
+            () => _TestSelectedSpaceNotifier('ch-1'),
+          ),
+          spacesProvider.overrideWith(
+            (ref) => Stream.value([_testSpaceA, _testSpaceB]),
+          ),
+          workspaceSpacesProvider(
+            _kWorkspaceId,
+          ).overrideWith((ref) => Stream.value([_testSpaceA, _testSpaceB])),
+          agentsProvider.overrideWith((ref) => Stream.value(const [])),
+          workspacesProvider.overrideWith((ref) => Stream.value(const [])),
+          spaceReadRepositoryProvider.overrideWith(
+            (ref) => _FakeSpaceReadRepository(),
+          ),
+          for (final id in ['ch-1', 'ch-2']) ...[
+            spaceParticipantsProvider(
+              id,
+            ).overrideWith((ref) => Stream.value(const [])),
+            spaceFeedWindowedProvider((
+              spaceId: id,
+              conversationId: id,
+            )).overrideWith(
+              (ref) => Stream.value((messages: const [], hasMore: false)),
+            ),
+            spaceMessagesProvider(
+              id,
+            ).overrideWith((ref) => Stream.value(const [])),
+            standingConversationIdProvider(id).overrideWith((ref) async => id),
+          ],
+        ],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: _wrap(
+            ValueListenableBuilder<String>(
+              valueListenable: route,
+              builder: (context, id, _) => MessagingScreen(selectedSpaceId: id),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    final terminalTab = find.text('Terminal');
+    expect(terminalTab, findsWidgets, reason: 'restored from the server');
+    expect(reads, ['ch-1']);
+
+    route.value = 'ch-2';
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(terminalTab, findsNothing);
+
+    route.value = 'ch-1';
+    // The route frame, then the frame the selection lands in.
+    await tester.pump();
+    await tester.pump();
+    expect(terminalTab, findsWidgets, reason: 'no seed frame in between');
+    expect(reads, ['ch-1', 'ch-2'], reason: 'ch-1 is not read again');
+
+    await tester.pumpWidget(Container());
+    await tester.pumpAndSettle();
+  });
+
   testWidgets('archiving a space from the header asks for no confirmation', (
     tester,
   ) async {

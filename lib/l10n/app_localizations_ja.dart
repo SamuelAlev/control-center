@@ -14572,4 +14572,38 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get stackSection => 'スタック';
+
+  @override
+  String get mergeConflictsButton => 'コンフリクト';
+
+  @override
+  String mergeConflictsFileCount(int count, String base) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 個のファイルが $base とコンフリクトしています',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get mergeConflictsLoading => 'コンフリクトしているファイルを検索中…';
+
+  @override
+  String get mergeConflictsLoadFailed => 'コンフリクトしているファイルを一覧表示できませんでした';
+
+  @override
+  String get mergeConflictsNoneFound =>
+      'コンフリクトしているファイルは見つかりませんでした。GitHub がこのプルリクエストをまだ更新中の可能性があります。';
+
+  @override
+  String get askAiToFixConflicts => 'AI にコンフリクトの解決を依頼';
+
+  @override
+  String get fixConflictsStarted => 'エージェントがこのプルリクエストのチャットでコンフリクトを解決しています';
+
+  @override
+  String failedToStartConflictFix(String error) {
+    return 'コンフリクトの解決を開始できませんでした: $error';
+  }
 }

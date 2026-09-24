@@ -7933,5 +7933,13 @@
   "stackPublishFailed": "Impossible de publier la pile",
   "stackPublished": "La pile a été publiée en brouillons",
   "stackOpenPullRequest": "Ouvrir la pull request",
-  "stackSection": "Pile"
+  "stackSection": "Pile",
+  "mergeConflictsButton": "Conflits",
+  "mergeConflictsFileCount": "{count, plural, =1{1 fichier est en conflit avec {base}} other{{count} fichiers sont en conflit avec {base}}}",
+  "mergeConflictsLoading": "Recherche des fichiers en conflit…",
+  "mergeConflictsLoadFailed": "Impossible de lister les fichiers en conflit",
+  "mergeConflictsNoneFound": "Aucun fichier en conflit trouvé. GitHub est peut-être encore en train de mettre à jour cette pull request.",
+  "askAiToFixConflicts": "Demander à l'IA de résoudre les conflits",
+  "fixConflictsStarted": "Un agent résout les conflits dans le chat de cette pull request",
+  "failedToStartConflictFix": "Impossible de lancer la résolution des conflits : {error}"
 }

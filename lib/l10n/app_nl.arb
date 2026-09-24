@@ -7939,5 +7939,13 @@
   "stackPublishFailed": "De stapel kon niet worden gepubliceerd",
   "stackPublished": "De stapel is als concepten gepubliceerd",
   "stackOpenPullRequest": "Pull request openen",
-  "stackSection": "Stapel"
+  "stackSection": "Stapel",
+  "mergeConflictsButton": "Conflicten",
+  "mergeConflictsFileCount": "{count, plural, =1{1 bestand conflicteert met {base}} other{{count} bestanden conflicteren met {base}}}",
+  "mergeConflictsLoading": "Conflicterende bestanden zoeken…",
+  "mergeConflictsLoadFailed": "Kan de conflicterende bestanden niet weergeven",
+  "mergeConflictsNoneFound": "Geen conflicterende bestanden gevonden. GitHub werkt deze pull request mogelijk nog bij.",
+  "askAiToFixConflicts": "AI de conflicten laten oplossen",
+  "fixConflictsStarted": "Een agent lost de conflicten op in de chat van deze pull request",
+  "failedToStartConflictFix": "Kan het oplossen van conflicten niet starten: {error}"
 }

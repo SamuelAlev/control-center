@@ -15106,4 +15106,40 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get stackSection => 'المكدس';
+
+  @override
+  String get mergeConflictsButton => 'تعارضات';
+
+  @override
+  String mergeConflictsFileCount(int count, String base) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ملفات تتعارض مع $base',
+      one: 'ملف واحد يتعارض مع $base',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get mergeConflictsLoading => 'جارٍ البحث عن الملفات المتعارضة…';
+
+  @override
+  String get mergeConflictsLoadFailed => 'تعذّر عرض الملفات المتعارضة';
+
+  @override
+  String get mergeConflictsNoneFound =>
+      'لم يتم العثور على ملفات متعارضة. ربما لا يزال GitHub يحدّث طلب السحب هذا.';
+
+  @override
+  String get askAiToFixConflicts => 'اطلب من الذكاء الاصطناعي حل التعارضات';
+
+  @override
+  String get fixConflictsStarted =>
+      'يعمل وكيل على حل التعارضات في محادثة طلب السحب هذا';
+
+  @override
+  String failedToStartConflictFix(String error) {
+    return 'تعذّر بدء حل التعارضات: $error';
+  }
 }

@@ -13574,5 +13574,51 @@
   "stackSection": "Stack",
   "@stackSection": {
     "description": "Section heading for the layers of a branch stack"
+  },
+  "mergeConflictsButton": "Conflicts",
+  "@mergeConflictsButton": {
+    "description": "Label of the merge button when the pull request conflicts with its base branch; opens a flyout listing the conflicting files"
+  },
+  "mergeConflictsFileCount": "{count, plural, =1{1 file conflicts with {base}} other{{count} files conflict with {base}}}",
+  "@mergeConflictsFileCount": {
+    "description": "Summary above the list of files that conflict with the base branch",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "base": {
+        "type": "String",
+        "example": "main"
+      }
+    }
+  },
+  "mergeConflictsLoading": "Finding the conflicting files…",
+  "@mergeConflictsLoading": {
+    "description": "Shown while the server computes which files conflict"
+  },
+  "mergeConflictsLoadFailed": "Couldn't list the conflicting files",
+  "@mergeConflictsLoadFailed": {
+    "description": "Shown when the conflicting files could not be listed"
+  },
+  "mergeConflictsNoneFound": "No conflicting files found. GitHub may still be updating this pull request.",
+  "@mergeConflictsNoneFound": {
+    "description": "Shown when GitHub reported conflicts but none were found on the current branch"
+  },
+  "askAiToFixConflicts": "Ask AI to fix conflicts",
+  "@askAiToFixConflicts": {
+    "description": "Button that starts an AI agent resolving the pull request's merge conflicts"
+  },
+  "fixConflictsStarted": "An agent is resolving the conflicts in this pull request's chat",
+  "@fixConflictsStarted": {
+    "description": "Toast after an agent was started to resolve merge conflicts"
+  },
+  "failedToStartConflictFix": "Couldn't start the conflict fix: {error}",
+  "@failedToStartConflictFix": {
+    "description": "Toast when the conflict-fixing agent could not be started",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   }
 }

@@ -24,8 +24,12 @@ const double kConversationLabelFontSize = 13;
 /// Nested conversation row. Shorter than a space so the list stays tight.
 const double kConversationRowExtent = 24;
 
+/// Box of a trailing control: the overflow trigger, and the slot the
+/// conversations caret centers in, so the two share one vertical axis.
+const double kSpaceSidebarTrailingControl = 22;
+
 /// Width the overflow trigger occupies, including its leading gap.
-const double kSpaceSidebarOverflowSlot = 26;
+const double kSpaceSidebarOverflowSlot = kSpaceSidebarTrailingControl + 4;
 
 /// Air inside a two-line row, so the branch shares the title's wash.
 const double _kTwoLinePad = AppSpacing.xxs;
@@ -254,8 +258,9 @@ class SpaceRowLayout extends StatelessWidget {
                             ],
                           ],
                         ),
+                        // The branch sits directly under the title: the
+                        // line heights already separate them.
                         if (_twoLine) ...[
-                          const SizedBox(height: AppSpacing.xxs),
                           Text(
                             subtitle!,
                             maxLines: 1,

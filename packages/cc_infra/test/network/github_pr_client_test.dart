@@ -674,6 +674,50 @@ void main() {
       },
     );
 
+    test('mergePullRequest turns a 405 into the forge\'s reason', () async {
+      final b = build(
+        (_) => _json({
+          'message': 'Pull Request has merge conflicts',
+        }, status: 405),
+      );
+      await expectLater(
+        b.client.mergePullRequest(
+          owner,
+          repo,
+          prNumber: 1,
+          mergeMethod: 'squash',
+        ),
+        throwsA(
+          isA<PrNotMergeableException>()
+              .having((e) => e.message, 'message', 'Pull Request has merge conflicts')
+              .having((e) => e.hasConflicts, 'hasConflicts', isTrue),
+        ),
+      );
+    });
+
+    test('mergePullRequest 405 without a conflict is not a conflict', () async {
+      final b = build(
+        (_) => _json({
+          'message': 'Required status check "ci" is expected.',
+        }, status: 405),
+      );
+      await expectLater(
+        b.client.mergePullRequest(
+          owner,
+          repo,
+          prNumber: 1,
+          mergeMethod: 'squash',
+        ),
+        throwsA(
+          isA<PrNotMergeableException>().having(
+            (e) => e.hasConflicts,
+            'hasConflicts',
+            isFalse,
+          ),
+        ),
+      );
+    });
+
     test('closePullRequest PATCHes state=closed', () async {
       final b = build((_) => _json({}, status: 200));
       await b.client.closePullRequest(owner, repo, prNumber: 4);

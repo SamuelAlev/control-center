@@ -85,6 +85,8 @@ import 'package:cc_domain/features/pr_review/domain/repositories/review_studio_r
 import 'package:cc_domain/features/pr_review/domain/services/pr_change_signals.dart';
 import 'package:cc_domain/features/pr_review/domain/services/review_guidelines.dart';
 import 'package:cc_domain/features/pr_review/domain/services/review_suppression_matcher.dart';
+import 'package:cc_domain/features/pr_review/domain/sources/pr_diff_source.dart'
+    show PrSourceRequest;
 import 'package:cc_domain/features/pr_review/domain/value_objects/pr_search_query.dart';
 import 'package:cc_domain/features/pr_review/domain/value_objects/review_cohort.dart';
 import 'package:cc_domain/features/pr_review/domain/value_objects/review_level.dart';
@@ -201,6 +203,7 @@ import 'package:cc_server_core/src/pr_review/github_pr_conversation_gateway.dart
 import 'package:cc_server_core/src/pr_review/multi_forge_open_pr_fetch.dart';
 import 'package:cc_server_core/src/pr_review/open_pr_polling_service.dart';
 import 'package:cc_server_core/src/pr_review/pr_conversation_polling_service.dart';
+import 'package:cc_server_core/src/pr_review/pr_merge_conflict_service.dart';
 import 'package:cc_server_core/src/pr_review/review_axis_service.dart';
 import 'package:cc_server_core/src/pr_review/review_cohort_service.dart';
 import 'package:cc_server_core/src/pr_review/review_diagram_service.dart';
@@ -4787,6 +4790,112 @@ Future<CcServer> runCcServer({
   // which is the attribution rule the forge seams already follow. The in-space
   // question is attributed to the member whose GitHub login the commenter maps
   // to (membership is the gate), and the run executes on their behalf.
+  // A PR space by PR number. The space seam wants the PR's node id (the
+  // review-space association key), which `startPrReview` resolves the same way
+  // for its own path — one resolver, so a mention-started question, a conflict
+  // fix and a UI-opened workbench can never disagree about which room a PR
+  // lives in.
+  Future<String?> ensurePrSpaceByNumber({
+    required String workspaceId,
+    required String repoFullName,
+    required int prNumber,
+    required String title,
+  }) async {
+    final parts = repoFullName.split('/');
+    if (parts.length != 2) {
+      return null;
+    }
+    final prExternalId = await resolvePrExternalId(
+      workspaceId: workspaceId,
+      owner: parts[0],
+      repo: parts[1],
+      prNumber: prNumber,
+    );
+    return ensureReviewSpaceFn(
+      workspaceId: workspaceId,
+      repoFullName: repoFullName,
+      prNumber: prNumber,
+      prExternalId: prExternalId,
+      title: title,
+    );
+  }
+
+  // Who works in a PR space nobody has spoken in yet: the seeded coordinator.
+  Future<String?> defaultPrSpaceAgent(String workspaceId) async {
+    final agents = await agentRepository.watchByWorkspace(workspaceId).first;
+    for (final agent in agents) {
+      if (agent.role == AgentRole.ceo) {
+        return agent.id;
+      }
+    }
+    return null;
+  }
+
+  // The merge button's "Conflicts" state. GitHub-only: the conflict list is a
+  // `git merge-tree` on the GitHub PR clone, fetched on the CALLER's
+  // credential (the boot-time token the diff fallback holds can be expired,
+  // and cannot see a private repo only that person can).
+  final prMergeConflictService = demo != null
+      ? null
+      : PrMergeConflictService(
+          refs: (owner, repo, prNumber) async {
+            final gh = await serverGitHubClient.pr.getPullRequest(
+              owner,
+              repo,
+              prNumber,
+            );
+            if (gh == null) {
+              return null;
+            }
+            final pr = pullRequestFromGitHub(gh, repoFullName: '$owner/$repo');
+            return (
+              title: pr.title,
+              baseRef: pr.baseRef,
+              headRef: pr.headRef,
+            );
+          },
+          conflictFiles:
+              ({
+                required workspaceId,
+                required owner,
+                required repo,
+                required prNumber,
+                required baseRef,
+                required userId,
+              }) async {
+                final linked = await resolveLinkedReviewRepo(
+                  workspaceId,
+                  owner,
+                  repo,
+                );
+                final token = await forgeCredentials.tokenForActor(
+                  ForgeHost.github,
+                  userId,
+                  workspaceId: workspaceId,
+                );
+                return localGitPrDiffSource.mergeConflictFiles(
+                  PrSourceRequest(
+                    prNumber: prNumber,
+                    owner: owner,
+                    repo: repo,
+                    baseRef: baseRef,
+                    headRef: '',
+                    headSha: '',
+                    changedFiles: 0,
+                    workspaceId: workspaceId,
+                    localCheckoutPath: linked.path,
+                  ),
+                  githubToken: token,
+                );
+              },
+          ensureSpace: ensurePrSpaceByNumber,
+          defaultAgent: defaultPrSpaceAgent,
+          conversations: conversationRepository,
+          messaging: messagingService,
+          messagingRepository: messagingRepository,
+          onWarning: CcHostLog.warning,
+        );
+
   final prConversationGateway = AppBackedGitHubPrConversationGateway(
     app: providerApps.githubApp,
     clientForOwner: (owner) => githubClientForOwner('', owner),
@@ -4808,42 +4917,10 @@ Future<CcServer> runCcServer({
     // same way for its own path — reuse the same resolver so a
     // mention-started question and a UI-opened workbench can never disagree
     // about which room a PR lives in.
-    ensureSpace:
-        ({
-          required workspaceId,
-          required repoFullName,
-          required prNumber,
-          required title,
-        }) async {
-          final parts = repoFullName.split('/');
-          if (parts.length != 2) {
-            return null;
-          }
-          final prExternalId = await resolvePrExternalId(
-            workspaceId: workspaceId,
-            owner: parts[0],
-            repo: parts[1],
-            prNumber: prNumber,
-          );
-          return ensureReviewSpaceFn(
-            workspaceId: workspaceId,
-            repoFullName: repoFullName,
-            prNumber: prNumber,
-            prExternalId: prExternalId,
-            title: title,
-          );
-        },
+    ensureSpace: ensurePrSpaceByNumber,
     // A question on a PR with no review running lands in an empty space; the
     // seeded coordinator is who wakes up for it.
-    defaultAnswerer: (workspaceId) async {
-      final agents = await agentRepository.watchByWorkspace(workspaceId).first;
-      for (final agent in agents) {
-        if (agent.role == AgentRole.ceo) {
-          return agent.id;
-        }
-      }
-      return null;
-    },
+    defaultAnswerer: defaultPrSpaceAgent,
     eventBus: eventBus,
     onWarning: CcHostLog.warning,
   )..start();
@@ -6213,6 +6290,7 @@ Future<CcServer> runCcServer({
     // tool, and renaming an op buys nothing a comment cannot say.
     reviewFindingStatus: reviewFindingStatusService,
     reviewHubStart: demo != null ? null : startPrReview,
+    prMergeConflicts: prMergeConflictService,
     publishReview:
         ({
           required String workspaceId,

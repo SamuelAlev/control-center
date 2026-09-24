@@ -14848,6 +14848,42 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get stackSection => 'Stack';
+
+  @override
+  String get mergeConflictsButton => 'Conflicts';
+
+  @override
+  String mergeConflictsFileCount(int count, String base) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count files conflict with $base',
+      one: '1 file conflicts with $base',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get mergeConflictsLoading => 'Finding the conflicting files…';
+
+  @override
+  String get mergeConflictsLoadFailed => 'Couldn\'t list the conflicting files';
+
+  @override
+  String get mergeConflictsNoneFound =>
+      'No conflicting files found. GitHub may still be updating this pull request.';
+
+  @override
+  String get askAiToFixConflicts => 'Ask AI to fix conflicts';
+
+  @override
+  String get fixConflictsStarted =>
+      'An agent is resolving the conflicts in this pull request\'s chat';
+
+  @override
+  String failedToStartConflictFix(String error) {
+    return 'Couldn\'t start the conflict fix: $error';
+  }
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

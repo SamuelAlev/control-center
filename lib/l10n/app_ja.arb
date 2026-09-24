@@ -8746,5 +8746,13 @@
   "stackPublishFailed": "スタックを公開できませんでした",
   "stackPublished": "スタックを下書きとして公開しました",
   "stackOpenPullRequest": "プルリクエストを開く",
-  "stackSection": "スタック"
+  "stackSection": "スタック",
+  "mergeConflictsButton": "コンフリクト",
+  "mergeConflictsFileCount": "{count, plural, other{{count} 個のファイルが {base} とコンフリクトしています}}",
+  "mergeConflictsLoading": "コンフリクトしているファイルを検索中…",
+  "mergeConflictsLoadFailed": "コンフリクトしているファイルを一覧表示できませんでした",
+  "mergeConflictsNoneFound": "コンフリクトしているファイルは見つかりませんでした。GitHub がこのプルリクエストをまだ更新中の可能性があります。",
+  "askAiToFixConflicts": "AI にコンフリクトの解決を依頼",
+  "fixConflictsStarted": "エージェントがこのプルリクエストのチャットでコンフリクトを解決しています",
+  "failedToStartConflictFix": "コンフリクトの解決を開始できませんでした: {error}"
 }

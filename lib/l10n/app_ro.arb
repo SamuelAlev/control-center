@@ -8746,5 +8746,13 @@
   "stackPublishFailed": "Stiva nu a putut fi publicată",
   "stackPublished": "Stiva a fost publicată ca ciorne",
   "stackOpenPullRequest": "Deschide pull request",
-  "stackSection": "Stivă"
+  "stackSection": "Stivă",
+  "mergeConflictsButton": "Conflicte",
+  "mergeConflictsFileCount": "{count, plural, =1{1 fișier este în conflict cu {base}} few{{count} fișiere sunt în conflict cu {base}} other{{count} de fișiere sunt în conflict cu {base}}}",
+  "mergeConflictsLoading": "Se caută fișierele în conflict…",
+  "mergeConflictsLoadFailed": "Fișierele în conflict nu au putut fi listate",
+  "mergeConflictsNoneFound": "Nu s-au găsit fișiere în conflict. Este posibil ca GitHub să actualizeze încă acest pull request.",
+  "askAiToFixConflicts": "Cere AI-ului să rezolve conflictele",
+  "fixConflictsStarted": "Un agent rezolvă conflictele în chatul acestui pull request",
+  "failedToStartConflictFix": "Rezolvarea conflictelor nu a putut porni: {error}"
 }

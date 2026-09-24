@@ -57,6 +57,10 @@ abstract final class RpcErrorCodes {
 
   /// Subscription limit exceeded for this session.
   static const tooManySubscriptions = -33011;
+
+  /// The forge refused to merge a pull request (`PrNotMergeableException`);
+  /// `data.has_conflicts` says whether the branch conflicts with its base.
+  static const prNotMergeable = -33012;
 }
 
 /// The repo-RPC wire-protocol versions this build speaks.

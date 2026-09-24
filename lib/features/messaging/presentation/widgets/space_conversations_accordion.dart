@@ -59,20 +59,27 @@ class _SpaceConversationsAccordionState
             ),
           ),
           if (expandable)
-            AnimatedRotation(
-              duration: CcMotion.resolve(context, CcMotion.moderate),
-              curve: CcMotion.standard,
-              // Collapsed points toward the end of the line: right in LTR,
-              // left in RTL.
-              turns: _expanded
-                  ? 0
-                  : Directionality.of(context) == TextDirection.rtl
-                  ? 0.25
-                  : -0.25,
-              child: Icon(
-                AppIcons.chevronDown,
-                size: 14,
-                color: t.textTertiary,
+            // Centered in the overflow trigger's box, so the caret and the
+            // title row's ⋮ share one vertical axis.
+            SizedBox(
+              width: kSpaceSidebarTrailingControl,
+              child: Center(
+                child: AnimatedRotation(
+                  duration: CcMotion.resolve(context, CcMotion.moderate),
+                  curve: CcMotion.standard,
+                  // Collapsed points toward the end of the line: right in LTR,
+                  // left in RTL.
+                  turns: _expanded
+                      ? 0
+                      : Directionality.of(context) == TextDirection.rtl
+                      ? 0.25
+                      : -0.25,
+                  child: Icon(
+                    AppIcons.chevronDown,
+                    size: 14,
+                    color: t.textTertiary,
+                  ),
+                ),
               ),
             ),
         ],

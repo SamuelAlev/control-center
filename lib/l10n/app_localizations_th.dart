@@ -14756,4 +14756,39 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get stackSection => 'สแตก';
+
+  @override
+  String get mergeConflictsButton => 'ข้อขัดแย้ง';
+
+  @override
+  String mergeConflictsFileCount(int count, String base) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ไฟล์ขัดแย้งกับ $base',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get mergeConflictsLoading => 'กำลังค้นหาไฟล์ที่ขัดแย้ง…';
+
+  @override
+  String get mergeConflictsLoadFailed => 'ไม่สามารถแสดงรายการไฟล์ที่ขัดแย้งได้';
+
+  @override
+  String get mergeConflictsNoneFound =>
+      'ไม่พบไฟล์ที่ขัดแย้ง GitHub อาจยังอัปเดต pull request นี้อยู่';
+
+  @override
+  String get askAiToFixConflicts => 'ให้ AI แก้ไขข้อขัดแย้ง';
+
+  @override
+  String get fixConflictsStarted =>
+      'เอเจนต์กำลังแก้ไขข้อขัดแย้งในแชทของ pull request นี้';
+
+  @override
+  String failedToStartConflictFix(String error) {
+    return 'ไม่สามารถเริ่มการแก้ไขข้อขัดแย้งได้: $error';
+  }
 }

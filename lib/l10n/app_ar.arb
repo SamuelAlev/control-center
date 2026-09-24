@@ -8746,5 +8746,13 @@
   "stackPublishFailed": "تعذر نشر المكدس",
   "stackPublished": "نُشر المكدس كمسودات",
   "stackOpenPullRequest": "افتح طلب السحب",
-  "stackSection": "المكدس"
+  "stackSection": "المكدس",
+  "mergeConflictsButton": "تعارضات",
+  "mergeConflictsFileCount": "{count, plural, =1{ملف واحد يتعارض مع {base}} other{{count} ملفات تتعارض مع {base}}}",
+  "mergeConflictsLoading": "جارٍ البحث عن الملفات المتعارضة…",
+  "mergeConflictsLoadFailed": "تعذّر عرض الملفات المتعارضة",
+  "mergeConflictsNoneFound": "لم يتم العثور على ملفات متعارضة. ربما لا يزال GitHub يحدّث طلب السحب هذا.",
+  "askAiToFixConflicts": "اطلب من الذكاء الاصطناعي حل التعارضات",
+  "fixConflictsStarted": "يعمل وكيل على حل التعارضات في محادثة طلب السحب هذا",
+  "failedToStartConflictFix": "تعذّر بدء حل التعارضات: {error}"
 }

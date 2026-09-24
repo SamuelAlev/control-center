@@ -26,6 +26,15 @@ RpcErrorMapping? mapAppExceptionToRpc(Object error) {
   if (error is AuthException) {
     return RpcErrorMapping(RpcErrorCodes.unauthorized, error.message);
   }
+  // A merge the forge refused carries the forge's own reason, and whether it
+  // was a conflict, so the merge button can offer to resolve it.
+  if (error is PrNotMergeableException) {
+    return RpcErrorMapping(
+      RpcErrorCodes.prNotMergeable,
+      error.message,
+      {'has_conflicts': error.hasConflicts},
+    );
+  }
   if (error is ValidationException) {
     return RpcErrorMapping(RpcErrorCodes.validation, error.message);
   }

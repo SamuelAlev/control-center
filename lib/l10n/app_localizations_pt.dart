@@ -14964,6 +14964,43 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get stackSection => 'Pilha';
+
+  @override
+  String get mergeConflictsButton => 'Conflitos';
+
+  @override
+  String mergeConflictsFileCount(int count, String base) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count arquivos estão em conflito com $base',
+      one: '1 arquivo está em conflito com $base',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get mergeConflictsLoading => 'Procurando os arquivos em conflito…';
+
+  @override
+  String get mergeConflictsLoadFailed =>
+      'Não foi possível listar os arquivos em conflito';
+
+  @override
+  String get mergeConflictsNoneFound =>
+      'Nenhum arquivo em conflito encontrado. O GitHub ainda pode estar atualizando este pull request.';
+
+  @override
+  String get askAiToFixConflicts => 'Pedir à IA para resolver os conflitos';
+
+  @override
+  String get fixConflictsStarted =>
+      'Um agente está resolvendo os conflitos no chat deste pull request';
+
+  @override
+  String failedToStartConflictFix(String error) {
+    return 'Não foi possível iniciar a resolução de conflitos: $error';
+  }
 }
 
 /// The translations for Portuguese, as used in Portugal (`pt_PT`).

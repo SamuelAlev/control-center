@@ -8746,5 +8746,13 @@
   "stackPublishFailed": "Yığın yayınlanamadı",
   "stackPublished": "Yığın taslak olarak yayınlandı",
   "stackOpenPullRequest": "Çekme isteğini aç",
-  "stackSection": "Yığın"
+  "stackSection": "Yığın",
+  "mergeConflictsButton": "Çakışmalar",
+  "mergeConflictsFileCount": "{count, plural, =1{1 dosya {base} ile çakışıyor} other{{count} dosya {base} ile çakışıyor}}",
+  "mergeConflictsLoading": "Çakışan dosyalar aranıyor…",
+  "mergeConflictsLoadFailed": "Çakışan dosyalar listelenemedi",
+  "mergeConflictsNoneFound": "Çakışan dosya bulunamadı. GitHub bu pull request'i hâlâ güncelliyor olabilir.",
+  "askAiToFixConflicts": "Çakışmaları yapay zekâya çözdür",
+  "fixConflictsStarted": "Bir ajan bu pull request'in sohbetinde çakışmaları çözüyor",
+  "failedToStartConflictFix": "Çakışma çözümü başlatılamadı: {error}"
 }

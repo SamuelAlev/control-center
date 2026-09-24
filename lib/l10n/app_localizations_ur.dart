@@ -14832,4 +14832,40 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get stackSection => 'اسٹیک';
+
+  @override
+  String get mergeConflictsButton => 'تنازعات';
+
+  @override
+  String mergeConflictsFileCount(int count, String base) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count فائلیں $base سے متصادم ہیں',
+      one: '1 فائل $base سے متصادم ہے',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get mergeConflictsLoading => 'متصادم فائلیں تلاش کی جا رہی ہیں…';
+
+  @override
+  String get mergeConflictsLoadFailed => 'متصادم فائلوں کی فہرست نہیں مل سکی';
+
+  @override
+  String get mergeConflictsNoneFound =>
+      'کوئی متصادم فائل نہیں ملی۔ ممکن ہے GitHub ابھی اس pull request کو اپ ڈیٹ کر رہا ہو۔';
+
+  @override
+  String get askAiToFixConflicts => 'AI سے تنازعات حل کروائیں';
+
+  @override
+  String get fixConflictsStarted =>
+      'ایک ایجنٹ اس pull request کی چیٹ میں تنازعات حل کر رہا ہے';
+
+  @override
+  String failedToStartConflictFix(String error) {
+    return 'تنازعات کا حل شروع نہیں ہو سکا: $error';
+  }
 }

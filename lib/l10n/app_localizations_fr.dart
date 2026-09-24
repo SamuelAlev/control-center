@@ -15013,6 +15013,43 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get stackSection => 'Pile';
+
+  @override
+  String get mergeConflictsButton => 'Conflits';
+
+  @override
+  String mergeConflictsFileCount(int count, String base) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count fichiers sont en conflit avec $base',
+      one: '1 fichier est en conflit avec $base',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get mergeConflictsLoading => 'Recherche des fichiers en conflit…';
+
+  @override
+  String get mergeConflictsLoadFailed =>
+      'Impossible de lister les fichiers en conflit';
+
+  @override
+  String get mergeConflictsNoneFound =>
+      'Aucun fichier en conflit trouvé. GitHub est peut-être encore en train de mettre à jour cette pull request.';
+
+  @override
+  String get askAiToFixConflicts => 'Demander à l\'IA de résoudre les conflits';
+
+  @override
+  String get fixConflictsStarted =>
+      'Un agent résout les conflits dans le chat de cette pull request';
+
+  @override
+  String failedToStartConflictFix(String error) {
+    return 'Impossible de lancer la résolution des conflits : $error';
+  }
 }
 
 /// The translations for French, as used in Canada (`fr_CA`).

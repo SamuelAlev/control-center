@@ -14890,4 +14890,40 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get stackSection => 'Yığın';
+
+  @override
+  String get mergeConflictsButton => 'Çakışmalar';
+
+  @override
+  String mergeConflictsFileCount(int count, String base) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count dosya $base ile çakışıyor',
+      one: '1 dosya $base ile çakışıyor',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get mergeConflictsLoading => 'Çakışan dosyalar aranıyor…';
+
+  @override
+  String get mergeConflictsLoadFailed => 'Çakışan dosyalar listelenemedi';
+
+  @override
+  String get mergeConflictsNoneFound =>
+      'Çakışan dosya bulunamadı. GitHub bu pull request\'i hâlâ güncelliyor olabilir.';
+
+  @override
+  String get askAiToFixConflicts => 'Çakışmaları yapay zekâya çözdür';
+
+  @override
+  String get fixConflictsStarted =>
+      'Bir ajan bu pull request\'in sohbetinde çakışmaları çözüyor';
+
+  @override
+  String failedToStartConflictFix(String error) {
+    return 'Çakışma çözümü başlatılamadı: $error';
+  }
 }

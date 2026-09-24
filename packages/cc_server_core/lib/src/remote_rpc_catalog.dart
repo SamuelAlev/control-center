@@ -200,6 +200,7 @@ import 'package:cc_server_core/src/identity/workspace_invite_service.dart';
 import 'package:cc_server_core/src/identity/workspace_profile.dart';
 import 'package:cc_server_core/src/paired_device_secrets_port.dart';
 import 'package:cc_server_core/src/pr_review/open_pr_polling_service.dart';
+import 'package:cc_server_core/src/pr_review/pr_merge_conflict_service.dart';
 import 'package:cc_server_core/src/pr_review/review_ci_signal_service.dart';
 import 'package:cc_server_core/src/rig_rpc_ops.dart';
 import 'package:cc_server_core/src/rig_wire.dart';
@@ -1015,6 +1016,9 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     String? level,
   })?
   reviewHubStart,
+  // Lists a PR's merge conflicts and hands them to an agent. Wired by a host
+  // that owns the PR clone and the dispatch engine; a demo leaves it null.
+  PrMergeConflictService? prMergeConflicts,
   // Aggregated review-effectiveness counters for a workspace (findings made
   // vs. actually addressed).
   Future<Map<String, dynamic>> Function({required String workspaceId})?
@@ -12703,6 +12707,45 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     // Starts the AI review (the "Ask AI" action): runs the `pr_review`
     // pipeline. Manual by design — no event trigger. The run proceeds in the
     // background; the response only reports the space + status.
+    // GitHub reports only THAT a branch conflicts; these name the files (a
+    // `git merge-tree` on the server's PR clone) and start an agent resolving
+    // them in the PR's space. Both act as the caller: the listing fetches on
+    // their credential and the fix is requested by them.
+    if (prMergeConflicts != null) ...[
+      RepoOp(
+        name: 'pr_review.mergeConflicts',
+        kind: RepoOpKind.read,
+        requiredArgs: ['workspace_id', 'owner', 'repo', 'pr_number'],
+        handler: (ctx) async {
+          final c = requireRepoCoords(ctx.args);
+          final conflicts = await prMergeConflicts.conflicts(
+            workspaceId: ctx.workspaceId!,
+            owner: c.owner,
+            repo: c.repo,
+            prNumber: (ctx.args['pr_number'] as num).toInt(),
+            userId: ctx.userId,
+          );
+          return conflicts.toWire();
+        },
+      ),
+      RepoOp(
+        name: 'pr_review.fixMergeConflicts',
+        kind: RepoOpKind.mutate,
+        // An agent run is a real process on the host.
+        actionClasses: const {ActionClass.processSpawn},
+        requiredArgs: ['workspace_id', 'owner', 'repo', 'pr_number'],
+        handler: (ctx) async {
+          final c = requireRepoCoords(ctx.args);
+          return prMergeConflicts.fixConflicts(
+            workspaceId: ctx.workspaceId!,
+            owner: c.owner,
+            repo: c.repo,
+            prNumber: (ctx.args['pr_number'] as num).toInt(),
+            userId: ctx.userId,
+          );
+        },
+      ),
+    ],
     if (reviewHubStart != null)
       RepoOp(
         name: 'review_hub.start',

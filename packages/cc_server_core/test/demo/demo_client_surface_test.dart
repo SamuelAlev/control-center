@@ -44,6 +44,10 @@ void main() {
     // call sites (terminal, rigs, editor, skills, MCP, forge card).
     'forge.listConnections',
     'forge.capabilities',
+    // The merge button's conflicts flyout: the merge itself is denied on a
+    // demo, so the flyout never lists files or offers the agent there.
+    'pr_review.mergeConflicts',
+    'pr_review.fixMergeConflicts',
     'forge.testConnection',
     'credentials.clearForgeToken',
     'credentials.setTicketingToken',

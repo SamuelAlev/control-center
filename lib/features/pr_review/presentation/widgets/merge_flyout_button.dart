@@ -1,10 +1,13 @@
 import 'dart:async';
 
+import 'package:cc_domain/cc_domain.dart' show RpcErrorCodes;
 import 'package:cc_domain/features/pr_review/domain/entities/check_run.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_review_submission.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_domain/features/pr_review/domain/usecases/evaluate_pr_merge_readiness.dart';
+import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcException;
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/merge_conflicts_panel.dart';
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
@@ -64,9 +67,36 @@ class _MergeFlyoutButtonState extends ConsumerState<MergeFlyoutButton> {
   Offset? _overlayOffset;
   _MergeMethod _method = _MergeMethod.squash;
 
+  /// GitHub refused a merge of THIS head because it conflicts. The forge's
+  /// `mergeable_state` can lag (it is computed asynchronously and the page
+  /// may hold a stale copy), and the refusal is the fresher word — without
+  /// it the flyout would keep offering a merge that just failed.
+  bool _rejectedForConflicts = false;
+
   // The method labels share one full-width track. 520px clips
   // "Create a merge commit" at the control's body size.
-  static const _overlayWidth = 576.0;
+  static const _mergeFormWidth = 576.0;
+
+  // A file list and one button; the merge form's width would leave it
+  // mostly empty.
+  static const _conflictsWidth = 440.0;
+
+  double get _overlayWidth => _hasConflicts ? _conflictsWidth : _mergeFormWidth;
+
+  /// Whether the branch conflicts with its base, by the forge's state or by
+  /// a merge it just refused.
+  bool get _hasConflicts =>
+      _rejectedForConflicts ||
+      widget.pr.mergeableState == PrMergeableState.dirty;
+
+  @override
+  void didUpdateWidget(covariant MergeFlyoutButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // A push is a new head: the refusal was about the old one.
+    if (oldWidget.pr.headSha != widget.pr.headSha) {
+      _rejectedForConflicts = false;
+    }
+  }
 
   @override
   void initState() {
@@ -115,7 +145,8 @@ class _MergeFlyoutButtonState extends ConsumerState<MergeFlyoutButton> {
   /// The approving reviewers among the reviews this widget was handed.
   Iterable<String> get _approvedLogins => [
     for (final r in widget.reviews)
-      if (r.state == PrReviewSubmissionState.approved && r.author?.login != null)
+      if (r.state == PrReviewSubmissionState.approved &&
+          r.author?.login != null)
         r.author!.login,
   ];
 
@@ -146,9 +177,7 @@ class _MergeFlyoutButtonState extends ConsumerState<MergeFlyoutButton> {
     if (widget.checks.any((c) => c.status != CheckRunStatus.completed)) {
       return PrChecksStatus.pending;
     }
-    return widget.checks.isEmpty
-        ? PrChecksStatus.none
-        : PrChecksStatus.passing;
+    return widget.checks.isEmpty ? PrChecksStatus.none : PrChecksStatus.passing;
   }
 
   /// Readiness signal used to colour the merge button.
@@ -242,6 +271,23 @@ class _MergeFlyoutButtonState extends ConsumerState<MergeFlyoutButton> {
       );
       _close();
       toaster.show(l10n.pullRequestMerged, variant: CcToastVariant.success);
+    } on RemoteRpcException catch (e) {
+      // The forge's own reason ("Pull Request has merge conflicts"), not a
+      // generic failure. A conflict also turns the flyout into the conflicts
+      // view, which is where the fix lives.
+      if (e.code == RpcErrorCodes.prNotMergeable &&
+          e.data is Map &&
+          (e.data! as Map)['has_conflicts'] == true &&
+          mounted) {
+        setState(() {
+          _rejectedForConflicts = true;
+          _computeOverlayOffset();
+        });
+      }
+      toaster.show(
+        l10n.failedToMergePr(e.message),
+        variant: CcToastVariant.danger,
+      );
     } on Exception catch (e) {
       toaster.show(l10n.failedToMergePr('$e'), variant: CcToastVariant.danger);
     } finally {
@@ -259,11 +305,18 @@ class _MergeFlyoutButtonState extends ConsumerState<MergeFlyoutButton> {
 
     final l10n = AppLocalizations.of(context);
 
-    final variant = switch (_readiness) {
-      PrMergeReadiness.ready => CcButtonVariant.primary,
-      PrMergeReadiness.pending => CcButtonVariant.secondary,
-      PrMergeReadiness.blocked => CcButtonVariant.destructive,
-    };
+    final conflicts = _hasConflicts;
+    // A conflict is not an override the operator can force: GitHub refuses
+    // the merge outright. Secondary rather than red, because what the button
+    // opens is a list and a fix, not a dangerous act; the label and the
+    // warning glyph carry the state.
+    final variant = conflicts
+        ? CcButtonVariant.secondary
+        : switch (_readiness) {
+            PrMergeReadiness.ready => CcButtonVariant.primary,
+            PrMergeReadiness.pending => CcButtonVariant.secondary,
+            PrMergeReadiness.blocked => CcButtonVariant.destructive,
+          };
 
     return OverlayPortal(
       controller: _popupCtrl,
@@ -273,8 +326,8 @@ class _MergeFlyoutButtonState extends ConsumerState<MergeFlyoutButton> {
         onPressed: _toggle,
         size: CcButtonSize.sm,
         variant: variant,
-        icon: AppIcons.gitMerge,
-        child: Text(l10n.merge),
+        icon: conflicts ? AppIcons.alertTriangle : AppIcons.gitMerge,
+        child: Text(conflicts ? l10n.mergeConflictsButton : l10n.merge),
       ),
     );
   }
@@ -346,104 +399,117 @@ class _MergeFlyoutButtonState extends ConsumerState<MergeFlyoutButton> {
                     boxShadow: AppShadows.golden,
                   ),
                   padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // Title
-                      Text(
-                        l10n.mergePullRequest,
-                        style: CcTypography.body.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: tokens.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
+                  child: _hasConflicts
+                      ? MergeConflictsPanel(
+                          pr: widget.pr,
+                          prRef: widget.prRef,
+                          onFixStarted: _close,
+                        )
+                      : Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            // Title
+                            Text(
+                              l10n.mergePullRequest,
+                              style: CcTypography.body.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: tokens.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
 
-                      // Merge method selector
-                      _buildMethodSelector(l10n),
-                      const SizedBox(height: 10),
+                            // Merge method selector
+                            _buildMethodSelector(l10n),
+                            const SizedBox(height: 10),
 
-                      // Commit title / description
-                      if (showFields) ...[
-                        _buildTextField(
-                          controller: _titleCtrl,
-                          hintText: l10n.commitTitle,
-                          tokens: tokens,
-                          theme: theme,
-                        ),
-                        const SizedBox(height: 8),
-                        _buildTextField(
-                          controller: _descCtrl,
-                          hintText: l10n.commitDescription,
-                          tokens: tokens,
-                          theme: theme,
-                          maxLines: 4,
-                        ),
-                        const SizedBox(height: 12),
-                      ],
+                            // Commit title / description
+                            if (showFields) ...[
+                              _buildTextField(
+                                controller: _titleCtrl,
+                                hintText: l10n.commitTitle,
+                                tokens: tokens,
+                                theme: theme,
+                              ),
+                              const SizedBox(height: 8),
+                              _buildTextField(
+                                controller: _descCtrl,
+                                hintText: l10n.commitDescription,
+                                tokens: tokens,
+                                theme: theme,
+                                maxLines: 4,
+                              ),
+                              const SizedBox(height: 12),
+                            ],
 
-                      // Warnings
-                      if (warnings.isNotEmpty)
-                        Container(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: tokens.bgWarningPrimary,
-                            borderRadius: BorderRadius.circular(2),
-                            border: Border.all(color: tokens.borderErrorSubtle),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: warnings
-                                .map(
-                                  (w) => Row(
-                                    children: [
-                                      Icon(
-                                        AppIcons.alertTriangle,
-                                        size: 14,
-                                        color: tokens.fgWarningPrimary,
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Expanded(
-                                        child: Text(
-                                          w,
-                                          style: CcTypography.caption
-                                              .copyWith(
-                                                color: tokens.textTertiary,
-                                              )
-                                              .copyWith(
-                                                color: tokens.textErrorPrimary,
-                                              ),
-                                        ),
-                                      ),
-                                    ],
+                            // Warnings
+                            if (warnings.isNotEmpty)
+                              Container(
+                                margin: const EdgeInsets.only(bottom: 12),
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: tokens.bgWarningPrimary,
+                                  borderRadius: BorderRadius.circular(2),
+                                  border: Border.all(
+                                    color: tokens.borderErrorSubtle,
                                   ),
-                                )
-                                .toList(),
-                          ),
-                        ),
-
-                      // Merge button
-                      SizedBox(
-                        width: double.infinity,
-                        child: CcButton(
-                          onPressed: _merging ? null : _merge,
-                          fullWidth: true,
-                          variant: _isOverrideMerge
-                              ? CcButtonVariant.destructive
-                              : CcButtonVariant.primary,
-                          child: _merging
-                              ? CcSpinner(size: 16, color: tokens.textWhite)
-                              : Text(
-                                  _isOverrideMerge
-                                      ? l10n.forceMergePullRequest
-                                      : l10n.mergePullRequest,
                                 ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: warnings
+                                      .map(
+                                        (w) => Row(
+                                          children: [
+                                            Icon(
+                                              AppIcons.alertTriangle,
+                                              size: 14,
+                                              color: tokens.fgWarningPrimary,
+                                            ),
+                                            const SizedBox(width: 6),
+                                            Expanded(
+                                              child: Text(
+                                                w,
+                                                style: CcTypography.caption
+                                                    .copyWith(
+                                                      color:
+                                                          tokens.textTertiary,
+                                                    )
+                                                    .copyWith(
+                                                      color: tokens
+                                                          .textErrorPrimary,
+                                                    ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      )
+                                      .toList(),
+                                ),
+                              ),
+
+                            // Merge button
+                            SizedBox(
+                              width: double.infinity,
+                              child: CcButton(
+                                onPressed: _merging ? null : _merge,
+                                fullWidth: true,
+                                variant: _isOverrideMerge
+                                    ? CcButtonVariant.destructive
+                                    : CcButtonVariant.primary,
+                                child: _merging
+                                    ? CcSpinner(
+                                        size: 16,
+                                        color: tokens.textWhite,
+                                      )
+                                    : Text(
+                                        _isOverrideMerge
+                                            ? l10n.forceMergePullRequest
+                                            : l10n.mergePullRequest,
+                                      ),
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                    ],
-                  ),
                 ),
               ),
             ),

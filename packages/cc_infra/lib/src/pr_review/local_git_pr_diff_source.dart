@@ -306,14 +306,51 @@ class LocalGitPrDiffSource implements PrDiffSource {
   }
 
 
-  PrCloneManager _buildManager(PrSourceRequest req) {
+  /// The files that conflict when [req]'s head is merged into its base.
+  ///
+  /// Fetches both refs first, so the answer is about the branch as it is on
+  /// the forge now rather than whenever the clone last fetched. [githubToken]
+  /// overrides the boot-time token this source was built with — the caller's
+  /// own credential reaches a private repo the server's may not, and a boot
+  /// snapshot of an installation token is an hour from expiring.
+  ///
+  /// Throws when the clone or fetch fails, or when another fetch of the same
+  /// clone is already running (the refs could be stale or missing mid-fetch).
+  Future<List<String>> mergeConflictFiles(
+    PrSourceRequest req, {
+    String? githubToken,
+  }) async {
+    final manager = _buildManager(req, githubToken: githubToken);
+    var ran = false;
+    await for (final progress in manager.ensureCloneAndFetch(
+      prNumber: req.prNumber,
+      baseRef: req.baseRef,
+      headSha: req.headSha,
+    )) {
+      ran = true;
+      if (progress.phase == PrClonePhase.error) {
+        throw StateError('Could not fetch the pull request: ${progress.error}');
+      }
+    }
+    if (!ran) {
+      throw StateError('The pull request is already being fetched; try again.');
+    }
+    return manager.conflictingFiles(
+      prNumber: req.prNumber,
+      baseRef: req.baseRef,
+    );
+  }
+
+  PrCloneManager _buildManager(PrSourceRequest req, {String? githubToken}) {
     return PrCloneManager(
       git: _git,
       filesystem: _filesystem,
       workspaceId: req.workspaceId,
       owner: req.owner,
       repo: req.repo,
-      githubToken: _githubToken,
+      githubToken: (githubToken == null || githubToken.isEmpty)
+          ? _githubToken
+          : githubToken,
       localCheckoutPath: req.localCheckoutPath,
       rift: _rift,
     );

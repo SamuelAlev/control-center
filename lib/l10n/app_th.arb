@@ -9158,5 +9158,13 @@
   "stackPublishFailed": "เผยแพร่สแตกไม่ได้",
   "stackPublished": "เผยแพร่สแตกเป็นฉบับร่างแล้ว",
   "stackOpenPullRequest": "เปิดพูลรีเควสต์",
-  "stackSection": "สแตก"
+  "stackSection": "สแตก",
+  "mergeConflictsButton": "ข้อขัดแย้ง",
+  "mergeConflictsFileCount": "{count, plural, other{{count} ไฟล์ขัดแย้งกับ {base}}}",
+  "mergeConflictsLoading": "กำลังค้นหาไฟล์ที่ขัดแย้ง…",
+  "mergeConflictsLoadFailed": "ไม่สามารถแสดงรายการไฟล์ที่ขัดแย้งได้",
+  "mergeConflictsNoneFound": "ไม่พบไฟล์ที่ขัดแย้ง GitHub อาจยังอัปเดต pull request นี้อยู่",
+  "askAiToFixConflicts": "ให้ AI แก้ไขข้อขัดแย้ง",
+  "fixConflictsStarted": "เอเจนต์กำลังแก้ไขข้อขัดแย้งในแชทของ pull request นี้",
+  "failedToStartConflictFix": "ไม่สามารถเริ่มการแก้ไขข้อขัดแย้งได้: {error}"
 }

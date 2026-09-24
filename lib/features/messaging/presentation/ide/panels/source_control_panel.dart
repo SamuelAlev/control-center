@@ -159,7 +159,7 @@ class _Preparing extends StatelessWidget {
   }
 }
 
-/// One repo's source-control section: header (name + branch + count), commit
+/// One repo's source-control section: header (name + branch), commit
 /// box, the staged/unstaged groups and the pull-request footer.
 class _RepoSection extends ConsumerStatefulWidget {
   const _RepoSection({
@@ -871,7 +871,6 @@ class _RepoSectionState extends ConsumerState<_RepoSection>
             ],
           ),
           uppercaseTitle: false,
-          count: total,
           collapsed: _collapsed,
           onToggleCollapse: () {
             setState(() => _collapsed = !_collapsed);

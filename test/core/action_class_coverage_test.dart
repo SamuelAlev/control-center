@@ -328,6 +328,8 @@ void main() {
     'pr_review.setPullRequestDraft': {'prPublish'},
     // Review Hub: both ops dispatch agent runs on the host.
     'review_hub.start': {'processSpawn'},
+    // An agent run on the host resolving a PR's merge conflicts.
+    'pr_review.fixMergeConflicts': {'processSpawn'},
     // Pipeline execution: start/retry spawn bash (and other step bodies);
     // cancel/kill interrupt a live process. Template upsert and trigger
     // writes schedule that spawn by proxy, the same claim as

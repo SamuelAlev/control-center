@@ -14400,6 +14400,39 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get stackSection => '堆叠';
+
+  @override
+  String get mergeConflictsButton => '冲突';
+
+  @override
+  String mergeConflictsFileCount(int count, String base) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 个文件与 $base 冲突',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get mergeConflictsLoading => '正在查找冲突文件…';
+
+  @override
+  String get mergeConflictsLoadFailed => '无法列出冲突文件';
+
+  @override
+  String get mergeConflictsNoneFound => '未找到冲突文件。GitHub 可能仍在更新此 pull request。';
+
+  @override
+  String get askAiToFixConflicts => '让 AI 解决冲突';
+
+  @override
+  String get fixConflictsStarted => '智能体正在此 pull request 的聊天中解决冲突';
+
+  @override
+  String failedToStartConflictFix(String error) {
+    return '无法开始解决冲突：$error';
+  }
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -28966,4 +28999,37 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get stackSection => '堆疊';
+
+  @override
+  String get mergeConflictsButton => '衝突';
+
+  @override
+  String mergeConflictsFileCount(int count, String base) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 個檔案與 $base 衝突',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get mergeConflictsLoading => '正在尋找衝突檔案…';
+
+  @override
+  String get mergeConflictsLoadFailed => '無法列出衝突檔案';
+
+  @override
+  String get mergeConflictsNoneFound => '找不到衝突檔案。GitHub 可能仍在更新此 pull request。';
+
+  @override
+  String get askAiToFixConflicts => '請 AI 解決衝突';
+
+  @override
+  String get fixConflictsStarted => '代理程式正在此 pull request 的聊天中解決衝突';
+
+  @override
+  String failedToStartConflictFix(String error) {
+    return '無法開始解決衝突：$error';
+  }
 }

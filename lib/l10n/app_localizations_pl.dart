@@ -15104,4 +15104,43 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get stackSection => 'Stos';
+
+  @override
+  String get mergeConflictsButton => 'Konflikty';
+
+  @override
+  String mergeConflictsFileCount(int count, String base) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count pliku jest w konflikcie z $base',
+      many: '$count plików jest w konflikcie z $base',
+      few: '$count pliki są w konflikcie z $base',
+      one: '1 plik jest w konflikcie z $base',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get mergeConflictsLoading => 'Wyszukiwanie plików z konfliktami…';
+
+  @override
+  String get mergeConflictsLoadFailed =>
+      'Nie udało się wyświetlić plików z konfliktami';
+
+  @override
+  String get mergeConflictsNoneFound =>
+      'Nie znaleziono plików z konfliktami. GitHub może nadal aktualizować ten pull request.';
+
+  @override
+  String get askAiToFixConflicts => 'Poproś AI o rozwiązanie konfliktów';
+
+  @override
+  String get fixConflictsStarted =>
+      'Agent rozwiązuje konflikty na czacie tego pull requesta';
+
+  @override
+  String failedToStartConflictFix(String error) {
+    return 'Nie udało się rozpocząć rozwiązywania konfliktów: $error';
+  }
 }

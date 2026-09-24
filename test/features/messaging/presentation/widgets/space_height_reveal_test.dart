@@ -26,41 +26,110 @@ Widget _reveal({required bool open, bool reduced = false}) {
 double _height(WidgetTester tester) =>
     tester.getSize(find.byKey(const ValueKey('reveal'))).height;
 
+/// Steps [total] in 120Hz frames.
+Future<void> _frames(WidgetTester tester, Duration total) async {
+  const frame = Duration(microseconds: 8333);
+  var left = total;
+  while (left > Duration.zero) {
+    final step = left < frame ? left : frame;
+    await tester.pump(step);
+    left -= step;
+  }
+}
+
 void main() {
-  testWidgets('a late frame does not drop a whole row of the close', (
+  testWidgets('a late frame pauses the close instead of jumping it', (
     tester,
   ) async {
     await tester.pumpWidget(_reveal(open: true));
     expect(_height(tester), 240);
 
     await tester.pumpWidget(_reveal(open: false));
-    // The frame that starts the close, including a hitch, does not spend
-    // that stall on the clip.
+    // The first tick only stamps the clock.
     await tester.pump(const Duration(milliseconds: 100));
     expect(_height(tester), 240);
 
-    await tester.pump(const Duration(milliseconds: 16));
-    expect(_height(tester), closeTo(224, 0.5));
-
+    // A 100ms hitch advances the curve by one 60Hz slice, no more.
     await tester.pump(const Duration(milliseconds: 100));
-    expect(_height(tester), closeTo(208, 0.5));
+    final afterHitch = _height(tester);
+    final oneSlice = 240 * (1 - CcMotion.emphasized.transform(16.667 / 240));
+    expect(afterHitch, closeTo(oneSlice, 0.5));
 
-    for (var i = 0; i < 20; i++) {
-      await tester.pump(const Duration(milliseconds: 16));
-    }
+    await _frames(tester, kSpaceRevealDuration);
     expect(_height(tester), 0);
   });
 
-  testWidgets('opening advances by the same pixel slice', (tester) async {
+  testWidgets('every 120Hz frame moves the clip', (tester) async {
     await tester.pumpWidget(_reveal(open: false));
-    expect(_height(tester), 0);
+    await tester.pumpWidget(_reveal(open: true));
+    await tester.pump();
+
+    var previous = _height(tester);
+    var frames = 0;
+    while (previous < 240) {
+      await tester.pump(const Duration(microseconds: 8333));
+      final next = _height(tester);
+      expect(next, greaterThan(previous));
+      previous = next;
+      frames++;
+    }
+    // 240ms at 120Hz, give or take the rounding of the last frame.
+    expect(frames, inInclusiveRange(28, 30));
+  });
+
+  testWidgets('open and close of different heights finish together', (
+    tester,
+  ) async {
+    Widget pair({required bool firstOpen}) => testWrap(
+      Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SpaceHeightReveal(
+            key: const ValueKey('a'),
+            open: firstOpen,
+            child: const SizedBox(height: 60),
+          ),
+          SpaceHeightReveal(
+            key: const ValueKey('b'),
+            open: !firstOpen,
+            child: const SizedBox(height: 200),
+          ),
+        ],
+      ),
+    );
+    double h(String k) => tester.getSize(find.byKey(ValueKey(k))).height;
+
+    await tester.pumpWidget(pair(firstOpen: true));
+    await tester.pumpWidget(pair(firstOpen: false));
+    await tester.pump();
+    await _frames(tester, const Duration(milliseconds: 80));
+    // Same progress on both: the shrinking and the growing card are one
+    // gesture, not two animations of different lengths.
+    expect(1 - h('a') / 60, closeTo(h('b') / 200, 0.02));
+
+    await _frames(tester, kSpaceRevealDuration);
+    expect(h('a'), 0);
+    expect(h('b'), 200);
+  });
+
+  testWidgets('reversing mid-flight continues from the current height', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_reveal(open: true));
+    await tester.pumpWidget(_reveal(open: false));
+    await tester.pump();
+    await _frames(tester, const Duration(milliseconds: 50));
+    final mid = _height(tester);
+    expect(mid, inExclusiveRange(0, 240));
 
     await tester.pumpWidget(_reveal(open: true));
-    await tester.pump(const Duration(milliseconds: 100));
-    expect(_height(tester), 0);
+    expect(_height(tester), closeTo(mid, 0.01));
+    await tester.pump();
+    await tester.pump(const Duration(microseconds: 8333));
+    expect(_height(tester), greaterThan(mid));
 
-    await tester.pump(const Duration(milliseconds: 16));
-    expect(_height(tester), closeTo(16, 0.5));
+    await _frames(tester, kSpaceRevealDuration);
+    expect(_height(tester), 240);
   });
 
   testWidgets('reduced motion snaps the clip', (tester) async {

@@ -225,7 +225,10 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
   void initState() {
     super.initState();
     _sidebarTab = ValueNotifier<IdeSidebarView>(IdeSidebarView.general);
-    _layout = _seedLayout(widget.selectedSpaceId);
+    _persistence = _newPersistence();
+    _workspaceId = ref.read(activeWorkspaceIdProvider);
+    final warm = _peekLayout(widget.selectedSpaceId);
+    _layout = warm?.layout ?? _seedLayout(widget.selectedSpaceId);
     _layout.addListener(_onLayoutChanged);
     _wireActions(widget.actions);
     _tabUrl = EditorTabUrlTracker(
@@ -235,13 +238,36 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
       writeKey: _writeTabKey,
     );
     // Restore this conversation's persisted layout once the first frame (and
-    // thus the provider reads in [build]) has run.
+    // thus the provider reads in [build]) has run. A layout the memo already
+    // held is on screen now; only the tab mirror is left to run.
     final spaceId = widget.selectedSpaceId;
     if (spaceId != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _restorePersisted(spaceId);
+        if (warm != null) {
+          _completeRestore();
+        } else {
+          _restorePersisted(spaceId);
+        }
       });
     }
+  }
+
+  EditorLayoutPersistence _newPersistence() => EditorLayoutPersistence(
+    codec: messagingLayoutCodec,
+    cache: ref.read(editorLayoutCacheRepositoryProvider),
+    cacheKind: editorLayoutCacheKind,
+    memo: ref.read(editorLayoutMemoProvider),
+  );
+
+  /// The space's layout when this client already knows it, without a
+  /// round-trip. Null when it has to be read from the server.
+  ({EditorLayoutController? layout})? _peekLayout(String? spaceId) {
+    final workspaceId = _workspaceId;
+    final persistence = _persistence;
+    if (spaceId == null || workspaceId == null || persistence == null) {
+      return null;
+    }
+    return persistence.peek(workspaceId: workspaceId, cacheKey: spaceId);
   }
 
   /// Wires the external command sink so keyboard shortcuts (⌘T/⌘W/⌘B) can drive
@@ -686,7 +712,11 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
     // Keep-decisions belong to tabs that are about to leave the tree with the
     // layout: a swap is not a close, so nothing is waiting to read them.
     _keptShells.clear();
-    setState(() => _setLayout(_seedLayout(to)));
+    // A space this client has shown before swaps straight to its layout:
+    // seeding first and restoring a round-trip later built every tab body
+    // twice, and the chat drew a spinner in between.
+    final warm = _peekLayout(to);
+    setState(() => _setLayout(warm?.layout ?? _seedLayout(to)));
     // This runs from didUpdateWidget (mid-build) and Riverpod 3 forbids
     // modifying a provider during a build pass ("modified a provider while the
     // widget tree was building"). The outgoing conversation's terminals mirror
@@ -706,9 +736,13 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
       }
     });
     if (to != null) {
-      WidgetsBinding.instance.addPostFrameCallback(
-        (_) => _restorePersisted(to),
-      );
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (warm == null) {
+          _restorePersisted(to);
+        } else if (mounted && widget.selectedSpaceId == to) {
+          _completeRestore();
+        }
+      });
     } else {
       // No restore will run for the empty surface: re-track the seed's focus
       // against the URL tracker immediately (same drift the restore's
@@ -736,6 +770,13 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
     if (restored != null) {
       setState(() => _setLayout(restored));
     }
+    _completeRestore();
+  }
+
+  /// The tail every restore shares, whether the layout came from the memo or
+  /// the server: the URL's `?tab=` gets the final say, then the space's
+  /// conversations are mirrored into chat tabs.
+  void _completeRestore() {
     _tabUrl.apply(_layout, widget.focusedTabKey, force: true);
     _layoutRestored = true;
     // Conversations may already be loaded (provider cache) — mirror them into
@@ -1342,11 +1383,7 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
     // The layout cache is a stable workspace-scoped provider; build the
     // persistence helper once (the cache repo never changes over the state's
     // life). Keyed by space id under the messaging layout cache kind.
-    _persistence ??= EditorLayoutPersistence(
-      codec: messagingLayoutCodec,
-      cache: ref.read(editorLayoutCacheRepositoryProvider),
-      cacheKind: editorLayoutCacheKind,
-    );
+    _persistence ??= _newPersistence();
     _workspaceId = ref.watch(activeWorkspaceIdProvider);
     // Kept warm here so the "+" menu's VM-terminal entry has an answer by the
     // time it opens — the menu itself builds outside this widget's build pass

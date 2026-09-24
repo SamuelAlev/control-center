@@ -25257,6 +25257,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Stack'**
   String get stackSection;
+
+  /// Label of the merge button when the pull request conflicts with its base branch; opens a flyout listing the conflicting files
+  ///
+  /// In en, this message translates to:
+  /// **'Conflicts'**
+  String get mergeConflictsButton;
+
+  /// Summary above the list of files that conflict with the base branch
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 file conflicts with {base}} other{{count} files conflict with {base}}}'**
+  String mergeConflictsFileCount(int count, String base);
+
+  /// Shown while the server computes which files conflict
+  ///
+  /// In en, this message translates to:
+  /// **'Finding the conflicting files…'**
+  String get mergeConflictsLoading;
+
+  /// Shown when the conflicting files could not be listed
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t list the conflicting files'**
+  String get mergeConflictsLoadFailed;
+
+  /// Shown when GitHub reported conflicts but none were found on the current branch
+  ///
+  /// In en, this message translates to:
+  /// **'No conflicting files found. GitHub may still be updating this pull request.'**
+  String get mergeConflictsNoneFound;
+
+  /// Button that starts an AI agent resolving the pull request's merge conflicts
+  ///
+  /// In en, this message translates to:
+  /// **'Ask AI to fix conflicts'**
+  String get askAiToFixConflicts;
+
+  /// Toast after an agent was started to resolve merge conflicts
+  ///
+  /// In en, this message translates to:
+  /// **'An agent is resolving the conflicts in this pull request\'s chat'**
+  String get fixConflictsStarted;
+
+  /// Toast when the conflict-fixing agent could not be started
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t start the conflict fix: {error}'**
+  String failedToStartConflictFix(String error);
 }
 
 class _AppLocalizationsDelegate

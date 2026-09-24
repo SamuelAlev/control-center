@@ -15053,4 +15053,42 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get stackSection => 'Sada';
+
+  @override
+  String get mergeConflictsButton => 'Konflikty';
+
+  @override
+  String mergeConflictsFileCount(int count, String base) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count souborů je v konfliktu s $base',
+      few: '$count soubory jsou v konfliktu s $base',
+      one: '1 soubor je v konfliktu s $base',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get mergeConflictsLoading => 'Hledání souborů v konfliktu…';
+
+  @override
+  String get mergeConflictsLoadFailed =>
+      'Soubory v konfliktu se nepodařilo načíst';
+
+  @override
+  String get mergeConflictsNoneFound =>
+      'Nebyly nalezeny žádné soubory v konfliktu. GitHub možná tento pull request ještě aktualizuje.';
+
+  @override
+  String get askAiToFixConflicts => 'Požádat AI o vyřešení konfliktů';
+
+  @override
+  String get fixConflictsStarted =>
+      'Agent řeší konflikty v chatu tohoto pull requestu';
+
+  @override
+  String failedToStartConflictFix(String error) {
+    return 'Řešení konfliktů se nepodařilo spustit: $error';
+  }
 }

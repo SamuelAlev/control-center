@@ -7933,5 +7933,13 @@
   "stackPublishFailed": "No se pudo publicar la pila",
   "stackPublished": "La pila se publicó como borradores",
   "stackOpenPullRequest": "Abrir pull request",
-  "stackSection": "Pila"
+  "stackSection": "Pila",
+  "mergeConflictsButton": "Conflictos",
+  "mergeConflictsFileCount": "{count, plural, =1{1 archivo tiene conflictos con {base}} other{{count} archivos tienen conflictos con {base}}}",
+  "mergeConflictsLoading": "Buscando los archivos en conflicto…",
+  "mergeConflictsLoadFailed": "No se pudieron listar los archivos en conflicto",
+  "mergeConflictsNoneFound": "No se encontraron archivos en conflicto. Puede que GitHub aún esté actualizando esta pull request.",
+  "askAiToFixConflicts": "Pedir a la IA que resuelva los conflictos",
+  "fixConflictsStarted": "Un agente está resolviendo los conflictos en el chat de esta pull request",
+  "failedToStartConflictFix": "No se pudo iniciar la resolución de conflictos: {error}"
 }

@@ -16,6 +16,7 @@ import 'package:control_center/features/agents/providers/conversation_run_tree_p
 import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -428,6 +429,80 @@ void main() {
         expect(repo.watched, [(workspaceId: wsA, spaceId: 'ch-a')]);
       },
     );
+  });
+
+  group('space chat data holds past its last listener', () {
+    const ws = 'ws-1';
+
+    ProviderContainer containerWith(ConversationRepository repo) {
+      final container = ProviderContainer(
+        overrides: [
+          activeWorkspaceIdProvider.overrideWith(_MutableActiveWorkspaceId.new),
+          workspaceSpacesProvider(ws).overrideWithValue(
+            AsyncData([
+              Space(
+                id: 'ch-a',
+                name: 'a',
+                workspaceId: ws,
+                createdAt: DateTime(2024),
+                updatedAt: DateTime(2024),
+              ),
+            ]),
+          ),
+          conversationRepositoryProvider.overrideWithValue(repo),
+        ],
+      );
+      addTearDown(container.dispose);
+      return container;
+    }
+
+    void visit(ProviderContainer container) {
+      container.listen(spaceConversationsProvider('ch-a'), (_, _) {}).close();
+    }
+
+    test('leaving and coming back within the hold opens no new watch', () {
+      fakeAsync((async) {
+        final repo = _RecordingConversationRepository();
+        final container = containerWith(repo);
+
+        visit(container);
+        async.flushMicrotasks();
+        async.elapse(const Duration(minutes: 1));
+        visit(container);
+        async.flushMicrotasks();
+        expect(repo.watched, hasLength(1));
+
+        // Past the hold the list is let go, and the next visit re-watches.
+        async.elapse(const Duration(minutes: 3));
+        visit(container);
+        async.flushMicrotasks();
+        expect(repo.watched, hasLength(2));
+      });
+    });
+
+    test('a failed standing-conversation resolve is not held', () {
+      fakeAsync((async) {
+        final repo = _EnsureCountingRepository(fail: true);
+        final container = containerWith(repo);
+
+        void open() {
+          container
+              .listen(standingConversationIdProvider('ch-a'), (_, _) {})
+              .close();
+          // A real reopen is frames later, not the same microtask.
+          async.elapse(const Duration(seconds: 1));
+        }
+
+        open();
+        open();
+        expect(repo.ensures, 2, reason: 'a failure retries on the next open');
+
+        repo.fail = false;
+        open();
+        open();
+        expect(repo.ensures, 3, reason: 'a success is held');
+      });
+    });
   });
 
   group('spaceBusyConversationIdsProvider', () {
@@ -946,4 +1021,35 @@ class _MutableActiveWorkspaceId extends ActiveWorkspaceIdNotifier {
   String? build() => 'ws-1';
 
   void switchTo(String id) => state = id;
+}
+
+/// Counts `ensure` calls; fails them while [fail] is set.
+class _EnsureCountingRepository implements ConversationRepository {
+  _EnsureCountingRepository({required this.fail});
+
+  bool fail;
+  int ensures = 0;
+
+  @override
+  Future<Conversation> ensure({
+    required String workspaceId,
+    required String spaceId,
+  }) async {
+    ensures++;
+    if (fail) {
+      throw StateError('ensure refused');
+    }
+    return Conversation(
+      id: 'standing-$spaceId',
+      workspaceId: workspaceId,
+      spaceId: spaceId,
+      title: spaceId,
+      createdAt: DateTime(2024),
+      updatedAt: DateTime(2024),
+    );
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) =>
+      throw UnimplementedError('${invocation.memberName} is not under test');
 }

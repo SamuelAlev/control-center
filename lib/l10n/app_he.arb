@@ -8746,5 +8746,13 @@
   "stackPublishFailed": "לא ניתן לפרסם את המחסנית",
   "stackPublished": "המחסנית פורסמה כטיוטות",
   "stackOpenPullRequest": "פתיחת בקשת משיכה",
-  "stackSection": "מחסנית"
+  "stackSection": "מחסנית",
+  "mergeConflictsButton": "התנגשויות",
+  "mergeConflictsFileCount": "{count, plural, =1{קובץ אחד מתנגש עם {base}} other{{count} קבצים מתנגשים עם {base}}}",
+  "mergeConflictsLoading": "מחפש את הקבצים המתנגשים…",
+  "mergeConflictsLoadFailed": "לא ניתן להציג את הקבצים המתנגשים",
+  "mergeConflictsNoneFound": "לא נמצאו קבצים מתנגשים. ייתכן ש-GitHub עדיין מעדכן את בקשת המשיכה הזו.",
+  "askAiToFixConflicts": "בקש מה-AI לפתור את ההתנגשויות",
+  "fixConflictsStarted": "סוכן פותר את ההתנגשויות בצ'אט של בקשת המשיכה הזו",
+  "failedToStartConflictFix": "לא ניתן להתחיל את פתרון ההתנגשויות: {error}"
 }

@@ -8746,5 +8746,13 @@
   "stackPublishFailed": "Sadu se nepodařilo publikovat",
   "stackPublished": "Sada byla publikována jako koncepty",
   "stackOpenPullRequest": "Otevřít pull request",
-  "stackSection": "Sada"
+  "stackSection": "Sada",
+  "mergeConflictsButton": "Konflikty",
+  "mergeConflictsFileCount": "{count, plural, =1{1 soubor je v konfliktu s {base}} few{{count} soubory jsou v konfliktu s {base}} other{{count} souborů je v konfliktu s {base}}}",
+  "mergeConflictsLoading": "Hledání souborů v konfliktu…",
+  "mergeConflictsLoadFailed": "Soubory v konfliktu se nepodařilo načíst",
+  "mergeConflictsNoneFound": "Nebyly nalezeny žádné soubory v konfliktu. GitHub možná tento pull request ještě aktualizuje.",
+  "askAiToFixConflicts": "Požádat AI o vyřešení konfliktů",
+  "fixConflictsStarted": "Agent řeší konflikty v chatu tohoto pull requestu",
+  "failedToStartConflictFix": "Řešení konfliktů se nepodařilo spustit: {error}"
 }

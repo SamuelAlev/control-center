@@ -8746,5 +8746,13 @@
   "stackPublishFailed": "Δεν ήταν δυνατή η δημοσίευση της στοίβας",
   "stackPublished": "Η στοίβα δημοσιεύτηκε ως πρόχειρα",
   "stackOpenPullRequest": "Άνοιγμα pull request",
-  "stackSection": "Στοίβα"
+  "stackSection": "Στοίβα",
+  "mergeConflictsButton": "Συγκρούσεις",
+  "mergeConflictsFileCount": "{count, plural, =1{1 αρχείο συγκρούεται με το {base}} other{{count} αρχεία συγκρούονται με το {base}}}",
+  "mergeConflictsLoading": "Αναζήτηση αρχείων σε σύγκρουση…",
+  "mergeConflictsLoadFailed": "Δεν ήταν δυνατή η εμφάνιση των αρχείων σε σύγκρουση",
+  "mergeConflictsNoneFound": "Δεν βρέθηκαν αρχεία σε σύγκρουση. Το GitHub ίσως ενημερώνει ακόμη αυτό το pull request.",
+  "askAiToFixConflicts": "Ζητήστε από την AI να επιλύσει τις συγκρούσεις",
+  "fixConflictsStarted": "Ένας πράκτορας επιλύει τις συγκρούσεις στη συνομιλία αυτού του pull request",
+  "failedToStartConflictFix": "Δεν ήταν δυνατή η έναρξη επίλυσης: {error}"
 }

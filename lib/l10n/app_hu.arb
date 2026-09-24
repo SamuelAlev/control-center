@@ -8746,5 +8746,13 @@
   "stackPublishFailed": "A vermet nem sikerült közzétenni",
   "stackPublished": "A verem piszkozatként lett közzétéve",
   "stackOpenPullRequest": "Pull request megnyitása",
-  "stackSection": "Verem"
+  "stackSection": "Verem",
+  "mergeConflictsButton": "Ütközések",
+  "mergeConflictsFileCount": "{count, plural, =1{1 fájl ütközik ezzel: {base}} other{{count} fájl ütközik ezzel: {base}}}",
+  "mergeConflictsLoading": "Ütköző fájlok keresése…",
+  "mergeConflictsLoadFailed": "Az ütköző fájlokat nem sikerült listázni",
+  "mergeConflictsNoneFound": "Nem található ütköző fájl. Lehet, hogy a GitHub még frissíti ezt a pull requestet.",
+  "askAiToFixConflicts": "Ütközések feloldása AI-jal",
+  "fixConflictsStarted": "Egy ügynök feloldja az ütközéseket ennek a pull requestnek a csevegésében",
+  "failedToStartConflictFix": "Az ütközésfeloldást nem sikerült elindítani: {error}"
 }

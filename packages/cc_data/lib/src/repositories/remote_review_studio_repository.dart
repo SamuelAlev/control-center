@@ -172,6 +172,32 @@ class RemoteReviewStudioRepository {
     if (level != null) 'level': level.wireName,
   });
 
+  /// The files PR #[prNumber] conflicts on against its base, computed on the
+  /// server (GitHub reports only that a branch conflicts). Raw payload:
+  /// `{files, base_ref, head_ref}`.
+  Future<Map<String, dynamic>> mergeConflicts({
+    required String workspaceId,
+    required String owner,
+    required String repo,
+    required int prNumber,
+  }) => _client.call('pr_review.mergeConflicts', {
+    'workspace_id': workspaceId,
+    ..._prArgs(owner, repo, prNumber),
+  });
+
+  /// Starts an agent resolving PR #[prNumber]'s merge conflicts in a new
+  /// conversation of the PR's space. Returns
+  /// `{space_id, conversation_id, agent_id, run_id}`.
+  Future<Map<String, dynamic>> fixMergeConflicts({
+    required String workspaceId,
+    required String owner,
+    required String repo,
+    required int prNumber,
+  }) => _client.call('pr_review.fixMergeConflicts', {
+    'workspace_id': workspaceId,
+    ..._prArgs(owner, repo, prNumber),
+  });
+
   /// Structured failure signals from the PR's failing CI jobs, correlated to
   /// its changed files. Raw payload: `{available, failing_count, jobs}`.
   Future<Map<String, dynamic>> ciSignals({

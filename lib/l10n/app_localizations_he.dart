@@ -14894,4 +14894,40 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get stackSection => 'מחסנית';
+
+  @override
+  String get mergeConflictsButton => 'התנגשויות';
+
+  @override
+  String mergeConflictsFileCount(int count, String base) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count קבצים מתנגשים עם $base',
+      one: 'קובץ אחד מתנגש עם $base',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get mergeConflictsLoading => 'מחפש את הקבצים המתנגשים…';
+
+  @override
+  String get mergeConflictsLoadFailed => 'לא ניתן להציג את הקבצים המתנגשים';
+
+  @override
+  String get mergeConflictsNoneFound =>
+      'לא נמצאו קבצים מתנגשים. ייתכן ש-GitHub עדיין מעדכן את בקשת המשיכה הזו.';
+
+  @override
+  String get askAiToFixConflicts => 'בקש מה-AI לפתור את ההתנגשויות';
+
+  @override
+  String get fixConflictsStarted =>
+      'סוכן פותר את ההתנגשויות בצ\'אט של בקשת המשיכה הזו';
+
+  @override
+  String failedToStartConflictFix(String error) {
+    return 'לא ניתן להתחיל את פתרון ההתנגשויות: $error';
+  }
 }

@@ -7,6 +7,7 @@ import 'package:cc_domain/features/messaging/domain/ports/messaging_port.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/conversation_repository.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/conversation_status.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/messaging/presentation/widgets/conversations_sidebar_section.dart';
@@ -29,6 +30,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod/src/framework.dart' show Override;
+
+import '../../../../helpers/fake_rpc_client.dart';
 
 const _workspaceId = 'ws-1';
 
@@ -92,6 +95,10 @@ List<Override> _commonOverrides({
   Map<String, List<PullRequest>> pullRequests = const {},
 }) => [
   activeWorkspaceIdProvider.overrideWith(_ActiveWorkspaceIdNotifier.new),
+  // Hovering a space row prefetches it over RPC; every op answers empty.
+  rpcClientProvider.overrideWithValue(
+    (FakeRpcHost()..onCall = (op, args) => const <String, dynamic>{}).client(),
+  ),
   workspaceVisibleSpacesProvider(_workspaceId).overrideWithValue(spaces),
   appPreferencesProvider.overrideWithValue(prefs),
   workspacesProvider.overrideWith((ref) => Stream.value(const [])),
@@ -172,8 +179,8 @@ double _spaceCardHeight(WidgetTester tester, String name) {
       .height;
 }
 
-/// The open card grows a row per frame. One elapsed pump draws a single
-/// frame, so a conversation is not inside the card until the reveal catches up.
+/// The open card grows over several frames. One elapsed pump advances it by
+/// a single slice, so a conversation is not inside the card until it settles.
 Future<void> _pumpOpenCard(WidgetTester tester) async {
   await tester.pump();
   for (var i = 0; i < 24; i++) {
@@ -181,8 +188,8 @@ Future<void> _pumpOpenCard(WidgetTester tester) async {
   }
 }
 
-/// Steps the reveal. The clip moves at most 16px per frame, so a single
-/// long [WidgetTester.pump] does not finish the travel.
+/// Steps the reveal. A frame advances it by at most one 60Hz slice, so a
+/// single long [WidgetTester.pump] does not finish the travel.
 Future<void> _elapseReveal(WidgetTester tester, Duration total) async {
   var left = total.inMilliseconds;
   while (left > 0) {
@@ -324,9 +331,9 @@ void main() {
       final closed = titleInset(0, 'Dev Team');
       final open = titleInset(1, 'Ops');
       expect(closed, open);
-      // Panel inset is [AppSpacing.sm], plus the two-line row's own air.
-      expect(closed, greaterThanOrEqualTo(AppSpacing.sm));
-      expect(closed, lessThan(AppSpacing.md));
+      // Panel inset is [AppSpacing.xs], plus the two-line row's own air.
+      expect(closed, greaterThanOrEqualTo(AppSpacing.xs));
+      expect(closed, lessThan(AppSpacing.sm));
 
       // The inset is part of the row's box. A press paints that box, so it
       // has to cover the card instead of sitting inside a second background.
@@ -912,6 +919,39 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
     });
 
+    testWidgets('the caret shares the overflow trigger\'s axis', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            ..._commonOverrides(spaces: [_space]),
+            ..._listedConversationOverrides(),
+          ],
+          child: _wrap(_router(spaceRoute(_workspaceId, 'g-1'))),
+        ),
+      );
+      await _pumpOpenCard(tester);
+
+      final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await mouse.addPointer(location: Offset.zero);
+      addTearDown(mouse.removePointer);
+      await mouse.moveTo(tester.getCenter(find.text('Dev Team')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final dots = tester.getCenter(_overflowTrigger());
+      final caret = tester.getCenter(
+        find.byWidgetPredicate(
+          (w) => w is Icon && w.icon == AppIcons.chevronDown,
+        ),
+      );
+      expect(caret.dx, closeTo(dots.dx, 0.5));
+
+      await tester.pumpWidget(Container());
+      await tester.pump(const Duration(milliseconds: 100));
+    });
+
     testWidgets('the conversation count collapses and expands conversations', (
       tester,
     ) async {
@@ -933,7 +973,7 @@ void main() {
       final openHeight = _spaceCardHeight(tester, 'Dev Team');
 
       await tester.tap(find.text(label));
-      await _elapseReveal(tester, const Duration(milliseconds: 48));
+      await _elapseReveal(tester, const Duration(milliseconds: 96));
 
       // Still mounted while the card clips shut.
       expect(find.text('Design review'), findsOneWidget);
@@ -948,7 +988,7 @@ void main() {
       expect(closingHeight, greaterThan(closedHeight + 8));
 
       await tester.tap(find.text(label));
-      await _elapseReveal(tester, const Duration(milliseconds: 48));
+      await _elapseReveal(tester, const Duration(milliseconds: 96));
 
       expect(find.text('Design review'), findsOneWidget);
       final openingHeight = _spaceCardHeight(tester, 'Dev Team');

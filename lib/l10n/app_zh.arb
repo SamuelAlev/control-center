@@ -8746,5 +8746,13 @@
   "stackPublishFailed": "无法发布堆叠",
   "stackPublished": "已将堆叠发布为草稿",
   "stackOpenPullRequest": "打开拉取请求",
-  "stackSection": "堆叠"
+  "stackSection": "堆叠",
+  "mergeConflictsButton": "冲突",
+  "mergeConflictsFileCount": "{count, plural, other{{count} 个文件与 {base} 冲突}}",
+  "mergeConflictsLoading": "正在查找冲突文件…",
+  "mergeConflictsLoadFailed": "无法列出冲突文件",
+  "mergeConflictsNoneFound": "未找到冲突文件。GitHub 可能仍在更新此 pull request。",
+  "askAiToFixConflicts": "让 AI 解决冲突",
+  "fixConflictsStarted": "智能体正在此 pull request 的聊天中解决冲突",
+  "failedToStartConflictFix": "无法开始解决冲突：{error}"
 }

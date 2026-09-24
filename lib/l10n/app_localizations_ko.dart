@@ -14566,4 +14566,38 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get stackSection => '스택';
+
+  @override
+  String get mergeConflictsButton => '충돌';
+
+  @override
+  String mergeConflictsFileCount(int count, String base) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '파일 $count개가 $base와 충돌합니다',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get mergeConflictsLoading => '충돌하는 파일을 찾는 중…';
+
+  @override
+  String get mergeConflictsLoadFailed => '충돌하는 파일 목록을 가져올 수 없습니다';
+
+  @override
+  String get mergeConflictsNoneFound =>
+      '충돌하는 파일이 없습니다. GitHub에서 이 풀 리퀘스트를 아직 업데이트하는 중일 수 있습니다.';
+
+  @override
+  String get askAiToFixConflicts => 'AI에게 충돌 해결 요청';
+
+  @override
+  String get fixConflictsStarted => '에이전트가 이 풀 리퀘스트의 채팅에서 충돌을 해결하고 있습니다';
+
+  @override
+  String failedToStartConflictFix(String error) {
+    return '충돌 해결을 시작할 수 없습니다: $error';
+  }
 }

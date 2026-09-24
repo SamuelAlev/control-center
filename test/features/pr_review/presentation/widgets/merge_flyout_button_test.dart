@@ -1,11 +1,20 @@
+import 'package:cc_data/cc_data.dart' show RemoteReviewStudioRepository;
+import 'package:cc_domain/cc_domain.dart' show RpcErrorCodes;
 import 'package:cc_domain/features/pr_review/domain/entities/check_run.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_review_submission.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_user.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
+import 'package:cc_domain/features/pr_review/domain/repositories/pr_review_repository.dart';
+import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcException;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/merge_flyout_button.dart';
+import 'package:control_center/features/pr_review/providers/pr_merge_conflicts_providers.dart';
+import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
+import 'package:control_center/features/pr_review/providers/review_studio_providers.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import '../../../../helpers/test_wrap.dart';
 
@@ -57,6 +66,51 @@ PrReviewSubmission _review({
 const _prRef = (workspaceId: 'ws', repoFullName: 'owner/repo', number: 42);
 
 Widget _wrap(MergeFlyoutButton child) => testWrap(child);
+
+Widget _wrapWith(
+  MergeFlyoutButton child, {
+  required List<Override> overrides,
+}) => testWrap(ProviderScope(overrides: overrides, child: child));
+
+/// Records the conflict fixes the flyout starts.
+class _FakeStudio implements RemoteReviewStudioRepository {
+  final fixes = <(String, String, String, int)>[];
+
+  @override
+  Future<Map<String, dynamic>> fixMergeConflicts({
+    required String workspaceId,
+    required String owner,
+    required String repo,
+    required int prNumber,
+  }) async {
+    fixes.add((workspaceId, owner, repo, prNumber));
+    return {'space_id': 's', 'conversation_id': 'c'};
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+/// Answers every merge the way GitHub answers a conflicting branch.
+class _RefusingRepo implements PrReviewRepository {
+  @override
+  Future<Map<String, dynamic>> mergePullRequest({
+    required int prNumber,
+    required String mergeMethod,
+    String? commitTitle,
+    String? commitMessage,
+    String? idempotencyKey,
+  }) => Future.error(
+    RemoteRpcException(
+      RpcErrorCodes.prNotMergeable,
+      'Pull Request has merge conflicts',
+      {'has_conflicts': true},
+    ),
+  );
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
 
 /// Pump enough time to clear CcButton animation timers.
 Future<void> _settleTimers(WidgetTester tester) async {
@@ -195,7 +249,9 @@ void main() {
 
   // ── Merge method ───────────────────────────────────────────────────────
 
-  testWidgets('flyout shows the merge method segmented control', (tester) async {
+  testWidgets('flyout shows the merge method segmented control', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       _wrap(
         MergeFlyoutButton(
@@ -679,9 +735,11 @@ void main() {
     expect(find.text('Force merge pull request'), findsNothing);
   });
 
-  testWidgets('conflict with base is danger and says so', (tester) async {
+  testWidgets('a conflict turns the button into Conflicts with the files', (
+    tester,
+  ) async {
     await tester.pumpWidget(
-      _wrap(
+      _wrapWith(
         MergeFlyoutButton(
           pr: _pr(mergeableState: PrMergeableState.dirty),
           owner: 'owner',
@@ -690,16 +748,117 @@ void main() {
           checks: const [],
           reviews: const [],
         ),
+        overrides: [
+          prMergeConflictsProvider(_prRef).overrideWith(
+            (ref) async => const PrMergeConflictList(
+              files: ['lib/a.dart', 'lib/b.dart'],
+              baseRef: 'main',
+            ),
+          ),
+        ],
       ),
     );
-    expect(_triggerVariant(tester), CcButtonVariant.destructive);
+    expect(find.text('Merge'), findsNothing);
+    final trigger = tester.widget<CcButton>(
+      find.widgetWithText(CcButton, 'Conflicts'),
+    );
+    expect(trigger.variant, CcButtonVariant.secondary);
+    expect(trigger.icon, AppIcons.alertTriangle);
 
-    await _openFlyout(tester);
+    await tester.tap(find.text('Conflicts'));
+    await tester.pump();
+    await _settleTimers(tester);
+
     expect(
       find.text('This branch has conflicts that must be resolved'),
       findsOneWidget,
     );
-    expect(find.text('Force merge pull request'), findsOneWidget);
+    expect(find.text('2 files conflict with main'), findsOneWidget);
+    expect(find.text('lib/a.dart'), findsOneWidget);
+    expect(find.text('lib/b.dart'), findsOneWidget);
+    expect(find.text('Ask AI to fix conflicts'), findsOneWidget);
+    // GitHub refuses this merge outright; there is nothing to confirm.
+    expect(find.text('Merge pull request'), findsNothing);
+    expect(find.text('Force merge pull request'), findsNothing);
+  });
+
+  testWidgets('asking AI starts the fix for this PR and closes the flyout', (
+    tester,
+  ) async {
+    final studio = _FakeStudio();
+    await tester.pumpWidget(
+      _wrapWith(
+        MergeFlyoutButton(
+          pr: _pr(mergeableState: PrMergeableState.dirty),
+          owner: 'owner',
+          prRef: _prRef,
+          repo: 'repo',
+          checks: const [],
+          reviews: const [],
+        ),
+        overrides: [
+          prMergeConflictsProvider(_prRef).overrideWith(
+            (ref) async =>
+                const PrMergeConflictList(files: ['a.dart'], baseRef: 'main'),
+          ),
+          reviewStudioRepositoryProvider.overrideWithValue(studio),
+        ],
+      ),
+    );
+    await tester.tap(find.text('Conflicts'));
+    await tester.pump();
+    await _settleTimers(tester);
+
+    await tester.tap(find.text('Ask AI to fix conflicts'));
+    await tester.pump();
+    await _settleTimers(tester);
+
+    expect(studio.fixes, [('ws', 'owner', 'repo', 42)]);
+    expect(find.text('Ask AI to fix conflicts'), findsNothing);
+    expect(
+      find.text(
+        "An agent is resolving the conflicts in this pull request's chat",
+      ),
+      findsOneWidget,
+    );
+    await tester.pump(const Duration(seconds: 10));
+  });
+
+  testWidgets('a merge refused for conflicts shows the reason and the files', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _wrapWith(
+        MergeFlyoutButton(
+          pr: _pr(),
+          owner: 'owner',
+          prRef: _prRef,
+          repo: 'repo',
+          checks: const [],
+          reviews: const [],
+        ),
+        overrides: [
+          prRepositoryProvider(_prRef).overrideWith((ref) => _RefusingRepo()),
+          prMergeConflictsProvider(_prRef).overrideWith(
+            (ref) async =>
+                const PrMergeConflictList(files: ['x.dart'], baseRef: 'main'),
+          ),
+        ],
+      ),
+    );
+    await _openFlyout(tester);
+    await tester.tap(find.widgetWithText(CcButton, 'Merge pull request'));
+    await tester.pump();
+    await _settleTimers(tester);
+
+    expect(
+      find.text('Failed to merge: Pull Request has merge conflicts'),
+      findsOneWidget,
+    );
+    expect(find.text('Conflicts'), findsOneWidget);
+    expect(find.text('x.dart'), findsOneWidget);
+    expect(find.text('Ask AI to fix conflicts'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 10));
   });
 
   testWidgets('branch protection block is danger and says so', (tester) async {

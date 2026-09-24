@@ -8746,5 +8746,13 @@
   "stackPublishFailed": "Không xuất bản được ngăn xếp",
   "stackPublished": "Đã xuất bản ngăn xếp dưới dạng bản nháp",
   "stackOpenPullRequest": "Mở pull request",
-  "stackSection": "Ngăn xếp"
+  "stackSection": "Ngăn xếp",
+  "mergeConflictsButton": "Xung đột",
+  "mergeConflictsFileCount": "{count, plural, other{{count} tệp xung đột với {base}}}",
+  "mergeConflictsLoading": "Đang tìm các tệp xung đột…",
+  "mergeConflictsLoadFailed": "Không thể liệt kê các tệp xung đột",
+  "mergeConflictsNoneFound": "Không tìm thấy tệp xung đột. GitHub có thể vẫn đang cập nhật pull request này.",
+  "askAiToFixConflicts": "Nhờ AI sửa xung đột",
+  "fixConflictsStarted": "Một tác tử đang giải quyết xung đột trong cuộc trò chuyện của pull request này",
+  "failedToStartConflictFix": "Không thể bắt đầu sửa xung đột: {error}"
 }

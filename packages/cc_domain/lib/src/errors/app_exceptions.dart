@@ -250,3 +250,23 @@ class RepoScriptException extends AppException {
   @override
   String toString() => message;
 }
+
+/// Thrown when the forge refuses to merge a pull request: GitHub answers the
+/// merge `PUT` with `405` and a reason (merge conflicts, a required check, a
+/// protection rule). Typed so the reason reaches the client instead of dying
+/// as a generic network error, and so a conflict can be told apart from the
+/// rest — a conflict has a fix (resolve it), the others have a wait.
+class PrNotMergeableException extends AppException {
+  /// Creates a [PrNotMergeableException]. [message] is the forge's own reason.
+  const PrNotMergeableException(
+    super.message, {
+    this.hasConflicts = false,
+    super.code,
+  });
+
+  /// Whether the forge refused because the branch conflicts with its base.
+  final bool hasConflicts;
+
+  @override
+  String toString() => message;
+}

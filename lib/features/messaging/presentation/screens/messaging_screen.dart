@@ -51,42 +51,70 @@ class _MessagingScreenState extends ConsumerState<MessagingScreen> {
   /// page never receives, so those two fire on desktop only; ⌘B still works.
   final MessagingIdeActions _ideActions = MessagingIdeActions();
 
+  /// Bumped per route sync so a superseded one never applies.
+  var _syncGeneration = 0;
+
+  /// A route sync is scheduled and has not applied yet.
+  var _syncPending = false;
+
+  /// The `?tab=` the layout sees. It moves with the selection: the URL's key
+  /// for the incoming space, handed to the outgoing layout a frame early,
+  /// would refocus the outgoing space's tabs.
+  String? _tabKey;
+
   @override
   void initState() {
     super.initState();
+    _tabKey = widget.focusedTabKey;
     _syncSelectionFromRoute();
   }
 
   @override
   void didUpdateWidget(MessagingScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.selectedSpaceId != widget.selectedSpaceId ||
-        oldWidget.pendingMessageId != widget.pendingMessageId) {
+    final spaceChanged = oldWidget.selectedSpaceId != widget.selectedSpaceId;
+    if (spaceChanged || oldWidget.pendingMessageId != widget.pendingMessageId) {
       _syncSelectionFromRoute();
+    }
+    // A tab change inside the open space passes straight through. One that
+    // arrives with a space swap waits for [_applySelection].
+    if (!spaceChanged && !_syncPending) {
+      _tabKey = widget.focusedTabKey;
     }
   }
 
   /// Mirrors the URL's space id into [selectedSpaceIdProvider] and forwards
   /// a `?m=<id>` deep link into [pendingFocusMessageProvider] for the space
   /// feed to consume. Deferred a frame so we never mutate a provider mid-build
-  /// of the route's page.
+  /// of the route's page. A newer sync supersedes one still waiting, so two
+  /// presses in one frame build only the last space.
   void _syncSelectionFromRoute() {
     final id = widget.selectedSpaceId;
     final messageId = widget.pendingMessageId;
+    final generation = ++_syncGeneration;
+    _syncPending = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) {
+      if (!mounted || generation != _syncGeneration) {
         return;
       }
-      if (ref.read(selectedSpaceIdProvider) != id) {
-        ref.read(selectedSpaceIdProvider.notifier).select(id);
-      }
-      if (id != null && messageId != null && messageId.isNotEmpty) {
-        ref.read(pendingFocusMessageProvider.notifier).set((
-          spaceId: id,
-          messageId: messageId,
-        ));
-      }
+      _syncPending = false;
+      _applySelection(id, messageId);
     });
+  }
+
+  void _applySelection(String? id, String? messageId) {
+    if (_tabKey != widget.focusedTabKey) {
+      setState(() => _tabKey = widget.focusedTabKey);
+    }
+    if (ref.read(selectedSpaceIdProvider) != id) {
+      ref.read(selectedSpaceIdProvider.notifier).select(id);
+    }
+    if (id != null && messageId != null && messageId.isNotEmpty) {
+      ref.read(pendingFocusMessageProvider.notifier).set((
+        spaceId: id,
+        messageId: messageId,
+      ));
+    }
   }
 
   @override
@@ -125,7 +153,7 @@ class _MessagingScreenState extends ConsumerState<MessagingScreen> {
           : MessagingIdeLayout(
               workspaceId: workspaceId,
               selectedSpaceId: selectedId,
-              focusedTabKey: widget.focusedTabKey,
+              focusedTabKey: _tabKey,
               actions: _ideActions,
             ),
     );

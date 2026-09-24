@@ -3,6 +3,7 @@ import 'dart:collection';
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:cc_domain/cc_domain.dart' show PrNotMergeableException;
 import 'package:cc_domain/core/domain/entities/github_user.dart';
 import 'package:cc_infra/src/network/error_mapper.dart';
 import 'package:cc_infra/src/network/models/github_check_run.dart';
@@ -1559,6 +1560,22 @@ class GitHubPrClient {
     } on DioException catch (e) {
       if (e.type == DioExceptionType.cancel) {
         rethrow;
+      }
+      // 405 is GitHub declining THIS merge, with the reason in the body
+      // ("Pull Request has merge conflicts", "Required status check … is
+      // expected"). Left to the generic mapper it became a reasonless
+      // `network_error`, so the operator never learned why.
+      if (e.response?.statusCode == 405) {
+        final data = e.response?.data;
+        final reason = data is Map ? data['message'] as String? : null;
+        final message = (reason == null || reason.trim().isEmpty)
+            ? 'GitHub refused to merge this pull request'
+            : reason.trim();
+        throw PrNotMergeableException(
+          message,
+          hasConflicts: message.toLowerCase().contains('conflict'),
+          code: 'not_mergeable',
+        );
       }
       throw mapDioException(e);
     }

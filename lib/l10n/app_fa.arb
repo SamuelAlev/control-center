@@ -8746,5 +8746,13 @@
   "stackPublishFailed": "پشته منتشر نشد",
   "stackPublished": "پشته به‌صورت پیش‌نویس منتشر شد",
   "stackOpenPullRequest": "باز کردن پول‌ریکوئست",
-  "stackSection": "پشته"
+  "stackSection": "پشته",
+  "mergeConflictsButton": "تعارض‌ها",
+  "mergeConflictsFileCount": "{count, plural, =1{۱ فایل با {base} تعارض دارد} other{{count} فایل با {base} تعارض دارند}}",
+  "mergeConflictsLoading": "در حال یافتن فایل‌های دارای تعارض…",
+  "mergeConflictsLoadFailed": "فهرست فایل‌های دارای تعارض دریافت نشد",
+  "mergeConflictsNoneFound": "هیچ فایل دارای تعارضی پیدا نشد. ممکن است GitHub هنوز در حال به‌روزرسانی این pull request باشد.",
+  "askAiToFixConflicts": "از هوش مصنوعی بخواهید تعارض‌ها را حل کند",
+  "fixConflictsStarted": "یک عامل در حال حل تعارض‌ها در گفتگوی این pull request است",
+  "failedToStartConflictFix": "شروع حل تعارض ممکن نشد: {error}"
 }

@@ -15047,4 +15047,42 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get stackSection => 'Stivă';
+
+  @override
+  String get mergeConflictsButton => 'Conflicte';
+
+  @override
+  String mergeConflictsFileCount(int count, String base) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de fișiere sunt în conflict cu $base',
+      few: '$count fișiere sunt în conflict cu $base',
+      one: '1 fișier este în conflict cu $base',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get mergeConflictsLoading => 'Se caută fișierele în conflict…';
+
+  @override
+  String get mergeConflictsLoadFailed =>
+      'Fișierele în conflict nu au putut fi listate';
+
+  @override
+  String get mergeConflictsNoneFound =>
+      'Nu s-au găsit fișiere în conflict. Este posibil ca GitHub să actualizeze încă acest pull request.';
+
+  @override
+  String get askAiToFixConflicts => 'Cere AI-ului să rezolve conflictele';
+
+  @override
+  String get fixConflictsStarted =>
+      'Un agent rezolvă conflictele în chatul acestui pull request';
+
+  @override
+  String failedToStartConflictFix(String error) {
+    return 'Rezolvarea conflictelor nu a putut porni: $error';
+  }
 }

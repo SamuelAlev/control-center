@@ -7936,5 +7936,13 @@
   "stackPublishFailed": "Impossibile pubblicare lo stack",
   "stackPublished": "Lo stack è stato pubblicato come bozze",
   "stackOpenPullRequest": "Apri la pull request",
-  "stackSection": "Stack"
+  "stackSection": "Stack",
+  "mergeConflictsButton": "Conflitti",
+  "mergeConflictsFileCount": "{count, plural, =1{1 file è in conflitto con {base}} other{{count} file sono in conflitto con {base}}}",
+  "mergeConflictsLoading": "Ricerca dei file in conflitto…",
+  "mergeConflictsLoadFailed": "Impossibile elencare i file in conflitto",
+  "mergeConflictsNoneFound": "Nessun file in conflitto trovato. GitHub potrebbe ancora aggiornare questa pull request.",
+  "askAiToFixConflicts": "Chiedi all'IA di risolvere i conflitti",
+  "fixConflictsStarted": "Un agente sta risolvendo i conflitti nella chat di questa pull request",
+  "failedToStartConflictFix": "Impossibile avviare la risoluzione dei conflitti: {error}"
 }

@@ -8746,5 +8746,13 @@
   "stackPublishFailed": "Nie udało się opublikować stosu",
   "stackPublished": "Stos został opublikowany jako wersje robocze",
   "stackOpenPullRequest": "Otwórz pull request",
-  "stackSection": "Stos"
+  "stackSection": "Stos",
+  "mergeConflictsButton": "Konflikty",
+  "mergeConflictsFileCount": "{count, plural, =1{1 plik jest w konflikcie z {base}} few{{count} pliki są w konflikcie z {base}} many{{count} plików jest w konflikcie z {base}} other{{count} pliku jest w konflikcie z {base}}}",
+  "mergeConflictsLoading": "Wyszukiwanie plików z konfliktami…",
+  "mergeConflictsLoadFailed": "Nie udało się wyświetlić plików z konfliktami",
+  "mergeConflictsNoneFound": "Nie znaleziono plików z konfliktami. GitHub może nadal aktualizować ten pull request.",
+  "askAiToFixConflicts": "Poproś AI o rozwiązanie konfliktów",
+  "fixConflictsStarted": "Agent rozwiązuje konflikty na czacie tego pull requesta",
+  "failedToStartConflictFix": "Nie udało się rozpocząć rozwiązywania konfliktów: {error}"
 }

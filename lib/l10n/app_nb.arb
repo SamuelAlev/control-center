@@ -8746,5 +8746,13 @@
   "stackPublishFailed": "Kunne ikke publisere stabelen",
   "stackPublished": "Stabelen ble publisert som utkast",
   "stackOpenPullRequest": "Åpne pull request",
-  "stackSection": "Stabel"
+  "stackSection": "Stabel",
+  "mergeConflictsButton": "Konflikter",
+  "mergeConflictsFileCount": "{count, plural, =1{1 fil er i konflikt med {base}} other{{count} filer er i konflikt med {base}}}",
+  "mergeConflictsLoading": "Finner filene med konflikter…",
+  "mergeConflictsLoadFailed": "Kunne ikke vise filene med konflikter",
+  "mergeConflictsNoneFound": "Fant ingen filer med konflikter. GitHub oppdaterer kanskje fortsatt denne pull requesten.",
+  "askAiToFixConflicts": "Be KI løse konfliktene",
+  "fixConflictsStarted": "En agent løser konfliktene i chatten til denne pull requesten",
+  "failedToStartConflictFix": "Kunne ikke starte konfliktløsningen: {error}"
 }

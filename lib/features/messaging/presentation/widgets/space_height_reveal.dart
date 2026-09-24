@@ -4,20 +4,28 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 
-/// Pixel speed of the reveal, matched to the sidebar wash: a row of travel
-/// in [CcMotion.fast] is about a pixel per millisecond.
-const double _kRevealPxPerMs = 1;
+/// How long a reveal travels, open or shut.
+///
+/// Both directions share it, and the curve, so switching spaces is one
+/// gesture: the card being left and the card being opened finish on the same
+/// frame and the rows below slide by the height difference, smoothly.
+const Duration kSpaceRevealDuration = CcMotion.slow;
 
-/// One 60Hz slice. A late frame keeps this instead of spending the hitch on
-/// the clip, which is what deletes a whole conversation between paints.
-const double _kRevealMaxPxPerFrame = 16;
+/// Decelerating: most of the travel happens in the first frames, so the
+/// press reads as answered at once, then the rows settle.
+const Curve _kRevealCurve = CcMotion.emphasized;
+
+/// The most one frame may advance the reveal: one 60Hz slice. At 120Hz a
+/// frame is well under it; a hitch pauses the motion instead of jumping it.
+const Duration _kMaxFrameStep = Duration(microseconds: 16667);
 
 /// Clips [child] open and shut from the top.
 ///
 /// Header and revealed child each sit on a [RepaintBoundary], so the clip
-/// moves as a layer. The travel is paced in pixels, not a fixed duration: a
-/// tall list would otherwise drop a whole row between frames. A hitch does
-/// not get added to the next step.
+/// moves as a layer. The travel runs on its own clock: every frame advances
+/// it by the real frame time, capped at one 60Hz slice, so it is as smooth
+/// as the display (120Hz on ProMotion) and a late frame never spends its
+/// stall on the clip.
 ///
 /// The widget has to stay in the tree while closed. A space that mounts its
 /// panel already open has no previous height to grow from, so switching from
@@ -63,7 +71,6 @@ class SpaceHeightReveal extends StatefulWidget {
 class _SpaceHeightRevealState extends State<SpaceHeightReveal>
     with TickerProviderStateMixin {
   late final AnimationController _controller;
-  final _panelKey = GlobalKey();
 
   /// The child captured when a close starts. Null once the height is zero
   /// or the panel is open again.
@@ -71,8 +78,13 @@ class _SpaceHeightRevealState extends State<SpaceHeightReveal>
 
   Ticker? _clock;
   Duration? _stamp;
-  var _towardOpen = false;
-  var _token = 0;
+
+  /// Clamped time spent on the current run.
+  var _travelled = Duration.zero;
+
+  /// Height factor the current run started from, and the one it ends at.
+  var _from = 0.0;
+  var _to = 0.0;
   var _snapScheduled = false;
 
   @override
@@ -80,7 +92,7 @@ class _SpaceHeightRevealState extends State<SpaceHeightReveal>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: CcMotion.moderate,
+      duration: kSpaceRevealDuration,
       value: widget.open ? 1 : 0,
     );
     _controller.addStatusListener(_onStatus);
@@ -137,7 +149,6 @@ class _SpaceHeightRevealState extends State<SpaceHeightReveal>
   }
 
   void _run({required bool forward}) {
-    _towardOpen = forward;
     _clock?.stop();
     _stamp = null;
     if (CcMotion.reduced(context)) {
@@ -145,17 +156,13 @@ class _SpaceHeightRevealState extends State<SpaceHeightReveal>
       _controller.value = forward ? 1 : 0;
       return;
     }
-    // Start after this frame. The selection rebuild is what made the first
-    // tick late, and the controller then skipped a row to catch up.
-    final token = ++_token;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || token != _token || widget.open != forward) {
-        return;
-      }
-      _clock ??= createTicker(_tick);
-      _stamp = null;
-      _clock!.start();
-    });
+    // A reversal mid-flight starts from where the clip is, so it never
+    // jumps; the full duration from there keeps the pair in step.
+    _from = _controller.value;
+    _to = forward ? 1 : 0;
+    _travelled = Duration.zero;
+    _clock ??= createTicker(_tick);
+    _clock!.start();
   }
 
   void _tick(Duration elapsed) {
@@ -164,35 +171,25 @@ class _SpaceHeightRevealState extends State<SpaceHeightReveal>
     if (previous == null || !mounted) {
       return;
     }
-    final dtMs = (elapsed - previous).inMicroseconds / 1000;
-    if (dtMs <= 0) {
+    var step = elapsed - previous;
+    if (step <= Duration.zero) {
       return;
     }
-    final px = _panelHeight();
-    if (px < 1) {
-      _controller.value = _towardOpen ? 1 : 0;
+    if (step > _kMaxFrameStep) {
+      step = _kMaxFrameStep;
+    }
+    _travelled += step;
+    final t = math.min(
+      1.0,
+      _travelled.inMicroseconds / kSpaceRevealDuration.inMicroseconds,
+    );
+    if (t >= 1) {
       _clock?.stop();
       _stamp = null;
+      _controller.value = _to;
       return;
     }
-    final pxStep = math.min(_kRevealMaxPxPerFrame, dtMs * _kRevealPxPerMs);
-    final step = pxStep / px;
-    final next = _towardOpen
-        ? math.min(1.0, _controller.value + step)
-        : math.max(0.0, _controller.value - step);
-    if (next == (_towardOpen ? 1.0 : 0.0)) {
-      _clock?.stop();
-      _stamp = null;
-    }
-    _controller.value = next;
-  }
-
-  double _panelHeight() {
-    final box = _panelKey.currentContext?.findRenderObject() as RenderBox?;
-    if (box == null || !box.hasSize) {
-      return 0;
-    }
-    return box.size.height;
+    _controller.value = _from + (_to - _from) * _kRevealCurve.transform(t);
   }
 
   @override
@@ -246,7 +243,6 @@ class _SpaceHeightRevealState extends State<SpaceHeightReveal>
           );
         },
         child: RepaintBoundary(
-          key: _panelKey,
           child: IgnorePointer(ignoring: !widget.open, child: child),
         ),
       ),

@@ -14940,4 +14940,41 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get stackSection => 'Stapel';
+
+  @override
+  String get mergeConflictsButton => 'Conflicten';
+
+  @override
+  String mergeConflictsFileCount(int count, String base) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count bestanden conflicteren met $base',
+      one: '1 bestand conflicteert met $base',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get mergeConflictsLoading => 'Conflicterende bestanden zoeken…';
+
+  @override
+  String get mergeConflictsLoadFailed =>
+      'Kan de conflicterende bestanden niet weergeven';
+
+  @override
+  String get mergeConflictsNoneFound =>
+      'Geen conflicterende bestanden gevonden. GitHub werkt deze pull request mogelijk nog bij.';
+
+  @override
+  String get askAiToFixConflicts => 'AI de conflicten laten oplossen';
+
+  @override
+  String get fixConflictsStarted =>
+      'Een agent lost de conflicten op in de chat van deze pull request';
+
+  @override
+  String failedToStartConflictFix(String error) {
+    return 'Kan het oplossen van conflicten niet starten: $error';
+  }
 }

@@ -6,6 +6,7 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/messaging/presentation/utils/conversation_display_name.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_conversations_accordion.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_height_reveal.dart';
+import 'package:control_center/features/messaging/presentation/widgets/space_hover_prefetch.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_sidebar_item.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/features/messaging/providers/space_worktrees_provider.dart';
@@ -15,9 +16,13 @@ import 'package:control_center/shared/utils/relative_time.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Air above the title and below the last row. The title row keeps both
-/// insets so opening the list does not resize the title block.
-const double _kCardInset = AppSpacing.sm;
+/// Air above and below the title. The title row keeps both insets whether
+/// or not its list is open, so opening does not resize the title block.
+/// Kept tight so the space list reads as one list, not separate cards.
+const double _kCardInset = AppSpacing.xs;
+
+/// Air under the last conversation, closing the open card.
+const double _kCardBottom = AppSpacing.sm;
 
 /// One space in the global sidebar. The open space sits on a raised panel.
 class SpaceSidebarGroup extends ConsumerWidget implements CcFluidHoverTarget {
@@ -93,7 +98,7 @@ class SpaceSidebarGroup extends ConsumerWidget implements CcFluidHoverTarget {
     // One press for the whole card. The title and the conversations are
     // content on that surface; the disclosure and the overflow menu stay
     // their own controls.
-    return CcTappable(
+    final card = CcTappable(
       onPressed: onOpenSpace,
       borderRadius: AppRadii.brSm,
       semanticLabel: label,
@@ -154,13 +159,20 @@ class SpaceSidebarGroup extends ConsumerWidget implements CcFluidHoverTarget {
                             ),
                         ],
                       ),
-                      const SizedBox(height: _kCardInset),
+                      const SizedBox(height: _kCardBottom),
                     ],
                   )
                 : const SizedBox.shrink(),
           ),
         );
       },
+    );
+    // Always in the tree: wrapping only unselected rows would remount the
+    // card on selection and lose its reveal.
+    return SpaceHoverPrefetch(
+      workspaceId: selected ? null : workspaceId,
+      spaceId: space.id,
+      child: card,
     );
   }
 }

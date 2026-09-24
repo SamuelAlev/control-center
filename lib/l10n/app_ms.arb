@@ -8746,5 +8746,13 @@
   "stackPublishFailed": "Tindanan tidak dapat diterbitkan",
   "stackPublished": "Tindanan diterbitkan sebagai draf",
   "stackOpenPullRequest": "Buka pull request",
-  "stackSection": "Tindanan"
+  "stackSection": "Tindanan",
+  "mergeConflictsButton": "Konflik",
+  "mergeConflictsFileCount": "{count, plural, other{{count} fail berkonflik dengan {base}}}",
+  "mergeConflictsLoading": "Mencari fail yang berkonflik…",
+  "mergeConflictsLoadFailed": "Tidak dapat menyenaraikan fail yang berkonflik",
+  "mergeConflictsNoneFound": "Tiada fail berkonflik ditemui. GitHub mungkin masih mengemas kini pull request ini.",
+  "askAiToFixConflicts": "Minta AI membetulkan konflik",
+  "fixConflictsStarted": "Ejen sedang menyelesaikan konflik dalam sembang pull request ini",
+  "failedToStartConflictFix": "Tidak dapat memulakan pembetulan konflik: {error}"
 }

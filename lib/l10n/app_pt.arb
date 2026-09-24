@@ -7936,5 +7936,13 @@
   "stackPublishFailed": "Não foi possível publicar a pilha",
   "stackPublished": "A pilha foi publicada como rascunhos",
   "stackOpenPullRequest": "Abrir pull request",
-  "stackSection": "Pilha"
+  "stackSection": "Pilha",
+  "mergeConflictsButton": "Conflitos",
+  "mergeConflictsFileCount": "{count, plural, =1{1 arquivo está em conflito com {base}} other{{count} arquivos estão em conflito com {base}}}",
+  "mergeConflictsLoading": "Procurando os arquivos em conflito…",
+  "mergeConflictsLoadFailed": "Não foi possível listar os arquivos em conflito",
+  "mergeConflictsNoneFound": "Nenhum arquivo em conflito encontrado. O GitHub ainda pode estar atualizando este pull request.",
+  "askAiToFixConflicts": "Pedir à IA para resolver os conflitos",
+  "fixConflictsStarted": "Um agente está resolvendo os conflitos no chat deste pull request",
+  "failedToStartConflictFix": "Não foi possível iniciar a resolução de conflitos: {error}"
 }
