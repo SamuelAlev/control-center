@@ -5,18 +5,6 @@
 /// (GitLab's default list payload is names only) and the chip falls back to
 /// the muted tag treatment.
 class PrLabel {
-  /// Creates a [PrLabel].
-  const PrLabel({required this.name, this.color = '', this.description = ''});
-
-  /// Display name (`bug`, `dependencies`).
-  final String name;
-
-  /// 6-digit hex background, no `#`. Empty when unknown.
-  final String color;
-
-  /// Optional description the forge attached to the label.
-  final String description;
-
   /// Builds a label from a forge payload.
   ///
   /// Strips a leading `#` from [color] so GitLab's `#RRGGBB` and GitHub's
@@ -33,6 +21,18 @@ class PrLabel {
       description: description,
     );
   }
+
+  /// Creates a [PrLabel].
+  const PrLabel({required this.name, this.color = '', this.description = ''});
+
+  /// Display name (`bug`, `dependencies`).
+  final String name;
+
+  /// 6-digit hex background, no `#`. Empty when unknown.
+  final String color;
+
+  /// Optional description the forge attached to the label.
+  final String description;
 
   /// Equality comparison.
   @override

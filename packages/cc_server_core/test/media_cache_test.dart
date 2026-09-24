@@ -177,7 +177,10 @@ void main() {
         key,
         ({etag, lastModified}) async => avatar(body: 'stale-but-fine'),
       );
-      now = now.add(const Duration(days: 30));
+      // Past the TTL, inside the 7-day stale grace. A 30-day jump crosses
+      // the grace, and the write's background sweep then deletes the body
+      // before this read.
+      now = now.add(const Duration(days: 2));
       final resolution = await c.resolve(
         key,
         ({etag, lastModified}) async => const MediaFetchFailed(),

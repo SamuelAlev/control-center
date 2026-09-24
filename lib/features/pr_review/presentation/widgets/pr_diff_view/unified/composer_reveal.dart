@@ -1,4 +1,8 @@
+/// @docImport 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_diff_measurement.dart';
+library;
+
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_diff_measurement.dart' show HeightReporter;
 import 'package:flutter/widgets.dart';
 
 /// Grows an inline comment composer out of the diff row it is anchored to.

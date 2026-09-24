@@ -1,3 +1,6 @@
+/// @docImport 'package:control_center/features/messaging/presentation/widgets/space_row.dart';
+library;
+
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_row_adornments.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';

@@ -30,9 +30,6 @@ import 'package:cc_domain/core/domain/repositories/agent_run_cost_history_port.d
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
 import 'package:cc_domain/core/domain/repositories/cache_repository.dart';
 import 'package:cc_domain/core/domain/repositories/isolated_repo_repository.dart';
-import 'package:cc_domain/features/messaging/domain/ports/space_stack_port.dart';
-import 'package:cc_domain/features/messaging/domain/repositories/space_stack_repository.dart';
-import 'package:cc_domain/features/messaging/domain/services/stack_branch_names.dart';
 import 'package:cc_domain/core/domain/repositories/repo_repository.dart';
 import 'package:cc_domain/core/domain/repositories/repo_script_repository.dart';
 import 'package:cc_domain/core/domain/repositories/review_space_repository.dart';
@@ -86,10 +83,13 @@ import 'package:cc_domain/features/memory/domain/repositories/memory_fact_reposi
 import 'package:cc_domain/features/memory/domain/repositories/memory_policy_repository.dart';
 import 'package:cc_domain/features/messaging/domain/entities/conversation.dart';
 import 'package:cc_domain/features/messaging/domain/ports/messaging_port.dart';
+import 'package:cc_domain/features/messaging/domain/ports/space_stack_port.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/conversation_repository.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/space_read_repository.dart';
+import 'package:cc_domain/features/messaging/domain/repositories/space_stack_repository.dart';
 import 'package:cc_domain/features/messaging/domain/services/space_factory.dart';
+import 'package:cc_domain/features/messaging/domain/services/stack_branch_names.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/conversation_status.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/conversation_token_totals.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/message_page.dart';

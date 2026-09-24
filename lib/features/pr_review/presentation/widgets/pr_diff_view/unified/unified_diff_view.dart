@@ -38,8 +38,8 @@ import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_v
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_row_painter.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_inline_comments/comment_composer_widget.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_inline_comments/comment_thread_widget.dart';
-import 'package:control_center/features/pr_review/presentation/widgets/reaction_label.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_inline_comments/suggestion_blocks.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/reaction_label.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/sticky_header.dart';
 import 'package:control_center/features/pr_review/providers/diff_view_settings_provider.dart';
 import 'package:control_center/features/pr_review/providers/pr_inline_comments_provider.dart';

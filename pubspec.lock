@@ -961,10 +961,10 @@ packages:
     dependency: "direct main"
     description:
       name: kalender
-      sha256: "063ba85318478ceb4205d44cb5fb21765a95bcc4a87ad9056dfb4887745b6d7a"
+      sha256: "271cd17f61120b9290e34d09a6d4719460d50c19e61e8b3e325c41b34d01d7fa"
       url: "https://pub.dev"
     source: hosted
-    version: "0.31.3"
+    version: "0.32.0"
   leak_tracker:
     dependency: transitive
     description:

@@ -193,7 +193,7 @@ dependencies:
   xterm: ^4.0.0
   flutter_pty: ^0.4.2
 
-  kalender: ^0.31.0
+  kalender: ^0.32.0
   # Desktop in-app updater: Sparkle 2 (macOS) + WinSparkle (Windows) behind one
   # Dart seam (lib/core/update/desktop_updater*.dart). Updates the WHOLE app
   # bundle (UI + embedded cc_server + natives); the check cadence and the

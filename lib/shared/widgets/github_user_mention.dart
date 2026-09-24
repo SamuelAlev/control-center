@@ -1,3 +1,6 @@
+/// @docImport 'package:flutter/material.dart';
+library;
+
 import 'package:cc_domain/core/domain/entities/github_user.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/router/routes.dart';
@@ -6,6 +9,7 @@ import 'package:control_center/shared/widgets/github_team_avatar.dart';
 import 'package:control_center/shared/widgets/github_team_hover_target.dart';
 import 'package:control_center/shared/widgets/github_user_avatar.dart';
 import 'package:control_center/shared/widgets/github_user_hover_target.dart';
+import 'package:flutter/material.dart' show SelectionArea;
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 
