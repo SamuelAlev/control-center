@@ -71,34 +71,29 @@ class _ReviewTimerBannerState extends ConsumerState<ReviewTimerBanner> {
     }
 
     final l10n = AppLocalizations.of(context);
-    final tokens = context.designSystem;
+    final tokens = context.designSystem ?? DesignSystemTokens.light();
 
-    // Warning semantic tokens from the design system.
-    final warningBg =
-        tokens?.bgWarningSecondary ??
-        const Color(0xFFFF9800).withValues(alpha: 0.12);
-    final warningFg = tokens?.fgWarningPrimary ?? const Color(0xFFFF9800);
-    final warningBorder =
-        tokens?.fgWarningSecondary ??
-        const Color(0xFFFF9800).withValues(alpha: 0.35);
-
+    // Soft warning surface with ink text. The solid warning fill put
+    // gold-on-gold copy under 2:1, and its bottom edge was the warning
+    // hue instead of the chrome hairline.
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
-        color: warningBg,
-        // Bottom only: the header above already paints its own bottom
-        // border, so a top edge here would stack into a double line.
-        border: Border(bottom: BorderSide(color: warningBorder)),
+        color: tokens.bgWarningPrimary,
+        border: Border(
+          top: BorderSide(color: tokens.borderPrimary),
+          bottom: BorderSide(color: tokens.borderPrimary),
+        ),
       ),
       child: Row(
         children: [
-          Icon(AppIcons.clock, size: 15, color: warningFg),
+          Icon(AppIcons.clock, size: 15, color: tokens.fgWarningPrimary),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               l10n.reviewFatigueWarning(_elapsedMinutes),
-              style: CcTypography.body.copyWith(color: warningFg),
+              style: CcTypography.body.copyWith(color: tokens.textPrimary),
             ),
           ),
           CcButton(

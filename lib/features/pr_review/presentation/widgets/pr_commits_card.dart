@@ -6,6 +6,7 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/utils/relative_time.dart';
 import 'package:control_center/shared/widgets/app_timestamp.dart';
+import 'package:control_center/shared/widgets/pr_title_text.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -120,7 +121,7 @@ class _CommitTile extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                PrTitleText(
                   commit.title.isEmpty ? '(no commit message)' : commit.title,
                   style: CcTypography.body.copyWith(
                     fontWeight: FontWeight.w600,

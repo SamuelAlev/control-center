@@ -8,6 +8,7 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/utils/relative_time.dart';
 import 'package:control_center/shared/widgets/app_timestamp.dart';
+import 'package:control_center/shared/widgets/pr_title_text.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -129,20 +130,17 @@ class _CommitRangeSelectorState extends ConsumerState<CommitRangeSelector> {
       return 'v$n';
     }
 
-    if (_selectedShas.length == 1) {
-      final i = widget.commits.indexWhere((c) => c.sha == _selectedShas.first);
-      if (i < 0) {
-        return 'v$n';
-      }
-
-      return 'v${n - i}';
-    }
+    // Commits arrive oldest-first, so a selection's version span runs from
+    // the earliest selected index up to the latest.
     final indices = <int>[
-      for (var i = 0; i < widget.commits.length; i++)
+      for (var i = 0; i < n; i++)
         if (_selectedShas.contains(widget.commits[i].sha)) i,
     ];
-    final hi = n - indices.first;
-    final lo = n - indices.last;
+    if (indices.isEmpty) {
+      return 'v$n';
+    }
+    final lo = indices.first + 1;
+    final hi = indices.last + 1;
     return lo == hi ? 'v$hi' : 'v$lo–v$hi';
   }
 
@@ -172,7 +170,7 @@ class _CommitRangeSelectorState extends ConsumerState<CommitRangeSelector> {
               const SizedBox(width: AppSpacing.sm),
               ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 220),
-                child: Text(
+                child: PrTitleText(
                   _chipLabel(),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -209,7 +207,9 @@ class _CommitRangeSelectorState extends ConsumerState<CommitRangeSelector> {
                   children: [
                     for (var i = 0; i < widget.commits.length; i++)
                       _CommitMenuRow(
-                        versionLabel: 'v${widget.commits.length - i}',
+                        // Oldest commit is v1; the tip shares vN with
+                        // "All commits".
+                        versionLabel: 'v${i + 1}',
                         title: widget.commits[i].title.isEmpty
                             ? widget.commits[i].shortSha
                             : widget.commits[i].title,
@@ -374,7 +374,7 @@ class _CommitMenuRow extends StatelessWidget {
             ),
             const SizedBox(width: 10),
             Expanded(
-              child: Text(
+              child: PrTitleText(
                 title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,

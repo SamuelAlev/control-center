@@ -31,6 +31,7 @@ import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/utils/relative_time.dart';
 import 'package:control_center/shared/widgets/app_timestamp.dart';
+import 'package:control_center/shared/widgets/pr_title_text.dart';
 import 'package:control_center/shared/widgets/github_user_avatar.dart';
 import 'package:control_center/shared/widgets/github_user_hover_target.dart';
 import 'package:control_center/shared/widgets/github_user_mention.dart';
@@ -904,6 +905,21 @@ class _CommitRow extends ConsumerWidget {
   }
 }
 
+/// Leading space plus the commit subject, with backtick runs as inline code.
+List<InlineSpan> _commitTitleSpans(
+  BuildContext context,
+  String title,
+  TextStyle style,
+) {
+  return [
+    TextSpan(text: ' ', style: style),
+    // The subject wraps with the sentence and does not ellipsize, so code
+    // runs stay chips. An ellipsizing title has to degrade to text runs
+    // (see [PrTitleText]).
+    ...buildInlineCodeSpans(context, title, baseStyle: style),
+  ];
+}
+
 /// Hash + title of a commit. With [onOpen], both are one button that opens
 /// that commit's diff; otherwise they stay plain text so the sentence wraps
 /// the same way.
@@ -925,7 +941,7 @@ List<InlineSpan> _commitIdentitySpans(
         style: shaStyle,
       ),
       if (commit.title.isNotEmpty)
-        TextSpan(text: ' ${commit.title}', style: titleStyle),
+        ..._commitTitleSpans(context, commit.title, titleStyle),
     ];
   }
   return [
@@ -990,9 +1006,10 @@ class _CommitChangesLink extends StatelessWidget {
                   ),
                 ),
                 if (commit.title.isNotEmpty)
-                  TextSpan(
-                    text: ' ${commit.title}',
-                    style: base.copyWith(
+                  ..._commitTitleSpans(
+                    context,
+                    commit.title,
+                    base.copyWith(
                       color: titleColor,
                       decoration: decoration,
                       decorationColor: titleColor,

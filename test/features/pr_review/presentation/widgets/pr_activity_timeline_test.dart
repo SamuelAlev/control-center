@@ -632,5 +632,55 @@ void main() {
         );
       },
     );
+
+    testWidgets('renders backtick runs in a commit subject as inline code', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(800, 600);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final commits = [
+        PrCommit(
+          sha: '368dda11234',
+          message: 'refactor: remove `clipboard` dependency',
+          author: const PrUser(login: 'SamuelAlev', avatarUrl: ''),
+          date: _t0,
+        ),
+      ];
+
+      await tester.pumpWidget(
+        _wrap(
+          CustomScrollView(
+            slivers: [
+              PrActivityTimeline(
+                pr: _pr(),
+                prRef: _prRef,
+                onOpenCommit: (_) {},
+              ),
+            ],
+          ),
+          comments: const [],
+          reviews: const [],
+          issueComments: const [],
+          commits: commits,
+          events: const [],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('clipboard'), findsOneWidget);
+      expect(find.textContaining('`'), findsNothing);
+      final chip = tester.widget<Container>(
+        find
+            .ancestor(
+              of: find.text('clipboard'),
+              matching: find.byType(Container),
+            )
+            .first,
+      );
+      expect(chip.decoration, isA<BoxDecoration>());
+    });
   });
 }

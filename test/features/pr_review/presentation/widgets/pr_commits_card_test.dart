@@ -167,6 +167,27 @@ void main() {
     expect(find.text('feat: add login'), findsOneWidget);
   });
 
+  testWidgets('renders backtick runs in the commit subject as inline code', (
+    tester,
+  ) async {
+    final commits = [
+      PrCommit(
+        sha: '368dda11234567890abcdef1234567890abcdef',
+        message: 'refactor: remove `clipboard` dependency',
+        author: _user('SamuelAlev'),
+        date: DateTime(2024, 6, 15),
+      ),
+    ];
+
+    await tester.pumpWidget(_wrap(PrCommitsCard(commits: commits)));
+
+    expect(
+      find.text('refactor: remove clipboard dependency'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('`'), findsNothing);
+  });
+
   testWidgets('renders commit with empty message', (tester) async {
     final commits = [
       PrCommit(

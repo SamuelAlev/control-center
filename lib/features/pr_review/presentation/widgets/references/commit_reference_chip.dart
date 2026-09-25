@@ -4,6 +4,7 @@ import 'package:control_center/features/pr_review/providers/commit_reference_pre
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/utils/github_reference_parser.dart';
 import 'package:control_center/shared/utils/open_url.dart';
+import 'package:control_center/shared/widgets/pr_title_text.dart';
 import 'package:control_center/shared/widgets/reference_chip_shell.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -121,7 +122,7 @@ class _LoadedContent extends StatelessWidget {
         const SizedBox(width: 6),
         ConstrainedBox(
           constraints: BoxConstraints(maxWidth: maxTitleWidth),
-          child: Text(
+          child: PrTitleText(
             preview.title,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
