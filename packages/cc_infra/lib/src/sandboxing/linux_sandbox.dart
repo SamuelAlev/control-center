@@ -14,14 +14,33 @@ import 'package:cc_infra/src/sandboxing/sandbox_config.dart';
 ///
 /// The bwrap argv is built from [SandboxConfig.filesystem]:
 ///   - `--bind <p> <p>` for every `allowWrite` entry (writable bind mount)
-///   - `--ro-bind /dev/null <p>` for every `denyRead` and `denyWrite` entry
+///   - `--ro-bind /dev/null <p>` for literal `denyWrite` paths
+///   - `--ro-bind /dev/null <p>` for every `denyRead` file
 ///   - `--tmpfs <p>` for `denyRead` directories that need to look empty
-///   - `--unshare-net --unshare-pid --proc /proc --dev /dev` always
+///   - `--unshare-net --unshare-pid --proc /proc --dev /dev` as configured
 ///
+/// Globbed deny-write rules cannot be enforced by mount points: enumerating
+/// existing files still lets a process create a new matching filename. Refuse
+/// those configurations rather than silently start an under-protected shell.
 /// Networking, when enabled, is reachable only through Unix sockets bind-mounted
 /// into the sandbox; the in-sandbox `socat` listens on 127.0.0.1 and forwards
 /// to those sockets so the user command sees a normal `HTTP_PROXY` URL.
 abstract final class LinuxSandbox {
+  /// Rejects deny-write patterns that bwrap cannot enforce for future files.
+  ///
+  /// There is no bwrap pathname-glob rule or safe expansion of one: a process
+  /// can create `.env`, `secret.key`, or a nested directory after mounting.
+  static void validateConfig(SandboxConfig config) {
+    for (final path in config.filesystem.denyWrite) {
+      if (path.contains('*') || path.contains('?')) {
+        throw UnsupportedError(
+          'Linux bubblewrap cannot enforce denyWrite pattern "$path" for '
+          'new files; refusing to run without secret-write protection.',
+        );
+      }
+    }
+  }
+
   /// Builds the bwrap argv for [config], excluding the leading `bwrap` token.
   ///
   /// [innerCommand] is the command (already shell-quoted) executed by
@@ -35,6 +54,7 @@ abstract final class LinuxSandbox {
     String? workingDirectory,
     String binShell = '/bin/bash',
   }) {
+    validateConfig(config);
     final args = <String>[
       '--die-with-parent',
       '--unshare-pid',
@@ -97,9 +117,6 @@ abstract final class LinuxSandbox {
       }
     }
     for (final p in config.filesystem.denyWrite) {
-      if (p.contains('*')) {
-        continue;
-      }
       if (FileSystemEntity.isDirectorySync(p)) {
         // A directory cannot be shadowed by /dev/null: bwrap refuses the
         // mount outright ("Can't create file at …: Is a directory") and the

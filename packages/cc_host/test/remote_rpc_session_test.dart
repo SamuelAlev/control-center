@@ -300,6 +300,7 @@ void main() {
           // user-1 is a member of ws-mine only.
           resolveRole: (workspaceId, userId) async =>
               workspaceId == 'ws-mine' ? WorkspaceRole.member : null,
+          toolIsMutating: (_) => true,
         );
         addTearDown(session.stop);
         await session.start();
@@ -340,6 +341,7 @@ void main() {
             roleLookups++;
             return WorkspaceRole.member;
           },
+          toolIsMutating: (_) => true,
         );
         addTearDown(session.stop);
         await session.start();
@@ -365,6 +367,100 @@ void main() {
       },
     );
 
+    test('guests and viewers cannot run registered mutating tools', () async {
+      for (final role in [WorkspaceRole.guest, WorkspaceRole.viewer]) {
+        for (final tool in ['send_message', 'assign_ticket', 'update_ticket']) {
+          final space = _FakeChannel();
+          final dispatcher = _RecordingDispatcher();
+          final session = _session(
+            space,
+            dispatcher,
+            resolveRole: (_, _) async => role,
+            toolIsMutating: (_) => true,
+          );
+          await session.start();
+          space.inject({
+            'jsonrpc': '2.0',
+            'method': 'tools/call',
+            'id': 1,
+            'params': {
+              'name': tool,
+              'arguments': {'workspace_id': 'ws-mine'},
+            },
+          });
+          await pumpEventQueue(times: 5);
+          expect(
+            (space.sent.single['error'] as Map)['code'],
+            RpcErrorCodes.unauthorized,
+            reason: '$role $tool',
+          );
+          expect(dispatcher.handled, isEmpty);
+          await session.stop();
+        }
+      }
+    });
+
+    test(
+      'guest reads and member writes follow registered tool metadata',
+      () async {
+        for (final (role, tool, mutating) in [
+          (WorkspaceRole.guest, 'list_tickets', false),
+          (WorkspaceRole.member, 'send_message', true),
+        ]) {
+          final space = _FakeChannel();
+          final dispatcher = _RecordingDispatcher();
+          final session = _session(
+            space,
+            dispatcher,
+            resolveRole: (_, _) async => role,
+            toolIsMutating: (_) => mutating,
+          );
+          await session.start();
+          space.inject({
+            'jsonrpc': '2.0',
+            'method': 'tools/call',
+            'id': 1,
+            'params': {
+              'name': tool,
+              'arguments': {'workspace_id': 'ws-mine'},
+            },
+          });
+          await pumpEventQueue(times: 5);
+          expect(dispatcher.handled, ['tools/call']);
+          expect(space.sent.single['result'], isNotNull);
+          await session.stop();
+        }
+      },
+    );
+
+    test(
+      'missing registry metadata cannot certify an allowed tool as read',
+      () async {
+        final space = _FakeChannel();
+        final dispatcher = _RecordingDispatcher();
+        final session = _session(
+          space,
+          dispatcher,
+          resolveRole: (_, _) async => WorkspaceRole.guest,
+          toolIsMutating: (_) => null,
+        );
+        addTearDown(session.stop);
+        await session.start();
+        space.inject({
+          'jsonrpc': '2.0',
+          'method': 'tools/call',
+          'id': 1,
+          'params': {
+            'name': 'list_tickets',
+            'arguments': {'workspace_id': 'ws-mine'},
+          },
+        });
+        await pumpEventQueue(times: 5);
+        expect((space.sent.single['error'] as Map)['code'], -32601);
+        expect(dispatcher.handled, isEmpty);
+      },
+    );
+
     test(
       'forwards a tool naming a workspace the user IS a member of',
       () async {
@@ -374,6 +470,7 @@ void main() {
           space,
           dispatcher,
           resolveRole: (workspaceId, userId) async => WorkspaceRole.member,
+          toolIsMutating: (_) => false,
         );
         addTearDown(session.stop);
         await session.start();
@@ -406,6 +503,7 @@ void main() {
             roleChecks++;
             return null;
           },
+          toolIsMutating: (_) => false,
         );
         addTearDown(session.stop);
         await session.start();
@@ -462,70 +560,67 @@ void main() {
       },
     );
 
-    test(
-      'sub/unsubscribe does not consume the request budget',
-      () async {
-        // Fast space-switching bursts unsubscribe as autoDispose watches
-        // tear down. Refusing those leaks the server-side subscription —
-        // the client swallows the error — and the next space then collides
-        // with the per-session cap. Teardown is not work.
-        final space = _FakeChannel();
-        final watchQueries = WatchQueryRegistry([
-          WatchQuery(
-            name: 'newsfeed',
-            workspaceScoped: false,
-            handler: (_) => const Stream<Map<String, dynamic>>.empty(),
-          ),
-        ]);
-        final session = RemoteRpcSession(
-          deviceId: 'desktop',
-          userId: 'user-1',
-          space: space,
-          dispatcher: _RecordingDispatcher(),
-          workspaceResolver: (_) async => const [],
-          capability: SessionCapability.fullClient,
-          watchQueries: watchQueries,
-          requestLimiter: RemoteRateLimiter(
-            maxCallsPerWindow: 1,
-            maxMutationsPerWindow: 1,
-          ),
-        );
-        addTearDown(session.stop);
-        await session.start();
+    test('sub/unsubscribe does not consume the request budget', () async {
+      // Fast space-switching bursts unsubscribe as autoDispose watches
+      // tear down. Refusing those leaks the server-side subscription —
+      // the client swallows the error — and the next space then collides
+      // with the per-session cap. Teardown is not work.
+      final space = _FakeChannel();
+      final watchQueries = WatchQueryRegistry([
+        WatchQuery(
+          name: 'newsfeed',
+          workspaceScoped: false,
+          handler: (_) => const Stream<Map<String, dynamic>>.empty(),
+        ),
+      ]);
+      final session = RemoteRpcSession(
+        deviceId: 'desktop',
+        userId: 'user-1',
+        space: space,
+        dispatcher: _RecordingDispatcher(),
+        workspaceResolver: (_) async => const [],
+        capability: SessionCapability.fullClient,
+        watchQueries: watchQueries,
+        requestLimiter: RemoteRateLimiter(
+          maxCallsPerWindow: 1,
+          maxMutationsPerWindow: 1,
+        ),
+      );
+      addTearDown(session.stop);
+      await session.start();
 
-        space.inject({
-          'jsonrpc': '2.0',
-          'method': 'session/list_workspaces',
-          'id': 1,
-        });
-        await pumpEventQueue(times: 5);
-        expect(space.sent, hasLength(1));
-        expect(space.sent.single.containsKey('error'), isFalse);
+      space.inject({
+        'jsonrpc': '2.0',
+        'method': 'session/list_workspaces',
+        'id': 1,
+      });
+      await pumpEventQueue(times: 5);
+      expect(space.sent, hasLength(1));
+      expect(space.sent.single.containsKey('error'), isFalse);
 
-        space.inject({
-          'jsonrpc': '2.0',
-          'method': RpcMethods.unsubscribe,
-          'id': 2,
-          'params': {'subscriptionId': 's-gone'},
-        });
-        await pumpEventQueue(times: 5);
-        expect(space.sent, hasLength(2));
-        expect(space.sent.last['id'], 2);
-        expect(space.sent.last['result'], {'ok': true});
+      space.inject({
+        'jsonrpc': '2.0',
+        'method': RpcMethods.unsubscribe,
+        'id': 2,
+        'params': {'subscriptionId': 's-gone'},
+      });
+      await pumpEventQueue(times: 5);
+      expect(space.sent, hasLength(2));
+      expect(space.sent.last['id'], 2);
+      expect(space.sent.last['result'], {'ok': true});
 
-        space.inject({
-          'jsonrpc': '2.0',
-          'method': 'session/list_workspaces',
-          'id': 3,
-        });
-        await pumpEventQueue(times: 5);
-        expect(space.sent, hasLength(3));
-        expect(
-          (space.sent.last['error'] as Map)['code'],
-          RpcErrorCodes.rateLimited,
-        );
-      },
-    );
+      space.inject({
+        'jsonrpc': '2.0',
+        'method': 'session/list_workspaces',
+        'id': 3,
+      });
+      await pumpEventQueue(times: 5);
+      expect(space.sent, hasLength(3));
+      expect(
+        (space.sent.last['error'] as Map)['code'],
+        RpcErrorCodes.rateLimited,
+      );
+    });
 
     test('a first-party client gets a higher request budget than a phone', () {
       final desktop = RemoteRpcSession(
@@ -1159,6 +1254,7 @@ RemoteRpcSession _session(
   RemoteRateLimiter? requestLimiter,
   WorkspaceRoleResolver? resolveRole,
   WorkspaceExistsChecker? workspaceExists,
+  bool? Function(String)? toolIsMutating,
   int maxConcurrentRequests = 16,
   Duration handlerTimeout = const Duration(seconds: 60),
 }) => RemoteRpcSession(
@@ -1173,6 +1269,7 @@ RemoteRpcSession _session(
   maxConcurrentRequests: maxConcurrentRequests,
   handlerTimeout: handlerTimeout,
   resolveRole: resolveRole,
+  toolIsMutating: toolIsMutating,
   workspaceExists: workspaceExists,
 );
 

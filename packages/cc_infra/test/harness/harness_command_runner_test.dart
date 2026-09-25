@@ -6,7 +6,12 @@ import 'dart:io';
 import 'package:cc_domain/core/domain/ports/confirmation_port.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_capabilities.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
+import 'package:cc_domain/features/guardrails/domain/entities/action_policy_rule.dart';
+import 'package:cc_domain/features/guardrails/domain/repositories/action_policy_repository.dart';
+import 'package:cc_domain/features/guardrails/domain/services/action_guard_service.dart';
+import 'package:cc_domain/features/guardrails/domain/value_objects/action_decision.dart';
 import 'package:cc_harness/cancellation.dart';
+import 'package:cc_harness/tools.dart';
 import 'package:cc_infra/src/harness/harness_command_runner.dart';
 import 'package:test/test.dart';
 
@@ -28,15 +33,18 @@ void main() {
 
   SandboxedHarnessCommandRunner runner({
     ConfirmationPort? confirmationPort,
+    ActionGuardService? actionGuard,
     Map<String, String> baseEnv = const {},
     int maxOutputChars = 16000,
   }) => SandboxedHarnessCommandRunner(
     mode: Mode.chat,
     capabilities: const AgentCapabilities(),
     confirmationPort: confirmationPort,
+    actionGuard: actionGuard,
     workspaceId: 'ws',
     agentId: 'a',
-    conversationId: 'c',
+    conversationId: 'conv-1',
+    spaceId: 'space-1',
     baseEnv: baseEnv,
     maxOutputChars: maxOutputChars,
   );
@@ -79,6 +87,46 @@ void main() {
       ).run('git push', workdir: cwd.path);
       expect(res.denied, isTrue);
       expect(res.denyReason, contains('denied by user'));
+    });
+
+    test('a space-level deny blocks bash and records that space', () async {
+      final target = File('${cwd.path}/should-not-exist');
+      final now = DateTime.now();
+      final audits = <GuardAudit>[];
+      final guard = ActionGuardService(
+        repository: _Rules([
+          ActionPolicyRule(
+            id: 'workspace-allow',
+            workspaceId: 'ws',
+            scopeType: ActionScopeType.workspace,
+            scopeId: '',
+            actionClass: ActionClass.processSpawn,
+            decision: ActionDecision.allow,
+            createdAt: now,
+            updatedAt: now,
+          ),
+          ActionPolicyRule(
+            id: 'space-deny',
+            workspaceId: 'ws',
+            scopeType: ActionScopeType.space,
+            scopeId: 'space-1',
+            actionClass: ActionClass.processSpawn,
+            decision: ActionDecision.deny,
+            createdAt: now,
+            updatedAt: now,
+          ),
+        ]),
+        onAudit: audits.add,
+      );
+
+      final result = await runner(
+        actionGuard: guard,
+      ).run('touch ${target.path}', workdir: cwd.path);
+      expect(result.denied, isTrue);
+      expect(target.existsSync(), isFalse);
+      expect(audits.single.ruleId, 'space-deny');
+      expect(audits.single.spaceId, 'space-1');
+      expect(audits.single.decision, ActionDecision.deny);
     });
   });
 
@@ -183,4 +231,16 @@ class _Approver implements ConfirmationPort {
   final bool approve;
   @override
   Future<bool> requestApproval(ConfirmationRequest request) async => approve;
+}
+
+class _Rules implements ActionPolicyRepository {
+  _Rules(this.values);
+
+  final List<ActionPolicyRule> values;
+
+  @override
+  Future<List<ActionPolicyRule>> rules(String workspaceId) async => values;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

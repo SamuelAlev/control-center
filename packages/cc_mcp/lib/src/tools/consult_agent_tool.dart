@@ -104,6 +104,9 @@ class ConsultAgentTool extends McpTool {
     final question = rawQuestion;
     final rationale = arguments['rationale'] as String?;
 
+    if (!await _messaging.spaceExists(workspaceId, spaceId)) {
+      return CallResult.error('Space belongs to a different workspace.');
+    }
     final candidates = await _agents.watchByWorkspace(workspaceId).first;
     final existingParticipants = await _messaging.getParticipants(
       workspaceId,

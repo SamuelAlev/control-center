@@ -128,6 +128,12 @@ class SandboxManager {
     required List<String> argv,
     String? workingDirectory,
   }) async {
+    // Refuse unenforceable write-deny globs before acquiring per-session
+    // proxies or creating bridges. bwrap can mask existing paths but cannot
+    // prevent a sandboxed process from creating a NEW matching secret file.
+    if (Platform.isLinux || LinuxSandbox.isWsl2()) {
+      LinuxSandbox.validateConfig(config);
+    }
     await ensureInitialized();
     final session = _sessions.putIfAbsent(config.sessionId, _SessionState.new);
     // PER-SESSION proxies. These used to be process-wide singletons whose

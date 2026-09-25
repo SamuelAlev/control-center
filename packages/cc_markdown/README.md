@@ -26,6 +26,9 @@ engine we own end to end.
   dispatch. Ships `CcThinkingPlugin` / `CcArtifactPlugin` / `CcToolCallPlugin`.
 - **Widget renderer**: one `Text.rich` per paragraph (inline builders embed as
   `WidgetSpan`s), an override registry with per-node `canBuild` fall-through.
+- **Emoji-aware inline spacing**: Apple Color Emoji's surplus advance is
+  reclaimed next to adjacent glyphs, but retained before whitespace so headings
+  such as `🖼️ Screenshots` keep their intended word gap in light and dark modes.
 - **Always-on LRU parse cache** keyed by `(source, plugin-set identity, parse
 options)`, plus `parseEphemeral` for volatile streaming intermediates.
 - **First-class incremental streaming**: `CcMarkdownStreamController` seals

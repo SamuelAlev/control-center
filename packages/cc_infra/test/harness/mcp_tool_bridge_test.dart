@@ -112,10 +112,37 @@ void main() {
       expect(inner.lastArgs?['workspace_id'], 'ws1');
     });
 
+    test('delegation always uses the run agent as caller', () async {
+      final inner = _FakeMcpTool(
+        schema: const {
+          'type': 'object',
+          'properties': {
+            'from_agent_id': {'type': 'string'},
+            'delegated_by_agent_id': {'type': 'string'},
+          },
+          'required': ['from_agent_id', 'delegated_by_agent_id'],
+        },
+      );
+      final bridge = McpToolBridge(
+        inner,
+        hiddenScopeParams: const {'from_agent_id', 'delegated_by_agent_id'},
+      );
+      expect(bridge.inputSchema['required'], isEmpty);
+      await bridge.execute(const {
+        'from_agent_id': 'spoofed',
+        'delegated_by_agent_id': 'spoofed',
+      }, ctx);
+      expect(inner.lastArgs?['from_agent_id'], 'a1');
+      expect(inner.lastArgs?['delegated_by_agent_id'], 'a1');
+    });
+
     test('the MCP tool own schema is untouched', () {
       // External MCP clients must keep seeing the full contract.
       final inner = _FakeMcpTool();
-      McpToolBridge(inner, hiddenScopeParams: const {'workspace_id'}).inputSchema;
+      McpToolBridge(
+        inner,
+        hiddenScopeParams: const {'workspace_id'},
+      ).inputSchema;
       expect(
         (inner.inputSchema['properties'] as Map).containsKey('workspace_id'),
         isTrue,
@@ -124,8 +151,10 @@ void main() {
 
     test('hiding nothing returns the schema identically', () {
       final inner = _FakeMcpTool();
-      expect(identical(McpToolBridge(inner).inputSchema, inner.inputSchema),
-          isTrue);
+      expect(
+        identical(McpToolBridge(inner).inputSchema, inner.inputSchema),
+        isTrue,
+      );
     });
 
     test('the schema is stable across reads', () {

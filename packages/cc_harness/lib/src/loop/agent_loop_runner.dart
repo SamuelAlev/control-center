@@ -761,6 +761,19 @@ class AgentLoopRunner implements AgentLoop {
       var pi = 0;
       while (pi < pending.length) {
         if (cancelToken.isCancelled) {
+          // The assistant turn is already in history. Pair every requested
+          // tool, including calls we never started, before returning so a
+          // resumed run can send a valid transcript back to the provider.
+          for (final t in pending.skip(pi)) {
+            resultBlocks.add(
+              HarnessToolResultBlock(
+                toolUseId: t.id,
+                content: 'Cancelled before the tool could run.',
+                isError: true,
+              ),
+            );
+          }
+          history.add(HarnessMessage.toolResults(resultBlocks));
           yield const LoopDone(LoopDoneReason.cancelled);
           return;
         }

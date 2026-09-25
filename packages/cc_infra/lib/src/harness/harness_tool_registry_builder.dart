@@ -72,6 +72,7 @@ HarnessToolRegistry buildHarnessToolRegistry({
     workspaceId: workspaceId,
     agentId: agentId,
     conversationId: conversationId,
+    spaceId: spaceId,
     baseEnv: env,
     protectedPaths: protectedPaths,
   );
@@ -128,14 +129,12 @@ HarnessToolRegistry buildHarnessToolRegistry({
   // working directory: a pattern is parsed by the grammar of the language it
   // searches, and there is nothing to search without a root.
   final astParser = treeSitterParser;
-  if (astParser != null && lspWorkingDirectory != null &&
+  if (astParser != null &&
+      lspWorkingDirectory != null &&
       lspWorkingDirectory.isNotEmpty) {
     registry
       ..register(
-        AstGrepTool(
-          parser: astParser,
-          workingDirectory: lspWorkingDirectory,
-        ),
+        AstGrepTool(parser: astParser, workingDirectory: lspWorkingDirectory),
       )
       // Separate WRITE-tier tool for the same reason `lsp_rename` is separate
       // from `lsp`: the tier decides which surfaces SEE a tool, so a
@@ -239,6 +238,10 @@ HarnessToolRegistry buildHarnessToolRegistry({
       if (conversationId != null && conversationId.isNotEmpty)
         'conversation_id',
       if (spaceId != null && spaceId.isNotEmpty) 'space_id',
+      if (agentId != null && agentId.isNotEmpty) ...{
+        'from_agent_id',
+        'delegated_by_agent_id',
+      },
     };
     for (final toolName in mcpRegistry.toolNames) {
       final mcpTool = mcpRegistry.lookup(toolName);

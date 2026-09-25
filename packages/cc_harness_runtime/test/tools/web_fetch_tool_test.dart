@@ -24,6 +24,13 @@ class _FakeHttpClient implements HttpClient {
     this.throwOnGet,
     this.redirects = const {},
   });
+  Future<ConnectionTask<Socket>> Function(Uri, String?, int?)?
+  connectionFactory;
+  String Function(Uri)? findProxy;
+  Uri? simulateConnectOn;
+
+  @override
+  void close({bool force = false}) {}
 
   final String body;
   final int statusCode;
@@ -42,6 +49,9 @@ class _FakeHttpClient implements HttpClient {
   @override
   Future<HttpClientRequest> getUrl(Uri url) async {
     requested.add(url);
+    if (url == simulateConnectOn) {
+      await connectionFactory!(url, null, null);
+    }
     if (throwOnGet != null) {
       throw throwOnGet!;
     }
@@ -67,6 +77,9 @@ class _FakeRequest implements HttpClientRequest {
 
   @override
   int maxRedirects = 5;
+
+  @override
+  bool persistentConnection = true;
 
   @override
   Future<HttpClientResponse> close() async => _FakeResponse(client, url);
@@ -226,6 +239,90 @@ void main() {
         'example.com',
       ], reason: 'the internal hop must never be dialled');
     });
+
+    test(
+      'pins the initial vetted DNS answer through the socket connector',
+      () async {
+        final client = _FakeHttpClient(body: 'must not return this')
+          ..simulateConnectOn = Uri.parse('https://rebind.test/page');
+        var lookups = 0;
+        final dialed = <InternetAddress>[];
+        final tool = WebFetchTool(
+          client: client,
+          resolveHost: (_) async {
+            lookups++;
+            return [
+              InternetAddress(
+                lookups == 1 ? '93.184.215.14' : '169.254.169.254',
+              ),
+            ];
+          },
+          connect: (address, _) async {
+            dialed.add(address);
+            throw StateError('stopped before network I/O');
+          },
+        );
+
+        final result = await tool.execute({
+          'url': 'https://rebind.test/page',
+        }, ctx);
+        expect(result.isError, isTrue);
+        expect(result.content, isNot(contains('must not return this')));
+        expect(lookups, 1);
+        expect(dialed.map((address) => address.address), ['93.184.215.14']);
+      },
+    );
+
+    test('pins each redirect hop without resolving again at connect', () async {
+      final client = _FakeHttpClient(
+        body: 'must not return this',
+        redirects: {'https://first.test/page': 'https://second.test/final'},
+      )..simulateConnectOn = Uri.parse('https://second.test/final');
+      final lookedUp = <String>[];
+      final dialed = <InternetAddress>[];
+      final tool = WebFetchTool(
+        client: client,
+        resolveHost: (host) async {
+          lookedUp.add(host);
+          return [
+            InternetAddress(
+              lookedUp.length <= 2 ? '93.184.215.14' : '169.254.169.254',
+            ),
+          ];
+        },
+        connect: (address, _) async {
+          dialed.add(address);
+          throw StateError('stopped before network I/O');
+        },
+      );
+
+      final result = await tool.execute({
+        'url': 'https://first.test/page',
+      }, ctx);
+      expect(result.isError, isTrue);
+      expect(result.content, isNot(contains('must not return this')));
+      expect(lookedUp, ['first.test', 'second.test']);
+      expect(dialed.map((address) => address.address), ['93.184.215.14']);
+    });
+
+    test(
+      'refuses mixed public and private DNS answers before dialing',
+      () async {
+        final client = _FakeHttpClient(body: 'must not return this');
+        final tool = WebFetchTool(
+          client: client,
+          resolveHost: (_) async => [
+            InternetAddress('93.184.215.14'),
+            InternetAddress('169.254.169.254'),
+          ],
+        );
+
+        final result = await tool.execute({'url': 'http://mixed.test/'}, ctx);
+        expect(result.isError, isTrue);
+        expect(result.content, contains('169.254.169.254'));
+        expect(client.requested, isEmpty);
+      },
+    );
 
     test('a redirect to another public host is followed', () async {
       final client = _FakeHttpClient(

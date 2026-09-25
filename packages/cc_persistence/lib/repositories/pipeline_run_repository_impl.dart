@@ -31,15 +31,9 @@ class PipelineRunRepositoryImpl implements PipelineRunRepository {
 
   PipelineDao _dao(String workspaceId) => _dbs.of(workspaceId).pipelineDao;
 
-  /// Resolved `runId -> workspaceId` routes, most-recently-used last.
-  ///
-  /// A run's workspace never changes: [insertRun] writes the route and [deleteRun] drops it,
-  /// and nothing in between re-points a run at a different workspace.
-  /// So a resolved route is a fact, not a snapshot, and re-asking `global.db` for it is pure
-  /// overhead.
-  /// Every id-only read — [getRun], [stepRunsForPipeline], [insertStepRun], [updateRunState],
-  /// [incrementCost] — pays this lookup, and the engine performs six to ten of them per step
-  /// against a server that holds ONE shared database connection.
+  /// Recently resolved `runId -> workspaceId` read routes, newest last.
+  /// Writes bypass this cache: import can replace a workspace and invalidate
+  /// its routes without going through this repository instance.
   final Map<String, String> _routeCache = {};
 
   /// Cap on [_routeCache]. Bounded because a long-lived server indexing repos
@@ -79,10 +73,26 @@ class PipelineRunRepositoryImpl implements PipelineRunRepository {
     }
   }
 
-  /// Resolves [runId] to its [PipelineDao], or null when it has no route.
+  /// Resolves [runId] to its [PipelineDao], or null for read-only lookups.
   Future<PipelineDao?> _daoForRun(String runId) async {
     final workspaceId = await _workspaceOf(runId);
     return workspaceId == null ? null : _dao(workspaceId);
+  }
+
+  Future<PipelineDao> _daoForMutation(String runId) async {
+    // A cached read route can outlive a workspace import (which drops every
+    // global route). Mutations must verify the authoritative route, not write
+    // to a stale workspace file and report success.
+    final workspaceId = await _routes.resolve(
+      WorkspaceRouteKind.pipelineRun,
+      runId,
+    );
+    if (workspaceId == null) {
+      _routeCache.remove(runId);
+      throw StateError('Pipeline run $runId has no workspace route');
+    }
+    _rememberRoute(runId, workspaceId);
+    return _dao(workspaceId);
   }
 
   @override
@@ -126,18 +136,18 @@ class PipelineRunRepositoryImpl implements PipelineRunRepository {
 
   @override
   Future<void> updateRunState(String runId, Map<String, dynamic> state) async {
-    final dao = await _daoForRun(runId);
-    await dao?.updateRunState(runId, jsonEncode(state));
+    final dao = await _daoForMutation(runId);
+    await dao.updateRunState(runId, jsonEncode(state));
   }
 
   @override
   Future<void> incrementCost(String runId, int cents, int tokens) async {
-    final dao = await _daoForRun(runId);
+    final dao = await _daoForMutation(runId);
     // One statement, never read-then-write: a fan-out's agents all complete at
     // once and two rollups reading the same pre-increment total would each
     // write it back plus their own share, losing one. See
     // [PipelineDao.incrementRunCost].
-    await dao?.incrementRunCost(runId, cents, tokens);
+    await dao.incrementRunCost(runId, cents, tokens);
   }
 
   /// CROSS-WORKSPACE BY DESIGN: the startup pipeline-resume reconciler needs
@@ -232,8 +242,8 @@ class PipelineRunRepositoryImpl implements PipelineRunRepository {
 
   @override
   Future<void> insertStepRun(PipelineStepRun stepRun) async {
-    final dao = await _daoForRun(stepRun.pipelineRunId);
-    await dao?.insertStepRun(stepRunToCompanion(stepRun));
+    final dao = await _daoForMutation(stepRun.pipelineRunId);
+    await dao.insertStepRun(stepRunToCompanion(stepRun));
   }
 
   @override

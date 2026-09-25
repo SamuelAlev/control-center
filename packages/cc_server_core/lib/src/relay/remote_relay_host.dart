@@ -43,6 +43,7 @@ class RemoteRelayHost {
     this.watchQueries,
     this.workspaceExists,
     this.resolveRole,
+    this.toolIsMutating,
     RemoteRateLimiterPool? rateLimiters,
     RelayOwnerJoin? ownerJoin,
   }) : rateLimiters = rateLimiters ?? RemoteRateLimiterPool(),
@@ -95,6 +96,10 @@ class RemoteRelayHost {
   /// (workspace-targeted events are dropped for non-members). Null (bare test
   /// hosts) skips the gates; production wiring always supplies it.
   final WorkspaceRoleResolver? resolveRole;
+
+  /// Classifies a registered tool before a relayed session applies its role
+  /// gate. An unknown tool returns null and is refused before dispatch.
+  final bool? Function(String toolName)? toolIsMutating;
 
   /// Repo-RPC dispatcher exposed to relayed clients (`repo/call`).
   final RepoOpDispatcher? repoOps;
@@ -380,6 +385,7 @@ class RemoteRelayHost {
       workspaceResolver: workspaceResolver,
       workspaceExists: workspaceExists,
       resolveRole: resolveRole,
+      toolIsMutating: toolIsMutating,
       capability: SessionCapability.fromPlatform(auth.row.platform),
       repoOps: repoOps,
       watchQueries: watchQueries,

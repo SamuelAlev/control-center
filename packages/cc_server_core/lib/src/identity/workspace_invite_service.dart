@@ -112,10 +112,9 @@ class WorkspaceInviteService {
     await _invites.upsert(invite.copyWith(revokedAt: _now()));
   }
 
-  /// Redeems [code]: validates it, JIT-provisions the user (or admits an
-  /// existing one by [existingUserId]), records membership + repo grants and
-  /// marks the invite used. Denials are generic — the code is the proof and
-  /// an attacker probing codes learns nothing about which ones exist.
+  /// Redeems [code]: validates it, claims the code atomically before
+  /// provisioning a user, then records membership and repo grants.
+  /// Denials are generic so probing codes reveals nothing about their status.
   Future<RedeemedInvite> redeem({
     required String code,
     String? handle,
@@ -128,19 +127,27 @@ class WorkspaceInviteService {
       throw const AuthException('Invite is invalid or expired');
     }
 
-    final user = existingUserId != null
-        ? await _users.getById(existingUserId)
-        : await _provisionUser(
-            handle: handle,
-            displayName: displayName,
-            email: email,
-          );
-    if (user == null) {
+    // Resolve an explicitly requested user before claiming the one-use code:
+    // a nonexistent id must not consume a valid invite.
+    final existingUser = existingUserId == null
+        ? null
+        : await _users.getById(existingUserId);
+    if (existingUserId != null && existingUser == null) {
       throw const AuthException('Invite is invalid or expired');
     }
+    final now = _now();
+    if (!await _invites.consume(invite, now)) {
+      throw const AuthException('Invite is invalid or expired');
+    }
+    final user =
+        existingUser ??
+        await _provisionUser(
+          handle: handle,
+          displayName: displayName,
+          email: email,
+        );
 
     final existing = await _members.getMember(invite.workspaceId, user.id);
-    final now = _now();
     final member =
         existing ??
         WorkspaceMember(
@@ -161,6 +168,10 @@ class WorkspaceInviteService {
           entry.value,
         );
       }
+    }
+
+    await _invites.recordUsedBy(invite, user.id);
+    if (existing == null) {
       _eventBus?.publish(
         WorkspaceMemberAdded(
           workspaceId: invite.workspaceId,
@@ -171,8 +182,11 @@ class WorkspaceInviteService {
       );
     }
 
-    await _invites.upsert(invite.copyWith(usedAt: now, usedBy: user.id));
-    return RedeemedInvite(user: user, member: member, invite: invite);
+    return RedeemedInvite(
+      user: user,
+      member: member,
+      invite: invite.copyWith(usedAt: now, usedBy: user.id),
+    );
   }
 
   Future<User> _provisionUser({

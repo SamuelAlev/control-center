@@ -302,6 +302,21 @@ class DaoWorkspaceInviteRepository implements WorkspaceInviteRepository {
     return row == null ? null : _mapper.inviteToDomain(row);
   }
 
+  @override
+  Future<bool> consume(WorkspaceInvite invite, DateTime now) async {
+    final claimed = await _dao(
+      invite.workspaceId,
+    ).consume(invite.id, invite.codeHash, now);
+    if (claimed) {
+      await _routes.remove(WorkspaceRouteKind.inviteCode, invite.codeHash);
+    }
+    return claimed;
+  }
+
+  @override
+  Future<void> recordUsedBy(WorkspaceInvite invite, String userId) =>
+      _dao(invite.workspaceId).recordUsedBy(invite.id, userId);
+
   /// Writes [invite] into its workspace's file, then updates its route.
   ///
   /// Row first, route second: a route pointing at a row that does not exist yet

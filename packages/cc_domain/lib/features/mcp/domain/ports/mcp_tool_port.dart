@@ -236,6 +236,12 @@ abstract class McpTool {
   /// create/publish, ticket sync writes, skill install, file writes) override.
   Set<ActionClass> get actionClasses => const {};
 
+  /// Whether this tool changes state. Remote human sessions use this metadata
+  /// for their workspace write-permission gate, independent of whether an
+  /// agent would be asked for confirmation or which guardrail class applies.
+  /// Tools with writes outside those two policies override this explicitly.
+  bool get isMutating => requiresApproval || actionClasses.isNotEmpty;
+
   /// Definition.
   ToolDef get definition =>
       ToolDef(name: name, description: description, inputSchema: inputSchema);

@@ -321,14 +321,11 @@ class OidcService {
         'outbound network',
       );
     }
-    final authorization = doc['authorization_endpoint'];
-    final token = doc['token_endpoint'];
-    if (authorization is! String || token is! String) {
-      throw const AuthException(
-        'The issuer\'s discovery document is missing its endpoints',
-      );
-    }
-    return (authorizationEndpoint: authorization, tokenEndpoint: token);
+    final endpoints = _trustedEndpoints(doc, issuerBase);
+    return (
+      authorizationEndpoint: endpoints.authorization.toString(),
+      tokenEndpoint: endpoints.token.toString(),
+    );
   }
 
   Future<void> _discover() async {
@@ -342,13 +339,41 @@ class OidcService {
     final doc = await _getJson(
       Uri.parse('$base/.well-known/openid-configuration'),
     );
+    final endpoints = _trustedEndpoints(doc, config.issuer);
+    _authorizationEndpoint = endpoints.authorization;
+    _tokenEndpoint = endpoints.token;
+  }
+
+  /// The token response is trusted without a local JWT signature check.
+  /// Discovery must therefore never move either endpoint off the issuer's
+  /// TLS origin (or loopback HTTP origin during local development).
+  static ({Uri authorization, Uri token}) _trustedEndpoints(
+    Map<String, dynamic> doc,
+    String issuer,
+  ) {
     final authorization = doc['authorization_endpoint'];
     final token = doc['token_endpoint'];
     if (authorization is! String || token is! String) {
-      throw const AuthException('Issuer discovery failed');
+      throw const AuthException('Issuer discovery failed: missing endpoints');
     }
-    _authorizationEndpoint = Uri.parse(authorization);
-    _tokenEndpoint = Uri.parse(token);
+    final origin = Uri.parse(issuer);
+    Uri trusted(String value) {
+      final endpoint = Uri.tryParse(value);
+      if (endpoint == null ||
+          !OidcConfig.isIssuerAllowed(value) ||
+          endpoint.scheme != origin.scheme ||
+          endpoint.host != origin.host ||
+          endpoint.port != origin.port ||
+          endpoint.userInfo.isNotEmpty ||
+          endpoint.hasFragment) {
+        throw const AuthException(
+          'Issuer discovery returned an endpoint outside the issuer origin',
+        );
+      }
+      return endpoint;
+    }
+
+    return (authorization: trusted(authorization), token: trusted(token));
   }
 
   /// The trust-anchor gate: TLS to the issuer is the ONLY authentication of

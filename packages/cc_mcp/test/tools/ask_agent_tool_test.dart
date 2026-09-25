@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:cc_domain/core/domain/entities/agent.dart';
+import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/entities/message.dart';
 import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_skills.dart';
@@ -12,7 +13,12 @@ import 'package:cc_domain/features/messaging/domain/ports/messaging_port.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
 import 'package:cc_domain/features/messaging/domain/services/peer_delegation_guards.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/space_kind.dart';
+import 'package:cc_domain/features/ticketing/domain/entities/ticket.dart';
+import 'package:cc_domain/features/ticketing/domain/entities/ticket_status.dart';
+import 'package:cc_domain/features/ticketing/domain/repositories/ticket_repository.dart';
+import 'package:cc_domain/features/ticketing/domain/services/ticket_workflow_service.dart';
 import 'package:cc_mcp/src/tools/ask_agent_tool.dart';
+import 'package:cc_mcp/src/tools/pending_delegation_hops.dart';
 import 'package:test/test.dart';
 
 /// `ask_agent` blocks on the recipient's reply in the pair's DM space. The
@@ -28,16 +34,35 @@ void main() {
   late _FakeMessagingRepository messaging;
   late _FakeMessagingPort messagingPort;
   late AskAgentTool tool;
+  late _FakeTickets tickets;
+
+  late int? remainingBudget;
+  late AutonomyLevel askerAutonomy;
+  late AutonomyLevel recipientAutonomy;
 
   setUp(() {
     agents = _FakeAgentRepository();
     messaging = _FakeMessagingRepository();
+    tickets = _FakeTickets();
     messagingPort = _FakeMessagingPort();
+    remainingBudget = null;
+    askerAutonomy = AutonomyLevel.actWithApproval;
+    recipientAutonomy = AutonomyLevel.actWithApproval;
     tool = AskAgentTool(
       agents: agents,
       messaging: messaging,
       messagingPort: messagingPort,
       rateLimiter: PairRateLimiter(),
+      service: TicketWorkflowService(
+        repository: tickets,
+        eventBus: DomainEventBus(),
+        resolveEffectiveAutonomy:
+            ({required workspaceId, required agentId, spaceId}) async =>
+                agentId == 'agent-a' ? askerAutonomy : recipientAutonomy,
+        resolveRemainingBudgetCents:
+            ({required workspaceId, required agentId}) async => remainingBudget,
+      ),
+      pendingHops: PendingDelegationHops(),
     );
     agents.add(
       Agent(
@@ -57,6 +82,7 @@ void main() {
       'workspace_id': workspaceId,
       'to_agent_id': 'agent-b',
       'message': 'Is the cast safe?',
+      'from_agent_id': 'agent-a',
       'timeout_seconds': timeoutSeconds,
     });
     expect(result.isError, isFalse);
@@ -102,6 +128,116 @@ void main() {
           'sent another copied the whole workspace onto disk.',
     );
   });
+  test('autonomy ceiling and exhausted budget refuse before posting', () async {
+    askerAutonomy = AutonomyLevel.proposeOnly;
+    recipientAutonomy = AutonomyLevel.actFreely;
+    final args = {
+      'workspace_id': workspaceId,
+      'from_agent_id': 'agent-a',
+      'to_agent_id': 'agent-b',
+      'message': 'Can you check?',
+    };
+    final autonomy = await tool.run(args);
+    expect(autonomy.isError, isTrue);
+    expect(autonomy.content.first.text, contains('ceiling'));
+    askerAutonomy = recipientAutonomy;
+    remainingBudget = 0;
+    final budget = await tool.run(args);
+    expect(budget.isError, isTrue);
+    expect(budget.content.first.text, contains('budget'));
+    expect(messaging._messages, isEmpty);
+    expect(messagingPort.dispatchCount, 0);
+  });
+
+  test(
+    'ticket ancestry consumes depth and foreign parent fails closed',
+    () async {
+      tickets.store['parent'] = Ticket(
+        id: 'parent',
+        workspaceId: workspaceId,
+        title: 'Current ticket',
+        assignedAgentId: 'agent-a',
+        status: TicketStatus.open,
+        delegationDepth: 3,
+        createdAt: DateTime(2026),
+        updatedAt: DateTime(2026),
+      );
+      final args = {
+        'workspace_id': workspaceId,
+        'from_agent_id': 'agent-a',
+        'to_agent_id': 'agent-b',
+        'message': 'Need help',
+        'parent_ticket_id': 'parent',
+      };
+      final depth = await tool.run(args);
+      expect(depth.isError, isTrue);
+      expect(depth.content.first.text, contains('depth'));
+      tickets.store['parent'] = Ticket(
+        id: 'parent',
+        workspaceId: 'ws-other',
+        title: 'Foreign ticket',
+        assignedAgentId: 'agent-a',
+        status: TicketStatus.open,
+        createdAt: DateTime(2026),
+        updatedAt: DateTime(2026),
+      );
+      final foreign = await tool.run(args);
+      expect(foreign.isError, isTrue);
+      expect(foreign.content.first.text, contains('workspace'));
+      expect(messaging._messages, isEmpty);
+      expect(messagingPort.dispatchCount, 0);
+    },
+  );
+
+  test('an active A→B ask refuses B→A without dispatching the cycle', () async {
+    agents.add(
+      Agent(
+        id: 'agent-a',
+        name: 'architect',
+        title: 'Architect',
+        agentMdPath: '$workspaceId/agents/architect/AGENTS.md',
+        workspaceId: workspaceId,
+        skills: AgentSkills(const []),
+        createdAt: DateTime(2025),
+      ),
+    );
+    final refused = Completer<bool>();
+    messagingPort.onDispatched = (agentId, prompt) {
+      () async {
+        final result = await tool.run({
+          'workspace_id': workspaceId,
+          'from_agent_id': 'agent-b',
+          'to_agent_id': 'agent-a',
+          'message': 'Please answer me first',
+        });
+        refused.complete(
+          result.isError && result.content.first.text.contains('cycle'),
+        );
+        messaging.post(
+          senderId: 'agent-b',
+          senderType: SenderType.agent,
+          content: 'Answer sent',
+        );
+      }();
+    };
+    final answer = await ask();
+    expect(answer['status'], 'replied');
+    expect(await refused.future, isTrue);
+    expect(messagingPort.dispatchCount, 1);
+  });
+}
+
+class _FakeTickets implements TicketRepository {
+  final Map<String, Ticket> store = {};
+
+  @override
+  Future<Ticket?> getById(String workspaceId, String id) async {
+    final ticket = store[id];
+    return ticket?.workspaceId == workspaceId ? ticket : null;
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) {}
 }
 
 class _FakeAgentRepository implements AgentRepository {
@@ -261,6 +397,8 @@ class _FakeMessagingPort implements MessagingPort {
   /// Invoked by [dispatchAgent]: the test's chance to play the recipient.
   void Function(String agentId, String prompt)? onDispatched;
 
+  int dispatchCount = 0;
+
   @override
   Future<String?> dispatchAgent({
     required String workspaceId,
@@ -277,6 +415,7 @@ class _FakeMessagingPort implements MessagingPort {
     Map<String, dynamic>? expectedOutputSchema,
     dynamic outputContractMode,
   }) async {
+    dispatchCount++;
     onDispatched?.call(agentId, prompt);
     return 'run-1';
   }

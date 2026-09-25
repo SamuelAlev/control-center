@@ -8,6 +8,7 @@ import 'package:cc_domain/features/ticketing/domain/entities/ticket_status.dart'
 import 'package:cc_domain/features/ticketing/domain/repositories/ticket_repository.dart';
 import 'package:cc_domain/features/ticketing/domain/services/ticket_workflow_service.dart';
 import 'package:cc_harness/tools.dart';
+import 'package:cc_mcp/src/tools/ticket_access.dart';
 
 Map<String, dynamic> _ticketJson(Ticket t) => {
   'ticket_id': t.id,
@@ -24,10 +25,7 @@ Map<String, dynamic> _ticketJson(Ticket t) => {
 /// MCP tool to create a ticket on the active provider (vendor-agnostic).
 class CreateTicketTool extends McpTool {
   /// Creates a [CreateTicketTool].
-  CreateTicketTool({
-    required this._service,
-    required this._provider,
-  });
+  CreateTicketTool({required this._service, required this._provider});
 
   final TicketWorkflowService _service;
   final TicketProvider _provider;
@@ -229,10 +227,7 @@ class ListTicketsTool extends McpTool {
 /// the retired `ticket_cli`. Every field is optional; supply only what changes.
 class UpdateTicketTool extends McpTool {
   /// Creates an [UpdateTicketTool].
-  UpdateTicketTool({
-    required this._service,
-    required this._repository,
-  });
+  UpdateTicketTool({required this._service, required this._repository});
   final TicketWorkflowService _service;
   final TicketRepository _repository;
 
@@ -305,6 +300,8 @@ class UpdateTicketTool extends McpTool {
       return CallResult.error('Missing or invalid argument: ticket_id.');
     }
 
+    final missing = await ticketMutationError(_service, workspaceId, ticketId);
+    if (missing != null) return missing;
     // Parse status first so a bad token fails before any mutation lands.
     final statusArg = arguments['status'];
     TicketStatus? status;

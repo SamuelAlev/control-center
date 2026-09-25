@@ -100,6 +100,43 @@ void main() {
     },
   );
 
+  test(
+    'concurrent redemption provisions only one membership and user',
+    () async {
+      final created = await service.create(
+        workspaceId: 'ws-1',
+        createdBy: 'owner-1',
+        role: WorkspaceRole.admin,
+      );
+      final results = await Future.wait([
+        for (final name in ['First', 'Second'])
+          service
+              .redeem(code: created.code, displayName: name)
+              .then<Object>(
+                (result) => result,
+                onError: (Object error) => error,
+              ),
+      ]);
+      expect(results.whereType<RedeemedInvite>(), hasLength(1));
+      expect(results.whereType<AuthException>(), hasLength(1));
+      final admitted = results.whereType<RedeemedInvite>().single;
+      final stored = (await db.workspaceInviteDao.getForWorkspace(
+        'ws-1',
+      )).single;
+      expect(stored.usedBy, admitted.user.id);
+      expect(stored.usedAt, isNotNull);
+      expect((await global.userDao.getAll()).map((user) => user.id), [
+        admitted.user.id,
+      ]);
+      expect(
+        (await db.workspaceMemberDao.getForWorkspace(
+          'ws-1',
+        )).map((member) => member.userId),
+        [admitted.user.id],
+      );
+    },
+  );
+
   test('an expired invite is refused with a generic denial', () async {
     final created = await service.create(
       workspaceId: 'ws-1',

@@ -119,4 +119,44 @@ Do the review.
       expect(skills.map((s) => s.name), ['plain']);
     });
   });
+
+  test('does not load SKILL.md symlink escaping permitted roots', () async {
+    final target = File(p.join(dir.path, 'private.md'))
+      ..writeAsStringSync('---\nname: leaked-secret\n---\n');
+    final skill = Directory(p.join(dir.path, '.agents/skills', 'example'))
+      ..createSync(recursive: true);
+    Link(p.join(skill.path, 'SKILL.md')).createSync(target.path);
+
+    expect(await const HarnessSkillScanner().scan([dir.path]), isEmpty);
+    final managed = Directory.systemTemp.createTempSync('allowed_skills_');
+    addTearDown(() => managed.deleteSync(recursive: true));
+    expect(
+      await const HarnessSkillScanner().scan(
+        [dir.path],
+        permittedLinkRoots: [managed.path],
+      ),
+      isEmpty,
+    );
+  });
+
+  test('loads a linked SKILL.md only when its target is permitted', () async {
+    final managed = Directory.systemTemp.createTempSync('allowed_skills_');
+    addTearDown(() => managed.deleteSync(recursive: true));
+    final target = File(p.join(managed.path, 'approved.md'))
+      ..writeAsStringSync(
+        '---\nname: approved\n'
+        'description: An approved linked skill\n---\n',
+      );
+    final skill = Directory(p.join(dir.path, '.agents/skills', 'example'))
+      ..createSync(recursive: true);
+    Link(p.join(skill.path, 'SKILL.md')).createSync(target.path);
+
+    expect(await const HarnessSkillScanner().scan([dir.path]), isEmpty);
+    final skills = await const HarnessSkillScanner().scan(
+      [dir.path],
+      permittedLinkRoots: [managed.path],
+    );
+    expect(skills.single.name, 'approved');
+    expect(skills.single.path, p.join(skill.path, 'SKILL.md'));
+  });
 }

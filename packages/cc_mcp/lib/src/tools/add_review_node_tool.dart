@@ -18,10 +18,7 @@ class AddReviewNodeTool extends McpTool {
   /// [run]. Null keeps the pre-thread behavior (the space's standing
   /// conversation), which is what the tool did before reviewers had streams of
   /// their own.
-  AddReviewNodeTool({
-    required this._repository,
-    this._runLogs,
-  });
+  AddReviewNodeTool({required this._repository, this._runLogs});
 
   final MessagingRepository _repository;
   final AgentRunLogRepository? _runLogs;
@@ -297,6 +294,9 @@ class AddReviewNodeTool extends McpTool {
     final lineNumber = rawLineNumber is int ? rawLineNumber : null;
     final lineEnd = rawLineEnd is int ? rawLineEnd : null;
 
+    if (!await _repository.spaceExists(rawWorkspaceId, spaceId)) {
+      return CallResult.error('Space belongs to a different workspace.');
+    }
     final messageId = const Uuid().v4();
 
     final metadata = <String, dynamic>{

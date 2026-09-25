@@ -8,8 +8,10 @@ import 'package:cc_domain/features/mcp/domain/ports/mcp_tool_port.dart';
 import 'package:cc_domain/features/messaging/domain/ports/messaging_port.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
 import 'package:cc_domain/features/messaging/domain/services/peer_delegation_guards.dart';
+import 'package:cc_domain/features/ticketing/domain/services/ticket_workflow_service.dart';
 import 'package:cc_harness/tools.dart';
 import 'package:cc_mcp/src/tools/peer_agent_messaging.dart';
+import 'package:cc_mcp/src/tools/pending_delegation_hops.dart';
 
 /// Asks another agent a question and waits for its reply (PRD 22 §2, §4).
 ///
@@ -26,20 +28,28 @@ class AskAgentTool extends McpTool {
   AskAgentTool({
     required AgentRepository agents,
     required MessagingRepository messaging,
-    required this._messagingPort,
-    required this._rateLimiter,
+    required MessagingPort messagingPort,
+    required PairRateLimiter rateLimiter,
+    required TicketWorkflowService service,
+    required PendingDelegationHops pendingHops,
     DomainEventBus? eventBus,
   }) : _peers = PeerAgentMessaging(
          agents: agents,
          messaging: messaging,
          eventBus: eventBus,
        ),
-       _messaging = messaging;
+       _messaging = messaging,
+       _messagingPort = messagingPort,
+       _rateLimiter = rateLimiter,
+       _service = service,
+       _pendingHops = pendingHops;
 
   final PeerAgentMessaging _peers;
   final MessagingRepository _messaging;
   final MessagingPort _messagingPort;
   final PairRateLimiter _rateLimiter;
+  final TicketWorkflowService _service;
+  final PendingDelegationHops _pendingHops;
 
   /// Default reply timeout in seconds (10 minutes) when unspecified.
   static const int _defaultTimeoutSeconds = 600;
@@ -92,7 +102,13 @@ class AskAgentTool extends McpTool {
       },
       'from_agent_id': {
         'type': 'string',
-        'description': 'Your own agent id (the asker), when known.',
+        'description':
+            'Your own agent id (the asker). Required for cycle and budget guards.',
+      },
+      'parent_ticket_id': {
+        'type': 'string',
+        'description':
+            'Current ticket id, if this ask belongs to a delegated task.',
       },
       'timeout_seconds': {
         'type': 'integer',
@@ -109,7 +125,7 @@ class AskAgentTool extends McpTool {
             'context for the question.',
       },
     },
-    'required': ['workspace_id', 'message'],
+    'required': ['workspace_id', 'message', 'from_agent_id'],
   };
 
   @override
@@ -124,7 +140,10 @@ class AskAgentTool extends McpTool {
         'Missing or invalid argument: message (expected non-empty string)',
       );
     }
-    final fromAgentId = arguments['from_agent_id'] as String?;
+    final fromAgentId = arguments['from_agent_id'];
+    if (fromAgentId is! String || fromAgentId.isEmpty) {
+      return CallResult.error('Missing or invalid argument: from_agent_id');
+    }
     final timeoutSeconds = _resolveTimeoutSeconds(arguments['timeout_seconds']);
 
     final resolution = await _peers.resolveRecipient(
@@ -137,7 +156,7 @@ class AskAgentTool extends McpTool {
     }
     final recipient = (resolution as ResolvedRecipient).agent;
 
-    final fromKey = fromAgentId ?? 'system';
+    final fromKey = fromAgentId;
     if (!_rateLimiter.tryAcquire(fromKey, recipient.id, DateTime.now())) {
       return CallResult.error(
         'Rate limited: too many messages from "$fromKey" to '
@@ -145,71 +164,150 @@ class AskAgentTool extends McpTool {
       );
     }
 
+    final parentTicketId = arguments['parent_ticket_id'];
+    if (parentTicketId != null && parentTicketId is! String) {
+      return CallResult.error('Invalid argument: parent_ticket_id');
+    }
+    final ticketChain = <String>[];
+    var ticketDepth = 0;
+    if (parentTicketId is String) {
+      var ticket = await _service.repository.getById(
+        workspaceId,
+        parentTicketId,
+      );
+      if (ticket == null || ticket.workspaceId != workspaceId) {
+        return CallResult.error('Parent ticket not found in this workspace.');
+      }
+      if (ticket.assignedAgentId != fromAgentId) {
+        return CallResult.error('Parent ticket is not assigned to the asker.');
+      }
+      ticketDepth = ticket.delegationDepth;
+      final seen = <String>{};
+      while (ticket != null && seen.add(ticket.id)) {
+        if (ticket.assignedAgentId != null) {
+          ticketChain.insert(0, ticket.assignedAgentId!);
+        }
+        final parent = ticket.parentTicketId;
+        ticket = parent == null
+            ? null
+            : await _service.repository.getById(workspaceId, parent);
+      }
+    }
+    final autonomyResolver = _service.resolveEffectiveAutonomy;
+    final budgetResolver = _service.resolveRemainingBudgetCents;
+    if (autonomyResolver == null || budgetResolver == null) {
+      return CallResult.error('Ask guard policy is not configured.');
+    }
     final space = await _peers.resolveOrCreateAgentDm(
       workspaceId: workspaceId,
       toAgentId: recipient.id,
       toAgentName: recipient.name,
       fromAgentId: fromAgentId,
     );
-
-    // Snapshot the existing message ids so the reply we wait for is strictly a
-    // NEW message from the recipient (a reused space may hold older replies).
-    final before = await _messaging.getMessages(workspaceId, space.id);
-    final knownIds = {for (final m in before) m.id};
-
-    final askMessageId = await _messaging.sendMessage(
+    final delegatorAutonomy = await autonomyResolver(
       workspaceId: workspaceId,
+      agentId: fromAgentId,
       spaceId: space.id,
-      content: message,
-      senderId: fromKey,
-      senderType: 'agent',
     );
-
-    await _messagingPort.dispatchAgent(
-      spaceId: space.id,
+    final requestedAutonomy = await autonomyResolver(
+      workspaceId: workspaceId,
       agentId: recipient.id,
-      prompt: message,
-      workspaceId: workspaceId,
-      inReplyToAgentId: fromAgentId,
-    );
-
-    final reply = await _awaitReply(
-      workspaceId: workspaceId,
       spaceId: space.id,
-      recipientId: recipient.id,
-      knownIds: knownIds,
-      timeout: Duration(seconds: timeoutSeconds),
     );
-
-    if (reply == null) {
-      // Mandatory-timeout contract: always resume, never error. The question
-      // stays pending in the space; the reply will land there.
-      return CallResult.success(
-        jsonEncode({
-          'status': 'timeout',
-          'space_id': space.id,
-          'pending_message_id': askMessageId,
-          'recipient_agent_id': recipient.id,
-          'recipient_agent_name': recipient.name,
-          'timeout_seconds': timeoutSeconds,
-          'note':
-              'No reply within ${timeoutSeconds}s. The question is still '
-              'pending in the conversation; poll get_messages to collect the '
-              'reply later. External-CLI recipients reply on their next turn.',
-        }),
+    final budget = await budgetResolver(
+      workspaceId: workspaceId,
+      agentId: fromAgentId,
+    );
+    // A null budget is explicitly unlimited in the workflow port. The guard
+    // only distinguishes positive remaining funds from an exhausted budget.
+    final pendingChain = _pendingHops.chain(workspaceId, fromAgentId);
+    final chain = [
+      ...ticketChain,
+      ...pendingChain.where((id) => !ticketChain.contains(id)),
+    ];
+    if (chain.isEmpty || chain.last != fromAgentId) chain.add(fromAgentId);
+    final guard = const DelegationGuards().evaluate(
+      chainAgentIds: chain,
+      chainDepth: ticketDepth + pendingChain.length - 1,
+      targetAgentId: recipient.id,
+      delegatorAutonomy: delegatorAutonomy,
+      requestedAutonomy: requestedAutonomy,
+      remainingBudgetCents: budget ?? 1,
+    );
+    if (!guard.allowed) return CallResult.error(guard.refusal!);
+    if (_pendingHops.wouldCycle(workspaceId, fromAgentId, recipient.id)) {
+      return CallResult.error(
+        'Delegation refused: cycle detected '
+        '(${[...pendingChain, recipient.id].join(' → ')}).',
       );
     }
-
-    return CallResult.success(
-      jsonEncode({
-        'status': 'replied',
-        'space_id': space.id,
-        'reply_message_id': reply.id,
-        'reply': reply.content,
-        'recipient_agent_id': recipient.id,
-        'recipient_agent_name': recipient.name,
-      }),
+    final releaseHop = _pendingHops.enter(
+      workspaceId,
+      fromAgentId,
+      recipient.id,
     );
+    try {
+      // Snapshot the existing message ids so the reply we wait for is strictly a
+      // NEW message from the recipient (a reused space may hold older replies).
+      final before = await _messaging.getMessages(workspaceId, space.id);
+      final knownIds = {for (final m in before) m.id};
+
+      final askMessageId = await _messaging.sendMessage(
+        workspaceId: workspaceId,
+        spaceId: space.id,
+        content: message,
+        senderId: fromKey,
+        senderType: 'agent',
+      );
+
+      await _messagingPort.dispatchAgent(
+        spaceId: space.id,
+        agentId: recipient.id,
+        prompt: message,
+        workspaceId: workspaceId,
+        inReplyToAgentId: fromAgentId,
+      );
+
+      final reply = await _awaitReply(
+        workspaceId: workspaceId,
+        spaceId: space.id,
+        recipientId: recipient.id,
+        knownIds: knownIds,
+        timeout: Duration(seconds: timeoutSeconds),
+      );
+
+      if (reply == null) {
+        // Mandatory-timeout contract: always resume, never error. The question
+        // stays pending in the space; the reply will land there.
+        return CallResult.success(
+          jsonEncode({
+            'status': 'timeout',
+            'space_id': space.id,
+            'pending_message_id': askMessageId,
+            'recipient_agent_id': recipient.id,
+            'recipient_agent_name': recipient.name,
+            'timeout_seconds': timeoutSeconds,
+            'note':
+                'No reply within ${timeoutSeconds}s. The question is still '
+                'pending in the conversation; poll get_messages to collect the '
+                'reply later. External-CLI recipients reply on their next turn.',
+          }),
+        );
+      }
+
+      return CallResult.success(
+        jsonEncode({
+          'status': 'replied',
+          'space_id': space.id,
+          'reply_message_id': reply.id,
+          'reply': reply.content,
+          'recipient_agent_id': recipient.id,
+          'recipient_agent_name': recipient.name,
+        }),
+      );
+    } finally {
+      releaseHop();
+    }
   }
 
   /// Clamps the requested timeout to `[1, _maxTimeoutSeconds]`, defaulting to

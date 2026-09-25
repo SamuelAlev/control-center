@@ -140,13 +140,13 @@ extension _DispatchSessionHarness on DispatchSession {
             final resolveAutonomy = deps.autonomyResolver;
             final autonomyWorkspaceId = workspaceId;
             if (resolveAutonomy != null &&
-                conversationId != null &&
+                spaceId != null &&
                 agentId != null &&
                 autonomyWorkspaceId != null &&
                 autonomyWorkspaceId.isNotEmpty) {
               autonomy = await resolveAutonomy(
                 autonomyWorkspaceId,
-                conversationId!,
+                spaceId!,
                 agentId!,
               );
             }
@@ -170,7 +170,7 @@ extension _DispatchSessionHarness on DispatchSession {
               final resolution = await guard.resolve(
                 workspaceId: wsId,
                 classes: tool.actionClasses,
-                spaceId: conversationId,
+                spaceId: spaceId,
                 agentId: agentId,
                 mode: effectiveMode,
                 request: const ActionRequestExtractor().extract(
@@ -185,7 +185,7 @@ extension _DispatchSessionHarness on DispatchSession {
                   applied: applied,
                   classes: tool.actionClasses,
                   agentId: agentId,
-                  spaceId: conversationId,
+                  spaceId: spaceId,
                   actionSummary: tool.name,
                   prompted: asked,
                   onBehalfOfUserId: requestedByUserId,

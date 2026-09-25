@@ -68,10 +68,8 @@ class _FakeAgentRepository implements AgentRepository {
 }
 
 class _FakeMessagingRepository implements MessagingRepository {
-
   @override
-  dynamic noSuchMethod(Invocation invocation) =>
-      super.noSuchMethod(invocation);
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
   @override
   Future<void> archiveSpace(String workspaceId, String spaceId) async {}
 
@@ -132,8 +130,11 @@ class _FakeMessagingRepository implements MessagingRepository {
     );
   }
 
+  bool hasSpace = true;
+
   @override
-  Future<bool> spaceExists(String workspaceId, String spaceId) async => true;
+  Future<bool> spaceExists(String workspaceId, String spaceId) async =>
+      hasSpace;
 
   @override
   Future<String> sendMessage({
@@ -335,10 +336,8 @@ class _SentMessage {
 }
 
 class _FakeMessagingPort implements MessagingPort {
-
   @override
-  dynamic noSuchMethod(Invocation invocation) =>
-      super.noSuchMethod(invocation);
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
   @override
   Future<void> archiveSpace(String workspaceId, String spaceId) async {}
 
@@ -574,6 +573,22 @@ void main() {
         messagingPort: messagingPort,
       );
     });
+
+    test(
+      'foreign or missing space refuses without posting or dispatching',
+      () async {
+        messaging.hasSpace = false;
+        final result = await tool.run({
+          'workspace_id': 'ws-1',
+          'space_id': 'foreign',
+          'topic': 'security',
+          'question': 'Check this?',
+        });
+        expect(result.isError, isTrue);
+        expect(result.content.first.text, contains('different workspace'));
+        expect(messaging.sent, isEmpty);
+      },
+    );
 
     group('definition', () {
       test('has correct name', () {

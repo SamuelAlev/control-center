@@ -13,6 +13,7 @@ class _ScriptedProvider implements LlmProviderPort {
   _ScriptedProvider(this.script);
 
   final List<List<LlmEvent>> script;
+  final List<List<HarnessMessage>> requests = [];
   int calls = 0;
 
   @override
@@ -30,6 +31,7 @@ class _ScriptedProvider implements LlmProviderPort {
     LlmCompleteConfig config = const LlmCompleteConfig(),
   }) async* {
     final index = calls < script.length ? calls : script.length - 1;
+    requests.add(List.of(messages));
     calls++;
     yield* Stream.fromIterable(script[index]);
   }
@@ -340,6 +342,74 @@ void main() {
         )
         .toList();
     expect((events.last as LoopDone).reason, LoopDoneReason.cancelled);
+  });
+
+  test('cancellation pairs all tool calls before history is resumed', () async {
+    final source = CancellationTokenSource();
+    final tool = _RecordingTool();
+    final provider = _ScriptedProvider([
+      [
+        const LlmToolUseDelta(
+          id: 'first',
+          name: 'do_thing',
+          argumentsJson: '{}',
+        ),
+        const LlmToolUseDelta(
+          id: 'second',
+          name: 'do_thing',
+          argumentsJson: '{}',
+        ),
+        const LlmDone(stopReason: LlmStopReason.toolUse),
+      ],
+    ]);
+    final history = <HarnessMessage>[];
+    final events = <AgentLoopEvent>[];
+    await runner
+        .run(
+          history: history,
+          userMessage: 'go',
+          tools: [tool],
+          provider: provider,
+          cancel: source.token,
+        )
+        .forEach((event) {
+          events.add(event);
+          if (event is LoopToolCallResult) {
+            source.cancel();
+          }
+        });
+
+    expect((events.last as LoopDone).reason, LoopDoneReason.cancelled);
+    expect(tool.calls, hasLength(1));
+    final uses = history[1].content.whereType<HarnessToolUseBlock>().toList();
+    final results = history.last.content
+        .whereType<HarnessToolResultBlock>()
+        .toList();
+    expect(uses.map((use) => use.id), ['first', 'second']);
+    expect(results.map((result) => result.toolUseId), ['first', 'second']);
+    expect(results.first.isError, isFalse);
+    expect(results.last.isError, isTrue);
+    expect(results.last.content, contains('Cancelled'));
+
+    final resumed = _ScriptedProvider([
+      [const LlmTextDelta('Resumed'), const LlmDone()],
+    ]);
+    final resumedEvents = await runner
+        .run(
+          history: history,
+          userMessage: 'continue',
+          tools: [tool],
+          provider: resumed,
+        )
+        .toList();
+    expect((resumedEvents.last as LoopDone).reason, LoopDoneReason.completed);
+    expect(
+      resumed.requests.single
+          .expand((message) => message.content)
+          .whereType<HarnessToolResultBlock>()
+          .map((result) => result.toolUseId),
+      ['first', 'second'],
+    );
   });
 
   test('a hung tool is bounded by the kernel tool timeout', () async {

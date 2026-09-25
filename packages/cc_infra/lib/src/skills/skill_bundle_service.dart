@@ -201,38 +201,16 @@ class SkillBundleService implements SkillBundlePort {
       path: path,
       ref: ref,
     );
-    final files = resolved.files;
-
-    // Mandatory scan gate (PRD 23 §2): scan the EXACT bytes that get written +
-    // hashed (one in-memory buffer, no TOCTOU) BEFORE anything touches disk.
-    // Fail-closed — a quarantine verdict or a scanner error throws here and
-    // aborts the install before any write.
-    final scanResult = await _runGate(
+    final (scanResult, hash) = await _installGatedFiles(
       workspaceId: workspaceId,
       slug: slug,
-      files: files,
+      files: resolved.files,
       trustTier: SkillTrustTier.community,
       runLlmReview: true,
       allowQuarantineOverride: allowQuarantineOverride,
-    );
-
-    // Capability→policy gate (PRD 23 §2 ties PRD 24): the skill's declared
-    // capabilities are resolved against the workspace action policy on the SAME
-    // buffer, before write. A denied capability blocks the install here.
-    await _checkManifestPolicy(
-      workspaceId: workspaceId,
-      slug: slug,
-      files: files,
-      scanResult: scanResult,
       spaceId: spaceId,
       agentId: agentId,
     );
-
-    await _replaceSkillDir(workspaceId, slug, files);
-    final hash = await computeSkillHash(workspaceId, slug);
-    if (hash == null) {
-      throw StateError('Installed skill "$slug" vanished before hashing.');
-    }
     final entry = SkillLockEntry(
       slug: slug,
       source: '$owner/$repo',
@@ -304,6 +282,42 @@ class SkillBundleService implements SkillBundlePort {
       await file.parent.create(recursive: true);
       await file.writeAsString(e.value);
     }
+  }
+
+  /// Gates one buffered bundle before replacing its directory and pinning the
+  /// hash of exactly the files that passed both checks.
+  Future<(SkillScanResult?, String)> _installGatedFiles({
+    required String workspaceId,
+    required String slug,
+    required Map<String, String> files,
+    required SkillTrustTier trustTier,
+    required bool runLlmReview,
+    required bool allowQuarantineOverride,
+    String? spaceId,
+    String? agentId,
+  }) async {
+    final scanResult = await _runGate(
+      workspaceId: workspaceId,
+      slug: slug,
+      files: files,
+      trustTier: trustTier,
+      runLlmReview: runLlmReview,
+      allowQuarantineOverride: allowQuarantineOverride,
+    );
+    await _checkManifestPolicy(
+      workspaceId: workspaceId,
+      slug: slug,
+      files: files,
+      scanResult: scanResult,
+      spaceId: spaceId,
+      agentId: agentId,
+    );
+    await _replaceSkillDir(workspaceId, slug, files);
+    final hash = await computeSkillHash(workspaceId, slug);
+    if (hash == null) {
+      throw StateError('Installed skill "$slug" vanished before hashing.');
+    }
+    return (scanResult, hash);
   }
 
   @override
@@ -384,28 +398,16 @@ class SkillBundleService implements SkillBundlePort {
       path: existing.skillPath,
       ref: ref,
     );
-    final scanResult = await _runGate(
+    final (scanResult, hash) = await _installGatedFiles(
       workspaceId: workspaceId,
       slug: slug,
       files: resolved.files,
       trustTier: existing.trustTier,
       runLlmReview: true,
       allowQuarantineOverride: allowQuarantineOverride,
-    );
-    await _checkManifestPolicy(
-      workspaceId: workspaceId,
-      slug: slug,
-      files: resolved.files,
-      scanResult: scanResult,
       spaceId: spaceId,
       agentId: agentId,
     );
-
-    await _replaceSkillDir(workspaceId, slug, resolved.files);
-    final hash = await computeSkillHash(workspaceId, slug);
-    if (hash == null) {
-      throw StateError('Updated skill "$slug" vanished before hashing.');
-    }
     final entry = SkillLockEntry(
       slug: slug,
       source: existing.source,
@@ -449,10 +451,20 @@ class SkillBundleService implements SkillBundlePort {
       // that a Windows author and a POSIX consumer must agree on, so a
       // platform-specific separator must never enter the digest.
       final rel = p.relative(entity.path, from: dirPath);
-      if (rel == _lockFileName) {
+      final relPosix = Platform.isWindows ? rel.replaceAll('\\', '/') : rel;
+      if (relPosix == _lockFileName) {
         continue; // The lock never scans (or hashes) itself.
       }
-      files[rel] = await entity.readAsString();
+      final bytes = await entity.readAsBytes();
+      final text = utf8.decode(bytes);
+      // Dart's UTF-8 decoder consumes an initial BOM. Keep it in the bundle
+      // so replacing a locally edited directory cannot change companion bytes.
+      final hasBom =
+          bytes.length >= 3 &&
+          bytes[0] == 0xef &&
+          bytes[1] == 0xbb &&
+          bytes[2] == 0xbf;
+      files[relPosix] = hasBom ? '\uFEFF$text' : text;
     }
     if (files.isEmpty) {
       return null;
@@ -518,32 +530,21 @@ class SkillBundleService implements SkillBundlePort {
     String? spaceId,
     String? agentId,
   }) async {
-    // ONE buffer through gate → policy → write → hash → pin (TOCTOU-safe,
-    // identical to install). Local saves use the create_skill profile: static
-    // Layers 1–2 only (no LLM round-trip on every editor save) at workspace
-    // trust — the operator is the author.
-    final scanResult = await _runGate(
+    // Compose the full on-disk bundle before scanning. The editor changes
+    // SKILL.md, but companion files are still installed and hash-locked.
+    final existingBundle = await _readBundleFromDisk(workspaceId, slug);
+    final files = {...?existingBundle?.files, 'SKILL.md': content};
+    final (scanResult, hash) = await _installGatedFiles(
       workspaceId: workspaceId,
       slug: slug,
-      files: {'SKILL.md': content},
+      files: files,
       trustTier: SkillTrustTier.workspace,
       runLlmReview: false,
       allowQuarantineOverride: allowQuarantineOverride,
-    );
-    await _checkManifestPolicy(
-      workspaceId: workspaceId,
-      slug: slug,
-      files: {'SKILL.md': content},
-      scanResult: scanResult,
       spaceId: spaceId,
       agentId: agentId,
     );
-
     final existing = (await readLock(workspaceId)).skills[slug];
-    await _fs.writeSkillFile(workspaceId, slug, content);
-    final hash =
-        await computeSkillHash(workspaceId, slug) ??
-        sha256.convert(utf8.encode(content)).toString();
     final entry = SkillLockEntry(
       slug: slug,
       // Preserve the install provenance across a local edit (a registry skill
@@ -733,10 +734,17 @@ class SkillBundleService implements SkillBundlePort {
     final manifest =
         scanResult?.manifest ??
         SkillCapabilityExtractor.extract(SkillBundle(slug: slug, files: files));
-    final classes = manifest.requiredActionClassWires
-        .map(ActionClass.fromWire)
-        .whereType<ActionClass>()
-        .toSet();
+    final classes = <ActionClass>{};
+    for (final wire in manifest.requiredActionClassWires) {
+      final actionClass = ActionClass.fromWire(wire);
+      if (actionClass == null) {
+        throw SkillScanBlockedException(
+          slug,
+          reason: 'unknown required action class: $wire',
+        );
+      }
+      classes.add(actionClass);
+    }
     if (classes.isEmpty) {
       return;
     }

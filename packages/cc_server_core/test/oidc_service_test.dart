@@ -110,8 +110,7 @@ class _FakeResponse implements HttpClientResponse {
   Stream<List<int>> timeout(
     Duration timeLimit, {
     void Function(EventSink<List<int>> sink)? onTimeout,
-  }) =>
-      _bytes.timeout(timeLimit, onTimeout: onTimeout);
+  }) => _bytes.timeout(timeLimit, onTimeout: onTimeout);
 
   @override
   dynamic noSuchMethod(Invocation invocation) =>
@@ -176,17 +175,15 @@ String _jwt(Map<String, Object?> claims) {
 /// [beginUrl]. Read at token-request time (inside the fake handler), so the
 /// closure must capture a `beginUrl` variable that has been assigned by then
 /// — declare it with `var` before `_buildService`.
-Map<String, Object?> _claimsFor(
-  Uri beginUrl, [
-  Map<String, Object?>? extra,
-]) => {
-  'iss': 'https://idp.test',
-  'aud': 'client-1',
-  'sub': 'subject-1',
-  'exp': DateTime.utc(2030, 1, 1).millisecondsSinceEpoch ~/ 1000,
-  'nonce': beginUrl.queryParameters['nonce'],
-  ...?extra,
-};
+Map<String, Object?> _claimsFor(Uri beginUrl, [Map<String, Object?>? extra]) =>
+    {
+      'iss': 'https://idp.test',
+      'aud': 'client-1',
+      'sub': 'subject-1',
+      'exp': DateTime.utc(2030, 1, 1).millisecondsSinceEpoch ~/ 1000,
+      'nonce': beginUrl.queryParameters['nonce'],
+      ...?extra,
+    };
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Fake repositories.
@@ -302,7 +299,7 @@ OidcService _buildService({
 
 void main() {
   group('OidcService.testDiscovery', () {
-    test('returns the issuer endpoints for an arbitrary issuer', () async {
+    test('tests the requested issuer independently of live config', () async {
       final service = _buildService(
         http: _FakeHttpClient({
           (u) => u.path.contains('.well-known'): _discoveryOk,
@@ -310,8 +307,9 @@ void main() {
         users: _FakeUserRepository(),
         workspaces: _FakeWorkspaceRepository(),
         members: _FakeMembershipRepository(),
+        issuer: 'https://configured.test',
       );
-      final endpoints = await service.testDiscovery('https://other-idp.test');
+      final endpoints = await service.testDiscovery('https://idp.test');
       expect(endpoints.authorizationEndpoint, 'https://idp.test/authorize');
       expect(endpoints.tokenEndpoint, 'https://idp.test/token');
     });
@@ -345,8 +343,64 @@ void main() {
         throwsA(isA<AuthException>()),
       );
     });
-  });
+    test('refuses endpoints outside the configured issuer origin', () async {
+      for (final endpoint in [
+        'http://idp.test/token',
+        'https://attacker.test/token',
+        'https://idp.test:8443/token',
+        'https://idp.test@attacker.test/token',
+        '/token',
+      ]) {
+        final http = _FakeHttpClient({
+          (u) => u.path.contains('.well-known'): (_) => _FakeResponse(
+            statusCode: 200,
+            body: jsonEncode({
+              'authorization_endpoint': 'https://idp.test/authorize',
+              'token_endpoint': endpoint,
+            }),
+          ),
+        });
+        final service = _buildService(
+          http: http,
+          users: _FakeUserRepository(),
+          workspaces: _FakeWorkspaceRepository(),
+          members: _FakeMembershipRepository(),
+        );
+        await expectLater(
+          service.testDiscovery('https://idp.test'),
+          throwsA(isA<AuthException>()),
+          reason: endpoint,
+        );
+        await expectLater(
+          service.beginLogin(redirectUri: Uri.parse('https://app/cb')),
+          throwsA(isA<AuthException>()),
+          reason: endpoint,
+        );
+        expect(http.requestBodies, isEmpty, reason: endpoint);
+      }
+    });
 
+    test('refuses an untrusted authorization endpoint', () async {
+      final service = _buildService(
+        http: _FakeHttpClient({
+          (u) => u.path.contains('.well-known'): (_) => _FakeResponse(
+            statusCode: 200,
+            body: jsonEncode({
+              'authorization_endpoint': 'https://elsewhere.test/authorize',
+              'token_endpoint': 'https://idp.test/token',
+            }),
+          ),
+        }),
+        users: _FakeUserRepository(),
+        workspaces: _FakeWorkspaceRepository(),
+        members: _FakeMembershipRepository(),
+      );
+      await expectLater(
+        service.beginLogin(redirectUri: Uri.parse('https://app/cb')),
+        throwsA(isA<AuthException>()),
+      );
+    });
+  });
 
   group('OidcService.beginLogin', () {
     test('throws when SSO is not configured', () async {
@@ -429,7 +483,13 @@ void main() {
     test('accepts a loopback http issuer (local development)', () async {
       final service = _buildService(
         http: _FakeHttpClient({
-          (u) => u.path.contains('.well-known'): _discoveryOk,
+          (u) => u.path.contains('.well-known'): (_) => _FakeResponse(
+            statusCode: 200,
+            body: jsonEncode({
+              'authorization_endpoint': 'http://localhost:8080/authorize',
+              'token_endpoint': 'http://localhost:8080/token',
+            }),
+          ),
         }),
         users: _FakeUserRepository(),
         workspaces: _FakeWorkspaceRepository(),
@@ -439,7 +499,7 @@ void main() {
       final url = await service.beginLogin(
         redirectUri: Uri.parse('http://localhost:8080/cb'),
       );
-      expect(url.toString(), startsWith('https://idp.test/authorize'));
+      expect(url.toString(), startsWith('http://localhost:8080/authorize'));
     });
 
     test('testDiscovery refuses a plaintext issuer', () async {
@@ -686,7 +746,10 @@ void main() {
           http: _FakeHttpClient({
             (u) => u.path.contains('.well-known'): _discoveryOk,
             (u) => u.path.contains('token'): (_) => _tokenWithClaims(
-              _claimsFor(beginUrl, {'email': 'grace@example.com', 'name': 'Grace'}),
+              _claimsFor(beginUrl, {
+                'email': 'grace@example.com',
+                'name': 'Grace',
+              }),
             ),
           }),
           users: users,
@@ -1102,12 +1165,12 @@ void main() {
       final service = _buildService(
         http: _FakeHttpClient({
           (u) => u.path.contains('.well-known'): _discoveryOk,
-            (u) => u.path.contains('token'): (_) => _tokenWithClaims(
-              _claimsFor(beginUrl, {
-                'preferred_username': 'Bob!! The Builder',
-                'name': 'Bob The Builder',
-              }),
-            ),
+          (u) => u.path.contains('token'): (_) => _tokenWithClaims(
+            _claimsFor(beginUrl, {
+              'preferred_username': 'Bob!! The Builder',
+              'name': 'Bob The Builder',
+            }),
+          ),
         }),
         users: users,
         workspaces: _FakeWorkspaceRepository(),
@@ -1133,9 +1196,9 @@ void main() {
       final service = _buildService(
         http: _FakeHttpClient({
           (u) => u.path.contains('.well-known'): _discoveryOk,
-            (u) => u.path.contains('token'): (_) => _tokenWithClaims(
-              _claimsFor(beginUrl, {'preferred_username': '!!!@@@'}),
-            ),
+          (u) => u.path.contains('token'): (_) => _tokenWithClaims(
+            _claimsFor(beginUrl, {'preferred_username': '!!!@@@'}),
+          ),
         }),
         users: _FakeUserRepository(),
         workspaces: _FakeWorkspaceRepository(),
@@ -1417,9 +1480,8 @@ void main() {
       final service = _buildService(
         http: _FakeHttpClient({
           (u) => u.path.contains('.well-known'): _discoveryOk,
-          (u) => u.path.contains('token'): (_) => _tokenWithClaims(
-            claims(beginUrl),
-          ),
+          (u) => u.path.contains('token'): (_) =>
+              _tokenWithClaims(claims(beginUrl)),
         }),
         users: users,
         workspaces: _FakeWorkspaceRepository(),
@@ -1461,8 +1523,9 @@ void main() {
     test('accepts the aud claim in list form', () async {
       final service = await serviceWithClaims(
         _FakeUserRepository(),
-        (beginUrl) =>
-            _claimsFor(beginUrl, {'aud': ['other-client', 'client-1']}),
+        (beginUrl) => _claimsFor(beginUrl, {
+          'aud': ['other-client', 'client-1'],
+        }),
       );
       final result = await service.handleCallback(
         requestUri: lastBeginUrl.replace(
@@ -1727,9 +1790,8 @@ void main() {
         final service = _buildService(
           http: _FakeHttpClient({
             (u) => u.path.contains('.well-known'): _discoveryOk,
-            (u) => u.path.contains('token'): (_) => _tokenWithClaims(
-              _claimsFor(beginUrl, {'sub': 'subject-1'}),
-            ),
+            (u) => u.path.contains('token'): (_) =>
+                _tokenWithClaims(_claimsFor(beginUrl, {'sub': 'subject-1'})),
           }),
           users: users,
           workspaces: _FakeWorkspaceRepository(),

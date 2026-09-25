@@ -1,6 +1,9 @@
 import 'dart:async';
 
 import 'package:cc_domain/cc_domain.dart';
+import 'package:cc_domain/core/domain/entities/role_definition.dart';
+import 'package:cc_domain/core/domain/services/permission_resolver.dart';
+import 'package:cc_domain/core/domain/value_objects/permission.dart';
 import 'package:cc_host/src/log/cc_host_log.dart';
 import 'package:cc_host/src/policy/remote_tool_policy.dart';
 import 'package:cc_host/src/policy/session_capability.dart';
@@ -43,6 +46,7 @@ class RemoteRpcSession {
     this.workspaceExists,
     this.resolveRole,
     this.resolveServerOwner,
+    this.toolIsMutating,
     this.remoteAddress,
     RemoteRateLimiter? rateLimiter,
     RemoteRateLimiter? requestLimiter,
@@ -165,6 +169,11 @@ class RemoteRpcSession {
   /// authenticated session. Null (bare test sessions) skips both gates;
   /// production wiring always supplies it.
   final WorkspaceRoleResolver? resolveRole;
+
+  /// Looks up the registered MCP tool's own mutation metadata. Null (unknown
+  /// tool, or missing wiring) is denied for authenticated workspace sessions
+  /// before dispatch; a name alone must never certify a tool as read-only.
+  final bool? Function(String toolName)? toolIsMutating;
 
   /// Server-owner gate forwarded to the [SubscriptionManager] for watch
   /// queries that declare a `serverAuthority` (install-wide streams).
@@ -448,9 +457,18 @@ class RemoteRpcSession {
       );
     }
 
-    // Per-session rate limit (abuse / flood guard on the untrusted space).
-    final mutating = RemoteToolPolicy.isMutating(toolName);
-    if (!rateLimiter.tryAcquire(mutating: mutating)) {
+    // Classification comes from the registered tool, not a second hand-kept
+    // tool-name list that can drift from what the dispatcher actually runs.
+    final mutating = toolIsMutating?.call(toolName);
+    if (mutating == null && resolveRole != null) {
+      return _error(
+        request.id,
+        -32601,
+        'Tool not available over remote control',
+      );
+    }
+    // Bare test sessions without a role resolver remain a transport-only seam.
+    if (!rateLimiter.tryAcquire(mutating: mutating ?? false)) {
       CcHostLog.warning(
         'Rate-limiting remote tools/call "$toolName" for $deviceId',
       );
@@ -485,16 +503,31 @@ class RemoteRpcSession {
           'Workspace not found',
         );
       }
-      if (roleResolver != null && await roleResolver(ws, userId) == null) {
-        CcHostLog.warning(
-          'Denying remote tools/call "$toolName" for $userId@$deviceId — '
-          'not a member of workspace $ws',
+      if (roleResolver != null) {
+        final role = await roleResolver(ws, userId);
+        final verdict = const PermissionResolver().can(
+          PermissionPrincipal(
+            userId: userId,
+            role: role == null ? null : RoleDefinition.preset(role),
+          ),
+          Permission(
+            'workspace',
+            mutating == true ? PermissionTier.write : PermissionTier.read,
+          ),
         );
-        return _error(
-          request.id,
-          RpcErrorCodes.unauthorized,
-          'Not a member of this workspace',
-        );
+        if (!verdict.allowed) {
+          CcHostLog.warning(
+            'Denying remote tools/call "$toolName" for $userId@$deviceId — '
+            '${verdict.reason} in workspace $ws',
+          );
+          return _error(
+            request.id,
+            RpcErrorCodes.unauthorized,
+            role == null
+                ? 'Not a member of this workspace'
+                : 'Tool requires workspace write permission',
+          );
+        }
       }
     }
     return dispatcher.handleRequest(request);

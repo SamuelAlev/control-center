@@ -2808,6 +2808,7 @@ Future<CcServer> runCcServer({
   // (`send_to_agent`, `ask_agent`) so a burst that alternates between the two
   // still trips the same ordered-pair window (PRD 22 §3).
   final peerRateLimiter = PairRateLimiter();
+  final pendingDelegationHops = PendingDelegationHops();
 
   // These replace the retired `ticket_cli` (CLI-args-in-JSON) surface with a
   // discoverable, schema-typed tool per verb. Registered post-construction
@@ -2823,7 +2824,12 @@ Future<CcServer> runCcServer({
     ..register(
       UpdateTicketTool(service: ticketWorkflow, repository: ticketRepository),
     )
-    ..register(DelegateTicketTool(service: ticketWorkflow))
+    ..register(
+      DelegateTicketTool(
+        service: ticketWorkflow,
+        pendingHops: pendingDelegationHops,
+      ),
+    )
     ..register(FailTicketTool(service: ticketWorkflow))
     ..register(AssignTicketTool(service: ticketWorkflow))
     ..register(ReassignTicketTool(service: ticketWorkflow))
@@ -2873,10 +2879,17 @@ Future<CcServer> runCcServer({
         messaging: messagingRepository,
         messagingPort: messagingService,
         rateLimiter: peerRateLimiter,
+        service: ticketWorkflow,
+        pendingHops: pendingDelegationHops,
         eventBus: eventBus,
       ),
     )
-    ..register(DelegateTaskTool(service: ticketWorkflow))
+    ..register(
+      DelegateTaskTool(
+        service: ticketWorkflow,
+        pendingHops: pendingDelegationHops,
+      ),
+    )
     ..register(
       ConsultAgentTool(
         agents: agentRepository,
@@ -4809,6 +4822,7 @@ Future<CcServer> runCcServer({
   final githubLoginDirectory = GitHubLoginDirectory(
     members: membershipRepository,
     credentials: userCredentials,
+    eventBus: eventBus,
   );
   final prConversationBridge = GitHubPrConversationBridge(
     gateway: prConversationGateway,
@@ -6663,6 +6677,7 @@ Future<CcServer> runCcServer({
     secrets: secrets,
     workspaceExists: workspaceExists,
     resolveRole: resolveRole,
+    toolIsMutating: (name) => mcpRegistry.resolve(name)?.isMutating,
     eventBus: eventBus,
     workspaceResolver: listWorkspaces,
     repoOps: repoOps,
@@ -7107,6 +7122,7 @@ Future<CcServer> runCcServer({
     dispatcher: mcpDispatcher,
     workspaceExists: workspaceExists,
     resolveRole: resolveRole,
+    toolIsMutating: (name) => mcpRegistry.resolve(name)?.isMutating,
     devicesDao: globalDb.pairedDeviceDao,
     secrets: secrets,
     eventBus: eventBus,

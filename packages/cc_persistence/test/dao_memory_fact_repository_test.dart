@@ -80,6 +80,25 @@ void main() {
       expect(result!.content, 'Changed content');
     });
 
+    test('updating without an embedder clears both old vectors', () async {
+      await repo.upsert(makeFact());
+      // Simulate a vector computed by an embedder that is now unavailable.
+      await dbs.of('ws-1').customStatement(
+        'UPDATE memory_facts SET embedding = ?, binary_embedding = ? '
+        'WHERE id = ?',
+        [
+          Uint8List.fromList([1, 2, 3, 4]),
+          Uint8List.fromList([255]),
+          'f-1',
+        ],
+      );
+      await repo.upsert(makeFact(content: 'A different meaning'));
+      final row = await dbs.of('ws-1').memoryFactDao.getById('ws-1', 'f-1');
+      expect(row!.content, 'A different meaning');
+      expect(row.embedding, isNull);
+      expect(row.binaryEmbedding, isNull);
+    });
+
     test('getById returns null for unknown id', () async {
       final result = await repo.getById('ws-1', 'nonexistent');
       expect(result, isNull);

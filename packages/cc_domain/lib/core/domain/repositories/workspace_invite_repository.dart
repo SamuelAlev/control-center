@@ -18,6 +18,13 @@ abstract class WorkspaceInviteRepository {
   /// this is deliberately not workspace-scoped.
   Future<WorkspaceInvite?> getByCodeHash(String codeHash);
 
+  /// Claims an open, unexpired code exactly once before provisioning a user.
+  /// Returns false if it was used, revoked, expired, or deleted concurrently.
+  Future<bool> consume(WorkspaceInvite invite, DateTime now);
+
+  /// Records the admitted user after successful membership provisioning.
+  Future<void> recordUsedBy(WorkspaceInvite invite, String userId);
+
   /// Inserts or updates [invite].
   Future<void> upsert(WorkspaceInvite invite);
 

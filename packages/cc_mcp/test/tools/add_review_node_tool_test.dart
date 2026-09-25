@@ -17,10 +17,8 @@ import 'package:cc_mcp/src/tools/add_review_node_tool.dart';
 import 'package:test/test.dart';
 
 class _FakeMessagingRepository implements MessagingRepository {
-
   @override
-  dynamic noSuchMethod(Invocation invocation) =>
-      super.noSuchMethod(invocation);
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
   @override
   Future<void> archiveSpace(String workspaceId, String spaceId) async {}
 
@@ -205,8 +203,11 @@ class _FakeMessagingRepository implements MessagingRepository {
     PrincipalType participantType = PrincipalType.agent,
   }) async {}
 
+  bool hasSpace = true;
+
   @override
-  Future<bool> spaceExists(String workspaceId, String spaceId) async => true;
+  Future<bool> spaceExists(String workspaceId, String spaceId) async =>
+      hasSpace;
 
   @override
   Future<List<SpaceParticipant>> getParticipants(
@@ -279,6 +280,22 @@ void main() {
     setUp(() {
       repository = _FakeMessagingRepository();
       tool = AddReviewNodeTool(repository: repository);
+    });
+
+    test('missing or foreign space does not file a finding', () async {
+      repository.hasSpace = false;
+      final result = await tool.run({
+        'workspace_id': 'ws-1',
+        'space_id': 'foreign',
+        'sender_id': 'a-1',
+        'node_type': 'bug',
+        'content': 'Null pointer on line 42',
+        'priority': 'p0',
+        'confidence': 0.9,
+      });
+      expect(result.isError, isTrue);
+      expect(result.content.first.text, contains('different workspace'));
+      expect(repository.sentMessages, isEmpty);
     });
 
     // A finding belongs in the stream the reviewer that filed it is working

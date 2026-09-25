@@ -451,7 +451,7 @@ class WorkspaceDatabaseManager {
             'WorkspaceDatabaseManager',
             'could not delete ${dir.path} after ${attempt + 1} attempts: $e',
           );
-          break;
+          rethrow;
         }
         await Future<void>.delayed(Duration(milliseconds: 50 * (attempt + 1)));
       }

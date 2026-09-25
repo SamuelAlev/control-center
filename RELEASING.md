@@ -81,7 +81,7 @@ gh attestation verify Control-Center-<v>-arm64.dmg --repo SamuelAlev/control-cen
 
 Every release publishes a signed updater feed alongside the binaries; the desktop app checks it on launch (after the shell is ready), every 24h, from the macOS app menu (**Control Center → Check for Updates…**, right under About) and from **Settings → Advanced → About → Check for updates**. Updates always prompt — release notes + explicit confirm — never apply silently and a check whose prompt would interrupt a meeting recording is deferred to the next cycle.
 
-- **macOS** — Sparkle 2 (via `auto_updater`): the whole `.app` is replaced (UI + embedded `cc_server` + natives), Developer ID signature intact. Feed: `appcast.xml`, DMG enclosure signed `sparkle:edSignature`.
+- **macOS** — Sparkle 2 (via `auto_updater`): the whole `.app` is replaced (UI + embedded `cc_server` + natives), Developer ID signature intact. Feed: `appcast.xml`, DMG enclosure signed `sparkle:edSignature`. Stable items must be **untagged**: Sparkle's default channel ignores `<sparkle:channel>stable</sparkle:channel>` unless the updater explicitly opts in, and the bundled plugin does not.
 - **Windows** — WinSparkle: the enclosure is the Inno installer (`Control-Center-<v>-x64-setup.exe`), run unattended (`/SILENT /SP-`) — WinSparkle _launches_ the enclosure, so it cannot be a zip. The portable zip stays a plain download. Feed: `appcast-windows.xml`, enclosures signed `sparkle:dsaSignature` (WinSparkle 0.8.x predates EdDSA). Updating the app IS updating its embedded `cc_server`; the two never update independently.
 - **Linux** — notify-only: "Check for updates" opens the latest release page (no Sparkle backend; AppImageUpdate is a future option).
 - **Standalone `cc_server`** — never auto-updates. `cc_server update` (check + download + SHA256/SLSA verify + stage, `--apply` to swap the whole tree with a one-deep `.bak`) is the explicit path; Docker installs are told to `docker pull`; the desktop-embedded binary refuses (`CC_EMBEDDED`). A published release **older** than the running binary is refused unless `--allow-downgrade`. On Windows the install directory cannot be renamed while the binary runs from it, so `--apply` parks the live `cc_server.exe` as `.old` and overlays the verified tree in place.
@@ -164,21 +164,16 @@ secret cannot be read back.
 
 Without both secrets the release job fails at `gen_appcast.sh` — deliberately: an unsigned feed is one every client would reject anyway.
 
-### If the in-app updater does nothing
+### If the in-app updater says there is no update
 
-Almost always one of the two public keys. Both fail closed — which is correct,
-and also silent from the user's side: the app checks, finds an item, rejects the
-signature and reports no update.
+Check the **published** `appcast.xml` asset, not just the release's version number. The macOS 0.0.4 feed was initially published with `<sparkle:channel>stable</sparkle:channel>`; Sparkle's default channel filtered out that item, so a 0.0.2 install reported "up to date" even though the version and build number were newer. The v0.0.4 `appcast.xml` asset was replaced with the same XML minus that channel element; its signed DMG, signature, version, URL and size were unchanged. `gen_appcast.sh` now emits untagged macOS items for future releases. If this recurs, replace **only** the appcast asset on the published release or publish a new release with the corrected feed. Verify the downloaded `releases/latest/download/appcast.xml` contains an untagged item before retrying the check.
 
-- **macOS** — `macos/Runner/Info.plist` → `SUPublicEDKey` is empty, or does not
-  match the key `SPARKLE_ED25519_KEY` signs with.
-- **Windows** — `dsa_pub.pem` at the repo root is still the placeholder, or does
-  not match `SPARKLE_DSA_PRIVATE_KEY`.
+If the feed item is visible but installation still fails, check the public signing keys. Both fail closed:
 
-Fix both with the one-time ceremony above. `gen_appcast.sh` now derives the
-public half of each signing key and compares it against these two files, so a
-release whose secrets and committed public keys disagree fails the job with the
-exact value to paste, instead of publishing a feed no client can verify.
+- **macOS** — `macos/Runner/Info.plist` → `SUPublicEDKey` is empty, or does not match the key `SPARKLE_ED25519_KEY` signs with.
+- **Windows** — `dsa_pub.pem` at the repo root is still the placeholder, or does not match `SPARKLE_DSA_PRIVATE_KEY`.
+
+Fix both with the one-time ceremony above. `gen_appcast.sh` derives the public half of each signing key and compares it against these files, so a release whose secrets and committed public keys disagree fails the job with the exact value to paste, instead of publishing a feed no client can verify.
 
 ### Homebrew
 

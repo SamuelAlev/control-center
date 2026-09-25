@@ -452,6 +452,7 @@ class LocalRpcServer implements McpHostServer {
     this.watchQueries,
     this.workspaceExists,
     this.resolveRole,
+    this.toolIsMutating,
     this.meetingAudio,
     this.workspaceLogo,
     this.blob,
@@ -779,6 +780,10 @@ class LocalRpcServer implements McpHostServer {
   /// forwarding is filtered. Null (bare test servers) skips the gates;
   /// production wiring always supplies it.
   final WorkspaceRoleResolver? resolveRole;
+
+  /// Classifies a registered tool before a remote session applies its role
+  /// gate. An unknown tool returns null and is refused before dispatch.
+  final bool? Function(String toolName)? toolIsMutating;
 
   /// Interface to bind. Defaults to loopback (the safe same-origin/localhost
   /// case). Pass `InternetAddress.anyIPv4` only together with [securityContext].
@@ -2313,6 +2318,7 @@ class LocalRpcServer implements McpHostServer {
       workspaceResolver: workspaceResolver,
       workspaceExists: workspaceExists,
       resolveRole: resolveRole,
+      toolIsMutating: toolIsMutating,
       // Privilege is derived from the authenticated device's platform: a
       // first-party web/desktop client gets full privilege; a phone is
       // restricted (cannot reach pairing.* ops).

@@ -5,19 +5,23 @@ import 'package:cc_domain/features/ticketing/domain/entities/ticket.dart';
 import 'package:cc_domain/features/ticketing/domain/repositories/ticket_repository.dart';
 import 'package:cc_domain/features/ticketing/domain/services/ticket_workflow_service.dart';
 import 'package:cc_mcp/src/tools/delegate_task_tool.dart';
+import 'package:cc_mcp/src/tools/pending_delegation_hops.dart';
 import 'package:test/test.dart';
 
 void main() {
   late _FakeTickets tickets;
   late DelegateTaskTool tool;
+  late PendingDelegationHops pendingHops;
 
   setUp(() {
     tickets = _FakeTickets();
+    pendingHops = PendingDelegationHops();
     tool = DelegateTaskTool(
       service: TicketWorkflowService(
         repository: tickets,
         eventBus: DomainEventBus(),
       ),
+      pendingHops: pendingHops,
     );
   });
 
@@ -50,9 +54,23 @@ void main() {
       'title': 'Child',
       'to_agent_id': 'agent-b',
       'parent_ticket_id': 'missing',
+      'from_agent_id': 'agent-a',
     });
     expect(result.isError, isTrue);
     expect(result.content.first.text, contains('does not exist'));
+  });
+  test('cannot delegate to the caller of an active ask', () async {
+    final release = pendingHops.enter('ws-1', 'agent-a', 'agent-b');
+    final result = await tool.run({
+      'workspace_id': 'ws-1',
+      'title': 'Loop back',
+      'from_agent_id': 'agent-b',
+      'to_agent_id': 'agent-a',
+    });
+    expect(result.isError, isTrue);
+    expect(result.content.first.text, contains('cycle'));
+    expect(tickets.store, isEmpty);
+    release();
   });
 }
 

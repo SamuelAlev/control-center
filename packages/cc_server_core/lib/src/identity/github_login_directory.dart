@@ -1,4 +1,6 @@
 import 'package:cc_domain/core/domain/entities/workspace_member.dart';
+import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
+import 'package:cc_domain/core/domain/events/identity_events.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_membership_repository.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_server_core/src/identity/user_credentials_store.dart';
@@ -13,14 +15,22 @@ class GitHubLoginDirectory {
     required this._credentials,
     this.ttl = const Duration(minutes: 5),
     DateTime Function()? now,
-  }) : _now = now ?? DateTime.now;
+    DomainEventBus? eventBus,
+  }) : _now = now ?? DateTime.now {
+    eventBus?.on<WorkspaceMemberRemoved>().listen(
+      (event) => invalidate(event.workspaceId),
+    );
+    eventBus?.on<WorkspaceMemberRoleChanged>().listen(
+      (event) => invalidate(event.workspaceId),
+    );
+  }
 
   final WorkspaceMembershipRepository _members;
   final UserCredentialsStore _credentials;
 
-  /// How long a built index is trusted. Credentials and membership both change
-  /// through the UI while the server runs; five minutes bounds staleness
-  /// without re-reading every member's credential per inbound comment.
+  /// How long credential mappings are trusted. Membership removals and role
+  /// changes invalidate the index immediately through membership events; TTL
+  /// bounds credential changes without re-reading every token per comment.
   final Duration ttl;
 
   final DateTime Function() _now;
@@ -59,10 +69,7 @@ class GitHubLoginDirectory {
         ForgeHost.github,
         workspaceId: workspaceId,
       );
-      token ??= await _credentials.forgeToken(
-        member.userId,
-        ForgeHost.github,
-      );
+      token ??= await _credentials.forgeToken(member.userId, ForgeHost.github);
       final login = token?.accountLogin ?? '';
       if (login.isEmpty) {
         continue;

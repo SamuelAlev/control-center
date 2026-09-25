@@ -22,14 +22,18 @@ transport. Pure Dart — no Flutter.
 
 ## Invariants
 
-- Every mutating tool call passes through `RemoteRateLimiter.tryAcquire` before
-  dispatch; a new mutating op must be classified in `RemoteToolPolicy.mutating`
-  (enforced by `test/remote_rate_limiter_test.dart`).
+- Every remote tool call is resolved against the registered MCP tool. Its mutation
+  metadata determines the stricter rate limit and whether the member needs
+  workspace write permission; unknown tools fail closed. The phone's
+  `RemoteToolPolicy` remains the explicit allow-list, and
+  `cc_server_core/test/remote_tool_metadata_test.dart` keeps its read/write sets
+  aligned with the registered tools.
 - Fail closed: an unauthenticated/over-limit request is denied, never served.
 
 ## Extending
 
-Add a new remote-invokable tool → add it to `RemoteToolPolicy.allowed` (and
-`.mutating` if it writes). New watch query → register it in the
+Add a new remote-invokable tool → add it to `RemoteToolPolicy.readOnly` or
+`.mutating`, declare its mutation effects on the MCP tool, and update the
+metadata inventory test. New watch query → register it in the
 `WatchQueryRegistry`. The transport itself lives in `cc_server_core`
 (`LocalRpcServer`); this package is transport-agnostic behind `RpcDispatcher`.

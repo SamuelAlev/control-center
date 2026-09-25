@@ -183,6 +183,15 @@ print(json.dumps({
     expect(win, contains('sparkle:dsaSignature="'));
   }, skip: skip);
 
+  test('macOS stable releases are visible to the default Sparkle channel', () async {
+    expect((await runScript()).exitCode, 0);
+
+    // Sparkle only accepts untagged items unless the updater explicitly opts
+    // into named channels. The shipped auto_updater plugin does not do so.
+    final mac = File('${tmp.path}/appcast.xml').readAsStringSync();
+    expect(mac, isNot(contains('<sparkle:channel>')));
+  }, skip: skip);
+
   test('every item carries a version the updaters can compare', () async {
     expect((await runScript()).exitCode, 0);
 

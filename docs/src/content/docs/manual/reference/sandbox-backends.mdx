@@ -16,7 +16,7 @@ The harness's in-process file tools (read, write, edit, apply patch, search, fin
 | Backend     | Value     | Platform                                      | Availability                                                                                                      |
 | ----------- | --------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
 | Enclosed VM | `microvm` | macOS, Linux, Windows (microVM hypervisor)    | Probe-gated on the microVM runtime; applies to interactive terminals — the shell runs inside a [rig](/manual/concepts/rigs/), not on the host |
-| Native      | `native`  | macOS (Seatbelt), Linux and WSL2 (bubblewrap) | Probed at boot; wraps agent dispatch when available                                                               |
+| Native      | `native`  | macOS (Seatbelt), Linux and WSL2 (bubblewrap) | Probed at boot; Linux refuses a run requiring filename-glob write denies, which bubblewrap cannot enforce |
 | None        | `none`    | All                                           | The parse default, the terminal's default and the fallback when no backend is available or `--sandbox off` is set |
 
 `SandboxBackend.fromName` returns `none` for a null or unrecognized stored value. A stored `"docker"` maps to `native`.
@@ -79,6 +79,14 @@ Requirements:
 - `bubblewrap` and `socat` installed (`sudo apt-get install bubblewrap socat` on Debian/Ubuntu)
 - Kernel namespace support (standard on modern Linux)
 
+Bubblewrap can shadow an existing path but cannot forbid a *new* `.env`,
+`*.key` or `*.pem` file inside a writable bind. The standard dispatch policy
+requires these filename-glob denies, so native agent dispatch currently
+**fails closed on Linux/WSL2 even when the probe finds bubblewrap**. It does not
+run with a silently weaker policy. A backend with create-time filename rules
+is required to restore Linux native dispatch. Disabling sandboxing is an
+explicit unconfined opt-out, not an equivalent workaround.
+
 ## None backend
 
 No sandboxing. The process runs directly on the host with the host's filesystem, network and process access. ACP and the harness `bash` tool still get environment sanitization and the command policy; Claude Code through `NoSandboxAdapter` inherits the host environment. This is what agent dispatch falls back to on a host with no available backend or with `--sandbox off` and it is the terminal's default when a client names none.
@@ -87,7 +95,7 @@ No sandboxing. The process runs directly on the host with the host's filesystem,
 
 The terminal is sandboxed on its own terms, not by the dispatch probe. `TerminalSessionService`'s `defaultBackend` is `none` and `cc_server` does not override it, so a terminal session runs the host shell unless the client explicitly asks for `native` — the desktop's terminal panel does not.
 
-When `native` is requested the shell is wrapped through `SandboxManager` under a fixed terminal profile: `$HOME` and the session's working directory are writable, network is open and `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` and `~/Library/Keychains` are read-denied. Capability gating does not apply — that is a dispatch concern. If the wrap is unsupported the session falls back to the host shell and emits a notice line.
+When `native` is requested the shell is wrapped through `SandboxManager` under a fixed terminal profile: `$HOME` and the session's working directory are writable, network is open and `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` and `~/Library/Keychains` are read-denied. Capability gating does not apply — that is a dispatch concern. If the wrap is unsupported, the session fails instead of showing a native badge on a host-shell PTY.
 
 ## Network egress
 

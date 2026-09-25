@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_backend.dart';
 import 'package:cc_infra/src/ports/workspace_filesystem_port.dart';
+import 'package:cc_infra/src/sandboxing/sandbox_config.dart';
 import 'package:cc_infra/src/sandboxing/sandbox_manager.dart';
 import 'package:cc_infra/src/sandboxing/terminal_session_service.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -27,6 +28,15 @@ class _RootedFs extends Fake implements WorkspaceFilesystemPort {
     String workspaceId,
     String conversationId,
   ) async => root;
+}
+
+class _UnsupportedNativeSandbox extends SandboxManager {
+  @override
+  Future<SandboxWrapResult> wrap({
+    required SandboxConfig config,
+    required List<String> argv,
+    String? workingDirectory,
+  }) async => throw UnsupportedError('native sandbox unavailable');
 }
 
 /// Rejection contract of [TerminalSessionService]: a session id the service does
@@ -67,6 +77,30 @@ void main() {
         throwsA(isA<NotFoundException>()),
       );
     });
+  });
+
+  test('native wrap failure does not start a host PTY', () async {
+    final root = Directory.systemTemp.createTempSync('cc-term-native-');
+    addTearDown(() => root.deleteSync(recursive: true));
+    final terminal = TerminalSessionService(
+      manager: _UnsupportedNativeSandbox(),
+      filesystem: _RootedFs(root.path),
+    );
+    await expectLater(
+      terminal.spawn(
+        workspaceId: 'ws-1',
+        rows: 24,
+        cols: 80,
+        backend: 'native',
+      ),
+      throwsA(
+        isA<UnsupportedError>().having(
+          (e) => e.message,
+          'message',
+          contains('native sandbox unavailable'),
+        ),
+      ),
+    );
   });
 
   group('resolveTerminalBackend', () {

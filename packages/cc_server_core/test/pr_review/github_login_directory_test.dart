@@ -1,4 +1,6 @@
 import 'package:cc_domain/core/domain/entities/workspace_member.dart';
+import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
+import 'package:cc_domain/core/domain/events/identity_events.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_membership_repository.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
@@ -57,10 +59,7 @@ void main() {
       final directory = GitHubLoginDirectory(
         members: _FakeMembershipRepository([_member('u1')]),
         credentials: _FakeCredentialsStore({
-          'u1': const ProviderToken(
-            accessToken: 't',
-            accountLogin: 'Octocat',
-          ),
+          'u1': const ProviderToken(accessToken: 't', accountLogin: 'Octocat'),
         }),
       );
 
@@ -80,33 +79,43 @@ void main() {
       expect(await directory.memberForLogin('ws1', 'someone-else'), isNull);
     });
 
-    test('a member whose credential carries no login resolves to null',
-        () async {
-      final directory = GitHubLoginDirectory(
-        members: _FakeMembershipRepository([_member('u1')]),
-        credentials: _FakeCredentialsStore({
-          'u1': const ProviderToken(accessToken: 't'),
-        }),
-      );
+    test(
+      'a member whose credential carries no login resolves to null',
+      () async {
+        final directory = GitHubLoginDirectory(
+          members: _FakeMembershipRepository([_member('u1')]),
+          credentials: _FakeCredentialsStore({
+            'u1': const ProviderToken(accessToken: 't'),
+          }),
+        );
 
-      expect(await directory.memberForLogin('ws1', ''), isNull);
-      expect(await directory.memberForLogin('', 'octocat'), isNull);
-    });
+        expect(await directory.memberForLogin('ws1', ''), isNull);
+        expect(await directory.memberForLogin('', 'octocat'), isNull);
+      },
+    );
 
-    test('a login connected by a user of ANOTHER workspace resolves to null',
-        () async {
-      // The reverse index is built per workspace from that workspace's
-      // members; a foreign workspace's user is simply absent from it.
-      final directory = GitHubLoginDirectory(
-        members: _FakeMembershipRepository([_member('u1')]),
-        credentials: _FakeCredentialsStore({
-          'u1': const ProviderToken(accessToken: 't', accountLogin: 'octocat'),
-          'u9': const ProviderToken(accessToken: 't', accountLogin: 'intruder'),
-        }),
-      );
+    test(
+      'a login connected by a user of ANOTHER workspace resolves to null',
+      () async {
+        // The reverse index is built per workspace from that workspace's
+        // members; a foreign workspace's user is simply absent from it.
+        final directory = GitHubLoginDirectory(
+          members: _FakeMembershipRepository([_member('u1')]),
+          credentials: _FakeCredentialsStore({
+            'u1': const ProviderToken(
+              accessToken: 't',
+              accountLogin: 'octocat',
+            ),
+            'u9': const ProviderToken(
+              accessToken: 't',
+              accountLogin: 'intruder',
+            ),
+          }),
+        );
 
-      expect(await directory.memberForLogin('ws1', 'intruder'), isNull);
-    });
+        expect(await directory.memberForLogin('ws1', 'intruder'), isNull);
+      },
+    );
 
     test('the oldest member wins a duplicate login claim', () async {
       final directory = GitHubLoginDirectory(
@@ -126,36 +135,99 @@ void main() {
         }),
       );
 
-      expect((await directory.memberForLogin('ws1', 'shared'))?.userId,
-          'first');
+      expect(
+        (await directory.memberForLogin('ws1', 'shared'))?.userId,
+        'first',
+      );
     });
 
-    test('rebuilds after the TTL, so a new member becomes resolvable',
-        () async {
-      var now = DateTime(2026, 8, 26, 12);
+    test(
+      'rebuilds after the TTL, so a new member becomes resolvable',
+      () async {
+        var now = DateTime(2026, 8, 26, 12);
+        final members = _FakeMembershipRepository([_member('u1')]);
+        final tokens = <String, ProviderToken?>{
+          'u1': const ProviderToken(accessToken: 't', accountLogin: 'octocat'),
+        };
+        final directory = GitHubLoginDirectory(
+          members: members,
+          credentials: _FakeCredentialsStore(tokens),
+          now: () => now,
+        );
+
+        expect(await directory.memberForLogin('ws1', 'newbie'), isNull);
+
+        members.members.add(_member('u2'));
+        tokens['u2'] = const ProviderToken(
+          accessToken: 't',
+          accountLogin: 'newbie',
+        );
+        // Inside the TTL: the cached index still answers.
+        now = now.add(const Duration(minutes: 1));
+        expect(await directory.memberForLogin('ws1', 'newbie'), isNull);
+        // Past it: the index rebuilds from the current members.
+        now = now.add(const Duration(minutes: 5));
+        expect((await directory.memberForLogin('ws1', 'newbie'))?.userId, 'u2');
+      },
+    );
+
+    test('membership removal revokes a cached login before TTL', () async {
+      final bus = DomainEventBus();
+      addTearDown(bus.dispose);
       final members = _FakeMembershipRepository([_member('u1')]);
-      final tokens = <String, ProviderToken?>{
-        'u1': const ProviderToken(accessToken: 't', accountLogin: 'octocat'),
-      };
       final directory = GitHubLoginDirectory(
         members: members,
-        credentials: _FakeCredentialsStore(tokens),
-        now: () => now,
+        credentials: _FakeCredentialsStore({
+          'u1': const ProviderToken(accessToken: 't', accountLogin: 'octocat'),
+        }),
+        eventBus: bus,
       );
 
-      expect(await directory.memberForLogin('ws1', 'newbie'), isNull);
+      expect((await directory.memberForLogin('ws1', 'octocat'))?.userId, 'u1');
+      members.members = [];
+      expect((await directory.memberForLogin('ws1', 'octocat'))?.userId, 'u1');
 
-      members.members.add(_member('u2'));
-      tokens['u2'] = const ProviderToken(
-        accessToken: 't',
-        accountLogin: 'newbie',
+      bus.publish(
+        WorkspaceMemberRemoved(
+          workspaceId: 'ws1',
+          userId: 'u1',
+          occurredAt: DateTime(2026),
+        ),
       );
-      // Inside the TTL: the cached index still answers.
-      now = now.add(const Duration(minutes: 1));
-      expect(await directory.memberForLogin('ws1', 'newbie'), isNull);
-      // Past it: the index rebuilds from the current members.
-      now = now.add(const Duration(minutes: 5));
-      expect((await directory.memberForLogin('ws1', 'newbie'))?.userId, 'u2');
+      await Future<void>.delayed(Duration.zero);
+      expect(await directory.memberForLogin('ws1', 'octocat'), isNull);
+    });
+
+    test('role change refreshes the cached write permission', () async {
+      final bus = DomainEventBus();
+      addTearDown(bus.dispose);
+      final members = _FakeMembershipRepository([_member('u1')]);
+      final directory = GitHubLoginDirectory(
+        members: members,
+        credentials: _FakeCredentialsStore({
+          'u1': const ProviderToken(accessToken: 't', accountLogin: 'octocat'),
+        }),
+        eventBus: bus,
+      );
+
+      expect(
+        (await directory.memberForLogin('ws1', 'octocat'))!.role.canWrite,
+        isTrue,
+      );
+      members.members = [_member('u1', role: WorkspaceRole.viewer)];
+      bus.publish(
+        WorkspaceMemberRoleChanged(
+          workspaceId: 'ws1',
+          userId: 'u1',
+          role: WorkspaceRole.viewer,
+          occurredAt: DateTime(2026),
+        ),
+      );
+      await Future<void>.delayed(Duration.zero);
+      expect(
+        (await directory.memberForLogin('ws1', 'octocat'))!.role.canWrite,
+        isFalse,
+      );
     });
   });
 }

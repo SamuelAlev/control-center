@@ -141,6 +141,28 @@ void main() {
       expect(fetched, isNull);
     });
 
+    test('missing route refuses all id-only mutations', () async {
+      await repo.insertRun(_makeRun());
+      await routes.remove(WorkspaceRouteKind.pipelineRun, 'run-1');
+      // The original repository cached this run at insertion; even a cached
+      // route must not mask deletion from the authoritative global index.
+      final caller = repo;
+      await expectLater(
+        caller.updateRunState('run-1', {'lost': true}),
+        throwsStateError,
+      );
+      await expectLater(caller.incrementCost('run-1', 4, 10), throwsStateError);
+      await expectLater(caller.insertStepRun(_makeStepRun()), throwsStateError);
+      expect(
+        (await dbs.of('ws-1').pipelineDao.getRun('run-1'))!.totalCostCents,
+        0,
+      );
+      expect(
+        await dbs.of('ws-1').pipelineDao.stepRunsForPipeline('run-1'),
+        isEmpty,
+      );
+    });
+
     test(
       'a rerun records its attempt without losing the original start',
       () async {
@@ -404,11 +426,6 @@ void main() {
       final fetched = await repo.getRun('run-1');
       expect(fetched!.totalCostCents, 125);
       expect(fetched.totalTokens, 60);
-    });
-
-    test('incrementCost is a no-op for nonexistent run', () async {
-      // Must not throw.
-      await repo.incrementCost('nonexistent', 10, 5);
     });
   });
 

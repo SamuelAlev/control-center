@@ -14,6 +14,9 @@ class SendSpaceMessageTool extends McpTool {
   String get name => 'send_message';
 
   @override
+  bool get isMutating => true;
+
+  @override
   String get description =>
       'Sends a message into a space from a specific sender agent. The space '
       'must belong to the given workspace. Pass conversation_id to target a '

@@ -87,7 +87,12 @@ class HarnessSkillScanner {
             continue;
           }
           final skillFile = File(p.join(skillDir, 'SKILL.md'));
-          if (!skillFile.existsSync()) {
+          // File.existsSync follows links; the frontmatter is autoloaded into
+          // the prompt, so a linked file needs the same target gate as a
+          // linked skill directory (including when both are links).
+          if (!skillFile.existsSync() ||
+              (isLinkLike(skillFile.path) &&
+                  !resolvesInsideRoots(skillFile.path, permittedLinkRoots))) {
             continue;
           }
           final info = _parse(skillFile, p.basename(skillDir));

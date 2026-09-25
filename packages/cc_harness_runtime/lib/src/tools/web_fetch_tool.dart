@@ -22,8 +22,15 @@ class WebFetchTool extends HarnessTool {
     this.allowNetwork = true,
     Duration? timeout,
     HttpClient? client,
+    Future<List<InternetAddress>> Function(String host)? resolveHost,
+    Future<ConnectionTask<Socket>> Function(InternetAddress address, int port)?
+    connect,
   }) : _timeout = timeout ?? const Duration(seconds: 30),
-       _client = client ?? (HttpClient()..connectionTimeout = _connectTimeout);
+       _clientFactory = client == null
+           ? (() => (HttpClient()..connectionTimeout = _connectTimeout))
+           : (() => client),
+       _resolveHost = resolveHost ?? InternetAddress.lookup,
+       _connect = connect ?? Socket.startConnect;
 
   static const Duration _connectTimeout = Duration(seconds: 15);
 
@@ -35,7 +42,14 @@ class WebFetchTool extends HarnessTool {
 
   /// Inactivity timeout for connecting and reading the response.
   final Duration _timeout;
-  final HttpClient _client;
+
+  final HttpClient Function() _clientFactory;
+  final Future<List<InternetAddress>> Function(String host) _resolveHost;
+  final Future<ConnectionTask<Socket>> Function(
+    InternetAddress address,
+    int port,
+  )
+  _connect;
 
   /// Hard cap on bytes read from the response body before truncation.
   static const int _maxBodyBytes = 5 * 1024 * 1024;
@@ -84,23 +98,27 @@ class WebFetchTool extends HarnessTool {
     if (uri == null || !(uri.isScheme('http') || uri.isScheme('https'))) {
       return HarnessToolResult.error('Invalid URL (must be http/https): $url');
     }
-    // SSRF guard: resolve the host and refuse if any resolved address is
-    // internal (loopback / link-local / private / metadata).
-    final blocked = await _blockedReason(uri.host);
-    if (blocked != null) {
-      return HarnessToolResult.error('Refusing to fetch $url: $blocked');
-    }
+    // One client per invocation: connectionFactory is bound to the vetted
+    // addresses for each hop and must not be shared across concurrent fetches.
+    final client = _clientFactory();
+    client.findProxy = (_) => 'DIRECT';
     try {
-      // Redirects are followed MANUALLY, one hop at a time, re-running the
-      // SSRF guard on each. `followRedirects: true` let dart:io chase a 302
-      // from a permitted public host straight to `169.254.169.254` — the
-      // pre-fetch check had already passed and nothing looked again, so the
-      // thorough internal-address classifier below was decided before the only
-      // hop that mattered.
       var current = uri;
       HttpClientResponse? response;
       for (var hop = 0; hop <= _maxRedirects; hop++) {
-        final request = await _client.getUrl(current).timeout(_timeout);
+        final resolved = await _publicAddresses(current.host);
+        if (resolved.reason != null) {
+          return HarnessToolResult.error(
+            '${hop == 0 ? 'Refusing to fetch' : 'Refusing to follow redirect to'} '
+            '$current: ${resolved.reason}',
+          );
+        }
+        final pinned = resolved.addresses.first;
+        // dart:io retains the original URI for Host and TLS SNI/cert checks,
+        // but its socket dials the already-vetted IP, never a second DNS answer.
+        client.connectionFactory = (url, _, _) => _connect(pinned, url.port);
+        final request = await client.getUrl(current).timeout(_timeout);
+        request.persistentConnection = false;
         request.followRedirects = false;
         request.headers.set(
           HttpHeaders.userAgentHeader,
@@ -126,12 +144,6 @@ class WebFetchTool extends HarnessTool {
         if (!(next.isScheme('http') || next.isScheme('https'))) {
           return HarnessToolResult.error(
             'Refusing to follow a non-http(s) redirect to $next',
-          );
-        }
-        final hopBlocked = await _blockedReason(next.host);
-        if (hopBlocked != null) {
-          return HarnessToolResult.error(
-            'Refusing to follow redirect to $next: $hopBlocked',
           );
         }
         current = next;
@@ -194,14 +206,18 @@ class WebFetchTool extends HarnessTool {
       return HarnessToolResult.success('# $url\n\n$capped$suffix');
     } on Object catch (e) {
       return HarnessToolResult.error('Failed to fetch $url: $e');
+    } finally {
+      client.close(force: true);
     }
   }
 
-  /// Returns a human-readable reason when [host] resolves to an internal
-  /// address that must not be fetched, or null when the host is safe.
-  static Future<String?> _blockedReason(String host) async {
+  /// Resolve once per hop. Every returned address must be public; the socket
+  /// uses one of these values, never the hostname that could rebind afterward.
+  Future<({List<InternetAddress> addresses, String? reason})> _publicAddresses(
+    String host,
+  ) async {
     if (host.isEmpty) {
-      return 'empty host';
+      return (addresses: const <InternetAddress>[], reason: 'empty host');
     }
     final List<InternetAddress> addresses;
     final literal = InternetAddress.tryParse(host);
@@ -209,22 +225,31 @@ class WebFetchTool extends HarnessTool {
       addresses = [literal];
     } else {
       try {
-        addresses = await InternetAddress.lookup(
+        addresses = await _resolveHost(
           host,
         ).timeout(const Duration(seconds: 5));
       } on Object {
-        return 'could not resolve host';
+        return (
+          addresses: const <InternetAddress>[],
+          reason: 'could not resolve host',
+        );
       }
       if (addresses.isEmpty) {
-        return 'could not resolve host';
+        return (
+          addresses: const <InternetAddress>[],
+          reason: 'could not resolve host',
+        );
       }
     }
     for (final addr in addresses) {
       if (_isInternal(addr)) {
-        return 'resolves to an internal address (${addr.address})';
+        return (
+          addresses: const <InternetAddress>[],
+          reason: 'resolves to an internal address (${addr.address})',
+        );
       }
     }
-    return null;
+    return (addresses: addresses, reason: null);
   }
 
   /// Whether [addr] is a loopback, link-local, private, or otherwise internal

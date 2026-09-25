@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
+import 'package:cc_domain/core/domain/ports/confirmation_port.dart';
 import 'package:cc_domain/core/domain/ports/credential_broker_port.dart';
 import 'package:cc_domain/core/domain/ports/sandbox_port.dart';
 import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
@@ -14,6 +15,10 @@ import 'package:cc_domain/core/domain/value_objects/sandbox_handle.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_spec.dart';
 import 'package:cc_domain/features/dispatch/domain/entities/agent_process_event.dart';
 import 'package:cc_domain/features/dispatch/domain/ports/agent_backend.dart';
+import 'package:cc_domain/features/guardrails/domain/entities/action_policy_rule.dart';
+import 'package:cc_domain/features/guardrails/domain/repositories/action_policy_repository.dart';
+import 'package:cc_domain/features/guardrails/domain/services/action_guard_service.dart';
+import 'package:cc_domain/features/guardrails/domain/value_objects/action_decision.dart';
 import 'package:cc_harness/cancellation.dart';
 import 'package:cc_harness/loop.dart';
 import 'package:cc_harness/messages.dart';
@@ -25,6 +30,23 @@ import 'package:cc_infra/src/dispatch/dispatch_session.dart';
 import 'package:test/test.dart';
 
 import '../helpers/windows_safe_delete.dart';
+
+class _Approver implements ConfirmationPort {
+  @override
+  Future<bool> requestApproval(ConfirmationRequest request) async => true;
+}
+
+class _Rules implements ActionPolicyRepository {
+  _Rules(this.values);
+
+  final List<ActionPolicyRule> values;
+
+  @override
+  Future<List<ActionPolicyRule>> rules(String workspaceId) async => values;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
 
 /// Pins the no-turn-ceiling contract of [DispatchSession]: every command
 /// (plain chat, /plan, /goal, /loop) runs a single uncapped segment — the
@@ -101,8 +123,9 @@ class _KeylessStore implements ProviderCredentialStore {
 /// Plays back one scripted segment and records every user message + config
 /// the session started the loop with.
 class _RecordingLoop implements AgentLoop {
-  _RecordingLoop(this.script);
+  _RecordingLoop(this.script, {this.onRun});
 
+  final Future<void> Function(AgentLoopConfig)? onRun;
   final List<AgentLoopEvent> script;
   final List<String> userMessages = [];
   final List<AgentLoopConfig> configs = [];
@@ -121,17 +144,29 @@ class _RecordingLoop implements AgentLoop {
   }) {
     userMessages.add(userMessage);
     configs.add(config);
-    return Stream.fromIterable(script);
+    if (onRun == null) {
+      return Stream.fromIterable(script);
+    }
+    return () async* {
+      await onRun!(config);
+      for (final event in script) {
+        yield event;
+      }
+    }();
   }
 }
 
 ({DispatchSession session, _RecordingLoop loop}) _buildSession({
   required List<AgentLoopEvent> script,
   String prompt = '/goal fix the bug',
+  String? spaceId,
+  ActionGuardService? actionGuard,
+  Future<String?> Function(String, String, String)? autonomyResolver,
+  Future<void> Function(AgentLoopConfig)? onRun,
 }) {
   final tempDir = Directory.systemTemp.createTempSync('cc_uncapped_');
   addTearDown(() => deleteDirBestEffort(tempDir));
-  final loop = _RecordingLoop(script);
+  final loop = _RecordingLoop(script, onRun: onRun);
   final deps = SandboxDispatchDeps(
     sandbox: _NoopSandbox(),
     broker: _NoopBroker(),
@@ -143,6 +178,9 @@ class _RecordingLoop implements AgentLoop {
     harnessCredentialStore: _KeylessStore(),
     harnessProviderFactory: const HarnessProviderFactory(),
     agentLoop: loop,
+    confirmationPort: onRun == null ? null : _Approver(),
+    actionGuard: actionGuard,
+    autonomyResolver: autonomyResolver,
   );
   final session = DispatchSession(
     deps: deps,
@@ -166,6 +204,7 @@ class _RecordingLoop implements AgentLoop {
     agentId: 'agent-1',
     workspaceId: 'ws-1',
     conversationId: 'conv-1',
+    spaceId: spaceId,
     runLogId: 'run-1',
     mode: Mode.chat,
   );
@@ -269,5 +308,68 @@ void main() {
       contains('budget exhausted'),
     );
     expect(events.whereType<DoneEvent>().single.outcome, isNull);
+  });
+
+  test(
+    'propose-only autonomy applies to the space, not conversation',
+    () async {
+      ToolGateDecision? gate;
+      final h = _buildSession(
+        prompt: 'make a change',
+        spaceId: 'space-1',
+        script: [const LoopDone(LoopDoneReason.completed)],
+        autonomyResolver: (workspaceId, spaceId, agentId) async =>
+            spaceId == 'space-1' ? 'proposeOnly' : 'actFreely',
+        onRun: (config) async {
+          gate = await config.approvalCallback!(WriteTool(), {
+            'path': 'change.txt',
+            'content': 'unsafe',
+          });
+        },
+      );
+
+      await _collect(h.session);
+      expect(gate?.allowed, isFalse);
+      expect(gate?.reason, contains('propose-only'));
+    },
+  );
+
+  test('space action deny blocks a write and audits the same space', () async {
+    final audits = <GuardAudit>[];
+    final now = DateTime.now();
+    final guard = ActionGuardService(
+      repository: _Rules([
+        ActionPolicyRule(
+          id: 'space-write-deny',
+          workspaceId: 'ws-1',
+          scopeType: ActionScopeType.space,
+          scopeId: 'space-1',
+          actionClass: ActionClass.fileWriteOutsideWorktree,
+          decision: ActionDecision.deny,
+          createdAt: now,
+          updatedAt: now,
+        ),
+      ]),
+      onAudit: audits.add,
+    );
+    ToolGateDecision? gate;
+    final h = _buildSession(
+      prompt: 'make a change',
+      spaceId: 'space-1',
+      script: [const LoopDone(LoopDoneReason.completed)],
+      actionGuard: guard,
+      onRun: (config) async {
+        gate = await config.approvalCallback!(WriteTool(), {
+          'path': 'change.txt',
+          'content': 'unsafe',
+        });
+      },
+    );
+
+    await _collect(h.session);
+    expect(gate?.allowed, isFalse);
+    expect(audits.single.spaceId, 'space-1');
+    expect(audits.single.ruleId, 'space-write-deny');
+    expect(audits.single.decision, ActionDecision.deny);
   });
 }

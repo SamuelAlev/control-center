@@ -183,7 +183,6 @@ Future<Pty> _startTerminalPty({
   required int rows,
   required int cols,
   List<String>? vmShellArgv,
-  void Function(String notice)? onNotice,
 }) async {
   if (backend == SandboxBackend.microvm) {
     if (vmShellArgv == null || vmShellArgv.isEmpty) {
@@ -212,33 +211,28 @@ Future<Pty> _startTerminalPty({
   }
   final shell = Platform.isMacOS ? '/bin/zsh' : '/bin/bash';
   final config = terminalSandboxConfig(sessionId: sessionId, cwd: cwd);
-  try {
-    final wrap = await manager.wrap(
-      config: config,
-      argv: [shell, '-il'],
-      workingDirectory: cwd,
-    );
-    final env = <String, String>{
-      if (Platform.environment['HOME'] != null)
-        'HOME': Platform.environment['HOME']!,
-      if (Platform.environment['PATH'] != null)
-        'PATH': Platform.environment['PATH']!,
-      if (Platform.environment['TERM'] != null)
-        'TERM': Platform.environment['TERM']!,
-      ...wrap.environment,
-    };
-    return Pty.start(
-      wrap.executable,
-      arguments: wrap.argv,
-      environment: env,
-      workingDirectory: cwd,
-      rows: rows,
-      columns: cols,
-    );
-  } on UnsupportedError catch (e) {
-    onNotice?.call('[!] $e — running on the host without a sandbox.');
-    return _startHostShellPty(rows: rows, cols: cols, cwd: cwd);
-  }
+  final wrap = await manager.wrap(
+    config: config,
+    argv: [shell, '-il'],
+    workingDirectory: cwd,
+  );
+  final env = <String, String>{
+    if (Platform.environment['HOME'] != null)
+      'HOME': Platform.environment['HOME']!,
+    if (Platform.environment['PATH'] != null)
+      'PATH': Platform.environment['PATH']!,
+    if (Platform.environment['TERM'] != null)
+      'TERM': Platform.environment['TERM']!,
+    ...wrap.environment,
+  };
+  return Pty.start(
+    wrap.executable,
+    arguments: wrap.argv,
+    environment: env,
+    workingDirectory: cwd,
+    rows: rows,
+    columns: cols,
+  );
 }
 
 Future<Pty> _startHostShellPty({

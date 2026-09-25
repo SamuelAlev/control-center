@@ -574,8 +574,6 @@ class _ReviewOverlayButtonState extends ConsumerState<ReviewOverlayButton> {
                         maxLines: 10,
                         onAttachImage: _attachFile,
                       ),
-                      const SizedBox(height: 14),
-                      const CcDivider(),
                       const SizedBox(height: 12),
                       // One row, read left to right in ascending commitment:
                       // the negative verdict, the no-verdict option, then the

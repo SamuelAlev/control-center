@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:cc_infra/src/sandboxing/linux_sandbox.dart';
 import 'package:cc_infra/src/sandboxing/sandbox_config.dart';
+import 'package:cc_infra/src/sandboxing/sandbox_manager.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -195,6 +196,59 @@ void main() {
           reason: 'a directory must never be shadowed by /dev/null',
         );
       },
+    );
+
+    test('refuses globs that cannot block creation of new secrets', () {
+      final root = Directory.systemTemp.createTempSync('cc-lx-glob-');
+      addTearDown(() => root.deleteSync(recursive: true));
+      final existing = File('${root.path}/existing.pem')
+        ..writeAsStringSync('credential');
+      for (final pattern in ['**/.env', '**/*.key', '**/*.pem']) {
+        expect(
+          () => LinuxSandbox.buildBwrapArgs(
+            config: SandboxConfig(
+              sessionId: 'secret-test',
+              network: const NetworkConfig(),
+              filesystem: FilesystemConfig(
+                allowWrite: [root.path],
+                denyWrite: [pattern],
+              ),
+            ),
+            innerCommand: 'touch ${root.path}/new.pem',
+          ),
+          throwsA(
+            isA<UnsupportedError>().having(
+              (e) => e.message,
+              'message',
+              contains('new files'),
+            ),
+          ),
+          reason: 'enumerating $existing does not prevent new secret files',
+        );
+      }
+    });
+
+    test(
+      'manager refuses a new-secret rule before starting the sandbox',
+      () async {
+        final manager = SandboxManager();
+        addTearDown(manager.reset);
+        await expectLater(
+          manager.wrap(
+            config: const SandboxConfig(
+              sessionId: 'no-secret-create',
+              network: NetworkConfig(),
+              filesystem: FilesystemConfig(
+                allowWrite: ['/tmp'],
+                denyWrite: ['**/*.pem'],
+              ),
+            ),
+            argv: const ['touch', '/tmp/new.pem'],
+          ),
+          throwsA(isA<UnsupportedError>()),
+        );
+      },
+      skip: !Platform.isLinux ? 'Linux-only bwrap guard' : null,
     );
   });
 

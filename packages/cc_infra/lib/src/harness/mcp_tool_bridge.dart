@@ -180,6 +180,14 @@ class McpToolBridge extends HarnessTool {
         (scoped['agent_id'] == null || scoped['agent_id'] == '')) {
       scoped['agent_id'] = agentId;
     }
+    // Delegation identities name the caller, never an arbitrary target.
+    // Overwrite model-supplied values so a harness run cannot borrow another
+    // agent's autonomy or budget envelope.
+    if (agentId != null && agentId.isNotEmpty) {
+      for (final callerId in const ['from_agent_id', 'delegated_by_agent_id']) {
+        if (props.containsKey(callerId)) scoped[callerId] = agentId;
+      }
+    }
     final convId = context.conversationId;
     if (convId != null &&
         convId.isNotEmpty &&

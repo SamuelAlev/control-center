@@ -247,7 +247,11 @@ class DefaultHarnessCompactor implements HarnessCompactor {
       headroom < 2000 ? 2000 : headroom,
     );
 
-    final cut = _planCut(history, keepRecentTokens: keepRecentTokens);
+    final cut = _planCut(
+      history,
+      keepRecentTokens: keepRecentTokens,
+      force: force,
+    );
     if (cut <= 0) {
       return HarnessCompactionResult.unchanged(before);
     }
@@ -402,26 +406,35 @@ class DefaultHarnessCompactor implements HarnessCompactor {
   }
 
   /// The index to cut at: everything in `history[0:cut)` is folded into the
-  /// summary. Returns 0 when there is nothing worth folding.
-  ///
-  /// Two regimes:
-  /// - **Multi-turn chat** (more than `keepTurns` user turns): fold everything
-  ///   before the newest `keepTurns` user turns — the cut lands on a
-  ///   user-message boundary, so the kept tail never starts on a tool turn.
-  /// - **Single-/few-turn autonomous run** (`/goal`, `/loop`: one user message
-  ///   then a long assistant↔tool exchange): the user-boundary rule can never
-  ///   fold anything, so instead keep the newest [keepRecentTokens] verbatim and
-  ///   fold the older assistant/tool messages. The cut is snapped to a safe
-  ///   boundary so a `tool_result` is never left without its `tool_use`.
-  int _planCut(List<HarnessMessage> history, {required int keepRecentTokens}) {
+  /// summary. Returns 0 when there is nothing worth folding. Normally a
+  /// multi-turn chat keeps [CompactionConfig.keepTurns] user turns; autonomous
+  /// runs use a token budget instead. After a provider overflow, the user-turn
+  /// boundary cannot protect an oversized recent tail: choose the deeper safe
+  /// token-budget cut when necessary.
+  int _planCut(
+    List<HarnessMessage> history, {
+    required int keepRecentTokens,
+    required bool force,
+  }) {
     final userIdx = <int>[
       for (var i = 0; i < history.length; i++)
         if (history[i].role == HarnessRole.user) i,
     ];
-    if (userIdx.length > config.keepTurns) {
-      return userIdx[userIdx.length - config.keepTurns];
+    final turnCut = userIdx.length > config.keepTurns
+        ? userIdx[userIdx.length - config.keepTurns]
+        : 0;
+    if (!force && turnCut > 0) {
+      return turnCut;
     }
-    return _tokenBudgetCut(history, keepRecentTokens);
+    final budgetCut = _tokenBudgetCut(history, keepRecentTokens);
+    // A single oversized final assistant turn cannot be kept under this
+    // budget. Under forced recovery even that turn must be summarized.
+    if (force &&
+        budgetCut == history.length - 1 &&
+        estimateHarnessMessage(history.last) >= keepRecentTokens) {
+      return history.length;
+    }
+    return budgetCut > turnCut ? budgetCut : turnCut;
   }
 
   /// Folds older messages within a single user turn, keeping the newest
@@ -445,7 +458,7 @@ class DefaultHarnessCompactor implements HarnessCompactor {
     while (cut < history.length && history[cut].role == HarnessRole.tool) {
       cut++;
     }
-    return cut >= history.length ? 0 : cut;
+    return cut;
   }
 
   /// Pulls the prior summary text out of a folded span, if its first user

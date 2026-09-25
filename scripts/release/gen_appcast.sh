@@ -214,6 +214,8 @@ if release_ships_platform windows; then
 fi
 
 if release_ships_platform macos; then
+# Sparkle's default channel accepts only untagged items. The bundled plugin
+# does not opt into named channels, so tagging this "stable" hides every release.
 cat > "${OUT}/appcast.xml" <<EOF
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" xmlns:dc="http://purl.org/dc/elements/1.1/">
@@ -225,7 +227,6 @@ cat > "${OUT}/appcast.xml" <<EOF
     <item>
       <title>Version ${VERSION}</title>
       <pubDate>${PUB_DATE}</pubDate>
-      <sparkle:channel>stable</sparkle:channel>
       <sparkle:version>${BUILD_NUMBER}</sparkle:version>
       <sparkle:shortVersionString>${VERSION}</sparkle:shortVersionString>
       <sparkle:releaseNotesLink>https://github.com/${REPO}/releases/tag/${TAG}</sparkle:releaseNotesLink>

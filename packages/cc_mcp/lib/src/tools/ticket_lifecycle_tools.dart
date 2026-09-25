@@ -1,15 +1,22 @@
 import 'dart:convert';
 
+import 'package:cc_domain/cc_domain.dart' show DelegationRefusedException;
 import 'package:cc_domain/features/mcp/domain/ports/mcp_tool_port.dart';
 import 'package:cc_domain/features/ticketing/domain/services/ticket_workflow_service.dart';
 import 'package:cc_harness/tools.dart';
+import 'package:cc_mcp/src/tools/pending_delegation_hops.dart';
+import 'package:cc_mcp/src/tools/ticket_access.dart';
 
-/// MCP tool that delegates a ticket to an agent (creates a child ticket with a
-/// delegating agent + optional pipeline coupling).
+/// MCP tool that delegates a ticket through the same guard as `delegate_task`.
 class DelegateTicketTool extends McpTool {
   /// Creates a [DelegateTicketTool].
-  DelegateTicketTool({required this._service});
+  DelegateTicketTool({
+    required TicketWorkflowService service,
+    required PendingDelegationHops pendingHops,
+  }) : _service = service,
+       _pendingHops = pendingHops;
   final TicketWorkflowService _service;
+  final PendingDelegationHops _pendingHops;
 
   @override
   String get name => 'delegate_ticket';
@@ -60,7 +67,12 @@ class DelegateTicketTool extends McpTool {
         'description': 'Optional pipeline step (paired with pipeline_run_id).',
       },
     },
-    'required': ['workspace_id', 'title', 'assigned_agent_id'],
+    'required': [
+      'workspace_id',
+      'title',
+      'assigned_agent_id',
+      'delegated_by_agent_id',
+    ],
   };
 
   @override
@@ -71,21 +83,41 @@ class DelegateTicketTool extends McpTool {
     if (workspaceId == null || title == null || assignedAgentId == null) {
       return CallResult.error('Missing required arguments.');
     }
-    final ticket = await _service.createTicket(
-      workspaceId: workspaceId,
-      title: title,
-      description: arguments['description'] as String?,
-      assignedAgentId: assignedAgentId,
-      delegatedByAgentId: arguments['delegated_by_agent_id'] as String?,
-      parentTicketId: arguments['parent_ticket_id'] as String?,
-      spaceId: arguments['space_id'] as String?,
-    );
-    return CallResult.success(
-      jsonEncode({
-        'ticket_id': ticket.id,
-        'status': ticket.status.toStorageString(),
-      }),
-    );
+    final delegatedByAgentId = arguments['delegated_by_agent_id'];
+    if (delegatedByAgentId is! String || delegatedByAgentId.isEmpty) {
+      return CallResult.error(
+        'Missing or invalid argument: delegated_by_agent_id',
+      );
+    }
+    if (_pendingHops.wouldCycle(
+      workspaceId,
+      delegatedByAgentId,
+      assignedAgentId,
+    )) {
+      return CallResult.error(
+        'Delegation refused: cycle detected '
+        '(${[..._pendingHops.chain(workspaceId, delegatedByAgentId), assignedAgentId].join(' → ')}).',
+      );
+    }
+    try {
+      final ticket = await _service.delegateGuarded(
+        workspaceId: workspaceId,
+        title: title,
+        description: arguments['description'] as String?,
+        assignedAgentId: assignedAgentId,
+        delegatedByAgentId: delegatedByAgentId,
+        parentTicketId: arguments['parent_ticket_id'] as String?,
+        spaceId: arguments['space_id'] as String?,
+      );
+      return CallResult.success(
+        jsonEncode({
+          'ticket_id': ticket.id,
+          'status': ticket.status.toStorageString(),
+        }),
+      );
+    } on DelegationRefusedException catch (e) {
+      return CallResult.error(e.message);
+    }
   }
 }
 
@@ -128,6 +160,8 @@ class FailTicketTool extends McpTool {
     if (ticketId == null || errorMessage == null) {
       return CallResult.error('Missing ticket_id or error_message.');
     }
+    final missing = await ticketMutationError(_service, workspaceId, ticketId);
+    if (missing != null) return missing;
     await _service.failTicket(ticketId, errorMessage, workspaceId: workspaceId);
     return CallResult.success(
       jsonEncode({'ticket_id': ticketId, 'status': 'failed'}),

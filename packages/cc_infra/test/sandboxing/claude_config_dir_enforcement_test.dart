@@ -162,16 +162,19 @@ void main() {
         expect(result.exitCode, 0, reason: result.stderr as String);
       });
 
-      test('without the declaration it is NOT writable — the guard is real', () async {
-        // Same paths, `runnerStateDirs` omitted. If this ever passes, the
-        // preceding tests prove nothing: they would be measuring the ambient
-        // `$HOME`/temp allowance rather than the re-allow under test.
-        final result = await runSandboxed(
-          'echo pwned > ${stateDir.path}/.credentials.json',
-          protectedPaths: [work.path],
-        );
-        expect(result.exitCode, isNot(0));
-      });
+      test(
+        'without the declaration it is NOT writable — the guard is real',
+        () async {
+          // Same paths, `runnerStateDirs` omitted. If this ever passes, the
+          // preceding tests prove nothing: they would be measuring the ambient
+          // `$HOME`/temp allowance rather than the re-allow under test.
+          final result = await runSandboxed(
+            'echo pwned > ${stateDir.path}/.credentials.json',
+            protectedPaths: [work.path],
+          );
+          expect(result.exitCode, isNot(0));
+        },
+      );
 
       test('the login keychain is STILL denied', () async {
         // The fix must not have bought credential access by opening the
@@ -186,10 +189,10 @@ void main() {
         expect(result.stdout, isNot(contains('sk-ant')));
       }, skip: !Platform.isMacOS ? 'macOS keychain only' : null);
     },
-    // Seatbelt/bwrap only, and the enforcement suite already declares the same
-    // constraint.
-    skip: !Platform.isMacOS && !Platform.isLinux
-        ? 'native sandbox is macOS/Linux only'
-        : null,
+    // bwrap cannot enforce the production policy's secret filename globs for
+    // new files, so Linux refuses this configuration before any PTY is opened.
+    skip: Platform.isMacOS
+        ? null
+        : 'production native sandbox policy requires macOS pathname globs',
   );
 }

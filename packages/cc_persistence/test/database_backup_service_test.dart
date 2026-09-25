@@ -10,9 +10,11 @@ library;
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:cc_domain/features/ticketing/domain/entities/ticket_provider.dart';
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
+import 'package:sqlite3/sqlite3.dart' as sqlite;
 import 'package:test/test.dart';
 
 /// [AppDatabaseBackupService] backs the `server.backupNow` RPC op.
@@ -280,18 +282,21 @@ void main() {
       expect(snapshot.workspaces.map((w) => w.workspaceId), <String>['ws1']);
     });
 
-    test('a snapshot missing a file the manifest names is incomplete', () async {
-      await seedWorkspace('ws1', agentName: 'Ada');
-      await seedWorkspace('ws2', agentName: 'Grace');
-      final svc = service();
-      final path = await svc.backupNow();
-      File('$path/ws2/workspace.db').deleteSync();
+    test(
+      'a snapshot missing a file the manifest names is incomplete',
+      () async {
+        await seedWorkspace('ws1', agentName: 'Ada');
+        await seedWorkspace('ws2', agentName: 'Grace');
+        final svc = service();
+        final path = await svc.backupNow();
+        File('$path/ws2/workspace.db').deleteSync();
 
-      final snapshot = (await svc.listBackups()).single;
+        final snapshot = (await svc.listBackups()).single;
 
-      expect(snapshot.complete, isFalse);
-      expect(snapshot.workspaces.map((w) => w.workspaceId), <String>['ws1']);
-    });
+        expect(snapshot.complete, isFalse);
+        expect(snapshot.workspaces.map((w) => w.workspaceId), <String>['ws1']);
+      },
+    );
 
     test('records the workspaces the backup could not capture', () async {
       // Registered but never written to, so it has no file — `backupNow`
@@ -307,6 +312,16 @@ void main() {
 
       expect(snapshot.skippedWorkspaceIds, <String>['ws-empty']);
       expect(snapshot.workspaces.map((w) => w.workspaceId), <String>['ws1']);
+      expect(snapshot.complete, isFalse);
+    });
+
+    test('a truncated listed file is not a complete backup', () async {
+      await seedWorkspace('ws1', agentName: 'Ada');
+      final svc = service();
+      final path = await svc.backupNow();
+      File('$path/ws1/workspace.db').writeAsBytesSync([0]);
+      final snapshot = (await svc.listBackups()).single;
+      expect(snapshot.complete, isFalse);
     });
   });
 
@@ -364,6 +379,118 @@ void main() {
       );
     });
 
+    test(
+      'imports an uncheckpointed source WAL as a consistent snapshot',
+      () async {
+        await seedWorkspace('ws1', agentName: 'Before');
+        final exported = await service().exportWorkspace('ws1');
+        final writer = sqlite.sqlite3.open(exported);
+        try {
+          writer.execute('PRAGMA journal_mode = WAL');
+          writer.execute(
+            "INSERT INTO pipeline_runs (id, template_id, workspace_id) "
+            "VALUES ('in-wal', 'tpl', 'ws1')",
+          );
+          expect(File('$exported-wal').existsSync(), isTrue);
+          await service().importWorkspace(
+            workspaceId: 'ws1',
+            sourcePath: exported,
+          );
+          expect(
+            (await workspaces.of('ws1').pipelineDao.getRun('in-wal'))?.id,
+            'in-wal',
+          );
+          expect(
+            await global.workspaceRouteDao.resolve(
+              WorkspaceRouteKind.pipelineRun,
+              'in-wal',
+            ),
+            'ws1',
+          );
+        } finally {
+          writer.close();
+        }
+      },
+    );
+
+    test('restores every route kind from imported rows', () async {
+      await seedWorkspace('ws1', agentName: 'Ada');
+      final db = workspaces.of('ws1');
+      await db.customStatement(
+        "INSERT INTO workspace_invites "
+        "(id, workspace_id, code_hash, created_by, expires_at) "
+        "VALUES ('inv', 'ws1', 'code-hash', 'owner', 4102444800)",
+      );
+      await db.customStatement(
+        "INSERT INTO pipeline_triggers "
+        "(id, event_type, template_id, workspace_id, webhook_token, enabled) "
+        "VALUES ('trigger', 'webhook', 'tpl', 'ws1', 'webhook-secret', 1)",
+      );
+      await db.customStatement(
+        "INSERT INTO pipeline_runs (id, template_id, workspace_id) "
+        "VALUES ('run', 'tpl', 'ws1')",
+      );
+      await db.customStatement(
+        "INSERT INTO spaces (id, name, workspace_id) "
+        "VALUES ('space-id', 'Room', 'ws1')",
+      );
+      await db.customStatement(
+        "INSERT INTO tickets (id, workspace_id, provider, external_key, title) "
+        "VALUES ('ticket', 'ws1', 'linear', 'ENG-1', 'Issue')",
+      );
+      await db.customStatement(
+        "INSERT INTO repos (id, name, path) VALUES ('repo', 'Repo', '/repo')",
+      );
+      await db.customStatement(
+        "INSERT INTO isolated_repos "
+        "(id, workspace_id, space_id, repo_id, path, branch, source_path) "
+        "VALUES ('checkout', 'ws1', 'space-id', 'repo', '/copy', 'main', '/repo')",
+      );
+      final exported = await service().exportWorkspace('ws1');
+      await global.workspaceRouteDao.removeAllForWorkspace('ws1');
+
+      await service().importWorkspace(workspaceId: 'ws1', sourcePath: exported);
+
+      for (final (kind, key) in [
+        (WorkspaceRouteKind.inviteCode, 'code-hash'),
+        (WorkspaceRouteKind.webhookToken, 'webhook-secret'),
+        (WorkspaceRouteKind.pipelineRun, 'run'),
+        (WorkspaceRouteKind.space, 'space-id'),
+        (WorkspaceRouteKind.ticketExternalKey, 'linear:ENG-1'),
+        (WorkspaceRouteKind.isolatedRepo, 'checkout'),
+      ]) {
+        expect(await global.workspaceRouteDao.resolve(kind, key), 'ws1');
+      }
+      expect(
+        (await DaoWorkspaceInviteRepository(
+          workspaces,
+          global.workspaceRouteDao,
+        ).getByCodeHash('code-hash'))?.id,
+        'inv',
+      );
+      expect(
+        (await PipelineRunRepositoryImpl(
+          workspaces,
+          global.workspaceRouteDao,
+        ).getRun('run'))?.id,
+        'run',
+      );
+      expect(
+        (await PipelineTriggerRepositoryImpl(
+          workspaces,
+          global.workspaceRouteDao,
+        ).byWebhookToken('webhook-secret'))?.id,
+        'trigger',
+      );
+      expect(
+        (await DaoTicketRepository(
+          workspaces,
+          global.workspaceRouteDao,
+        ).getByExternal(TicketProvider.linear, 'ENG-1'))?.id,
+        'ticket',
+      );
+    });
+
     test('importing under a different id is allowed but warned about', () async {
       await seedWorkspace('ws1', agentName: 'Ada');
       final exported = await service().exportWorkspace('ws1');
@@ -385,7 +512,59 @@ void main() {
         (await workspaces.of('ws-clone').agentDao.getAll()).map((a) => a.name),
         <String>['Ada'],
       );
+      expect(
+        (await workspaces.of('ws-clone').agentDao.getById('a-ws1'))
+            ?.workspaceId,
+        'ws-clone',
+      );
+      expect(
+        (await workspaces
+                .of('ws-clone')
+                .customSelect('SELECT workspace_id FROM workspace_meta')
+                .getSingle())
+            .read<String>('workspace_id'),
+        'ws-clone',
+      );
     });
+
+    test(
+      'a conflicting clone route fails before deleting the target',
+      () async {
+        await seedWorkspace('ws1', agentName: 'Source');
+        await global.workspaceRouteDao.put(
+          WorkspaceRouteKind.pipelineRun,
+          'run-1',
+          'ws1',
+        );
+        await workspaces
+            .of('ws1')
+            .customStatement(
+              "INSERT INTO pipeline_runs (id, template_id, workspace_id) "
+              "VALUES ('run-1', 'tpl', 'ws1')",
+            );
+        final exported = await service().exportWorkspace('ws1');
+        await seedWorkspace('ws-clone', agentName: 'Keep');
+
+        await expectLater(
+          service().importWorkspace(
+            workspaceId: 'ws-clone',
+            sourcePath: exported,
+          ),
+          throwsStateError,
+        );
+        expect(
+          (await workspaces.of('ws-clone').agentDao.getAll()).single.name,
+          'Keep',
+        );
+        expect(
+          await global.workspaceRouteDao.resolve(
+            WorkspaceRouteKind.pipelineRun,
+            'run-1',
+          ),
+          'ws1',
+        );
+      },
+    );
 
     test(
       'rejects a file that is not a Control Center workspace database',

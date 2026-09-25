@@ -142,38 +142,16 @@ void main() {
         },
       );
     },
-    // The sandbox is a host capability: macOS always has sandbox-exec, Linux
-    // needs bwrap + socat, Windows has no backend at all. Skip rather than
-    // fail where the host cannot sandbox — `runCcServer` makes the same call.
+    // The production Linux policy contains wildcard secret write-denies.
+    // bwrap cannot enforce them for newly created names, so wrap refuses
+    // BEFORE spawning. The unit test pins that refusal; these real-process
+    // checks remain for macOS Seatbelt's pathname-pattern support.
     skip: _skipReason(),
   );
 }
 
-String? _skipReason() {
-  if (Platform.isMacOS) {
-    return null;
-  }
-  if (Platform.isLinux) {
-    // CI installs bwrap + socat (ci.yml's "Install sandbox tooling" step), so
-    // this never fires there — the enforcement suite RUNS. It exists for a
-    // bare local container without the tools, where the alternative is a
-    // ProcessException from deep inside `wrap` instead of this actionable
-    // message.
-    for (final tool in const ['bwrap', 'socat']) {
-      if (!_hasTool(tool)) {
-        return 'Linux sandbox needs $tool on PATH (sudo apt-get install -y '
-            'bubblewrap socat); skipping the real-process enforcement suite';
-      }
-    }
-    return null;
-  }
-  return 'no OS-native sandbox backend on ${Platform.operatingSystem}';
-}
-
-bool _hasTool(String name) {
-  try {
-    return Process.runSync('which', [name]).exitCode == 0;
-  } catch (_) {
-    return false;
-  }
-}
+String? _skipReason() => Platform.isMacOS
+    ? null
+    : Platform.isLinux
+    ? 'bwrap cannot enforce secret filename globs; Linux fails closed'
+    : 'no OS-native sandbox backend on ${Platform.operatingSystem}';

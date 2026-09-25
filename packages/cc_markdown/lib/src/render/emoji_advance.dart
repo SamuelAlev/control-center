@@ -15,16 +15,15 @@ final _gapCache = <String, double>{};
 @visibleForTesting
 void debugResetEmojiAdvanceCache() => _gapCache.clear();
 
-/// Splits [text] so an emoji's layout box ends where its bitmap does.
+/// Splits [text] so an emoji's surplus advance is reclaimed only when the
+/// following glyph would otherwise touch it.
 ///
-/// On macOS and iOS, Flutter scales the Apple Color Emoji bitmap to the em
-/// square and left-aligns it, but keeps the font's advance (about 1.36em).
-/// The surplus is empty and sits on the right, so a selection of the emoji
-/// runs past the face and the next glyph starts late. Negative letter
-/// spacing on the emoji run cancels that surplus: the glyph stays put and
-/// the following text moves left to the bitmap's edge. The first glyph of a
-/// line is also nudged left by half that spacing; mid-line emoji, the usual
-/// case, only lose the trailing gap.
+/// On macOS and iOS, Apple Color Emoji has a wider advance than its em square.
+/// Negative letter spacing can pull adjacent glyphs into that surplus. Before
+/// whitespace, however, the advance is part of the visible gap: reclaiming it
+/// (sometimes once per code point in a variation-selector sequence) makes a
+/// heading like "🖼️ Screenshots" run together. Preserve it there. A trailing
+/// emoji still loses the surplus for alignment in centered cells.
 ///
 /// A font whose advance is already the em measures no surplus and the text
 /// stays one span. Windows and Linux are left alone.
@@ -43,24 +42,34 @@ List<TextSpan> textSpansTighteningEmoji(
   final spacing = TextStyle(letterSpacing: -gap);
   final spans = <TextSpan>[];
   final buf = StringBuffer();
-  var emoji = false;
-  var started = false;
+  var tightened = false;
   void flush() {
     if (buf.isEmpty) {
       return;
     }
-    spans.add(TextSpan(text: buf.toString(), style: emoji ? spacing : null));
+    spans.add(
+      TextSpan(text: buf.toString(), style: tightened ? spacing : null),
+    );
     buf.clear();
   }
 
-  for (final cluster in text.characters) {
-    final isEmoji = _emojiCluster(cluster);
-    if (started && isEmoji != emoji) {
+  final clusters = text.characters.iterator;
+  clusters.moveNext();
+  var cluster = clusters.current;
+  while (true) {
+    final hasNext = clusters.moveNext();
+    final next = hasNext ? clusters.current : null;
+    final tighten =
+        _emojiCluster(cluster) && (next == null || next.trim().isNotEmpty);
+    if (buf.isNotEmpty && tighten != tightened) {
       flush();
     }
-    started = true;
-    emoji = isEmoji;
+    tightened = tighten;
     buf.write(cluster);
+    if (!hasNext) {
+      break;
+    }
+    cluster = next!;
   }
   flush();
   return spans;

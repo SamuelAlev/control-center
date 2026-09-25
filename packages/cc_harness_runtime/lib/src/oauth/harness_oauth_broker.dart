@@ -305,19 +305,20 @@ class HarnessOAuthBroker implements ProviderCredentialRefresher {
         final code = params['code'];
         final state = params['state'];
         final error = params['error'];
+        final validState = state == flow.state;
         request.response
           ..statusCode = 200
           ..headers.contentType = ContentType.html
           ..headers.set('Cache-Control', 'no-store')
-          ..write(_resultPage(error == null && code != null));
+          ..write(_resultPage(error == null && code != null && validState));
         await request.response.close();
         if (error != null) {
           flow.fail(error);
-        } else if (code != null && state == flow.state) {
-          // The state must MATCH — a callback carrying none used to pass, which
-          // is the CSRF check declining to check. Redirect flows always mint
-          // one (`randomOAuthState()`), so an absent state means the callback
-          // did not come from the authorization we started.
+        } else if (!validState) {
+          flow.fail(
+            'OAuth callback state did not match. Start the login again.',
+          );
+        } else if (code != null) {
           await _exchange(flowId, code);
         }
         await flow.closeServer();

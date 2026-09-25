@@ -45,8 +45,9 @@ class DaoMemoryFactRepository implements MemoryFactRepository {
   @override
   Stream<List<MemoryFact>> watchByWorkspace(String workspaceId) =>
       // Deduped: any fact upsert re-runs this and re-ships the whole set.
-      distinctRows(_dao(workspaceId).watchByWorkspace(workspaceId))
-          .map((rows) => rows.map(_mapper.toDomain).toList());
+      distinctRows(
+        _dao(workspaceId).watchByWorkspace(workspaceId),
+      ).map((rows) => rows.map(_mapper.toDomain).toList());
 
   @override
   Future<List<MemoryFact>> getByWorkspace(String workspaceId) =>
@@ -92,8 +93,8 @@ class DaoMemoryFactRepository implements MemoryFactRepository {
           fact.temporalTags.isEmpty ? null : jsonEncode(fact.temporalTags),
         ),
         mentionCount: Value(fact.mentionCount),
-        embedding: embedding != null ? Value(embedding) : const Value.absent(),
-        binaryEmbedding: binary != null ? Value(binary) : const Value.absent(),
+        embedding: Value(embedding),
+        binaryEmbedding: Value(binary),
         createdAt: Value(fact.createdAt),
         updatedAt: Value(fact.updatedAt),
       ),

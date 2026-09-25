@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:cc_domain/core/domain/ports/database_backup_port.dart';
 import 'package:cc_persistence/database/global/global_database.dart';
+import 'package:cc_persistence/database/tables/workspace_routes_table.dart';
 import 'package:cc_persistence/database/workspace_database_manager.dart';
 import 'package:cc_persistence/src/server_database.dart';
 import 'package:sqlite3/sqlite3.dart' as sqlite;
@@ -157,37 +158,53 @@ class AppDatabaseBackupService implements DatabaseBackupPort {
   BackupSnapshot _readSnapshot(Directory dir, String name) {
     final sep = Platform.pathSeparator;
     final manifest = _readManifest(File('${dir.path}$sep$manifestFileName'));
-    var complete = manifest != null;
+    final skipped = manifest?['skipped_workspaces'];
+    final entries = manifest?['workspaces'];
+    var complete =
+        manifest != null &&
+        skipped is List &&
+        skipped.isEmpty &&
+        entries is List;
 
     final workspaces = <BackupSnapshotWorkspace>[];
     if (manifest != null) {
-      for (final entry in (manifest['workspaces'] as List?) ?? const []) {
+      for (final entry in entries is List ? entries : const []) {
         if (entry is! Map) {
+          complete = false;
           continue;
         }
-        final id = entry['workspace_id'] as String?;
-        final relative = entry['file'] as String?;
-        if (id == null || relative == null) {
+        final id = entry['workspace_id'];
+        final relative = entry['file'];
+        if (id is! String || relative is! String) {
           complete = false;
           continue;
         }
         final file = File('${dir.path}$sep${relative.replaceAll('/', sep)}');
         if (!file.existsSync()) {
-          // The manifest names it and it is not there — an interrupted write.
-          // Dropped from the restorable set AND flagged, so the snapshot does
-          // not read as a complete one with a workspace fewer.
+          // Missing entry: exclude it from the individually restorable set.
           complete = false;
           continue;
+        }
+        final bytes = file.lengthSync();
+        if (bytes == 0 || entry['bytes'] != bytes) {
+          complete = false;
         }
         workspaces.add(
           BackupSnapshotWorkspace(
             workspaceId: id,
             path: file.path,
-            bytes: file.lengthSync(),
+            bytes: bytes,
           ),
         );
       }
-      if (!File('${dir.path}${sep}global.db').existsSync()) {
+      final globalEntry = manifest['global'];
+      final globalFile = globalEntry is Map ? globalEntry['file'] : null;
+      final global = File('${dir.path}${sep}global.db');
+      if (globalFile != 'global.db' ||
+          !global.existsSync() ||
+          global.lengthSync() == 0 ||
+          globalEntry is! Map ||
+          globalEntry['bytes'] != global.lengthSync()) {
         complete = false;
       }
     } else {
@@ -217,11 +234,15 @@ class AppDatabaseBackupService implements DatabaseBackupPort {
       name: name,
       createdAt: manifest == null
           ? null
-          : DateTime.tryParse(manifest['created_at'] as String? ?? ''),
+          : DateTime.tryParse(
+              manifest['created_at'] is String
+                  ? manifest['created_at'] as String
+                  : '',
+            ),
       bytes: _directoryBytes(dir),
       workspaces: workspaces,
       skippedWorkspaceIds: [
-        for (final id in (manifest?['skipped_workspaces'] as List?) ?? const [])
+        for (final id in skipped is List ? skipped : const [])
           if (id is String) id,
       ],
       complete: complete,
@@ -299,15 +320,6 @@ class AppDatabaseBackupService implements DatabaseBackupPort {
         'not a Control Center workspace database (no workspace_meta row)',
       );
     }
-    if (meta.workspaceId != workspaceId) {
-      // Legitimate — this is how a workspace is duplicated or restored under a
-      // new id — but never silent, because the alternative is a file quietly
-      // serving a workspace it does not claim to be.
-      _onWarn?.call(
-        'importing workspace database that records workspace '
-        '${meta.workspaceId} as workspace $workspaceId',
-      );
-    }
     final ourInstall = await _global.workspaceRouteDao.meta(
       GlobalDatabase.installIdKey,
     );
@@ -319,20 +331,149 @@ class AppDatabaseBackupService implements DatabaseBackupPort {
       );
     }
 
-    // Close and drop whatever is there before copying over it: an open drift
-    // connection holds the file (and its -wal), so overwriting underneath it
-    // would leave the running server reading a database that no longer exists.
+    // Snapshot before touching the live directory. A byte copy of a WAL
+    // database loses uncheckpointed writes; VACUUM INTO incorporates them.
+    final staging = await Directory.systemTemp.createTemp('cc-import-');
+    try {
+      final stagedPath = '${staging.path}${Platform.pathSeparator}workspace.db';
+      sqlite.Database? snapshot;
+      try {
+        snapshot = sqlite.sqlite3.open(
+          sourcePath,
+          mode: sqlite.OpenMode.readOnly,
+        );
+        snapshot.execute('VACUUM INTO ?', [stagedPath]);
+      } finally {
+        snapshot?.close();
+      }
+      if (meta.workspaceId != workspaceId) {
+        _rekeyWorkspace(stagedPath, meta.workspaceId, workspaceId);
+        _onWarn?.call(
+          'importing workspace database that records workspace '
+          '${meta.workspaceId} as workspace $workspaceId',
+        );
+      }
+      final routes = _routesInSnapshot(stagedPath);
+      for (final route in routes) {
+        final owner = await _global.workspaceRouteDao.resolve(
+          route.kind,
+          route.key,
+        );
+        if (owner != null && owner != workspaceId) {
+          throw StateError(
+            'cannot import workspace $workspaceId: ${route.kind.wireName} '
+            '${route.key} already belongs to $owner',
+          );
+        }
+      }
+      await _adoptWorkspace(workspaceId, stagedPath, routes);
+      return workspaceId;
+    } finally {
+      await staging.delete(recursive: true);
+    }
+  }
+
+  Future<void> _adoptWorkspace(
+    String workspaceId,
+    String stagedPath,
+    List<({WorkspaceRouteKind kind, String key})> routes,
+  ) async {
+    // dropAndClose must fail before copy if even one WAL sidecar survives.
     await _workspaces.dropAndClose(workspaceId);
     final target = File(_workspaces.pathFor(workspaceId));
     await target.parent.create(recursive: true);
-    await source.copy(target.path);
+    await File(stagedPath).copy(target.path);
 
-    // Force an open so beforeOpen reinstalls the FTS/sync triggers and
-    // vector_init, then rebuild the FTS indexes: the imported file's content
-    // tables are populated but its index may be stale or absent.
+    // Reinstall triggers and rebuild FTS before making pre-auth keys visible.
     final db = await _workspaces.create(workspaceId);
     await db.rebuildFtsIndexes();
-    return workspaceId;
+    await _global.transaction(() async {
+      for (final route in routes) {
+        await _global.workspaceRouteDao.put(route.kind, route.key, workspaceId);
+      }
+    });
+  }
+
+  /// The route keys written by repositories for rows in this workspace file.
+  /// Include the reserved space/isolated-repo kinds, not just today's inbound
+  /// invite, webhook, ticket and run readers.
+  List<({WorkspaceRouteKind kind, String key})> _routesInSnapshot(String path) {
+    final db = sqlite.sqlite3.open(path, mode: sqlite.OpenMode.readOnly);
+    try {
+      final routes = <({WorkspaceRouteKind kind, String key})>[];
+      void add(WorkspaceRouteKind kind, String sql) {
+        for (final row in db.select(sql)) {
+          routes.add((kind: kind, key: row.values.first! as String));
+        }
+      }
+
+      add(
+        WorkspaceRouteKind.inviteCode,
+        'SELECT code_hash FROM workspace_invites '
+        'WHERE used_at IS NULL AND revoked_at IS NULL',
+      );
+      add(
+        WorkspaceRouteKind.webhookToken,
+        "SELECT webhook_token FROM pipeline_triggers "
+        "WHERE webhook_token IS NOT NULL AND webhook_token <> ''",
+      );
+      add(WorkspaceRouteKind.pipelineRun, 'SELECT id FROM pipeline_runs');
+      add(WorkspaceRouteKind.space, 'SELECT id FROM spaces');
+      add(
+        WorkspaceRouteKind.ticketExternalKey,
+        "SELECT provider || ':' || external_key FROM tickets "
+        'WHERE external_key IS NOT NULL',
+      );
+      add(WorkspaceRouteKind.isolatedRepo, 'SELECT id FROM isolated_repos');
+      return routes;
+    } finally {
+      db.close();
+    }
+  }
+
+  /// A cloned snapshot must identify its new workspace in every scoped row.
+  /// Update only the staging file; the exported source is never modified.
+  void _rekeyWorkspace(String path, String oldId, String newId) {
+    final db = sqlite.sqlite3.open(path);
+    try {
+      db.execute('PRAGMA foreign_keys = OFF');
+      db.execute('BEGIN IMMEDIATE');
+      try {
+        // Reinstalled on open; avoid populating a bogus change feed while
+        // rewriting historical rows to their new workspace identity.
+        final syncTriggers = db.select(
+          "SELECT name FROM sqlite_master WHERE type = 'trigger' "
+          "AND name LIKE 'trg_sync_%'",
+        );
+        for (final row in syncTriggers) {
+          final name = (row['name'] as String).replaceAll('"', '""');
+          db.execute('DROP TRIGGER "$name"');
+        }
+        for (final row in db.select(
+          "SELECT name FROM sqlite_master WHERE type = 'table' "
+          "AND name NOT LIKE 'sqlite_%' AND sql NOT LIKE 'CREATE VIRTUAL TABLE%'",
+        )) {
+          final name = (row['name'] as String).replaceAll('"', '""');
+          if (db
+              .select('PRAGMA table_info("$name")')
+              .any((column) => column['name'] == 'workspace_id')) {
+            db.execute(
+              'UPDATE "$name" SET workspace_id = ? WHERE workspace_id = ?',
+              [newId, oldId],
+            );
+          }
+        }
+        db.execute('COMMIT');
+      } on Object {
+        db.execute('ROLLBACK');
+        rethrow;
+      }
+      // A WAL-mode source can leave staged writes in its own sidecar; the
+      // target receives only workspace.db, so checkpoint before copying it.
+      db.execute('PRAGMA wal_checkpoint(TRUNCATE)');
+    } finally {
+      db.close();
+    }
   }
 
   /// Reads `workspace_meta` straight out of [path] with a short-lived

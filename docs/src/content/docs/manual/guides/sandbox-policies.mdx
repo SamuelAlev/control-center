@@ -113,6 +113,12 @@ and is probe-gated on its own runtime. On **Linux and WSL2** both `bwrap` and
 `socat` must be on the `PATH`; without them the probe reports unavailable and
 names the missing packages.
 
+On Linux/WSL2 with bubblewrap installed, the standard policy's secret-file
+globs cannot be enforced for files an agent creates later. Such a native run
+now fails instead of silently ignoring the rules. A positive boot probe
+therefore does not guarantee that a Linux dispatch can start. `--sandbox off`
+is a deliberate unconfined opt-out, not a substitute security boundary.
+
 ## Know what a mode already forbids
 
 Mode is stored per space and feeds the guardrail resolver as the **mode

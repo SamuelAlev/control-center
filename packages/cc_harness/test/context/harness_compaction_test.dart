@@ -46,6 +46,84 @@ void main() {
       },
     );
 
+    test('forced overflow cuts deeper than the newest user turns', () async {
+      final history = _buildHistory(5);
+      for (var i = 0; i < 5; i++) {
+        history.add(
+          HarnessMessage(
+            role: HarnessRole.assistant,
+            content: [
+              HarnessToolUseBlock(id: 'large-$i', name: 'read', input: {}),
+            ],
+          ),
+        );
+        history.add(
+          HarnessMessage.toolResults([
+            HarnessToolResultBlock(
+              toolUseId: 'large-$i',
+              content: i == 4
+                  ? 'small last result'
+                  : 'Long file content $i ' * 800,
+            ),
+          ]),
+        );
+      }
+      final normal = List<HarnessMessage>.of(history);
+      final forced = List<HarnessMessage>.of(history);
+      final normalResult = await compactor.maybeCompact(
+        normal,
+        contextWindow: 5000,
+      );
+      final forcedResult = await compactor.maybeCompact(
+        forced,
+        contextWindow: 5000,
+        force: true,
+      );
+      expect(normalResult.changed, isTrue);
+      expect(forcedResult.changed, isTrue);
+      expect(
+        forcedResult.messagesFolded,
+        greaterThan(normalResult.messagesFolded),
+      );
+      expect(forcedResult.tokensAfter, lessThan(normalResult.tokensAfter));
+      // The deeper cut must not orphan tool results, even when the budget
+      // threshold falls between a tool call and its result.
+      final pairedIds = <String>{};
+      for (final message in forced.skip(1)) {
+        for (final use in message.content.whereType<HarnessToolUseBlock>()) {
+          pairedIds.add(use.id);
+        }
+        for (final result
+            in message.content.whereType<HarnessToolResultBlock>()) {
+          expect(pairedIds, contains(result.toolUseId));
+        }
+      }
+    });
+
+    test('forced overflow folds an oversized final tool turn', () async {
+      final history = <HarnessMessage>[
+        HarnessMessage.user('Read this file'),
+        const HarnessMessage(
+          role: HarnessRole.assistant,
+          content: [HarnessToolUseBlock(id: 'huge', name: 'read', input: {})],
+        ),
+        HarnessMessage.toolResults([
+          HarnessToolResultBlock(
+            toolUseId: 'huge',
+            content: 'large output ' * 1000,
+          ),
+        ]),
+      ];
+      final result = await compactor.maybeCompact(
+        history,
+        contextWindow: 4000,
+        force: true,
+      );
+      expect(result.messagesFolded, 3);
+      expect(history, hasLength(1));
+      expect(history.single.textContent, startsWith(harnessSummaryMarker));
+    });
+
     test(
       'folds within a single user turn (autonomous /goal or /loop run)',
       () async {

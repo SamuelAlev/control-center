@@ -96,6 +96,9 @@ class RequestPeerReviewTool extends McpTool {
       );
     }
 
+    if (!await _messaging.spaceExists(rawWorkspaceId, rawSpaceId)) {
+      return CallResult.error('Space belongs to a different workspace.');
+    }
     final replyId = const Uuid().v4();
     await _messaging.sendMessage(
       workspaceId: rawWorkspaceId,

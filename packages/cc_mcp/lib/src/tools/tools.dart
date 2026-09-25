@@ -40,6 +40,7 @@ export 'newsfeed_tools.dart';
 export 'pin_skill_tool.dart';
 export 'playbook_tools.dart';
 export 'preview_trigger_tool.dart';
+export 'pending_delegation_hops.dart';
 export 'propose_fact_tool.dart';
 export 'propose_orchestration_tool.dart';
 export 'propose_policy_tool.dart';

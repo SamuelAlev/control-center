@@ -4,19 +4,23 @@ import 'package:cc_domain/cc_domain.dart' show DelegationRefusedException;
 import 'package:cc_domain/features/mcp/domain/ports/mcp_tool_port.dart';
 import 'package:cc_domain/features/ticketing/domain/services/ticket_workflow_service.dart';
 import 'package:cc_harness/tools.dart';
+import 'package:cc_mcp/src/tools/pending_delegation_hops.dart';
 
 /// Delegates a task to another agent as a tracked child ticket, enforcing the
 /// deterministic delegation guards (PRD 22 §3) at the ticketing chokepoint.
-///
-/// Unlike `delegate_ticket`, this routes through
-/// [TicketWorkflowService.delegateGuarded], which refuses a hop that would push
-/// the delegation chain past its depth cap or form a cycle (A→B→…→A). A refusal
-/// surfaces the guard's reason verbatim as a tool error.
+/// The ticket workflow checks persisted delegation ancestry. Pending asks are
+/// checked here as well, so the recipient cannot delegate back to the agent
+/// currently waiting for its answer.
 class DelegateTaskTool extends McpTool {
   /// Creates a [DelegateTaskTool].
-  DelegateTaskTool({required this._service});
+  DelegateTaskTool({
+    required TicketWorkflowService service,
+    required PendingDelegationHops pendingHops,
+  }) : _service = service,
+       _pendingHops = pendingHops;
 
   final TicketWorkflowService _service;
+  final PendingDelegationHops _pendingHops;
 
   @override
   String get name => 'delegate_task';
@@ -59,7 +63,8 @@ class DelegateTaskTool extends McpTool {
       },
       'from_agent_id': {
         'type': 'string',
-        'description': 'Your own agent id (the delegator), when known.',
+        'description':
+            'Your own agent id (the delegator). Required for cycle and policy guards.',
       },
       'space_id': {
         'type': 'string',
@@ -68,7 +73,7 @@ class DelegateTaskTool extends McpTool {
             'space the parent task runs in).',
       },
     },
-    'required': ['workspace_id', 'title', 'to_agent_id'],
+    'required': ['workspace_id', 'title', 'to_agent_id', 'from_agent_id'],
   };
 
   @override
@@ -88,6 +93,16 @@ class DelegateTaskTool extends McpTool {
       return CallResult.error('Missing or invalid argument: to_agent_id');
     }
 
+    final fromAgentId = arguments['from_agent_id'];
+    if (fromAgentId is! String || fromAgentId.isEmpty) {
+      return CallResult.error('Missing or invalid argument: from_agent_id');
+    }
+    if (_pendingHops.wouldCycle(workspaceId, fromAgentId, toAgentId)) {
+      return CallResult.error(
+        'Delegation refused: cycle detected '
+        '(${[..._pendingHops.chain(workspaceId, fromAgentId), toAgentId].join(' → ')}).',
+      );
+    }
     final description = _composeDescription(
       arguments['description'] as String?,
       arguments['acceptance_criteria'] as String?,
@@ -99,7 +114,7 @@ class DelegateTaskTool extends McpTool {
         title: title.trim(),
         assignedAgentId: toAgentId,
         parentTicketId: arguments['parent_ticket_id'] as String?,
-        delegatedByAgentId: arguments['from_agent_id'] as String?,
+        delegatedByAgentId: fromAgentId,
         description: description,
         spaceId: arguments['space_id'] as String?,
       );

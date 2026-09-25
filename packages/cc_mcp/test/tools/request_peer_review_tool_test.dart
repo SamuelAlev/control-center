@@ -14,10 +14,8 @@ import 'package:cc_mcp/src/tools/request_peer_review_tool.dart';
 import 'package:test/test.dart';
 
 class _FakeMessagingRepository implements MessagingRepository {
-
   @override
-  dynamic noSuchMethod(Invocation invocation) =>
-      super.noSuchMethod(invocation);
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
   @override
   Future<void> archiveSpace(String workspaceId, String spaceId) async {}
 
@@ -177,8 +175,11 @@ class _FakeMessagingRepository implements MessagingRepository {
     PrincipalType participantType = PrincipalType.agent,
   }) async {}
 
+  bool hasSpace = true;
+
   @override
-  Future<bool> spaceExists(String workspaceId, String spaceId) async => true;
+  Future<bool> spaceExists(String workspaceId, String spaceId) async =>
+      hasSpace;
 
   @override
   Future<List<SpaceParticipant>> getParticipants(
@@ -286,6 +287,21 @@ void main() {
     setUp(() {
       messaging = _FakeMessagingRepository();
       tool = RequestPeerReviewTool(messaging: messaging);
+    });
+
+    test('missing or foreign space does not request review', () async {
+      messaging.hasSpace = false;
+      final result = await tool.run({
+        'workspace_id': 'ws-1',
+        'space_id': 'foreign',
+        'node_message_id': 'node-1',
+        'requester_id': 'agent-a',
+        'target_agent_id': 'agent-b',
+        'question': 'What do you think?',
+      });
+      expect(result.isError, isTrue);
+      expect(result.content.first.text, contains('different workspace'));
+      expect(messaging.sendMessageCallCount, 0);
     });
 
     // ── Metadata ──

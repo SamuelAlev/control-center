@@ -44,6 +44,28 @@ class WorkspaceInviteDao extends DatabaseAccessor<WorkspaceDatabase>
     workspaceInvitesTable,
   )..where((t) => t.codeHash.equals(codeHash))).getSingleOrNull();
 
+  /// One SQL update arbitrates simultaneous redemptions on this workspace DB.
+  Future<bool> consume(String id, String codeHash, DateTime now) async {
+    final changed =
+        await (update(workspaceInvitesTable)..where(
+              (t) =>
+                  t.id.equals(id) &
+                  t.codeHash.equals(codeHash) &
+                  t.usedAt.isNull() &
+                  t.revokedAt.isNull() &
+                  t.expiresAt.isBiggerThanValue(now),
+            ))
+            .write(WorkspaceInvitesTableCompanion(usedAt: Value(now)));
+    return changed == 1;
+  }
+
+  /// Records the recipient without undoing the claim or reopening the code.
+  Future<void> recordUsedBy(String id, String userId) async {
+    await (update(workspaceInvitesTable)
+          ..where((t) => t.id.equals(id) & t.usedAt.isNotNull()))
+        .write(WorkspaceInvitesTableCompanion(usedBy: Value(userId)));
+  }
+
   /// Inserts or updates an invite row.
   Future<void> upsert(WorkspaceInvitesTableCompanion entry) =>
       into(workspaceInvitesTable).insertOnConflictUpdate(entry);

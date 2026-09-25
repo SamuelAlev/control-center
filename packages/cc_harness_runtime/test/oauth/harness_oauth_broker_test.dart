@@ -267,6 +267,40 @@ void main() {
       expect(broker.status(start.flowId).state, HarnessOAuthState.pending);
     });
 
+    test('loopback callback rejects wrong and missing OAuth state', () async {
+      for (final suffix in ['&state=wrong', '']) {
+        final portReservation = await HttpServer.bind(
+          InternetAddress.loopbackIPv4,
+          0,
+        );
+        final port = portReservation.port;
+        await portReservation.close();
+        final store = _RecordingStore();
+        final broker = _broker(
+          store: store,
+          providers: [_FakeProvider(providerId: 'test', callbackPort: port)],
+        );
+        final start = await broker.start('test');
+        final client = HttpClient();
+        addTearDown(client.close);
+        final request = await client.getUrl(
+          Uri.parse('http://127.0.0.1:$port/cb?code=FAKE$suffix'),
+        );
+        final response = await request.close();
+        final page = await response.transform(SystemEncoding().decoder).join();
+        await _until(
+          () => broker.status(start.flowId).state == HarnessOAuthState.error,
+        );
+
+        expect(page, contains('Sign-in failed'));
+        expect(page, isNot(contains('You can close this tab')));
+        expect(broker.status(start.flowId).state, HarnessOAuthState.error);
+        expect(broker.status(start.flowId).error, contains('state'));
+        expect(store.saved, isEmpty);
+        await broker.cancel(start.flowId);
+      }
+    });
+
     group('complete (manual paste)', () {
       test('exchanges the code and persists the credential', () async {
         final store = _RecordingStore();

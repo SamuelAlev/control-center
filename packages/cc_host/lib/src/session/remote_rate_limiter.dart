@@ -5,7 +5,7 @@ import 'dart:collection';
 /// A paired phone is authenticated but untrusted: after approval a modified or
 /// hijacked client could loop tool calls to burn resources, flood local writes,
 /// or churn the desktop. This caps both the overall call rate and a tighter
-/// sub-limit for mutating verbs (see `RemoteToolPolicy.mutating`).
+/// sub-limit for tools the registered MCP metadata marks as mutating.
 ///
 /// Budgets are **per principal, not per session**: sessions of the same user
 /// share one instance via [RemoteRateLimiterPool], so a member opening three

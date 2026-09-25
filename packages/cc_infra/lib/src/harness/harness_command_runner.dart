@@ -37,6 +37,7 @@ class SandboxedHarnessCommandRunner implements HarnessCommandRunner {
     this.workspaceId,
     this.agentId,
     this.conversationId,
+    this.spaceId,
     this._protectedPaths,
     this._baseEnv = const {},
     this._maxOutputChars = 16000,
@@ -74,8 +75,12 @@ class SandboxedHarnessCommandRunner implements HarnessCommandRunner {
   /// Agent the run belongs to.
   final String? agentId;
 
-  /// Conversation the run belongs to (used in the confirmation request).
+  /// Conversation identity used for the sandbox session.
   final String? conversationId;
+
+  /// Space containing the conversation; guard rules, approvals and exec
+  /// grants are scoped to this id, not to the conversation's own id.
+  final String? spaceId;
 
   final Mode _mode;
   final AgentCapabilities _capabilities;
@@ -106,7 +111,7 @@ class SandboxedHarnessCommandRunner implements HarnessCommandRunner {
         workspaceId: workspaceId!,
         classes: const {ActionClass.processSpawn},
         command: command,
-        spaceId: conversationId,
+        spaceId: spaceId,
         agentId: agentId,
         mode: _mode,
         actionSummary: 'bash: $command',
@@ -140,7 +145,7 @@ class SandboxedHarnessCommandRunner implements HarnessCommandRunner {
         }
         final approved = await port.requestApproval(
           ConfirmationRequest(
-            spaceId: conversationId ?? '',
+            spaceId: spaceId ?? '',
             workspaceId: workspaceId,
             title: 'Approve command',
             detail: 'An agent is about to run:',
@@ -308,7 +313,7 @@ class SandboxedHarnessCommandRunner implements HarnessCommandRunner {
       return await service.approvedRoots(
         workspaceId: wsId,
         candidateRoots: [cwd],
-        spaceId: conversationId,
+        spaceId: spaceId,
       );
     } on Object catch (e) {
       CcInfraLog.warning(

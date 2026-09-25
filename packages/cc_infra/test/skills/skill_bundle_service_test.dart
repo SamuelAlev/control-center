@@ -2,6 +2,9 @@ import 'dart:io';
 
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/events/skill_events.dart';
+import 'package:cc_domain/features/guardrails/domain/entities/action_policy_rule.dart';
+import 'package:cc_domain/features/guardrails/domain/repositories/action_policy_repository.dart';
+import 'package:cc_domain/features/guardrails/domain/services/action_guard_service.dart';
 import 'package:cc_domain/features/skills/domain/entities/skill_lock.dart';
 import 'package:cc_domain/features/skills/domain/exceptions/skill_scan_blocked_exception.dart';
 import 'package:cc_domain/features/skills/domain/ports/skill_scan_port.dart';
@@ -19,8 +22,11 @@ import 'package:test/test.dart';
 
 /// A scanner that returns a configured verdict for any bundle.
 class _FakeScanner implements SkillScanPort {
-  _FakeScanner({this.verdict = SkillScanVerdict.pass, this.throwObject})
-    : manifest = const SkillCapabilityManifest();
+  _FakeScanner({
+    this.verdict = SkillScanVerdict.pass,
+    this.throwObject,
+    this.manifest = const SkillCapabilityManifest(),
+  });
 
   final SkillScanVerdict verdict;
   final SkillCapabilityManifest manifest;
@@ -50,6 +56,46 @@ class _FakeScanner implements SkillScanPort {
       rulesVersion: rulesVersion,
     );
   }
+}
+
+class _CompanionBlockingScanner extends _FakeScanner {
+  @override
+  Future<SkillScanResult> scan(
+    SkillBundle bundle, {
+    required String workspaceId,
+    SkillTrustTier trustTier = SkillTrustTier.community,
+    bool runLlmReview = true,
+  }) async {
+    final result = await super.scan(
+      bundle,
+      workspaceId: workspaceId,
+      trustTier: trustTier,
+      runLlmReview: runLlmReview,
+    );
+    return SkillScanResult(
+      verdict: bundle.files['scripts/run.sh'] == 'unsafe'
+          ? SkillScanVerdict.quarantine
+          : result.verdict,
+      findings: result.findings,
+      manifest: result.manifest,
+      rulesVersion: result.rulesVersion,
+    );
+  }
+}
+
+class _ManifestWithUnknownClass extends SkillCapabilityManifest {
+  const _ManifestWithUnknownClass();
+
+  @override
+  List<String> get requiredActionClassWires => ['mistypedClass'];
+}
+
+class _EmptyPolicyRepository implements ActionPolicyRepository {
+  @override
+  Future<List<ActionPolicyRule>> rules(String workspaceId) async => [];
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 /// In-memory scan cache keyed like the DAO: latest-per-hash, workspace-scoped.
@@ -124,6 +170,7 @@ SkillBundleService _service(
   Future<String?> Function({required String owner, required String repo})?
   defaultBranch,
   DomainEventBus? eventBus,
+  ActionGuardService? actionGuard,
 }) => SkillBundleService(
   filesystem: _fs(temp),
   fetchGitHubSkill: fetch,
@@ -132,14 +179,13 @@ SkillBundleService _service(
   eventBus: eventBus,
   latestCommit: latestCommit,
   defaultBranch: defaultBranch,
+  actionGuard: actionGuard,
 );
 
 String _sha(String s) => sha256.convert(s.codeUnits).toString();
 
-SourceSkillFiles _files(String skillMd, String? ref) => SourceSkillFiles(
-  files: {'SKILL.md': skillMd},
-  ref: ref ?? 'deadbeef',
-);
+SourceSkillFiles _files(String skillMd, String? ref) =>
+    SourceSkillFiles(files: {'SKILL.md': skillMd}, ref: ref ?? 'deadbeef');
 
 void main() {
   late Directory temp;
@@ -375,60 +421,66 @@ void main() {
       expect(lock.skills['gh-skill'], isNotNull);
     });
 
-    test('multi-file bundle writes every file and replaces stale ones', () async {
-      final scanner = _FakeScanner();
-      var call = 0;
-      final svc = _service(
-        temp,
-        scanner: scanner,
-        fetch:
-            ({
-              required owner,
-              required repo,
-              required path,
-              String? ref,
-            }) async => call++ == 0
-                ? const SourceSkillFiles(
-                    files: {
-                      'SKILL.md': '# v1',
-                      'scripts/run.sh': 'echo v1',
-                      'old.txt': 'stale',
-                    },
-                    ref: 'c1',
-                  )
-                : const SourceSkillFiles(
-                    files: {'SKILL.md': '# v2', 'scripts/run.sh': 'echo v2'},
-                    ref: 'c2',
-                  ),
-      );
-      await svc.installFromGitHub(
-        workspaceId: 'ws',
-        slug: 'mf',
-        owner: 'o',
-        repo: 'r',
-        path: 'skills/mf/SKILL.md',
-        ref: 'c1',
-      );
-      final dir = p.join(_workspaceRoot(temp), 'ws', 'skills', 'mf');
-      expect(File(p.join(dir, 'old.txt')).existsSync(), isTrue);
+    test(
+      'multi-file bundle writes every file and replaces stale ones',
+      () async {
+        final scanner = _FakeScanner();
+        var call = 0;
+        final svc = _service(
+          temp,
+          scanner: scanner,
+          fetch:
+              ({
+                required owner,
+                required repo,
+                required path,
+                String? ref,
+              }) async => call++ == 0
+              ? const SourceSkillFiles(
+                  files: {
+                    'SKILL.md': '# v1',
+                    'scripts/run.sh': 'echo v1',
+                    'old.txt': 'stale',
+                  },
+                  ref: 'c1',
+                )
+              : const SourceSkillFiles(
+                  files: {'SKILL.md': '# v2', 'scripts/run.sh': 'echo v2'},
+                  ref: 'c2',
+                ),
+        );
+        await svc.installFromGitHub(
+          workspaceId: 'ws',
+          slug: 'mf',
+          owner: 'o',
+          repo: 'r',
+          path: 'skills/mf/SKILL.md',
+          ref: 'c1',
+        );
+        final dir = p.join(_workspaceRoot(temp), 'ws', 'skills', 'mf');
+        expect(File(p.join(dir, 'old.txt')).existsSync(), isTrue);
 
-      // Re-install (the update path): the whole directory is REPLACED, so a
-      // file dropped upstream between versions never lingers in the hash.
-      final entry = await svc.installFromGitHub(
-        workspaceId: 'ws',
-        slug: 'mf',
-        owner: 'o',
-        repo: 'r',
-        path: 'skills/mf/SKILL.md',
-        ref: 'c2',
-      );
-      expect(entry.ref, 'c2');
-      expect(File(p.join(dir, 'old.txt')).existsSync(), isFalse);
-      expect(await File(p.join(dir, 'scripts', 'run.sh')).readAsString(), 'echo v2');
-      expect(await File(p.join(dir, 'SKILL.md')).readAsString(), '# v2');
-      // The lock pins the rolled-up hash of exactly the new file set.
-      expect(entry.computedHash, await svc.computeSkillHash('ws', 'mf'));
-    });
+        // Re-install (the update path): the whole directory is REPLACED, so a
+        // file dropped upstream between versions never lingers in the hash.
+        final entry = await svc.installFromGitHub(
+          workspaceId: 'ws',
+          slug: 'mf',
+          owner: 'o',
+          repo: 'r',
+          path: 'skills/mf/SKILL.md',
+          ref: 'c2',
+        );
+        expect(entry.ref, 'c2');
+        expect(File(p.join(dir, 'old.txt')).existsSync(), isFalse);
+        expect(
+          await File(p.join(dir, 'scripts', 'run.sh')).readAsString(),
+          'echo v2',
+        );
+        expect(await File(p.join(dir, 'SKILL.md')).readAsString(), '# v2');
+        // The lock pins the rolled-up hash of exactly the new file set.
+        expect(entry.computedHash, await svc.computeSkillHash('ws', 'mf'));
+      },
+    );
 
     test('quarantine verdict throws and writes nothing', () async {
       final scanner = _FakeScanner(verdict: SkillScanVerdict.quarantine);
@@ -1605,6 +1657,184 @@ void main() {
       );
       // The gate runs the create_skill profile: static layers, no LLM pass.
       expect(scanner.scanned.single.files['SKILL.md'], '# fresh');
+    });
+
+    test(
+      'scans, replaces, and pins the full bundle on an editor save',
+      () async {
+        final scanner = _FakeScanner();
+        final svc = _service(
+          temp,
+          scanner: scanner,
+          fetch:
+              ({
+                required owner,
+                required repo,
+                required path,
+                String? ref,
+              }) async => _files('', ref),
+        );
+        final dir = Directory(p.join(temp.path, 'ws', 'skills', 'edited'));
+        await Directory(p.join(dir.path, 'scripts')).create(recursive: true);
+        await File(p.join(dir.path, 'SKILL.md')).writeAsString('# old');
+        await File(
+          p.join(dir.path, 'scripts', 'run.sh'),
+        ).writeAsString('echo hi');
+        final bomBytes = [0xef, 0xbb, 0xbf, 0x68, 0x69];
+        await File(p.join(dir.path, 'notes.txt')).writeAsBytes(bomBytes);
+
+        final entry = await svc.saveLocal(
+          workspaceId: 'ws',
+          slug: 'edited',
+          content: '# new',
+        );
+
+        expect(scanner.scanned.single.files, {
+          'SKILL.md': '# new',
+          'notes.txt': '\uFEFFhi',
+          'scripts/run.sh': 'echo hi',
+        });
+        expect(
+          await File(p.join(dir.path, 'SKILL.md')).readAsString(),
+          '# new',
+        );
+        expect(
+          await File(p.join(dir.path, 'scripts', 'run.sh')).readAsString(),
+          'echo hi',
+        );
+        expect(
+          await File(p.join(dir.path, 'notes.txt')).readAsBytes(),
+          bomBytes,
+        );
+        expect(
+          entry.computedHash,
+          _sha(
+            'SKILL.md:${_sha('# new')}\n'
+            'notes.txt:${sha256.convert(bomBytes)}\n'
+            'scripts/run.sh:${_sha('echo hi')}',
+          ),
+        );
+        expect((await svc.verify('ws')).matched, contains('edited'));
+      },
+    );
+
+    test(
+      'a blocked companion leaves the existing bundle and pin intact',
+      () async {
+        final scanner = _CompanionBlockingScanner();
+        final svc = _service(
+          temp,
+          scanner: scanner,
+          fetch:
+              ({
+                required owner,
+                required repo,
+                required path,
+                String? ref,
+              }) async => _files('', ref),
+        );
+        final dir = Directory(p.join(temp.path, 'ws', 'skills', 'edited'));
+        await Directory(p.join(dir.path, 'scripts')).create(recursive: true);
+        await File(p.join(dir.path, 'SKILL.md')).writeAsString('# old');
+        await File(
+          p.join(dir.path, 'scripts', 'run.sh'),
+        ).writeAsString('unsafe');
+        await svc.pinLocal(workspaceId: 'ws', slug: 'edited');
+        final oldPin = (await svc.readLock(
+          'ws',
+        )).skills['edited']!.computedHash;
+
+        await expectLater(
+          svc.saveLocal(workspaceId: 'ws', slug: 'edited', content: '# new'),
+          throwsA(isA<SkillScanBlockedException>()),
+        );
+        expect(scanner.scanned.single.files['scripts/run.sh'], 'unsafe');
+        expect(
+          await File(p.join(dir.path, 'SKILL.md')).readAsString(),
+          '# old',
+        );
+        expect(
+          await File(p.join(dir.path, 'scripts', 'run.sh')).readAsString(),
+          'unsafe',
+        );
+        expect(
+          (await svc.readLock('ws')).skills['edited']!.computedHash,
+          oldPin,
+        );
+      },
+    );
+
+    test('an existing companion capability is checked before saving', () async {
+      final svc = _service(
+        temp,
+        actionGuard: ActionGuardService(repository: _EmptyPolicyRepository()),
+        fetch:
+            ({
+              required owner,
+              required repo,
+              required path,
+              String? ref,
+            }) async => _files('', ref),
+      );
+      final dir = Directory(p.join(temp.path, 'ws', 'skills', 'edited'));
+      await Directory(p.join(dir.path, 'scripts')).create(recursive: true);
+      await File(p.join(dir.path, 'SKILL.md')).writeAsString('# old');
+      await File(
+        p.join(dir.path, 'scripts', 'run.sh'),
+      ).writeAsString('rm old.txt');
+
+      await expectLater(
+        svc.saveLocal(workspaceId: 'ws', slug: 'edited', content: '# new'),
+        throwsA(
+          isA<SkillScanBlockedException>().having(
+            (error) => error.reason,
+            'reason',
+            contains('action policy'),
+          ),
+        ),
+      );
+      expect(await File(p.join(dir.path, 'SKILL.md')).readAsString(), '# old');
+      expect((await svc.readLock('ws')).skills, isEmpty);
+    });
+
+    test('unknown declared action class blocks before installing', () async {
+      final svc = _service(
+        temp,
+        scanner: _FakeScanner(manifest: const _ManifestWithUnknownClass()),
+        actionGuard: ActionGuardService(repository: _EmptyPolicyRepository()),
+        fetch:
+            ({
+              required owner,
+              required repo,
+              required path,
+              String? ref,
+            }) async => SourceSkillFiles(
+              files: {'SKILL.md': '# skill', 'scripts/run.sh': 'echo hi'},
+              ref: ref ?? 'deadbeef',
+            ),
+      );
+
+      await expectLater(
+        svc.installFromGitHub(
+          workspaceId: 'ws',
+          slug: 'unknown',
+          owner: 'owner',
+          repo: 'repo',
+          path: 'skills/unknown/SKILL.md',
+        ),
+        throwsA(
+          isA<SkillScanBlockedException>().having(
+            (error) => error.reason,
+            'reason',
+            contains('mistypedClass'),
+          ),
+        ),
+      );
+      expect(
+        Directory(p.join(temp.path, 'ws', 'skills', 'unknown')).existsSync(),
+        isFalse,
+      );
+      expect((await svc.readLock('ws')).skills, isEmpty);
     });
 
     test('quarantine without override throws and writes nothing', () async {

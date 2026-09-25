@@ -6,6 +6,7 @@ import 'package:cc_domain/features/ticketing/domain/entities/ticket_collaborator
 import 'package:cc_domain/features/ticketing/domain/repositories/ticket_repository.dart';
 import 'package:cc_domain/features/ticketing/domain/services/ticket_workflow_service.dart';
 import 'package:cc_harness/tools.dart';
+import 'package:cc_mcp/src/tools/ticket_access.dart';
 
 /// MCP tool to assign a ticket to an agent and/or team.
 class AssignTicketTool extends McpTool {
@@ -58,6 +59,8 @@ class AssignTicketTool extends McpTool {
     if (ticketId is! String) {
       return CallResult.error('Missing or invalid argument: ticket_id');
     }
+    final missing = await ticketMutationError(_service, workspaceId, ticketId);
+    if (missing != null) return missing;
     await _service.assign(
       ticketId,
       workspaceId: workspaceId,
@@ -121,6 +124,8 @@ class ReassignTicketTool extends McpTool {
     if (ticketId is! String || agentId is! String) {
       return CallResult.error('Missing ticket_id or agent_id.');
     }
+    final missing = await ticketMutationError(_service, workspaceId, ticketId);
+    if (missing != null) return missing;
     await _service.reassign(
       ticketId,
       workspaceId: workspaceId,
@@ -171,6 +176,8 @@ class AddTicketCollaboratorTool extends McpTool {
     if (ticketId is! String || agentId is! String) {
       return CallResult.error('Missing ticket_id or agent_id.');
     }
+    final missing = await ticketMutationError(_service, workspaceId, ticketId);
+    if (missing != null) return missing;
     await _service.addCollaborator(
       ticketId,
       workspaceId: workspaceId,
@@ -240,11 +247,7 @@ class CommentOnTicketTool extends McpTool {
         'Ticket has no discussion space yet — assign it to an agent first.',
       );
     }
-    await _messagingPort.sendAndDispatch(
-      ticket.workspaceId,
-      spaceId,
-      content,
-    );
+    await _messagingPort.sendAndDispatch(ticket.workspaceId, spaceId, content);
     return CallResult.success(
       jsonEncode({
         'ticket_id': ticketId,
@@ -306,6 +309,8 @@ class TicketPrLinkTool extends McpTool {
     if (rawAction != null && rawAction != 'link' && rawAction != 'unlink') {
       return CallResult.error("Invalid action. Expected 'link' or 'unlink'.");
     }
+    final missing = await ticketMutationError(_service, workspaceId, ticketId);
+    if (missing != null) return missing;
     final unlinking = rawAction == 'unlink';
     if (unlinking) {
       await _service.unlinkPullRequest(
@@ -379,6 +384,8 @@ class CloseTicketTool extends McpTool {
     if (ticketId is! String) {
       return CallResult.error('Missing or invalid argument: ticket_id');
     }
+    final missing = await ticketMutationError(_service, workspaceId, ticketId);
+    if (missing != null) return missing;
     await _service.completeTicket(ticketId, workspaceId: workspaceId);
     return CallResult.success(
       jsonEncode({'ticket_id': ticketId, 'status': 'done'}),
