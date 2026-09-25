@@ -249,17 +249,19 @@ extension _AuthMethods on LocalRpcServer {
       );
     } catch (e) {
       _w('OIDC callback failed: $e');
-      res
-        ..statusCode = HttpStatus.forbidden
-        ..headers.contentType = ContentType.html
-        ..write(
-          browserHandoffPage(
-            title: 'Sign-in failed',
-            body: 'Close this tab and try again.',
-            ok: false,
-          ),
-        );
-      await res.close();
+      final state = request.uri.queryParameters['state'] ?? '';
+      await _writeSignInFailed(
+        res,
+        retryUrl: _ssoRetryUrl(
+          request,
+          kind: 'oidc',
+          relay: state.startsWith('p.')
+              ? 'web-popup'
+              : state.startsWith('d.')
+              ? 'desktop'
+              : null,
+        ),
+      );
     }
   }
 
@@ -327,6 +329,51 @@ extension _AuthMethods on LocalRpcServer {
     bool ok = true,
   }) => browserHandoffPage(title: title, body: body, ok: ok);
 
+  /// Sign-in failure page. [retryUrl] is the login start for this same
+  /// attempt, so the tab itself has a button instead of only "close and
+  /// try again" with nowhere to go.
+  Future<void> _writeSignInFailed(
+    HttpResponse res, {
+    String? retryUrl,
+  }) async {
+    res
+      ..statusCode = HttpStatus.forbidden
+      ..headers.contentType = ContentType.html
+      ..headers.set('Cache-Control', 'no-store')
+      ..write(
+        browserHandoffPage(
+          title: 'Sign-in failed',
+          body: retryUrl == null
+              ? 'Close this tab and try again.'
+              : 'Sign-in did not finish. You can try again.',
+          ok: false,
+          ctaLabel: retryUrl == null ? null : 'Try again',
+          ctaHref: retryUrl,
+        ),
+      );
+    await res.close();
+  }
+
+  /// Login URL that restarts [kind] (`oidc` or `saml`) with the same relay
+  /// the failed attempt used. Null when the relay is not one we started.
+  String? _ssoRetryUrl(
+    HttpRequest request, {
+    required String kind,
+    required String? relay,
+  }) {
+    if (relay != 'web-popup' && relay != 'desktop') {
+      return null;
+    }
+    final origin = _requestOrigin(request);
+    final path = kind == 'saml' ? '/saml/login' : '/oidc/login';
+    final clientOrigin = request.uri.queryParameters['client_origin'];
+    final base = '$origin$path?relay=$relay';
+    if (clientOrigin == null || clientOrigin.isEmpty) {
+      return base;
+    }
+    return '$base&client_origin=${Uri.encodeComponent(clientOrigin)}';
+  }
+
   Future<void> _serveSamlLogin(HttpRequest request) async {
     final res = request.response;
     final sso = saml;
@@ -371,6 +418,7 @@ extension _AuthMethods on LocalRpcServer {
       await res.close();
       return;
     }
+    String? relay;
     try {
       const maxBodyBytes = 256 * 1024;
       final chunks = <int>[];
@@ -385,6 +433,7 @@ extension _AuthMethods on LocalRpcServer {
       final fields = Uri.splitQueryString(
         utf8.decode(chunks, allowMalformed: true),
       );
+      relay = fields['RelayState'];
       final encoded = fields['SAMLResponse'];
       if (encoded == null || encoded.isEmpty) {
         throw const FormatException('no SAMLResponse field');
@@ -403,18 +452,10 @@ extension _AuthMethods on LocalRpcServer {
       );
     } catch (e) {
       _w('SAML ACS failed: $e');
-      res
-        ..statusCode = HttpStatus.forbidden
-        ..headers.contentType = ContentType.html
-        ..headers.set('Cache-Control', 'no-store')
-        ..write(
-          browserHandoffPage(
-            title: 'Sign-in failed',
-            body: 'Close this tab and try again.',
-            ok: false,
-          ),
-        );
-      await res.close();
+      await _writeSignInFailed(
+        res,
+        retryUrl: _ssoRetryUrl(request, kind: 'saml', relay: relay),
+      );
     }
   }
 

@@ -59,6 +59,10 @@ class _AddServerDialogState extends State<AddServerDialog> {
   bool _showManual = false;
   String? _ssoError;
 
+  /// Bumps on every new sign-in so a popup that closes from an older attempt
+  /// cannot clear the one the user just started.
+  int _ssoGeneration = 0;
+
   bool get _ssoAvailable => _auth?.providers.isNotEmpty ?? false;
 
   /// An unknown server (not probed, or it did not answer) is treated as
@@ -123,6 +127,7 @@ class _AddServerDialogState extends State<AddServerDialog> {
       setState(() => _ssoError = l10n.serverSetupInvalidUrl);
       return;
     }
+    final generation = ++_ssoGeneration;
     setState(() {
       _ssoBusyProvider = provider;
       _ssoError = null;
@@ -133,7 +138,7 @@ class _AddServerDialogState extends State<AddServerDialog> {
         provider: provider,
         origin: origin,
         onAwaiting: () {
-          if (mounted) {
+          if (mounted && generation == _ssoGeneration) {
             setState(() {
               _ssoBusyProvider = null;
               _awaitingBrowser = true;
@@ -142,7 +147,7 @@ class _AddServerDialogState extends State<AddServerDialog> {
         },
       );
     } on SsoBrowserOpenException {
-      if (mounted) {
+      if (mounted && generation == _ssoGeneration) {
         setState(() {
           _ssoBusyProvider = null;
           _awaitingBrowser = false;
@@ -151,10 +156,20 @@ class _AddServerDialogState extends State<AddServerDialog> {
       }
       return;
     }
-    if (!mounted || payload == null) {
-      // Null is the DESKTOP shape and not a failure — the browser is still
-      // mid-login. Staying open on "waiting for your browser…" says so;
-      // popping here would look like the click did nothing.
+    if (!mounted || generation != _ssoGeneration) {
+      return;
+    }
+    if (payload == null) {
+      // Desktop resolves null the moment the browser opens; the credential
+      // comes back later as a deep link, so the dialog keeps waiting.
+      // Web resolves null when the popup closes or the sign-in fails, and
+      // that is the moment Connect has to be usable again.
+      if (kIsWeb) {
+        setState(() {
+          _ssoBusyProvider = null;
+          _awaitingBrowser = false;
+        });
+      }
       return;
     }
     Navigator.of(context).pop((
@@ -178,7 +193,9 @@ class _AddServerDialogState extends State<AddServerDialog> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final t = context.designSystem ?? DesignSystemTokens.light();
-    final busy = _ssoBusyProvider != null || _awaitingBrowser;
+    // Waiting on the browser must not lock Connect or Sign in. A failed
+    // login never calls back, and the only recovery is clicking again.
+    final busy = _ssoBusyProvider != null;
     // Manual credentials show when the server offers nothing better or the
     // user unfolded them — never once it has turned pairing off.
     final showManual = (!_ssoAvailable || _showManual) && _pairingAllowed;

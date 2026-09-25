@@ -211,6 +211,30 @@ void main() {
         DesignSystemTokens.light().hoverStrong,
       );
       expect(codeSpan!.style?.fontFamily, AppFonts.codeFamily);
+      // A semibold title must not embolden the code run. The weight is
+      // inherited from the parent span unless the run sets its own, and a
+      // synthesized bold on the code face is what made title chips read
+      // heavier than the same code in the PR body.
+      expect(codeSpan!.style?.fontWeight, CcTypography.regularWeight);
+    });
+
+    testWidgets('keeps code at the regular weight inside a semibold title', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          PrTitleText(
+            'cleanup `LIQUID_TO_DASHBOARD_GUIDELINES`',
+            style: CcTypography.title.copyWith(fontWeight: FontWeight.w600),
+          ),
+        ),
+      );
+
+      final code = tester.widget<Text>(
+        find.text('LIQUID_TO_DASHBOARD_GUIDELINES'),
+      );
+      expect(code.style?.fontWeight, CcTypography.regularWeight);
+      expect(code.style?.fontFamily, AppFonts.codeFamily);
     });
 
     testWidgets('keeps widget chips when not ellipsizing', (tester) async {
@@ -229,11 +253,12 @@ void main() {
 
       final span = tester
           .widget<Text>(
-            find.descendant(
-              of: find.byType(PrTitleText),
-              matching: find.byType(Text),
-            )
-            .first,
+            find
+                .descendant(
+                  of: find.byType(PrTitleText),
+                  matching: find.byType(Text),
+                )
+                .first,
           )
           .textSpan!;
       final chips = <WidgetSpan>[];

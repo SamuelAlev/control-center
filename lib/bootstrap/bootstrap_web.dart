@@ -858,6 +858,10 @@ class _ConnectGateState extends State<_ConnectGate> {
   AuthProviderInfo? _ssoBusyProvider;
   bool _awaitingPopup = false;
   String? _ssoError;
+
+  /// Bumps on every new sign-in so a popup that closes from an older attempt
+  /// cannot clear the one the user just started.
+  int _ssoGeneration = 0;
   bool _showManual = false;
   Timer? _ssoDebounce;
 
@@ -958,6 +962,7 @@ class _ConnectGateState extends State<_ConnectGate> {
       setState(() => _ssoError = l10n.ssoProbeFailed);
       return;
     }
+    final generation = ++_ssoGeneration;
     setState(() {
       _ssoBusyProvider = provider;
       _ssoError = null;
@@ -967,7 +972,7 @@ class _ConnectGateState extends State<_ConnectGate> {
       origin: origin,
       clientOrigin: Uri.base.origin,
       onAwaiting: () {
-        if (mounted) {
+        if (mounted && generation == _ssoGeneration) {
           setState(() {
             _ssoBusyProvider = null;
             _awaitingPopup = true;
@@ -975,9 +980,17 @@ class _ConnectGateState extends State<_ConnectGate> {
         }
       },
     );
-    if (payload == null || !mounted) {
-      // Abandoned (the gate was disposed) or same-tab: the reload's
-      // credential fragment completes it in `_boot` instead.
+    if (!mounted || generation != _ssoGeneration) {
+      return;
+    }
+    if (payload == null) {
+      // The popup closed or the sign-in failed. Same-tab fallback never
+      // completes this future (the reload finishes it), so landing here
+      // means this attempt is over and Connect has to work again.
+      setState(() {
+        _ssoBusyProvider = null;
+        _awaitingPopup = false;
+      });
       return;
     }
     unawaited(
@@ -1050,7 +1063,7 @@ class _ConnectGateState extends State<_ConnectGate> {
                     CcButton(
                       onPressed: (widget.connecting || _ssoBusyProvider != null)
                           ? null
-                          : () => _startSso(provider),
+                          : () => unawaited(_startSso(provider)),
                       variant: CcButtonVariant.accent,
                       loading: identical(_ssoBusyProvider, provider),
                       fullWidth: true,

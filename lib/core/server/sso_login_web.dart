@@ -37,6 +37,7 @@ const _inFlightKey = 'cc-sso-inflight';
 
 Completer<SsoPairPayload?>? _pending;
 JSFunction? _handler;
+Timer? _popupWatch;
 
 /// Web round-trip: a NEW TAB for the IdP, with the completion page posting
 /// the minted credential back to this one (origin-validated — the message
@@ -61,6 +62,7 @@ Future<SsoPairPayload?> startSsoLoginImpl({
     return Completer<SsoPairPayload?>().future;
   }
   final completer = _pending = Completer<SsoPairPayload?>();
+  _watchPopup(popup, completer);
   _handler = ((web.MessageEvent event) {
     // Trust NOTHING but the expected origin and the message shape.
     if (event.origin != origin) {
@@ -144,9 +146,33 @@ void _clearMark() {
 }
 
 void _removeListener() {
+  _popupWatch?.cancel();
+  _popupWatch = null;
   final handler = _handler;
   if (handler != null) {
     web.window.removeEventListener('message', handler);
     _handler = null;
   }
+}
+
+/// A closed popup will never post a credential. Completing the attempt is
+/// what lets the connect form offer Connect again instead of waiting forever.
+void _watchPopup(web.Window popup, Completer<SsoPairPayload?> completer) {
+  _popupWatch?.cancel();
+  _popupWatch = Timer.periodic(const Duration(milliseconds: 400), (timer) {
+    if (!popup.closed) {
+      return;
+    }
+    timer.cancel();
+    if (identical(_popupWatch, timer)) {
+      _popupWatch = null;
+    }
+    if (!identical(_pending, completer) || completer.isCompleted) {
+      return;
+    }
+    _removeListener();
+    _clearMark();
+    _pending = null;
+    completer.complete(null);
+  });
 }

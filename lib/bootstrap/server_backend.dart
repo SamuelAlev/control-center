@@ -586,10 +586,7 @@ class _ServerSetupScreenState extends State<_ServerSetupScreen> {
                     for (final provider in _ssoProviders) ...[
                       const SizedBox(height: AppSpacing.md),
                       CcButton(
-                        onPressed:
-                            (_busy ||
-                                _awaitingBrowser ||
-                                _ssoBusyProvider != null)
+                        onPressed: (_busy || _ssoBusyProvider != null)
                             ? null
                             : () => unawaited(_startSso(provider)),
                         variant: CcButtonVariant.secondary,

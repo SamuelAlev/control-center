@@ -1,3 +1,4 @@
+import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/theme/app_fonts.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_style.dart';
 import 'package:flutter/widgets.dart';
@@ -47,9 +48,15 @@ List<InlineSpan> buildInlineCodeSpans(
   //
   // The chip is smaller than the surrounding text, so its ascent stays under
   // the line's and baseline alignment (below) costs no extra line height.
+  //
+  // Weight stays at the regular cut, the same as a markdown body chip. A PR
+  // title is semibold, and copying that weight onto Fira Code (one variable
+  // file, no separate bold cut) synthesizes a heavy blob inside the chip.
+  // The weight has to be set explicitly: a null weight on a child [TextSpan]
+  // inherits the parent title's semibold.
   final codeStyle = AppFonts.codeStyle(
     fontSize: (baseStyle.fontSize ?? 14) - 1,
-    fontWeight: baseStyle.fontWeight,
+    fontWeight: CcTypography.regularWeight,
     color: baseStyle.color,
     height: 1,
     letterSpacing: 0.2,
