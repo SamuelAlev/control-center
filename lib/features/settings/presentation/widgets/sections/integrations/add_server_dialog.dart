@@ -9,6 +9,8 @@ import 'package:control_center/shared/widgets/server_discovery_button.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
+part 'add_server_dialog_fields.dart';
+
 /// What [AddServerDialog] resolves to: one set of credentials to pair with,
 /// however obtained — typed by hand, or minted by an SSO round-trip this
 /// dialog captured inline.
@@ -192,7 +194,6 @@ class _AddServerDialogState extends State<AddServerDialog> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final t = context.designSystem ?? DesignSystemTokens.light();
     // Waiting on the browser must not lock Connect or Sign in. A failed
     // login never calls back, and the only recovery is clicking again.
     final busy = _ssoBusyProvider != null;
@@ -227,71 +228,22 @@ class _AddServerDialogState extends State<AddServerDialog> {
                         onSelected: (server) => _url.text = server.rpcUrl,
                       ),
               ),
-              if (_ssoError != null) ...[
-                const SizedBox(height: 8),
-                Text(
-                  _ssoError!,
-                  style: CcTypography.caption.copyWith(color: t.danger),
-                ),
-              ],
-              if (_ssoAvailable) ...[
-                for (final provider
-                    in _auth?.providers ?? const <AuthProviderInfo>[]) ...[
-                  const SizedBox(height: 8),
-                  CcButton(
-                    onPressed: busy
-                        ? null
-                        : () => unawaited(_startSso(provider)),
-                    variant: CcButtonVariant.accent,
-                    loading: identical(_ssoBusyProvider, provider),
-                    fullWidth: true,
-                    child: Text(l10n.ssoSignInWith(provider.label)),
-                  ),
-                ],
-                const SizedBox(height: 8),
-                Text(
-                  _awaitingBrowser
-                      ? l10n.ssoWaitingForBrowser
-                      : l10n.ssoOpensBrowser,
-                  style: CcTypography.caption.copyWith(color: t.textTertiary),
-                ),
-                if (_pairingAllowed) ...[
-                  const SizedBox(height: 8),
-                  CcButton(
-                    onPressed: busy
-                        ? null
-                        : () => setState(() => _showManual = !_showManual),
-                    variant: CcButtonVariant.ghost,
-                    fullWidth: true,
-                    child: Text(
-                      _showManual
-                          ? l10n.ssoHideManualPairing
-                          : l10n.ssoUseManualPairing,
-                    ),
-                  ),
-                ],
-              ],
-              if (showManual) ...[
-                const SizedBox(height: 8),
-                CcTextField(
-                  controller: _invite,
-                  hintText: l10n.serverSetupInviteCodeHint,
-                  enabled: !busy,
-                ),
-                const SizedBox(height: 8),
-                CcTextField(
-                  controller: _device,
-                  hintText: l10n.serverRemoteDeviceId,
-                  enabled: !busy,
-                ),
-                const SizedBox(height: 8),
-                CcTextField(
-                  controller: _psk,
-                  hintText: l10n.serverRemotePairingKey,
-                  obscureText: true,
-                  enabled: !busy,
-                ),
-              ],
+              _AddServerAuthFields(
+                ssoError: _ssoError,
+                providers: _auth?.providers ?? const <AuthProviderInfo>[],
+                busy: busy,
+                busyProvider: _ssoBusyProvider,
+                awaitingBrowser: _awaitingBrowser,
+                pairingAllowed: _pairingAllowed,
+                manualExpanded: _showManual,
+                showManual: showManual,
+                onStartSso: (provider) => unawaited(_startSso(provider)),
+                onToggleManual: () =>
+                    setState(() => _showManual = !_showManual),
+                invite: _invite,
+                device: _device,
+                psk: _psk,
+              ),
             ],
           ),
         ),

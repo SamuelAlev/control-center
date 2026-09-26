@@ -21,8 +21,8 @@ packages/cc_infra/lib/src/rigs/rig_service.dart  2976
 packages/cc_infra/lib/src/rigs/smolvm_enclosure_backend.dart  2088
 packages/cc_server_core/lib/src/cached_pr_review_repository.dart  2889
 packages/cc_server_core/lib/src/catalog/catalog_wire.dart  3360
-packages/cc_server_core/lib/src/cc_server_runtime.dart  7893
+packages/cc_server_core/lib/src/cc_server_runtime.dart  7885
 packages/cc_server_core/lib/src/demo/demo_seeder.dart  2534
-packages/cc_server_core/lib/src/local_rpc_server.dart  2511
+packages/cc_server_core/lib/src/local_rpc_server.dart  2429
 packages/cc_server_core/lib/src/remote_rpc_catalog.dart  16110
 packages/cc_server_core/lib/src/repo_ide_data_service.dart  2563

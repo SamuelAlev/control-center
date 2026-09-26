@@ -100,7 +100,7 @@ lib/features/pr_review/presentation/widgets/mention_autocomplete_field.dart  436
 lib/features/pr_review/presentation/widgets/merge_flyout_button.dart  427
 lib/features/pr_review/presentation/widgets/open_in_ide_button.dart  585
 lib/features/pr_review/presentation/widgets/picker_flyout.dart  342
-lib/features/pr_review/presentation/widgets/pr_activity_timeline.dart  1933
+lib/features/pr_review/presentation/widgets/pr_activity_timeline.dart  1833
 lib/features/pr_review/presentation/widgets/pr_comment_actions.dart  411
 lib/features/pr_review/presentation/widgets/pr_detail_skeleton.dart  445
 lib/features/pr_review/presentation/widgets/pr_diff_file_tree.dart  819
@@ -134,7 +134,7 @@ lib/features/pr_review/presentation/widgets/pr_worktree_search_panel.dart  915
 lib/features/pr_review/presentation/widgets/reaction_bar.dart  386
 lib/features/pr_review/presentation/widgets/review_accordion_item.dart  470
 lib/features/pr_review/presentation/widgets/review_accordion_list.dart  633
-lib/features/pr_review/presentation/widgets/review_overlay.dart  741
+lib/features/pr_review/presentation/widgets/review_overlay.dart  739
 lib/features/pr_review/presentation/widgets/reviewer_picker_flyout.dart  560
 lib/features/pr_review/presentation/widgets/sticky_header.dart  331
 lib/features/pr_review/presentation/widgets/workflow_job_detail.dart  1068

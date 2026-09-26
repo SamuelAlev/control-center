@@ -200,6 +200,7 @@ import 'package:cc_server_core/src/pr_review/github_pr_conversation_gateway.dart
 import 'package:cc_server_core/src/pr_review/multi_forge_open_pr_fetch.dart';
 import 'package:cc_server_core/src/pr_review/open_pr_polling_service.dart';
 import 'package:cc_server_core/src/pr_review/pr_conversation_polling_service.dart';
+import 'package:cc_server_core/src/pr_review/pr_space_provisioning.dart';
 import 'package:cc_server_core/src/pr_review/pr_space_seam.dart';
 import 'package:cc_server_core/src/pr_review/review_axis_service.dart';
 import 'package:cc_server_core/src/pr_review/review_cohort_service.dart';
@@ -4628,33 +4629,6 @@ Future<CcServer> runCcServer({
     };
   }
 
-  // Blocks until the (event-driven, idempotent) provisioner has finished a PR
-  // space's checkout at the PR head. An already-ready space returns on the
-  // first poll. Throws rather than returning on failure/timeout: a caller that
-  // continued would hand an agent — or an editor — an empty `repos/` and call
-  // it a review.
-  Future<void> awaitPrProvisioning({
-    required String workspaceId,
-    required String spaceId,
-    required int prNumber,
-  }) async {
-    final deadline = DateTime.now().add(const Duration(seconds: 120));
-    while (true) {
-      final ch = await messagingRepository.getSpaceById(workspaceId, spaceId);
-      final status = ch?.provisioningStatus ?? SpaceProvisioningStatus.ready;
-      if (status == SpaceProvisioningStatus.ready) {
-        return;
-      }
-      if (status == SpaceProvisioningStatus.failed) {
-        throw StateError('PR worktree provisioning failed for #$prNumber');
-      }
-      if (DateTime.now().isAfter(deadline)) {
-        throw StateError('PR worktree provisioning timed out for #$prNumber');
-      }
-      await Future<void>.delayed(const Duration(milliseconds: 400));
-    }
-  }
-
   // Close the loop for the `messaging.createSpace` body wired into the pipeline
   // executor above: the review pipeline and the PR workbench now resolve the
   // PR's space through one implementation, so they can never disagree about
@@ -4683,7 +4657,8 @@ Future<CcServer> runCcServer({
         if (spaceId == null || spaceId.isEmpty) {
           return null;
         }
-        await awaitPrProvisioning(
+        await awaitPrSpaceProvisioning(
+          messaging: messagingRepository,
           workspaceId: workspaceId,
           spaceId: spaceId,
           prNumber: prNumber,
@@ -5104,7 +5079,8 @@ Future<CcServer> runCcServer({
 
     // Wait for the (event-driven, idempotent) provisioner to finish the PR-head
     // checkout. An already-ready space returns on the first poll.
-    await awaitPrProvisioning(
+    await awaitPrSpaceProvisioning(
+      messaging: messagingRepository,
       workspaceId: workspaceId,
       spaceId: spaceId,
       prNumber: prNumber,
