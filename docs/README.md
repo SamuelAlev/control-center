@@ -1,142 +1,63 @@
 # Control Center docs
 
-The documentation site for [Control Center](https://github.com/SamuelAlev/control-center),
-published at **[usectrl.dev](https://usectrl.dev)**. Built with
-[Astro](https://astro.build) + [Starlight](https://starlight.astro.build), themed
-to match the marketing site and deployed to Cloudflare Pages.
+[usectrl.dev](https://usectrl.dev) is built with Astro, Starlight and a Cloudflare Worker. Repository architecture is in [ARCH.md](../ARCH.md); this file covers site-specific authoring and deployment.
 
-## Structure
+## Develop and deploy
 
-```
-src/
-├── content/docs/      # The manual (Markdown/MDX, organized Diátaxis-style)
-│   └── manual/
-│       ├── tutorials/ # Learning-oriented — guided first-time walks
-│       ├── guides/    # Task-oriented — how to do a specific thing
-│       ├── concepts/  # Understanding-oriented — how the system works
-│       └── reference/ # Information-oriented — schemas, enums, maps
-├── pages/             # Marketing + legal pages, machine endpoints (llms.txt,
-│                      #   llms-full.txt, openapi.json, <page>.md twins, the MCP routes, the /demo redirect)
-├── components/        # Starlight overrides + landing/legal/changelog components
-├── data/              # Single source of truth (changelog, compare, faq, pages, site)
-├── agentic/           # Agent-facing machinery: content negotiation, markdown twin
-│                      #   assembly, the docs MCP server, the OpenAPI builder
-├── layouts/           # Marketing layout
-├── styles/            # Global + Starlight CSS (warm surfaces, cc_* tokens)
-├── assets/            # Integration icons
-└── worker.ts          # Custom Cloudflare Worker entry (wraps the adapter: markdown
-                       #   negotiation, Vary: Accept, negotiated 404s, JSON errors)
-astro.config.mjs       # Starlight config — sidebar, theme, fonts, Expressive Code
-```
+From `docs/`:
 
-## Agent surface
-
-The site is built to be read by agents as well as people:
-
-- **`Accept: text/markdown`** on any page serves its markdown twin; the same
-  twin is published at `<page>.md` (e.g. `/manual/quick-start.md`, `/index.md`).
-  Negotiated responses carry `Vary: Accept`. The twins are prerendered from the
-  same data modules and docs collection the HTML renders (`src/agentic/markdown-pages.ts`).
-- **`/llms.txt`** / **`/llms-full.txt`** — the llmstxt.org index, including
-  when-to-use guidance and the developer-resources map.
-- **`/openapi.json`** — OpenAPI 3.1 for the site's endpoints, generated from
-  the route inventory (`src/agentic/openapi.ts`).
-- **`/.well-known/mcp`** (and `/mcp`) — a Streamable HTTP MCP server exposing
-  the site's pages as `list_pages` / `get_page_markdown` / `search_pages`
-  (`src/agentic/mcp.ts`, transport in `src/agentic/mcp-http.ts`).
-- **404s negotiate**: markdown recovery map for markdown clients, a JSON error
-  envelope for `Accept: application/json` and any `/api/*` path, the rendered
-  HTML 404 page for browsers.
-
-The interception lives in `src/worker.ts` (the wrangler `main`): it wraps the
-Astro adapter entry, and only page routes run through it — binary assets keep
-the free direct-asset path (see `run_worker_first` in `wrangler.jsonc`). When
-the wrangler `main` changes, the adapter emits the deploy config at
-`dist/server/wrangler.json` instead of `dist/client/wrangler.json`;
-`scripts/fix-wrangler.mjs` patches whichever exists.
-
-Tests for the negotiation, MCP, converter and OpenAPI logic are dependency-free
-`node --test` units in `test/` (`pnpm test`), and run in the deploy workflow
-before the build.
-
-The documentation follows the [Diátaxis](https://diataxis.fr/) framework: four
-content types kept separate so each page answers one kind of question. Diátaxis
-picks the type from two axes — whether the content informs **action** or
-**cognition** and whether it serves **acquisition** (study) or **application**
-(work):
-
-| If the content…   | …and serves the user's… | …then it is               |
-| ----------------- | ----------------------- | ------------------------- |
-| informs action    | acquisition of skill    | a tutorial                |
-| informs action    | application of skill    | a how-to guide            |
-| informs cognition | application of skill    | reference                 |
-| informs cognition | acquisition of skill    | explanation (`concepts/`) |
-
-In practice:
-
-- **`tutorials/`** — a lesson that is _guaranteed to succeed_. One path, no
-  choices, minimal theory. If a reader following it verbatim gets stuck, that is
-  a bug in the tutorial.
-- **`guides/`** — a recipe for a competent user. The title states the goal. May
-  branch. No teaching.
-- **`reference/`** — austere, factual, **complete**. Incompleteness is its
-  characteristic failure, so reconcile against the code, don't eyeball it.
-- **`concepts/`** — discursive; why it works this way. No numbered procedure.
-
-When adding a page, place it in the folder that matches its intent and register
-it in the `sidebar` array in `astro.config.mjs`.
-
-Each of the four sections has an `index.mdx` landing page (slug `manual/guides`,
-`manual/concepts`, …) that orients the reader and maps the section. Add new
-pages to the relevant landing page as well as the sidebar.
-
-## Develop
-
-```bash
+```sh
 pnpm install
-pnpm dev      # local server at http://localhost:4321
+pnpm dev                 # http://localhost:4321
+pnpm test                # dependency-free node --test units
+pnpm build               # dist/ plus scripts/fix-wrangler.mjs
+pnpm preview             # built site
+pnpm exec wrangler deploy
+pnpm generate-types      # after a Worker binding change
 ```
 
-## Build & preview
+`pnpm dev` does not execute `src/worker.ts`, and Pagefind search requires a build. Test language routing, content negotiation and redirects against the built Wrangler preview. `.github/workflows/deploy-docs.yml` deploys on `main` changes under `docs/`; Cloudflare git auto-build is off to avoid competing deploys. `scripts/fix-wrangler.mjs` removes the adapter's unused `SESSION` KV binding from the emitted config (`dist/server/wrangler.json` or `dist/client/wrangler.json`).
 
-```bash
-pnpm build    # production build to ./dist/ (runs the wrangler fixup script)
-pnpm preview  # preview the build locally
+## Content and theme
+
+- `src/content/docs/manual/{tutorials,guides,concepts,reference}/` holds Starlight articles. Tutorials teach one reproducible path; guides solve a task; concepts explain; reference must be complete. Register new pages in `astro.config.mjs` and their section's `index.mdx` landing page. The sidebar is hand-curated.
+- `src/pages/` holds marketing, legal, changelog and machine endpoints. `src/data/` holds locale copy, `changelog.ts` (also used by RSS), comparison and page data; `src/agentic/` builds Markdown twins, MCP, OpenAPI and negotiation. Check behavior claims against wired call sites, not another article.
+- Cross-links use trailing-slash Starlight slugs, e.g. `/manual/concepts/agent-model/`. Keep the app's [GLOSSARY.md](../GLOSSARY.md) as the terminology source; when changing `reference/glossary.mdx`, update both prose and `glossaryTerms` JSON-LD.
+- Non-index guides and concepts close with `## Related guides` and/or `## Related concepts`; references use `## See also`; tutorials use a short `## Recap` and `**Next:**` link.
+- `src/styles/brand.css` owns shared tokens and fonts; `global.css`, `landing.css` and `starlight.css` consume them. Starlight does not import the marketing reset. Reuse Starlight `LinkButton`/`LinkCard`, navigation and preference controls instead of duplicating kits. Review both themes, phone/tablet/desktop layouts, keyboard focus, menus, contents dropdown and built search.
+
+## Locales and caching
+
+English is Starlight's `root` locale (`/manual/`, no `/en/`). `src/content.config.ts` uses native `docsLoader()`/`i18nLoader()`: keep authored path casing, explicit slugs and `/index` semantics. `src/content/i18n/en.json` is the UI-copy reference; add English values and blank entries in the other locale dictionaries for each new key. Blank values retain native/English fallback. Filenames match exact BCP 47 tags (`fr-FR.json`); do not lowercase route prefixes, since case-insensitive build filesystems and case-sensitive deployed URLs disagree. `localizeSidebar()` resolves stable translation keys; `src/data/locales.ts` is the shared locale registry. The documentation language picker offers only languages with translated articles; untranslated articles retain the selected UI locale and show an untranslated-content notice. Translate articles under `src/content/docs/<locale>/manual/`, keeping filenames and MDX syntax aligned.
+
+The Worker chooses locale in this order: explicit URL, `?lang=` picker choice, `cc-locale` cookie, weighted `Accept-Language`, English. The one-year cookie is HttpOnly, SameSite=Lax and Secure over HTTPS; visiting a localized link must not overwrite the preference. Picker links preserve manual article, query and anchor, work without JavaScript and do not read browser storage. Unsupported regions use the supported language default; Chinese script preferences distinguish simplified/traditional.
+
+All localized pages are prerendered. Locale redirects are temporary `302`; personalized redirects, unprefixed HTML and explicit-choice responses are `private, no-store` and vary on `Accept`, `Accept-Language`, `Cookie`. Explicit locale URLs remain cacheable. Markdown/JSON, assets and other routes do not use browser-language negotiation. Register new locale paths in `wrangler.jsonc` as well as `locales.ts` and landing copy.
+
+## Landing and accessibility
+
+`LandingPage.astro` supplies `/` (en-US) and localized landing routes. `landing-en.ts` defines the copy shape; other `landing-*.ts` modules translate all text, metadata and accessible labels. Canonicals and reciprocal HTML `hreflang` include full BCP 47 tags; bare language codes point to one primary region, `x-default` to `/`. RTL languages set `dir="rtl"`. Do not advertise untranslated legal/comparison pages. The sitemap includes published HTML, not Markdown twins, redirects, machine endpoints or 404. Flutter app shells and the gallery use `noindex`, which is not access control.
+
+`ProductMedia.astro` slots are intentionally descriptive placeholders, **not** screenshots. Use `data-media-slot` to replace them with actual captures; retain translated alt text and reserved source dimensions (desktop 1440 × 900, phone 390 × 844). Videos need captions, transcripts where required, accessible controls, silent autoplay policy and pause in hidden panels. The tour starts paused; arrows/Home/End and previous/next work, selection stops playback, and hover/focus/dialog/hidden state pauses it. The dialog closes on Escape and restores focus. The native mobile menu and language disclosures dismiss on Escape/outside click. Without JavaScript, all six hero descriptions remain readable. Keep landing content visible without reveal animations, and freeze the hero shader at time zero on reduced motion, including preference changes. Avoid double-counting sticky-header offsets: do not combine root scroll padding and target scroll margins.
+
+The `/download/{macos,windows,linux}` Worker routes select only the matching installer (Apple Silicon DMG, Windows x64 setup EXE, Linux x86_64 AppImage) from GitHub's latest stable release. Release metadata caches for up to five minutes; the GET/HEAD redirect is `no-store` and bytes come from GitHub. Missing assets return 404, malformed metadata 502, upstream failure 503. These routes bypass Markdown negotiation.
+
+### Alpine pilot assets
+
+The two pilots are sourced from the packed `art/alpine/alpine-journey.blend`; **the retained pilot skins originated in Meshy**. Keep that source and its exporter modules so shipped assets remain reproducible. Regenerate on macOS from the repository root (requires Blender, ffmpeg, Node and `pnpm -C docs install`):
+
+```sh
+/Applications/Blender.app/Contents/MacOS/Blender -b docs/art/alpine/alpine-journey.blend --python-exit-code 1 --python docs/art/alpine/render_install_pilot.py
 ```
 
-## Deploy
+Append `-- --quick-check` for geometry checks without rendering/exporting; a full run is required to publish. `render_install_pilot.py` and `compress_pilots.mjs` write two self-contained GLBs and WebP posters under `public/alpine/`. Their Meshopt-compressed GLBs require `EXT_texture_webp`, `KHR_mesh_quantization` and `EXT_meshopt_compression`; morph normal deltas must stay float/range-safe, skin and animation precision intact. The compression script verifies decoded geometry, rig/morph metadata, textures and animation samples. Do not multiply baked contact AO into albedo; preserve UV0 color/normal/metallic maps and UV1 non-overlapping AO. Dispose generated studio environments with viewers.
 
-A Cloudflare Worker (adapter `@astrojs/cloudflare`, config in `wrangler.jsonc`),
-deployed by **`.github/workflows/deploy-docs.yml`** on every push to `main` that
-touches `docs/` — the same model as the web client, the phone client and the
-design-system gallery. Cloudflare's own git auto-build is deliberately off: two
-builders racing for one Worker is how a deploy ends up reflecting neither commit.
+Maintain loaded models only on desktop widths above 900px and near viewport; mobile must fetch neither 3D chunks, GLBs nor posters, even without JavaScript. Cancel pending mounts and dispose viewers across resize, BFCache and load failures; keep poster visible on failure. Drag/orbit, arrow-key bank/pitch, R reset and Space pause must not steal vertical touch scroll or wheel. Motion stops offscreen/hidden, reduced motion holds a neutral pose but permits manual orbit. Rig checks must retain weighted skin, hands on toggles, attachment endpoints, synchronized cloth/cord morphs and loop closure. `flightBounds` must cover idle, brake, wind, pitch and bank; resize preserves orbit until reset. Additive turn conversion clones glTF track buffers before mutation; full neutral skeleton keys prevent hands separating from handles. Rooted hair masks exclude face, beard, helmet and harness, and mixer animation must not overwrite hair morph weights. On visual review, check both directions, both pitch limits, pause/reduced motion, resize and no mobile asset requests.
 
-`pnpm build` is `astro build` plus `scripts/fix-wrangler.mjs`, which strips the
-`SESSION` KV binding the adapter emits for a namespace this site does not have.
-Deploy with `pnpm exec wrangler deploy`; wrangler redirects itself to the
-generated `dist/server/wrangler.json`, which is the file that fixup patches.
-`pnpm generate-types` regenerates Cloudflare env types after a binding change.
+## Agent-facing routes
 
-## Conventions
+`src/worker.ts` wraps the Astro adapter; `wrangler.jsonc` routes pages through it and leaves binary assets directly served. `Accept: text/markdown` or `<page>.md` returns the same generated Markdown twin, with `Vary: Accept`. `/llms.txt`, `/llms-full.txt`, `/openapi.json` and `/.well-known/mcp` (`/mcp`) expose discovery, an OpenAPI 3.1 inventory and Streamable HTTP `list_pages`/`get_page_markdown`/`search_pages`. Missing routes negotiate HTML, Markdown recovery or JSON error (`Accept: application/json` and `/api/*`). Keep twins derived from the same data and collection as HTML; test negotiation, MCP and OpenAPI with `pnpm test` and the built Worker.
 
-- **Content lives in `src/content/docs/`** — Starlight routes each file by its
-  path. The landing page and changelog are authored in `src/pages/`.
-- **The sidebar is hand-curated** in `astro.config.mjs` — a new page is invisible
-  in the nav until you add it there.
-- **Cross-links use Starlight slugs**, e.g. `/manual/concepts/agent-model/`
-  (trailing slash). The source-of-truth ARB/glossary in the app repo is
-  `GLOSSARY.md`; this site's `reference/glossary` is a curated subset. Note that
-  `reference/glossary.mdx` keeps every definition **twice** — once in the
-  `glossaryTerms` JSON-LD array and once in prose. Edit both, or they drift.
-- **Every non-index page ends with a cross-link section**, pointing both _down_
-  (the task that applies an idea) and _up_ (the idea behind a task). The
-  headings are fixed: `## Related guides` and/or `## Related concepts` on guide
-  and concept pages, `## See also` on reference pages. Tutorials instead close
-  with a short `## Recap` and a `**Next:** [link]` line.
-- **Claims must be checked against the code, not against other docs.** A 2026
-  audit of the whole manual found several hundred defects, the large majority of
-  them features documented as working that were implemented but never wired up.
-  When in doubt, grep for the call site before writing that something happens.
-- **The changelog is a single source of truth** in `src/data/changelog.ts`,
-  consumed by both the changelog page and the RSS feed.
+## Website analytics
+
+Umami at `https://analytics.alev.dev` uses public website ID `d84f01cc-5611-4363-b598-ddd31e3011c1` (not an API credential). `install_section_click`, `release_page_click` and `demo_open_click` count CTA actions, **not** completed downloads, installs or activated users. The release event ID remains for reporting continuity even though current OS cards redirect to installers. Limit properties to CTA placement and explicit platform; omit query/fragment, respect Do Not Track, track only `usectrl.dev`, add no visitor ID or cross-domain attribution, and never block navigation when tracking is unavailable.

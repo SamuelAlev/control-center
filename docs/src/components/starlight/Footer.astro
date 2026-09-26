@@ -1,0 +1,32 @@
+---
+import StarlightFooter from '@astrojs/starlight/components/Footer.astro';
+import ThemeSelect from 'virtual:starlight/components/ThemeSelect';
+import LanguageSelect from 'virtual:starlight/components/LanguageSelect';
+import { landingCopy } from '../../data/landing';
+import { localeFromPath, siteRtl } from '../../data/locales';
+
+const locale = localeFromPath(Astro.url.pathname);
+const copy = landingCopy[locale];
+const footer = {
+  label: Astro.locals.t('docs.footer.label'),
+  appearance: copy.nav.appearance,
+  language: copy.nav.language,
+};
+---
+
+<div class="docs-article-footer" lang={locale} dir={siteRtl.has(locale) ? 'rtl' : 'ltr'}>
+  <StarlightFooter />
+  <section class="docs-footer-preferences" aria-label={footer.label}>
+    <p class="docs-footer-heading">{footer.label}</p>
+    <div class="docs-footer-fields">
+      <div class="docs-footer-field">
+        <span class="docs-footer-field-label">{footer.appearance}</span>
+        <ThemeSelect />
+      </div>
+      <div class="docs-footer-field">
+        <span class="docs-footer-field-label">{footer.language}</span>
+        <LanguageSelect />
+      </div>
+    </div>
+  </section>
+</div>

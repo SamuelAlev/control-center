@@ -1,302 +1,181 @@
-# Control Center
+# Architecture
 
-A multi-agent developer control center for orchestrating AI coding agents across isolated Git worktrees. Built with Flutter for desktop (macOS, Windows, Linux) and the web.
+Control Center uses Flutter clients, a pure-Dart authoritative server, Riverpod, and Drift/SQLite. Coding/build rules are in [AGENTS.md](AGENTS.md); access control and credentials in [SECURITY.md](SECURITY.md). Read the subsystem below when changing it, rather than loading every package document.
 
-Agents run inside OS-native sandboxes, collaborate over messaging spaces, review pull requests, execute DAG-based pipelines, orchestrate whole-team plans from a single goal and share a workspace-scoped knowledge memory. The app also records and summarizes meetings on-device, syncs Google Calendar (events + RSVP) and pairs with your phone over a peer-to-peer link, all behind a native GUI with GitHub, Linear and Google Calendar integration.
+## Repository map
 
-## Architecture
+The root [pubspec.yaml](pubspec.yaml) defines the native Dart pub workspace; all members share `pubspec.lock`.
 
-Feature-first Clean Architecture (ports & adapters) with Riverpod state management and Drift (SQLite) persistence.
+| Location | Owns |
+| --- | --- |
+| `lib/` | Desktop/web thin client: bootstrap, shared client infrastructure, feature presentation/providers, DI, l10n, routing |
+| [apps/cc_server](apps/cc_server/README.md) | Headless server entrypoint and native CLI bundle |
+| [apps/cc_worker](apps/cc_worker/README.md) | Stateless leased-job executor; see README for runner limitations |
+| [apps/cc_remote](apps/cc_remote/README.md) | Phone PWA over encrypted brokered RPC |
+| [apps/cc_signaling_server](apps/cc_signaling_server/README.md) | Stateless, invite-gated WebSocket relay |
+| [apps/cc_gallery](apps/cc_gallery/README.md) | Widgetbook component reference |
+| [apps/cc_demo_server](apps/cc_demo_server/README.md) | Separate public demo binary with restricted mutations |
+| `packages/cc_domain` | Shared entities, ports, repositories, events and feature domain; no infrastructure |
+| `packages/cc_harness` | Web-safe agent loop, messages, provider port, tools, compaction, steering, hooks, subagents, commands; no other cc package dependency |
+| `packages/cc_harness_runtime` | VM providers, credentials/OAuth, generic tools and context loaders |
+| [packages/cc_rpc](packages/cc_rpc/README.md) | Web-safe JSON-RPC client and transports |
+| [packages/cc_host](packages/cc_host/README.md) | Server sessions, dispatcher, subscriptions, rate limiting, presence and WSS |
+| [packages/cc_data](packages/cc_data/README.md) | Web-safe RPC repository adapters |
+| `packages/cc_persistence` | Server-only Drift/SQLite, global and per-workspace databases |
+| `packages/cc_infra` | VM adapters: git/process, dio integrations, dispatch, sandboxes, rigs, fleet, tunnels and CC-specific harness bridges |
+| `packages/cc_mcp` | Typed server MCP tools and dispatcher; no Riverpod `Ref` |
+| [packages/cc_mcp_client](packages/cc_mcp_client/README.md) | External MCP connections and tool/resource/prompt bridges |
+| [packages/cc_server_core](packages/cc_server_core/README.md) | Server composition, RPC catalog, MCP registry, identity and background services |
+| [packages/cc_ui](packages/cc_ui/README.md) | Widgets-only design system, tokens and theme |
+| [packages/cc_markdown](packages/cc_markdown/README.md) | Typed-AST Markdown and native mermaid rendering |
+| [packages/cc_natives](packages/cc_natives/README.md) | Required FFI libraries; in-repo Rust watcher, inference and SAML |
+| `packages/system_audio_capture` | Core Audio taps, WASAPI and PipeWire loopback plugin |
+| [docs](docs/README.md) | Astro/Starlight marketing site and manual |
 
-### Thin-client / server model
+Client features are under `lib/features/<name>/{presentation,providers}`; their domain lives in `cc_domain`, adapters in server packages. Shared client infrastructure is in `lib/core`, composition in `lib/di`, reusable rendering in `lib/shared`. `mcp` is providers-only; its settings UI lives under settings. `orchestration` and `plan_studio` have presentation/providers only. Settings contribution rules are in [AGENTS.md](AGENTS.md#boundaries).
 
-Control Center is a **thin-client architecture**. No client opens the database — a `cc_server` process owns the data and serves it over WebSocket RPC. Every client is a renderer over that one RPC connection.
+## Runtime and data flow
 
-```
-                         ┌─────────────────────────────┐
-   desktop (LOCAL)  ──►  │  spawns cc_server here,      │
-   (loopback RPC)        │  talks over 127.0.0.1        │
-                         └─────────────────────────────┘
-                                                         cc_server
-   desktop (REMOTE) ──►  ┌─────────────────────────────┐  owns the Drift/SQLite DB,
-   web client       ──►  │  dials a cc_server elsewhere │  serves repo-RPC + subscriptions
-   (WSS RPC)             │  over wss://…/rpc            │  over ws://…/rpc, runs the
-                         └─────────────────────────────┘  background services
-                                                         (pipelines, MCP, reconcilers).
-   phone (cc_remote) ──►  brokered WS relay (E2E-sealed JSON-RPC) ──► tool surface
-   MCP clients       ──►  JSON-RPC 2.0 over stdio/SSE  ──► MCP tool registry
-```
-
-Five clients reach the server (the desktop in local or remote mode), each with a different trust profile:
-
-| Client                                                              | Transport                     | What it runs                                                                                                                      |
-| ------------------------------------------------------------------- | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| **Desktop app** (LOCAL)                                             | loopback `ws://127.0.0.1` RPC | spawns a supervised `cc_server` on this machine that owns the DB; desktop is a pure renderer                                      |
-| **Desktop app** (REMOTE)                                            | `wss://` RPC                  | dials a `cc_server` running elsewhere with a stored pairing key                                                                   |
-| **Web build** (`scripts/build_web.sh`, SkWasm + CanvasKit fallback) | `wss://` RPC                  | always remote — a browser cannot spawn a subprocess; renders the full desktop UI                                                  |
-| **Phone companion** (`cc_remote` PWA)                               | brokered relay + JSON-RPC     | a lighter, read-mostly client; a lower-privilege principal (default-deny tool policy)                                             |
-| **Fleet executor** (`cc_worker`)                                    | `wss://` RPC (leased jobs)    | a headless pure-Dart binary that pulls leased jobs from a `cc_server`, executes them, streams events back; holds no durable state |
-| **MCP clients**                                                     | JSON-RPC 2.0                  | external tools that consume the MCP tool registry                                                                                 |
-
-The boot resolver (`lib/bootstrap/server_backend.dart`) reads the user's persisted **server-connection choice** before Riverpod exists: first run shows a setup screen; LOCAL spawns a `cc_server` (owning `global.db` plus one `<workspaceId>/workspace.db` under the app-support root); REMOTE dials the configured URL with the keychain-stored pairing key. The resulting connected `RemoteRpcClient` overrides `rpcClientProvider`, so the whole UI and every feature provider read/write through the server instead of an in-process Drift host. The web build runs the same resolver but is forced to REMOTE (a browser can never self-serve).
-
-### Workspace (single resolved `pubspec.lock`)
-
-The repository is a **native Dart pub workspace**. The root app and its twenty-one members (6 apps + 15 packages) share a single resolved lockfile. The server half is pure-Dart (no Flutter engine) so it compiles to a self-contained native binary; the client half is Flutter.
-
-**Apps**
-
-| Member                     | Role                                                                                                                                                                                                                                                                                                                                                                           |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `control_center` (root)    | The Flutter **desktop + web app**: everything under `lib/` below. The thin client.                                                                                                                                                                                                                                                                                             |
-| `apps/cc_server`           | **Headless server** — a pure-Dart `dart build cli` binary (no Flutter). Owns the `cc_persistence` databases (`global.db` + one directory per workspace), serves repo-RPC over WebSocket.                                                                                                                                                                                       |
-| `apps/cc_worker`           | **Headless fleet executor** — a pure-Dart `dart build cli` binary. Pairs with a `cc_server`, declares its host capabilities, pulls leased jobs, executes them and streams process events back. Holds **no durable state** (no DB, auth, approvals, or budgets — those never leave `cc_server`); one authoritative server, N dumb limbs, no consensus/worker-to-worker traffic. **MVP = lease plumbing:** `agentRun` is the only real runner (`CC_JOB_COMMAND` or an echoed prompt). `pipelineStep`, `codeIndex`, `goldenRender`, `benchmark`, and `evalBatch` currently execute a git probe (`git --version` / `rev-parse HEAD`) so the streaming path is exercised without pretending the job ran. |
-| `apps/cc_remote`           | **Phone thin client** — a Flutter web PWA that remote-controls the fleet over the brokered relay (E2E-sealed JSON-RPC frames).                                                                                                                                                                                                                                                 |
-| `apps/cc_signaling_server` | Pure-Dart, stateless WebSocket **relay broker** hosting N-capacity invite-gated rooms. A dumb relay — it never interprets frames, holds no app data and never sees the PSK.                                                                                                                                                                                                    |
-| `apps/cc_gallery`          | A **Widgetbook** catalogue of `cc_ui` (the living design-system reference).                                                                                                                                                                                                                                                                                                    |
-| `apps/cc_demo_server`      | **Public demo host** — a separate binary with a locked-down mutating surface. Not a `--demo` flag on `cc_server`.                                                                                                                                                                                                                                                              |
-
-**Packages**
-
-| Member                          | Role                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `packages/cc_ui`                | The in-repo **design system**: tokens, theme, foundation primitives and 30+ `Cc*` components. Built on `flutter/widgets.dart`, no Material or Cupertino.                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| `packages/cc_domain`            | Pure-Dart **shared kernel**: all domain entities, value objects, ports, repositories, events and services, plus every feature's `domain/` layer. Zero infrastructure deps (no drift/dio/dart:io/ffi) so it imports on native and web.                                                                                                                                                                                                                                                                                                                                                                                        |
-| `packages/cc_harness`           | Pure-Dart **agent-loop kernel** — the built-in agent runtime core: messages, provider port, tools, compaction, steering, hooks, subagents, slash commands. Web-safe (no dart:io, no other cc\_\* dep), embeddable by `cc_server`, `cc_worker`, tests and third parties.                                                                                                                                                                                                                                                                                                                                                      |
-| `packages/cc_harness_runtime`   | **VM-only batteries** for the `cc_harness` kernel — Anthropic/OpenAI/Ollama streaming providers, OAuth/PKCE credential brokering, file/env credential stores, the generic tool set, AGENTS.md + skills context loaders, watchdog advisor. The CC-coupled adapters (sandboxed command runner, MCP bridge, apply_patch) stay in `cc_infra`.                                                                                                                                                                                                                                                                                    |
-| `packages/cc_rpc`               | Transport-agnostic **JSON-RPC client + channel transports** (web-safe: no dart:io/ffi). The desktop in REMOTE mode, the full web build and the `cc_remote` PWA all dial a `cc-server` through this.                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| `packages/cc_host`              | **Server-side RPC kernel** — per-connection sessions, the repo-op dispatcher, reactive subscriptions, rate limiting, the remote tool policy, the presence hub and the WSS server transport. VM-only.                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| `packages/cc_data`              | **Remote data layer** — repository adapters that satisfy reads/writes over the `cc_rpc` client instead of a local database. Web-safe.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| `packages/cc_persistence`       | Pure-Dart **persistence** for the headless server over `package:sqlite3` (no Flutter, no `path_provider`). **Two databases:** `GlobalDatabase` (`global.db` — the workspace registry, identity, newsfeed, fleet queue, pre-auth routing) and `WorkspaceDatabase` (one file per workspace, holding everything else including repos), handed out by `WorkspaceDatabaseManager`; `CrossWorkspaceQueries` is the only sanctioned way to span workspaces. The split makes workspace isolation a compile-time property rather than a WHERE-clause convention.                                                                      |
-| `packages/cc_infra`             | **Server-side VM-only infrastructure adapters** — pure `dart:io` implementations of ports: git/process, the dio HTTP clients (the three forge adapters — GitHub REST/GraphQL, GitLab REST v4, Bitbucket Cloud REST 2.0 — plus Linear and Google Calendar), agent dispatch + sandboxing + the CC-coupled harness adapters (sandboxed command runner, MCP bridge, apply_patch), meetings ML (Whisper/diarization), schema validation, adapter/ACP-model detection, fleet execution and supervised tunnel binaries, plus the rift/fff/tree-sitter natives via `cc_natives`. No Flutter, so it links into the Flutter-free server binary.                                                                      |
-| `packages/cc_mcp`               | The **MCP tool surface** (server-side): Ref-free typed tools (~80 wired) + the JSON-RPC tool dispatcher.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| `packages/cc_mcp_client`        | **MCP client** — connects to _external_ MCP servers (stdio / HTTP / SSE + OAuth) and bridges their tools/resources/prompts into CC's registry.                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| `packages/cc_server_core`       | **App-server composition** for the headless server — the repo-RPC catalog (tickets/messaging/newsfeed), the MCP registry wiring, the `LocalRpcServer`, live event forwarding and the identity, presence, fleet and evals runtime, plus the GitHub PR-conversation surface (polling discovery + the bot bridge that turns `@bot` PR comments, replies in the bot's review threads and the `ai-review` label into turns in the PR's review space, with answers posted back under the app identity — no webhook, no public URL). No Flutter.                                                                                                                                                                                                                                                                                                                                                                                |
-| `packages/cc_markdown`          | The in-repo **markdown engine** — a custom typed-AST parser + widget renderer (`CcMarkdown` one-shot, `CcStreamingMarkdown` for LLM streaming) plus a native **mermaid diagram engine** (`CcMermaidView`: pure-Dart dialect parsers → layered/sequence/chart layout → `CustomPainter`, no WebView, no JS). Widgets-only except the selection island.                                                                                                                                                                                                                                                                         |
-| `packages/cc_natives`           | The **native FFI leaf** (rift copy-on-write worktrees, fff file finder, tree-sitter code indexing + grammars, `cc_watcher` file watching, `ccpty` terminals, aec echo cancellation, lame MP3, `cc_saml` SAML crypto and the onnx/sherpa inference runtimes). Pure Dart FFI, no Flutter; in-repo Rust source lives at `native/watcher/`, `native/inference/` and `native/saml/`. **Every native is REQUIRED** — loaders throw a `NativeLibraryUnavailable`, `cc_server` refuses to boot on a miss and the build/packaging scripts fail rather than shipping a degraded artifact; `rift` on Windows is the single platform exemption. See `packages/cc_natives/README.md`. |
-| `packages/system_audio_capture` | Plugin: driver-free system-audio loopback capture (Core Audio taps / WASAPI / PipeWire).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-
-```
-lib/
-├── bootstrap/            # Platform bootstraps: desktop (bootstrap_io), web (bootstrap_web),
-│   # server_backend (resolves the cc_server connection), thin_client_boot (local spawn)
-├── core/                 # Cross-cutting CLIENT infrastructure (the domain + DB + network live in packages)
-│   ├── config/           # App and environment configuration
-│   ├── constants/        # App-wide constants, log levels
-│   ├── deep_link/        # Deep-link handler routing URL schemes into the app
-│   ├── domain/           # Nearly empty — the shared kernel moved to cc_domain; a few client-only services remain
-│   ├── infrastructure/   # Client-side platform services: audio, embeddings, file search, speech, skills
-│   ├── keybindings/      # Keybinding registry + dispatcher (command palette / shortcuts)
-│   ├── notifications/    # Notification center, service, sounds, preferences, event→notification mapper
-│   ├── observability/    # Sentry bootstrap
-│   ├── offline/          # Offline mutation queue (buffers writes while the server is unreachable)
-│   ├── providers/        # Central infrastructure Riverpod providers (rpc client, server connection, storage, event bus, sync engine, locale)
-│   ├── server/           # Desktop↔cc_server connection: config, process supervisor, endpoint
-│   ├── storage/          # Local path resolution + non-sensitive preference storage
-│   ├── sync/             # Optimistic-mutation client helpers for the durable sync lane
-│   ├── theme/            # Material 3 base theme + design-system token re-export shims (tokens live in cc_ui)
-│   ├── undo/             # Universal undo: the client-side action journal
-│   └── utils/            # App-wide logging (AppLog)
-├── features/             # Feature modules (presentation + client providers; each feature's domain/ lives in cc_domain)
-│   ├── agents/           # Agent registry screen (roster + per-agent config), doctor diagnostics, cost tracking
-│   ├── artifacts/        # Native renderer for typed work-product blocks (charts, tables, mermaid, code, JSON trees — deliberately no HTML)
-│   ├── auth/             # GitHub/Linear authentication, onboarding, credentials repository
-│   ├── calendar/         # Google Calendar sync + RSVP (OAuth+PKCE) + month/week/agenda views + meeting alerts + record-and-link
-│   ├── dashboard/        # Global overview with system metrics, agent process matching
-│   ├── dispatch/         # Agent dispatch: run-process lifecycle, prompt assembly, modes (absorbed agent_modes)
-│   ├── focus_mode/       # Ephemeral distraction-free PR review UI
-│   ├── identity/         # Multi-user identity, membership, roles, invites, per-user device registry
-│   ├── inbox/            # Unified cross-pillar inbox + ⌘K omnibox
-│   ├── mcp/              # MCP settings/status UI (the tool surface itself lives in the cc_mcp package)
-│   ├── meetings/         # Local meeting notes: system+mic capture, on-device Whisper transcription, diarization, AI summary
-│   ├── memory/           # Knowledge management: facts, policies, domains, embeddings, knowledge graph
-│   ├── messaging/        # Spaces + conversations (merged chat + messaging context); agent peer messaging + delegation
-│   ├── newsfeed/         # RSS/Atom aggregation with ad-blocking and content curation
-│   ├── observability/    # Live Agent Hub + cost/usage/quota/behavior/model/goal/benchmark analytics
-│   ├── orchestration/    # One goal → a proposed whole-team plan (roles, sub-tickets, synthesis) → one approval → a materialized pipeline + tickets
-│   ├── pipelines/        # DAG-based workflow orchestration + template editor + execution engine
-│   ├── plan_studio/      # Editable DAG plan canvas: per-step cost/time/risk estimates, plan diff versioning, partial approval, Playbooks
-│   ├── presence/         # Real-time collaboration: presence/awareness, follow-mode, steer/take-over/hand-back, autonomy dial
-│   ├── pr_review/        # PR lifecycle, diff viewer, inline comments, review sessions, IDE launch; Review Studio (semantic cohorts, per-axis gates, API-contract + visual diffs) is a tab in PR detail
-│   ├── remote_control/   # Phone/browser companion over the brokered relay: QR pairing, default-deny tool policy, per-session workspace binding
-│   ├── rigs/             # Disposable machines agents drive: enclosed computer/browser/terminal rigs plus host-managed Android and iOS simulators; live viewer, human take-over, clipboard and file transfer where supported
-│   ├── repos/            # Git repository management + per-space worktree provisioning
-│   ├── sandboxing/       # Process isolation: OS-native sandbox adapters, capability controls, credential brokering; terminals can run inside an enclosure (rig) and accept dropped files as guest paths
-│   ├── session_review/   # Session-diff viewer (git changes for a run) with imported VS Code syntax colors
-│   ├── service_status/   # External service health flyout (GitHub / Claude / Codex / Kimi; server-side Statuspage polling, worst-of chip)
-│   ├── settings/         # The settings SHELL: routes, nav model, page scaffold, generic cards. Feature-owned
-│                         #   pages/sections arrive through settings_extensions.dart, aggregated in di/settings_registry.dart
-│   ├── shell/            # App shell layout (sidebar, title bar, content area, command palette, breadcrumbs, banner rail)
-│   ├── soundscape/       # Generative ambient audio (weather + clock + mood folded into a soundscape context)
-│   ├── subscriptions/    # AI-plan usage pill (Claude Code / Codex / z.ai): most-constrained provider + reset countdowns
-│   ├── teams/            # Agent team grouping and coordinated dispatch
-│   ├── ticketing/        # Vendor-agnostic tickets (Local + Linear; Jira/GitHub sync) + projects + MCP tools (absorbed the tasks feature)
-│   ├── todos/            # Per-space task checklists behind the todo_write tool (agents + user), watched live
-│   ├── user_profiles/    # GitHub user profile display with PR filtering
-│   ├── vscode_theme/     # Imports VS Code editor themes → lightweight color set for diff/code surfaces
-│   └── workspaces/       # Git worktree workspace management with event-driven CEO seeding
-├── di/                   # Composition root: binds repository ports to implementations (providers.dart + provider_bindings{,_io,_web}.dart)
-├── l10n/                 # Internationalization: ARB source files (see kAppLocaleVariants) + generated localizations
-├── router/               # GoRouter config, route constants, auth guards, splash
-├── shared/               # Shared widgets, domain services, extensions, utilities
-└── main.dart             # Entry point: selects bootstrap_io (VM) vs bootstrap_web (web)
+```text
+Desktop local ── supervised cc_server ── loopback RPC
+Desktop remote / web ── WSS RPC ─────── cc_server
+Phone PWA ── E2E-sealed broker relay ── cc_server
+MCP clients ── JSON-RPC ─────────────── tool registry
+Fleet workers ── leases + events ────── cc_server
 ```
 
-### Feature layer convention
+`lib/bootstrap/server_backend.dart` resolves the persisted local/remote choice before Riverpod starts. Local desktop spawns a supervised server; web is always remote. The connected `RemoteRpcClient` overrides `rpcClientProvider`; all client repository bindings use `cc_data`, including local desktop. Platform-specific bindings use the existing `*_bindings{,_io,_web}.dart` seams.
 
-```
-feature_name/
-├── data/          # Repository implementations, data sources, services, DTOs, mappers
-│   ├── datasources/
-│   ├── repositories/
-│   ├── services/
-│   └── mappers/
-├── domain/        # Entities, repository interfaces (abstract), ports, use cases
-│   ├── entities/
-│   ├── repositories/
-│   └── usecases/
-├── presentation/  # Screens (<250 lines), widgets (<300 lines), notifiers
-│   ├── screens/
-│   └── widgets/
-└── providers/     # Riverpod providers for this feature
-```
+The server owns external APIs and background services. Dio adapters in `cc_infra` inject auth and map failures to domain `AppException`s. Workers execute leased jobs and stream events; they do not own databases, policy, approvals or budgets, and do not coordinate with each other. Architecture boundaries are enforced by `test/core/architecture_constraints_test.dart`.
 
-### Dependency rule
+### Identity and collaboration
 
-```
-Presentation → Application/Providers → Domain ← Infrastructure
-```
+`Principal` is `UserPrincipal | AgentPrincipal`; use it for attribution. Users are global; membership/roles and repo grants are workspace-scoped. See [authorization](SECURITY.md#authorization-and-isolation).
 
-Ports and adapters enforce Clean Architecture boundaries:
+- Durable state: optimistic mutation + server rebase + per-field LWW. Allocate monotonic workspace `syncSeq` in the mutation transaction; receipt order, never client time, decides the last writer. Per-store kill switches restore snapshot mode.
+- Presence: server-hubbed, ephemeral, never persisted; filter by repo grants before fan-out. Agent presence derives from run/lifecycle events. With one human the lane idles and roster chrome is absent.
+- Follow/steer/interrupt/take-over and per-space autonomy use these lanes, not a CRDT.
+- Agent peer messages use durable spaces, exact ID/unique-name resolution and no cross-workspace recipient search. `ask_agent` has a mandatory timeout (default ten minutes, workspace-capped) and pairwise cycle detection. Delegation inherits budget and autonomy ceilings, with cycle detection and a default depth cap of three. Agent-only spaces do not increment human unread badges or send OS notifications.
+- `DomainEventBus` declarations under `cc_domain/lib/core/domain/events/` are authoritative. Device revocation watches `paired_devices`; there is no `UserDeviceRevoked` event. Workspace removal drops subscriptions without requiring the socket to close.
 
-- **Domain layer:** zero infrastructure imports (no dio, drift, or network models).
-- **Presentation layer:** no direct drift/DAO/data-layer access; everything goes through Riverpod providers → repositories.
-- Infrastructure adapters implement domain ports; domain entities use enums/sealed classes for status fields (no magic strings).
-- `DomainEventBus` enables decoupled cross-feature communication.
+## Persistence
 
-In the thin-client model, every feature's data layer is remote: LOCAL/REMOTE/web all use the `cc_data` RPC-backed repositories over the connected `cc_server`. The composition root (`di/providers.dart` + the `di/provider_bindings{,_io,_web}.dart` platform seam) binds repository ports to these implementations; a feature that needs platform-specific binding bodies carries its own `<feature>_bindings{,_io,_web}.dart` seam (e.g. `ticketing/ticketing_bindings.dart`).
+`cc_persistence` is pure Dart over `package:sqlite3`, without Flutter/path_provider. Only the server opens databases:
 
-Boundaries are validated by `test/core/architecture_constraints_test.dart`.
+- `<dataDir>/global.db`: workspace registry, identity/preferences/devices, per-user newsfeed, fleet queue, routing and server policy/settings. The pinned global-table set is in `workspace_isolation_ratchet_test.dart`; additions require an isolation justification.
+- `<dataDir>/<workspaceId>/workspace.db`: all workspace-owned data, including repos. `workspaceDatabasePath` defines the path; associated artifacts share this directory.
+- `WorkspaceDatabaseManager.of(workspaceId)` synchronously returns a lazy database; disk opens on first query. Hold the manager, not a resolved DAO. `quick_check` runs on first workspace touch, not boot.
+- `CrossWorkspaceQueries` is the only fan-out mechanism (`fanOut`, `fanOutKeyed`, `forEachWorkspace`, `mergeStreams`, `topN`). Its callers explain `CROSS-WORKSPACE BY DESIGN`.
+- `workspace_routes` resolves pre-auth opaque IDs/secrets. Write the entity before its route; a route miss is not-found, never a workspace scan.
+- The same checkout in two workspaces has two repo IDs. Cross-workspace repo identity is its path (`findByPath`), not its ID. Ordering/link time are `repos.position`/`linkedAt`.
 
-### Workspace isolation
+### Schema changes
 
-Workspaces are isolation tenants; data from one must never surface in another. Every workspace-scoped operation takes a **required** `workspaceId`; DAO reads filter by it; ID-only lookups are scoped or validated; cross-workspace access is denied loudly with `WorkspaceMismatchException` (domain) or an explicit MCP error. The few genuinely global queries (dashboard, observability aggregation, startup reconcilers) carry a `CROSS-WORKSPACE BY DESIGN` doc comment. The RPC session is **not** bound to a workspace: every workspace-scoped call carries its own `workspace_id` in args and membership is checked per call, so two clients on one server can sit in different workspaces.
+1. Put each table in exactly one database, defaulting to `WorkspaceDatabase`. DAOs extend the matching `DatabaseAccessor` and cannot declare the other database's tables. Override `tableName` with plain snake_case.
+2. Read current schema versions from source. Both databases have squashed baselines; append `MigrationStep(from, to, migrate)` and bump the owning database version. Do not support pre-baseline files by silently opening them.
+3. Update fresh-schema expectations in `workspace_baseline_schema_test.dart`. Regenerate Drift/JSON output with the root build_runner command in [AGENTS.md](AGENTS.md#build-and-verification).
+4. FTS/vector virtual tables, external-content FTS triggers and sync-feed triggers are idempotently installed in `beforeOpen`. Partial-index changes must cover installed databases: `_createPipelineIndexes` runs only in `onCreate`, so migrations changing its predicates must explicitly drop/recreate those indexes.
 
-### Identity & multiplayer
+`workspaceId` columns support sync/FTS/self-identification; separate files provide isolation. Vectors use sqlite_vector FLOAT32/384 dimensions with FTS-only degradation when the embedding model is unavailable, not when a required native is missing.
 
-Control Center is multi-user: humans and agents are co-equal actors. A `Principal` (sealed `UserPrincipal` | `AgentPrincipal`) in the shared kernel is the abstraction every attribution, message, ticket, review, plan and run log resolves through. `User` is global (cross-workspace); membership is a workspace-scoped `workspace_members` row at a `WorkspaceRole` (`owner`/`admin`/`member`/`viewer`/`guest`) held in that workspace's own database file. **Membership is the access test — holding a pairing key is no longer the boundary; being a member is.** Per-repo grants (`workspace_member_repo_grants`: `none`/`read`/`review`/`write`) keep workspace membership from silently out-privileging the forge. Rate limits are per-principal (one user across N devices shares one budget); revocation is live — a revoked device's sessions terminate within seconds (the server watches the `paired_devices` table directly; there is no `UserDeviceRevoked` event) and a removed member's workspace subscriptions are dropped on `WorkspaceMemberRemoved`. Self-hosted-first identity: the first user owns the install, invite by link, SAML/OIDC SSO + SCIM optional. There are no passkeys — the device credential is a PSK minted per device.
+### Backup and restore
 
-Real-time collaboration is **authoritative-server + per-field last-writer-wins (LWW), not a CRDT** — the consensus across Figma/Linear/Replicache and a Dart CRDT would mean Rust-via-`cc_natives` FFI (reserved for one possible future co-editing surface only). Two lanes never mix:
+Snapshots are `backups/<ts>/{manifest.json,global.db,<workspaceId>/workspace.db}`, written using `VACUUM INTO`. `server.listBackups` includes incomplete snapshots and marks them incomplete. `workspace.export/import` operate on a single workspace file; restoring one from a snapshot uses the same import. Whole-install restore is a stopped-server copy-back, not another RPC operation.
 
-- **Durable lane** — optimistic-mutation + server-rebase + per-field LWW, on a monotonic per-workspace `syncSeq` allocated inside the same DB transaction as the mutation (`sync_changes` table). Ordering never trusts a client clock; "last writer" = server receipt order. Per-store flags revert to snapshot mode (the kill-switch); staged store-by-store.
-- **Ephemeral lane** — presence/awareness (`ParticipantPresence`: status, locus, cursor, typing, agent live-status + running cost), server-hubbed and **never persisted**. Repo-grant filtering applies at the server before fan-out, so presence never leaks content a viewer can't open.
+RPC paths name files on the server. Remote byte transfer uses signed HTTP:
 
-Humans and agents share one roster (agent presence is synthesized server-side from run/lifecycle events); follow-mode (incl. "watch an agent work"), steer/interrupt/take-over/hand-back and a per-space autonomy dial (`propose-only`/`act-with-approval`/`act-freely`) sit on top. Solo-mode zero-regression: with one human the presence lane idles and no roster chrome appears.
+| Route | Authorization and lifecycle |
+| --- | --- |
+| `GET /backup/workspace` | Workspace admin; stream export, delete server copy |
+| `GET /backup/snapshot` | Install owner; ZIP to a temporary file rather than buffering the installation |
+| `POST /backup/restore` | Workspace owner; stream to staging, adopt, delete staging on success or refusal |
 
-### Action guardrails & agent interaction
+HTTP handlers enforce their own roles. Downloads use `no-store` and `Accept-Ranges: none`: every request creates a fresh export. Backups are absent in demo mode and disabled for relay-only clients without an HTTP origin. Transfer progress is throttled to 100 ms with a final byte count; upload progress means bytes handed to the socket, while the response confirms completion.
 
-- **Unified action guardrails** generalize the former bash-only `CommandPolicy` into a closed **`ActionClass`** taxonomy (13 effect classes). Resolution is `space > agent > workspace > mode preset > built-in default` (most-specific scope wins; within a scope, longest-prefix then most-restrictive). Every mutating tool declares its ActionClass(es); `prompt` with no approver connected is **denied** (fail-closed). The autonomy dial is a named profile over this same store.
-- **Agent peer messaging & delegation** ride spaces (durable, roster-visible) — the old in-memory IRC bus was deleted. `ask_agent` is request/reply with a **mandatory timeout** and cycle detection; `delegate_task` is guarded by depth cap, cycle detection, budget-envelope inheritance and an autonomy ceiling, all enforced server-side at a chokepoint.
-- **Skills supply-chain scanning** is a fail-closed gate between fetch and write: no skill content reaches disk or an agent prompt without a verdict (`pass`/`warn`/`quarantine`). The scanner is inert by construction; trust tiers are provenance, never a scan substitute.
-- **Repo-scoped skills** load the skills a checked-out repo ships (`.agents/skills`, `.claude/skills`, `.opencode/skills`), scoped to the ONE repo an agent is working in. `ActiveRepoTracker` infers that repo from tool-call paths observed at `DispatchSession.addEvent` — the single point both shipped transports funnel through — where a WRITE switches and a read only seeds. `RepoSkillProjector` then materializes that repo's skills into the overlay `.claude/skills` (Claude Code hot-reloads it, so a swap lands mid-session) and composes the same index into a real `<overlay>/AGENTS.md` replacing the provisioner's symlink so the built-in harness sees it too. Only the active repo is ever loaded: the index is prompt-resident on every turn and a sibling service's skill actively misleads. `RepoSkillCatalog` is the shared, scan-gated discovery behind both the projection and `skills.repoSkills`, so the composer's palette can never offer a name the server refuses to load. Skills invoke under their own namespace — `/skill:<name>`, `/skill:<repo>:<name>` — because a bare name let a builtin permanently shadow a skill of the same name.
-  - The three context loaders follow a symlink ONLY into a caller-declared permitted root (`resolvesInsideRoots`): every overlay affordance is a symlink and a `followLinks: false` listing types one as neither `File` nor `Directory`, so the agent's attached skills and its own `AGENTS.md` had both been silently invisible.
+## Harness and indexing
 
-### Design system (cc_ui) & gallery
+### Repo skills
 
-The app owns its entire visual layer through the `cc_ui` workspace package.
-`cc_ui` exposes a token system (`DesignSystemTokens`,
-`CcTypography`, `AppSpacing`, `AppRadii`, `AppShadows`/`CcElevation`, `CcMotion`),
-a `CcTheme` (read via `context.designSystem`), foundation primitives and 30+
-`Cc*` components. Its purity (no Material/Cupertino/infrastructure imports) is
-verified by the same `architecture_constraints_test.dart`.
+`RepoSkillCatalog` is the shared scan-gated discovery for projection and `skills.repoSkills`. `ActiveRepoTracker` observes paths at `DispatchSession.addEvent`: a write under `repos/<name>/` switches the active repo; reads only seed an unset repo. Only that repo's skills are prompt-resident.
 
-`apps/cc_gallery` is the **living reference**, a Widgetbook catalogue with ~165
-use-cases across **Components** (Buttons, Inputs, Feedback, Containers,
-Navigation & Overlays, Layout) and **Foundations** (token specimens + primitives).
-Toggle the Light/Dark theme addon to audit both palettes. See
-`apps/cc_gallery/README.md` for the authoring workflow and
-`packages/cc_ui/README.md` for the package API; the visual spec the system
-implements is `DESIGN.md`.
+`RepoSkillProjector` writes the overlay's `.claude/skills` and a real `AGENTS.md` for hot reload; the provisioner's `_ensureSymlink` restores its link on the next dispatch. Never project into overlay `.agents/skills`, which links to the agent-global directory. Announce swaps through **steering**, not aside: compaction drops system-role history, and `AgentLoopConfig.systemPrompt` is fixed for a run.
 
-### Stack
+Invocation is `/skill:<name>` or `/skill:<repo>:<name>` (`skillNameFor`); old bare non-builtin invocations remain readable. The human composer can name any repo's skill, but a bare name must be unambiguous. Context loaders resolve symlinks only within caller-permitted roots (`resolvesInsideRoots`); the AGENTS walk never descends a linked directory. Scanning/security requirements are in [SECURITY.md](SECURITY.md#execution-and-untrusted-input).
 
-| Concern                  | Technology                                                                                                                                                                                                                                                                                                 |
-| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| State management         | flutter_riverpod (Notifier / AsyncNotifier / Provider)                                                                                                                                                                                                                                                     |
-| Routing                  | go_router (ShellRoute app shell + redirect guards)                                                                                                                                                                                                                                                         |
-| Database                 | drift (SQLite) with DAO pattern, **split by workspace**: `GlobalDatabase` (`global.db`, schema v1) + one `WorkspaceDatabase` per workspace (`<workspaceId>/workspace.db`, schema v2), squashed baseline + `MigrationStep` chain, ~110 tables, owned by `cc_persistence`; FTS5 + sqlite_vector, server-only |
-| Client↔server RPC        | cc_rpc (JSON-RPC client + WSS/in-process/brokered-relay transports) · cc_host (server kernel: sessions, dispatcher, subscriptions, rate limiting, presence hub)                                                                                                                                            |
-| Networking               | dio (GitHub REST/GraphQL, GitLab REST v4, Bitbucket Cloud REST 2.0, Linear GraphQL, Google Calendar REST) + OAuth 2.0 PKCE (Google) + json_serializable models                                                                                                                                                                                       |
-| UI components            | **cc_ui** (in-repo design system: tokens, theme, 30+ `Cc*` components, no Material/Cupertino) over a token-based Material 3 base theme, fl_chart, kalender (calendar month/week views); the Plan Studio canvas is custom-drawn                                                                             |
-| Markdown & code          | **cc_markdown** (in-repo typed-AST parser + widget renderer: `CcMarkdown` / `CcStreamingMarkdown`, plus the native mermaid engine `CcMermaidView`), shiki_flutter (TextMate-grammar syntax highlighting for code blocks and diffs, themed by the custom CC theme in `lib/shared/syntax/`)                  |
-| Icons & graphics         | Phosphor Regular, vendored into cc_ui and reached through the AppIcons/CcIcons codepoint seams (no icon package dependency — see `test/tooling/icon_font_bundle_test.dart`), flutter_svg, GLSL fragment shaders                                                                                            |
-| On-device ML             | sherpa_onnx + onnxruntime_v2 (Whisper meeting transcription + pyannote speaker diarization, speech-to-text), sqlite_vector + dart_wordpiece (embeddings)                                                                                                                                                   |
-| Audio & video            | record (microphone), system_audio_capture (driver-free loopback: Core Audio taps / WASAPI / PipeWire), WebRTC AEC3, audioplayers, video_player + chewie                                                                                                                                                    |
-| Terminal & FFI           | xterm + flutter_pty (sandboxed terminal), ffi (rift worktrees, file finder, tree-sitter, native file watcher via cc_natives)                                                                                                                                                                               |
-| Desktop integration      | nativeapi (windowing incl. multi-window, plain storage, URL launching — consolidates what used to be four separate plugins), local_notifier, file_selector                                                                                                                                                 |
-| Off-main-thread compute  | isolate_manager (real isolates on native; generated Web Workers on web — diff parsing, large markdown, graph layout)                                                                                                                                                                                       |
-| Embedded web             | flutter_inappwebview (article webview, code-server panes)                                                                                                                                                                                                                                                  |
-| Remote control           | Brokered WebSocket relay (cc_rpc `RelayClientChannel` + E2E frame crypto), qr_flutter (pairing QR), crypto (PSK pairing handshake)                                                                                                                                                                         |
-| Security                 | flutter_secure_storage (keychain/keystore), crypto                                                                                                                                                                                                                                                         |
-| Internationalization     | intl + flutter_localizations (`kAppLocaleVariants`, `generate: true`)                                                                                                                                                                                                                                               |
-| Code generation          | build_runner, json_serializable, drift_dev, widgetbook_generator (cc_gallery navigation tree)                                                                                                                                                                                                              |
-| Architecture enforcement | architecture_constraints_test.dart                                                                                                                                                                                                                                                                         |
-| CI                       | GitHub Actions (ubuntu-latest): analyze, test, architecture test; plus deploy workflows for the web app, the Remote PWA and the design system                                                                                                                                                              |
+### Deferred tool loading
 
-### Route map
+- Keep external MCP `tools/list` complete. Only in-process harness schemas are deferred; tools remain callable from turn one, activating and executing in the same step.
+- `HarnessToolSearchTool` uses BM25 and returns matches plus `HarnessToolResult.activateTools`. Activation is append-only after resident schemas; `toolCacheBreakpointIndex` stays at the last resident tool.
+- Apply deferral after `ToolSurfaceSpec` filtering. Activation cannot add disallowed tools or bypass approval/action guards.
+- Dispatch and `ContextInspectionService` share `materializeHarnessToolSurface`. Residency comes from `ModeToolPolicy` through `ModeCapabilityProfile.toToolResidencySpec()`; reserve it for tools used in most runs.
+- `test/tooling/resident_tool_names_test.dart` checks real names and the under-40 budget. `--tool-deferral=off` / `CC_SERVER_TOOL_DEFERRAL` makes every admitted tool resident.
 
-The app shell (`ControlCenterLayout`) wraps every route via a `ShellRoute`. **Every in-shell destination is workspace-prefixed — `/workspaces/:workspaceId/…` — and the workspace id in the URL is the single source of truth for the active workspace** (`activeWorkspaceIdProvider` is driven from the route). `/splash`, `/onboarding` and the bare `/workspaces` picker render full-screen outside the shell. The auth guard keeps the user on `/onboarding` until at least one forge is connected for the signed-in user **and** at least one workspace exists. Paths below omit the `/workspaces/:workspaceId` prefix for brevity.
+### Prompt caching
 
-| Path (under `/workspaces/:workspaceId`)                                               | Screen                                                                                                                                                                                                                                                                                                  |
-| ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/splash` · `/onboarding` · `/workspaces`                                             | Startup splash · first-run setup · workspace picker (all full-screen, no prefix)                                                                                                                                                                                                                        |
-| `/dashboard`                                                                          | Global dashboard (the workspace root redirects here)                                                                                                                                                                                                                                                    |
-| `/inbox`                                                                              | Unified inbox: PRs by review lifecycle + everything else blocking the operator                                                                                                                                                                                                                          |
-| `/pull-requests` · `/pull-requests/compose` · `/pull-requests/:owner/:repo/:prNumber` | PR list · compose · PR detail with diff viewer                                                                                                                                                                                                                                                          |
-| `/spaces` · `/spaces/:spaceId`                                                        | Spaces + conversations, deep-linkable to a message via `?m=`                                                                                                                                                                                                                                             |
-| `/tickets` · `/tickets/:ticketId`                                                     | Ticket board · ticket master-detail                                                                                                                                                                                                                                                                     |
-| `/projects/:projectId`                                                                | Project overview (grouped tickets + progress)                                                                                                                                                                                                                                                           |
-| `/observability`                                                                      | Observability hub: live Agent Hub + cost/usage/quota/behavior analytics + fleet panel                                                                                                                                                                                                                   |
-| `/meetings` · `/meetings/record` · `/meetings/:meetingId`                             | Meetings list · live recording · meeting detail (notes/transcript)                                                                                                                                                                                                                                      |
-| `/calendar` · `/calendar/:eventId`                                                    | Calendar (month/week/agenda) · event detail                                                                                                                                                                                                                                                             |
-| `/newsfeed` · `/newsfeed/article/:articleId`                                          | Newsfeed list · article webview (feed management lives at `/settings/you/newsfeed`)                                                                                                                                                                                                                                                              |
-| `/pipelines` · `/pipelines/run` · `/pipelines/:runId`                                 | Pipelines · run launcher · run detail                                                                                                                                                                                                                                                                   |
-| `/plans` · `/plans/:kind/:id`                                                         | Plan Studio hub (active plans, plan documents, playbooks) · Plan Studio for one plan (`kind` = `orchestration`\|`document`)                                                                                                                                                                             |
-| `/memory`                                                                             | Workspace knowledge memory                                                                                                                                                                                                                                                                              |
-| `/users/:login`                                                                       | GitHub user profile                                                                                                                                                                                                                                                                                     |
-| `/api-keys`                                                                           | API key management                                                                                                                                                                                                                                                                                      |
-| `/settings/*` (incl. `/settings/you/newsfeed`)                                       | `/settings` redirects to `/settings/appearance`; then appearance, notifications, accounts, members, mcp, remote-control, advanced, voice-meetings, security, guardrails, adapters, agents, repositories, skills, keybindings, pipelines (+ template editor at `/settings/pipelines/:templateId`), teams |
+Keep sent prefixes byte-identical: append messages and tool schemas rather than mutating/reordering them. `pruneToolResults` batches rewrites at `CompactionConfig.pruneThresholdTokens` (default 2000); compaction forces pruning because it already rewrites history.
 
-## Getting Started
+Anthropic uses four cache breakpoints: last resident tool and last system block with a one-hour TTL; previous and current request tails with short TTLs. The rolling pair (`cacheAnchorIndex`) survives wide parallel tool turns. `_subagentPilots` releases same-shape siblings on the first child's first event with a bounded wait, allowing its cache write to become readable. Subagent resident sets are profile-independent; model/effort differences fragment the prefix. `McpToolBridge` caches deterministic stripped schemas with stable key order.
 
-```bash
-fvm flutter pub get
-fvm flutter pub run build_runner build --delete-conflicting-outputs  # after drift/JSON model changes
-fvm flutter gen-l10n                                                  # after ARB (l10n) changes
-fvm flutter run -d macos  # or windows, linux
-```
+Measure `cacheRead / (input + cacheRead + cacheWrite)` in `observability_metrics.dart`; cache writes belong in the denominator.
 
-### Run the headless server
+### Code graph
 
-The `cc_server` binary is a pure-Dart native executable (no Flutter engine):
+- Before walking or reading file state, `RepoStateProbe` fingerprints HEAD, `git status --porcelain -z -uall`, and dirty-path mtime/size; `codeIndexerFingerprint` covers extractor version, queries and grammar libraries. Matching `code_index_checkpoints` returns `CodeIndexResult.unchanged()`. Worktrees also compare base `generation`. A null probe never skips; watcher events force indexing.
+- Enumeration/hashing (`walkAndHash`), tree-sitter (`ExtractionWorker`) and embedding (`TextEmbedderWorker`, owning its FFI session) run off the main isolate. Use one long-lived extraction isolate per run; kill/replace a wedged parser.
+- Embed batches outside transactions, then write 32 files per transaction. Prune with chunked `IN` lists in one transaction. `resolvePendingReferences` probes indexed COUNT and projects names, not full embedding blobs.
+- Start `codeGraphWatch` after the ready banner; defer the first sweep with `--code-index-defer`. Desktop kills a server that misses its 20-second ready deadline. `--code-index off` disables indexing; `/healthz` exposes watching/indexing/pending state.
+- Native `cc_watcher` is required: kernel-recursive on macOS/Windows; ignore-aware inotify setup on its own Linux thread. No scanning fallback or arm stagger. An unwatchable checkout is logged/retried by reconciliation, not fatal to the service. Share `SourceFileWalker.watchIgnoredDirs` with `affectsIndex`. See [watcher](packages/cc_natives/native/watcher/README.md).
 
-```bash
-cd apps/cc_server
-dart build cli
-# provision a thin client before first start:
-./build/cli/<os_arch>/bundle/bin/cc_server pair --data-dir ./data --port 9030
-./build/cli/<os_arch>/bundle/bin/cc_server --data-dir ./data --port 9030
-```
+## Enclosures
 
-See `apps/cc_server/README.md` for flags, pairing and the `calendar connect` subcommand.
+Rig domain is `cc_domain/lib/features/rigs`, adapters `cc_infra/lib/src/rigs`, viewers `lib/features/rigs`. Desktop uses QEMU/HVF or KVM with qcow2 images; exec/browser use smolvm/libkrun with pinned OCI images; Android and iOS are host-managed exceptions, not enclosed networking. Backend selection follows `RigSpec`, never availability or a silent host-shell downgrade. Enforcement rules are in [SECURITY.md](SECURITY.md#execution-and-untrusted-input).
 
-## Testing
+### Browser engines
 
-```bash
-fvm flutter test --concurrency=1                                     # root app suite (other suites: --concurrency=2)
-fvm flutter test test/core/architecture_constraints_test.dart --concurrency=1  # architecture validation
-```
+`RigBrowserEngine` selects Chromium/CDP (`CdpClient`), Firefox/BiDi (`BidiClient`) or WebKit/W3C (`WebDriverClient`). `BrowserRigDriver` depends only on `BrowserEngineClient`; shared page scripts/action vocabulary live in `browser_engine_client.dart`. A rig keeps one engine for life; conversation reuse, in-flight open, tab dedup and provider keys all include the engine.
 
-Always cap test concurrency (`--concurrency=2`; `--concurrency=1` for the root app suite): an uncapped `flutter test` spawns one `flutter_tester` per CPU core, each loading the whole app plus a `frontend_server` compiler and can exhaust machine memory.
+- Create Firefox's `--profile` directory before launch. Send the guest-side authority in its WebSocket Host header; the forwarded host port fails validation.
+- Classic WebDriver POSTs require a body; GETs must not carry one (`dart:io` fixes GET content-length to zero).
+- Only Chromium screencasts; others poll at at most 6 fps. WebKit PNG stills need host ffmpeg for its live lane. Firefox/WebKit cannot bypass cache on reload, expose platform accessibility trees or perform real file drops; label DOM-derived accessibility accurately.
+- Use distribution Chromium, not upstream `headless-shell`, which omits audio backends. Browser workloads start system PulseAudio with a `ccout` null sink, a pulse-owned socket directory and successful `pactl` sink observation. Never mask startup failure with `|| true`. ffmpeg encodes `ccout.monitor`; packs are keyed by image, engine and audio revision.
 
-Tests cover network models, database DAOs (including workspace-isolation scoping and cross-workspace denial), auth + identity/membership, router and route guards, domain entities, domain services (with hand-rolled fakes), use cases, the deterministic sync/presence lanes, the action-guardrail policy resolver, the thin-client RPC parity surface (`InProcessRpcChannel`) and architecture constraints.
+### Input, display and worktrees
+
+QEMU input uses QMP (`input-send-event`/`send-key`) and `virtio-tablet`; the unprivileged guest agent only captures/mode-sets and scales frames. The human display lane relays bytes at panel resolution with adaptive fps/quality; the server never decodes frames on the RPC path. The agent lane is at most 1280×800 with one image per result (`capToolImages`); compaction discards old images but keeps text.
+
+The host worktree remains authoritative. Tar streams sync in; git bundles are fetched into `refs/rigs/<rigId>/*`, never pushed or checked out. Uncommitted changes return as a reviewable diff. `WorktreeTransport` uses SSH for QEMU and `smolvm machine exec` for microVMs.
+
+Clipboard policy is per-user and per-direction: paste into rig defaults on, copy out defaults off and prompts before reading. Temporary grants last ten minutes for one rig/direction; persistent grants are synced user preferences. `ensureRigClipboardPermission` gates `RigInputSurface` before `/rig/clipboard`. Denial still forwards guest-local Ctrl+C/X/V on Windows/Linux so copy, paste and terminal interrupts work.
+
+`RigService.act` rejects agent mutations while a human has control but allows observations. Log inputs with `Principal` and a per-rig monotonic `seq` in the insert transaction. Hard TTL, idle→park→close and resident-MB LRU bound resource use; parked VMs retain RAM. Shutdown tears down all owned machines.
+
+### Boot and recovery
+
+- Desktop qcow2 downloads are user-initiated, checksum-pinned and stored in `<dataDir>/rigs/images`. `scripts/rigs/build_image.sh` bakes the guest agent; Settings imports images. `kSmolvmExecImage`/`kSmolvmDebianBrowserImage` pin OCI digests; browser engines warm gated apt installs into per-engine packs.
+- Android SDK/emulator/images come from Google (`setup_android.sh` reuses Android Studio); distinguish no SDK, no emulator, no AVD and no running device. iOS requires macOS, Xcode/runtime and checksum-verified WebDriverAgent installed through owner-only `rig.installBackendSetup`. Register uniquely named owned devices atomically; teardown/orphan recovery stop WDA and delete only those devices. iOS streams fixed-size MJPEG and supports typed point/key/app actions, not file drop/audio/mic/enclosed egress. Mobile developer commands are argv-shaped device commands, never a host shell.
+- `buildRigSocketPath` selects the first fitting XDG_RUNTIME_DIR/TMPDIR/`/tmp` root; Unix socket limits are 104 bytes on macOS/BSD, 108 on Linux. Keep full rig IDs, create 0700 directories, reject symlinked `ccrig` namespaces. Durable files remain under the data directory; teardown/recovery clear both trees.
+- Stock Ubuntu QEMU cloud images need a `cidata` cloud-init seed creating `cc` and its SSH key, not the built-image `CCRIG` format. Readiness is sshd's banner, not a bare forwarded TCP connection or a nonexistent guest agent.
+- Guest seed permissions are `0640 root:cc`; both the `User=cc` guest service and git credential helper need read access.
+- A successful cloud-init exit does not prove customization. The builder requires the guest completion marker and deletes failed output. Discover firmware via `qemu -L help`, not paths derived from a symlinked binary. `verify_image.sh` must boot the output with a real seed and observe `/health` before publication; its diagnostic seed dumps the guest journal.
+- Rig viewers belong to space/PR tabs, not global navigation; tools share the conversation's machine. Settings → Server → Enclosures owns setup/capabilities/sessions. Never auto-start rigs on layout restore. Restored microVM terminal tabs carry `EditorLayoutCodec.deferStartArg` and wait for “Open the shell”; host-shell terminals may attach on mount.
+
+## Client conventions
+
+### Routes and onboarding
+
+`go_router` uses `ShellRoute(ControlCenterLayout)`. In-shell routes start `/workspaces/:workspaceId/`; that URL drives `activeWorkspaceIdProvider` and `context.currentWorkspaceId`. Builders take workspace ID first. `/splash`, `/onboarding`, `/signed-out`, and `/workspaces` are full-screen pre-context routes. See `lib/router/{routes,app_router,guards}.dart` and `features/auth/providers/onboarding_providers.dart` for the actual route inventory.
+
+Setup requires a forge connected for the signed-in user and a workspace. Missing credentials lead to `/signed-out` only if that user's `users.onboarding_finished_at` says setup finished; otherwise onboarding. Never infer this from workspace existence or device preferences: invited users and shared devices invalidate that inference. Hold splash while the value is unknown. `users.markOnboardingFinished` is self-targeting, idempotent and monotonic; mark on completion and when observing a complete setup. Snapshot the step list once: invited members skip workspace creation but still do personal setup.
+
+### Rendering assets
+
+- [cc_ui](packages/cc_ui/README.md) and [gallery](apps/cc_gallery/README.md) own components; [DESIGN.md](DESIGN.md) owns visual rules. Do not create another kit.
+- Vendor only `Phosphor-Regular.ttf`; `tool/gen_icon_seams.py` generates `AppIcons`/`CcIcons` with `fontPackage: 'cc_ui'`. An icon-package dependency loads unused styles on web and giant icon classes can overflow the DDC linker.
+- Script companions are locale-loaded assets, not `fonts:` entries: Sarabun (Thai), Rubik (Hebrew), IBM Plex Sans Arabic (Arabic/Persian/Urdu); CJK uses the OS face. Do not bundle Noto CJK or eagerly load companions for English.
+- Markdown uses `appMarkdownStyle`, `markdown_registries.dart`, `markdown_builders.dart` and `buildSharedCodeBlock` under `lib/shared/widgets/markdown/`. `GitHubMarkdownBody` serves forge content; `StyledMarkdownBody` tickets/meetings. Native mermaid ignores author styling in favor of `appMermaidStyle`; malformed/unsupported and unclosed streaming fences remain code. No WebView/JS diagram dependency.
+- Syntax highlighting uses shiki_flutter via `lib/shared/syntax/`: shared `syntax_languages.dart`, native registry, curated web registry and deferred grammar packs (`tool/gen_grammar_packs.py`). Theme edits update `syntax_palette.dart` and bump `kCcThemeRevision`. The Flutter-free `package:shiki_flutter/engine.dart` feeds the generated diff worker. Its unmatched-token sentinel maps to inherited color; do not duplicate the magic value elsewhere.
+- Global error boundaries are `PlatformDispatcher.instance.onError` and `ErrorWidget.builder`.
+
+### Media cache
+
+Clients fetch external media through signed `/proxy/media` (`MediaProxyConfig`). `MediaCache` persists non-ranged images under `<dataDir>/media_cache`, keyed by `(url,w)`: upstream max-age clamped to 1 hour–7 days (default 24 hours), conditional ETag/Last-Modified refresh, stale-on-refresh-failure and same-key single-flight. Bucket requested widths **up** with `bucketMediaWidth` in `lib/shared/utils/media_width_ladder.dart` to share entries.

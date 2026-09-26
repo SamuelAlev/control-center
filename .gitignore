@@ -12,6 +12,9 @@
 .swiftpm/
 migrate_working_dir/
 
+# Generated local MCP configuration lock; keep the configuration itself.
+/.omp/mcp.json.lock
+
 # IntelliJ related
 *.iml
 *.ipr

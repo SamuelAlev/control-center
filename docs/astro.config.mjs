@@ -12,6 +12,9 @@ import {
   bundledComponents,
   dartDependencies,
 } from "./src/data/third-party.build.mjs";
+import { readFileSync, readdirSync } from "node:fs";
+
+import { siteLocales, siteRtl } from "./src/data/locales.ts";
 
 function thirdPartyManifest() {
   const id = "virtual:third-party";
@@ -29,22 +32,73 @@ function thirdPartyManifest() {
   };
 }
 
+
+const site = "https://usectrl.dev";
+const socialImage = new URL("/og.png", site).href;
+
+const localeDirectory = new URL("./src/content/i18n/", import.meta.url);
+const uiLocales = Object.fromEntries(
+  readdirSync(localeDirectory).filter((file) => file.endsWith(".json")).map((file) => [
+    file.slice(0, -5),
+    JSON.parse(readFileSync(new URL(file, localeDirectory), "utf8")),
+  ]),
+);
+const ui = uiLocales.en;
+const socialImageAlt = ui["docs.socialImageAlt"];
+
+/** @typedef {{label: string, slug?: string, collapsed?: boolean, items?: SidebarItem[]}} SidebarItem */
+/** Resolve locale keys into Starlight's native label/translations fields.
+ * @param {SidebarItem} item
+ */
+function localizeSidebar(item) {
+  const key = item.label;
+  return {
+    ...item,
+    label: ui[key],
+    translations: Object.fromEntries(
+      Object.entries(uiLocales).flatMap(([language, messages]) =>
+        typeof messages[key] === "string" && messages[key] !== "" ? [[language, messages[key]]] : [],
+      ),
+    ),
+    ...(item.items ? { items: item.items.map(localizeSidebar) } : {}),
+  };
+}
+
 // https://astro.build/config
 export default defineConfig({
   base: "/",
-  site: "https://usectrl.dev",
+  site,
 
   integrations: [
     starlight({
-      title: "Documentation \\\\ Control Center",
+      title: Object.fromEntries([
+        ["en", ui["docs.siteTitle"]],
+        ...siteLocales.map(({ id }) => [id, uiLocales[id]?.["docs.siteTitle"] || ui["docs.siteTitle"]]),
+      ]),
+      defaultLocale: "root",
+      locales: Object.fromEntries(
+        siteLocales.map(({ id, name }) => [
+          id === "en-US" ? "root" : id,
+          { label: name, lang: id === "en-US" ? "en" : id, dir: siteRtl.has(id) ? "rtl" : "ltr" },
+        ]),
+      ),
       customCss: ["./src/styles/starlight.css"],
       components: {
-        SiteTitle: "./src/components/starlight/SiteTitle.astro",
+        Header: "./src/components/starlight/Header.astro",
+        Footer: "./src/components/starlight/Footer.astro",
+        LanguageSelect: "./src/components/starlight/LanguageSelect.astro",
+        Sidebar: "./src/components/starlight/Sidebar.astro",
         ThemeSelect: "./src/components/starlight/ThemeSelect.astro",
         Head: "./src/components/starlight/Head.astro",
       },
       titleDelimiter: " \\\\ ",
       head: [
+        { tag: "meta", attrs: { property: "og:image", content: socialImage } },
+        { tag: "meta", attrs: { property: "og:image:width", content: "1200" } },
+        { tag: "meta", attrs: { property: "og:image:height", content: "630" } },
+        { tag: "meta", attrs: { property: "og:image:alt", content: socialImageAlt } },
+        { tag: "meta", attrs: { name: "twitter:image", content: socialImage } },
+        { tag: "meta", attrs: { name: "twitter:image:alt", content: socialImageAlt } },
         {
           tag: "link",
           attrs: {
@@ -69,11 +123,10 @@ export default defineConfig({
       expressiveCode: {
         themes: ["github-light", "github-dark"],
         styleOverrides: {
-          borderRadius: "0.125rem",
+          borderRadius: "0",
           borderColor: "var(--cc-border)",
           codeBackground: "var(--cc-rail)",
-          codeFontFamily:
-            "'Fira Code', ui-monospace, 'SF Mono', Menlo, Consolas, monospace",
+          codeFontFamily: "var(--cc-font-mono)",
           codeFontSize: "0.8125rem",
           frames: {
             editorTabBarBackground: "var(--cc-surface)",
@@ -88,173 +141,173 @@ export default defineConfig({
       social: [
         {
           icon: "github",
-          label: "GitHub",
+          label: ui["docs.socialGitHub"],
           href: "https://github.com/SamuelAlev/control-center",
         },
       ],
       sidebar: [
         {
-          label: "Getting started",
+          label: "docs.sidebar.gettingStarted",
           items: [
-            { label: "Introduction", slug: "manual" },
-            { label: "Quick start", slug: "manual/quick-start" },
-            { label: "Install", slug: "manual/install" },
+            { label: "docs.sidebar.gettingStartedIntroduction", slug: "manual" },
+            { label: "docs.sidebar.quickStart", slug: "manual/quick-start" },
+            { label: "docs.sidebar.install", slug: "manual/install" },
           ],
         },
         {
-          label: "Tutorials",
+          label: "docs.sidebar.tutorials",
           items: [
-            { label: "Overview", slug: "manual/tutorials" },
+            { label: "docs.sidebar.tutorialsOverview", slug: "manual/tutorials" },
             {
-              label: "Your first workspace",
+              label: "docs.sidebar.tutorialsFirstWorkspace",
               slug: "manual/tutorials/first-workspace",
             },
             {
-              label: "Dispatch your first agent",
+              label: "docs.sidebar.tutorialsFirstAgent",
               slug: "manual/tutorials/first-agent",
             },
             {
-              label: "Review your first pull request",
+              label: "docs.sidebar.tutorialsFirstPr",
               slug: "manual/tutorials/first-pr",
             },
             {
-              label: "Build your first pipeline",
+              label: "docs.sidebar.tutorialsFirstPipeline",
               slug: "manual/tutorials/first-pipeline",
             },
             {
-              label: "Bridge Slack to your workspace",
+              label: "docs.sidebar.tutorialsFirstChatBridge",
               slug: "manual/tutorials/first-chat-bridge",
             },
             {
-              label: "Sign your team in with SSO",
+              label: "docs.sidebar.tutorialsSso",
               slug: "manual/tutorials/sso",
             },
           ],
         },
         {
-          label: "Concepts",
+          label: "docs.sidebar.concepts",
           items: [
-            { label: "Overview", slug: "manual/concepts" },
+            { label: "docs.sidebar.conceptsOverview", slug: "manual/concepts" },
             {
-              label: "Core model",
+              label: "docs.sidebar.conceptsCoreModel",
               items: [
                 {
-                  label: "Workspaces and isolation",
+                  label: "docs.sidebar.conceptsWorkspaces",
                   slug: "manual/concepts/workspaces",
                 },
                 {
-                  label: "The agent model",
+                  label: "docs.sidebar.conceptsAgentModel",
                   slug: "manual/concepts/agent-model",
                 },
                 {
-                  label: "Agent dispatch lifecycle",
+                  label: "docs.sidebar.conceptsDispatchLifecycle",
                   slug: "manual/concepts/dispatch-lifecycle",
                 },
-                { label: "Modes", slug: "manual/concepts/modes" },
+                { label: "docs.sidebar.conceptsModes", slug: "manual/concepts/modes" },
                 {
-                  label: "Tool context and prompt caching",
+                  label: "docs.sidebar.conceptsToolContext",
                   slug: "manual/concepts/tool-context",
                 },
                 {
-                  label: "Conversation history",
+                  label: "docs.sidebar.conceptsConversationHistory",
                   slug: "manual/concepts/conversation-history",
                 },
                 {
-                  label: "Code intelligence",
+                  label: "docs.sidebar.conceptsCodeIntelligence",
                   slug: "manual/concepts/code-intelligence",
                 },
               ],
             },
             {
-              label: "Safety and control",
+              label: "docs.sidebar.conceptsSafetyAndControl",
               items: [
                 {
-                  label: "Sandbox and security",
+                  label: "docs.sidebar.conceptsSandboxSecurity",
                   slug: "manual/concepts/sandbox-security",
                 },
-                { label: "Guardrails", slug: "manual/concepts/guardrails" },
+                { label: "docs.sidebar.conceptsGuardrails", slug: "manual/concepts/guardrails" },
                 {
-                  label: "Authorization",
+                  label: "docs.sidebar.conceptsAuthorization",
                   slug: "manual/concepts/authorization",
                 },
                 {
-                  label: "Rigs and enclosures",
+                  label: "docs.sidebar.conceptsRigs",
                   slug: "manual/concepts/rigs",
                 },
               ],
             },
             {
-              label: "Directing the work",
+              label: "docs.sidebar.conceptsDirectingTheWork",
               items: [
                 {
-                  label: "Tickets and delegation",
+                  label: "docs.sidebar.conceptsTickets",
                   slug: "manual/concepts/tickets",
                 },
                 {
-                  label: "Pipelines and automation",
+                  label: "docs.sidebar.conceptsPipelines",
                   slug: "manual/concepts/pipelines",
                 },
                 {
-                  label: "Orchestration",
+                  label: "docs.sidebar.conceptsOrchestration",
                   slug: "manual/concepts/orchestration",
                 },
                 {
-                  label: "AI review",
+                  label: "docs.sidebar.conceptsAiReview",
                   slug: "manual/concepts/ai-review",
                 },
                 {
-                  label: "Memory and knowledge",
+                  label: "docs.sidebar.conceptsMemoryKnowledge",
                   slug: "manual/concepts/memory-knowledge",
                 },
                 {
-                  label: "Evals and quality",
+                  label: "docs.sidebar.conceptsEvalsAndQuality",
                   slug: "manual/concepts/evals-and-quality",
                 },
               ],
             },
             {
-              label: "People and reach",
+              label: "docs.sidebar.conceptsPeopleAndReach",
               items: [
                 {
-                  label: "Multiplayer and presence",
+                  label: "docs.sidebar.conceptsMultiplayer",
                   slug: "manual/concepts/multiplayer",
                 },
-                { label: "Single sign-on", slug: "manual/concepts/sso" },
+                { label: "docs.sidebar.conceptsSso", slug: "manual/concepts/sso" },
                 {
-                  label: "Chat bridges",
+                  label: "docs.sidebar.conceptsChatBridges",
                   slug: "manual/concepts/chat-bridges",
                 },
                 {
-                  label: "PR conversations",
+                  label: "docs.sidebar.conceptsPrConversations",
                   slug: "manual/concepts/pr-conversations",
                 },
                 {
-                  label: "Remote control and mobile",
+                  label: "docs.sidebar.conceptsRemoteControl",
                   slug: "manual/concepts/remote-control",
                 },
                 {
-                  label: "Meetings and transcription",
+                  label: "docs.sidebar.conceptsMeetings",
                   slug: "manual/concepts/meetings",
                 },
                 {
-                  label: "Calendar and scheduling",
+                  label: "docs.sidebar.conceptsCalendar",
                   slug: "manual/concepts/calendar",
                 },
               ],
             },
             {
-              label: "Under the hood",
+              label: "docs.sidebar.conceptsUnderTheHood",
               items: [
                 {
-                  label: "Architecture",
+                  label: "docs.sidebar.conceptsArchitecture",
                   slug: "manual/concepts/architecture",
                 },
                 {
-                  label: "Deployment and clients",
+                  label: "docs.sidebar.conceptsDeployment",
                   slug: "manual/concepts/deployment",
                 },
                 {
-                  label: "Domain events",
+                  label: "docs.sidebar.conceptsDomainEvents",
                   slug: "manual/concepts/domain-events",
                 },
               ],
@@ -262,353 +315,352 @@ export default defineConfig({
           ],
         },
         {
-          label: "How-to guides",
+          label: "docs.sidebar.guides",
           items: [
-            { label: "Overview", slug: "manual/guides" },
+            { label: "docs.sidebar.guidesOverview", slug: "manual/guides" },
             {
-              label: "Agents",
+              label: "docs.sidebar.guidesAgents",
               items: [
                 {
-                  label: "Create and configure an agent",
+                  label: "docs.sidebar.guidesCreateAgent",
                   slug: "manual/guides/create-agent",
                 },
                 {
-                  label: "Run agents in parallel",
+                  label: "docs.sidebar.guidesParallelAgents",
                   slug: "manual/guides/parallel-agents",
                 },
                 {
-                  label: "Build an agent team",
+                  label: "docs.sidebar.guidesBuildTeam",
                   slug: "manual/guides/build-team",
                 },
                 {
-                  label: "Manage costs",
+                  label: "docs.sidebar.guidesManageCosts",
                   slug: "manual/guides/manage-costs",
                 },
                 {
-                  label: "Diagnose an agent",
+                  label: "docs.sidebar.guidesAgentDiagnostics",
                   slug: "manual/guides/agent-diagnostics",
                 },
                 {
-                  label: "Tune an agent's tool context",
+                  label: "docs.sidebar.guidesTuneToolContext",
                   slug: "manual/guides/tune-tool-context",
                 },
                 {
-                  label: "Debug a failing test with an agent",
+                  label: "docs.sidebar.guidesDebugAFailingTest",
                   slug: "manual/guides/debug-a-failing-test",
                 },
                 {
-                  label: "Explore data in a persistent kernel",
+                  label: "docs.sidebar.guidesExploreDataInAKernel",
                   slug: "manual/guides/explore-data-in-a-kernel",
                 },
                 {
-                  label: "Direct background workers",
+                  label: "docs.sidebar.guidesDirectBackgroundWorkers",
                   slug: "manual/guides/direct-background-workers",
                 },
               ],
             },
             {
-              label: "Workspaces",
+              label: "docs.sidebar.guidesWorkspaces",
               items: [
                 {
-                  label: "Add repos to a workspace",
+                  label: "docs.sidebar.guidesAddRepos",
                   slug: "manual/guides/add-repos",
                 },
                 {
-                  label:
-                    "Run scripts when a space's worktree is created or destroyed",
+                  label: "docs.sidebar.guidesRepoScripts",
                   slug: "manual/guides/repo-scripts",
                 },
                 {
-                  label: "Manage workspace memory",
+                  label: "docs.sidebar.guidesManageMemory",
                   slug: "manual/guides/manage-memory",
                 },
                 {
-                  label: "Install and manage skills",
+                  label: "docs.sidebar.guidesManageSkills",
                   slug: "manual/guides/manage-skills",
                 },
                 {
-                  label: "Search code with the code graph",
+                  label: "docs.sidebar.guidesCodeSearch",
                   slug: "manual/guides/code-search",
                 },
                 {
-                  label: "Refactor code structurally",
+                  label: "docs.sidebar.guidesStructuralRefactor",
                   slug: "manual/guides/structural-refactor",
                 },
                 {
-                  label: "Give an agent a machine to test on",
+                  label: "docs.sidebar.guidesUseRigs",
                   slug: "manual/guides/use-rigs",
                 },
                 {
-                  label: "Forward ports from a terminal",
+                  label: "docs.sidebar.guidesVmPorts",
                   slug: "manual/guides/vm-ports",
                 },
               ],
             },
             {
-              label: "Pull requests",
+              label: "docs.sidebar.guidesPullRequests",
               items: [
                 {
-                  label: "Review and merge a PR",
+                  label: "docs.sidebar.guidesReviewMergePr",
                   slug: "manual/guides/review-merge-pr",
                 },
                 {
-                  label: "Use AI-powered review",
+                  label: "docs.sidebar.guidesAiReview",
                   slug: "manual/guides/ai-review",
                 },
                 {
-                  label: "Talk to Control Center from a GitHub PR",
+                  label: "docs.sidebar.guidesGithubPrConversations",
                   slug: "manual/guides/github-pr-conversations",
                 },
                 {
-                  label: "Dispatch reviewer agents",
+                  label: "docs.sidebar.guidesDispatchReviewers",
                   slug: "manual/guides/dispatch-reviewers",
                 },
                 {
-                  label: "Review compute (cohorts and axes)",
+                  label: "docs.sidebar.guidesReviewCompute",
                   slug: "manual/guides/review-compute",
                 },
               ],
             },
             {
-              label: "Messaging",
+              label: "docs.sidebar.guidesMessaging",
               items: [
                 {
-                  label: "Chat with an agent",
+                  label: "docs.sidebar.guidesChatWithAgent",
                   slug: "manual/guides/chat-with-agent",
                 },
                 {
-                  label: "Use spaces",
+                  label: "docs.sidebar.guidesSpaces",
                   slug: "manual/guides/spaces",
                 },
                 {
-                  label: "@-mention agents",
+                  label: "docs.sidebar.guidesMentionAgents",
                   slug: "manual/guides/mention-agents",
                 },
-                { label: "Use plan mode", slug: "manual/guides/plan-mode" },
+                { label: "docs.sidebar.guidesPlanMode", slug: "manual/guides/plan-mode" },
                 {
-                  label: "Branch a conversation",
+                  label: "docs.sidebar.guidesBranchAConversation",
                   slug: "manual/guides/branch-a-conversation",
                 },
                 {
-                  label: "Triage your inbox",
+                  label: "docs.sidebar.guidesTriageInbox",
                   slug: "manual/guides/triage-inbox",
                 },
               ],
             },
             {
-              label: "Pipelines and plans",
+              label: "docs.sidebar.guidesPipelinesAndPlans",
               items: [
                 {
-                  label: "Create a pipeline template",
+                  label: "docs.sidebar.guidesCreatePipeline",
                   slug: "manual/guides/create-pipeline",
                 },
                 {
-                  label: "Run a pipeline manually",
+                  label: "docs.sidebar.guidesRunPipeline",
                   slug: "manual/guides/run-pipeline",
                 },
                 {
-                  label: "Set up pipeline triggers",
+                  label: "docs.sidebar.guidesPipelineTriggers",
                   slug: "manual/guides/pipeline-triggers",
                 },
                 {
-                  label: "Monitor pipeline runs",
+                  label: "docs.sidebar.guidesMonitorPipelines",
                   slug: "manual/guides/monitor-pipelines",
                 },
                 {
-                  label: "Run an orchestration",
+                  label: "docs.sidebar.guidesRunOrchestration",
                   slug: "manual/guides/run-orchestration",
                 },
                 {
-                  label: "Work in Plan Studio",
+                  label: "docs.sidebar.guidesPlanStudio",
                   slug: "manual/guides/plan-studio",
                 },
               ],
             },
             {
-              label: "Ticketing",
+              label: "docs.sidebar.guidesTicketing",
               items: [
                 {
-                  label: "Create and manage tickets",
+                  label: "docs.sidebar.guidesManageTickets",
                   slug: "manual/guides/manage-tickets",
                 },
                 {
-                  label: "Delegate work to agents",
+                  label: "docs.sidebar.guidesDelegateTickets",
                   slug: "manual/guides/delegate-tickets",
                 },
                 {
-                  label: "Organize work with projects",
+                  label: "docs.sidebar.guidesProjects",
                   slug: "manual/guides/projects",
                 },
               ],
             },
             {
-              label: "Meetings and calendar",
+              label: "docs.sidebar.guidesMeetingsAndCalendar",
               items: [
                 {
-                  label: "Record and summarize a meeting",
+                  label: "docs.sidebar.guidesRecordMeeting",
                   slug: "manual/guides/record-meeting",
                 },
                 {
-                  label: "Connect a Google Calendar",
+                  label: "docs.sidebar.guidesConnectCalendar",
                   slug: "manual/guides/connect-calendar",
                 },
               ],
             },
             {
-              label: "Server and deployment",
+              label: "docs.sidebar.guidesServerAndDeployment",
               items: [
                 {
-                  label: "Run a headless server",
+                  label: "docs.sidebar.guidesRunHeadlessServer",
                   slug: "manual/guides/run-headless-server",
                 },
                 {
-                  label: "Connect to a remote server",
+                  label: "docs.sidebar.guidesConnectRemoteServer",
                   slug: "manual/guides/connect-remote-server",
                 },
                 {
-                  label: "Run a fleet worker",
+                  label: "docs.sidebar.guidesRunFleetWorker",
                   slug: "manual/guides/run-fleet-worker",
                 },
                 {
-                  label: "Back up and restore",
+                  label: "docs.sidebar.guidesBackUpAndRestore",
                   slug: "manual/guides/back-up-and-restore",
                 },
                 {
-                  label: "Pair a device",
+                  label: "docs.sidebar.guidesPairADevice",
                   slug: "manual/guides/pair-a-device",
                 },
                 {
-                  label: "Connect an OpenID Connect provider",
+                  label: "docs.sidebar.guidesSsoOidc",
                   slug: "manual/guides/sso-oidc",
                 },
                 {
-                  label: "Provision users with SCIM",
+                  label: "docs.sidebar.guidesSsoScim",
                   slug: "manual/guides/sso-scim",
                 },
               ],
             },
             {
-              label: "Integrations",
+              label: "docs.sidebar.guidesIntegrations",
               items: [
                 {
-                  label: "Connect a code host",
+                  label: "docs.sidebar.guidesConnectForges",
                   slug: "manual/guides/connect-forges",
                 },
                 {
-                  label: "Set up GitHub integration",
+                  label: "docs.sidebar.guidesGithubIntegration",
                   slug: "manual/guides/github-integration",
                 },
                 {
-                  label: "Create the GitHub App",
+                  label: "docs.sidebar.guidesGithubApp",
                   slug: "manual/guides/github-app",
                 },
                 {
-                  label: "Set up Linear integration",
+                  label: "docs.sidebar.guidesLinearIntegration",
                   slug: "manual/guides/linear-integration",
                 },
                 {
-                  label: "Set up Slack integration",
+                  label: "docs.sidebar.guidesSlackIntegration",
                   slug: "manual/guides/slack-integration",
                 },
                 {
-                  label: "Link your Slack account",
+                  label: "docs.sidebar.guidesLinkChatAccount",
                   slug: "manual/guides/link-chat-account",
                 },
                 {
-                  label: "Customize the chat bot",
+                  label: "docs.sidebar.guidesCustomizeChatBot",
                   slug: "manual/guides/customize-chat-bot",
                 },
                 {
-                  label: "Use the MCP server",
+                  label: "docs.sidebar.guidesMcpServer",
                   slug: "manual/guides/mcp-server",
                 },
                 {
-                  label: "Curate your newsfeed",
+                  label: "docs.sidebar.guidesNewsfeed",
                   slug: "manual/guides/newsfeed",
                 },
               ],
             },
             {
-              label: "Your environment",
+              label: "docs.sidebar.guidesYourEnvironment",
               items: [
                 {
-                  label: "Configure notifications",
+                  label: "docs.sidebar.guidesNotifications",
                   slug: "manual/guides/notifications",
                 },
                 {
-                  label: "Use focus mode and soundscapes",
+                  label: "docs.sidebar.guidesFocusMode",
                   slug: "manual/guides/focus-mode",
                 },
                 {
-                  label: "Manage adapters and models",
+                  label: "docs.sidebar.guidesAdapters",
                   slug: "manual/guides/adapters",
                 },
                 {
-                  label: "Configure sandbox policies",
+                  label: "docs.sidebar.guidesSandboxPolicies",
                   slug: "manual/guides/sandbox-policies",
                 },
                 {
-                  label: "Configure guardrails",
+                  label: "docs.sidebar.guidesConfigureGuardrails",
                   slug: "manual/guides/configure-guardrails",
                 },
-                { label: "Manage API keys", slug: "manual/guides/api-keys" },
+                { label: "docs.sidebar.guidesApiKeys", slug: "manual/guides/api-keys" },
               ],
             },
           ],
         },
         {
-          label: "Reference",
+          label: "docs.sidebar.reference",
           items: [
-            { label: "Overview", slug: "manual/reference" },
-            { label: "MCP tools", slug: "manual/reference/mcp-tools" },
+            { label: "docs.sidebar.referenceOverview", slug: "manual/reference" },
+            { label: "docs.sidebar.referenceMcpTools", slug: "manual/reference/mcp-tools" },
             {
-              label: "Built-in agent tools",
+              label: "docs.sidebar.referenceAgentTools",
               slug: "manual/reference/agent-tools",
             },
             {
-              label: "Slash commands",
+              label: "docs.sidebar.referenceSlashCommands",
               slug: "manual/reference/slash-commands",
             },
             {
-              label: "SSO configuration",
+              label: "docs.sidebar.referenceSso",
               slug: "manual/reference/sso",
             },
             {
-              label: "Agent configuration",
+              label: "docs.sidebar.referenceAgentConfiguration",
               slug: "manual/reference/agent-configuration",
             },
             {
-              label: "Pipeline step kinds",
+              label: "docs.sidebar.referencePipelineSteps",
               slug: "manual/reference/pipeline-steps",
             },
             {
-              label: "Ticket lifecycle",
+              label: "docs.sidebar.referenceTicketLifecycle",
               slug: "manual/reference/ticket-lifecycle",
             },
             {
-              label: "Sandbox backends",
+              label: "docs.sidebar.referenceSandboxBackends",
               slug: "manual/reference/sandbox-backends",
             },
-            { label: "Rigs", slug: "manual/reference/rigs" },
-            { label: "Chat bridge", slug: "manual/reference/chat-bridge" },
-            { label: "Domain events", slug: "manual/reference/domain-events" },
+            { label: "docs.sidebar.referenceRigs", slug: "manual/reference/rigs" },
+            { label: "docs.sidebar.referenceChatBridge", slug: "manual/reference/chat-bridge" },
+            { label: "docs.sidebar.referenceDomainEvents", slug: "manual/reference/domain-events" },
             {
-              label: "Keyboard shortcuts",
+              label: "docs.sidebar.referenceKeyboardShortcuts",
               slug: "manual/reference/keyboard-shortcuts",
             },
-            { label: "Route map", slug: "manual/reference/route-map" },
+            { label: "docs.sidebar.referenceRouteMap", slug: "manual/reference/route-map" },
             {
-              label: "cc_server CLI",
+              label: "docs.sidebar.referenceCcServerCli",
               slug: "manual/reference/cc-server-cli",
             },
             {
-              label: "Backup, export and import",
+              label: "docs.sidebar.referenceBackup",
               slug: "manual/reference/backup",
             },
-            { label: "Glossary", slug: "manual/reference/glossary" },
+            { label: "docs.sidebar.referenceGlossary", slug: "manual/reference/glossary" },
           ],
         },
-      ],
+      ].map(localizeSidebar),
     }),
     mdx(),
   ],

@@ -1,708 +1,80 @@
 ---
 name: Control Center
-description: Multi-agent developer control center for orchestrating AI agents across isolated Git worktrees
+description: Flutter clients and a pure-Dart server for multi-agent developer operations
 repository: https://github.com/SamuelAlev/control-center
 ---
 
-# Control Center
+# Working in Control Center
 
-You are working on the Control Center, a Flutter desktop application for orchestrating AI agents across isolated Git worktrees. The app provides a native GUI for multi-agent development with GitHub/Linear integration, PR review and workspace management.
+Read only the references relevant to the change:
 
-## Project structure
+- [ARCH.md](ARCH.md): package ownership, persistence, harness/cache/indexing, rigs and client integration contracts.
+- [SECURITY.md](SECURITY.md): authorization, credentials, untrusted input and network boundaries. Required for changes touching these surfaces.
+- [PRODUCT.md](PRODUCT.md) + [DESIGN.md](DESIGN.md): strategy and visual rules. Required for UI work; use the `impeccable` skill.
+- App/package READMEs: local APIs, commands and limitations. [RELEASING.md](RELEASING.md): packaging/release procedures. [GLOSSARY.md](GLOSSARY.md): domain terms.
 
-The repository is a **native Dart pub workspace** (single resolved `pubspec.lock`) of a root Flutter app plus **6 apps and 15 packages**. The server half is pure-Dart (no Flutter engine) so it compiles to a self-contained native binary; the client half is Flutter. See `ARCH.md` for the exhaustive map.
+Keep this file for cross-cutting coding rules. Put subsystem details in the owning reference, not another copy here. `CLAUDE.md` points to this file.
 
-```
-apps/
-├── cc_server/          # Headless pure-Dart server binary (dart build cli). Owns the DB, serves repo-RPC.
-├── cc_worker/          # Headless fleet executor binary. Pairs with cc_server, declares capabilities,
-│                       #   heartbeats, pulls leased jobs, executes them, streams events back. Holds no durable state.
-├── cc_remote/          # Phone thin client — Flutter web PWA, remote-controls the fleet over the brokered relay.
-├── cc_signaling_server/# Stateless WebSocket relay broker (N-way invite-gated rooms; a dumb relay).
-├── cc_gallery/         # Widgetbook catalogue of cc_ui (the living design-system reference).
-└── cc_demo_server/     # Public demo host — a separate binary with a locked-down mutating surface. Not a `--demo` flag on cc_server.
+## Boundaries
 
-packages/
-├── cc_ui/              # In-repo design system: tokens, theme, 30+ Cc* components (flutter/widgets.dart only).
-├── cc_domain/          # Pure-Dart SHARED KERNEL: all domain entities, value objects, ports, repositories,
-│                       #   events, services + every feature's domain/ layer. Zero infra deps (no drift/dio/dart:io).
-├── cc_harness/         # Pure-Dart agent-loop KERNEL (the built-in agent runtime core): messages, provider port,
-│                       #   tools, compaction, steering, hooks, subagents, slash commands. Web-safe; embeddable by cc_server/cc_worker.
-├── cc_harness_runtime/ # VM-only BATTERIES for the kernel: Anthropic/OpenAI/Ollama streaming providers,
-│                       #   OAuth/PKCE credential brokering, generic tool set, AGENTS.md + skills loaders.
-├── cc_rpc/             # Transport-agnostic JSON-RPC client + channel transports (web-safe).
-├── cc_host/            # Server-side RPC kernel: sessions, repo-op dispatcher, subscriptions, rate limiting, WSS transport, presence hub.
-├── cc_data/            # Remote data layer: repository adapters that satisfy reads/writes over cc_rpc.
-├── cc_persistence/     # Server-side Drift/SQLite (package:sqlite3, no Flutter). SPLIT BY WORKSPACE:
-│                       #   GlobalDatabase (global.db) + one WorkspaceDatabase per workspace file.
-├── cc_infra/           # Server-side VM-only adapters (dart:io): git, process, GitHub/Linear dio clients, dispatch, sandbox, meetings ML, fleet, tunnels.
-├── cc_mcp/             # The MCP tool surface (server-side, Ref-free typed tools, ~80 wired) + JSON-RPC dispatcher.
-├── cc_mcp_client/      # MCP CLIENT: connects to EXTERNAL MCP servers and bridges their tools into the registry.
-├── cc_server_core/     # App-server composition: the repo-RPC catalog, LocalRpcServer, MCP registry wiring, identity/presence/fleet/evals runtime.
-├── cc_markdown/        # In-repo markdown engine: typed-AST parser + widget renderer (CcMarkdown / CcStreamingMarkdown)
-│                       #   + native mermaid diagrams (CcMermaidView, no WebView/JS). widgets-only.
-├── cc_natives/         # Native FFI leaf (ALL REQUIRED, no degraded mode): rift CoW worktrees, fff file
-│                       #   finder, tree-sitter + grammars, ccpty, aec, lame, plus three in-repo Rust
-│                       #   crates: cc_watcher (native/watcher/), cc_inference (native/inference/:
-│                       #   sherpa-onnx speech + ONNX Runtime embeddings, statically linked) and
-│                       #   cc_saml (native/saml/).
-└── system_audio_capture/ # Plugin: driver-free system-audio loopback capture (Core Audio taps / WASAPI / PipeWire).
-
-lib/                    # The root Flutter THIN CLIENT (desktop + web). Renders state; holds no business logic.
-├── bootstrap/          # Platform bootstraps (io/web), server_backend resolver, thin_client_boot (local cc_server spawn)
-├── core/               # Cross-cutting CLIENT infrastructure
-│   ├── config/ constants/ deep_link/ infrastructure/ keybindings/
-│   ├── domain/         # Nearly empty — the shared kernel moved to cc_domain (a few client-only services remain)
-│   ├── notifications/  # NotificationEventMapper (maps domain events to AppNotification, principal-aware)
-│   ├── observability/  # Sentry bootstrap
-│   ├── offline/        # Offline mutation queue (buffers writes while the server is unreachable)
-│   ├── providers/      # Central infra providers (rpc client, server connection, storage, event bus, sync engine, locale)
-│   ├── server/         # Desktop↔cc_server connection: config, process supervisor, endpoint, connection descriptor
-│   ├── storage/ sync/ theme/ undo/ utils/
-├── di/                 # Composition root: binds repository ports to RPC-backed implementations
-├── features/           # Feature modules (presentation + client providers; domain lives in cc_domain)
-│   ├── agents/ artifacts/ auth/ calendar/ dashboard/ dispatch/ focus_mode/
-│   ├── identity/ inbox/ mcp/ meetings/ memory/ messaging/ newsfeed/
-│   ├── observability/ orchestration/ pipelines/ plan_studio/ presence/ pr_review/
-│   ├── remote_control/ repos/ rigs/ sandboxing/ service_status/ session_review/ settings/ shell/
-│   ├── soundscape/ subscriptions/ teams/ ticketing/ todos/ user_profiles/ vscode_theme/ workspaces/
-├── l10n/               # ARB source files (locale variants in kAppLocaleVariants) + generated localizations
-├── router/             # GoRouter config, workspace-prefixed route constants, guards, splash (thin, no business logic)
-├── shared/             # Shared widgets, extensions, utilities
-└── main.dart           # Entry point: selects bootstrap_io (VM) vs bootstrap_web (web)
-```
-
-Notable recent additions: **identity** + **presence** (multi-user identity/membership/roles and real-time collaboration/presence — supersedes the old "no multi-user" decision), **plan_studio** (editable DAG plans), **inbox** (unified cross-pillar inbox + ⌘K omnibox), the **evals** / **fleet** / **guardrails** subdomains in `cc_domain`, agent peer messaging + delegation (`send_to_agent`/`ask_agent`/`delegate_task`/`todo_read`; the old IRC bus was deleted), skills supply-chain scanning, plus the earlier **observability**, **orchestration**, **todos**, **subscriptions**, **session_review** + **vscode_theme** and the **governance**, **model_routing** and **skills** subdomains. The built-in agent runtime is the two standalone workspace packages **cc_harness** (web-safe pure-Dart agent-loop kernel) + **cc_harness_runtime** (VM-only batteries: providers, credential brokering, tool set). The former `tasks` feature was absorbed into `ticketing`. The companion design-system and markdown packages `cc_ui` / `cc_markdown` are first-party.
-
-## Client / server architecture
-
-Control Center is a client/server product with three client tiers and a single server. Each tier has a strict responsibility boundary.
-
-- **Thin clients (desktop / web).** These clients hold **no** business logic. They must NOT contain database access, API calls (GitHub, Linear, …), environment/process execution, sandboxing, or any other heavyweight logic. They render state received from the server and forward user actions to it. All persistence, network I/O and execution live in `cc_server`.
-- **Thick client (desktop only).** The desktop app is the only tier permitted to embed `cc_server` in-process. It hosts the server locally so it can run standalone, but it does not duplicate the server's logic; it delegates to it.
-- **Remote client (`cc_remote`, mobile).** `cc_remote` is a lightweight client whose only job is to connect to a `cc_server` instance and display a curated, mobile-friendly subset of information. It does not embed the server, does not run agents or pipelines and never touches the database or external APIs directly.
-- **Server (`cc_server`).** `cc_server` is the single source of truth. It holds all state, runs all database access, makes all external API calls and executes agents/pipelines/sandboxes. Because every client (thin, thick, remote) talks to the same server, the experience is identical across all of them: the server, not the client, owns the data and the behavior.
-- **Fleet executors (`cc_worker`).** A headless pure-Dart binary that pairs with a `cc_server`, declares its capabilities, pulls leased jobs, executes them and streams process events back. It holds **no durable state** (no DB, no auth, no approvals, no budgets — those never leave `cc_server`); "a worker is a limb, not a second brain." One authoritative server, N dumb limbs; no consensus, no worker-to-worker traffic. The implicit local worker is an in-process seam so a solo desktop stays byte-identical to today.
-
-### Identity & multiplayer
-
-Control Center is now **multi-user**: humans and agents are co-equal actors. A `Principal` (sealed union: `UserPrincipal` | `AgentPrincipal`) in the shared kernel is the abstraction every attribution, message, ticket, review, plan and run log resolves through. `User` is global (cross-workspace, like `repos`); membership (`workspace_members` at a `WorkspaceRole`: owner/admin/member/viewer/guest) is workspace-scoped and is the access test — **holding a pairing key is no longer the access boundary; being a member is.** The old `'user'` sentinel for human messages was removed in favor of real user ids. Per-repo grants (`workspace_member_repo_grants`) keep workspace membership from silently out-privileging the forge. Rate limits are per-principal (one user across N devices shares one budget); revocation is live (sessions drop within seconds on device/member revocation).
-
-Real-time collaboration is **authoritative-server + per-field last-writer-wins, NOT a CRDT** (the consensus across Figma/Linear/Replicache; a Dart CRDT would mean Rust-via-`cc_natives` FFI, reserved for one future co-editing surface only). Presence is a **separate ephemeral lane that is never persisted** (status/locus/cursor/typing); durable state rides an optimistic-mutation + server-rebase + per-field LWW backbone with a monotonic per-workspace `syncSeq` allocated in the same DB transaction as the mutation. Ordering never trusts a client clock — "last writer" = server receipt order. Humans and agents share one roster (agent presence is synthesized server-side from run/lifecycle events); follow-mode (incl. "watch an agent work"), steer/interrupt/take-over/hand-back and a per-space autonomy dial (`propose-only` / `act-with-approval` / `act-freely`) sit on top. Solo-mode zero-regression: with one human, the presence lane idles and no roster chrome appears.
-
-The hard rule: **never push logic that belongs in `cc_server` into any client.** If a feature needs the database, an API, or process execution, it belongs in the server. Clients consume the result.
-
-## Architecture rules
-
-### Dependency Rule (enforced by architecture_constraints_test.dart)
-
-```
-Presentation → Application/Providers → Domain ← Infrastructure
-```
-
-- **Domain layer** must NOT import dio, drift, network models, or feature data layers. Zero infrastructure deps.
-- **Presentation layer** must NOT import drift, DAOs, or feature data layers directly. All data access goes through Riverpod providers → repositories.
-- **Core** must NOT import feature data directories.
-- Domain entities use enums/sealed classes for status fields (no magic strings).
-- All entities have `==`/`hashCode` overrides and constructor validation.
-- Repository interfaces are in domain; implementations are in data layer.
-
-### Shared kernel
-
-`packages/cc_domain/lib/core/domain/` holds entities and repositories shared across 3+ features (and each feature's own `domain/` layer lives under `packages/cc_domain/lib/features/<name>/domain/`). It is pure Dart with zero infrastructure deps, so both the Flutter client and the Flutter-free server binary import it:
-
-- `Agent`, `AgentRunLog`, `Workspace`, `Repo`, `ReviewSpaceAssociation`, `GitRepoInfo`, shared entities
-- `User`, `Principal` (sealed `UserPrincipal` | `AgentPrincipal`), `WorkspaceRole` — the identity/multiplayer unification
-- `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`, memory subdomain entities
-- `AgentCapabilities`, `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `SandboxHandle`, `SandboxEvent`, `ExecutionContract`, shared value objects
-- `AgentRepository`, `WorkspaceRepository`, `RepoRepository`, `AgentRunLogRepository`, `ReviewSpaceRepository`, shared repository interfaces
-- `SandboxPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `CredentialBrokerPort`, `ConfirmationPort`, `NotificationPort`, `NotificationPreferencesPort`, `EmbeddingPort`, `ProcessControlPort`, `ModeResolver`, shared ports
-- `DomainEventBus` + event types, decoupled cross-feature communication
-- `SkillScanner`, `MemoryAccessPolicy`, `ActivityLogger`, `CacheStats`, shared domain services
-
-### Feature layer convention
-
-Each feature follows this structure (when applicable):
-
-```
-feature_name/
-├── data/          # Repository implementations, data sources, services, DTOs, mappers
-│   ├── datasources/
-│   ├── repositories/
-│   ├── services/
-│   └── mappers/
-├── domain/        # Entities, repository interfaces (abstract), use cases
-│   ├── entities/
-│   ├── repositories/
-│   └── usecases/  (where business logic complexity warrants)
-├── presentation/  # Screens (<250 lines), widgets (<300 lines), notifiers
-│   ├── screens/
-│   ├── widgets/
-│   ├── notifiers/
-│   ├── settings/                   # This feature's settings page + its sections (when it has one)
-│   └── settings_contributions.dart # What it contributes to settings, and where
-└── providers/     # Riverpod providers for this feature
-```
-
-**Exception:** the `mcp` feature is providers-only (no `presentation/`) — the MCP settings/status UI lives under `settings/` and the tool surface itself lives in the `cc_mcp` package. `orchestration` and `plan_studio` carry only `presentation/` + `providers/`.
-
-### Settings is a shell, not an integration point
-
-`features/settings/` owns the **routes, the nav model (`settings_nav.dart`), the page scaffold (`SettingsPage`) and the generic cards** — nothing else. It had become the app's de-facto integration point: one screen imported presentation code from five other features, and `agents` had been hollowed out into a bag of widgets with no screen of its own. The dependency is now inverted.
-
-- **A feature owns its settings surface.** The page lives in `features/<x>/presentation/settings/` and `features/<x>/presentation/settings_contributions.dart` declares what it contributes: a `SettingsBody` (a whole destination, keyed by `SettingsNavItem.id`), a `SettingsSectionContribution` (a card on a `SettingsSlot` page), an `AgentSettingsTab` or an `AgentRegistryView`.
-- **The contract is `features/settings/settings_extensions.dart`** — contract-only (`flutter/widgets.dart` + the shared kernel + l10n), so declaring a contribution pulls in no settings UI and there is no cycle. A test pins that it stays that way.
-- **`lib/di/settings_registry.dart` is the one file that knows every feature.** That is a composition root's job, the same way `di/providers.dart` binds every repository port. It only concatenates the features' lists, so adding a card never means editing a screen.
-- **Nothing under `lib/features/settings/` may import another feature's `presentation/`.** Enforced by `architecture_constraints_test.dart` against an intentionally EMPTY allowlist (`settings_feature_importers.txt`). The reverse direction is fine and deliberately unchecked: a feature may import settings' card vocabulary (`settings_shared.dart`, `scope_badge.dart`, `SettingsPage`) so a contributed card looks native.
-- **Wiring is pinned by `test/features/settings/settings_registry_test.dart`**: every `navItemId` resolves against `kSettingsNav`, no two features claim one destination, ids are unique and `<feature>.`-namespaced. A registry trades a compile-time reference for a string, so a typo would otherwise be a silently blank page rather than a build error.
-
-## Agent interaction tools & guardrails
-
-- **Agent peer messaging & delegation** (`send_to_agent`, `ask_agent`, `delegate_task`, `todo_read` + the re-implemented `consult_agent`). Agents talk to each other over **spaces** (durable, roster-visible), not a separate bus — the old in-memory IRC bus was deleted. `ask_agent` is request/reply with a **mandatory timeout** (no configuration removes it; default 10 min, capped by a workspace ceiling) and pair-wise cycle detection; `delegate_task` creates a child ticket/plan node guarded by depth cap (default 3), cycle detection, budget-envelope inheritance and an autonomy ceiling, all enforced server-side at a chokepoint (never by prompt instructions). Recipient resolution is exact (by id or unique name; no fuzzy, no cross-workspace). Agent-to-agent spaces are muted by default and never bump the human unread badge or fire an OS notification.
-- **Unified action guardrails** generalize the former bash-only `CommandPolicy` into a closed **`ActionClass`** taxonomy (13 effect classes: `fileDelete`, `fileWriteOutsideWorktree`, `gitCommit`, `gitPush`, `prCreate`, `prPublish`, `vendorSyncWrite`, `networkEgress`, `secretAccess`, `packageInstall`, `processSpawn`, `workspaceMutation`, `enclosureControl`). Resolution order is `space > agent > workspace > mode preset > built-in default` (most-specific scope wins; within a scope, longest-prefix then most-restrictive). The flat `allow > deny > prompt` precedence was replaced by specificity-then-restrictiveness. Every mutating tool declares its ActionClass(es); undeclared new tools fail the ratchet test. `prompt` with no approver connected is **denied** (fail-closed). The per-space autonomy dial (`propose-only`/`act-with-approval`/`act-freely`) is a named profile over this same store.
-- **Skills supply-chain scanning** is a **fail-closed gate** invoked between fetch and write in `SkillBundleService`: no skill content reaches disk or an agent prompt without a verdict (`pass`/`warn`/`quarantine`). The scanner is inert by construction (executes nothing from the skill); Layer 1 static rules + Layer 2 capability manifest are the mandatory gate, Layer 3 LLM review is additive. Trust tiers (`firstParty`/`workspace`/`verified`/`community`) are provenance metadata, never a scan substitute. TOCTOU invariant: bytes scanned = bytes written = bytes hash-locked.
-- **Repo-scoped skills** carry the skills a checked-out repo ships (`.agents/skills`, `.claude/skills`, `.opencode/skills`) — scoped to the ONE repo an agent is working in, and swapped when it moves. `ActiveRepoTracker` infers the active repo from tool-call paths observed at `DispatchSession.addEvent`, the single point both shipped transports funnel through: a WRITE under `repos/<name>/` switches, a read only seeds when nothing is active (agents read across repos constantly, and letting that switch thrashes the set mid-task). `RepoSkillProjector` materializes that repo's skills into the agent overlay's `.claude/skills` — Claude Code watches it, so a swap lands mid-session without restarting the CLI — and composes the same index into a real `<overlay>/AGENTS.md` (replacing the provisioner's symlink; `_ensureSymlink` restores it next dispatch, so it self-heals) so the built-in harness sees it too. Never project into `<overlay>/.agents/skills` — that path is a symlink to the agent's GLOBAL dir, shared by every space. Only the active repo is loaded: the index is prompt-resident on every turn while bodies are not, and a sibling service's `testing` skill is actively wrong for the repo in hand. Repo skills pass the SAME fail-closed scan gate (cloned content whose frontmatter reaches a prompt).
-  - The system prompt is frozen for a run (`AgentLoopConfig.systemPrompt` is final and the Anthropic provider keeps it byte-identical for prompt caching), so a swap is announced on the **`steering`** lane, never `aside` — `serializeHarnessHistory` drops system-role messages on a compaction fold.
-  - `RepoSkillCatalog` is the one scan-gated discovery shared by the projection and the `skills.repoSkills` op, so the composer's palette can never offer a name the server then refuses to load. The composer is deliberately NOT repo-scoped (a human naming a skill pays no per-turn context cost): `<repo>:<skill>` reaches any repo, a bare name resolves only when unambiguous.
-  - **Skills invoke under their own namespace**: `/skill:<name>` or `/skill:<repo>:<name>` (`skillNameFor`). Resolving a bare name against skills let a builtin permanently shadow a skill of the same name — `plan`, `goal`, `loop`, `compact` were unreachable as skill names. A bare non-builtin still resolves, for messages predating the namespace.
-  - **Context loaders follow a symlink only into a caller-declared permitted root** (`resolvesInsideRoots` in `workspace_paths.dart`). Every overlay affordance is a symlink and a `followLinks: false` listing types one as neither `File` nor `Directory`, so `HarnessSkillScanner` and `AgentsMdContextLoader` had been silently skipping the agent's attached skills AND its own `AGENTS.md` on every space-scoped run. A link to a DIRECTORY is still never descended by the AGENTS.md walk — descending `repos → ../../repos` would load every repo's instructions at once.
-
-## Enclosures (rigs)
-
-A **rig** is a disposable machine an agent drives in real time — a desktop,
-headless browser, Android emulator or iOS Simulator — watched live by a human
-who can take over. VM-backed rigs are enclosures; Android and iOS are explicit
-host-managed exceptions with disposable device state but host networking. The
-same platform hosts interactive terminals, so shell work stops running on the
-host. `packages/cc_domain/lib/features/rigs/` is the domain,
-`packages/cc_infra/lib/src/rigs/` the mechanism, `lib/features/rigs/` the viewer.
-
-There are four local backends, split by surface: the **desktop** boots on QEMU
-(HVF/KVM) from qcow2 base images; **exec (terminal) and browser rigs** boot on
-the **smolvm** microVM (libkrun over the host hypervisor) from digest-pinned OCI
-images; Android uses Google's host-managed emulator; and iOS uses CoreSimulator
-on macOS. Routing is by spec, not availability. Asking for a backend the
-surface does not run on (`RigSpec.backend`) is an error, never a silent
-downgrade.
-
-- **A browser rig is one of THREE engines, and the driver knows none of
-  them.** `RigBrowserEngine` (chromium/firefox/webkit) picks the image, the
-  protocol and the guest workload; `BrowserRigDriver` holds a
-  `BrowserEngineClient` so every domain verb is one contract over CDP
-  (`CdpClient`), WebDriver BiDi (`BidiClient`) and classic W3C WebDriver
-  (`WebDriverClient`). Shared page scripts and the W3C action vocabulary live
-  in `browser_engine_client.dart` precisely so "clicking in Firefox" and
-  "clicking in WebKit" cannot become two behaviours nobody compares. One rig is
-  one engine for life and a conversation holds one rig PER engine — that is the
-  feature, and the reuse key, the in-flight open key, the tab dedup key and the
-  provider key all carry it. Three properties were each paid for against a real
-  guest: **Firefox does not create a `--profile` directory that does not
-  exist** and silently never starts its remote agent (nothing listens, the rig
-  times out, no error anywhere), **Firefox rejects a WebSocket upgrade whose
-  `Host` header names a port other than its own** so the client sends the
-  guest-side authority rather than the one it dialled (`--remote-allow-hosts`
-  does NOT fix this), and **classic WebDriver takes a body on every POST but
-  `dart:io` fixes content-length at 0 for a GET**, which broke every read
-  command. Capability differences are stated, never smoothed: no screencast
-  outside Chromium (the other two poll, capped at 6 fps), PNG stills on WebKit
-  (so its live lane needs the host's ffmpeg), no cache-bypassing reload on
-  either, no platform accessibility tree on either (the a11y extract is a
-  DOM-derived approximation and says so), and no real file drop on either.
-- **Enclosure-only execution, enforced by the command line.** Each backend's
-  argv is built by a pure function precisely so its security flags can be
-  pinned by a test. Restricted QEMU rigs (`buildQemuArgv`,
-  `qemu_argv_test.dart`) carry `restrict=on` on the user-mode netdev; every
-  `hostfwd` still binds to `127.0.0.1`, the base image stays read-only behind a
-  per-session qcow2 overlay and no `-virtfs`/`-fsdev` is allowed. Restricted
-  smolvm rigs (`buildSmolvmCreateArgs`,
-  `smolvm_enclosure_backend_test.dart`) carry
-  `--outbound-localhost-only`, one `--allow-host` per admitted host and the
-  broker secret by `--secret-file`, never as an env value smolvm would persist
-  in its machine record. A server-owner-only, confirmed control in a live rig
-  tab can restart that one enclosure with unrestricted networking. The
-  exception is explicit in `RigSpec.unrestrictedNetwork`: QEMU omits
-  `restrict=on`, smolvm uses bare `--net`, and the tab keeps a visible warning
-  for the session's lifetime. A missing or misplaced flag can leave the rig
-  working while silently changing its boundary, so both paths are pinned by
-  argv tests.
-- **Egress is deny-by-default.** On restricted QEMU rigs the guest's only
-  routes out are `guestfwd` holes to the existing
-  `SandboxHttpProxy`/`SandboxSocksProxy` on host loopback. On restricted
-  smolvm rigs the VMM admits loopback plus exactly the allowlisted hosts; the
-  Docker Hub pull path is unioned in as image maintenance because the guest
-  agent pulls through the same gate. The explicit unrestricted restart is the
-  only exception on those backends and widens both the direct NIC and proxy
-  lanes so policy-aware and raw-socket applications agree. The mobile surface
-  remains the honest exception: an Android emulator owns its networking, so
-  the tab states that it is already unrestricted rather than offering a
-  security switch that cannot be enforced.
-- **Input goes through the hypervisor, capture goes through the guest.** QMP
-  (`input-send-event`/`send-key`) injects keyboard and pointer events, so the
-  guest never runs a privileged daemon that can synthesize input; the small
-  unprivileged guest agent only captures and mode-sets, scaling in the guest so
-  a full framebuffer never crosses the wire. A `virtio-tablet` is always present
-  — a relative mouse cannot implement "click at (412, 180)".
-- **Clipboard crossing follows a per-user, per-direction policy.** Host-to-rig
-  paste is allowed by default; rig-to-host copy is off and prompts before the
-  guest clipboard is read. The two choices stay independent in Settings →
-  Server → Enclosures. A ten-minute grant is process-local and scoped to one
-  rig plus one direction; "always allow" is a synced per-user preference. It is
-  never a workspace setting, because one member cannot consent to another
-  member's clipboard. The signed `/rig/clipboard` HTTP lane stays the carrier,
-  but `RigInputSurface` does not cross a disabled direction until
-  `ensureRigClipboardPermission` approves it. On Windows and Linux a denied
-  transfer still forwards the shared Ctrl+C/Ctrl+X/Ctrl+V chord to the guest,
-  so refusing host clipboard access does not break a guest-local copy, paste or
-  terminal interrupt.
-- **Two display lanes, decoupled on purpose.** The HUMAN lane is full-resolution
-  at the viewer's panel size (adaptive fps/quality under a bitrate ceiling),
-  relayed as bytes — the server never decodes a frame, because a video decoder
-  on the request path is what stops it answering RPCs. The AGENT lane is
-  downscaled to ≤1280×800 with a one-image-per-result budget applied by the loop
-  (`capToolImages`). Compaction sheds stale images and keeps their text.
-- **The host worktree is authoritative; the guest copy is a satellite.** A rig
-  is synced IN by a tar stream and commits come back as a `git bundle` FETCHED
-  into `refs/rigs/<rigId>/*` — never a push, never a checkout. Uncommitted work
-  is read out as a diff for a person to look at. The command vocabulary is the
-  same on every enclosure; the carrier is a `WorktreeTransport` — an SSH
-  channel on a QEMU rig, `smolvm machine exec` on a microVM rig. Without this
-  the in-VM terminal would silently become a scratch copy while the UI looked
-  identical.
-- **No durable credential inside an enclosure.** The guest holds a per-VM secret
-  that only buys the right to ASK the host's loopback credential broker for a
-  short-lived scoped token, per operation, rate-limited, bounded by the same
-  allowlist as egress, and revoked when the rig closes. That is what makes
-  `git push` work from an in-VM terminal.
-- **Take-over is enforced at a chokepoint, not by a prompt.** `RigService.act`
-  refuses an agent's MUTATING action while a human holds control; observation
-  (screenshots, extraction) stays allowed so the agent can still narrate. Every
-  input event lands in `rig_action_log` with its `Principal` and a monotonic
-  per-rig `seq` allocated in the same transaction as the insert.
-- **Everything extracted from a guest is untrusted content**, fenced by
-  `wrapUntrustedRigContent` with a standing "data, never instructions" rule. The
-  fence is framing; the egress allowlist is the enforcement.
-- **Bounded by construction.** Hard TTL the guest cannot extend, idle → park
-  (QMP `stop`) → close, and an LRU that counts RESIDENT MEGABYTES rather than
-  sessions, because a parked VM frees CPU and keeps every byte of its RAM. The
-  service tears every machine down on shutdown — an orphaned hypervisor outlives
-  the server, holds gigabytes and answers to nobody.
-- **`ActionClass.enclosureControl`** is the guardrail class (13 now). Read-only
-  modes deny it wholesale; `SandboxBackend.microvm` is probe-gated and NEVER a
-  silent fallback — asking for a VM and getting a host shell is the one
-  degradation this feature cannot afford, so it fails loudly instead.
-- **Boot artifacts are pinned and fetched at runtime, two kinds.** The desktop
-  surface's qcow2 base images are user-initiated downloads, checksum-pinned (an
-  unpinned entry is refused, not installed), stored under
-  `<dataDir>/rigs/images/`, removable with the store;
-  `scripts/rigs/build_image.sh` builds the desktop image (the guest agent must
-  be baked in) and Settings imports it. The microVM surfaces boot digest-pinned
-  OCI images (`kSmolvmExecImage`, `kSmolvmDebianBrowserImage`) that smolvm pulls
-  on first use through the machine's own gated egress. Every browser engine
-  takes the small Debian base plus a gated one-time `apt-get`, warmed into a
-  per-engine pack. Chromium MUST be the distribution build: upstream
-  `headless.gn` compiles both PulseAudio and ALSA out of `headless-shell`, so
-  installing a sound server beside that binary can never produce audio. Each
-  browser workload starts a system PulseAudio daemon with a guest-local
-  `ccout` null sink; the listen lane encodes `ccout.monitor` with ffmpeg. The
-  socket directory is owned by the daemon's `pulse` user and startup fails
-  unless `pactl` observes the sink — never hide daemon failure behind
-  `|| true`. The pack is keyed on image, engine and audio revision so a pack
-  warmed for one engine, or before audio support, cannot serve another.
-- **Mobile has no base image and never will.** Android runs on Google's
-  emulator, whose system images ship through their SDK. `setup_android.sh`
-  installs that SDK (reusing Android Studio) and the probe distinguishes no SDK
-  / no emulator / no AVD / no running device. iOS runtimes similarly come from
-  Xcode rather than Control Center; the iOS backend is advertised on every host
-  but available only on macOS with Xcode, a Simulator runtime and the pinned
-  automation bridge installed. Settings invokes the owner-only
-  `rig.installBackendSetup` action to fetch and checksum-verify WebDriverAgent.
-  Each iOS rig creates a uniquely named CoreSimulator device, boots it, starts
-  one WebDriverAgent session, and records ownership in an atomic registry.
-  Close and orphan recovery stop WDA, shut down and delete only owned devices,
-  then remove their registry entries. The live lane streams fixed-size MJPEG;
-  input and `ios_use` share typed point/key/app actions. Android and iOS both
-  expose argv-shaped developer commands inside the device/simulator, never a
-  host shell. iOS has no file drop, audio, microphone or enclosed egress.
-- **Control sockets live OUTSIDE the data directory.** A unix socket path is
-  hard-capped at 104 bytes (`sockaddr_un.sun_path` on macOS/BSD; 108 on Linux)
-  and the rig runtime dir sits under an operator-chosen `dataDir` whose length
-  we do not control — running from source put the QMP socket at 112 bytes and
-  QEMU refused to start, so NO rig booted on any surface. `buildRigSocketPath`
-  picks the first of `XDG_RUNTIME_DIR` / `TMPDIR` / `/tmp` that fits, which
-  self-heals: a root that would overflow is skipped rather than truncated. The
-  rig id is never shortened (two rigs sharing a prefix would share a control
-  channel), the directory is created 0700 because QMP can stop the VM and
-  inject input, and a symlink planted at the `ccrig` namespace is refused
-  rather than followed. Durable artifacts (overlay, seed, key) stay in the
-  runtime dir, where length does not matter — but teardown and the orphan
-  sweep must now clear BOTH trees.
-- **The exec rig is seeded with cloud-init, not with our own format.** It
-  boots the STOCK Ubuntu cloud image (downloaded and checked against
-  Canonical's published hash, which is worth more than an image only we vouch
-  for), so it carries none of our units: no `cc-rig-seed` to read a `CCRIG`
-  volume, no guest agent, not even the `cc` user the terminal SSHes in as.
-  Handing it the built-image seed format configures nothing and the rig is
-  unreachable. So exec rigs get a `cidata` seed that creates the user,
-  installs the key and writes the same JSON — and their readiness signal is
-  sshd's banner, NOT the guest agent, which that image was never supposed to
-  answer with. Reading the banner matters: QEMU's user-mode networking accepts
-  on a forwarded port before anything in the guest listens, so a bare TCP
-  connect reports ready mid-boot.
-- **The guest seed is 0640 root:cc, never 0600 root.** Both consumers run
-  unprivileged: the guest agent (`User=cc` so a compromised capture process
-  cannot synthesize input — that is the hypervisor's job via QMP) and the git
-  credential helper, which git invokes as whoever runs it. At 0600 root the
-  agent dies with `PermissionError` on every start, `Restart=always` turns
-  that into a crash loop, nothing listens on :7811, and the host burns its
-  whole 120s agent timeout before reporting "the image may be wrong for this
-  surface" — a message that blames the image for a permission bit. Group-read
-  by `cc` keeps the broker secret off world-readable while letting the two
-  processes that need it work.
-- **A built image is verified by BOOTING it, not by trusting the build.**
-  `verify_image.sh` boots the finished image with a real per-VM seed and polls
-  `/health` exactly as the host does, and `build_image.sh` refuses to publish
-  an image whose agent does not answer. "cloud-init applied every line" and
-  "the agent serves" are different claims, and only the second is what a rig
-  needs — the first one passed for the image that crash-looped. The verify
-  boot also attaches a `cidata` seed that dumps the guest's own journal to the
-  console, so a failure names itself instead of requiring the whole
-  boot-and-probe dance by hand.
-- **The image builder verifies that it built something.** cloud-init treats a
-  seed it never found as "no work to do": it exits 0 and yields a pristine
-  stock image that boots fine and has none of the guest agent in it, failing
-  much later inside a rig as a mystery. So the guest echoes a marker to the
-  console as its last act and the builder greps for it, deletes the output on
-  a miss, and names the usual cause (the seed volume label must be exactly
-  `cidata`). The same reasoning covers the host side: firmware is located by
-  asking `qemu -L help` rather than guessing distro paths (a Homebrew/Nix
-  binary on PATH is a symlink into a versioned store, so `dirname $(command -v
-  qemu)/..` finds the profile, not the firmware).
-- **Where it lives in the UI.** Rigs are NOT a global destination: the live
-  view belongs beside its work as a tab in a space or PR page
-  (`Computer` / browser engine / `Android` / `iOS Simulator`). The tab and the
-  matching `computer_use` / `browser_use` / `mobile_use` / `ios_use` tool share
-  the conversation's default machine. Capabilities, images, mobile automation
-  setup and running sessions live under Settings → Server → Enclosures. A rig
-  tab never auto-starts during layout restore — surprise VMs and simulator
-  devices are both prohibited. **That rule reaches the adjacent TERMINAL path
-  too**: a
-  terminal tab persists its `backend`, and a `microvm` one restored from a
-  layout snapshot boots the conversation's exec rig the moment it attaches. The
-  layout codec stamps `EditorLayoutCodec.deferStartArg` on those tabs at decode
-  time and the hosts render an "Open the shell" affordance instead — the badge
-  comes back, the machine does not. A host-shell terminal costs a process and
-  still attaches on mount; only the enclosed one waits for a press.
-
-## The two-tier tool surface (deferred loading)
-
-The harness catalogue is ~126 tools. Sending every definition on every request cost **~23k tokens** and — the part that actually matters — put the model well past the 30–50 tool band where published evaluations show tool-selection accuracy holding up. A run now sends a small **resident** set plus a name-only **index** of everything else: measured **~23.1k → ~5.0k tokens, 78% smaller**.
-
-- **Deferral is a HARNESS-layer feature. Never gate the MCP `tools/list`.** `mcp_tool_registry.dart:19-31` documents a reverted attempt: external MCP clients (Claude Code, pi) validate names client-side against their cached list and refuse anything unlisted, which made every gated write structurally unreachable. The external surface stays complete; only the in-process harness path defers.
-- **A deferred tool is CALLABLE from turn one** — only its schema is withheld. The model sees the name in the prompt index, and calling it directly loads the schema and executes in the SAME step (`agent_loop_runner.dart`). `search_tools` (BM25 over the run's surface, `HarnessToolSearchTool`) is the backstop for "I know the task, not the name"; it returns matches AND loads them via `HarnessToolResult.activateTools`.
-- **Activation is APPEND-ONLY and the cache breakpoint is pinned to the last resident tool** (`LlmCompleteConfig.toolCacheBreakpointIndex`). Tools sit first in the provider's cache prefix, so inserting or reordering would rebuild tools+system on every turn — strictly worse than never deferring. Appending behind the breakpoint leaves the prefix byte-identical.
-- **Deferral never widens a surface.** It is applied AFTER `ToolSurfaceSpec` filtering; an activated tool still passes the approval callback and the action guard. A tool cannot activate a name the mode did not admit.
-- **One assembly, shared with the context explorer.** `materializeHarnessToolSurface` (cc_infra) is the only place the surface is built; dispatch and `ContextInspectionService` both call it, so the explorer cannot report a surface no run gets.
-- **Policy lives in `ModeToolPolicy`** (`residentBuiltins` / `residentDiscovery` / `residentMcpTools` + per-mode additions) projected by `ModeCapabilityProfile.toToolResidencySpec()`. Adding a name costs its schema on every request of every run forever — a tool earns residency by being used in MOST runs. `test/tooling/resident_tool_names_test.dart` pins the set against the real tool names (a resident name matching nothing is INERT — that typo already shipped once, deferring `search_files`) and holds each mode under 40.
-- **Kill switch: `--tool-deferral=off` / `CC_SERVER_TOOL_DEFERRAL`.** Off makes every admitted tool resident — the pre-deferral request byte for byte.
-
-## Prompt-cache discipline
-
-Agent workloads are ~100:1 input:output, so cache hit rate is a first-class metric, not an optimization. It is also a **throughput** lever: on Anthropic, cache reads do not count toward ITPM.
-
-- **Never mutate what was already sent.** Any byte change invalidates the provider's cached prefix from that point on. The rule is append-only: new messages at the tail, new tool schemas after the breakpoint. `pruneToolResults` used to rewrite history in place on EVERY tool-bearing turn — a permanent cache leak to reclaim a few dozen tokens — and is now threshold-batched (`CompactionConfig.pruneThresholdTokens`, default 2000) so it is a rare deep rewrite instead. Compaction still forces it (`force: true`): that rewrite is already paid for.
-- **Four breakpoints, spent deliberately** (`anthropic_provider.dart`): last resident tool + last system block on the **1-hour** TTL (constant for the run, and shared across runs and subagents in the same workspace), plus a **rolling tail pair** on the short TTL — the previous request's tail (the read anchor, tracked by the loop as `cacheAnchorIndex`) and the current one. The pair matters because a cache lookup walks back a bounded number of blocks, and one wide parallel-tool turn can overrun a single tail breakpoint, missing silently.
-- **The stable prefix is worth the long TTL**: the window is measured from when a request *starts*, so a long streamed turn spends most of a short one, and a desktop operator pauses for minutes routinely.
-- **Fan-out pilots.** A cache entry is only readable once the request that wrote it begins responding, so N subagents launched together each pay the write premium for a prefix they share. `_subagentPilots` in `dispatch_session.dart` lets the first child of a given shape start, then releases its siblings on its first event (bounded — a slow pilot costs a cache hit, never the fan-out).
-- **Anything that must be identical, must be identical.** Subagent resident sets are deliberately profile-INDEPENDENT so every child emits the same prefix; a differing `model` or `effort` fragments it. Tool schemas serialize deterministically (`McpToolBridge` caches its stripped schema, key order preserved).
-- **Measure it.** `cacheRate` in `observability_metrics.dart` is `cacheRead / (input + cacheRead + cacheWrite)` — cache-write tokens are in the denominator because they are prompt tokens billed at a premium, and omitting them scored a run that rebuilt its prefix every turn the same as one that never needed to.
-
-## Code-graph indexing cost model
-
-Indexing is background work that must leave the machine — and the server — usable. Five invariants keep it that way; breaking any of them reintroduces a measured regression:
-
-- **Boot pays nothing for an unchanged repo.** Every run first probes the checkout (`RepoStateProbe`: `git rev-parse HEAD` + `git status --porcelain -z -uall` + an mtime/size fold over the dirty paths) and the extraction toolchain (`codeIndexerFingerprint`: extractor version + `.scm` queries + grammar libs). A match against the partition's `code_index_checkpoints` row returns `CodeIndexResult.unchanged()` before any file-state read, walk, hash, prune, or reference resolution. A worktree additionally compares the base partition's `generation`, because a base re-index invalidates the worktree's delta. `probe == null` (not a git tree, git missing, huge dirty set) **never** skips and a watcher event passes `force: true` — the digest is a fingerprint, not a proof.
-- **Nothing CPU-bound runs on the server's main isolate.** Enumeration+hashing (`walkAndHash`), tree-sitter extraction (`ExtractionWorker`, ONE long-lived isolate per run — a wedged parse is killed and respawned) and ONNX embedding (`TextEmbedderWorker`, owning the session because FFI handles can't cross isolates) are all off-isolate. Embedding used to run inline: measured, the RPC server accepted connections but could not answer a request for 40s while a repo indexed.
-- **Writes are batched.** `ingestFiles` embeds a whole batch first (outside any transaction — the server has ONE shared DB connection and holding a write txn across inference queues every RPC read behind it), then writes 32 files per transaction. Pruning is one transaction with chunked `IN` lists. `resolvePendingReferences` probes an indexed `COUNT` first and, when work exists, reads a projection of only the needed names (a full-row read dragged along every symbol's 384-float embedding blob).
-- **Indexing starts after the ready banner.** `codeGraphWatch.start()` is the last thing `runCcServer` does and the service holds its first sweep for `--code-index-defer` seconds. The desktop parses that banner with a hard 20s timeout and **kills the child** on expiry (`cc_server_process.dart`), so anything heavy on the path to it risks the app dropping to an error screen. `--code-index off` is the field kill switch; `/healthz` reports a `codeGraph` block (watching/indexing/pending).
-- **Watching costs nothing to arm and the native is REQUIRED.** The native `cc_watcher` (in-repo Rust crate over `notify`; see `packages/cc_natives/native/watcher/README.md`) watches kernel-recursively on macOS/Windows and installs ignore-aware inotify watches on its own thread on Linux, so arming is O(1) and the arm stagger is zero. There is deliberately **no `package:watcher` fallback** — its `DirectoryWatcher` constructor scans the whole tree and cannot skip `node_modules`, which froze the server isolate for a measured 65 seconds across 4 repos + 72 worktrees, so a silent degrade to it is worse than a loud failure: `create` throws `WatcherUnavailable`, `cc_server`'s native preflight refuses to boot and one unwatchable checkout is logged and retried by the reconcile sweep rather than taking the service down. The native's ignore list is fed from `SourceFileWalker.watchIgnoredDirs`, the same set `affectsIndex` gates on (a test pins them together).
+- `cc_server` owns persistence, external APIs, business logic and execution. Desktop/web/phone clients render server state and forward actions; no database, forge API, sandbox or process logic in `lib/`. A local desktop hosts the server, not a second implementation. Fleet workers execute leased jobs without durable state, auth, approvals or budgets.
+- Dependency direction: presentation → providers/application → domain ← infrastructure. `cc_domain` is pure Dart: no Flutter, dio, drift, `dart:io` or FFI. Presentation never imports DAOs or feature data layers; core never imports feature data directories.
+- Domain owns repository interfaces, entities and ports; adapters implement them. Entities validate construction, implement equality/hashCode and use enums/sealed status types.
+- Shared domain lives in `packages/cc_domain/lib/core/domain/`; feature domain in `packages/cc_domain/lib/features/<name>/domain/`. Client features own `presentation/` and `providers/`. Keep screens under 250 lines and widgets under 300.
+- Riverpod owns client state (`Notifier`, `AsyncNotifier`, `FutureProvider`, `Provider`). Use `ref.read/watch`, never `ProviderScope.containerOf()`. Central infrastructure is in `lib/core/providers/`; repository bindings in `lib/di/`. MCP tools take typed dependencies, never `Ref`.
+- Settings is a shell. Feature-owned `presentation/settings/` and `settings_contributions.dart` implement `settings_extensions.dart`; `lib/di/settings_registry.dart` composes them. Settings must not import another feature's presentation. Contribution IDs are unique and `<feature>.`-namespaced; destinations resolve against `kSettingsNav`.
+- Use declared `DomainEventBus` events, not assumed ones. Workspace seeding reacts to `WorkspaceCreated`, never fire-and-forget from widget `build()`.
 
 ## Workspace isolation
 
-Workspaces are isolated tenants. Data from one workspace must NEVER surface in another. We have had real cross-workspace leaks, so this is a hard invariant, not a nicety. When adding or changing anything that touches workspace-scoped data, follow these rules:
+- Every workspace operation requires `workspaceId` / MCP `workspace_id`; no implicit current/default workspace. When an entity owns its workspace, derive it from the entity rather than accepting a conflicting second value.
+- Resolve `WorkspaceDatabaseManager.of(workspaceId)` per call. Never cache a workspace DAO in a repository. Each workspace has its own database; new tables default there, not `global.db`.
+- Validate the registered, non-deleted workspace **before** membership lookup or opening its database. Then enforce membership at RPC, subscription, MCP and HTTP entry points. A paired device is not a workspace grant.
+- Scope ID lookups or verify ownership at the mutation chokepoint. Mismatch throws `WorkspaceMismatchException`; MCP returns an explicit error. Repo tools also check `isRepoLinkedToWorkspace`.
+- Cross-workspace reads use `CrossWorkspaceQueries` with a `CROSS-WORKSPACE BY DESIGN` explanation. Filter streams/events per subscriber. Pre-auth opaque IDs route through `workspace_routes`; no scan fallback.
+- Add behavioral isolation coverage for new workspace surfaces. Structural checks live in `packages/cc_persistence/test/workspace_isolation_ratchet_test.dart`; authorization details are in [SECURITY.md](SECURITY.md).
 
-- **`workspaceId` is required, never optional.** Any operation that reads or mutates workspace-scoped data takes a **required** `workspaceId` (Dart) / `workspace_id` (MCP tool schema). Do NOT make it optional, nullable-with-a-default, or resolve a "current"/"active"/"default" workspace implicitly. A required parameter forces every new call site to consciously supply the workspace — and since the split, it is also what picks the database file, so there is nowhere for an unscoped call to go.
-- **Entities own their workspace.** `Agent.workspaceId` is **non-null**. Every agent belongs to exactly one workspace. When an operation already has the entity, source the workspace from it (e.g. `PromptBuilder.identity` and the dispatch/memory path read `agent.workspaceId`) rather than threading a separate, fallible parameter that could disagree. `CreateAgentUseCase` refuses to create a workspace-less agent. A write whose entity carries a `workspaceId` uses it to pick the database, so an entity with no workspace now fails loudly at the write instead of landing in an unowned row.
-- **Isolation is enforced by the database split, not by WHERE clauses.** A workspace's rows live in that workspace's own SQLite file (`<dataDir>/<workspaceId>/workspace.db`), reached through `WorkspaceDatabaseManager.of(workspaceId)`. A `WorkspaceDatabase` does not declare `users`, `workspaces`, or any other workspace's tables, so a cross-workspace read does not compile. The `workspaceId` columns still exist and are still written (they keep the sync triggers/FTS indexes unchanged and make a file self-describing) but they are no longer what keeps workspaces apart. See the **Database** section for the full picture.
-- **Only these tables are shared across workspaces** (they live in `global.db`): `workspaces` (the registry), `users`, `user_preferences`, `paired_devices`, `rss_feeds`/`rss_articles`, `workers`/`jobs`/`placement_log`, `workspace_routes`, `server_meta`, `server_settings`, `sso_connections`, `managed_action_policies`. Each is documented `CROSS-WORKSPACE BY DESIGN` and the routing ratchet test pins the set — adding to it is an isolation decision that has to be argued for in review.
-- **The one way to reintroduce a leak: caching a resolved DAO.** `final AgentDao _dao;` on a repository can only have come from _some_ workspace and every later call is then answered from that workspace's file whatever `workspaceId` was passed. Always hold the manager and resolve per call. The ratchet test fails on a cached per-workspace DAO field.
-- **Repository/DAO methods still take a required `workspaceId`** — that is what selects the file. Never make it optional, nullable-with-a-default, or resolved from a "current"/"active" workspace. An ID-only lookup (`forAgent(agentId)`, `getById(id)`) cannot pick a database, so it must gain one: `forAgent(workspaceId, agentId)`.
-- **Crossing workspaces requires `CrossWorkspaceQueries`.** `fanOut` / `fanOutKeyed` / `forEachWorkspace` / `mergeStreams` / `topN`. Its call sites are the complete inventory of what legitimately spans workspaces (all-workspace dashboards, startup reconcilers, retention/GC, event routers) and each keeps a `CROSS-WORKSPACE BY DESIGN:` comment saying why. Anything that enumerates workspaces itself fails the ratchet.
-- **Pre-auth lookups route through `workspace_routes`.** A few entry points arrive with nothing but a secret or an opaque id and no workspace: an invite code hash, a webhook token, a deep link naming a run/space/ticket. Those resolve their workspace from the global `workspace_routes` index (written by the same operation that creates the entity, entity first then route). A miss is a not-found — there is deliberately no scan fallback that could paper over a route that was never written.
-- **ID-based access is not a substitute for scoping.** Looking an entity up by its id (`ticketId`, `factId`, `symbol_id`) does not prove it belongs to the caller's workspace. Either scope the query by `workspaceId` so a foreign row is simply not found, or fetch then validate `entity.workspaceId == workspaceId` and reject on mismatch.
-- **MCP tools.** Every tool that touches workspace-scoped data declares `workspace_id` in its `required` array, reads it (`if (x is! String) return CallResult.error('Missing or invalid argument: workspace_id')`) and enforces ownership. For repo-scoped tools (code graph) check `WorkspaceRepository.isRepoLinkedToWorkspace`. Tools that genuinely span all workspaces (e.g. `list_workspaces`) are the only exemptions.
-- **Reject cross-workspace access explicitly.** On a mismatch, deny loudly, never silently no-op (that hides the bug) and never proceed (that leaks). Domain/service code throws `WorkspaceMismatchException` (in `packages/cc_domain/lib/src/errors/app_exceptions.dart`); MCP tools return `CallResult.error('... belongs to a different workspace.')`. The thrown exception's message reaches the agent verbatim via the MCP error path.
-- **Validate at a chokepoint.** When a service mutates entities by id, validate once at the single read/write chokepoint rather than per-method. See `TicketWorkflowService._mutate` / `_assertWorkspace`: every mutation threads `workspaceId`, the chokepoint loads the row and asserts `row.workspaceId == workspaceId` before applying.
-- **An unregistered workspace id is refused before its database is opened.** Opening a workspace database CREATES the file, so every client-supplied `workspace_id` passes a registry existence check (`workspaceExists`, wired from the global registry and answered by `workspaceRegistryDao.getById`, which excludes soft-deleted rows) at the `repo/call` and `sub/subscribe` chokepoints BEFORE the membership/role lookup or the query handler runs — the role lookup itself opens the named workspace's database. Without the gate, a stale client-held id (e.g. an `active_workspace_id` pref surviving a data-dir reset) sprays an empty ghost `<dataDir>/<id>/workspace.db` per request. Regression coverage: `packages/cc_server_core/test/fresh_boot_first_workspace_test.dart` ("stale workspace id is refused without materialising a ghost database") plus the gate groups in cc_host's dispatcher/subscription-manager tests.
-- **Genuinely-global queries are the only exception and must be documented.** A few surfaces legitimately span all workspaces: the dashboard's all-agents/all-spaces view, observability aggregation, startup reconcilers (orphan-run reaper, stranded-ticket reconciler, pipeline resume), the embedding backfill and event routers (trigger dispatcher fans out then filters per-event). These keep their unscoped query, but the DAO method MUST carry a `CROSS-WORKSPACE BY DESIGN` doc comment explaining why and pointing to the workspace-scoped alternative. If you add an unscoped query without that comment, assume it is a bug.
-- **Membership is enforced at every server chokepoint, not just `repo/call`.** The dispatcher's role gate only covers ops; the other inbound lanes have their own gates, all resolving the caller's role via the `resolveRole` (`WorkspaceRoleResolver`) seam wired from the membership repository: `sub/subscribe` refuses a workspace-scoped watch naming a workspace the user is not a member of (async `sub/error{unauthorized}`; the query handler never runs) and `tools/call` refuses a tool whose arguments name a foreign `workspace_id` (both in `RemoteRpcSession`/`SubscriptionManager` in cc_host). Cross-workspace `watchAll` streams (`workspace`, `agents`, `agent_run_log`, `pipeline_run`, `confirmation.watchPending`) are filtered PER SUBSCRIBER to rows from their workspaces (`_visibleRows` in `remote_rpc_catalog.dart`) and `RemoteEventForwarder` drops notifications whose `workspace_id` the session user does not belong to. Registry ops self-gate: `workspace.upsert` update requires admin, `workspace.delete` is owner-only, `workspace.reorder` filters to the caller's workspaces, `confirmation.respond` requires member. Server-wide settings/MCP/model ops are gated on `serverOwnerUserId` (`requireServerAdmin`) and the `/meeting/audio` + `/workspace-logo` media endpoints verify membership after the device-PSK check. Live revocation: `WorkspaceMemberRemoved` drops the session's subscriptions for that workspace (`dropWorkspaceSubscriptions`) and invalidates the forwarder's cached verdict. Regression coverage: the membership-gate groups in cc_host's `subscription_manager_test.dart` / `remote_rpc_session_test.dart`, `remote_event_forwarder_test.dart` and the non-member e2e in `fresh_boot_first_workspace_test.dart`.
-- **Tests.** The structural ratchet is `packages/cc_persistence/test/workspace_isolation_ratchet_test.dart`: every table in exactly one database, the pinned global-table set, no DAO reaching across the boundary, no repository caching a per-workspace DAO, no fan-out outside `CrossWorkspaceQueries` and the workspace-id path-traversal guard. Behavioural denial is covered by `test/features/ticketing/domain/ticket_workflow_service_test.dart` ("workspace isolation" group). Add an analogous isolation test when you introduce a new workspace-scoped surface.
+## UI and localization
 
-## State management
+- Use the in-repo `Cc*` components. `cc_ui` imports `flutter/widgets.dart`, never Material/Cupertino; root `MaterialApp` is separate. Read tokens via `context.designSystem`, full configuration via `context.ccTheme`, fonts via `CcFonts.ui/code`.
+- Root-overlay content needs a complete `DefaultTextStyle` (size, token color, `TextDecoration.none`); do not inherit the WidgetsApp error fallback. Use `showCcDialog` for dialogs.
+- Use the shared markdown and syntax seams, not new renderers. See [ARCH.md](ARCH.md#client-conventions) for fonts, icons, highlighting and route/onboarding invariants.
+- All widget/screen/dialog copy is localized with `AppLocalizations.of(context)!` and sentence case. MCP API descriptions and context-free data-layer strings need not be translated; example hints may remain literal.
+- `lib/l10n/app_en.arb` is the source. New camelCase keys need translated values in every language-base ARB, including `app_zh_TW.arb`. Sparse variants (`en_GB`, `es_MX`, `fr_CA`, `pt_PT`, `zh_HK`) only override divergent wording. Declare typed placeholders; regenerate after any ARB change.
+- Mirror UI with `EdgeInsetsDirectional`, `AlignmentDirectional`, `PositionedDirectional`, `BorderDirectional`, `BorderRadiusDirectional`, and `TextAlign.start/end`. No hardcoded app-level `Directionality`.
+- LTR carve-outs: code, diffs, terminals, paths, branches, URLs, logs, mermaid, sequence lanes and DAG canvases. Mark with `// RTL carve-out:`. Physical geometry is also valid for actual viewport/painter coordinates.
+- Navigation glyphs use `matchTextDirection: true`; physical/semantic glyphs stay unmirrored. Resolve splitter gestures and prev/next keys through directionality; guest input remains physical. Calendar columns mirror too.
+- Format dates/numbers with the active locale. Use FSI/PDI around an ARB placeholder only when an LTR token demonstrably scrambles under RTL. Cover RTL with `testWrap(textDirection: TextDirection.rtl)` or `ccTestApp`; remove fixed files from the shrinking physical-geometry allowlist, never add exceptions.
 
-- **Riverpod** for all state management. Use `Notifier<T>`, `AsyncNotifier<T>`, `FutureProvider<T>` and `Provider<T>`.
-- Database-backed state returns `AsyncValue<List<T>>` from Drift `.watch()` streams.
-- `core/providers/provider.dart` provides central infrastructure providers (rpc client, server connection, storage, event bus, sync engine, locale) — the thin client has no database/DAO/dio providers.
-- `di/providers.dart` is the composition root binding repository interfaces to implementations.
-- Feature-level providers live in `features/<name>/providers/`.
-- **Never use `ProviderScope.containerOf()`**. Use `ref.read()`/`ref.watch()` in the widget tree.
-- MCP tools must NOT receive `Ref`. Use typed constructor parameters.
+## Build and verification
 
-## Database
-
-- **Drift** (SQLite) with the DAO pattern, owned entirely by the **`cc_persistence`** package (pure Dart over `package:sqlite3`, no Flutter, no `path_provider`). Only `cc_server` opens the DB; every client reaches data over RPC. No code under `lib/` opens a database.
-
-### Two databases: `global.db` + one file per workspace
-
-Persistence is **split by workspace** and this is the single most important thing to know before touching it. There is no `AppDatabase` any more:
-
-- **`GlobalDatabase`** (`lib/database/global/global_database.dart`) → `<dataDir>/global.db`. Holds only genuinely server-wide state: the **workspaces registry**, identity (`users`, `user_preferences`, `paired_devices`), the **per-user newsfeed** (`rss_feeds`/`rss_articles`, scoped by `user_id`), the fleet queue (`workers`/`jobs`/`placement_log`), plus `workspace_routes` and `server_meta`. This is the only database boot opens and it stays small.
-- **`WorkspaceDatabase`** (`lib/database/workspace/workspace_database.dart`) → `<dataDir>/<workspaceId>/workspace.db`. Holds _everything else_ — agents, spaces, tickets, memory, pipelines, meetings, the code graph, reviews, **repos**. One DIRECTORY per workspace (so anything else belonging only to that workspace lives beside its database and is deleted with it), opened lazily on first touch. There is no flat `workspaces/` directory — see `workspaceDatabasePath` in `cc_persistence/lib/src/server_database.dart`.
-- **`WorkspaceDatabaseManager`** (`lib/database/workspace_database_manager.dart`) hands them out: `manager.of(workspaceId)` is **synchronous** (it returns a database over a `LazyDatabase`, so nothing touches disk until the first query — that is what keeps every `Stream`-returning repository signature intact).
-- **`CrossWorkspaceQueries`** (`lib/database/cross_workspace_queries.dart`) is the **only** sanctioned way to span workspaces (`fanOut` / `fanOutKeyed` / `forEachWorkspace` / `mergeStreams` / `topN`). Its callers are the complete inventory of everything that legitimately crosses the boundary: all-workspace dashboards, startup reconcilers, retention/GC sweeps, event routers.
-
-**Why it matters:** workspace isolation used to be a _convention_ (every query remembering `WHERE workspace_id = ?`, policed by a regex ratchet). It is now **structural** — a `WorkspaceDatabase` does not declare another workspace's tables, so a cross-workspace read is a compile error. Deleting a workspace is unlinking a file; exporting one is a single `VACUUM INTO`.
-
-**Rules when adding to the schema:**
-
-- A new table goes in exactly one `@DriftDatabase` list. Default to `WorkspaceDatabase` — a table only earns a place in `GlobalDatabase` if it is genuinely server-wide and the routing ratchet test pins that set so the addition has to be argued for.
-- A new DAO extends `DatabaseAccessor<WorkspaceDatabase>` or `<GlobalDatabase>` and must not declare a table from the other side.
-- **Repositories must never cache a per-workspace DAO in a field.** Hold the manager and resolve `_dbs.of(workspaceId).xDao` per call. A cached DAO pins the first workspace it saw and serves every later caller from that workspace's file — the exact leak the split makes impossible. The ratchet test fails on this.
-- The `workspaceId` columns still exist and are still written: they keep the sync-feed triggers and FTS indexes unchanged and make a file self-describing. Inside a file they are redundant, not the isolation mechanism.
-
-- Tables in `packages/cc_persistence/lib/database/tables/`, DAOs in `packages/cc_persistence/lib/database/daos/` (generated `.g.dart` files).
-- **Both databases carry a squashed v1 baseline** (`onCreate` builds everything current) on top of which `_migrationSteps` runs; both lists are currently EMPTY — `WorkspaceDatabase`'s chain was squashed back into its baseline when the tables dropped their redundant `_table` suffix (`agents_table` → `agents`), a rename no replay could carry. Read `schemaVersion` / `currentSchemaVersion` there rather than here, because a number written down in prose is the part that rots. A schema change appends a `MigrationStep(from, to, migrate)` to the `_migrationSteps` list of whichever database owns the table and bumps that database's version. Partial indexes and FTS/vector virtual tables are (re)built in `beforeOpen` helpers, not `@TableIndex` — with one caveat a step that touches one has to pay: `_createPipelineIndexes` runs ONLY in `onCreate`, so a migration that changes a partial index's `WHERE` has to drop and re-create it explicitly or every installed database keeps the old predicate forever. Because the baseline is the only description of the schema, `workspace_baseline_schema_test.dart` pins what a FRESH database must contain. A database file written before a squash is never carried forward (its tables still carry the old names) — like the pre-split single-file `control_center.db`, it is simply not opened.
-- **A drift table class that does not override `tableName` is named after its CLASS** (`AgentsTable` → `agents_table`), which is where the old suffix came from. Every table now overrides it with the plain snake_case name, and the baseline test fails if a new one forgets.
-- FTS5 external-content tables (`memory_facts_fts`, `code_symbols_fts`, `conversation_messages_fts`) and the `sync_changes` change-feed triggers live in `WorkspaceDatabase.beforeOpen` (idempotent, reinstalled on every open); vector embeddings via the `sqlite_vector` extension (FLOAT32, dim 384) with graceful FTS-only degradation. `quick_check` runs per workspace on first touch, not on the boot path.
-- ~110 tables. In `global.db`: Workspaces (the registry), Users, UserPreferences, PairedDevices, RssFeeds/RssArticles, Workers/Jobs/PlacementLog, WorkspaceRoutes, ServerMeta. In each workspace file: Repos (which absorbed the old global `repos` + its `workspace_repos` join — see below), Agents, AgentRunLogs, AgentRuntimeState, PullRequests, ReviewDrafts, ReviewSpaces, ReviewCohorts/ApiContractSnapshots/VisualDiffSnapshots/ReviewAxisResults, Caches, Spaces, Conversations, SpaceParticipants, ConversationMessages, SpaceNotes, SpaceAutonomy, SyncChanges/SyncSequences (the deterministic change feed), WriteLedger (universal idempotency), Tickets (+ TicketCollaborators/Links and TicketSyncConfigs/SyncLinks/SyncLog), Projects, Playbooks, PlanDocuments + OrchestrationRevisions, Todos, Achievements, AgentDailyStats, Streaks, ActivityLog/UserActivity (audit), WorktreeMergeLog, BudgetPolicy/BudgetIncidents, Approvals/ApprovalComments, Goals, WorkProducts/WorkProductRevisions, RuntimeProfiles, Orchestrations, AgentWorkingMemory, WorkingMemoryItems, MemoryDomains, MemoryFacts, MemoryPolicies, MemoryAccessGrants, MemoryBeliefs/Conflicts/ConsolidationLog, EpisodicEdges, PipelineRuns, PipelineStepRuns, PipelineTemplates, PipelineTriggers, CronExecutions, Teams, TeamActivityLog, CodeSymbols/CodeEdges/CodeFiles/CodeIndexCheckpoints, Meetings (+ TranscriptSegments/Speakers/ActionItems/Decisions/CalendarLinks), CalendarAccounts/Events/Sources, VoiceProfiles, IsolatedRepos, WebhookDeliveries, ProviderPolicies, RememberedDecisions, ActionPolicies, SkillScanResults, SessionRecordings/GoldenSessions/EvalSuites/EvalRuns/AgentConfigVersions, WorkspaceMembers/WorkspaceInvites/WorkspaceMemberRepoGrants, RigSessions/RigActionLog (enclosures + their attributed action log) and WorkspaceMeta (the file's self-identification).
-- **Repos are workspace-scoped.** `RepoRepository` takes a required `workspaceId` on every method. The same checkout registered in two workspaces is two rows with two ids — repo identity _across_ workspaces is by path (`findByPath`), never by id. `workspace_repos` is gone; its `position`/`linkedAt` columns moved onto `repos`.
-- **Backup is a directory, not a file:** `backups/<ts>/{manifest.json, global.db, <workspaceId>/workspace.db}` (the same shape as the live data dir, so a restore is a copy back), each written with `VACUUM INTO`. `workspace.export` / `workspace.import` hand a single workspace around as one file. `server.listBackups` reads the directory back for **Settings → Server → Backup & restore**, which is where all four (plus `workspace.delete`) got their first UI — a snapshot whose manifest is missing or names absent files is still listed, flagged incomplete, because hiding it is how an operator comes to believe they have a backup they do not. Restoring ONE workspace from a snapshot IS `workspace.import` pointed at that snapshot's `<workspaceId>/workspace.db`; there is deliberately no second mechanism that could treat the same file differently, and no whole-install restore op (that is a copy-back with the server stopped). **Every one of those ops speaks in paths on the SERVER**, which is a complete answer only when the server is the operator's own machine — so three signed HTTP routes carry the bytes for every other topology, on the same PSK-signed lane as `/proxy/media` and `/blob`: `GET /backup/workspace` (admin; exports and streams, then DELETES its copy — a download's destination is the caller's disk), `GET /backup/snapshot` (install OWNER, not a workspace role: the archive holds every workspace; zipped to a temp file because a snapshot is the whole install and buffering one would put it in the heap) and `POST /backup/restore` (workspace owner; streamed to a staging file, adopted, deleted on every path out including refusals). Both downloads are `no-store` + `Accept-Ranges: none` because each request mints a FRESH copy — a resumed range would splice two exports into one file that looks valid. The routes re-check roles themselves: the RPC gate never runs for an HTTP request, so "export is admin, import is owner" is stated twice or enforced once. All null on a demo (`databaseBackupService` is null there) and all disabled client-side on a relay-only connection, which has no HTTP origin. Both directions report PROGRESS (bar + byte count) because these are the two payloads that run to gigabytes and a spinner for four minutes is indistinguishable from a hang; the counting stream is throttled to one report per 100 ms — a 2 GB file is tens of thousands of chunks, and a `setState` per chunk spends more time painting than transferring — and always emits the final count so the bar lands on full. An upload's progress is bytes handed to the SOCKET, not bytes the server has; the response is what says that.
-
-## Routing
-
-- **go_router** with `ShellRoute` wrapping the app shell (`ControlCenterLayout`).
-- **Every in-app destination is workspace-prefixed: `/workspaces/:workspaceId/…`.** The workspace id in the URL is the single source of truth for the active workspace (`activeWorkspaceIdProvider` is driven from the route; read it via `context.currentWorkspaceId`). Route builders take the workspace id as their first argument. Only the pre-context surfaces have no prefix: `/splash`, `/onboarding`, `/signed-out` and `/workspaces` (the picker).
-- Splash, onboarding and the re-auth screen render full-screen outside the shell. The gate is complete when at least one forge is connected FOR THE SIGNED-IN USER (by signing in to it, or by pasting a token) AND at least one workspace exists. The `gh` CLI is not an authentication method.
-- **A missing credential and a missing setup are different screens.** With no forge connected the guard picks between `/signed-out` (re-authenticate; the same `ForgeConnectionsCard` Settings renders, no step bar, no continue button — the router leaves on its own when a forge reports in) and `/onboarding`, and the discriminator is **`users.onboarding_finished_at`**, read off the caller's own `identity.me`, never "workspaces exist". That inference was wrong the moment someone is INVITED: they hold a workspace they never created and have never onboarded. The flag is monotonic, written (through `users.markOnboardingFinished` — idempotent, self-targeting, no admin gate) both when the flow ends and whenever the gate observes a complete setup (which self-heals accounts predating it), and while it is still unknown the gate holds the splash rather than guessing — the guard never redirects back out of onboarding, so a wrong guess strands the user there. **It is a column on the user with NO device-local lane**, and that is not a style preference: it used to be a synced preference read local-copy-first, and the preference sync's promotion pass seeds the server from whatever a machine already holds — so a device that had onboarded once marked a brand-new account as already set up, and the gate offered that person the re-auth screen instead of the setup they had never done. Anything an account must be _right_ about, rather than merely agree on, belongs on the entity and not in `user_preferences`.
-- **Onboarding's steps are a list, not a count.** The workspace step is dropped for someone who already belongs to one (the invited case); connect/sandbox/adapter/voice are per-person setup everyone still walks. The list is snapshotted once at flow start — deriving skips per-build from async probes made steps vanish underneath the person walking them.
-- Route constants in `router/routes.dart` (builder functions, not string constants). Router config in `router/app_router.dart`; guard logic in `router/guards.dart`; onboarding gate in `features/auth/providers/onboarding_providers.dart`.
-- Notable non-obvious routes: `/workspaces/:id/inbox` (the unified inbox) and `/workspaces/:id/plans` + `/workspaces/:id/plans/:kind/:id` (Plan Studio hub + studio; `kind` = `orchestration`|`document`).
-
-## Networking
-
-- **All external network I/O lives in `cc_server`, never in a client.** The dio HTTP clients moved out of `lib/` into **`cc_infra`** (the server-side VM-only adapter package): `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphQLClient`, `GitLabApiClient`, `BitbucketApiClient`, `LinearGraphQlClient`, plus `GoogleCalendarApiClient`.
-- Auth token injection via dio interceptors; all network errors mapped to typed `AppException` subclasses (in `cc_domain`'s `src/errors`).
-- Clients (desktop/web/phone) never dial GitHub/Linear/Google directly — they call server RPC ops and even remote media is fetched through the server's `/proxy/media` endpoint (`MediaProxyConfig`). Non-ranged image fetches are served through a persistent disk cache (`MediaCache` in `cc_server_core`, under `<dataDir>/media_cache/`, keyed by `(url, w)`): TTL honors upstream `max-age` clamped to 1h-7d (24h default), expired entries revalidate with `ETag`/`Last-Modified` conditionals, a failed refresh serves stale and concurrent same-key requests single-flight. Client-side, requested widths are bucketed UP to a shared ladder (`bucketMediaWidth` in `lib/shared/utils/media_width_ladder.dart`) so nearby display sizes share one cache entry.
-
-## UI
-
-- **cc_ui** (`packages/cc_ui/`) is the in-repo design system. The app owns every visual component. Use the `Cc*` widgets (`CcButton`, `CcTextField`, `CcDialog`, `CcSidebar`/`CcSidebarGroup`/`CcSidebarItem`, `CcDivider`, `CcToastScope`, …) for all UI; the Widgetbook gallery in `apps/cc_gallery/` previews every component.
-- **cc_ui is purist; it builds on `package:flutter/widgets.dart` only**, never `material.dart`/`cupertino.dart`: no `Material`, `Scaffold`, ink, or Material `Theme`. Design tokens travel through the `CcTheme` `InheritedWidget`. Read semantic tokens with `context.designSystem` and the full config (brightness, reduced-motion, resolved font families) with `context.ccTheme`; both fall back gracefully when there is no `CcTheme` ancestor. Resolve fonts via `CcFonts.ui`/`CcFonts.code`, never by passing a raw family string to `TextStyle.fontFamily`.
-- **Overlays do not inherit a Material text theme. Supply your own.** `MaterialApp` only installs a usable `DefaultTextStyle` _inside_ each route's `Material`. Anything presented into the root overlay (dialogs via `showCcDialog` → `showGeneralDialog`, toasts, popovers, sub-windows) sits above that, where the only ambient `DefaultTextStyle` is `WidgetsApp`'s error fallback, 48px text with a double yellow underline. `showCcDialog` wraps its content in a complete design-system `DefaultTextStyle` (concrete size + token color + `decoration: TextDecoration.none`) so this never leaks through; any new off-Material overlay surface MUST do the same.
-- **Material 3** remains the _root_ app theme (`MaterialApp`, light/dark) with `ThemeMode` persistence via `shared_preferences` (non-sensitive only); cc_ui renders on top of it without depending on it.
-- **Phosphor for iconography, vendored not depended on.** `packages/cc_ui/fonts/Phosphor-Regular.ttf` is the only icon font; glyphs go through the generated `AppIcons`/`CcIcons` codepoint seams owned by `tool/gen_icon_seams.py` (`fontPackage: 'cc_ui'`). Do NOT re-add `phosphoricons_flutter`: its ~1530-member classes stack-overflow the web DDC linker and its pubspec declares all six styles — a dependency's `fonts:` block cannot be opted out of, the icon tree-shaker skips a font with no const `IconData` referencing it and Flutter web downloads every `FontManifest.json` entry at engine boot, so the five unused styles cost 2.46 MB per cold load. `test/tooling/icon_font_bundle_test.dart` pins this.
-- **Script companions load with the locale, never at boot.** Manrope covers Latin (incl. Vietnamese), Cyrillic, and limited Greek. Thai uses **Sarabun**, Hebrew **Rubik**, Arabic/Persian/Urdu **IBM Plex Sans Arabic**, CJK the OS UI face. Those files live under `packages/cc_ui/fonts/scripts/` as `assets:`, not `fonts:` — a `fonts:` entry would land in `FontManifest.json` and Flutter web would download every companion on an English cold start. `CcTheme` FontLoads only the active locale's file. Do not add Noto CJK to the bundle (tens of MB).
-- **cc_markdown** (`packages/cc_markdown/`) is the in-repo markdown engine — a custom typed-AST parser + widget renderer that replaced `flutter_smooth_markdown` and `flutter_markdown_plus` (both removed). ` ```mermaid ` fences are drawn natively by the package's own diagram engine (`CcMermaidView`) — pure-Dart dialect parsers (flowchart/`graph`, `stateDiagram`, `classDiagram`, `erDiagram`, `sequenceDiagram`, `pie`, `timeline`) → layout (layered Sugiyama-style for the graph family) → `CustomPainter`; no WebView, no JS, no new dependency. Author theming (`%%{init}%%`, `classDef`, `style`) is parsed but NOT applied: diagrams are themed from app tokens via `appMermaidStyle` so light/dark and the contrast floor hold. An unsupported dialect or malformed body degrades to the normal code block (the engine never throws) and an unclosed streaming fence stays code until it closes. Render with `CcMarkdown` (one-shot) or `CcStreamingMarkdown` (first-class LLM streaming: sealed-block memoization, per-delta tail parse, no cache pollution). App-side wiring lives in `lib/shared/widgets/markdown/`: `appMarkdownStyle` (the ONE unified `CcMarkdownStyle` for every surface), `markdown_registries.dart` (chat vs GitHub plugin/builder registers), `markdown_builders.dart` and `buildSharedCodeBlock` (syntax highlighting stays app-side, injected via `codeBuilder`). GitHub surfaces use `GitHubMarkdownBody`; tickets/meetings use `StyledMarkdownBody`. The package is widgets-only except the selection island (`selection_region.dart` + `context_menu.dart`), enforced by the cc_markdown purity group in `architecture_constraints_test.dart`.
-- Custom diff viewer with syntax highlighting in `pr_review/presentation/`.
-- **Syntax highlighting is shiki_flutter** (TextMate grammars, pure Dart) everywhere: markdown fences, transcript tool bodies and the PR diff. The app-side seam is `lib/shared/syntax/` — the custom `cc-light`/`cc-dark` themes (authored from `syntax_palette.dart`; a drift test pins them together, bump `kCcThemeRevision` on any theme edit), ONE unified language table (`syntax_languages.dart`: fence hints + file paths + well-known filenames → shiki ids, with measured per-grammar weight classes gating sync vs async tokenization) and the grammar registries (native indexes all ~250 grammars; web ships a curated ~50 eagerly + 5 deferred packs regenerated by `tool/gen_grammar_packs.py`). The PR-diff worker compiles `package:shiki_flutter/engine.dart` (the package's Flutter-free entrypoint) straight into `web/diffWorker.js` and tokenizes per hunk. Unmatched tokens carry the `#010203` sentinel foreground which maps to `null` (inherit the surface's base style) — never hardcode that hex elsewhere.
-- Global error boundary via `PlatformDispatcher.instance.onError` + `ErrorWidget.builder`.
-
-## Design context
-
-Design is governed by two root files, managed by the `impeccable` skill. Read them before designing or reviewing any UI.
-
-- **PRODUCT.md**, strategic: register, users, product purpose, brand personality, anti-references and the principles below. Answers who/what/why.
-- **DESIGN.md**, visual: color tokens, typography, elevation, components, do's and don'ts. Answers how it looks. The design-system tokens live in the `cc_ui` package (`packages/cc_ui/lib/src/tokens/`; the `core/theme/` paths are now re-export shims); read tokens via `context.designSystem`.
-
-Register: **product** (design serves the task). Personality: **alive, warm, confident** (Anthropic-style warmth, never cold), with earned brand moments (onboarding, the dashboard deck, the shader backgrounds). Product framing: a **unified developer ops hub** for a **solo, multi-platform operator** (desktop + web + phone). Agents are one pillar among co-equal ones (messaging, meetings, calendar, newsfeed, PR review). Anti-references (hard): **generic SaaS dashboard** and **default component-kit/template feel**. Accessibility bar: **WCAG 2.1 AAA where feasible, AA as the floor**, never status-by-color-alone, full reduced-motion alternatives, keyboard-first _and_ touch-ergonomic (≥44px targets on phone).
-
-Core design principles:
-
-1. **Presence over decoration.** Motion, color and "life" must report real state (an agent thinking/running/blocked/done/costing, a meeting recording, a sync in flight, a feed updating), or they are cut.
-2. **Situational command in one glance.** Across every pillar, surface status, ownership and the next action by default; bury nothing essential a level deep.
-3. **Distinctive through behavior, not skins.** Escape the component-kit feel by making the model legible, not by adding decoration.
-4. **Warm confidence, earned.** Warmth and expression live in voice and a few thresholds; day-to-day surfaces stay quiet, dense and consistent with one component vocabulary.
-5. **Solo-first, multi-platform continuity.** Optimize for one operator now, keep the operation coherent across desktop/web/phone (no surface a degraded afterthought) and keep attribution legible so team use is additive, not a rewrite.
-
-For any design work (new screens, redesigns, reviews, polish), use the `impeccable` skill: `/impeccable <command>`.
-
-## Security
-
-- **Provider credentials live on the SERVER, attached to a user — never on a client.** A token on the client is a token on every machine the operator signs in from, and a phone or web tab has no keychain we control. Three lanes, all server-side (`packages/cc_server_core/lib/src/identity/`):
-  - **Per-user** (`UserCredentialsStore`) — `user_forge_<forge>_<userId>` / `user_ticket_<provider>_<userId>` in the 0600 `FileSecretsStore`, holding a JSON envelope (`access`/`refresh`/`expires_at`/`source`/`account`) so an expiring OAuth token can be renewed in place. Self-service over `credentials.*`: the target is always `ctx.userId`, so there is no admin gate and no way to write another member's.
-  - **The server's own app identity** (`ProviderAppSettings` + `GitHubAppClient`) — a GitHub App (app id + private key → installation tokens) and a Linear app. This is what background work runs on (webhooks, PR polling, ticket sync, media fetches), so nothing with no human behind it depends on one person's PAT still being valid. Operator-only (`providerApps.*`, `requireServerAdmin`); non-secrets in `server_settings`, secrets in the secrets file, seeded ONCE per field from the environment (`GITHUB_APP_ID`, `GITHUB_APP_PRIVATE_KEY`, `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `LINEAR_CLIENT_ID`/`LINEAR_CLIENT_SECRET`, `LINEAR_API_KEY`) — after which the stored value wins.
-  - **The environment** (`GITHUB_TOKEN`, `GITLAB_TOKEN`, `LINEAR_API_KEY`, …) — the CI/headless path.
-- **Resolution order is fixed** (`ForgeCredentials`): with a calling user → their credential → nothing else (the environment is the SERVER's credential, not theirs); without one → app identity → the server owner's credential → the environment.
-- **A human-driven forge write is authored by that human; only agent and background work is the app.** `tokenForActor(forge, userId)` is the lane for anything a person clicked: their own credential first, the no-caller chain only as a fallback for a member who has not connected that forge (`actsAsSelf` reports which one answered). It is threaded from `ctx.userId` at the RPC boundary through per-actor factories in `cc_server_runtime` — `forgeDioFactoryForActor`, `forgeRegistryForActor`, `prLifecycleRepositoryForActor` and `ReviewPublisherService.githubPrClientFor` — so approving a review, posting or replying to a comment, reacting, merging, assigning, requesting reviewers, opening a pull request and pressing "publish to GitHub" all carry the operator's name. **The `prRepoCache` key includes the acting user**: the cached `PrReviewRepository` holds the authenticated client its writes ride, so sharing one across members would attribute everyone's approvals to whoever opened that PR first. The MCP tool surface, the pollers, webhooks and the opt-in auto-publish at the end of an agent orchestration pass no user and stay on the app identity — that split is the feature, not an oversight: a review nobody clicked must not borrow somebody's account.
-- **Signing in is a round-trip the server runs, and GitHub's is a DEVICE FLOW** (`ProviderOAuthService`): `oauth.begin` returns a user code, the server polls GitHub itself and stores the credential when the human approves. No callback URL is registered anywhere, which is what makes it work for a server on `127.0.0.1`, behind NAT, or driven from a phone — and the client id alone authenticates it, so **a GitHub client secret is not required** (it only enables refreshing an expiring token). Linear has no device flow: it uses the redirect lane (`GET /oauth/<provider>/callback`) with a single-use, TTL-bounded `state` bound server-side to `(user, provider)`, so no client ever names a user. Pasting a token stays available for installs with no app configured.
-- **Credentials are environment-only, never a flag, and `.env.template` is the complete list.** `CcServerConfig.pickCredential` reads the environment and falls back to the release build's baked-in value (`builtin_credentials.dart`, written by `scripts/release/builtin_credentials.sh` in the release job); there is deliberately no `--google-client-id` / `--klipy-app-key`, because a secret on a command line is readable by every process on the host through `ps`. What may be baked in is narrow, and every entry is a credential its vendor documents as non-confidential: the Google device-code client, the Klipy key and the **GitHub client id** (public by design — a device flow sends no secret, which is why `gh` embeds one too; an extracted copy mints nothing, since every token still needs a human approving on github.com). Two GitHub values are deliberately excluded: the PRIVATE KEY, which mints installation tokens for every repo the app can see — and the server binary is the distributed artifact, so "in the release build" and "on every user's disk" are the same place — and the CLIENT SECRET, which GitHub does not call public and which is only reachable through the refresh grant, so the shipped app leaves token expiry off and nothing needs refreshing. The consequence is that the shipped client id buys the SIGN-IN lane only: a user token from it reaches what the app is installed on, while background work with no human behind it still falls back to the owner's credential until an operator registers their own app. The client secret is excluded from the BUILD only: it seeds from the environment (`GITHUB_CLIENT_SECRET`, like Linear's) or is pasted in Settings, and an operator whose own app has token expiry on needs it — without it an expiring user token cannot be refreshed, and every eight hours becomes a fresh sign-in. The repo-root `.env` is read by `cc_server` ITSELF (`environmentWithDotenv`, from its working directory, layered UNDER the real environment) — not by the app, which forwards nothing: a file only the desktop could read did nothing for a packaged binary, a systemd unit or docker.
-- **Everything that is not a provider credential is edited in Settings, not the environment.** SSO (`CC_OIDC_*` / `CC_SAML_*`) and the owner's identity (`CC_OWNER_*`) used to seed from env and no longer do — a connection that can arrive from two places is one the settings screen can disagree with. `CC_SERVER_*` remains for pre-boot process configuration (data dir, port, bind, TLS, log level), which has no Settings surface and pairs with a `--flag`.
-- **The `gh` CLI is NOT an authentication method.** It authenticated as whatever account the host happened to be logged into, changed identity when someone ran `gh auth login` in an unrelated terminal, and cannot exist on a phone or on web.
-- Credentials never cross the RPC boundary: `forge.listConnections` / `ticketing.listConnections` carry status and an account name, never a token, and secrets are write-only in `providerApps.*` (presence flags out).
-- `shared_preferences` is used only for non-sensitive preferences (theme, font, which ticketing vendor you work in), which ride the per-user preference sync.
-- `flutter_secure_storage` remains only for the client's own device credential; `SecureCredentialsRepository` is gone, and `features/auth/providers/credential_migration.dart` hands any leftovers to the server once, then deletes them.
-
-## Domain Events
-
-- `DomainEventBus` in `packages/cc_domain/lib/core/domain/events/` enables decoupled cross-feature communication. 53 concrete classes (plus sealed `TaskLifecycleEvent`); there is no `TaskQueued`, `TicketStarted`, `PipelineRunStarted`, `UserCreated`, `UserDeviceRevoked`, or memory/orchestration event.
-- Workspace, Agent & Repo: `WorkspaceCreated` (triggers CEO seeding, pipeline templates, starter eval suites), `AgentRunCompleted`, `RepoAdded` (triggers code indexing via the `index_code` pipeline), `SkillUpdated`
-- PR & Review: `PullRequestPublished`, `PullRequestStatusChanged`, `PrMerged`, `PrReviewRequested`, `PrMentioned`, `ExternalPrMerged`, `ExternalPrDetected`, `PrHeadChanged`, `ReviewBecameStale`, plus the authored-PR watch (`PrMergeReadinessChanged`, `PrReviewDecisionChanged`, `PrChecksStatusChanged`, `PrCommentMentioned`, `PrThreadReplied`, `PrThreadResolved`)
-- Messaging: `MessageReceived`, `SpaceCreated`, `SpaceDeleted` (drives worktree GC), `SpaceProvisioningChanged` (workspace setup progress: the chat bridge narrates it on its task card)
-- Ticketing: `TicketCreated`, `TicketCompleted`, `TicketFailed`, `TicketCancelled`, `TicketStatusChanged`, `TicketAssigned` (audit/notification/pipeline trigger; team assignment also dispatches the team leader), `TicketReassigned`, `TicketDetailsUpdated`
-- Task lifecycle (one dispatched run): `TaskDispatched`, `TaskRunning`, `TaskWaitingLocalDirectory`, `TaskProgress`, `TaskMessage`, `TaskCompleted`, `TaskFailed`, `TaskCancelled`
-- Pipeline lifecycle (terminal only): `PipelineRunCompleted`, `PipelineRunFailed`, `PipelineRunCancelled`
-- Calendar & Meetings: `CalendarAuthExpired`, `MeetingStartingSoon`, `MeetingRecordingStopped`
-- Identity & membership: `WorkspaceMemberAdded`, `WorkspaceMemberRemoved` (session hosts drop that user's workspace subscriptions; the socket stays open), `WorkspaceMemberRoleChanged`. Device revocation watches `paired_devices` directly — there is no `UserDeviceRevoked` event.
-- Observability: `ActivityLogged`, `BudgetThresholdCrossed`
-- Rigs: `RigControlChanged`, `RigReaped`, `RigClosedEvent`
-- CEO agent seeding is event-driven (listens to `WorkspaceCreated`) instead of fire-and-forget in `build()`.
-
-## Build and code generation
-
-**Use `fvm` for every Flutter/Dart command.** This repo pins its SDK with [fvm](https://fvm.app), so always prefix invocations: `fvm flutter <…>` / `fvm dart <…>` (e.g. `fvm flutter analyze`, `fvm flutter test`, `fvm flutter gen-l10n`, `fvm dart analyze tool/foo.dart`). A bare `flutter`/`dart` may be missing from PATH or resolve to the wrong SDK version. The user owns running the app (`fvm flutter run`). Do not start it yourself.
-
-**Cap test concurrency: always run tests with `--concurrency=2` (use `--concurrency=1` for the root app suite).** `flutter test` defaults to one `flutter_tester` per CPU core and each one loads the entire app plus a `frontend_server` compiler, so an uncapped run can exhaust machine memory (it has crashed a laptop). Also never run two test suites in parallel. A PreToolUse hook in `.claude/settings.json` denies uncapped `flutter test` / `dart test` invocations.
+Use `fvm` for **every** Dart/Flutter invocation. The user owns `fvm flutter run`; do not launch the app yourself.
 
 ```bash
-fvm flutter pub run build_runner build --delete-conflicting-outputs
+fvm flutter pub get
+fvm flutter analyze
+fvm flutter test --concurrency=1  # root app; other suites use --concurrency=2
+fvm flutter test test/core/architecture_constraints_test.dart --concurrency=1
 ```
 
-Because this is a single-lockfile pub workspace, a root `build_runner` run regenerates every member. Required after changes to:
+Never run two test suites in parallel or omit the concurrency cap.
 
-- Database tables/DAOs (drift) — the generated code lives in `packages/cc_persistence`.
-- JSON serializable / other codegen models (`*.g.dart`) — mostly in `packages/cc_domain`.
+| Changed surface | Required regeneration/build |
+| --- | --- |
+| Drift tables/DAOs or JSON/codegen models | `fvm flutter pub run build_runner build --delete-conflicting-outputs` from root; shared pub workspace/lockfile |
+| ARB files | `fvm flutter gen-l10n` |
+| Server-side code | Build/stage natives, then `cd apps/cc_server && fvm dart build cli`; desktop prefers the prebuilt binary |
+| Worker entry or transitive source | `tool/gen_workers.sh`; commit generated `web/*.js`, check with `tool/check_workers.sh` |
 
-**Rebuild the `cc_server` binary after any server-side change.** The desktop launches a prebuilt `cc_server` binary in preference to source, so a new RPC op or tool won't appear (returns `opUnknown` / "unknown tool") until you rebuild it:
+Worker entries (`@isolateManagerCustomWorker` / `@isolateManagerWorker`) must remain Flutter-free. The generator is a global build tool, not a dev_dependency; adding it conflicts with the workspace analyzer constraints.
 
-```bash
-cd apps/cc_server && dart build cli
-```
+### Native and worktree safety
 
-Tell-tale sign: a change works in tests but not in the running app. The user owns running the app (`fvm flutter run`); do not start it yourself.
-
-**Native libraries are REQUIRED — there is no degraded mode.** Every native
-(`rift`, `fff`, `tree-sitter` + grammars, `cc_watcher`, `ccpty`,
-`aec_ffi`, `lame_ffi`, `cc_inference`, `cc_saml`) must be built and staged before
-`dart build cli`:
-
-```bash
-scripts/natives/build_natives.sh      # aborts on the first failure
-```
-
-`cc_inference` is the in-repo Rust crate (`packages/cc_natives/native/inference/`)
-that owns BOTH on-device ML workloads — speech (sherpa-onnx: ASR, VAD,
-diarization, voiceprints) and text embeddings (ONNX Runtime) — statically linked
-against ONE ONNX Runtime. On-device inference has NO pub dependency; do not add
-one back. A second ONNX Runtime in the process is a Windows loader hazard (it
-resolves a DLL dependency from already-loaded modules by base name) and a pub
-package that imports `package:flutter` cannot link into the Flutter-free server
-binary at all.
-
-A missing dylib is a broken install, never a runtime condition. Loaders throw a
-`NativeLibraryUnavailable` (rift signals it via `RiftException.isUnavailable`),
-`cc_server`'s boot preflight refuses to start and names the offender, the build
-hook fails `dart build cli` (create a repo-root `.cc_natives_allow_missing`
-file to downgrade that to a warning for compile-only work — a FILE, not an env
-var, because the hooks runner does not forward the caller's environment) and the packaging scripts refuse to produce an artifact. Do
-NOT reintroduce a fallback: one hides a broken native behind a slower working
-path forever and the only symptom is that things quietly got worse.
-
-The required set lives in ONE matrix, `scripts/lib/natives.sh`, which
-`verify_natives.sh` and the packaging scripts read and
-`test/tooling/native_matrix_test.dart` pins against the `nativeRequirement` table
-in `cc_server_runtime.dart`. `rift` on Windows is the single platform exemption
-(no MSVC copy-on-write backend, so `git worktree` is the _backend_ there).
-
-ONE fallback remains, and it is **environment**-driven so it cannot mask a build
-failure: semantic search stays FTS-only until the on-device embedding **model**
-downloads (`EmbeddingService.isReady`). Models are the only artifacts fetched at
-runtime.
-
-The other one is gone. A filesystem without copy-on-write support
-(`RiftException.isCowUnavailable`) used to degrade to `git worktree`, but that
-backend writes the new branch, a `.git/worktrees/<name>` registration and
-FETCH_HEAD into the **user's own checkout** — so a "correct and permanent"
-fallback quietly filled operators' repos with `conv/*` and `rescue/*` branches.
-Copy-on-write is now the SOLE backend wherever rift ships: `cow_unavailable` and
-every operational rift error fail the provision (the fix is a data dir on the
-same CoW volume as the repo), and `RiftRepoIsolationAdapter` issues no git
-command against the source at all — even the default-branch probe reads the copy.
-`git worktree` provisioning survives only on Windows, and its teardown path
-survives everywhere, because that is what removes the state older rows left in
-a checkout.
-
-**Regenerate the Web Workers after changing any worker source.** Heavy CPU work
-that must run off the main thread uses [`isolate_manager`](https://pub.dev/packages/isolate_manager)
-— real isolates on native, generated `web/<name>.js` Web Workers on the web (so
-web reaches desktop parity instead of janking on the main thread). Worker entry
-functions are annotated `@isolateManagerCustomWorker` / `@isolateManagerWorker`
-and live in **Flutter-free** files (they compile via `dart compile js`, which
-cannot see Flutter — e.g. `diff_worker_core.dart`). After editing a worker entry
-or any code it pulls in, regenerate and commit the JS (same discipline as
-`build_runner` for `*.g.dart`):
-
-```bash
-tool/gen_workers.sh   # dart run isolate_manager:generate --input lib --output web --single
-```
-
-The generator (`isolate_manager_generator`) is a build-time-only tool run via
-`dart pub global` — it is deliberately NOT a dev_dependency because it pins
-`analyzer ^10`, which conflicts with mockito's `analyzer ^13`. The committed
-`web/*.js` mean `flutter build web` needs no generator. `test/tooling/web_workers_test.dart`
-asserts every annotated worker has a committed asset; `tool/check_workers.sh`
-(and the scoped `.github/workflows/web-workers.yml`) byte-diff for staleness.
-
-### Internationalization (i18n)
-
-- **All user-facing strings MUST be internationalized** using Flutter's l10n system. NEVER hardcode English text in widgets, screens, or dialogs.
-- Access translations via `final l10n = AppLocalizations.of(context)!;` then `l10n.keyName`.
-- L10n keys are defined in ARB files under `lib/l10n/`. Source of truth: `app_en.arb`.
-- When adding a new key, add it to every **language-base** ARB (`app_en.arb`, `app_ar.arb`, `app_cs.arb`, `app_de.arb`, `app_el.arb`, `app_es.arb`, `app_fa.arb`, `app_fr.arb`, `app_he.arb`, `app_hu.arb`, `app_id.arb`, `app_it.arb`, `app_ja.arb`, `app_ko.arb`, `app_ms.arb`, `app_nb.arb`, `app_nl.arb`, `app_pl.arb`, `app_pt.arb`, `app_ro.arb`, `app_ru.arb`, `app_sv.arb`, `app_th.arb`, `app_tr.arb`, `app_uk.arb`, `app_ur.arb`, `app_vi.arb`, `app_zh.arb`, `app_zh_TW.arb`). Sparse country variants (`app_en_GB.arb`, `app_es_MX.arb`, `app_fr_CA.arb`, `app_pt_PT.arb`, `app_zh_HK.arb`) only get the key when the wording actually diverges; missing keys fall back to the language base. Translate the values you are adding to the other languages.
-- Key naming: camelCase, descriptive (e.g. `agentName`, `failedWithError`, `saveChanges`).
-- After adding keys, run `flutter gen-l10n` to regenerate the Dart l10n files.
-- For strings with parameters: `"keyName": "{param} some text"` with `"@keyName": { "placeholders": { "param": { "type": "String" } } }`.
-- MCP tool titles and descriptions are API descriptions for AI agents. Do NOT i18n them.
-- Data-layer strings without BuildContext (e.g. default agent names, notification event titles) may remain hardcoded if no context is available. Prefer passing locale through the call chain when practical.
-- Example placeholders like `hint: 'e.g. architect'` are acceptable to leave as-is.
-- Run `flutter gen-l10n` after any ARB file changes.
-
-### RTL & directionality
-
-The app ships RTL locales. `MaterialApp` derives the ambient `Directionality` from the resolved locale via `GlobalWidgetsLocalizations` — never wrap app chrome in a hardcoded `Directionality`.
-
-- **Logical geometry, never physical, in anything that mirrors.** Use `EdgeInsetsDirectional`, `AlignmentDirectional`, `PositionedDirectional`, `BorderDirectional`, `BorderRadiusDirectional` and `TextAlign.start`/`end`. Physical `left`/`right` APIs are legal only inside an LTR carve-out or for true screen-coordinate math (overlay collision clamps against the viewport, painter internals that already resolved direction). `test/core/rtl_directionality_ratchet_test.dart` polices this with a shrinking allowlist — new physical-edge geometry outside a carve-out fails the ratchet, and fixing a file means removing it from `test/core/migration_allowlists/rtl_physical_geometry.txt`, never adding to it.
-- **LTR carve-outs — always LTR in every locale, by convention:** source code, diffs (the `unified_row_painter.dart` family), terminals, file paths, branch names, URLs, log output, the mermaid diagram engine, `CcDiagram` sequence lanes, and the plan/pipeline DAG canvases. These keep a hardcoded `TextDirection.ltr` with an `// RTL carve-out:` comment naming the reason. Do NOT "fix" them to be directional.
-- **Everything else mirrors with the locale:** navigation, sidebars, menus, flyouts, tooltips, settings, composer, cards, toasts, breadcrumbs, tabs — and the calendar grid (day columns run start→end, matching platform RTL calendars).
-- **Directional glyphs mirror; semantic glyphs do not.** Chevrons/arrows/carets that mean "forward/back/expand toward the reading direction" carry `matchTextDirection: true` through the icon seam (`AppIcons`/`CcIcons`). Glyphs that depict a physical thing (media transport, undo/redo arrows per platform convention, text-formatting marks) stay unmirrored.
-- **Gestures and keys resolve direction at the edge.** A drag that moves a start/end edge (splitters, resizable panels, swipe actions) maps `delta.dx` through the ambient `Directionality`; ArrowLeft/ArrowRight mean prev/next only after direction resolution — EXCEPT surfaces that forward raw keys to a guest (rig key translation stays physical).
-- **Dates and numbers follow the active locale.** Thread the ambient locale into `DateFormat`/`NumberFormat` (`AppLocalizations.of(context)` surfaces or `Localizations.localeOf`); never hardcode an English-shaped pattern in a widget.
-- **BiDi hygiene:** LTR tokens interpolated into ARB strings (paths, branch names, URLs, identifiers) rely on Flutter's paragraph-level BiDi; if a specific string renders scrambled under RTL, isolate the placeholder with FSI/PDI (`\u2068`…`\u2069`) in the ARB value rather than reordering words.
-- Widget tests exercise RTL through `testWrap(textDirection: TextDirection.rtl)` (app) and `ccTestApp(textDirection: …)` (cc_ui); the gallery previews every component under a text-direction addon.
-
-### Copy/text conventions
-
-- **All user-facing strings MUST use sentence case** (capitalize only the first word and proper nouns like "GitHub", "Linear", "Riverpod", "Dart").
-  - Correct: "Add agent" / "Create new workspace" / "Connect to GitHub"
-  - Wrong: "Add Agent" / "Create New Workspace" / "Connect To GitHub"
-  - Buttons, labels, tooltips, dialogs, form labels, navigation items, badges, keybinding labels, all sentence case.
-  - NEVER use title case in user-facing strings.
-
-## Architecture enforcement
-
-Architecture constraints are validated by `test/core/architecture_constraints_test.dart`.
+- Run `scripts/natives/build_natives.sh` before server builds. Required libraries and platform exemptions are defined once in `scripts/lib/natives.sh`; see [cc_natives](packages/cc_natives/README.md).
+- Missing natives fail loading, server preflight and packaging. Never add a fallback. `.cc_natives_allow_missing` is a repo-root **file** for compile-only work, not a shipping/runtime mode. Missing downloaded ML models may allow FTS-only search; missing native libraries may not.
+- `cc_inference` owns speech and embeddings with one statically linked ONNX Runtime. Do not add Flutter/pub inference dependencies or a second ONNX Runtime.
+- Rift copy-on-write is the sole provisioning backend where supported; operational/CoW failures are errors. Keep data and repo on the same CoW volume. Never run git against the source checkout during provisioning, including branch probes; inspect the copy. Windows uses git worktrees. Preserve teardown of existing worktree registrations on all platforms.
 
 ## Git safety
 
-- **NEVER run `git stash`, `git restore`, `git checkout`, `git reset`, `git clean`, `git stash drop`, or any other destructive git command** that modifies or discards uncommitted working-tree changes.
-- If you need a clean tree for verification, create a new branch or worktree instead.
-- If you need to inspect the state at HEAD, use `git show HEAD:<path>` or `git diff`, read-only operations only.
-- Uncommitted changes are the user's property. Treat them as irreversible.
+Uncommitted changes belong to the user. Never run `git stash`, `restore`, `checkout`, `reset`, `clean`, `stash drop`, or another command that discards/modifies them. Use read-only `git show`/`diff` for inspection; use a separate branch/worktree if verification requires a clean tree.

@@ -1,0 +1,9 @@
+---
+import LanguagePicker from '../shared/LanguagePicker.astro';
+import { landingCopy } from '../../data/landing';
+import { localeFromPath } from '../../data/locales';
+
+const locale = localeFromPath(Astro.url.pathname);
+const copy = landingCopy[locale];
+---
+<LanguagePicker {locale} label={copy.nav.language} navigationLabel={copy.footer.resources} />

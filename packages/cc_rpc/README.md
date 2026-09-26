@@ -9,9 +9,8 @@ client tier — desktop, web PWA and the `cc_remote` phone.
 - **`RemoteRpcClient`** — the client half of the protocol: `initialize`,
   `call(op, args)`, subscriptions and the PSK handshake. Injects
   `activeWorkspaceId` into every request (the server is stateless).
-- **Channel transports** — pluggable framed-JSON transports (e.g. WebSocket)
-  behind a common port, so the same client works over a direct WSS connection
-  or a relayed WebRTC data channel.
+- **Channel transports** — pluggable framed-JSON transports behind a common
+  port for direct WebSocket connections or the sealed broker relay.
 - **`src/crypto/remote_control_crypto.dart`** — the shared pairing crypto:
   `generatePsk` (32 bytes / 256-bit), `generateRoomCode` (16 bytes / 128-bit),
   the mutual HMAC challenge/response and `verifyProxyTarget` (the signed

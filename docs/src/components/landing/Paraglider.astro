@@ -1,0 +1,66 @@
+---
+import type { LandingCopy } from '../../data/landing';
+interface Props { copy: LandingCopy; variant: 'hero' | 'install' }
+const { copy: t, variant } = Astro.props;
+const asset = variant === 'hero' ? 'hero-pilot' : 'install-pilot';
+---
+<div class:list={['paraglider', `paraglider--${variant}`]} data-paraglider data-model={`/alpine/${asset}.glb`} data-controls={t.pilot.controls}>
+  <picture>
+    <source media="(width > 900px)" srcset={`/alpine/${asset}.webp`} />
+    <img class="paraglider-poster" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E" alt="" width="1200" height="1050" loading="lazy" decoding="async" />
+  </picture>
+  <div class="paraglider-stage" hidden></div>
+</div>
+<script>
+  // Match landing.css: mobile must never enter the dynamic import.
+  const desktop = matchMedia('(width > 900px)');
+  document.querySelectorAll<HTMLElement>('[data-paraglider]').forEach(root => {
+    let attempt: AbortController | undefined;
+    let nearby: IntersectionObserver | undefined;
+    const reset = () => {
+      nearby?.disconnect();
+      nearby = undefined;
+      attempt?.abort();
+      attempt = undefined;
+      root.classList.remove('is-ready');
+      const stage = root.querySelector<HTMLElement>('.paraglider-stage')!;
+      stage.replaceChildren();
+      stage.hidden = true;
+    };
+    const start = () => {
+      if (!desktop.matches || attempt) return;
+      const current = new AbortController();
+      attempt = current;
+      import('./paragliderViewer')
+        .then(({ mountParaglider }) => {
+          if (!current.signal.aborted) return mountParaglider(root, current.signal);
+        })
+        .catch(() => {
+          if (!current.signal.aborted) reset();
+        });
+    };
+    const observe = () => {
+      if (!desktop.matches || attempt || nearby) return;
+      if ('IntersectionObserver' in window) {
+        nearby = new IntersectionObserver(entries => {
+          if (!entries[0].isIntersecting || !desktop.matches) return;
+          nearby?.disconnect();
+          nearby = undefined;
+          start();
+        }, { rootMargin: '300px 0px' });
+        nearby.observe(root);
+      } else {
+        start();
+      }
+    };
+    desktop.addEventListener('change', () => {
+      if (desktop.matches) observe();
+      else reset();
+    });
+    window.addEventListener('pagehide', reset);
+    window.addEventListener('pageshow', event => {
+      if (event.persisted) observe();
+    });
+    observe();
+  });
+</script>

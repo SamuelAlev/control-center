@@ -1,0 +1,8 @@
+---
+import LandingNav from '../landing/LandingNav.astro';
+import { landingCopy } from '../../data/landing';
+import { localeFromPath } from '../../data/locales';
+const locale = localeFromPath(Astro.url.pathname);
+---
+
+<LandingNav copy={landingCopy[locale]} {locale} embedded />

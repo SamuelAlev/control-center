@@ -1,0 +1,90 @@
+/* Shared by marketing and Starlight, without Tailwind's resets or utilities. */
+@font-face {
+  font-family: Manrope;
+  src: url('/fonts/Manrope-Variable.woff2') format('woff2-variations');
+  font-weight: 200 800;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Fira Code';
+  src: url('/fonts/FiraCode-VF.woff2') format('woff2-variations');
+  font-weight: 300 700;
+  font-display: swap;
+}
+
+:root {
+  --cc-font-sans: Manrope, ui-sans-serif, system-ui, sans-serif;
+  --cc-font-mono: 'Fira Code', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --cc-bg: #fcfbf9;
+  --cc-surface: #f2f0e9;
+  --cc-panel: #ffffff;
+  --cc-sidebar: #f7f5f0;
+  --cc-rail: #faf9f5;
+  --cc-fg: #1f1f1f;
+  --cc-muted: #3d3d3d;
+  --cc-idle: #63625f;
+  --cc-border: #e8e5dc;
+  --cc-border-soft: #efece4;
+  --cc-line-strong: color-mix(in oklab, var(--cc-fg) 16%, transparent);
+  --cc-hover: color-mix(in oklab, var(--cc-fg) 5%, transparent);
+
+  /* Functional orange is readable text; the bright signal is for graphics. */
+  --cc-accent: #b0370c;
+  --cc-accent-strong: #b0370c;
+  --cc-accent-fill: #b0370c;
+  --cc-accent-on: #ffffff;
+  --cc-accent-soft: color-mix(in oklab, var(--cc-accent) 10%, var(--cc-bg));
+
+  --cc-success: #17a34a;
+  --cc-success-strong: #0c7133;
+  --cc-warn: #b8780a;
+  --cc-warn-strong: #785a00;
+  --cc-danger: #dc2626;
+  --cc-danger-strong: #b21f1f;
+  --cc-success-soft: color-mix(in oklab, var(--cc-success) 8%, var(--cc-bg));
+  --cc-warn-soft: color-mix(in oklab, var(--cc-warn) 8%, var(--cc-bg));
+  --cc-danger-soft: color-mix(in oklab, var(--cc-danger) 8%, var(--cc-bg));
+
+  --cc-space-1: 4px;
+  --cc-space-2: 8px;
+  --cc-space-3: 12px;
+  --cc-space-4: 16px;
+  --cc-space-5: 20px;
+  --cc-space-6: 24px;
+  --cc-space-8: 32px;
+  --cc-space-12: 48px;
+  --cc-radius: 0px;
+  --cc-motion-fast: 80ms;
+  --cc-motion-base: 160ms;
+  --cc-motion-slow: 240ms;
+  --cc-ease: cubic-bezier(.2, 0, .38, .9);
+  --cc-ease-emphasized: cubic-bezier(0, 0, .38, .9);
+  --cc-shadow-soft: 0 1px 2px rgba(127, 99, 21, .05), 0 6px 18px rgba(127, 99, 21, .05);
+  --cc-shadow-golden: -8px 16px 39px rgba(127, 99, 21, .12), -28px 56px 64px rgba(127, 99, 21, .08), -64px 120px 88px rgba(127, 99, 21, .04);
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  --cc-bg: #171614;
+  --cc-surface: #262522;
+  --cc-panel: #1f1f1f;
+  --cc-sidebar: #121110;
+  --cc-rail: #1b1a17;
+  --cc-fg: #fcfbf9;
+  --cc-muted: #b8b2a4;
+  --cc-idle: #9c9890;
+  --cc-border: #322f2a;
+  --cc-border-soft: #262522;
+  --cc-accent: #fb6224;
+  --cc-accent-strong: #fb6224;
+  --cc-success: #47cd89;
+  --cc-success-strong: #75e0a7;
+  --cc-warn: #fac515;
+  --cc-warn-strong: #fde272;
+  --cc-danger: #f97066;
+  --cc-danger-strong: #fda29b;
+  --cc-shadow-soft: 0 1px 2px rgba(0, 0, 0, .45), 0 6px 18px rgba(0, 0, 0, .4);
+  --cc-shadow-golden: -8px 16px 39px rgba(0, 0, 0, .5), -28px 56px 64px rgba(0, 0, 0, .36), -64px 120px 88px rgba(0, 0, 0, .22);
+  color-scheme: dark;
+}

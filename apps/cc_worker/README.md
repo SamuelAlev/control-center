@@ -1,66 +1,21 @@
 # cc_worker
 
-Headless fleet executor for Control Center. A pure-Dart binary that pairs with a `cc_server`, declares its
-capabilities, heartbeats, pulls leased jobs, executes them and streams process
-events back over the fleet lease protocol. It holds **no durable state** — a
-supervisor restarts it and it re-registers.
+Headless pure-Dart fleet executor. It pairs with `cc_server`, registers capabilities, heartbeats, polls leases and streams process events back. It keeps no durable state; a supervisor restarts it and it re-registers. **This is a subprocess-streaming worker, not an embedded agent runtime or full implementation of every job kind.**
 
-## Run
+```sh
+# from apps/cc_worker, against a paired production server
+fvm dart run cc_worker --server wss://host:9030 --device-id my-worker --psk <psk>
+# pair on the server first: cc_server pair --data-dir <dir> --device my-worker
 
-```bash
-# Against a paired server (production): the device id + PSK come from
-# `cc_server pair --data-dir <dir> --device <worker-id>` (or the desktop
-# pairing UI).
-dart run cc_worker --server wss://host:9030 --device-id my-worker --psk <psk>
+# loopback development server without an auth handshake
+fvm dart run cc_worker --server ws://localhost:9030
 
-# Against a loopback dev server with no auth handshake:
-dart run cc_worker --server ws://localhost:9030
+# native bundle
+fvm dart build cli
 ```
 
-Build a self-contained binary the same way as `cc_server`:
+`--server` is required and accepts `ws://`/`wss://` (HTTP(S) and a missing `/rpc` are coerced). `--name` defaults to the host name; `--device-id` defaults to `cc-worker` and doubles as the worker ID. `--psk` is required except against a loopback development server without authentication. `CC_WORKER_CACHE` overrides the default temp-directory `cc_worker_cache` materialization cache.
 
-```bash
-cd apps/cc_worker && dart build cli
-```
+The worker calls `fleet.registerWorker` (aborting on `compatible: false`), heartbeats every 20 seconds and polls every 2 seconds. New leases start jobs and `cancelledJobId` cancels running ones. It flushes `WorkerEventFrame` batches every 250 ms or 32 events, then reports `DoneEvent` and `fleet.workerComplete`.
 
-## Flags
-
-| Flag               | Description                                                                                      | Default     |
-| ------------------ | ------------------------------------------------------------------------------------------------ | ----------- |
-| `--server <url>`   | cc_server URL (`ws://`/`wss://`; `http(s)` and a missing `/rpc` path are coerced). **Required.** | —           |
-| `--name <name>`    | Operator-facing worker name.                                                                     | host name   |
-| `--device-id <id>` | Stable paired-device id, also used as the worker id.                                             | `cc-worker` |
-| `--psk <key>`      | Paired-device pre-shared key. Omit only for a loopback dev server.                               | —           |
-
-`CC_WORKER_CACHE` overrides the worktree materialization cache dir (default: a
-`cc_worker_cache` dir under the system temp dir).
-
-## Protocol loop
-
-`fleet.registerWorker` (aborts if the server reports `compatible: false`) →
-`fleet.workerHeartbeat` every 20s → `fleet.workerPoll` every 2s. New leases are
-executed; each new `cancelledJobId` cancels its running job. Events are batched
-into `WorkerEventFrame`s and flushed via `fleet.workerEvents` (every 250ms or
-every 32 events); the job ends with a `DoneEvent` and a `fleet.workerComplete`
-report.
-
-## Execution (what is real vs. stubbed)
-
-Execution is a **real subprocess-streaming implementation**, not a full embedded
-harness:
-
-- **Materialization**: if a lease carries `repoRemote`, the worker
-  `git clone --depth 1` into a remote+SHA-keyed cache dir, then `git fetch` +
-  `git checkout <headSha>` (best-effort; guarded), emitting a `materialized …`
-  debug event.
-- **`agentRun`**: if the lease `env` contains `CC_JOB_COMMAND`, it runs via a
-  subprocess in the work dir — stdout → `TextEvent`, stderr → `ErrorEvent`.
-  Otherwise it echoes the prompt from the spec so the transport is still
-  exercised end to end. **Stubbed:** there is no embedded agent runtime; wiring
-  the real agent loop is future work.
-- **`benchmark` / `codeIndex` / other kinds**: run a small real command
-  (`git rev-parse HEAD`, or `git --version` with no work dir) and stream its
-  output. These are honest probes, not full implementations of those kinds.
-
-The lease `env` (short-lived, job-scoped credentials) is injected into every
-subprocess and is **never written to a log**.
+A `repoRemote` lease uses a remote+SHA-keyed cache: `git clone --depth 1`, then guarded `git fetch`/`git checkout <headSha>` when supplied. An `agentRun` lease executes `env['CC_JOB_COMMAND']` as a **shell command line** (`/bin/sh -c` or Windows `cmd.exe /c`) in the work directory, streaming stdout/stderr as text/error events. Without that variable it **only echoes the prompt**; no agent loop runs. `pipelineStep`, `codeIndex`, `goldenRender`, `benchmark` and `evalBatch` only probe with `git rev-parse HEAD` in a work directory or `git --version` without one. Do not treat a successful probe as completion of those workloads. Short-lived lease credentials in `env` go to subprocesses and are not logged. See [ARCH.md](../../ARCH.md) for the wider fleet architecture.

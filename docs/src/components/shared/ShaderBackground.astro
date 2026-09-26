@@ -15,20 +15,12 @@
  * at `u_time = 0` and never start the animation loop. (The app's dashboard hero
  * does the same via ShaderBackground(animate: false).)
  *
- * Position/veil it from the parent via `class` (e.g. `absolute inset-0`,
- * `opacity-*`, a mask). When WebGL2 is unavailable the canvas falls back to a
- * static CSS gradient in the same palette (per theme), so the section never
- * flashes empty.
+ * When WebGL2 is unavailable the canvas falls back to a static CSS gradient
+ * in the same palette (per theme), so the section never flashes empty.
  */
-interface Props {
-  /** Positioning / veil classes applied to the canvas (sizing is handled here). */
-  class?: string;
-}
-
-const { class: className = '' } = Astro.props;
 ---
 
-<canvas class:list={['cc-shader', className]} aria-hidden="true"></canvas>
+<canvas class="cc-shader" aria-hidden="true"></canvas>
 
 <style>
   .cc-shader {
@@ -57,7 +49,6 @@ const { class: className = '' } = Astro.props;
     uTime: WebGLUniformLocation | null;
     uDark: WebGLUniformLocation | null;
     dark: boolean;
-    running: boolean;
     visible: boolean;
     lastDraw: number;
   };
@@ -281,50 +272,13 @@ const { class: className = '' } = Astro.props;
       uTime: gl.getUniformLocation(program, 'u_time'),
       uDark: gl.getUniformLocation(program, 'u_dark'),
       dark: isDark(),
-      running: false,
-      visible: true,
+      visible: false,
       lastDraw: 0,
     };
   }
 
   function start(fields: Field[]) {
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
-
-    // Speed 0 — a single frame at u_time = 0. Shapes stay, no motion.
-    const renderFrozen = (f: Field) => {
-      f.dark = isDark();
-      resize(f);
-      draw(f, 0);
-    };
-
-    // Re-render the frozen frame(s) when the theme flips (golden ↔ ember).
-    const onThemeChange = (redraw: () => void) => {
-      const mo = new MutationObserver(redraw);
-      mo.observe(document.documentElement, {
-        attributes: true,
-        attributeFilter: ['data-theme'],
-      });
-      return mo;
-    };
-
-    // ── Reduced motion: one frozen frame, no loop. Keeps the shapes. ──
-    if (reduce.matches) {
-      fields.forEach(renderFrozen);
-      const ro = new ResizeObserver(() => fields.forEach(renderFrozen));
-      fields.forEach((f) => ro.observe(f.canvas));
-      const themeMo = onThemeChange(() => fields.forEach(renderFrozen));
-      // Re-arm the live loop if the user turns motion back on.
-      reduce.addEventListener('change', () => {
-        if (!reduce.matches) {
-          ro.disconnect();
-          themeMo.disconnect();
-          start(fields);
-        }
-      });
-      return;
-    }
-
-    // ── Live: throttled rAF, paused when hidden or scrolled out of view. ──
     let raf = 0;
     let startTs = 0;
 
@@ -334,57 +288,59 @@ const { class: className = '' } = Astro.props;
       const seconds = (ts - startTs) / 1000;
       const dark = isDark();
       for (const f of fields) {
-        if (!f.visible) continue;
-        if (ts - f.lastDraw < FRAME_MS) continue;
+        if (!f.visible || ts - f.lastDraw < FRAME_MS) continue;
         f.lastDraw = ts;
         f.dark = dark;
         resize(f);
-        // Raw elapsed seconds — identical clock to the Flutter ticker, which
-        // feeds u_time = elapsed seconds (shader scales by 0.20 internally).
         draw(f, seconds);
       }
     };
 
-    const play = () => {
-      if (raf === 0) {
-        startTs = 0;
-        raf = requestAnimationFrame(frame);
+    // One lifecycle handles visibility and motion changes in both directions;
+    // restarting observers on preference changes leaves stale animation loops.
+    const syncPlayback = () => {
+      const visible = !document.hidden && fields.some((f) => f.visible);
+      if (visible && !reduce.matches) {
+        if (raf === 0) {
+          startTs = 0;
+          raf = requestAnimationFrame(frame);
+        }
+        return;
       }
-    };
-    const pause = () => {
       if (raf !== 0) {
         cancelAnimationFrame(raf);
         raf = 0;
       }
+      // Preserve the shapes at speed zero, including after theme/size changes.
+      if (visible && reduce.matches) {
+        for (const f of fields) {
+          if (!f.visible) continue;
+          f.dark = isDark();
+          resize(f);
+          draw(f, 0);
+        }
+      }
     };
 
-    const io = new IntersectionObserver(
-      (entries) => {
-        for (const e of entries) {
-          const f = fields.find((x) => x.canvas === e.target);
-          if (f) f.visible = e.isIntersecting;
-        }
-        if (fields.some((f) => f.visible) && !document.hidden) play();
-        else pause();
-      },
-      { threshold: 0 },
-    );
-    fields.forEach((f) => io.observe(f.canvas));
-
-    document.addEventListener('visibilitychange', () => {
-      if (document.hidden) pause();
-      else if (fields.some((f) => f.visible)) play();
-    });
-
-    reduce.addEventListener('change', () => {
-      if (reduce.matches) {
-        pause();
-        io.disconnect();
-        fields.forEach(renderFrozen);
+    const io = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        const field = fields.find((f) => f.canvas === entry.target);
+        if (field) field.visible = entry.isIntersecting;
       }
+      syncPlayback();
+    }, { threshold: 0 });
+    const ro = new ResizeObserver(syncPlayback);
+    for (const field of fields) {
+      io.observe(field.canvas);
+      ro.observe(field.canvas);
+    }
+    const themeObserver = new MutationObserver(syncPlayback);
+    themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme'],
     });
-
-    play();
+    document.addEventListener('visibilitychange', syncPlayback);
+    reduce.addEventListener('change', syncPlayback);
   }
 
   const canvases = Array.from(

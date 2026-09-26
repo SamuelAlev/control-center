@@ -1,0 +1,19 @@
+---
+import ProductMedia from './ProductMedia.astro';
+import type { LandingCopy } from '../../data/landing';
+interface Props { copy: LandingCopy }
+const { copy: t } = Astro.props;
+---
+<section class="landing-workflow landing-section" id="workflows" aria-labelledby="workflow-title">
+  <div class="landing-wrap">
+    <header class="section-intro"><h2 id="workflow-title">{t.workflow.title}</h2><p>{t.workflow.description}</p></header>
+    <ol class="workflow-steps" aria-label={t.workflow.label}>
+      {t.workflow.steps.map((step, i) => <li data-enter>
+        <div class="workflow-track" aria-hidden="true"><span>{String(i + 1).padStart(2, '0')}</span><i></i></div>
+        <h3>{step.title}</h3><p>{step.text}</p>
+        <div class="workflow-media"><ProductMedia kind={`workflow-${step.kind}`} description={t.tour.stops.find(stop => stop.kind === step.kind)!.alt} label={t.tour.imageLanguage} compact /></div>
+        <span class="workflow-label">{step.label}</span>
+      </li>)}
+    </ol>
+  </div>
+</section>

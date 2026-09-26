@@ -1,0 +1,40 @@
+---
+interface Props {
+  kind: string;
+  description: string;
+  label: string;
+  format?: 'desktop' | 'phone';
+  compact?: boolean;
+}
+const { kind, description, label, format = 'desktop', compact = false } = Astro.props;
+---
+<div class:list={['product-media', { 'media-compact': compact }]} data-media-slot={kind} data-media-format={format}>
+  <div class="media-registration" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+  <div class="media-description">
+    <span class="media-symbol" aria-hidden="true"><i></i></span>
+    <p class="media-label">{label}</p>
+    <p class="media-brief">{description}</p>
+    <span class="media-dimensions">{format === 'phone' ? '390 × 844' : '1440 × 900'}</span>
+  </div>
+</div>
+<style>
+  .product-media { position: relative; display: grid; place-items: center; inline-size: 100%; aspect-ratio: 8 / 5; overflow: hidden; padding: var(--spacing-8); background: var(--color-rail); color: var(--color-fg); isolation: isolate; }
+  .product-media::before { content: ''; position: absolute; inset: 0; z-index: -1; background-image: linear-gradient(var(--color-border-soft) 1px, transparent 1px), linear-gradient(90deg, var(--color-border-soft) 1px, transparent 1px); background-size: 48px 48px; mask-image: radial-gradient(ellipse, transparent 15%, black 95%); }
+  .product-media[data-media-format='phone'] { aspect-ratio: 390 / 844; }
+  .media-description { display: grid; justify-items: center; gap: var(--spacing-3); text-align: center; max-inline-size: 44ch; }
+  .media-symbol { display: grid; place-items: center; inline-size: 48px; block-size: 40px; border: 1px solid var(--color-line-strong); margin-block-end: var(--spacing-2); }
+  .media-symbol i { inline-size: 0; block-size: 0; border-block: 6px solid transparent; border-inline-start: 9px solid var(--color-idle); margin-inline-start: 2px; }
+  .media-label { font-size: 12px; color: var(--color-idle); }
+  .media-brief { font-size: 15px; line-height: 1.6; text-wrap: pretty; }
+  .media-dimensions { color: var(--color-idle); font: 11px/1.5 var(--font-mono); margin-block-start: var(--spacing-1); }
+  .media-registration i { position: absolute; inline-size: 12px; block-size: 12px; border-color: var(--color-line-strong); border-style: solid; }
+  .media-registration i:nth-child(1) { inset: 16px auto auto 16px; border-width: 1px 0 0 1px; }
+  .media-registration i:nth-child(2) { inset: 16px 16px auto auto; border-width: 1px 1px 0 0; }
+  .media-registration i:nth-child(3) { inset: auto 16px 16px auto; border-width: 0 1px 1px 0; }
+  .media-registration i:nth-child(4) { inset: auto auto 16px 16px; border-width: 0 0 1px 1px; }
+  .media-compact { padding: var(--spacing-6); }
+  .media-compact .media-symbol { display: none; }
+  .media-compact .media-description { gap: var(--spacing-2); }
+  .media-compact .media-brief { font-size: 13px; max-inline-size: 40ch; }
+  @media(max-width: 600px) { .product-media { padding: 32px 24px; min-block-size: 260px; } .media-brief { font-size: 13px; } .media-symbol { inline-size: 36px; block-size: 30px; margin: 0; } .media-compact { min-block-size: 220px; } }
+</style>

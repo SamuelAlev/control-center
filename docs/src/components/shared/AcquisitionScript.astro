@@ -1,0 +1,49 @@
+---
+/** One Umami tracker and one delegated click listener per marketing/docs page. */
+---
+
+<script
+  is:inline
+  defer
+  src="https://analytics.alev.dev/script.js"
+  data-website-id="d84f01cc-5611-4363-b598-ddd31e3011c1"
+  data-domains="usectrl.dev"
+  data-exclude-search="true"
+  data-exclude-hash="true"
+  data-do-not-track="true"
+></script>
+
+<script>
+  type EventName = 'release_page_click' | 'demo_open_click' | 'install_section_click';
+  type Placement = 'hero' | 'nav' | 'download';
+  type Platform = 'macos' | 'windows' | 'linux' | 'none';
+  type Umami = { track: (name: EventName, data: { placement: Placement; platform: Platform }) => void | Promise<unknown> };
+
+  const eventNames = new Set<EventName>(['release_page_click', 'demo_open_click', 'install_section_click']);
+  const placements = new Set<Placement>(['hero', 'nav', 'download']);
+  const platforms = new Set<Platform>(['macos', 'windows', 'linux', 'none']);
+
+  document.addEventListener('click', (event) => {
+    // Native anchor activation already handles pointer, keyboard, modifiers and nested content.
+    // Never cancel or await navigation for an analytics request.
+    // Smooth scrolling cancels the native anchor default but still represents click intent.
+    if (window.location.hostname !== 'usectrl.dev') return;
+    const anchor = event.target instanceof Element
+      ? event.target.closest<HTMLAnchorElement>('a[data-acquisition-event]')
+      : null;
+    if (!anchor) return;
+
+    const name = anchor.dataset.acquisitionEvent as EventName;
+    const placement = anchor.dataset.acquisitionPlacement as Placement;
+    const platform = anchor.dataset.acquisitionPlatform as Platform;
+    if (!eventNames.has(name) || !placements.has(placement) || !platforms.has(platform)) return;
+
+    const sdk = (window as Window & { umami?: Umami }).umami;
+    if (!sdk || typeof sdk.track !== 'function') return;
+    try {
+      void Promise.resolve(sdk.track(name, { placement, platform })).catch(() => {});
+    } catch {
+      // Blocked or unavailable analytics must never affect the destination.
+    }
+  });
+</script>

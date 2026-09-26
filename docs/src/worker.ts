@@ -23,6 +23,7 @@
  * untouched.
  */
 import adapter from '@astrojs/cloudflare/entrypoints/server';
+import { applyLocaleHeaders, negotiateLocale } from './locale-negotiation.ts';
 import { appendDiscoveryLinks } from './agentic/api-catalog.ts';
 import {
   appendVary,
@@ -32,6 +33,7 @@ import {
   markdownHeaders,
   notFoundMarkdown,
   parseAccept,
+  type AcceptPreference,
 } from './agentic/negotiation.ts';
 
 interface AgenticEnv {
@@ -40,12 +42,14 @@ interface AgenticEnv {
 
 const METHODS: Record<string, true> = { GET: true, HEAD: true };
 
-export default {
-  async fetch(request: Request, env: AgenticEnv, ctx: unknown): Promise<Response> {
+const content = {
+  async fetch(request: Request, env: AgenticEnv, ctx: unknown, accept: AcceptPreference): Promise<Response> {
     const url = new URL(request.url);
     const { pathname } = url;
+    // Installer redirects are request-time routes, not content pages. Never
+    // negotiate a .md twin or replace an installer error with a page 404.
+    if (pathname.startsWith('/download/')) return adapter.fetch(request, env, ctx);
     const origin = url.origin;
-    const accept = METHODS[request.method] ? parseAccept(request.headers.get('Accept')) : { markdown: false, json: false };
 
     // 1. Markdown twin, when asked for one and the page has one.
     if (accept.markdown) {
@@ -103,5 +107,16 @@ export default {
       }
     }
     return response;
+  },
+};
+
+export default {
+  async fetch(request: Request, env: AgenticEnv, ctx: unknown): Promise<Response> {
+    const accept = METHODS[request.method] ? parseAccept(request.headers.get('Accept')) : { markdown: false, json: false };
+    // Machine representations retain their existing URLs and negotiation.
+    const locale = accept.markdown || accept.json ? null : negotiateLocale(request);
+    if (locale?.redirect) return locale.redirect;
+    const response = await content.fetch(request, env, ctx, accept);
+    return locale ? applyLocaleHeaders(response, locale) : response;
   },
 };

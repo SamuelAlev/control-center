@@ -1,0 +1,80 @@
+/* One header for the landing page and manual. No Tailwind dependency. */
+.landing-nav {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: var(--z-chrome, 20);
+  background: var(--cc-bg);
+  font-family: var(--cc-font-sans);
+  line-height: 1.6;
+}
+.landing-nav--embedded { position: relative; z-index: auto; }
+.landing-nav--over-hero { background: transparent; }
+.landing-nav-inner {
+  display: flex;
+  align-items: center;
+  gap: var(--cc-space-8);
+  min-block-size: 72px;
+  max-inline-size: 1248px;
+  padding-inline: clamp(16px, 3vw, 48px);
+  margin-inline: auto;
+}
+.landing-brand { display: inline-flex; align-items: center; gap: var(--cc-space-3); min-block-size: 44px; color: var(--cc-fg); font-size: 15px; font-weight: 600; text-decoration: none; white-space: nowrap; }
+.landing-brand img { display: block; inline-size: 32px; block-size: 32px; border-radius: 0; }
+.landing-nav-links { display: flex; align-items: center; gap: var(--cc-space-6); margin-inline: auto; }
+.landing-nav-links a { display: inline-flex; align-items: center; min-block-size: 44px; text-decoration: none; color: var(--cc-muted); font-size: 13px; }
+.landing-nav-links a:hover { color: var(--cc-accent-strong); }
+.landing-nav-actions { display: flex; align-items: center; gap: var(--cc-space-4); margin-inline-start: auto; }
+.landing-nav-download {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  min-block-size: 44px;
+  padding: var(--cc-space-2) var(--cc-space-3);
+  gap: var(--cc-space-4);
+  border: 1px solid var(--cc-fg);
+  border-radius: 0;
+  background: var(--cc-fg);
+  color: var(--cc-bg);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: transform var(--cc-motion-fast);
+}
+.landing-nav-download > span { font-size: 16px; font-weight: 400; line-height: 1; }
+.landing-nav-download:hover { background: var(--cc-accent-fill); border-color: var(--cc-accent-fill); color: var(--cc-accent-on); }
+.landing-nav-download:active { transform: translateY(1px); }
+.landing-mobile-menu { display: none; }
+.landing-mobile-menu summary { display: flex; align-items: center; justify-content: center; gap: var(--cc-space-2); min-inline-size: 48px; min-block-size: 44px; padding-inline: var(--cc-space-2); font-size: 12px; list-style: none; cursor: pointer; }
+.landing-mobile-menu summary::-webkit-details-marker { display: none; }
+.landing-nav :is(a, summary):focus-visible { outline: 2px solid var(--cc-accent); outline-offset: 3px; box-shadow: 0 0 0 3px var(--cc-bg); }
+@media (max-width: 1100px) {
+  .landing-nav-inner { gap: var(--cc-space-6); }
+  .landing-nav-links { gap: var(--cc-space-4); }
+  .landing-nav-links a { font-size: 12px; }
+}
+@media (max-width: 900px) {
+  .landing-nav-links, .landing-nav-download { display: none; }
+  .landing-nav-inner { min-block-size: 64px; }
+  .landing-mobile-menu { display: block; }
+  .landing-mobile-menu summary { font-size: 13px; border: 1px solid var(--cc-border); padding-inline: var(--cc-space-4); gap: var(--cc-space-4); }
+  .landing-mobile-menu nav { position: absolute; inset: 100% 0 auto; max-block-size: calc(100dvh - 64px); overflow-y: auto; overscroll-behavior: contain; padding: var(--cc-space-4) clamp(16px, 3vw, 48px) var(--cc-space-6); background: var(--cc-panel); border-block-end: 1px solid var(--cc-border); box-shadow: var(--cc-shadow-soft); }
+  .landing-mobile-menu nav a { display: flex; justify-content: space-between; align-items: center; min-block-size: 48px; color: var(--cc-fg); text-decoration: none; border-block-end: 1px solid var(--cc-border-soft); font-size: 14px; }
+  .landing-mobile-menu nav a.repo-star { justify-content: flex-start; gap: var(--cc-space-2); padding-inline: 0; background: transparent; border-inline: 0; border-block-start: 0; }
+  .landing-mobile-menu nav a.repo-star .repo-star-count { margin-inline-start: auto; }
+  .landing-mobile-menu[open] summary > span { transform: rotate(45deg); }
+}
+@media (max-width: 600px) {
+  .landing-nav-actions { gap: var(--cc-space-2); }
+  .landing-brand { font-size: 13px; gap: var(--cc-space-2); }
+  .landing-brand img { inline-size: 28px; block-size: 28px; }
+}
+@media (max-width: 360px) {
+  .landing-nav .landing-brand > span { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .landing-nav-download { transition: none; }
+  .landing-nav-download:active { transform: none; }
+}
+@media (forced-colors: active) {
+  .landing-nav-download { border: 2px solid ButtonText; }
+}

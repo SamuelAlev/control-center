@@ -64,7 +64,7 @@ The link icon on a row opens an editor for the repo's GitHub owner and repositor
 
 The dialog says what it does: "_name_ will be removed from this workspace. The local files on disk are not touched."
 
-Removal deletes the repo row from this workspace and cascades away its code-graph rows — symbols, edges, files and index checkpoints — plus every per-member repo grant on it, its space-repo links, and its isolated-checkout records. There is no separate unlink, because there is no shared global repo left to unlink from. The same checkout registered in another workspace is an independent row and is unaffected. On-disk worktrees those records pointed at are not torn down by the delete.
+Removal deletes the repo row from this workspace and cascades away its code-graph rows — symbols, edges, files and index checkpoints — plus every per-member repo grant on it, its space-repo links, and its isolated-checkout records. The same checkout registered in another workspace is an independent row and is unaffected. On-disk worktrees those records pointed at are not torn down by the delete.
 
 ## Related guides
 

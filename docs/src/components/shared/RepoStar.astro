@@ -1,0 +1,61 @@
+---
+import { REPO_URL } from '../../data/site';
+
+interface Props { label: string; class?: string }
+const { label, class: className = '' } = Astro.props;
+---
+<a class:list={['repo-star', className]} href={REPO_URL} target="_blank" rel="noopener noreferrer">
+  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" width="16" height="16"><path d="m12 2 3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2Z" /></svg>
+  <span>{label}</span><span class="repo-star-count" data-repo-star-count hidden></span>
+</a>
+<script>
+  import { REPO_URL } from '../../data/site';
+
+  // GitHub's public repository endpoint is CORS-enabled. A failed/rate-limited
+  // request leaves the action usable without displaying an invented count.
+  // The action renders immediately. Reuse a recent count across navigation
+  // rather than contacting GitHub for every page view.
+  const count = document.querySelectorAll<HTMLElement>('[data-repo-star-count]');
+  const cacheKey = 'cc-repo-stars';
+  const maxAgeMs = 5 * 60 * 1000;
+  const showCount = (value: number) => {
+    const formatted = new Intl.NumberFormat(document.documentElement.lang || 'en').format(value);
+    for (const element of count) {
+      element.textContent = formatted;
+      element.hidden = false;
+    }
+  };
+  if (count.length) {
+    let cached: { value: number; at: number } | undefined;
+    try {
+      const raw = localStorage.getItem(cacheKey);
+      if (raw) cached = JSON.parse(raw);
+    } catch { /* Storage can be blocked; the link still works. */ }
+    if (cached && Number.isSafeInteger(cached.value) && cached.value >= 0 &&
+        Date.now() - cached.at >= 0 && Date.now() - cached.at < maxAgeMs) {
+      showCount(cached.value);
+    } else {
+      fetch(`https://api.github.com/repos${new URL(REPO_URL).pathname}`, {
+        headers: { Accept: 'application/vnd.github+json' },
+      }).then(response => {
+        if (!response.ok) throw new Error('GitHub stars unavailable');
+        return response.json();
+      }).then((repo: { stargazers_count?: unknown }) => {
+        if (typeof repo.stargazers_count !== 'number' || !Number.isSafeInteger(repo.stargazers_count) || repo.stargazers_count < 0) return;
+        showCount(repo.stargazers_count);
+        try { localStorage.setItem(cacheKey, JSON.stringify({ value: repo.stargazers_count, at: Date.now() })); }
+        catch { /* Private browsing may deny storage. */ }
+      }).catch(() => { /* Keep the link; never claim a stale or fabricated count. */ });
+    }
+  }
+</script>
+<style>
+  .repo-star { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-block-size: 44px; padding-inline: 12px; border: 1px solid var(--cc-border); color: var(--cc-fg); background: var(--cc-panel); font-size: 13px; font-weight: 600; line-height: 1; text-decoration: none; white-space: nowrap; }
+  .repo-star:hover { border-color: var(--cc-fg); }
+  .repo-star-count { padding-inline-start: 8px; border-inline-start: 1px solid var(--cc-border); font-weight: 400; font-variant-numeric: tabular-nums; }
+  .repo-star-count[hidden] { display: none; }
+  .repo-star:focus-visible { outline: 2px solid var(--cc-accent); outline-offset: 3px; }
+  @media (forced-colors: active) { .repo-star { border-color: ButtonText; } }
+  @media (max-width: 900px) { .repo-star.landing-nav-star { display: none; } }
+  @media (max-width: 639px) { .repo-star.marketing-nav-star { display: none; } }
+</style>

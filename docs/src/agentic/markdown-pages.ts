@@ -12,10 +12,11 @@
  */
 import { getCollection } from 'astro:content';
 import { releases } from '../data/changelog';
-import { faqs } from '../data/faq';
 import { columns, tools, vsTools, compareSummary, compareReviewed } from '../data/compare';
 import { sitePages } from '../data/pages';
 import { OVERVIEW, REPO_URL } from '../data/site';
+import { landingCopy } from '../data/landing';
+import { siteLocales, type SiteLocale } from '../data/locales';
 import { htmlToMarkdown } from './html-to-markdown';
 
 export interface MarkdownPage {
@@ -29,37 +30,32 @@ export interface MarkdownPage {
 const stripHtml = (html: string) => html.replace(/<[^>]+>/g, '');
 const stripImports = (body: string) => body.replace(/^import\s[^\n]*$/gm, '').trim();
 
-const LANDING_TITLE = 'Control Center — the developer operations deck';
-const LANDING_DESCRIPTION =
-  'Dispatch and review AI coding agents, hand them disposable VMs to test in, capture and summarize meetings and keep tickets, pipelines and your calendar on one deck. Desktop on macOS, Windows and Linux, plus web and phone.';
+const LANDING_TITLE = landingCopy['en-US'].meta.title;
+const LANDING_DESCRIPTION = landingCopy['en-US'].meta.description;
 
-function landingMarkdown(origin: string): string {
-  const out: string[] = [
-    `# ${LANDING_TITLE}`,
-    '',
-    `> ${LANDING_DESCRIPTION}`,
-    '',
-    OVERVIEW,
-    '',
-    '## Frequently asked questions',
-    '',
+function landingMarkdown(origin: string, locale: SiteLocale = 'en-US'): string {
+  const t = landingCopy[locale];
+  const out = [
+    `# ${t.meta.title}`, '', `> ${t.meta.description}`, '',
+    ...(locale === 'en-US' ? [OVERVIEW, ''] : [t.hero.description, '', t.surfaces.description, '']),
+    `## ${t.grid.title}`, '', t.grid.description, '',
+    ...[...t.grid.items, ...t.grid.supporting].flatMap(feature => [
+      `### [${feature.title}](${origin}${feature.href})`, '', feature.description, '',
+    ]),
+    `## ${t.boundaries.title}`, '', t.boundaries.description, '', t.boundaries.note, '',
+    `## ${t.faq.title}`, '',
+    ...t.faq.items.flatMap(faq => [
+      `### ${faq.question}`, '', faq.answer, '',
+      ...(faq.links?.map(link => `[${link.label}](${origin}${link.href})`) ?? []), '',
+    ]),
+    `## ${t.install.title.replace('\n', ' ')}`, '', t.install.description, '',
+    `- [${t.nav.download} · macOS](${origin}/download/macos)`,
+    `- [${t.nav.download} · Windows](${origin}/download/windows)`,
+    `- [${t.nav.download} · Linux](${origin}/download/linux)`,
+    `- [${t.install.release}](${REPO_URL}/releases/latest)`,
+    `- [${t.install.guide}](${origin}/manual/quick-start/)`,
+    `- [${t.footer.source}](${REPO_URL})`, '',
   ];
-  for (const f of faqs) {
-    out.push(`### ${f.question}`, '', f.answer, '');
-    if (f.links?.length) {
-      out.push(`See also: ${f.links.map((l) => `[${l.label}](${origin}${l.href})`).join(' · ')}`, '');
-    }
-  }
-  out.push(
-    '## Learn more',
-    '',
-    `- [Documentation](${origin}/manual/) — tutorials, guides, concepts and reference`,
-    `- [Developers](${origin}/developers) — MCP server, CLI and this site's machine-readable surface`,
-    `- [Compare](${origin}/compare/) — honest feature matrix against the alternatives`,
-    `- [Changelog](${origin}/changelog) — what shipped, newest first`,
-    `- [Source code](${REPO_URL}) — MIT-licensed`,
-    '',
-  );
   return out.join('\n');
 }
 
@@ -151,6 +147,12 @@ function changelogMarkdown(): string {
 export async function getMarkdownPages(origin: string): Promise<MarkdownPage[]> {
   const pages: MarkdownPage[] = [
     { path: '/', title: LANDING_TITLE, description: LANDING_DESCRIPTION, markdown: landingMarkdown(origin) },
+    ...siteLocales.filter(language => language.id !== 'en-US').map(language => ({
+      path: language.path,
+      title: landingCopy[language.id].meta.title,
+      description: landingCopy[language.id].meta.description,
+      markdown: landingMarkdown(origin, language.id),
+    })),
     {
       path: '/compare/',
       title: 'Compare Control Center',

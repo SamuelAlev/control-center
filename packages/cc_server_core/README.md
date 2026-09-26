@@ -34,5 +34,5 @@ binary and the desktop's embedded server both boot.
 
 New RPC op → register it in the repo-RPC catalog + provide its handler. New
 periodic service → construct and `.start()` it in `cc_server_runtime` next to
-the others. Rebuild the binary (`cd apps/cc_server && dart build cli`) so the
-running app picks it up.
+the others. Rebuild the binary (`cd apps/cc_server && fvm dart build cli`) so
+the running app picks it up.

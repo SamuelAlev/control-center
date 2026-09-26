@@ -2,20 +2,10 @@
 version: alpha
 name: Control Center
 description: >-
-  Design system for Control Center, a unified developer operations hub for a
-  solo, multi-platform operator (desktop, web, phone). A near-white,
-  ink-structured operator deck with a single orange signal and earned
-  golden-hour warmth, kept to bounded graphics. Squared 0-radius geometry, a
-  two-weight productive type scale (semibold headings, regular body) and every
-  status carried by color paired with shape, never color alone. Dual light/dark
-  theme.
+  Near-white, ink-structured operator UI with bounded warm graphics, square
+  geometry, light/dark themes and status conveyed beyond color.
 
-# ── COLORS ────────────────────────────────────────────────────────────────
-# Values are the LIGHT-theme resolved ARGB hexes used at runtime by cc_ui
-# (packages/cc_ui/lib/src/tokens/). A full DARK theme exists with the same
-# token names (see Colors → "Dual theme"). Alpha tokens (idle, line-strong,
-# the *-soft set, hovers) are an opacity of a base token; both formula and
-# resolved hex are documented in the Colors section.
+# Light-theme ARGB values. Runtime light/dark tokens live in packages/cc_ui/lib/src/tokens/.
 colors:
   # Surface ladder, near-white canvas, warm-neutral surface, pure-white data
   bg: "#fcfbf9" # canvas, the true page background (gray50)
@@ -37,12 +27,7 @@ colors:
   hover: "#1f1f1f0d" # fg @ 5%, row / nav hover wash
   hover-strong: "#1f1f1f14" # fg @ 8%, count chips, pressed states
 
-  # Accent, the single orange signal fire. The FUNCTIONAL accent is the
-  # brand's accessible burnt orange (#b0370c): white on it clears 4.5:1 (6.2:1)
-  # and it clears 4.5:1 as colored text on the canvas. The BRIGHT signal
-  # #fa500f (brand600) is reserved for the bounded brand graphics (brand mark,
-  # golden-hour horizon), where it is large/decorative and carries no contrast
-  # duty. See "The Contrast Rule".
+  # Functional orange; bright #fa500f is for decorative brand graphics only.
   accent: "#b0370c" # Signal orange (functional), used <= twice/screen; white on it = 6.2:1
   accent-on: "#ffffff" # text/icon on accent
   accent-hover: "#c03e0f" # hover warm-up (brand800), white = 5.3:1
@@ -68,23 +53,8 @@ colors:
   bright-yellow: "#ffd900"
   block-edge: "#c03e0f" # burnt-orange terminus of the brand-mark gradient
 
-# ── TYPOGRAPHY ────────────────────────────────────────────────────────────
-# One family (Manrope) for UI/body, one (Fira Code) for mono. TWO weights:
-# headings and labels are SemiBold (600), body and data text are Regular (400)
-# — the productive-scale rule "semibold for section headers, never for long
-# text". Line-heights and letter-spacing follow the productive scale (tight,
-# tuned for a dense operator deck), not a marketing billboard scale.
-# Numerals are TABULAR in the MONO lane only: OpenType `tnum`
-# (`CcTypography.numeralFeatures`) rides the family, applied by `CcFonts.code`,
-# so mono digits share one advance width — columns align, ticking values never
-# jitter — while Manrope prose keeps its natural proportional figures.
-# Script companions (Sarabun / Rubik / IBM Plex Sans Arabic) load only for the
-# active locale; they are not a second display family.
-#
-# Flutter web optical compensation: SkWasm/CanvasKit renders nominal regular
-# and medium cuts lighter than the native desktop engine. `CcTypography` maps
-# 400→500 and 500→600 on web only; 600 stays 600. These remain the same two
-# perceived roles, while native weights and font-preview specimens stay exact.
+# Manrope UI/body, Fira Code machine values. Script companions load for active locale.
+# Web-only weight mapping compensates for lighter Flutter rasterization.
 typography:
   display-hero:
     fontFamily: "Manrope, ui-sans-serif, system-ui, sans-serif"
@@ -141,11 +111,7 @@ rounded:
   md: "0px" # intentionally equal to sm; no mid rounding
   pill: "9999px" # pills + status capsules + live dots ONLY
 
-# ── SPACING ───────────────────────────────────────────────────────────────
-# The productive spacing scale (multiples of 2/4/8). Keys mirror cc_ui
-# AppSpacing exactly and map 1:1 onto the standard scale steps 01-07 & 09
-# (2/4/8/12/16/24/32/48). Tokens replace every margin/padding — inside
-# components for build spacing, between components for layout spacing.
+# AppSpacing productive scale: 2/4/8/12/16/24/32/48.
 spacing:
   xxs: "2px" # step-01 — hairline gaps
   xs: "4px" # step-02 — tight gaps
@@ -156,15 +122,9 @@ spacing:
   xxl: "32px" # step-07 — between major sections
   xxxl: "48px" # step-09 — page-level breathing room
 
-# ── COMPONENTS ────────────────────────────────────────────────────────────
-# Variants use related names (button-primary / -hover / -active). Token refs
-# use dot-notation: {colors.fg}, {typography.body}, {rounded.sm}, {spacing.md}.
-# Borders/shadows/focus rings live in prose + the .impeccable/design.json
-# sidecar (Stitch component schema holds only 8 props).
+# Component token references use {section.token} notation.
 components:
-  # Buttons ride a 32/40/48 height ramp (sm/md/lg); md 40px is the default and
-  # matches the field height. Square corners, 16px horizontal padding (12px on
-  # sm). Full-width buttons left-align their label; hugging buttons center.
+  # Buttons: 32/40/48px, default 40px matching fields.
   button-primary:
     backgroundColor: "{colors.fg}"
     textColor: "{colors.accent-on}"
@@ -196,14 +156,12 @@ components:
     padding: "0 12px"
   panel:
     backgroundColor: "{colors.panel}"
-    rounded: "{rounded.lg}"
+    rounded: "{rounded.sm}"
   card:
     backgroundColor: "{colors.panel}"
     rounded: "{rounded.sm}"
     padding: "11px 12px"
-  # Fields are a filled well: a soft surface fill closed by a 1px bottom
-  # underline, no side/top chrome at rest. Focus/error/warn draw a 2px outline
-  # around the whole box (no layout shift). ~40px tall to match the md button.
+  # Filled field, resting bottom underline; focus/error outlines do not shift layout.
   input:
     backgroundColor: "{colors.surface}"
     textColor: "{colors.fg}"
@@ -248,260 +206,38 @@ components:
     padding: "1px 5px"
 ---
 
-# Control Center Design System
+# Control Center design system
 
-## 1. Overview
+This is the visual contract for the client and site. [PRODUCT.md](PRODUCT.md) owns product direction; [ARCH.md](ARCH.md) owns implementation boundaries. The YAML above records light-theme design values; `packages/cc_ui/lib/src/tokens/` is the runtime source of truth, including dark-theme values. Read tokens through `context.designSystem`, not copied hex values. Review components in `apps/cc_gallery` in both themes before changing them.
 
-**Creative North Star: "The Golden-Hour Deck."**
+## Color and contrast
 
-Control Center is the operator deck for a one-person developer operations hub: a single technical operator running many concurrent streams of work (coding agents on isolated worktrees, a meeting recording, a calendar filling up, PRs to review, feeds and conversations updating) and holding all of it in view at once. The interface has to do something most product UI doesn't: sit open all day next to real work, report live machine state honestly across every pillar and never shout. The personality is **alive, warm, confident**: alive because the surface reports real work as it happens, warm in the Anthropic register (intelligent, on-your-side, never cold or corporate), confident because it is direct and technical with no hype.
+- Near-white `{colors.bg}` is the canvas; warm-neutral `{colors.surface}` is for controls, pure-white `{colors.panel}` for data surfaces, ink `{colors.fg}` for structure. No full-page cream, pure-black text or cool-gray shadows.
+- Functional orange `{colors.accent}` is limited to at most two elements per screen. Primary buttons rest in ink and warm to orange on hover. Bright orange and the sunshine scale belong only to bounded brand graphics (mark, horizon, sunset CTA), never body text or page backgrounds. Keep the logo gradient orange-led; a yellow-led small mark reads incorrectly.
+- Choose colors by role, not raw hue. Derive translucent hover, selected and status fills from their base token in code; do not create unrelated state hues. Light and dark themes retain token names, with dark canvas near `#171614` and accent `#fb6224`.
+- Body and essential text target 7:1 contrast; 4.5:1 for small text and 3:1 for large text and non-text are hard minimums. Use `{colors.muted}` for meaningful secondary text; never use `{colors.idle}` for it. Check any placeholder pairing against 4.5:1 when the placeholder communicates information. Pair status color with a shape/icon **and** a text label. Validation likewise needs a message and glyph, not just a tinted field.
 
-The visual roots are golden-amber warmth, sharp architectural geometry and one near-single type weight, but tuned for a deck, not a billboard. A pure marketing treatment would flood the canvas with ivory and cream; on an operator deck that reads as "ugly yellow" and fights the data. So the canvas is **near-white with ink-black as the structural color**, the warm gold is **confined to bounded graphics** (the brand mark, one golden-hour horizon, the dark sunset CTA) and the single orange signal is **rationed to at most twice per screen**. Warmth is a moment you earn at a threshold, not a wash you apply everywhere. This is how the system reads warm and confident while staying quiet and dense for ten-hours-a-day use.
+## Typography and geometry
 
-This system explicitly rejects two looks. It is **not a generic SaaS dashboard**. No gradient hero-metric cards, no identical rounded card grids marching down a page, no decorative charts, no purple gradients. And it is **not the default component-kit / template look**. Distinction comes from making the underlying model legible (an agent thinking vs. blocked, a meeting recording, a conversation threading a PR), never from decoration. Density is welcome; density _without hierarchy_ is not.
+- UI and prose use Manrope; machine values and labels use Fira Code with tabular figures. `CcFonts.ui`/`CcFonts.code` provide fonts; use `AppFonts.code*` when setting numerics. `tnum` belongs to the mono lane, **not** the ambient Material text theme; explicit `fontFeatures` replaces that lane's features, so carry `AppFonts.codeFontFeatures` when toggling ligatures.
+- Semibold 600 is for short headings/labels, regular 400 for running text. Use the productive sizes in the frontmatter (40/28/18 display/title; 14/13/12 body/caption; 12 label, 13 mono). Flutter web compensates for lighter rendering by mapping 400→500 and 500→600 without creating another perceived hierarchy.
+- Script companions (Sarabun Thai, Rubik Hebrew, IBM Plex Sans Arabic for Arabic/Persian/Urdu) load only for the active locale as package assets, not `fonts:` entries that fetch at web startup. CJK uses platform UI fonts. Do not add a second display family or 700 weight.
+- Spacing follows `AppSpacing` (2 through 48px). Controls, fields, cards and panels have zero radius; pills and state capsules are the exceptions. On desktop, a ~248px sidebar collapses to ~64px with a fluid, independently scrolling content area. Phone controls need ≥44px touch targets and no hover-only action; avoid horizontal overflow at 360/390/430/768/1024/1280/1440/1920px.
+- Use directional layout and glyph mirroring for RTL chrome. Code, diffs, terminals, paths and diagram canvases remain LTR.
 
-**Key Characteristics:**
+## Surface, focus and motion
 
-- **Near-white canvas, ink-black structure, one rationed orange signal.** Black does the structural work; orange is a signal, not a highlight.
-- **Earned warmth.** Golden-hour gold lives only in bounded brand graphics and the amber elevation shadows, never as a page wash.
-- **Squared geometry.** Zero radius everywhere — controls, fields, cards and large panels alike (pills excepted). The tension between soft warm color and hard, right-angled geometry is the identity.
-- **One family, two weights.** Manrope (UI/body) + Fira Code (mono). Headings and labels are SemiBold 600; body and data are Regular 400. Hierarchy is size + weight + color.
-- **Presence over decoration.** Motion and color report real state (running / blocked / failed / recording / syncing) or they are cut. Every animated element has a reduced-motion path.
-- **Status is never color alone.** Every state pairs a color with an icon/shape and a text label.
-- **Dual theme.** A full light and dark theme ship from the same token names; design for both.
-- **Multi-platform, one operation.** The same system serves a dense keyboard-driven desktop deck, a web thin client and a touch-first phone remote. No surface is a degraded afterthought.
+- Default separation is a 1px warm hairline. A subtle amber soft shadow is for hover/sticky chrome; the lower-left amber golden float is for genuinely floating dialogs, menus and toasts, not ordinary cards. Avoid cool, symmetric shadows.
+- Every interactive element retains a 2px accent focus outline at 2px offset and a 3px soft-accent halo or an equally visible replacement. Inputs are ~40px filled wells with a bottom underline, and use a whole-field 2px outline on focus/error/warning without shifting layout.
+- `CcMotion` uses fast 80ms (exit 60), moderate 160ms (exit 120), slow 240ms (exit 160); standard/emphasized easing has no bounce. Reduced motion drops travel/scale but preserves a short state-signaling fade. Running bars/dots settle or stop; content never waits for an entrance animation to become readable. Motion and color report real state, not decoration.
 
-**Layout & density.** The desktop app shell is a two-column grid: a ~248px sidebar rail + a fluid, independently scrollable main column, under a ~48px frosted top bar (`backdrop-filter: blur`); content caps around 1080px inside the canvas. The sidebar collapses to a ~64px icon rail on narrow widths. Spacing rides the 4px base scale (`{spacing.xxs}` 2px → `{spacing.xxxl}` 48px); bold declarations earn their own breathing room and the empty space is _near-white_, not stark, so it still reads warm. On the **phone remote**, the same content must stay operable touch-first: ≥44px targets, no hover-only affordances, gestures that degrade gracefully. Verify no horizontal scroll across the modern range (360 / 390 / 430 / 768 / 1024 / 1280 / 1440 / 1920).
+## Component conventions
 
-## 2. Colors
+- Reuse `Cc*` widgets rather than styling new primitives. Buttons are 32/40/48px, with 40px matching fields; a full-width label aligns to start. A signed approve/destructive pair uses success/danger with white labels; an unsigned third action stays neutral, while ordinary Save/Create uses the ink primary, not green.
+- Panels are square data containers; status may tint a card **border**, not its entire fill. Do not nest cards. A desktop navigation selection needs legible inverted badges and synchronized fill/ink transitions. Use `assets/logo_with_background.svg` for the square brand mark, `logo.svg`/`logo_white.svg` for the figure alone.
+- Settings kit (`lib/features/settings/presentation/widgets/kit/`) uses `SettingsPage` → `SectionCard` → `SettingsGroup` → field/toggle/entity row. Open with `SettingsSummary` (3–5 state facts), disclose expert controls while badging overrides, filter lists beyond roughly eight entities, and show `SettingsSaveBar` only when edits need committing. `SettingsCopyField` handles selectable values and `SettingsKeyValueEditor` handles maps.
+- Code fences and Mermaid diagrams share a square framed surface. Labeled blocks get a kind/action header; unlabeled fences put Copy in the body. Diagrams add source, fenced copy, expandable pan/zoom and generated text alternatives. Theme diagram strokes from tokens; categorical color needs adjacent text. Preserve shape semantics, and collapse diagrams taller than ~340px.
 
-A four-rung surface ladder, a warm-neutral text/border set, one accent, three status hues and a sunshine scale reserved for brand graphics.
+## Checks when designing
 
-### Primary
-
-- **Signal Orange** (`{colors.accent}` `#b0370c`): the single highest-signal color — the accessible burnt orange the functional UI runs on, while the bright signal `#fa500f` (brand600) is reserved for the bounded brand graphics. Budget **at most twice per screen** (typically an eyebrow rule + the primary CTA, or one active-nav indicator + one link-arrow hover). Note the deliberate inversion: primary buttons are **ink-black, not orange**. Orange appears on _hover_, so the page rests calm and warms on intent. Warm-up states: **Flame** (`#fb6224`, brand500, the dark-theme accent), hover (`{colors.accent-hover}` `#c03e0f`), **Burnt orange** pressed (`{colors.accent-active}` `#a6360c`) and `{colors.accent-soft}` (accent @ 12%) for tinted active chips. `{colors.accent-on}` `#ffffff` is the only text/icon color placed on accent.
-
-### Secondary (status)
-
-- **Success** (`{colors.success}` `#17a34a`), **Warn** (`{colors.warn}` `#eab308`), **Danger** (`{colors.danger}` `#dc2626`), each with a `*-soft` tint (`success-soft` @ 14%, `warn-soft` @ 20%, `danger-soft` @ 12%) for pill backgrounds. Tuned to stay distinguishable from the warm palette. **Color is never the only signal**. See Components → Status.
-
-### Tertiary (brand sunshine, bounded graphics ONLY)
-
-- The golden-hour scale: `{colors.sunshine-900}` `#ff8a00` → `{colors.sunshine-700}` `#ffa110` → `{colors.sunshine-500}` `#ffb83e` → `{colors.sunshine-300}` `#ffd06a` → `{colors.bright-yellow}` `#ffd900`, terminating in `{colors.block-edge}` `#c03e0f`. Appears only in the brand mark, the horizon flourish and the CTA sunset. Never as text, never as a page background.
-
-### Neutral
-
-- **Canvas** (`{colors.bg}` `#fcfbf9`): the page background, near-white, barely warm. Never pure white, never ivory/cream as a full bleed.
-- **Surface** (`{colors.surface}` `#f2f0e9`): secondary buttons, soft chips, inert fills.
-- **Panel** (`{colors.panel}` `#ffffff`): pure white, **only** for data surfaces (cards, panels, product windows, popovers). White earns attention here because the page around it isn't white.
-- **Sidebar / Rail** (`{colors.sidebar}` `#f7f5f0`, `{colors.rail}` `#faf9f5`): faint neutral rails in the app shell.
-- **Ink black** (`{colors.fg}` `#1f1f1f`): primary text, dark buttons, the sunset CTA base. Never `#000000`.
-- **Muted** (`{colors.muted}` `#3d3d3d`): secondary text and metadata, clears AAA on the canvas.
-- **Placeholder** (`{colors.placeholder}` `#8c8578`) and **Idle** (`{colors.idle}`, fg @ 38%): the lightest tier, placeholder input text and disabled/tertiary meta only.
-- **Borders**: `{colors.border}` `#e8e5dc` / `{colors.border-soft}` `#efece4` (warm-neutral hairlines so panels stop reading yellow); `{colors.line-strong}` (fg @ 16%) for dividers and DAG edges that must show; `{colors.hover}` / `{colors.hover-strong}` (fg @ 5% / 8%) for row washes.
-
-### Dual theme
-
-A full **dark theme** ships under the same token names (`DesignSystemTokens.light()` / `.dark()`): canvas → warm near-black `#171614`, panel → `#1f1f1f`, fg → near-white and the accent shifts to **Flame** (`#fb6224`) so orange stays legible on dark surfaces. Design and review in both; the `cc_gallery` theme addon toggles them side by side.
-
-### Named Rules
-
-**The One Voice Rule.** `{colors.accent}` appears on ≤2 elements per screen. Its rarity is the signal; spend it on the one thing that matters next, never on decoration.
-
-**The Earned-Warmth Rule.** All warm gold is confined to bounded graphics (mosaic, horizon, sunset CTA) and the amber elevation shadows. Gold is never a text color and never a page background.
-
-**The Token-Role Rule.** Every color is chosen by _role_, never by raw hue: **background** (`{colors.bg}`) → **layer** (`{colors.surface}`/`{colors.panel}`) → **field** (input fills) → **border** (subtle `{colors.border-soft}`, default `{colors.border}`, strong `{colors.line-strong}`) → **text** (primary `{colors.fg}`, secondary `{colors.muted}`, placeholder `{colors.placeholder}`, disabled `{colors.idle}`, on-accent `{colors.accent-on}`) → **interactive/focus** (`{colors.accent}` + the 2px focus outline) → **support/status** (`success`/`warn`/`danger`, each with a `-soft` layer). Field and border tokens step with the layer they sit on (a field on `panel` reads against `panel`, a field on `surface` against `surface`). The full role set lives in `DesignSystemTokens`; reach for the role and the light/dark value resolves itself.
-
-**The State-Token Rule.** Interaction states derive from the base token, not new hues: **hover** = a faint ink wash (`{colors.hover}`, fg @ 5%), **pressed/active** = a stronger wash (`{colors.hover-strong}`, fg @ 8%), **selected** = the accent-soft tint or ink fill, **disabled** = the gray family (`{colors.idle}` / `bgDisabled` / `borderDisabled`), **focus** = the 2px accent outline. Keep the derivation in code so a base change propagates.
-
-**The Contrast Thresholds.** WCAG minimums are enforced by size: small text (<24px) needs **4.5:1**, large text (≥24px) needs **3:1** and non-text graphical elements (icons, focus rings, status dots, control borders) need **3:1**. Body and essential text still _target_ AAA 7:1 (see the Contrast Rule below); these thresholds are the hard floor no token pairing may cross.
-
-**The Contrast Rule (AAA where feasible, AA is the floor).** Body and essential text target **7:1 (AAA)**; `{colors.fg}` (~14:1) and `{colors.muted}` (~9:1) on the canvas clear it comfortably and are the defaults. AA (4.5:1) is the _minimum_, never the target. The lightest grays, `{colors.placeholder}` (~3.3:1) and `{colors.idle}`, clear only the disabled-state bar; never carry meaningful text in them. Promote any hint or label that must be read to `{colors.muted}`.
-
-**The Derivation Contract.** Alpha tokens (`idle`, `line-strong`, `accent-soft`, the `*-soft` set, hovers) are an opacity of a base token, `idle` = fg @ 38%, `accent-soft` = accent @ 12%, etc. Keep the relationship in code (Flutter `Color.withValues` / web `color-mix(... in oklab)`) so a base-color change propagates. The brand-mark gradient (`assets/logo_with_background.svg`) is orange-dominant (never yellow-led, or the small mark reads as a lemon square): `linear-gradient(135deg, #ffb83e 0%, #ff8105 34%, #fa500f 70%, #c03e0f 100%)`.
-
-## 3. Typography
-
-**Display / Body Font:** Manrope (with `ui-sans-serif, system-ui, sans-serif`)
-**Label / Mono Font:** Fira Code (with `ui-monospace, "SF Mono", Menlo, Consolas, monospace`)
-**Script companions (active locale only):** Sarabun (Thai), Rubik (Hebrew), IBM Plex Sans Arabic (Arabic / Persian / Urdu). CJK uses the platform UI face.
-
-**Character:** A warm grotesque (Manrope) carries everything human-readable; a structural monospace (Fira Code) carries everything machine: counts, IDs, diffs, timestamps and uppercase labels. The pairing reads as "considered, technical, honest." Both are bundled as host assets by `cc_ui` and resolved via `CcFonts.ui` / `CcFonts.code`. Never pass a raw family string.
-
-Manrope covers Latin (including Vietnamese), Cyrillic, and limited Greek. Locales outside that set attach **one** companion, loaded only while that language is active — Hebrew does not download Sarabun. The companions are package _assets_, not `fonts:` entries, because Flutter web fetches every `FontManifest.json` family at engine boot. CJK stays on PingFang / Hiragino / Apple SD Gothic Neo: a bundled Noto CJK would dwarf the UI font.
-
-### Hierarchy
-
-- **Display Hero** (Manrope 600, 40px, line-height 1.15): earned brand moments only, onboarding, the dashboard greeting deck. The ceiling of the app scale.
-- **Display** (Manrope 600, 28px, 36/28): top-of-screen headings, big statements.
-- **Title** (Manrope 600, 18px, 24/18): section / card / feature titles.
-- **Body** (Manrope 400, 14px, 20/14, +0.16px): standard body and prose. Cap measured text at 65-75ch.
-- **Body Small** (Manrope 400, 13px, 18/13, +0.16px): dense UI text, control labels, buttons.
-- **Caption** (Manrope 400, 12px, 16/12, +0.32px): metadata and secondary annotations.
-- **Label** (Fira Code 600, 12px, 16/12, +0.6px tracking, UPPERCASE): eyebrows, nav labels, status pills. The system's signature label.
-- **Mono Num** (Fira Code 400, 13px, 18/13, tabular figures): anything countable, addressable, or time-stamped.
-
-### Named Rules
-
-**The Two-Weight Rule.** Hierarchy comes from **size + weight + color**. Headings and labels (Display Hero, Display, Title, Label) are SemiBold **600**; body, small body, caption and mono-num are Regular **400**. The productive-scale rule holds: semibold is for section headers and short labels, never for long running text. Never introduce a 700/black weight, a second display family, or Inter/Roboto/Arial as a display face; the two weights of Manrope (plus Fira Code) carry everything.
-
-**The Machine-Truth Rule.** Anything countable, addressable, or time-stamped is Fira Code with tabular figures. Mono signals "this is machine truth," not decoration.
-
-**Tabular Figures Follow The Mono Family.** OpenType `tnum` (`CcTypography.numeralFeatures`) is a property of the MONO lane, not of the app: `CcFonts.code` applies it alongside the monospace family, so anything set in mono — line numbers, counts, durations, costs, timestamps, the `label` eyebrow — gets fixed-advance digits, and Manrope prose keeps its natural proportional ones. The type scale itself names no family and therefore no `fontFeatures`; the root Material text theme names none either, because `MaterialApp` seeds the ambient `DefaultTextStyle` from `bodyMedium` and anything there reaches every raw `TextStyle` in the app. Per-surface `fontFeatures: [FontFeature.tabularFigures()]` copies are gone: reach for `CcFonts.code`/`AppFonts.code*` instead, and remember that naming your own `fontFeatures` REPLACES the lane's (which is why `AppFonts.codeFontFeatures` carries `tnum` next to the ligature toggle).
-
-## 4. Elevation
-
-Depth is rare and **warm**. Two levels only, plus the focus ring; structure is carried by hairline borders, not shadows.
-
-- **Flat (Level 0).** No shadow. Page backgrounds, text blocks, inert chips, most of the UI. Surfaces separate by a `1px {colors.border}` hairline ring, not a drop shadow.
-- **Soft (Level 0.5).** A subtle warm lift for hover on cards and sticky chrome that must read as slightly raised. `0 1px 2px rgba(127,99,21,0.05), -2px 6px 18px rgba(127,99,21,0.05)`.
-
-- **Golden float (Level 1).** The signature multi-layer "golden hour" cascade, reserved for genuinely floating data surfaces: dialogs, popovers, drawers, toasts, the hero deck.
-
-```
-golden float:
-  -8px  16px  39px rgba(127, 99, 21, 0.12),
-  -28px 56px  64px rgba(127, 99, 21, 0.08),
-  -64px 120px 88px rgba(127, 99, 21, 0.06);
-```
-
-### Named Rules
-
-**The Warm-Shadow Rule.** Shadows are always amber-tinted (`rgba(127, 99, 21, …)`, never cool gray) and offset to the **lower-left** (negative X), as if lit by late-afternoon sun from the right. Never a cool, symmetric, or top-down drop shadow.
-
-**The Borders-Not-Shadows Rule.** A surface separates with a hairline ring by default. Reach for a shadow only when something genuinely floats above the canvas.
-
-**The Always-Visible-Focus Rule.** Every interactive element shows a focus ring: a 2px solid `{colors.accent}` outline at 2px offset plus a `0 0 0 3px {colors.accent-soft}` glow. Keyboard operability is a P0 of this product; never remove the ring without an equal replacement.
-
-## 5. Components
-
-35 `Cc*` widgets ship in `cc_ui`; document and reuse those rather than re-styling primitives. Variants follow `name` / `name-hover` / `name-active`. Read tokens via `context.designSystem`.
-
-### Buttons
-
-- **Shape:** square corners (`{rounded.sm}` = 0); a `translateY(0.5-1px)` press nudge; no shadow.
-- **Size ramp:** 32px (sm) / 40px (md, default; matches field height) / 48px (lg, dialog footers). A full-width button left-aligns its label; a hugging button centers it.
-- **Primary** (`{components.button-primary}`): ink-black `{colors.fg}` fill, white text; hover warms to `{colors.accent}`. The main CTA, calm at rest, orange on intent.
-- **Accent** (`{components.button-accent}`): solid `{colors.accent}`; hover → `{colors.accent-hover}`. For in-app "go" affordances where dark would feel too heavy.
-- **Secondary** (`{components.button-secondary}`): `{colors.surface}` fill + `{colors.border}` hairline; hover strengthens the border to `{colors.line-strong}`.
-- **Line** (`{components.button-line}`): `{colors.panel}` fill + border; hover → `{colors.fg}` border. The quiet utility button in dense UI.
-- **Verdict pair — success / destructive:** solid `{colors.bg-success-solid}` (green700) and solid `{colors.bg-error-solid}` (red700), both with white text, one shape in two hues. Reserved for a **signed decision the user picks between** (approve vs request changes) and for destroying something. A plain confirm ("Save", "Create") is **primary**, not green — this system spends color on state, never on emphasis, so a green button that only means "the affirmative one" is decoration. When a pair is color-signed, any third, unsigned option (e.g. "Comment") stays neutral: tinting it would imply a position it does not take. Hierarchy between the pair comes from **layout** (full row vs half), not from making one of them louder.
-- On the phone remote, button hit-targets expand to ≥44px regardless of visual size.
-
-### Cards / Containers
-
-- **Panel** (`{components.panel}`): white, square (`{rounded.lg}` = 0), hairline `{colors.border}` ring; header is a padded row with a bottom border and a mono count. The base data container.
-- **Card** (`{components.card}`): a tighter square (`{rounded.sm}` = 0) unit for rails and lists. Agent / PR cards tint their **border** by status (success / warn / danger mixed into the border), never their fill, so a busy fleet stays legible. Never nest a card inside a card.
-
-### Inputs / Fields
-
-- **Style** (`{components.input}`): a filled well — a soft `{colors.surface}` fill closed by a **1px bottom underline** (a warm mid-gray strong enough to read as a field), no side or top chrome at rest, square corners, `{typography.body-sm}`, ~40px tall. An optional persistent label sits above the box; helper / error / warn text below.
-- **Focus:** a 2px `{colors.accent}` outline is drawn around the whole box (over the resting chrome, so nothing shifts). Applies on both keyboard and pointer focus.
-- **Validation:** the focus-style outline recolors to `{colors.danger}` (error) or `{colors.warn}` (warn) and the field tints `{colors.danger-soft}` / `{colors.warn-soft}`, with a glyph + message beneath. Selected tabs/segments use a **dark `{colors.fg}` fill with white text**, matching the primary-button logic.
-- Placeholder text uses `{colors.placeholder}`; keep real hints in `{colors.muted}` (placeholder color is below the body-contrast floor).
-
-### Status (the load-bearing rule)
-
-Every agent, PR, pipeline, meeting and sync state is a pill pairing **color + icon/shape + text label**, so it survives color-blind viewing and grayscale:
-
-- `{components.status-run}`, success tint, with animated equalizer bars (live presence).
-- `{components.status-blocked}`, warn tint, with a "pause" glyph.
-- `{components.status-failed}`, danger tint, with an alert glyph.
-- `{components.status-idle}`, muted, neutral fill.
-
-Live "running" presence uses 2px equalizer bars or a pinging dot; both have a full reduced-motion fallback (bars settle at ~70% height, ping stops). Never a blank surface, never a reveal that fails to fire on a hidden tab.
-
-### Navigation
-
-- Desktop: a ~248px `CcSidebar` rail (collapses to a ~64px icon rail) under a frosted top bar. Active item = a solid `{colors.bg-brand-solid}` fill with bold `{colors.accent-on}` ink and a 1px `{colors.accent}` rim (invisible in light, a brighter edge in dark). A badge on the active row **inverts** — `{colors.accent-on}` pill, `{colors.bg-brand-solid}` content — because an accent-tinted badge is the fill's own hue and would disappear into it; a badge carrying identity (a project swatch) keeps its hue on an opaque `{colors.accent-on}` backing instead. Fill, ink and badge lerp on one `{motion.fast}` timing so white ink never lands on a mid-lerp pale fill.
-- Brand lockup = `assets/logo_with_background.svg` (square mark) + wordmark. Use `assets/logo.svg` (ink figure) or `assets/logo_white.svg` (reversed) when the mark sits on a filled field. Never a 3×3 color grid.
-
-### Supporting
-
-`{components.badge}` (mono uppercase, surface fill), eyebrow (mono label + accent rule), `{components.kbd}` (mono key caps), search field with a `⌘K` hint, count chips (mono on `{colors.hover-strong}`), right-drawer + scrim and bottom-center toast (both on golden float), dropdown menus / popovers (white, golden float) and DAG nodes/edges for pipelines (square nodes, `{colors.line-strong}` arrowed edges, failed node tinted `{colors.danger-soft}`).
-
-### Embedded artifacts (code + diagrams)
-
-A fenced code block and a rendered ` ```mermaid ` diagram share one anatomy: `{colors.surface}` fill, square hairline frame. When the fence names a language (or the diagram has a kind), a slim header row carries that kind on the left (`dart`, `flowchart`) and its actions on the right. An unlabeled fence (` ``` ` with no info string) drops the header and parks **copy** in the top-right of the body so an empty chrome row never sits above the code. Diagrams add **view source**, **expand** (a modal pan/zoom viewer) and **copy** (as a fence, so a paste round-trips). Diagram ink is `{colors.muted}` strokes on `{colors.surface}` nodes — never author-specified mermaid colors, which would break dark mode and the contrast floor; the categorical palette appears only where hue carries data (pie slices, timeline sections), always with a text label beside it. Rounding stays reserved for the mermaid shapes whose roundness IS the meaning (`(text)`, `([text])`, notes); `[text]` boxes are square like every other surface. A diagram taller than ~340px collapses behind "show more" rather than pushing the conversation off screen and every diagram carries a generated text alternative for screen readers.
-
-### Signature brand components
-
-- **Brand mark.** `assets/logo_with_background.svg` is the square lockup (sunshine gradient + white figure). `assets/logo.svg` and `assets/logo_white.svg` are the figure alone. Do not substitute a 3×3 color grid.
-- **Golden-hour horizon.** A faint ridge + lake + low sun in SVG at the bottom of a hero, masked to ~40-50% opacity. The _one_ warm brand moment per page and the hook for subtle, us-controlled regional cues. Never a page wash.
-- **Sunset CTA.** A dark `{colors.fg}` band with a top-left radial of `{colors.sunshine-700}` fading to black, the page literally sets like the sun at the final call to action.
-- **Product window.** A faithful slice of the live dashboard inside a traffic-light titlebar, on golden float, the hero visual instead of a stock screenshot.
-
-### Dense configuration surfaces (the settings kit)
-
-Settings is where density stops being a virtue and starts being a wall, so it has its own four-layer vocabulary in `lib/features/settings/presentation/widgets/kit/` (`settings_kit.dart`), built entirely on `cc_ui` primitives and tokens. A settings surface picks only the layers it needs:
-
-| Layer | Component                                                | Job                                                                          |
-| ----- | -------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| Page  | `SettingsPage`                                           | Title, subtitle, page actions, scroll.                                       |
-| Card  | `SectionCard`                                            | One subject. Its uppercase label is the eyebrow; nothing inside outranks it. |
-| Group | `SettingsGroup`                                          | A titled block _inside_ a card — a heading and a rule, never a nested card.  |
-| Row   | `SettingsField` / `SettingsToggle` / `SettingsEntityRow` | One labelled control, one switch, or one repeating thing with a state.       |
-
-Four rules govern the layer choice, and a dense surface that reads badly is almost always breaking one of them:
-
-- **State before configuration.** Open with `SettingsSummary`: three to five facts (what is on, what is connected, what is missing) before the first input. Not a row of stat cards — that is the SaaS-dashboard reflex — but a wrapped strip of label-over-value pairs on the card's own surface, values in mono.
-- **Progressive disclosure by default.** Expert, per-item and rarely-touched controls live behind `SettingsDisclosure`, whose header states what is inside (`summary`) and carries a `SettingsModifiedBadge` when the values within are not the defaults. A collapsed section may hide detail; it may never hide that something was changed.
-- **A long list gets a filter, not a scroll.** Past roughly eight repeating rows, add `SettingsFilterBar` (search + facets with counts + a live result count) and sort what is in use to the top. `SettingsEntityRow` collapses each item to status marker, name, the one line identifying _this_ install of it, small meta facts and at most one control; everything else is built only when the row is opened.
-- **Edits are committed, not ambient.** A form that saves as a unit uses `SettingsSaveBar`, which exists only while there is something to commit. A permanently greyed Save teaches the reader to ignore that corner of the card.
-
-Supporting pieces: `SettingsCopyField` for a read-only value the operator must hand to something else (mono, selectable, one copy button); `SettingsKeyValueEditor` for a map, in place of a text field holding JSON; `SettingsMetaFact` for the small mono facts on a row.
-
-### Motion
-
-`CcMotion` tokens — three enter speeds, a faster exit for each: `fast` 80ms / `fastExit` 60ms (hover washes, fades, focus rings, checkbox, radio, tooltip, slider), `moderate` 160ms / `moderateExit` 120ms (`normal` is an alias; dropdowns, tabs, switch thumb, toasts, short panels), `slow` 240ms / `slowExit` 160ms (dialogs, drawers, sidebar collapse). Easing: `standard` = `cubic-bezier(0.2, 0, 0.38, 0.9)` (quick to commit, gentle to settle), `emphasized` = `cubic-bezier(0, 0, 0.38, 0.9)` for larger movement (no bounce, no elastic). `CcMotion.resolve` / `resolveTravel` drop translate/scale/size under reduced motion; `resolveFade` keeps an 80ms opacity fade so presence still reports. Motion must report real state, never animate for flourish.
-
-### Implementation & gallery
-
-This spec is shipped by **`cc_ui`** (`packages/cc_ui/`), a Material-/Cupertino-free system built on `flutter/widgets.dart`; read tokens via `context.designSystem`, never hardcode a value this document names.
-
-| This spec                      | Code (`cc_ui`)                                                                                                               |
-| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
-| Colors (`{colors.*}`)          | `DesignSystemTokens`, `canvas`/`surface`/`panel`/`fg`/`muted`/`accent`/`success`/`warn`/`danger`/… (`.light()` & `.dark()`). |
-| Typography                     | `CcTypography`, `displayHero`/`display`/`title`/`body`/`bodySm`/`caption`/`label`/`monoNum`; families via `CcFonts`.         |
-| Spacing (4px base)             | `AppSpacing`, `xxs`(2) → `xxxl`(48) + gap widgets.                                                                           |
-| Rounded (0 / pill)             | `AppRadii`, 0 everywhere (`sm`/`md`/`lg` all 0), `pill` 999.                                                                 |
-| Elevation (warm amber shadows) | `AppShadows.golden` / `.soft`, `CcElevation` z-index scale.                                                                  |
-| Motion + reduced-motion        | `CcMotion` (`fast`/`moderate`/`slow` + `*Exit`, `standard`/`emphasized`, `.resolve` / `.resolveFade`).                        |
-| Focus ring                     | `FocusRing` + `FocusModality` (keyboard-only `:focus-visible`).                                                              |
-| Components                     | 35 `Cc*` widgets, `CcButton`, `CcSelect`, `CcCard`, `CcSidebar`, `CcDialog`, …                                               |
-
-The living reference is **`apps/cc_gallery`** (Widgetbook): interactive use-cases across Components and Foundations, with a Light/Dark theme toggle. Before designing or reviewing UI, open the gallery and read the relevant component's states; authoring a new component means adding its states as `@widgetbook.UseCase` builders there.
-
-## 6. Do's and Don'ts
-
-### Do:
-
-- **Do** keep the canvas near-white (`{colors.bg}`) and let **ink-black** (`{colors.fg}`) be the structural color; reserve pure white (`{colors.panel}`) for data surfaces.
-- **Do** confine all warm gold to **bounded graphics** (mosaic, horizon, sunset CTA) and amber elevation shadows.
-- **Do** ration `{colors.accent}` to **two uses per screen**; default primary buttons to dark and let orange arrive on hover.
-- **Do** pair every status with an icon/shape **and** a text label, never color alone.
-- **Do** target **AAA contrast (7:1)** for body and essential text; keep `{colors.muted}` as the lightest color you trust for meaningful text and AA (4.5:1) as the hard floor.
-- **Do** keep regular body and semibold headings as the only perceived weight roles. The web-only 400→500 / 500→600 mapping is raster compensation, not a third hierarchy level.
-- **Do** hold corners square (0 radius on every control, field, card and panel; pills excepted).
-- **Do** make warm, lower-left, amber-tinted shadows and only on genuinely floating surfaces.
-- **Do** set numerics, IDs, counts and timestamps in mono with tabular figures.
-- **Do** ship a real reduced-motion path for every animated/presence element and keep the 2px accent focus outline visible on every interactive element.
-- **Do** design every surface for its platform: dense + keyboard-first on desktop, ≥44px touch targets and no hover-only affordances on the phone remote and verify both light and dark themes.
-- **Do** open a dense configuration surface with its state (`SettingsSummary`), put expert controls behind a disclosure that badges its own overrides, and give any list past ~8 repeating rows a filter bar.
-- **Do** render embedded artifacts (code, diagrams) in OUR ink: theme them from tokens, keep their chrome identical and give the reader the source and a text alternative.
-- **Do** lay chrome out in logical start/end geometry (`EdgeInsetsDirectional`, `AlignmentDirectional`, `TextAlign.start`) so every surface mirrors under the RTL locales and let directional glyphs (chevrons, forward/back arrows) mirror with text direction.
-
-### Don't:
-
-- **Don't** let any surface read as a **generic SaaS dashboard**. No gradient hero-metric cards, no identical rounded card grids repeated down a page, no decorative charts, no purple gradients.
-- **Don't** ship the **default component-kit / template look**. Distinction comes from making the model (agents, meetings, conversations) legible, not from decoration.
-- **Don't** use ivory/cream as a full-bleed surface. That's the "ugly yellow" the near-white canvas exists to fix.
-- **Don't** use pure `#000`, cool grays, or cool/symmetric drop shadows.
-- **Don't** introduce blue/green/purple chrome or any cool gradient (status hues excepted and always shape-paired).
-- **Don't** add a bold weight or a second display typeface.
-- **Don't** carry meaningful text in `{colors.placeholder}` or `{colors.idle}`. They clear the disabled bar, not the 4.5:1 body bar.
-- **Don't** round corners "to feel friendlier," or add radius to hero imagery; the squared geometry is the point.
-- **Don't** spend the accent on decoration. It is a signal, not a highlight; and never lead the brand-mark gradient with yellow.
-- **Don't** nest a card inside a card and don't let color be the only carrier of meaning (status, validation, diffs). Inside a card, a second subject is a `SettingsGroup` (heading + rule), never another box.
-- **Don't** render every item of a settings list fully expanded, and don't split one subject across several cards to give it headings. Both read as a wall; the first is what a disclosure is for, the second is what a group is for.
-- **Don't** hardcode physical left/right layout in chrome, and don't mirror the LTR carve-outs: source code, diffs, terminals, file paths and diagram canvases stay LTR in every locale.
+Use the gallery's component states and review light/dark, keyboard focus, reduced motion, screen readers and touch. Status, diff and validation meaning must survive grayscale. Distinction comes from visible ownership/state/actions, not decorative dashboards, repeated rounded grids or gradients.

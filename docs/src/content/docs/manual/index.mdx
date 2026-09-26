@@ -3,7 +3,14 @@ title: Introduction
 description: Control Center is the cockpit for multi-agent software development.
 ---
 
+import { LinkButton, LinkCard } from '@astrojs/starlight/components';
+
 Control Center gives you command over a fleet of AI coding agents. Spawn agents, watch them work in real time, review their PRs and manage repos, workspaces and integrations — from a native desktop app, a browser, or your phone.
+
+<div className="docs-start not-content">
+  <LinkButton href="/manual/quick-start/" icon="right-arrow">Quick start</LinkButton>
+  <LinkButton href="/manual/install/" variant="minimal" icon="download">Install Control Center</LinkButton>
+</div>
 
 ## What you can do
 
@@ -36,9 +43,11 @@ See [Install](/manual/install/#use-it-in-your-browser) for the browser route and
 
 ## Next steps
 
-- [Install](/manual/install/): downloads, system requirements and where the server runs
-- [Quick start](/manual/quick-start/): the shortest complete path to an agent working on your repo
-- [Tutorials](/manual/tutorials/): longer lessons, in order, starting with [your first workspace](/manual/tutorials/first-workspace/)
-- [Guides](/manual/guides/): recipes for one task at a time — [add repos](/manual/guides/add-repos/), [configure guardrails](/manual/guides/configure-guardrails/), [pair your phone](/manual/guides/pair-a-device/)
-- [Concepts](/manual/concepts/): why the product works the way it does, starting with [deployment and clients](/manual/concepts/deployment/)
-- [Reference](/manual/reference/): complete tables — [routes](/manual/reference/route-map/), [MCP tools](/manual/reference/mcp-tools/), [keyboard shortcuts](/manual/reference/keyboard-shortcuts/), [domain events](/manual/reference/domain-events/)
+<div className="docs-pathways not-content">
+  <LinkCard title="Install" href="/manual/install/" description="Downloads, system requirements and where the server runs." />
+  <LinkCard title="Quick start" href="/manual/quick-start/" description="The shortest complete path to an agent working on your repo." />
+  <LinkCard title="Tutorials" href="/manual/tutorials/" description="Longer lessons, in order, starting with your first workspace." />
+  <LinkCard title="Guides" href="/manual/guides/" description="Recipes for one task at a time: add repos, configure guardrails or pair your phone." />
+  <LinkCard title="Concepts" href="/manual/concepts/" description="Why the product works the way it does, starting with deployment and clients." />
+  <LinkCard title="Reference" href="/manual/reference/" description="Complete tables for routes, MCP tools, keyboard shortcuts and domain events." />
+</div>

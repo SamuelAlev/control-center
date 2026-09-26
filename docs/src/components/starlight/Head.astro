@@ -5,29 +5,33 @@
  * per-page JSON-LD: a `TechArticle` describing the doc and a `BreadcrumbList`
  * trail, and the WebMCP tool registration every page on this origin carries
  * (see components/shared/WebMcpScript.astro). Registered via `components.Head`
- * in astro.config.mjs, the same mechanism used for SiteTitle + ThemeSelect.
+ * in astro.config.mjs, alongside the other Starlight component overrides.
  *
- * Breadcrumb URLs are kept honest: only `/` and `/manual/` resolve to real
- * pages (section levels like `/manual/guides/` have no index), so the trail is
- * Home → Documentation → page, never a fabricated category URL.
+ * Breadcrumb URLs use the current locale's landing page and manual index.
+ * Section levels like `/manual/guides/` have no index, so the trail
+ * includes only existing landing, manual index and article pages.
  */
 import Default from '@astrojs/starlight/components/Head.astro';
 import StructuredData from '../shared/StructuredData.astro';
 import WebMcpScript from '../shared/WebMcpScript.astro';
+import AcquisitionScript from '../shared/AcquisitionScript.astro';
+import SiteLocaleScript from '../shared/SiteLocaleScript.astro';
+import { landingPath, localeFromPath, manualPath } from '../../data/locales';
 
 const { starlightRoute } = Astro.locals;
-const { entry } = starlightRoute;
-
+const { entry, entryMeta } = starlightRoute;
+const locale = localeFromPath(Astro.url.pathname);
 const siteHref = new URL('/', Astro.site).href;
-const docsHref = new URL('/manual/', Astro.site).href;
+const landingHref = new URL(landingPath(locale), Astro.site).href;
+const docsHref = new URL(manualPath(locale), Astro.site).href;
 const canonical = new URL(Astro.url.pathname, Astro.site).href;
 const { title, description, datePublished, dateModified } = entry.data;
 
 // The 404 entry isn't a real article — skip structured data there.
 const isError = entry.id === '404' || entry.id.endsWith('/404');
 
-const crumbs = [{ name: 'Home', item: siteHref }];
-if (canonical !== docsHref) crumbs.push({ name: 'Documentation', item: docsHref });
+const crumbs = [{ name: Astro.locals.t('docs.home'), item: landingHref }];
+if (canonical !== docsHref) crumbs.push({ name: Astro.locals.t('docs.documentation'), item: docsHref });
 crumbs.push({ name: title, item: canonical });
 
 const schema = [
@@ -41,7 +45,7 @@ const schema = [
     // a date is never fabricated. See src/content.config.ts.
     ...(datePublished ? { datePublished: datePublished.toISOString() } : {}),
     ...(dateModified ? { dateModified: dateModified.toISOString() } : {}),
-    inLanguage: starlightRoute.lang ?? 'en',
+    inLanguage: entryMeta.lang,
     isPartOf: { '@type': 'WebSite', name: 'Control Center', url: siteHref },
     publisher: {
       '@type': 'Organization',
@@ -64,8 +68,11 @@ const schema = [
 ---
 
 <Default><slot /></Default>
+{isError && <meta name="robots" content="noindex, follow" />}
 {!isError && <StructuredData schema={schema} />}
 {/* WebMCP tools on every docs page — the marketing half is covered by
     MarketingLayout. Unconditional: the tools are just as useful from the
     404 page, where an agent most needs to find the right route. */}
 <WebMcpScript />
+<AcquisitionScript />
+<SiteLocaleScript />

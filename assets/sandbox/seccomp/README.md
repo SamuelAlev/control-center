@@ -1,40 +1,15 @@
 # Vendored `apply-seccomp` binaries
 
-Drop a pre-built `apply-seccomp-x64` and/or `apply-seccomp-arm64` binary in
-this directory to enable the seccomp-based defense-in-depth layer in the
-Linux sandbox. When the matching arch binary is present and executable, the
-sandbox runtime wraps user commands with it so `socket(AF_UNIX, …)` is
-blocked at the syscall level (mirrors the `@anthropic-ai/sandbox-runtime`
-default).
+`apply-seccomp-x64` / `apply-seccomp-arm64` come from `@anthropic-ai/sandbox-runtime` (release binaries on npm or `vendor/seccomp-src/apply-seccomp.c` in that project's source). When the current Linux architecture has an executable binary here, the sandbox wraps commands to block `socket(AF_UNIX, …)` at the syscall level, matching that runtime's default. Without it, the sandbox still runs with kernel/filesystem isolation but **allows all Unix sockets**; Settings → Sandboxing shows a warning. Do not describe that fallback as equivalent security.
 
-If the binary is missing for the current arch, the sandbox still runs — it
-just falls back to the "allow all Unix sockets" mode (kernel + filesystem
-isolation are unaffected). A warning is surfaced in Settings → Sandboxing.
+Build statically for the matching Linux architecture (from the upstream C source, with libseccomp):
 
-## Building
-
-Cross-compile from the C source in `vendor/seccomp-src/apply-seccomp.c` in
-the `@anthropic-ai/sandbox-runtime` repo:
-
-```bash
+```sh
 gcc -static -O2 apply-seccomp.c -o apply-seccomp-x64 \
-    -I/usr/include -lseccomp
-
-# arm64 cross:
+  -I/usr/include -lseccomp
 aarch64-linux-gnu-gcc -static -O2 apply-seccomp.c -o apply-seccomp-arm64 \
-    -I/path/to/aarch64-libseccomp/include -L/path/to/aarch64-libseccomp/lib -lseccomp
-```
-
-Or grab the already-built binaries from
-`@anthropic-ai/sandbox-runtime`'s release artifacts on npm.
-
-After dropping the binary in:
-
-```bash
+  -I/path/to/aarch64-libseccomp/include -L/path/to/aarch64-libseccomp/lib -lseccomp
 chmod +x apply-seccomp-*
 ```
 
-## Asset wiring
-
-`pubspec.yaml` declares `assets/sandbox/seccomp/` so anything dropped in
-this directory ships with the Flutter bundle.
+`pubspec.yaml` declares `assets/sandbox/seccomp/`; dropped binaries are bundled with Flutter. See [SECURITY.md](../../../SECURITY.md) for sandbox trust boundaries.

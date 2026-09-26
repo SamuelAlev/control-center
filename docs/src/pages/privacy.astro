@@ -2,7 +2,7 @@
 import MarketingLayout from '../layouts/MarketingLayout.astro';
 import LegalDoc from '../components/legal/LegalDoc.astro';
 
-const lastUpdated = '19 September 2026';
+const lastUpdated = '25 September 2026';
 const issuesUrl = 'https://github.com/SamuelAlev/control-center/issues';
 
 const sections = [
@@ -10,6 +10,7 @@ const sections = [
   { id: 'scope', title: 'Who this covers' },
   { id: 'local-data', title: 'Data stored on your device' },
   { id: 'no-collection', title: "What we don't collect" },
+  { id: 'website-analytics', title: 'Website analytics' },
   { id: 'integrations', title: 'Connected services' },
   { id: 'ai', title: 'AI agents and your code' },
   { id: 'meetings', title: 'Meeting capture and transcription' },
@@ -25,24 +26,25 @@ const sections = [
 
 <MarketingLayout
   title="Privacy policy \\ Control Center"
-  description="Privacy policy for Control Center, the local-first desktop app: your workspaces, code and spaces stay on your device. Here's what touches the network."
+  description="Privacy policy for Control Center's local-first app and public website, including website analytics and connected services."
   breadcrumbName="Privacy policy"
 >
   <LegalDoc
     title="Privacy policy"
     lastUpdated={lastUpdated}
-    intro="Control Center is a local-first desktop application. Your workspaces, agents, code, spaces and notes live on your own device — not on a server we run. This policy explains exactly what stays local, what is sent to the services you connect and the one diagnostic service that reports crashes."
+    intro="Control Center is a local-first application. Your workspaces, agents, code, spaces and notes live on your own server — not on a server we run. This policy explains what stays under your control, what is sent to services you connect, app diagnostics and analytics on this public website."
     sections={sections}
   >
     <section id="summary">
       <h2>Summary</h2>
       <p>The short version, in plain language:</p>
       <ul>
-        <li><strong>There is no Control Center server.</strong> We do not operate a backend that collects, stores, or syncs your data. The app keeps your data on your device.</li>
+        <li><strong>We do not host your workspace data.</strong> Your self-hosted <code>cc_server</code> holds it. The public website uses separate analytics described <a href="#website-analytics">below</a>.</li>
         <li><strong>Your data is stored locally.</strong> Workspaces, agents, spaces, tickets, memory, code indexes and meeting notes are kept in a local database and files on your machine.</li>
         <li><strong>Some features talk to services you connect.</strong> When you link GitHub, Linear, Google Calendar, or an AI coding agent, the relevant data is sent to those providers to make the feature work. They process it under their own privacy policies.</li>
         <li><strong>Your code can be sent to an AI provider.</strong> The built-in adapter sends prompts, code, diffs and context to whichever model provider you connect. The Claude Code adapter sends the same kinds of data to Anthropic under your own Claude Code subscription.</li>
         <li><strong>Crash reports are sent in production — and you can turn them off.</strong> Released builds send crash, error, performance and session-replay diagnostics to Sentry; you can disable this during onboarding or in Settings → Server → Diagnostics & privacy. See <a href="#diagnostics">Diagnostics and crash reporting</a> for exactly what this includes.</li>
+        <li><strong>The public website uses Umami analytics.</strong> Pageviews and named acquisition-link clicks are measured on <code>usectrl.dev</code>; the app does not load this website tracker.</li>
       </ul>
     </section>
 
@@ -82,7 +84,15 @@ const sections = [
         <li>The app does <strong>not</strong> capture your screen, record video, or access your contacts or address book.</li>
         <li>The app does <strong>not</strong> scan your filesystem broadly — its file access is scoped to its own application directories and the repositories you explicitly add.</li>
       </ul>
-      <p>The exceptions to "stays local" are the connected services, AI processing and crash diagnostics described in the sections below. Those are the only paths by which data leaves your device.</p>
+      <p>The app exceptions to “stays local” are the connected services, AI processing and crash diagnostics described below. The public marketing and documentation website has separate analytics, described next.</p>
+    </section>
+
+    <section id="website-analytics">
+      <h2>Website analytics</h2>
+      <p>The public marketing pages and documentation at <code>usectrl.dev</code> load Umami from <code>analytics.alev.dev</code> to count pageviews and named link-click events. The events are <code>release_page_click</code> (requesting the latest GitHub installer for the selected OS; earlier versions opened the release page), <code>demo_open_click</code> (opening the demo link) and <code>install_section_click</code> (following a link to the download section). A click does not establish that a download finished, the app was installed or the demo loaded.</p>
+      <p>Umami's normal pageview/event information includes the visited page, page title, referrer, browser language, screen size and site hostname; its service also receives the network request. Our extra event properties are limited to the link placement (<code>hero</code>, <code>nav</code> or <code>download</code>) and the OS label shown on a release link (<code>macos</code>, <code>windows</code>, <code>linux</code> or <code>none</code>). We do not send custom account IDs, code, workspace data, link text, URL search parameters or fragments. The tracker is limited to <code>usectrl.dev</code>, excludes search parameters and fragments from tracked URLs, and respects your browser's Do Not Track setting.</p>
+      <p>Umami's tracking code does not use cookies; the analytics service may process request and session information on the server. Umami's documentation says self-hosted analytics data is retained indefinitely unless manually deleted. We have not verified a different retention setting or a hosting-region guarantee for this installation. To ask about analytics records or their deletion, <a href={issuesUrl}>contact us</a>.</p>
+      <p>Blocking the analytics script or disabling JavaScript does not stop links from working. This website analytics script is not part of the desktop, web-app or phone clients and does not change the app's own telemetry settings.</p>
     </section>
 
     <section id="integrations">
@@ -147,8 +157,8 @@ const sections = [
 
     <section id="retention">
       <h2>Retention and deletion</h2>
-      <p>Because your data lives on your device, <strong>you control retention</strong>. Spaces, run logs, transcripts, memory, code indexes and other data persist locally until you delete them or remove the app's data. Isolated repository working copies created for a space or task are automatically garbage-collected when that unit ends.</p>
-      <p>Deleting data through the app removes it from the active database and files, but, like any deletion, the underlying disk blocks may remain recoverable until overwritten by your operating system. Diagnostic data sent to Sentry is retained according to Sentry's retention settings and deleted thereafter.</p>
+      <p>Because your app data lives on your own server, <strong>you control its retention</strong>. Spaces, run logs, transcripts, memory, code indexes and other data persist there until you delete them or remove the app's data. Isolated repository working copies created for a space or task are automatically garbage-collected when that unit ends.</p>
+      <p>Deleting data through the app removes it from the active database and files, but underlying disk blocks may remain recoverable until overwritten by your operating system. Diagnostic data sent to Sentry is retained according to Sentry's retention settings and deleted thereafter. Website analytics has separate retention governed by the Umami installation; contact us to ask about deletion.</p>
     </section>
 
     <section id="choices">

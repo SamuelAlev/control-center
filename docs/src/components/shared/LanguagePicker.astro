@@ -1,0 +1,27 @@
+---
+import { localeChoiceParameter, localizePath, siteLocales, type SiteLocale } from '../../data/locales';
+interface Props { locale: SiteLocale; label: string; navigationLabel: string }
+const { locale, label, navigationLabel } = Astro.props;
+const current = siteLocales.find(language => language.id === locale)!;
+---
+<details class="landing-languages" data-landing-disclosure>
+  <summary aria-label={`${label}: ${current.name}`}><span lang={locale} dir="auto">{current.name}</span><svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m4 6 4 4 4-4" /></svg></summary>
+  <nav aria-label={`${label} (${navigationLabel})`}>
+    {siteLocales.map(language => <a href={`${localizePath(Astro.url.pathname, language.id)}?${localeChoiceParameter}=${language.id}`} data-site-locale={language.id} lang={language.id} hreflang={language.id} aria-current={language.id === locale ? 'page' : undefined}><span dir="auto">{language.name}</span></a>)}
+  </nav>
+</details>
+<style>
+  .landing-languages { position: relative; inline-size: 300px; max-inline-size: 100%; }
+  summary { display: flex; align-items: center; justify-content: space-between; gap: var(--cc-space-3); min-block-size: 44px; padding-inline: var(--cc-space-3); border: 1px solid var(--cc-border); background: var(--cc-panel); color: var(--cc-fg); font: 400 12px/1.5 var(--cc-font-sans); list-style: none; cursor: pointer; }
+  summary::-webkit-details-marker { display: none; }
+  summary svg { flex: none; }
+  details[open] summary { background: var(--cc-surface); }
+  nav { position: absolute; inset-block-end: calc(100% + 8px); inset-inline-end: 0; z-index: var(--z-menu, 30); inline-size: 300px; max-inline-size: calc(100vw - 32px); max-block-size: min(70dvh, 440px); overflow: auto; overscroll-behavior: contain; padding: var(--cc-space-2); border: 1px solid var(--cc-border); background: var(--cc-panel); box-shadow: var(--cc-shadow-soft); }
+  nav a { display: flex; align-items: center; min-block-size: 44px; padding: var(--cc-space-2); color: var(--cc-fg); font: 400 12px/1.5 var(--cc-font-sans); text-decoration: none; }
+  nav a:hover, nav a[aria-current] { background: var(--cc-surface); }
+  nav a[aria-current] { font-weight: 600; }
+  summary:focus-visible, nav a:focus-visible { outline: 2px solid var(--cc-accent); outline-offset: -2px; }
+</style>
+<script>
+  import '../../scripts/landing-disclosures';
+</script>

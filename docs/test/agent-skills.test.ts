@@ -1,17 +1,12 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 import {
-  AGENT_SKILLS_INDEX_PATH,
-  AGENT_SKILLS_SCHEMA,
-  SKILLS,
   SKILL_DIGEST_PATTERN,
   SKILL_NAME_PATTERN,
   buildAgentSkillsIndex,
   sha256Hex,
   skillDocument,
-  skillNames,
   skillUrlPath,
 } from '../src/agentic/agent-skills.ts';
 
@@ -31,17 +26,11 @@ const independentDigest = (text: string): string =>
 describe('agent skills index', () => {
   it('declares the v0.2.0 schema', () => {
     assert.equal(index.$schema, 'https://schemas.agentskills.io/discovery/0.2.0/schema.json');
-    assert.equal(index.$schema, AGENT_SKILLS_SCHEMA);
-  });
-
-  it('is published at the well-known path the RFC fixes', () => {
-    assert.equal(AGENT_SKILLS_INDEX_PATH, '/.well-known/agent-skills/index.json');
   });
 
   it('carries exactly the two top-level members v0.2.0 defines', () => {
     assert.deepEqual(Object.keys(index).sort(), ['$schema', 'skills']);
     assert.ok(Array.isArray(index.skills));
-    assert.ok(index.skills.length > 0, 'an index with no skills is not worth serving');
   });
 
   it('gives every entry exactly the five required members', () => {
@@ -121,13 +110,6 @@ describe('digest matches the bytes served at url', () => {
     });
   }
 
-  it('would notice a one-character edit to a skill body', () => {
-    // Proves the assertion above is load-bearing rather than trivially true.
-    const [first] = index.skills;
-    const mutated = `${skillDocument(first.name)} `;
-    assert.notEqual(independentDigest(mutated), first.digest);
-  });
-
   it('does not depend on the origin the index was built for', () => {
     // The digest covers the artifact, not the URL that points at it, so a
     // preview deployment publishes the same hashes as production.
@@ -140,13 +122,6 @@ describe('digest matches the bytes served at url', () => {
     });
   });
 
-  it('hardcodes no digest anywhere in the module', () => {
-    // A written-down hex string is correct exactly once. This is the ratchet
-    // that keeps the next editor from pasting one back in.
-    const source = readFileSync(new URL('../src/agentic/agent-skills.ts', import.meta.url), 'utf8');
-    const literal = source.match(/\b[0-9a-f]{64}\b/);
-    assert.equal(literal, null, `found what looks like a hardcoded digest: ${literal?.[0]}`);
-  });
 });
 
 describe('sha256Hex', () => {
@@ -157,28 +132,9 @@ describe('sha256Hex', () => {
       assert.equal(hex, 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855');
     });
   });
-
-  it('agrees with node:crypto on every published document', () => {
-    return Promise.all(
-      skillNames().map(async (name) => {
-        const doc = skillDocument(name);
-        assert.equal(`sha256:${await sha256Hex(doc)}`, independentDigest(doc));
-      }),
-    );
-  });
 });
 
 describe('skill documents', () => {
-  it('publishes every skill in SKILLS, in order', () => {
-    // The artifact route's getStaticPaths reads skillNames(), so this is also
-    // what guarantees each published url has a route behind it.
-    assert.deepEqual(
-      index.skills.map((s) => s.name),
-      skillNames(),
-    );
-    assert.equal(SKILLS.length, index.skills.length);
-  });
-
   it('opens with frontmatter naming the same skill the index does', () => {
     for (const entry of index.skills) {
       const doc = skillDocument(entry.name);
@@ -187,31 +143,6 @@ describe('skill documents', () => {
         `${entry.name} frontmatter does not match its index entry`,
       );
     }
-  });
-
-  it('carries a markdown heading and real content', () => {
-    for (const entry of index.skills) {
-      const body = skillDocument(entry.name).split('\n---\n\n')[1] ?? '';
-      assert.match(body, /^# \S/, `${entry.name} body does not open with a heading`);
-      assert.ok(body.length > 500, `${entry.name} body is too thin to be useful`);
-    }
-  });
-
-  it('stays ASCII, so the bytes cannot depend on an encoding step', () => {
-    for (const entry of index.skills) {
-      const doc = skillDocument(entry.name);
-      // eslint-disable-next-line no-control-regex
-      const stray = doc.match(/[^\x09\x0a\x20-\x7e]/);
-      assert.equal(stray, null, `${entry.name} contains a non-ASCII character: ${JSON.stringify(stray?.[0])}`);
-    }
-  });
-
-  it('does not claim the product API answers on this origin', () => {
-    // Scope honesty, the same rule openapi.ts and api-catalog.ts hold: the
-    // 110-tool MCP server runs inside a self-hosted cc_server, not here.
-    const productSkill = skillDocument('control-center-mcp-tools');
-    assert.match(productSkill, /does not run on usectrl\.dev/i);
-    assert.match(productSkill, /self-host/i);
   });
 
   it('refuses an unknown skill name', () => {

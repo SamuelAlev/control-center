@@ -26,17 +26,17 @@ A workspace's rows live in that workspace's own SQLite file, at `<dataDir>/<work
 | Members, invites, per-repo grants                   | Workspace-scoped                             |
 | Code graph symbols and edges                        | Scoped by `repoId` within the workspace file |
 
-Most of these rows still carry a `workspaceId` column, but that column is no longer what keeps workspaces apart — see the isolation invariant below.
+Most of these rows carry a `workspaceId` column; separate database files enforce isolation. See the isolation invariant below.
 
 ## Repos are workspace-scoped; identity across workspaces is by path
 
-A repo row lives in its workspace's own database file — the file _is_ the scope, so the table has no `workspaceId` column and no join table. The old server-global `repos` table and its `workspace_repos` many-to-many collapsed into one table when the database was split, because within a single workspace a repo is linked exactly zero or one times and the join row carried no information.
+A repo row lives in its workspace's own database file — the file _is_ the scope, so the table has no `workspaceId` column and no join table.
 
-There is therefore no "link an existing global repo" step. You add a repo _into_ a workspace, at Settings → Workspace → Repositories. Registering the same checkout in two workspaces creates two independent rows with two ids; repo identity _across_ workspaces is by filesystem path (or GitHub owner/name), never by id.
+You add a repo into a workspace at Settings → Workspace → Repositories. Registering the same checkout in two workspaces creates two independent rows with two ids; repo identity _across_ workspaces is by filesystem path (or GitHub owner/name), never by id.
 
 Registration is strict: the path must be inside a git work tree, it must have an `origin` remote and that remote must point at a supported forge (github.com, gitlab.com or bitbucket.org). The forge is read from the remote and stored on the repo, so one workspace can hold repos from all three. Anything else is rejected. The folder browser you pick from lists the **server host's** filesystem, confined to the server's `--repo-roots` allow-list (which defaults to the server user's home directory).
 
-Removing a repository from a workspace deletes the row outright — there is no shared global repo left to unlink from — and cascades its code symbols, edges, files, index checkpoints and per-member grants. The checkout on disk is untouched.
+Removing a repository from a workspace deletes the row outright and cascades its code symbols, edges, files, index checkpoints and per-member grants. The checkout on disk is untouched.
 
 The code graph lives in the same file, keyed by `repoId`, because different workspaces may have the same repository on different branches with different code.
 

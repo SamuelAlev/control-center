@@ -21,3 +21,6 @@ pnpm-debug.log*
 .DS_Store
 
 .wrangler
+
+# Blender backups (the packed source .blend is versioned).
+/art/alpine/*.blend1

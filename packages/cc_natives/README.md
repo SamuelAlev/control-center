@@ -1,179 +1,29 @@
 # cc_natives
 
-The Dart FFI surface for Control Center's **runtime-loaded native libraries**.
-This package owns only the Dart side — bindings, loaders and path-resolution
-policy. The shared libraries are produced by `scripts/natives/*.sh` and loaded at
-runtime via `dart:ffi`.
+Dart FFI bindings, loaders and path resolution for Control Center's runtime-loaded libraries. Build scripts supply the dylibs; this package does not compile them during `flutter build`. **Missing required natives are broken installs, not a degraded runtime mode:** loaders throw, the server's boot preflight fails and packaging refuses an incomplete artifact. The only platform exception is rift on Windows, where plain `git worktree` is the intended backend. On other platforms rift's CoW provision requires the data dir and source repo on the same CoW volume.
 
-**Every native is REQUIRED. There is no degraded mode.** A missing dylib is a
-broken install, never a runtime condition: loaders throw, `cc_server` refuses to
-boot, the build scripts abort and the packaging scripts refuse to produce an
-artifact. A "graceful" fallback here would hide a broken native behind a slower
-working path indefinitely — search that finds less, worktrees that are no longer
-copy-on-write, a code graph missing a language — and the only symptom is that
-things quietly got worse.
+The required set is defined in `scripts/lib/natives.sh`: `rift_ffi` (CoW worktrees), `fff_c` (file search), `tree-sitter` and language grammars (indexing), `cc_watcher` (recursive watch), `ccpty` (terminal), `aec_ffi` (echo cancellation), `lame_ffi` (MP3), `cc_inference` (embeddings/speech/diarization) and `cc_saml` (SAML verification). `test/tooling/native_matrix_test.dart` checks that matrix against server preflight; grammar IDs must also match `lib/src/code_index/code_languages.dart`. `NativeLibraryUnavailable` marks missing libraries; rift uses `RiftException.isUnavailable` instead. A missing **model**, unlike a missing native, can leave embedding search FTS-only until the model downloads. See [ARCH.md](../../ARCH.md) for indexing and isolation invariants.
 
-## The natives
+Rift writes a persistent `.rift` marker into each managed source repo. All copies
+must share `<dataDir>/rift.sqlite` (`CcPaths.riftRegistryPath()`); a second
+registry cannot recognize that marker. After a data-dir reset, repair a stale
+marker via `RiftClient.clearMarker` and re-initialize through
+`RiftRepoIsolationAdapter`, rather than leaving the repo unprovisionable.
 
-| Library          | Base name                               | Purpose                                                                           | Missing ⇒                             |
-| ---------------- | --------------------------------------- | --------------------------------------------------------------------------------- | ------------------------------------- |
-| **rift**         | `rift_ffi`                              | Copy-on-write git worktrees (APFS clonefile / reflink)                            | `RiftException(code: 'unavailable')`¹ |
-| **fff**          | `fff_c`                                 | Fast file search with frecency ranking                                            | `FffUnavailable`                      |
-| **tree-sitter**  | `tree-sitter` + `tree-sitter-<lang>`    | Code indexing / AST extraction                                                    | `TreeSitterUnavailable`               |
-| **cc_watcher**   | `cc_watcher`                            | Recursive file watching (FSEvents / ReadDirectoryChangesW / ignore-aware inotify) | `WatcherUnavailable`                  |
-| **pty**          | `ccpty`                                 | Pseudo-terminal for the Flutter-free agent executor                               | `PtyUnavailable`                      |
-| **aec**          | `aec_ffi`                               | Acoustic echo cancellation (WebRTC AEC3) for meetings                             | `AecUnavailable`                      |
-| **lame**         | `lame_ffi`                              | MP3 encoding for the generative soundscape                                        | `LameUnavailable`                     |
-| **cc_inference** | `cc_inference`                          | Embeddings (semantic search) + transcription, diarization, VAD, dictation         | boot refused                          |
-| **cc_saml**      | `cc_saml`                               | SAML SSO: XML-DSig, canonicalization, profile validation                          | boot refused                          |
+## Build and load
 
-¹ rift is the **one platform exemption**: Windows has no MSVC copy-on-write
-backend, so it is deliberately not built there and plain `git worktree` is the
-_backend_ rather than a degradation. Everywhere else a missing `librift_ffi` is a
-hard failure. See `RiftRepoIsolationAdapter.missingRiftIsExpected`.
-
-All the `*Unavailable` types implement the
-[`NativeLibraryUnavailable`](lib/src/native_unavailable.dart) marker; rift signals
-the same condition through `RiftException.isUnavailable`, its FFI surface being
-error-code based. `tryOpenFirst` returning `null` is a **probe result**, not a
-licence to degrade — every caller converts it into one of those throws.
-
-### The one fallback that legitimately remains
-
-It is **environment**-driven, never build-driven, so it cannot mask a broken
-install: an on-device embedding **model** that has not been downloaded yet
-(`EmbeddingService.isReady`) → FTS-only search. Models are the only artifacts the
-server fetches at runtime; the dylibs all ship in the bundle.
-
-A second one used to sit here — a filesystem without copy-on-write support
-(`RiftException.isCowUnavailable`) degrading to plain `git worktree` — and it was
-removed. `git worktree add` writes the branch, a `.git/worktrees/<name>`
-registration and FETCH_HEAD into the **source repo**, i.e. the operator's own
-checkout, and a linked worktree shares that repo's ref namespace so teardown
-rescue labels land there too. "Correct and permanent" in the environment sense,
-but it silently filled real repos with `conv/*` and `rescue/*` branches. CoW is
-now the sole backend wherever rift ships, and a `cow_unavailable` provision
-fails with the fix named (put the data dir on the same CoW volume as the repo).
-
-### One rift registry per host (the marker rule)
-
-rift records a managed source by writing a `.rift` marker **into that source
-repo**, holding the id of its entry in the registry SQLite file. The marker
-therefore lives outside our data dir and never expires, which makes two rules
-non-negotiable:
-
-- **All managed copies share ONE registry file** (`<dataDir>/rift.sqlite`,
-  `CcPaths.riftRegistryPath()`). A second registry looking at the same repo sees
-  a marker it does not know (`marker_mismatch` on `init`, `unknown_marker` on
-  `create`) and every provision for that repo fails. Conversation worktrees and
-  PR worktrees used to keep separate registries, so whichever surface reached a
-  repo first silently locked the other out of CoW.
-- **An unrecognised marker is repaired, not failed on.**
-  `RiftException.isStaleMarker` (also raised when a data-dir reset wipes the
-  registry but leaves the marker) is healed by `RiftClient.clearMarker` + a
-  re-`init` in `RiftRepoIsolationAdapter`. Without the repair that repo would be
-  locked out of CoW permanently, since nothing ever clears the marker — and
-  since CoW is the only backend, permanently unprovisionable.
-
-### Where the matrix is written down
-
-The required set lives in **one** file, `scripts/lib/natives.sh`. Packaging
-(`verify_natives.sh`, `cc_server_package.sh`) reads it; the boot preflight in
-`packages/cc_server_core/lib/src/runtime/server_native_preflight.dart` is a
-probe-closure table that cannot be generated from the shell, so
-`test/tooling/native_matrix_test.dart` pins the two together. Grammar rows
-must also match `kLanguageByExtension` in
-`packages/cc_natives/lib/src/code_index/code_languages.dart` (20 language ids).
-
-Three in-repo Rust crates live here: `native/watcher/` (`cc_watcher`, over
-`notify`), `native/inference/` (`cc_inference`, sherpa-onnx + ONNX Runtime)
-and `native/saml/` (`cc_saml`). `cc_watcher`'s `package:watcher` alternative
-was deliberately deleted rather than kept as a fallback: it scans the whole
-tree per checkout and cannot skip `node_modules`, which froze the server
-isolate for a measured 65 seconds on a real worktree fleet. See
-[`native/watcher/README.md`](native/watcher/README.md).
-
-## How loading works
-
-The single source of truth for "where might this dylib live" is
-[`lib/src/native_library.dart`](lib/src/native_library.dart):
-
-- `nativeLibraryCandidates(baseName, {appSupportRoot, envVar})` — the full
-  ordered list: an env override → the app-support install → the bundled
-  release paths.
-- `bundledLibraryCandidates(baseName)` — the packaged-release locations
-  (`@executable_path/../Frameworks` on macOS, `<exeDir>/lib` on Linux, beside
-  the exe on Windows).
-- `tryOpenFirst(candidates)` — opens the first that loads, else `null`.
-
-There are exactly **two locations a given dylib lives**, by context:
-
-- **Dev:** the app-support data dir next to `global.db`
-  (`~/Library/Application Support/com.alev.control-center/` on macOS), where
-  `scripts/natives/build_*.sh` installs it. This is the _only_ dev location —
-  there is no repo-local `macos/Frameworks/` copy. The historical
-  `control_center.db` name is no longer written.
-- **Release:** inside the signed app bundle's `Contents/Frameworks/` (macOS),
-  `<bundle>/lib/` (Linux), or beside the exe (Windows). The release packaging
-  (`scripts/release/macos_package.sh` et al.) copies the staged dylibs there
-  and code-signs them.
-
-## Leaf package — host injects its concerns
-
-`cc_natives` has **no `package:control_center` dependency**. The host app
-injects what the package can't know:
-
-- `NativeLog` — a logging sink (`onLog`), defaulting to silent.
-- `NativeDirResolver` — resolves the app-support / grammars directory.
-
-See `FffFileSearch` and `GrammarManager` constructors. This boundary is enforced
-by `test/core/architecture_constraints_test.dart` in the app.
-
-## Building the dylibs
-
-```bash
-scripts/natives/build_natives.sh            # all of them → <repo>/build/natives + app-support
-scripts/natives/build_rift.sh               # one at a time
-scripts/natives/build_watcher.sh            # the in-repo Rust watcher crate
-scripts/natives/build_inference.sh          # the in-repo Rust inference crate
-scripts/natives/build_saml.sh               # the in-repo Rust SAML crate
+```sh
+# from the repo root; build all required libraries before a CLI bundle
+scripts/natives/build_natives.sh
+# or targeted builds: build_rift.sh, build_watcher.sh, build_inference.sh,
+# build_saml.sh (each under scripts/natives/)
+cd apps/cc_server && fvm dart build cli
 ```
 
-`build_inference.sh` pre-fetches the prebuilt sherpa-onnx **static** archive,
-verifies it against the sha256 pinned in `scripts/lib/native_pins.env` and hands
-it to cargo via `SHERPA_ONNX_LIB_DIR`. Left to itself the `sherpa-onnx-sys` build
-script downloads that archive unverified at build time; since it is linked into a
-shipped artifact, we pin it instead. The script then asserts the built dylib
-exports the `cc_*` ABI **and nothing else** — an escaped `OrtGetApiBase` or
-`SherpaOnnx*` symbol could interpose on another ONNX Runtime in the same process,
-which is the hazard this native exists to remove.
+The build scripts stage in `<repo>/build/natives/` and install dev copies in app support next to `global.db`. `hook/build.dart` bundles staged assets into a native CLI bundle. Release packaging places them under `Contents/Frameworks/` on macOS, `<bundle>/lib/` on Linux or beside the executable on Windows; Windows stages them with `scripts/release/windows_natives.sh`. For a different staging directory, put its path in repo-root `.cc_natives_prebuilt_dir`: the hooks runner does not forward the calling process's environment. An empty repo-root `.cc_natives_allow_missing` downgrades the missing-staged-assets build-hook error to a warning **only for compile-only workflows that never run the result**. No such escape applies to a running server.
 
-All of these **fail hard**: the aggregator aborts on the first failure instead of
-warning past it, because there is no degraded mode left for a warning to
-describe. On Windows every native comes from
-`scripts/release/windows_natives.sh` instead (rift excepted).
+`lib/src/native_library.dart` owns candidate ordering (explicit environment override, app-support dev install, packaged release paths) and `tryOpenFirst` returns a probe result; callers must turn a missing required library into an error. `cc_natives` does not import `control_center`: hosts inject `NativeLog` and `NativeDirResolver` for logging and app-support/grammar paths.
 
-A fresh clone must run both scripts before `dart build cli` — the build hook fails
-without staged natives rather than producing a server that cannot boot. For
-compile-only workflows that never run the binary, create an empty
-`.cc_natives_allow_missing` at the repo root to downgrade that to a warning. It is
-a FILE rather than an env var because the hooks runner spawns the hook as its own
-process and does not forward the caller's environment (the same reason the old
-`CC_NATIVES_PREBUILT_DIR` override never worked; `.cc_natives_prebuilt_dir`, whose
-contents are a staging path, replaces it).
+`build_inference.sh` verifies the pinned sherpa-onnx static archive SHA-256 from `scripts/lib/native_pins.env` before cargo, then checks that the built library exposes only `cc_*` ABI symbols. See [inference provenance](native/inference/PROVENANCE.md) for bundled ONNX Runtime licenses, version updates and bindings. Upstream native versions are pinned in the scripts and `renovate.json`; the in-repo Rust crates are [watcher](native/watcher/README.md), [inference](native/inference/README.md) and [SAML](native/saml/README.md). The vendored PTY source and license are recorded in [PTY provenance](native/pty/PROVENANCE.md).
 
-Upstream sources are fetched at pinned SHAs (Renovate-managed); see the scripts
-and `renovate.json`. `cc_watcher` has no upstream — its source is in
-`native/watcher/` and its `notify` dependency is tracked by Renovate's cargo
-manager via `native/watcher/Cargo.toml`.
-
-## NOT a Flutter plugin
-
-This is intentionally a plain Dart package, **not** an `ffiPlugin`. Converting it
-would move native compilation into `flutter build`, make cargo/meson/ninja/a
-C++ toolchain mandatory for every contributor
-and every build, collapse tree-sitter to a single build-time dylib (instead of
-the per-language grammar libs the indexer resolves at boot) and destroy the
-fast install-to-app-support
-dev loop. The `architecture_constraints_test.dart` guard fails if anyone adds an
-`ffiPlugin` declaration here.
+This is a plain Dart package, **not** a Flutter `ffiPlugin`: release assets and language-specific grammar libraries are staged outside Flutter builds. `test/core/architecture_constraints_test.dart` guards that boundary.

@@ -1,0 +1,21 @@
+---
+import ProductMedia from './ProductMedia.astro';
+import type { LandingCopy } from '../../data/landing';
+interface Props { copy: LandingCopy }
+const { copy: t } = Astro.props;
+---
+<section class="landing-features landing-section" id="features" aria-labelledby="features-title">
+  <div class="landing-wrap">
+    <header class="section-intro"><h2 id="features-title">{t.grid.title}</h2><p>{t.grid.description}</p></header>
+    <div class="landing-feature-grid">
+      {t.grid.items.map((item, i) => <article id={item.kind === 'meetings' ? 'day' : undefined} class:list={['landing-feature', `feature-${item.kind}`]} data-enter style={`--enter-order:${i % 3}`}>
+        <div class="feature-media"><ProductMedia kind={`feature-${item.kind}`} description={t.tour.stops.find(stop => stop.kind === item.kind)!.alt} label={t.tour.imageLanguage} compact /></div>
+        <div class="feature-copy"><h3>{item.title}</h3><p>{item.description}</p><a class="landing-text-link" href={item.href}>{item.link}<span aria-hidden="true">↗</span></a></div>
+      </article>)}
+      {t.grid.supporting.map(item => <article class="landing-feature feature-supporting">
+        <div class="feature-copy"><h3><a href={item.href}>{item.title}<span aria-hidden="true">↗</span></a></h3><p>{item.description}</p></div>
+      </article>)}
+    </div>
+    <a class="feature-docs-link landing-text-link" href="/manual/">{t.grid.more}<span aria-hidden="true">↗</span></a>
+  </div>
+</section>

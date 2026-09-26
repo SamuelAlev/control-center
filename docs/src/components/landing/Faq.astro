@@ -1,49 +1,15 @@
 ---
-/**
- * Faq — question-shaped landing content for featured snippets and AI
- * Overviews. The copy lives in src/data/faq.ts (also feeding llms-full.txt);
- * this component renders it and attaches FAQPage JSON-LD. Google no longer
- * shows FAQ rich results for ordinary sites, but the machine-readable pairs
- * cost nothing and other answer surfaces still read them.
- */
 import StructuredData from '../shared/StructuredData.astro';
-import { faqs } from '../../data/faq';
-
-const schema = {
-  '@context': 'https://schema.org',
-  '@type': 'FAQPage',
-  mainEntity: faqs.map((f) => ({
-    '@type': 'Question',
-    name: f.question,
-    acceptedAnswer: { '@type': 'Answer', text: f.answer },
-  })),
-};
+import type { LandingCopy } from '../../data/landing';
+import type { SiteLocale } from '../../data/locales';
+interface Props { copy: LandingCopy; locale: SiteLocale }
+const { copy: t, locale } = Astro.props;
+const schema = { '@context': 'https://schema.org', '@type': 'FAQPage', url: new URL(Astro.url.pathname, Astro.site).href, inLanguage: locale, mainEntity: t.faq.items.map(faq => ({ '@type': 'Question', name: faq.question, acceptedAnswer: { '@type': 'Answer', text: faq.answer } })) };
 ---
-
-<section id="faq" class="border-t border-border py-[clamp(56px,9vw,88px)]">
-  <div class="wrap">
-    <div class="reveal max-w-[62ch]">
-      <span class="eyebrow">Questions</span>
-      <h2 class="mt-4 text-[clamp(28px,4vw,48px)] font-semibold leading-[1.02] tracking-[-0.03em]">Asked, answered.</h2>
-      <p class="mt-[18px] max-w-[48ch] text-[clamp(16px,1.4vw,18px)] text-muted">The short versions; the manual has the long ones.</p>
-    </div>
-
-    <div class="mt-[clamp(28px,4vw,48px)] grid grid-cols-1 gap-x-[clamp(24px,4vw,64px)] gap-y-0 md:grid-cols-2">
-      {faqs.map((f) => (
-        <div class="reveal border-b border-border py-[clamp(18px,2.6vw,28px)]">
-          <h3 class="m-0 max-w-[34ch] text-[16.5px] font-semibold leading-[1.3] tracking-[-0.01em]">{f.question}</h3>
-          <p class="mb-0 mt-3 max-w-[52ch] text-[14.5px] leading-[1.65] text-muted">{f.answer}</p>
-          {f.links && (
-            <p class="mb-0 mt-3 flex flex-wrap gap-x-5 gap-y-1 font-mono text-[11.5px] uppercase tracking-[0.06em]">
-              {f.links.map((l) => (
-                <a class="text-muted no-underline underline-offset-4 hover:text-fg hover:underline" href={l.href}>{l.label} <span aria-hidden="true">→</span></a>
-              ))}
-            </p>
-          )}
-        </div>
-      ))}
-    </div>
+<section class="landing-faq landing-section" id="faq" aria-labelledby="faq-title">
+  <div class="landing-wrap">
+    <header class="section-intro"><h2 id="faq-title">{t.faq.title}</h2><p>{t.faq.description}</p></header>
+    <div class="faq-grid">{t.faq.items.map(faq => <article><h3>{faq.question}</h3><p>{faq.answer}</p>{faq.links?.map(link => <a class="landing-text-link" href={link.href}>{link.label}<span aria-hidden="true">↗</span></a>)}</article>)}</div>
   </div>
-
   <StructuredData schema={schema} />
 </section>

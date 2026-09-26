@@ -1,14 +1,51 @@
 ---
 /**
- * Starlight `ThemeSelect` override.
- *
- * Replaces Starlight's default <select> with the marketing site's shared
- * system / light / dark chooser, so the docs header matches the brand and
- * both surfaces share one control. It writes the same localStorage key
- * (`starlight-theme`) that Starlight's ThemeProvider reads before paint, so
- * no-flash theming keeps working. Dark tokens live in src/styles/starlight.css.
+ * Starlight `ThemeSelect` override. The documentation footer uses the shared
+ * system / light / dark chooser and the same no-flash theme preference as the
+ * landing page. Shared tokens live in src/styles/brand.css.
  */
 import ThemeToggle from '../shared/ThemeToggle.astro';
+import { landingCopy } from '../../data/landing';
+import { localeFromPath } from '../../data/locales';
+const labels = landingCopy[localeFromPath(Astro.url.pathname)].nav;
 ---
+<div class="cc-docs-theme">
+  <ThemeToggle labels={{ group: labels.appearance, auto: labels.system, light: labels.light, dark: labels.dark }} />
+</div>
 
-<ThemeToggle />
+<style>
+  .cc-docs-theme {
+    display: inline-flex;
+    flex: none;
+  }
+  .cc-docs-theme :global(.cc-theme-toggle) {
+    border-radius: 0;
+    background: var(--cc-surface);
+    border-color: var(--cc-border);
+    padding: var(--cc-space-1);
+    gap: var(--cc-space-1);
+  }
+  .cc-docs-theme :global(.cc-theme-toggle button) {
+    width: 44px;
+    height: 44px;
+    border-radius: 0;
+    color: var(--cc-muted);
+    transition: color var(--cc-motion-fast) var(--cc-ease),
+      background-color var(--cc-motion-fast) var(--cc-ease);
+  }
+  .cc-docs-theme :global(.cc-theme-toggle button:hover) {
+    color: var(--cc-fg);
+  }
+  .cc-docs-theme :global(.cc-theme-toggle button[aria-checked="true"]),
+  .cc-docs-theme :global(.cc-theme-toggle button[aria-checked="true"]:hover) {
+    background: var(--cc-fg);
+    color: var(--cc-bg);
+  }
+  .cc-docs-theme :global(.cc-theme-toggle button:focus-visible) {
+    outline: 2px solid var(--cc-accent-strong);
+    outline-offset: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cc-docs-theme :global(.cc-theme-toggle button) { transition: none; }
+  }
+</style>

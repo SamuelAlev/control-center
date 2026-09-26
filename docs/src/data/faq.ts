@@ -15,75 +15,57 @@ export interface FaqItem {
 
 export const faqs: FaqItem[] = [
   {
-    question: 'What is Control Center?',
+    question: 'Is Control Center only for AI agents?',
     answer:
-      'Control Center is a free and open-source developer operations deck: one native app where you dispatch AI coding agents across isolated Git worktrees, review and merge what they ship, and run the surrounding operation — tickets, pipelines, meetings, calendar, memory — side by side with them. It runs on macOS, Windows and Linux, in the browser and on your phone, all rendered from one server you own.',
-    links: [
-      { label: 'Read the manual', href: '/manual/' },
-      { label: 'What shipped lately', href: '/changelog' },
-    ],
+      'No. Control Center puts tickets, pull requests, conversations, meetings, calendar, pipelines, agents and a personal RSS reader in one workspace. Agents are one part of the desk, not a prerequisite for using the others.',
+    links: [{ label: 'Explore the features', href: '/#features' }],
   },
   {
-    question: 'How is Control Center different from running several Claude Code terminals?',
+    question: 'What is the difference between a ticket and a conversation?',
     answer:
-      'Terminals give you N agents and zero cross-agent visibility. Control Center gives each agent its own copy-on-write worktree, sandbox and budget, then adds everything the terminals cannot: a PR review cockpit with AI reviewers and merge actions, pipelines that trigger work on schedules or domain events, durable agent-to-agent messaging, long-term memory and a code graph every run starts from. You steer any run mid-flight, take it over, or hand it back.',
-    links: [
-      { label: 'How it works', href: '/manual/concepts/architecture/' },
-      { label: 'Run agents in parallel', href: '/manual/guides/parallel-agents/' },
-    ],
+      'A ticket records the work and its status; execution happens in a conversation. The conversation can provision an isolated copy-on-write worktree before an agent run. On Windows, provisioning uses a Git worktree.',
+    links: [{ label: 'Follow a sample workflow', href: '/#workflows' }],
   },
   {
-    question: 'What do Control Center agents run on?',
+    question: 'Where do agents run, and what does the server do?',
     answer:
-      'Two runners. The built-in pure-Dart runtime needs no external CLI and talks to Anthropic, OpenAI, Codex, Cursor, Kimi Code and any OpenAI- or Anthropic-compatible endpoint. The Claude Code adapter runs your existing Claude Code plan. Mix them in the same fleet and the same pipeline.',
-    links: [{ label: 'Agent runners and adapters', href: '/manual/guides/adapters/' }],
+      'The server owns the workspace database, credentials, APIs and agent execution; desktop and browser clients display and control that work. Optional fleet workers pull leased jobs and stream events, but do not hold the database, credentials or budgets.',
+    links: [{ label: 'Read the architecture guide', href: '/manual/concepts/architecture/' }],
   },
   {
-    question: 'Does my code or data leave my machine?',
+    question: 'How much control do I have over an agent run?',
     answer:
-      'No, unless you decide to run it that way. Control Center is local-first: state lives in SQLite files you own, meeting transcription and speaker diarization run on-device, and semantic-search embeddings are computed by an on-device model. Your code host and Linear are called only from your own server, over credentials stored on that server and attached to your user — never in a client keychain.',
-    links: [{ label: 'Security model', href: '/manual/concepts/sandbox-security/' }],
+      'Each conversation can use Propose only, Act with approval or Act freely. Permissions and a sandbox still bound allowed actions; approval requests without an approver are denied. Soft budget limits warn, hard limits pause, and runs keep a log.',
+    links: [{ label: 'Preview the controls', href: '/#boundaries' }],
   },
   {
-    question: 'Can an agent test in a real browser or run risky commands safely?',
+    question: 'Does an orchestrate plan hire agents automatically?',
     answer:
-      'Yes — that is what rigs are for. A rig is a disposable machine the agent drives in real time: a headless browser (Chromium, Firefox or WebKit), a Linux desktop, an Android emulator, an iOS Simulator, or the machine behind an enclosed terminal. Enclosed VMs have their own kernel, a throwaway disk and a network that reaches only the hosts you allow; Android and iOS use disposable emulator devices with the host’s network. You watch it live and can take the controls at any moment. Dev servers started inside are forwarded to localhost, to the agent’s browser and to dev domains like https://myapp.test.',
-    links: [
-      { label: 'Give an agent a machine', href: '/manual/guides/use-rigs/' },
-      { label: 'How enclosures work', href: '/manual/concepts/rigs/' },
-    ],
+      'No. Orchestrate can research and propose roles, child tickets and a plan, but hiring waits for approval. Plan Studio opens from the plan row in the originating conversation; a ticket assignment alone does not start a run.',
+    links: [{ label: 'Follow the sample workflow', href: '/#workflows' }],
   },
   {
-    question: 'Is Control Center free and open source?',
+    question: 'Can I run agents from the paired phone?',
     answer:
-      'Yes — MIT-licensed, source on GitHub, with signed builds for every platform. The desktop apps, the headless server and the phone companion are all free; you bring your own agent subscriptions or API keys, and the built-in runtime can use any provider you can reach.',
-    links: [{ label: 'Install it', href: '/#install' }],
+      'The paired phone is a thin client for the same server-backed workspace, not a second execution host. Desktop, browser and phone show the same operation; agents execute on the server or on optional leased fleet workers.',
+    links: [{ label: 'See the connected surfaces', href: '/#surfaces' }],
   },
   {
-    question: 'Which platforms does it run on?',
+    question: 'Which integrations can I use?',
     answer:
-      'Native desktop apps ship together for macOS (Apple Silicon, signed and notarized), Windows and Linux, with auto-updates. The same server also serves a web app at app.usectrl.dev and a phone companion at remote.usectrl.dev, so the operation follows you across screens without a rewrite.',
-    links: [{ label: 'Download', href: '/#install' }],
+      'Linear ticket sync is implemented; Jira and ClickUp do not have adapters. Connected Google Calendar events are read-only, with RSVP only when the calendar grants write permission. Slack threads can bridge into conversations, and connected code hosts supply pull requests and checks.',
+    links: [{ label: 'Read the manual', href: '/manual/' }],
   },
   {
-    question: 'Can my team use Control Center together?',
+    question: 'When do meeting notes and action items appear?',
     answer:
-      'Yes. Humans and agents are co-equal members with workspace roles — owner, admin, member, viewer or guest — plus per-repo grants, invites and live revocation. Presence shows who is working on what (including watching an agent work), and every space carries an autonomy dial: propose-only, act-with-approval or act-freely. With one human, the multiplayer chrome simply idles.',
-    links: [{ label: 'Multiplayer concepts', href: '/manual/concepts/multiplayer/' }],
+      'The live transcript can separate speakers while recording. After you stop, the summarizer processes the meeting and stores its notes, decisions and action items; recording and processing are distinct states.',
+    links: [{ label: 'See the day in context', href: '/#day' }],
   },
   {
-    question: 'Which code hosts does Control Center work with?',
+    question: 'Is the public demo a live workspace?',
     answer:
-      'GitHub, GitLab and Bitbucket Cloud — and one workspace can hold repos from all three at once. Each repo is talked to through its own forge with its own credential, and the inbox merges pull requests from every one of them into a single stream. The full loop works everywhere: list and open PRs, read diffs, comment inline and at top level, review, merge, close and create. Forges genuinely differ beyond that (stacked PRs and synced viewed-state are GitHub-only, for instance), so the app hides what a host cannot do rather than showing a control that silently fails.',
-    links: [
-      { label: 'Connect a code host', href: '/manual/guides/connect-forges/' },
-      { label: 'GitHub integration', href: '/manual/guides/github-integration/' },
-    ],
-  },
-  {
-    question: 'How does Control Center work with Linear?',
-    answer:
-      'Linear syncs tickets bidirectionally with projects, statuses, labels and assignees; Jira and ClickUp providers are scaffolded. Tickets themselves are vendor-neutral, so the same board works whichever tracker you sync.',
-    links: [{ label: 'Linear integration', href: '/manual/guides/linear-integration/' }],
+      'The public demo is a separate, locked-down build with invented data and scripted agents. Its records and runs are examples, not your own work.',
+    links: [{ label: 'Explore the live demo', href: '/demo' }],
   },
 ];

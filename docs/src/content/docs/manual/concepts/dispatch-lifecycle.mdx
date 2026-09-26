@@ -104,7 +104,7 @@ There is deliberately **no turn ceiling anywhere**. A hard iteration count kills
 - **the silence watchdog fires.** No output for the threshold and the session is terminated with a `silentRun` failure. The default is 15 minutes, dropping to 10 in the read-mostly modes (review and plan); an agent may override it between 1 and 240 minutes. The watchdog is armed when a child process reports its PID, so it covers the Claude Code CLI — **not** the built-in harness, which spawns nothing;
 - **a cost cap bites** — but only for autonomous commands.
 
-The doom-loop guard is not a terminator: three identical tool calls in a row and the loop _steers_ the agent to change approach, which is the bound that replaced a turn ceiling.
+The doom-loop guard is not a terminator: three identical tool calls in a row and the loop _steers_ the agent to change approach.
 
 :::note[A normal turn has no cost cap]
 The in-session cost guard is wired only for `/goal` and `/loop`; every other run passes no budget at all. For those commands, one unattended segment may burn 500 cents ($5.00) by default, with a soft steer at 80% asking the agent to wrap up cleanly before the hard stop and a durable goal budget of 5000 cents ($50.00) across segments. An explicit `/goal --budget` is never overshot by a whole segment.

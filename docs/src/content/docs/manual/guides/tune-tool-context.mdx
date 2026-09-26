@@ -57,7 +57,7 @@ If the right tool exists but ranks low, that is what the `limit` argument is for
 
 If two tools have descriptions that would read the same to someone who does not already know the difference, the model is guessing. Merge them into one tool with a discriminating argument.
 
-That is what `ticket_relation` and `ticket_pr_link` are: each replaced a `link_` / `unlink_` pair that took identical arguments and differed only in direction. A choice made *inside* one call, with the full context of the request, is more reliable than a choice made between two look-alike descriptions.
+`ticket_relation` and `ticket_pr_link` follow this pattern: each handles linking and unlinking through a discriminating argument. A choice made *inside* one call, with the full context of the request, is more reliable than a choice made between two look-alike descriptions.
 
 Keep tools separate when they need different approval gating, different auditing or different rendering — those are reasons a merge would cost you something real.
 

@@ -3,8 +3,15 @@ import MarketingNav from '../components/shared/MarketingNav.astro';
 import Footer from '../components/shared/Footer.astro';
 import StructuredData from '../components/shared/StructuredData.astro';
 import WebMcpScript from '../components/shared/WebMcpScript.astro';
+import AcquisitionScript from '../components/shared/AcquisitionScript.astro';
+import SiteLocaleScript from '../components/shared/SiteLocaleScript.astro';
 import { ISSUES_URL, REPO_URL } from '../data/site';
 import '../styles/global.css';
+import '../styles/landing.css';
+import LandingNav from '../components/landing/LandingNav.astro';
+import LandingFooter from '../components/landing/LandingFooter.astro';
+import { landingCopy } from '../data/landing';
+import { siteLanguageDefaults, siteLocales, siteRtl, type SiteLocale } from '../data/locales';
 
 interface Props {
   title: string;
@@ -17,6 +24,7 @@ interface Props {
   softwareApplication?: boolean;
   /** Leaf name for a 2-level BreadcrumbList (Home → name), e.g. "Privacy policy". */
   breadcrumbName?: string;
+  landingLocale?: SiteLocale;
 }
 
 const {
@@ -27,7 +35,11 @@ const {
   ogImageAlt = 'Control Center: the developer operations deck.',
   softwareApplication = false,
   breadcrumbName,
+  landingLocale,
 } = Astro.props;
+const isLanding = landingLocale !== undefined;
+const locale = landingLocale ?? 'en-US';
+const copy = landingCopy[locale];
 
 // Absolute URLs for canonical + social cards. Astro.site comes from
 // astro.config.mjs (`site`).
@@ -67,6 +79,7 @@ const schemas: Record<string, unknown>[] = [
     name: SITE_NAME,
     alternateName: ['ctrl', 'usectrl.dev'],
     url: siteHref,
+    inLanguage: siteLocales.map(language => language.id),
   },
 ];
 
@@ -77,7 +90,8 @@ if (softwareApplication) {
     name: SITE_NAME,
     applicationCategory: 'DeveloperApplication',
     operatingSystem: 'macOS, Windows, Linux',
-    url: siteHref,
+    url: canonical,
+    inLanguage: locale,
     description,
     image: ogImageUrl,
     softwareHelp: new URL('/manual/', Astro.site).href,
@@ -100,7 +114,7 @@ if (breadcrumbName) {
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang={locale} dir={siteRtl.has(locale) ? 'rtl' : undefined} data-landing={isLanding ? '' : undefined}>
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -108,6 +122,11 @@ if (breadcrumbName) {
   <title>{title}</title>
   <meta name="description" content={description} />
   <link rel="canonical" href={canonical} />
+  {isLanding && siteLocales.map(language => <>
+    <link rel="alternate" hreflang={language.id} href={new URL(language.path, Astro.site).href} />
+    {siteLanguageDefaults.has(language.id) && <link rel="alternate" hreflang={language.id.split('-')[0]} href={new URL(language.path, Astro.site).href} />}
+  </>)}
+  {isLanding && <link rel="alternate" hreflang="x-default" href={siteHref} />}
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link rel="sitemap" href="/sitemap-index.xml" />
   <link
@@ -117,12 +136,16 @@ if (breadcrumbName) {
     href="/rss.xml"
   />
 
-  {/* Theme color tracks the active surface (near-white / warm near-black). */}
+  {/* Theme color tracks the operating-system surface without imposing a landing-only palette. */}
   <meta name="theme-color" content="#fcfbf9" media="(prefers-color-scheme: light)" />
   <meta name="theme-color" content="#171614" media="(prefers-color-scheme: dark)" />
 
   {/* Open Graph */}
   <meta property="og:type" content="website" />
+  <meta property="og:locale" content={locale.replace('-', '_')} />
+  {isLanding && siteLocales.filter(language => language.id !== locale).map(language =>
+    <meta property="og:locale:alternate" content={language.id.replace('-', '_')} />
+  )}
   <meta property="og:site_name" content="Control Center" />
   <meta property="og:title" content={title} />
   <meta property="og:description" content={description} />
@@ -145,6 +168,8 @@ if (breadcrumbName) {
   {/* Offer this site's content as WebMCP tools to a browser-resident agent.
       Silent no-op where the API is absent (every browser by default). */}
   <WebMcpScript />
+  <AcquisitionScript />
+  {isLanding && <SiteLocaleScript />}
 
   {/* Preload the self-hosted fonts to avoid a flash of fallback text. */}
   <link rel="preload" href="/fonts/Manrope-Variable.woff2" as="font" type="font/woff2" crossorigin />
@@ -175,9 +200,9 @@ if (breadcrumbName) {
   {/* Bypass block (WCAG 2.4.1): the nav is ~10 links deep and it repeats on
       every page. Every marketing page opens its <main> with id="top", which
       is also what the in-page "back to top" anchors target. */}
-  <a class="skip-link" href="#top">Skip to content</a>
-  <MarketingNav currentPath={Astro.url.pathname} />
+  <a class="skip-link" href="#top">{isLanding ? copy.nav.skip : 'Skip to content'}</a>
+  {isLanding ? <LandingNav copy={copy} locale={locale} /> : <MarketingNav currentPath={Astro.url.pathname} />}
   <slot />
-  <Footer />
+  {isLanding ? <LandingFooter copy={copy} locale={locale} /> : <Footer />}
 </body>
 </html>

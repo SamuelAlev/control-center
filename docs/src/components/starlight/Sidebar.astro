@@ -1,0 +1,30 @@
+---
+import config from 'virtual:starlight/user-config';
+import Search from 'virtual:starlight/components/Search';
+import { Icon } from '@astrojs/starlight/components';
+import SidebarPersister from '@astrojs/starlight/components/SidebarPersister.astro';
+import SidebarSublist from '@astrojs/starlight/components/SidebarSublist.astro';
+import { REPO_URL } from '../../data/site';
+
+const { sidebar } = Astro.locals.starlightRoute;
+const shouldRenderSearch = config.pagefind || config.components.Search !== '@astrojs/starlight/components/Search.astro';
+---
+
+<div class="docs-sidebar-tools">
+  {shouldRenderSearch && <Search />}
+  <a class="docs-source-code" href={REPO_URL} target="_blank" rel="noopener noreferrer">
+    <Icon name="github" size="1.25rem" />
+    <span>{Astro.locals.t('docs.sourceCode')}</span>
+    <span aria-hidden="true">↗</span>
+  </a>
+</div>
+<SidebarPersister>
+  <SidebarSublist sublist={sidebar} />
+</SidebarPersister>
+
+<style>
+  .docs-sidebar-tools { display: grid; gap: var(--cc-space-3); padding-block-end: var(--cc-space-6); border-block-end: 1px solid var(--cc-border); }
+  .docs-sidebar-tools :global(site-search button[data-open-modal]) { inline-size: 100%; max-inline-size: none; gap: var(--cc-space-2); font-size: 13px; }
+  .docs-sidebar-tools :global(site-search button[data-open-modal] > span) { display: block; }
+  .docs-sidebar-tools :global(site-search button[data-open-modal] > kbd) { display: flex; margin-inline-start: auto; }
+</style>
