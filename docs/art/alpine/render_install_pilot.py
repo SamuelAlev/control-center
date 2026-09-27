@@ -303,18 +303,22 @@ def render_pilot(name, basename):
         (line_material, brake_material, toggle_material), attachments, fixed_ends,
         FRAME)
     display = (body, canopy, cords)
+    # Hidden parents also hide their children from Cycles, even when the mesh
+    # itself is renderable. Keep the transform/skin parents visible.
     for obj in SCENE.objects:
-        obj.hide_render = obj not in display
+        obj.hide_render = obj not in (*display, flight_rig, bank)
     SCENE.frame_set(1)  # Clip neutral is also the poster pose.
     points = [point-target for point in points]
     target = Vector((0, 0, 0))
 
-    # Source pilots fly along world -Y. From +X/-Y they look left and present
-    # recognizable three-quarter faces and an open upper canopy to the reader.
+    # Source pilots fly along world -Y; glTF exports that front as +Z.
+    # Keep the install poster head-on like its default interactive camera.
+    # The hero retains its three-quarter profile.
     camera = bpy.data.objects.new(name + ' studio camera', bpy.data.cameras.new(name + ' orthographic'))
     SCENE.collection.objects.link(camera)
     SCENE.camera = camera
-    camera.location = target + Vector((8, -11, 3.7))
+    camera.location = target + (Vector((0, -11, 1.7)) if basename == 'install-pilot'
+                                else Vector((8, -11, 3.7)))
     camera.rotation_euler = (target - camera.location).to_track_quat('-Z', 'Y').to_euler()
     camera.data.type = 'ORTHO'
     right = camera.rotation_euler.to_matrix() @ Vector((1, 0, 0))
@@ -339,13 +343,15 @@ def render_pilot(name, basename):
         SCENE.render.filepath = str(png)
         bpy.context.view_layer.update()
         bpy.ops.render.render(write_still=True, scene=SCENE.name)
-        # Blender's direct lossy WebP encoder visibly quantizes transparent
-        # edges and fine lines; the lossless conversion keeps Cycles alpha.
         subprocess.run((FFMPEG, '-hide_banner', '-loglevel', 'error', '-y',
-                        '-i', str(png), '-vf', 'scale=1200:1050:flags=lanczos,format=rgba',
+                        '-i', str(png), '-vf', ('scale=1800:1575:flags=lanczos,format=rgba'
+                                               if basename == 'install-pilot'
+                                               else 'scale=1200:1050:flags=lanczos,format=rgba'),
                         '-c:v', 'libwebp', '-lossless', '1', '-compression_level', '6',
                         str(poster)), check=True)
     print(f'{name} poster: {poster} ({poster.stat().st_size} bytes), frame {FRAME}')
+    if '--install-poster-only' in sys.argv:
+        return
 
     # AO is baked directly on the flight-pose skinned mesh. No modifier is
     # applied: the authored armature, weights, UV0 and PBR maps remain live.
@@ -382,4 +388,5 @@ def render_pilot(name, basename):
     del SCENE['flightBounds']
 
 render_pilot(SOURCE_NAMES['boy'], 'install-pilot')
-render_pilot(SOURCE_NAMES['girl'], 'hero-pilot')
+if '--install-poster-only' not in sys.argv:
+    render_pilot(SOURCE_NAMES['girl'], 'hero-pilot')

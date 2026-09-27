@@ -14,6 +14,8 @@ import { ParagliderHair } from './paragliderHair';
 export async function mountParaglider(root: HTMLElement, signal: AbortSignal): Promise<void> {
   if (signal.aborted) return;
   const stage = root.querySelector<HTMLElement>('.paraglider-stage')!;
+  const install = root.closest<HTMLElement>('.landing-install');
+  const cards = install?.querySelectorAll<HTMLElement>('.install-platforms, .install-remote');
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const scene = new Scene();
   const camera = new PerspectiveCamera(35, 8 / 7, .1, 100);
@@ -44,11 +46,13 @@ export async function mountParaglider(root: HTMLElement, signal: AbortSignal): P
   controls.maxPolarAngle = Math.PI * .7;
   canvas.style.touchAction = 'pan-y'; // OrbitControls defaults to none; allow vertical touch scrolling.
   const upAxis = new Vector3(0, 1, 0);
-  const initialDirection = new Vector3(8, 3.7, 11).normalize();
+  // The install pilot faces the reader; the hero retains its three-quarter view.
+  const initialDirection = new Vector3(install ? 0 : 8, install ? 1.7 : 3.7, 11).normalize();
   const center = new Vector3();
   let fitRadius = 0;
   let fitDistance = 0;
   let model: Group | undefined;
+  let loopPivot: Group | undefined;
   let environmentTarget: WebGLRenderTarget | undefined;
   let mixer: AnimationMixer | undefined;
   let leftTurn: AnimationAction | undefined;
@@ -58,6 +62,11 @@ export async function mountParaglider(root: HTMLElement, signal: AbortSignal): P
   let pitch = 0;
   let targetPitch = 0;
   let targetTurn = 0;
+  let yaw = 0;
+  let targetYaw = 0;
+  let tracking = false;
+  let loopStart = 0;
+  const loopDuration = 900;
   let steeringUntil = 0;
   let dragging = false;
   let lastAzimuth = 0;
@@ -80,9 +89,10 @@ export async function mountParaglider(root: HTMLElement, signal: AbortSignal): P
     const delta = previousFrame ? Math.min(time - previousFrame, 100) / 1000 : 0;
     previousFrame = time;
     elapsed += delta;
-    if (!dragging && time >= steeringUntil) targetTurn = targetPitch = 0;
+    if (!dragging && !tracking && time >= steeringUntil) targetTurn = targetPitch = 0;
     turn += (targetTurn - turn) * (1 - Math.exp(-delta * 8));
     pitch += (targetPitch - pitch) * (1 - Math.exp(-delta * 7));
+    yaw += (targetYaw - yaw) * (1 - Math.exp(-delta * 7));
     if (targetTurn === 0 && Math.abs(turn) < .001) turn = 0;
     if (targetPitch === 0 && Math.abs(pitch) < .0003) pitch = 0;
     // Sample the baked IK/cord/bank timelines together, never cross-fade just
@@ -90,9 +100,19 @@ export async function mountParaglider(root: HTMLElement, signal: AbortSignal): P
     if (leftTurn) leftTurn.time = Math.max(0, -turn) * leftTurn.getClip().duration;
     if (rightTurn) rightTurn.time = Math.max(0, turn) * rightTurn.getClip().duration;
     mixer?.update(delta);
-    model.position.y = Math.sin(elapsed * .9) * .035;
-    model.position.x = Math.sin(elapsed * .65) * .035;
-    model.rotation.set(pitch, 0, Math.sin(elapsed * .55) * .007);
+    model.position.y = (loopPivot ? -center.y : 0) + Math.sin(elapsed * .9) * .035;
+    model.position.x = (loopPivot ? -center.x : 0) + Math.sin(elapsed * .65) * .035;
+    model.rotation.set(pitch, yaw, Math.sin(elapsed * .55) * .007);
+    if (loopPivot && loopStart) {
+      const progress = Math.min((time - loopStart) / loopDuration, 1);
+      const eased = progress * progress * (3 - 2 * progress);
+      // Around the flight envelope's center: nose down first, then over the top.
+      loopPivot.rotation.x = eased * Math.PI * 2;
+      if (progress === 1) {
+        loopPivot.rotation.x = 0;
+        loopStart = 0;
+      }
+    }
     hair.update(delta);
     airflowPhase = (airflowPhase + delta * .42 * hair.windSpeed) % 1;
     // The trails are local to the glider, not the camera: +Z is the nose,
@@ -109,8 +129,8 @@ export async function mountParaglider(root: HTMLElement, signal: AbortSignal): P
   const update = () => {
     const active = !!model && !!hair && visible && !document.hidden && !reduced.matches && !userPaused;
     if (!visible || document.hidden) {
-      dragging = false;
-      targetTurn = targetPitch = steeringUntil = 0;
+      dragging = tracking = false;
+      targetTurn = targetPitch = targetYaw = steeringUntil = 0;
     }
     if (wind) {
       const wasVisible = wind.visible;
@@ -118,12 +138,13 @@ export async function mountParaglider(root: HTMLElement, signal: AbortSignal): P
       if (wasVisible !== wind.visible && visible && !document.hidden) render();
     }
     if (reduced.matches && model) {
-      turn = targetTurn = pitch = targetPitch = steeringUntil = 0;
+      turn = targetTurn = pitch = targetPitch = yaw = targetYaw = steeringUntil = loopStart = 0;
       // A fixed neutral keyframe also lets manual orbit remain responsive.
       mixer?.setTime(0);
       elapsed = airflowPhase = 0;
-      model.position.set(0, 0, 0);
+      model.position.copy(center).multiplyScalar(loopPivot ? -1 : 0);
       model.rotation.set(0, 0, 0);
+      if (loopPivot) loopPivot.rotation.x = 0;
       hair?.reset();
       if (visible && !document.hidden) render();
     }
@@ -163,6 +184,30 @@ export async function mountParaglider(root: HTMLElement, signal: AbortSignal): P
     if (userPaused || reduced.matches || !visible || document.hidden) return;
     targetPitch = Math.max(-maxPitch, Math.min(maxPitch, angle));
     steeringUntil = performance.now() + 450;
+  };
+  const onCardMove = (event: PointerEvent) => {
+    if (event.pointerType === 'touch' || userPaused || reduced.matches || !visible || document.hidden) return;
+    const bounds = root.getBoundingClientRect();
+    tracking = true;
+    // A restrained glance keeps the face visible even over the far card edges.
+    targetYaw = Math.max(-.2, Math.min(.2,
+      Math.atan2(event.clientX - bounds.left - bounds.width / 2, bounds.width * 3.5)));
+    targetPitch = Math.max(0, Math.min(.12,
+      Math.atan2(event.clientY - bounds.top - bounds.height / 2, bounds.height * 4)));
+    targetTurn = Math.max(-.85, Math.min(.85, targetYaw * 4));
+  };
+  const onCardLeave = () => {
+    tracking = false;
+    targetYaw = targetTurn = targetPitch = 0;
+  };
+  const onDownload = (event: MouseEvent) => {
+    const link = (event.target as Element).closest<HTMLAnchorElement>('.install-platform');
+    if (!link || event.defaultPrevented || event.button !== 0 || event.metaKey ||
+        event.ctrlKey || event.shiftKey || event.altKey || link.target ||
+        !model || !visible || document.hidden || reduced.matches || userPaused) return;
+    // Native navigation starts the installer immediately and leaves this page
+    // in place for an attachment; no timer holds up the download.
+    loopStart = performance.now();
   };
   const onOrbit = () => {
     const azimuth = controls.getAzimuthalAngle();
@@ -204,11 +249,12 @@ export async function mountParaglider(root: HTMLElement, signal: AbortSignal): P
       controls.update();
     } else if (event.key.toLowerCase() === 'r') {
       event.preventDefault();
-      turn = targetTurn = pitch = targetPitch = steeringUntil = 0;
+      turn = targetTurn = pitch = targetPitch = yaw = targetYaw = steeringUntil = loopStart = 0;
       if (leftTurn) leftTurn.time = 0;
       if (rightTurn) rightTurn.time = 0;
       mixer?.update(0);
-      if (model) model.rotation.x = 0;
+      if (model) model.rotation.set(0, 0, 0);
+      if (loopPivot) loopPivot.rotation.x = 0;
       hair?.reset();
       lastAzimuth = Math.atan2(initialDirection.x, initialDirection.z);
       camera.position.copy(center).addScaledVector(initialDirection, fitDistance);
@@ -220,6 +266,11 @@ export async function mountParaglider(root: HTMLElement, signal: AbortSignal): P
       update();
     }
   };
+  cards?.forEach(card => {
+    card.addEventListener('pointermove', onCardMove);
+    card.addEventListener('pointerleave', onCardLeave);
+  });
+  install?.addEventListener('click', onDownload);
   controls.addEventListener('change', onOrbit);
   controls.addEventListener('start', onStart);
   controls.addEventListener('end', onEnd);
@@ -243,6 +294,11 @@ export async function mountParaglider(root: HTMLElement, signal: AbortSignal): P
     controls.removeEventListener('start', onStart);
     controls.removeEventListener('end', onEnd);
     controls.dispose();
+    cards?.forEach(card => {
+      card.removeEventListener('pointermove', onCardMove);
+      card.removeEventListener('pointerleave', onCardLeave);
+    });
+    install?.removeEventListener('click', onDownload);
     canvas.removeEventListener('keydown', onKey);
     reduced.removeEventListener('change', update);
     document.removeEventListener('visibilitychange', update);
@@ -312,6 +368,13 @@ export async function mountParaglider(root: HTMLElement, signal: AbortSignal): P
     }
     center.fromArray(authoredBounds.center);
     fitRadius = authoredBounds.radius;
+    if (install) {
+      loopPivot = new Group();
+      loopPivot.position.copy(center);
+      scene.add(loopPivot);
+      loopPivot.add(model);
+      model.position.copy(center).multiplyScalar(-1);
+    }
     mixer?.setTime(0);
     // The animation envelope is in local model coordinates. Its center moves
     // slightly when the idle roll rotates the whole group around the origin.
