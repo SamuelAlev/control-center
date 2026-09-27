@@ -12,27 +12,27 @@ import StructuredData from '../components/shared/StructuredData.astro';
 import RevealScript from '../components/shared/RevealScript.astro';
 import CompareCell from '../components/compare/CompareCell.astro';
 import CompareTooltip from '../components/compare/CompareTooltip.astro';
-import { columns, tools, compareSummary, compareReviewed, priceNote, hasVsPage, trackedUrl } from '../data/compare';
+import { columns, tools, compareSummary, compareReviewed, reviewScopeNote, priceNote, hasVsPage, trackedUrl } from '../data/compare';
 
 const cc = tools[0];
-const rivals = tools.slice(1, 6);
-const adjacent = tools.slice(6);
+const rivals = tools.slice(1, 7);
+const adjacent = tools.slice(7);
 
 const faqs = [
   {
     question: 'Which tool should a solo developer pick for parallel AI coding agents?',
     answer:
-      'Pick Conductor for the smoothest turnkey experience on a Mac, Superset for maximum parallelism in a lightweight dashboard, or Orca for a free cross-platform desktop with a phone companion and a complete pull-request surface. Pick Control Center when you also want review, tickets, pipelines, meetings and memory on the same deck — and self-hosting for the data.',
+      'Choose Conductor for a Mac-first parallel coding workspace, Superset for a lightweight dashboard with optional iOS access, Orca for an agent IDE and self-hosted remote server, or T3 Code for a free multi-harness coding surface. Choose Control Center when you also want first-party tickets, dependent pipelines, meetings and an inbox for PRs across your linked repos on a self-hosted server.',
   },
   {
     question: 'Is Control Center an alternative to Cursor, OpenClaw or Hermes Agent?',
     answer:
-      'It complements rather than replaces them. Cursor is an AI-first editor and Control Center can open any PR into it; OpenClaw and Hermes Agent are general-purpose personal assistants you reach from a chat app, not coding fleets. Control Center is the operation around coding agents — dispatch, review, orchestrate — not another editor or assistant.',
+      'They overlap, but emphasize different workflows. Cursor is an AI-first editor with worktrees, cloud automations and PR review. OpenClaw and Hermes Agent both run coding tasks in managed worktrees, alongside assistant features and scheduled work. Control Center concentrates the developer operation — review and merge, tickets, pipelines, meetings and workspace roles — on a server you own.',
   },
   {
     question: 'What does each tool cost to start?',
     answer:
-      'Control Center, Orca, Paperclip, Goose and OpenClaw are free and open source. Superset is free on the desktop with a $15/user/month team tier, Multica is free to self-host with an unpriced cloud, Hermes Agent is free to run against your own keys with hosted credits from $20/month, Conductor is free on the Mac with Cloud and multiplayer from $50/month, and Cursor is free on Hobby with Pro from $20/month. None of those figures include model spend — every tool bills your provider separately.',
+      'Control Center, Orca, T3 Code, Paperclip, Goose and OpenClaw are free and open source. Superset has a free tier and Pro at $20/user/month monthly ($15/user/month billed yearly); Multica is free to self-host, with no published Cloud price. Hermes Agent is free to self-host with Plus hosted credits from $20/month; Conductor has a free tier and Pro from $50/month; Cursor has a free Hobby tier and Pro from $20/month. Model access may be billed separately or included with a plan; check each vendor’s terms.',
   },
 ];
 
@@ -49,7 +49,7 @@ const schema = {
 
 <MarketingLayout
   title="Compare \\ Control Center"
-  description="Control Center compared with Conductor, Superset, Orca, Paperclip, Multica, OpenClaw, Hermes Agent, Goose, Cursor and plain terminals: parallel agents, PR review, pipelines, meetings, self-hosting, multiplayer and starting price, side by side."
+  description="Control Center compared with Conductor, Superset, Orca, T3 Code, Paperclip, Multica, OpenClaw, Hermes Agent, Goose, Cursor and plain terminals: agents, PR review, pipelines, meetings, self-hosting and pricing."
   breadcrumbName="Compare"
 >
   <main id="top" tabindex="-1">
@@ -62,7 +62,7 @@ const schema = {
           <span class="eyebrow">Compare</span>
           <h1 class="mt-4 text-[clamp(30px,4.4vw,56px)] font-semibold leading-[1.0] tracking-[-0.03em]">How Control Center compares.</h1>
           <p class="mt-[22px] max-w-[64ch] text-[clamp(16px,1.4vw,18px)] leading-[1.6] text-muted">{compareSummary}</p>
-          <p class="mt-5 font-mono text-[11px] uppercase tracking-[0.08em] text-idle">Checked against each product’s public site · {compareReviewed}</p>
+          <p class="mt-5 font-mono text-[11px] uppercase tracking-[0.08em] text-idle">Last updated · {compareReviewed} · Checked against each product’s public site</p>
         </div>
       </div>
     </section>
@@ -75,6 +75,7 @@ const schema = {
           <p class="mt-[14px] max-w-[52ch] text-[15px] leading-[1.6] text-muted">
             <span class="font-mono">✓</span> yes · <span class="font-mono">≈</span> partial — hover or focus a <span class="font-mono">≈</span> for the reason · <span class="font-mono">—</span> not offered. Every name links to a full head-to-head. Scroll sideways on a small screen.
           </p>
+          <p class="mt-[10px] max-w-[56ch] text-[13.5px] leading-[1.6] text-idle">{reviewScopeNote}</p>
           <p class="mt-[10px] max-w-[56ch] text-[13.5px] leading-[1.6] text-idle">{priceNote}</p>
         </div>
 
@@ -148,7 +149,7 @@ const schema = {
           ))}
 
           <!-- Control Center's own card closes the grid. -->
-          <article class="reveal flex flex-col rounded-lg border border-[color-mix(in_oklab,var(--color-accent),transparent_55%)] bg-accent-soft p-6 shadow-soft">
+          <article class="reveal flex flex-col rounded-lg border border-[color-mix(in_oklab,var(--color-accent),transparent_55%)] bg-accent-soft p-6 shadow-soft md:col-span-2">
             <h3 class="m-0 text-[18px] font-semibold leading-[1.25] tracking-[-0.01em]">
               {cc.name}
               <span class="ml-2 font-mono text-[11px] font-normal uppercase tracking-[0.06em] text-idle">{cc.kind}</span>

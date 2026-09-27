@@ -96,7 +96,9 @@ class PrSidebar extends ConsumerWidget {
     final reviewersAsync = ref.watch(prReviewersProvider(prRef));
     final reviewersPending =
         !reviewersAsync.hasValue && !reviewersAsync.hasError;
-    final reviewers = reviewersAsync.value ?? const <PrReviewer>[];
+    final reviewers = reviewersAsync.hasError
+        ? const <PrReviewer>[]
+        : (reviewersAsync.value ?? const <PrReviewer>[]);
     // Watched, not read: the viewer login resolves asynchronously, and
     // `_applyOptimistic` silently no-ops while it is empty — a `read` would
     // pin that empty value and drop the just-submitted verdict off the rail.
@@ -115,7 +117,9 @@ class PrSidebar extends ConsumerWidget {
 
     final filesAsync = ref.watch(prFileIndexProvider(prRef));
     final filesPending = !filesAsync.hasValue && !filesAsync.hasError;
-    final files = filesAsync.value ?? const <PrFile>[];
+    final files = filesAsync.hasError
+        ? const <PrFile>[]
+        : (filesAsync.value ?? const <PrFile>[]);
     final sortedFiles = sortFilesByTreeOrder(files);
     final hasComplexity = files.isNotEmpty;
     final hasShipShowAsk = ref.watch(shipShowAskProvider(prRef)).value != null;

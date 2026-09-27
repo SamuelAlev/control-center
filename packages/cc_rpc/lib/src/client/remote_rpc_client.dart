@@ -197,6 +197,18 @@ class RemoteRpcClient {
     return (res['data'] as Map?)?.cast<String, dynamic>() ?? {};
   }
 
+  /// A one-shot live read as a stream. The resilient facade can opt selected
+  /// read operations into cached stale-while-revalidate behavior; direct
+  /// sessions simply issue the ordinary call when listened to.
+  Stream<Map<String, dynamic>> watchCall(String op, Map<String, dynamic> args) {
+    if (!offlineSafeReadOps.contains(op)) {
+      throw ArgumentError.value(op, 'op', 'Not an offline-safe read operation');
+    }
+    return () async* {
+      yield await call(op, args);
+    }();
+  }
+
   /// As [call], but returns the whole `result` envelope — `{op, data,
   /// deduplicated?, dry_run?}` — for callers that need to observe the
   /// idempotency/dry-run flags (bulk ops, the mutation queue, tests).
@@ -653,6 +665,22 @@ class RemoteRpcClient {
     await _notifications.close();
   }
 }
+
+/// Operations explicitly reviewed for render-only snapshot persistence.
+/// This is deliberately stricter than the naming-based call coalescing rule.
+const offlineSafeReadOps = <String>{
+  'messaging.getMessageById',
+  'pr.searchReviewedByForWorkspace',
+  'pr.closedByAuthorForWorkspace',
+  'pr_review.getJobRunDetail',
+  'meeting.getByWorkspace',
+  'meeting.getById',
+  'meeting.getSegments',
+  'meeting.getSpeakers',
+  'calendar.getAccounts',
+  'calendar.getEventForMeeting',
+  'calendar.getMeetingIdForEvent',
+};
 
 /// Ref-counted fan-out over one underlying [RemoteRpcClient._subscribeRaw]
 /// stream, so N callers requesting the same subscription coordinates share a

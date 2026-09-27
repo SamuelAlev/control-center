@@ -8,28 +8,19 @@ import 'package:cc_domain/features/meetings/domain/repositories/meeting_reposito
     show MeetingRepository;
 import 'package:cc_domain/features/meetings/domain/services/meeting_audio_capture_port.dart';
 import 'package:cc_domain/features/meetings/domain/services/meeting_recording_control_port.dart';
+import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/core/utils/app_log.dart';
+import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/meetings/presentation/notifiers/meeting_recorder_state.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
-/// Web-inert meeting recorder.
-///
-/// Live recording captures native audio + transcribes on-device (cc_natives /
-/// the speech models) — a desktop-only capability with no browser equivalent.
-/// On web this controller NEVER records: [start] surfaces an honest "recording
-/// runs on the desktop/host" error, [stop] / [togglePause] / [cancelProcessing]
-/// / [resummarize] are inert and the state stays idle.
-///
-/// The pure DATA edits the meeting detail UI drives through this controller —
-/// notes, title and the manual action-item / decision CRUD — are NOT recording
-/// and DO work: they route through the RPC-backed [MeetingRepository] (the
-/// `meeting.*` ops), so a connected web client can still edit a finished
-/// meeting's notes and structured output. Mirrors the desktop controller's
-/// public surface so the shared meeting screens compile and behave identically
-/// for everything except capture.
+/// Web meeting recorder. Production captures mic and shared-system audio and
+/// streams PCM to the host. The demo branch, selected before capture starts,
+/// controls a server-owned fictional transcript through demo-only RPC ops.
+/// Notes, title, action items and decisions use [MeetingRepository] in both.
 class MeetingRecorderController extends Notifier<MeetingRecorderState> {
   static const _uuid = Uuid();
 
@@ -43,6 +34,8 @@ class MeetingRecorderController extends Notifier<MeetingRecorderState> {
 
   MeetingAudioCapturePort? _capture;
   String? _meetingId;
+  bool _demoRecording = false;
+  bool _demoPausePending = false;
   StreamSubscription<Uint8List>? _micSub;
   StreamSubscription<Uint8List>? _systemSub;
 
@@ -78,6 +71,22 @@ class MeetingRecorderController extends Notifier<MeetingRecorderState> {
       state = MeetingRecorderState.failed(
         'Select a workspace before recording.',
       );
+      return;
+    }
+    if (ref.read(isDemoServerProvider)) {
+      try {
+        final result = await ref
+            .read(rpcClientProvider)
+            .call('meeting.demoStart', const <String, dynamic>{});
+        final meetingId = result['meeting_id'] as String;
+        _meetingId = meetingId;
+        _demoRecording = true;
+        state = MeetingRecorderState.recording(meetingId, DateTime.now());
+      } catch (e) {
+        state = MeetingRecorderState.failed(
+          'Could not start simulated meeting: $e',
+        );
+      }
       return;
     }
     final control = ref.read(meetingRecordingControlProvider);
@@ -136,6 +145,20 @@ class MeetingRecorderController extends Notifier<MeetingRecorderState> {
       return;
     }
     final meetingId = _meetingId;
+    if (_demoRecording) {
+      final id = _meetingId!;
+      try {
+        await ref.read(rpcClientProvider).call('meeting.demoStop', {
+          'meeting_id': id,
+        });
+        _demoRecording = false;
+        _meetingId = null;
+        state = MeetingRecorderState.idle;
+      } catch (e) {
+        AppLog.w('MeetingRecorder', 'demoStop failed: $e');
+      }
+      return;
+    }
     await _micSub?.cancel();
     await _systemSub?.cancel();
     _micSub = null;
@@ -164,6 +187,34 @@ class MeetingRecorderController extends Notifier<MeetingRecorderState> {
     if (!state.isRecording) {
       return;
     }
+    if (_demoRecording) {
+      if (_demoPausePending) {
+        return;
+      }
+      _demoPausePending = true;
+      final paused = !state.paused;
+      final id = _meetingId!;
+      unawaited(() async {
+        try {
+          await ref.read(rpcClientProvider).call(
+            paused ? 'meeting.demoPause' : 'meeting.demoResume',
+            {'meeting_id': id},
+          );
+          if (_demoRecording && _meetingId == id) {
+            _updatePauseState();
+          }
+        } catch (e) {
+          AppLog.w('MeetingRecorder', 'demo pause/resume failed: $e');
+        } finally {
+          _demoPausePending = false;
+        }
+      }());
+      return;
+    }
+    _updatePauseState();
+  }
+
+  void _updatePauseState() {
     if (state.paused) {
       final pausedSince = state.pausedSince;
       final added = pausedSince != null
@@ -424,8 +475,7 @@ class MeetingRecorderController extends Notifier<MeetingRecorderState> {
   }
 }
 
-/// Controls the active meeting recording. On web this is the inert variant —
-/// recording is device-only; the data edits route over RPC.
+/// Controls the active meeting on web, including the capture-free demo.
 final meetingRecorderControllerProvider =
     NotifierProvider<MeetingRecorderController, MeetingRecorderState>(
       MeetingRecorderController.new,

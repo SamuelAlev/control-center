@@ -1803,6 +1803,14 @@ class AppLocalizationsHu extends AppLocalizations {
       'JSON Schema, amelyet a lépés kimenetének ki kell elégítenie';
 
   @override
+  String get nodeConfigBackupRetentionDays =>
+      'Ennél régebbi mentések törlése (nap)';
+
+  @override
+  String get nodeConfigBackupRetentionDaysHelp =>
+      'Csak ennek a munkaterületnek a mentései törlődnek. Adjon meg pozitív napszámot.';
+
+  @override
   String get diffLineDisplay => 'Hosszú sorok a diffeekben';
 
   @override
@@ -9115,6 +9123,44 @@ class AppLocalizationsHu extends AppLocalizations {
   String get spaceReposHint => 'Bevonandó tárolók';
 
   @override
+  String get newSpaceFolder => 'Új mappa';
+
+  @override
+  String get folderName => 'Mappa neve';
+
+  @override
+  String get renameSpaceFolder => 'Mappa átnevezése';
+
+  @override
+  String get deleteSpaceFolder => 'Mappa törlése';
+
+  @override
+  String get moveSpaceToFolder => 'Áthelyezés mappába';
+
+  @override
+  String get removeSpaceFromFolder => 'Eltávolítás a mappából';
+
+  @override
+  String get spaceFolderActions => 'Mappaműveletek';
+
+  @override
+  String get deleteFolderWithSpacesWarning =>
+      'A terek végleges törlése mindenki számára eltávolítja az üzeneteiket és a munkafáikat. Ez nem vonható vissza.';
+
+  @override
+  String get deleteSpacesInFolder => 'A mappában lévő terek végleges törlése';
+
+  @override
+  String get deleteFolderAndSpaces => 'Mappa és terek törlése';
+
+  @override
+  String get keepSpacesInFolder =>
+      'Ellenkező esetben a terek mappán kívül maradnak.';
+
+  @override
+  String get noSpaceFoldersYet => 'Még nincsenek mappák';
+
+  @override
   String get ideSourceControl => 'Verziókezelés';
 
   @override
@@ -14438,7 +14484,7 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get backupNoSnapshots =>
-      'Még nincsenek pillanatképek. Csak akkor készül egy, ha kéri — semmi nincs ütemezve.';
+      'Még nincsenek telepítési pillanatképek. Készítsen egyet most, vagy használjon ütemezett pipeline-t a munkaterület mentéséhez.';
 
   @override
   String get backupSnapshotComplete => 'Teljes';
@@ -14449,6 +14495,29 @@ class AppLocalizationsHu extends AppLocalizations {
   @override
   String get backupSnapshotIncompleteNote =>
       'A manifest hiányzik, vagy olyan fájlokat nevez meg, amelyek nincsenek ott, így ez a pillanatkép nem tudja visszaállítani a teljes telepítést. A meglévő munkaterület-fájljai egyenként még átvehetők.';
+
+  @override
+  String get backupDeleteSnapshotLabel => 'Pillanatkép törlése';
+
+  @override
+  String get backupDeleteSnapshotDescription =>
+      'Végleg eltávolítja ezt a pillanatképet a szerverről. Előbb töltse le, ha meg szeretné tartani.';
+
+  @override
+  String get backupDeleteSnapshotAction => 'Pillanatkép törlése';
+
+  @override
+  String get backupDeleteSnapshotTitle => 'Törli ezt a pillanatképet?';
+
+  @override
+  String backupDeleteSnapshotBody(String name) {
+    return 'Törli a(z) $name pillanatképet a szerverről? Az összes benne lévő adatbázis elveszik. Ez nem vonható vissza.';
+  }
+
+  @override
+  String backupDeleteSnapshotDone(String name) {
+    return 'A(z) $name pillanatkép törölve.';
+  }
 
   @override
   String backupSnapshotWorkspaces(int count) {

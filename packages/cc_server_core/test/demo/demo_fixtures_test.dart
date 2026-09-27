@@ -115,6 +115,33 @@ void main() {
     }
   });
 
+  test('Helix peer replay carries separate tool evidence and review beats', () {
+    final scripts = [
+      for (final raw in jsonDecode(kDemoRunScriptsJson) as List)
+        DemoRunScript.fromJson(Map<String, dynamic>.from(raw as Map)),
+    ];
+    final story = scripts.singleWhere((script) => script.id == 'helix-peer-review');
+    expect(story.scoreFor('@Ravi shared run-group walkthrough'), greaterThan(0));
+    final peerIndex = story.steps.indexWhere((step) => step is DemoPeerStep);
+    expect(peerIndex, greaterThan(0));
+    final peer = story.steps[peerIndex] as DemoPeerStep;
+    expect(peer.agent, 'Juno');
+    expect(
+      peer.tools.map((step) => step.tool),
+      containsAllInOrder(['read', 'edit', 'bash']),
+    );
+    expect(peer.tools.singleWhere((step) => step.tool == 'edit').result,
+        contains('no filesystem write'));
+    expect(peer.tools.singleWhere((step) => step.tool == 'bash').result,
+        contains('not an executed process'));
+    expect(
+      story.steps.skip(peerIndex + 1).whereType<DemoSayStep>()
+          .map((step) => step.text).join(),
+      contains('Thanks, Juno'),
+      reason: 'Ravi must answer the peer after seeing her work',
+    );
+  });
+
   test('the PR world is four helix repos and furnishes Maya\'s inbox', () {
     final world = jsonDecode(kDemoPullRequestsJson) as Map<String, dynamic>;
     final repoRows = (world['repos'] as List).cast<Map<String, dynamic>>();

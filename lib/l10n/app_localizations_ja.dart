@@ -1759,6 +1759,13 @@ class AppLocalizationsJa extends AppLocalizations {
   String get nodeConfigOutputSchemaHelp => 'ステップ出力が満たす必要があるJSON Schemaです';
 
   @override
+  String get nodeConfigBackupRetentionDays => '指定日数より古いバックアップを削除（日）';
+
+  @override
+  String get nodeConfigBackupRetentionDaysHelp =>
+      'このワークスペースのバックアップだけが削除されます。正の整数の日数を入力してください。';
+
+  @override
   String get diffLineDisplay => 'diffの長い行';
 
   @override
@@ -8884,6 +8891,43 @@ class AppLocalizationsJa extends AppLocalizations {
   String get spaceReposHint => '含めるリポジトリ';
 
   @override
+  String get newSpaceFolder => '新しいフォルダー';
+
+  @override
+  String get folderName => 'フォルダー名';
+
+  @override
+  String get renameSpaceFolder => 'フォルダー名を変更';
+
+  @override
+  String get deleteSpaceFolder => 'フォルダーを削除';
+
+  @override
+  String get moveSpaceToFolder => 'フォルダーに移動';
+
+  @override
+  String get removeSpaceFromFolder => 'フォルダーから取り除く';
+
+  @override
+  String get spaceFolderActions => 'フォルダーの操作';
+
+  @override
+  String get deleteFolderWithSpacesWarning =>
+      'スペースを完全に削除すると、そのメッセージと作業ツリーが全員から削除されます。この操作は元に戻せません。';
+
+  @override
+  String get deleteSpacesInFolder => 'このフォルダー内のスペースを完全に削除する';
+
+  @override
+  String get deleteFolderAndSpaces => 'フォルダーとスペースを削除';
+
+  @override
+  String get keepSpacesInFolder => 'それ以外の場合、スペースはどのフォルダーにも属さない状態になります。';
+
+  @override
+  String get noSpaceFoldersYet => 'フォルダーはまだありません';
+
+  @override
   String get ideSourceControl => 'ソース管理';
 
   @override
@@ -14078,7 +14122,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get backupNoSnapshots =>
-      'スナップショットはまだありません。要求したときにのみ作成されます — 何もスケジュールされていません。';
+      'インストール全体のスナップショットはまだありません。今すぐ作成するか、ワークスペースの定期バックアップにパイプラインを使用してください。';
 
   @override
   String get backupSnapshotComplete => '完了';
@@ -14089,6 +14133,29 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get backupSnapshotIncompleteNote =>
       'マニフェストがないか、存在しないファイルを参照しているため、このスナップショットでインストール全体を復元することはできません。含まれているワークスペースファイルは、1つずつなら取り込めます。';
+
+  @override
+  String get backupDeleteSnapshotLabel => 'スナップショットを削除';
+
+  @override
+  String get backupDeleteSnapshotDescription =>
+      'このスナップショットをサーバーから完全に削除します。残す場合は先にダウンロードしてください。';
+
+  @override
+  String get backupDeleteSnapshotAction => 'スナップショットを削除';
+
+  @override
+  String get backupDeleteSnapshotTitle => 'このスナップショットを削除しますか？';
+
+  @override
+  String backupDeleteSnapshotBody(String name) {
+    return 'サーバーから$nameを削除しますか？含まれるすべてのデータベースが失われます。この操作は元に戻せません。';
+  }
+
+  @override
+  String backupDeleteSnapshotDone(String name) {
+    return 'スナップショット$nameを削除しました。';
+  }
 
   @override
   String backupSnapshotWorkspaces(int count) {

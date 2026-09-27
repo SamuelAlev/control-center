@@ -2,7 +2,7 @@
  * Custom Worker entry for usectrl.dev.
  *
  * Wraps the Astro/Cloudflare adapter entry (`@astrojs/cloudflare/entrypoints/server`)
- * to add the agent-facing behavior the static pipeline cannot express:
+ * to add request-time behavior the static pipeline cannot express:
  *
  * 1. Markdown content negotiation — `Accept: text/markdown` on a content page
  *    serves its build-time markdown twin (`<page>.md` asset), per
@@ -18,12 +18,15 @@
  *    surface — the RFC 9727 §3 `api-catalog` relation plus `service-desc`,
  *    `service-doc` and `describedby` — so an agent finds the API catalog from
  *    any page it happens to land on, without parsing HTML.
+ * 5. A five-minute edge-cached GitHub star count in the HTML navigation,
+ *    with no browser request or stale count when GitHub is unavailable.
  *
  * Anything this file does not explicitly handle is delegated to the adapter
  * untouched.
  */
 import adapter from '@astrojs/cloudflare/entrypoints/server';
 import { applyLocaleHeaders, negotiateLocale } from './locale-negotiation.ts';
+import { renderRepoStars } from './data/repo-stars.ts';
 import { appendDiscoveryLinks } from './agentic/api-catalog.ts';
 import {
   appendVary,
@@ -117,6 +120,11 @@ export default {
     const locale = accept.markdown || accept.json ? null : negotiateLocale(request);
     if (locale?.redirect) return locale.redirect;
     const response = await content.fetch(request, env, ctx, accept);
+    if (request.method === 'GET' && response.status === 200 &&
+        (response.headers.get('Content-Type') ?? '').includes('text/html')) {
+      const html = renderRepoStars(response);
+      return locale ? applyLocaleHeaders(html, locale) : html;
+    }
     return locale ? applyLocaleHeaders(response, locale) : response;
   },
 };

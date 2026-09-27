@@ -9,6 +9,7 @@ import 'package:cc_domain/features/pr_review/domain/repositories/open_pr_list_re
 import 'package:cc_domain/features/pr_review/domain/usecases/classify_pull_requests_use_case.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/di/providers.dart';
+import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/pr_review/providers/pr_filter_providers.dart';
 import 'package:control_center/features/repos/providers/repo_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
@@ -17,31 +18,35 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final _epoch = DateTime.fromMillisecondsSinceEpoch(0);
 
-/// A keepAlive store of last-good values keyed by scope (workspace id,
-/// `workspace|login`, …). The autoDispose list/inbox providers seed
-/// synchronously from it on rebuild — navigating back to a surface shows the
-/// previous visit's data INSTANTLY — and stamp every fresh emission into it,
-/// so the next visit is instant too (stale-while-revalidate). Keyed stores
-/// (never a single slot) so a workspace switch can't flash another
-/// workspace's data.
+/// Keeps an in-memory revisit seed inside the same authenticated user's
+/// workspace. An unresolved identity must never reuse a previous user's seed.
+String? _prListScopeKey(String workspaceId, String? userId) =>
+    userId == null ? null : '$userId|$workspaceId';
+
+/// A keepAlive store of last-good values keyed by authenticated user and
+/// workspace (and forge login for user-specific searches).
+/// AutoDispose list/inbox providers seed synchronously from it on revisit.
 class LastGoodStore<T> extends Notifier<Map<String, T>> {
   @override
   Map<String, T> build() => const {};
 
   /// Records [value] as the last good for [key].
   void stamp(String key, T value) => state = {...state, key: value};
+
+  /// Drops a revoked snapshot so it cannot seed another visit.
+  void remove(String key) => state = {...state}..remove(key);
 }
 
-/// The last open-PR snapshot per workspace, seeded into [prsByRepoProvider]
-/// on revisit (see [LastGoodStore]).
+/// The last open-PR snapshot per authenticated user and workspace, seeded
+/// into [prsByRepoProvider] on revisit.
 final lastGoodOpenPrsProvider =
     NotifierProvider<
       LastGoodStore<PrsByRepoState>,
       Map<String, PrsByRepoState>
     >(LastGoodStore.new);
 
-/// The last `reviewed-by:<me>` key set per workspace, seeded into
-/// [reviewedByMePrKeysProvider] on revisit (see [LastGoodStore]).
+/// The last `reviewed-by:<me>` key set per user, workspace and forge login,
+/// seeded into [reviewedByMePrKeysProvider] on revisit.
 final lastGoodReviewedKeysProvider =
     NotifierProvider<LastGoodStore<Set<String>>, Map<String, Set<String>>>(
       LastGoodStore.new,
@@ -57,12 +62,16 @@ class PrsByRepoState {
     required this.loadingMore,
     this.reviewedByRepo = const {},
     this.authenticated = true,
+    this.scopeKey,
     this.sweeping = false,
     this.inaccessibleRepos = const [],
   });
 
   /// PRs grouped by repository.
   final List<RepoPullRequests> repos;
+
+  /// Authenticated account/workspace that produced this snapshot.
+  final String? scopeKey;
 
   /// Whether the SERVER holds a usable GitHub token. The thin client never holds
   /// a token itself, so the PR list reflects the host's auth: `false` drives the
@@ -105,11 +114,13 @@ class PrsByRepoState {
     Map<String, bool>? loadingMore,
     Map<String, Set<int>>? reviewedByRepo,
     bool? authenticated,
+    String? scopeKey,
     bool? sweeping,
     List<InaccessibleRepo>? inaccessibleRepos,
   }) {
     return PrsByRepoState(
       repos: repos ?? this.repos,
+      scopeKey: scopeKey ?? this.scopeKey,
       hasMore: hasMore ?? this.hasMore,
       nextPage: nextPage ?? this.nextPage,
       loadingMore: loadingMore ?? this.loadingMore,
@@ -146,6 +157,7 @@ final repoAccessForWorkspaceProvider = StreamProvider.autoDispose
 PrsByRepoState _buildStateFromGroups(
   List<Repo> repos,
   WorkspaceOpenPrs result,
+  String? scopeKey,
 ) {
   final reposById = {for (final r in repos) r.id: r};
   final prsByRepo = <RepoPullRequests>[];
@@ -175,6 +187,7 @@ PrsByRepoState _buildStateFromGroups(
 
   return PrsByRepoState(
     repos: prsByRepo,
+    scopeKey: scopeKey,
     hasMore: hasMoreMap,
     nextPage: nextPageMap,
     loadingMore: const {},
@@ -200,6 +213,7 @@ class PrsByRepoNotifier extends AsyncNotifier<PrsByRepoState> {
     // releases the snapshot when the user navigates away; returning
     // re-subscribes to the server's poller snapshot, which is cheap.
     final workspaceId = ref.watch(activeWorkspaceIdProvider);
+    final userId = ref.watch(currentUserIdProvider);
     if (workspaceId == null) {
       return const PrsByRepoState(
         repos: [],
@@ -222,13 +236,16 @@ class PrsByRepoNotifier extends AsyncNotifier<PrsByRepoState> {
     // GitHub-authenticated (drives the connect-GitHub gate). A pushed snapshot
     // resets pagination state (extra REST pages reload on demand).
     final completer = Completer<PrsByRepoState>();
+    final scopeKey = _prListScopeKey(workspaceId, userId);
     final sub = ref
         .watch(openPrListRepositoryProvider)
         .watchOpenForWorkspace(workspaceId)
         .listen(
           (result) {
-            final next = _buildStateFromGroups(repos, result);
-            ref.read(lastGoodOpenPrsProvider.notifier).stamp(workspaceId, next);
+            final next = _buildStateFromGroups(repos, result, scopeKey);
+            if (scopeKey != null) {
+              ref.read(lastGoodOpenPrsProvider.notifier).stamp(scopeKey, next);
+            }
             if (!completer.isCompleted) {
               completer.complete(next);
             } else {
@@ -236,11 +253,15 @@ class PrsByRepoNotifier extends AsyncNotifier<PrsByRepoState> {
             }
           },
           onError: (Object error, StackTrace stackTrace) {
-            // Only a pre-first-value failure surfaces as the list's error
-            // state; once data is showing, a transient push failure keeps the
-            // last good snapshot (the server re-pushes on the next change).
+            // The transport suppresses transient outages after a snapshot.
+            // An emitted error is authoritative (e.g. access was revoked).
+            if (scopeKey != null) {
+              ref.read(lastGoodOpenPrsProvider.notifier).remove(scopeKey);
+            }
             if (!completer.isCompleted) {
               completer.completeError(error, stackTrace);
+            } else {
+              state = AsyncError(error, stackTrace);
             }
           },
         );
@@ -249,7 +270,9 @@ class PrsByRepoNotifier extends AsyncNotifier<PrsByRepoState> {
     // the re-subscription's first server push is in flight. Read (never
     // watch) the store — watching it would re-run build on every stamp and
     // churn the subscription.
-    final lastGood = ref.read(lastGoodOpenPrsProvider)[workspaceId];
+    final lastGood = scopeKey == null
+        ? null
+        : ref.read(lastGoodOpenPrsProvider)[scopeKey];
     if (lastGood != null && !completer.isCompleted) {
       completer.complete(lastGood);
     }
@@ -394,41 +417,72 @@ final reviewedByMePrKeysProvider =
 
 /// Holds the reviewed-by-me key set; see [reviewedByMePrKeysProvider].
 class ReviewedByMePrKeysNotifier extends AsyncNotifier<Set<String>> {
+  String? _scopeKey;
+
+  /// Identity of the active review search; retained AsyncValues from another
+  /// login are not valid filter input during a dependency reload.
+  String? get scopeKey => _scopeKey;
+
   @override
   Future<Set<String>> build() async {
     final workspaceId = ref.watch(activeWorkspaceIdProvider);
+    _scopeKey = null;
     if (workspaceId == null) {
       return const {};
     }
-    final lastGood = ref.read(lastGoodReviewedKeysProvider)[workspaceId];
-    final fresh = _fetch(workspaceId);
-    if (lastGood == null) {
-      return fresh;
-    }
-    var disposed = false;
-    ref.onDispose(() => disposed = true);
-    unawaited(
-      fresh.then(
-        (keys) {
-          if (!disposed) {
-            state = AsyncData(keys);
-          }
-        },
-        onError: (_) {
-          // A failed refresh keeps the stale set — better-stale-than-broken.
-        },
-      ),
+    final userId = ref.watch(currentUserIdProvider);
+    final login = ref.watch(currentUserLoginProvider).toLowerCase();
+    final scopeKey = _prListScopeKey(workspaceId, userId);
+    final key = scopeKey == null || login.isEmpty ? null : '$scopeKey|$login';
+    final completer = Completer<Set<String>>();
+    final repository = ref.watch(openPrListRepositoryProvider);
+    final stream = repository is RpcOpenPrListRepository
+        ? repository.watchReviewedByKeysForWorkspace(workspaceId)
+        : Stream.fromFuture(repository.reviewedByKeysForWorkspace(workspaceId));
+    final sub = stream.listen(
+      (keys) {
+        _scopeKey = key;
+        if (key != null) {
+          ref.read(lastGoodReviewedKeysProvider.notifier).stamp(key, keys);
+        }
+        if (!completer.isCompleted) {
+          completer.complete(keys);
+        } else {
+          state = AsyncData(keys);
+        }
+      },
+      onError: (Object error, StackTrace stackTrace) {
+        _scopeKey = key;
+        if (key != null) {
+          ref.read(lastGoodReviewedKeysProvider.notifier).remove(key);
+        }
+        if (!completer.isCompleted) {
+          completer.completeError(error, stackTrace);
+        } else {
+          state = AsyncError(error, stackTrace);
+        }
+      },
     );
-    return lastGood;
+    ref.onDispose(sub.cancel);
+    final lastGood = key == null
+        ? null
+        : ref.read(lastGoodReviewedKeysProvider)[key];
+    if (lastGood != null && !completer.isCompleted) {
+      _scopeKey = key;
+      completer.complete(lastGood);
+    }
+    return completer.future;
   }
 
   /// Server-side gh search (`reviewed-by:<server login>`): the thin client
   /// holds no token, so the host resolves the reviewed-by-me set over RPC.
-  Future<Set<String>> _fetch(String workspaceId) async {
+  Future<Set<String>> _fetch(String workspaceId, String? key) async {
     final keys = await ref
         .read(openPrListRepositoryProvider)
         .reviewedByKeysForWorkspace(workspaceId);
-    ref.read(lastGoodReviewedKeysProvider.notifier).stamp(workspaceId, keys);
+    if (key != null) {
+      ref.read(lastGoodReviewedKeysProvider.notifier).stamp(key, keys);
+    }
     return keys;
   }
 
@@ -440,8 +494,20 @@ class ReviewedByMePrKeysNotifier extends AsyncNotifier<Set<String>> {
     if (workspaceId == null) {
       return;
     }
+    final userId = ref.read(currentUserIdProvider);
+    final login = ref.read(currentUserLoginProvider).toLowerCase();
+    final scopeKey = _prListScopeKey(workspaceId, userId);
+    final key = scopeKey == null || login.isEmpty ? null : '$scopeKey|$login';
     try {
-      state = AsyncData(await _fetch(workspaceId));
+      final keys = await _fetch(workspaceId, key);
+      if (!ref.mounted ||
+          ref.read(activeWorkspaceIdProvider) != workspaceId ||
+          ref.read(currentUserIdProvider) != userId ||
+          ref.read(currentUserLoginProvider).toLowerCase() != login) {
+        return;
+      }
+      _scopeKey = key;
+      state = AsyncData(keys);
     } catch (_) {
       // Keep the last good set — the surface shows its own error affordance.
     }
@@ -451,7 +517,7 @@ class ReviewedByMePrKeysNotifier extends AsyncNotifier<Set<String>> {
 /// Overlays `reviewedByMe` onto the PRs whose `"<repoFullName>#<number>"` is in
 /// [reviewedKeys], so the "reviewed by me" filter works without the list query
 /// carrying per-PR review data. Only invoked while that filter is active.
-List<RepoPullRequests> _overlayReviewedByMe(
+List<RepoPullRequests> overlayReviewedByMe(
   List<RepoPullRequests> repos,
   Set<String> reviewedKeys,
 ) {
@@ -460,11 +526,14 @@ List<RepoPullRequests> _overlayReviewedByMe(
         (rp) => RepoPullRequests(
           repo: rp.repo,
           prs: rp.prs
-              .map(
-                (pr) => reviewedKeys.contains('${pr.repoFullName}#${pr.number}')
-                    ? pr.copyWith(reviewedByMe: true)
-                    : pr,
-              )
+              .map((pr) {
+                final reviewed = reviewedKeys.contains(
+                  '${pr.repoFullName}#${pr.number}',
+                );
+                return pr.reviewedByMe == reviewed
+                    ? pr
+                    : pr.copyWith(reviewedByMe: reviewed);
+              })
               .toList(growable: false),
         ),
       )
@@ -478,23 +547,49 @@ final prListDataProvider = Provider.autoDispose<AsyncValue<PrListData>>((ref) {
   final currentLogin = ref
       .watch(githubUserProvider)
       .maybeWhen(data: (user) => user?.login, orElse: () => null);
-  final byRepoAsync = ref.watch(prsByRepoProvider).whenData((s) => s.repos);
+  final queue = ref.watch(prsByRepoProvider);
+  final workspaceId = ref.watch(activeWorkspaceIdProvider);
+  final userId = ref.watch(currentUserIdProvider);
+  final expectedScope = workspaceId == null
+      ? null
+      : _prListScopeKey(workspaceId, userId);
+  final sourceScope = queue.value?.scopeKey;
+  final scopedQueue = sourceScope != null && sourceScope != expectedScope
+      ? const AsyncLoading<PrsByRepoState>()
+      : queue;
+  if (scopedQueue.hasError) {
+    return AsyncError(scopedQueue.error!, scopedQueue.stackTrace!);
+  }
+  final byRepoAsync = scopedQueue.whenData((s) => s.repos);
 
-  // `reviewedByMe` is no longer carried by the list query (its `latestReviews`
-  // connection was dropped). Only when the "reviewed by me" filter is on do we
-  // fetch the reviewed set lazily and overlay it; otherwise that provider is
-  // never watched, so it never fetches.
+  // Only fetch the optional reviewed-by search while its filter is active.
   final reviewedByMeActive = ref.watch(
-    prListFiltersProvider.select((f) => f.reviewedByMe),
+    prListFiltersProvider.select((filters) => filters.reviewedByMe),
   );
-  final reviewedKeys = reviewedByMeActive
-      ? (ref.watch(reviewedByMePrKeysProvider).value ?? const <String>{})
-      : const <String>{};
+  final reviewed = reviewedByMeActive
+      ? ref.watch(reviewedByMePrKeysProvider)
+      : null;
+  if (reviewed != null) {
+    final login = ref.watch(currentUserLoginProvider).toLowerCase();
+    final expectedReviewedScope = expectedScope == null || login.isEmpty
+        ? null
+        : '$expectedScope|$login';
+    if (expectedReviewedScope == null ||
+        ref.read(reviewedByMePrKeysProvider.notifier).scopeKey !=
+            expectedReviewedScope ||
+        !reviewed.hasValue && !reviewed.hasError) {
+      return const AsyncLoading<PrListData>();
+    }
+    if (reviewed.hasError) {
+      return AsyncError(reviewed.error!, reviewed.stackTrace!);
+    }
+  }
+  final reviewedKeys = reviewed?.value ?? const <String>{};
 
   return byRepoAsync.whenData((repos) {
-    final byRepo = reviewedKeys.isEmpty
-        ? repos
-        : _overlayReviewedByMe(repos, reviewedKeys);
+    final byRepo = reviewedByMeActive
+        ? overlayReviewedByMe(repos, reviewedKeys)
+        : repos;
     return const ClassifyPullRequestsUseCase().execute(
       byRepo: byRepo,
       currentUserLogin: currentLogin,
@@ -505,7 +600,8 @@ final prListDataProvider = Provider.autoDispose<AsyncValue<PrListData>>((ref) {
 /// Every PR loaded into the queue, flattened across repos — the population
 /// the filter menu's facet counts and the filter bar run over.
 final prListPopulationProvider = Provider.autoDispose<List<PullRequest>>((ref) {
-  final data = ref.watch(prListDataProvider).value;
+  final snapshot = ref.watch(prListDataProvider);
+  final data = snapshot.hasError ? null : snapshot.value;
   return [
     for (final group in data?.byRepo ?? const <RepoPullRequests>[])
       ...group.prs,

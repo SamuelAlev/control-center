@@ -234,5 +234,19 @@
   "yesterday": "ontem",
   "durationMinutes": "{count}m",
   "durationHours": "{count}h",
-  "durationHoursMinutes": "{hours}h {minutes}m"
+  "durationHoursMinutes": "{hours}h {minutes}m",
+  "newSpaceFolder": "Nova pasta",
+  "folderName": "Nome da pasta",
+  "renameSpaceFolder": "Renomear pasta",
+  "deleteSpaceFolder": "Excluir pasta",
+  "moveSpaceToFolder": "Mover para uma pasta",
+  "removeSpaceFromFolder": "Remover da pasta",
+  "spaceFolderActions": "Ações da pasta",
+  "deleteFolderWithSpacesWarning": "Excluir espaços permanentemente remove suas mensagens e diretórios de trabalho para todos. Essa ação não pode ser desfeita.",
+  "deleteSpacesInFolder": "Excluir permanentemente os espaços desta pasta",
+  "deleteFolderAndSpaces": "Excluir pasta e espaços",
+  "keepSpacesInFolder": "Caso contrário, os espaços ficarão fora de qualquer pasta.",
+  "create": "Criar",
+  "otherSpaces": "Outros espaços",
+  "folderUpdateFailed": "Não foi possível atualizar as pastas"
 }

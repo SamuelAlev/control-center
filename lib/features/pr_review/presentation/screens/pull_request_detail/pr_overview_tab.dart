@@ -55,11 +55,11 @@ class PrOverviewTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final t = context.designSystem ?? DesignSystemTokens.light();
     final checksAsync = ref.watch(prCheckRunsProvider(prRef));
-    final checks = checksAsync.value ?? const <CheckRun>[];
+    final checks = checksAsync.hasError
+        ? const <CheckRun>[]
+        : (checksAsync.value ?? const <CheckRun>[]);
     final canEdit = ref.watch(prCanEditProvider(prRef));
-    final optimisticMyState = ref.watch(
-      prOptimisticReviewStateProvider,
-    )[prRef];
+    final optimisticMyState = ref.watch(prOptimisticReviewStateProvider)[prRef];
 
     final header = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

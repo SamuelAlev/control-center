@@ -153,14 +153,19 @@ class _PrDiffTabState extends ConsumerState<PrDiffTab> {
   /// Patched files once the heavy subscription is armed, otherwise the
   /// metadata index Overview already loaded.
   List<PrFile> _filesForChrome() {
-    final index = ref.watch(prFileIndexProvider(widget.prRef)).value;
+    final indexAsync = ref.watch(prFileIndexProvider(widget.prRef));
+    if (indexAsync.hasError) {
+      return const [];
+    }
+    final index = indexAsync.value;
     if (!_listenForPatches) {
       return index ?? const [];
     }
-    return preferPatchedFiles(
-      ref.watch(prFilesProvider(widget.prRef)).value,
-      index,
-    );
+    final patchesAsync = ref.watch(prFilesProvider(widget.prRef));
+    if (patchesAsync.hasError) {
+      return const [];
+    }
+    return preferPatchedFiles(patchesAsync.value, index);
   }
 
   @override
@@ -219,9 +224,7 @@ class _PrDiffTabState extends ConsumerState<PrDiffTab> {
       if (!mounted || widget.pendingCommentAnchor?.value != commentId) {
         return;
       }
-      final comments = ref
-          .read(prReviewCommentsProvider(widget.prRef))
-          .value;
+      final comments = ref.read(prReviewCommentsProvider(widget.prRef)).value;
       final diff = _diffKey.currentState;
       if (comments == null || diff == null) {
         if (attempts > 0) {
@@ -326,16 +329,24 @@ class _PrDiffTabState extends ConsumerState<PrDiffTab> {
     final indexAsync = ref.watch(prFileIndexProvider(widget.prRef));
     final filesAsync = _listenForPatches
         ? ref.watch(prFilesProvider(widget.prRef))
-        : const AsyncValue<List<PrFile>>.data([]);
-    final allFiles = preferPatchedFiles(filesAsync.value, indexAsync.value);
+        : const AsyncLoading<List<PrFile>>();
+    final filesError = filesAsync.hasError
+        ? filesAsync.error
+        : indexAsync.hasError
+        ? indexAsync.error
+        : null;
+    final allFiles = filesError == null
+        ? preferPatchedFiles(filesAsync.value, indexAsync.value)
+        : const <PrFile>[];
     final scoped = watchScopedDiffFiles(
       ref,
       pr: widget.prRef,
       scope: scope,
       commits: commits,
       allFiles: allFiles,
-      isLoading: filesAsync.isLoading && !indexAsync.hasValue,
-      error: filesAsync.hasError ? filesAsync.error : null,
+      isLoading:
+          filesError == null && filesAsync.isLoading && !indexAsync.hasValue,
+      error: filesError,
     );
 
     // While the unscoped file list is still streaming in, the PR detail's
@@ -552,19 +563,31 @@ class _PrDiffTabState extends ConsumerState<PrDiffTab> {
     final indexAsync = ref.watch(prFileIndexProvider(widget.prRef));
     final filesAsync = _listenForPatches
         ? ref.watch(prFilesProvider(widget.prRef))
-        : const AsyncValue<List<PrFile>>.data([]);
+        : const AsyncLoading<List<PrFile>>();
     final commitsAsync = ref.watch(prCommitsProvider(widget.prRef));
     final reviewCommentsAsync = ref.watch(
       prReviewCommentsProvider(widget.prRef),
     );
+    final filesError = filesAsync.hasError
+        ? filesAsync.error
+        : indexAsync.hasError
+        ? indexAsync.error
+        : null;
     return FilesTab(
       pr: widget.pr,
       prRef: widget.prRef,
-      allFiles: preferPatchedFiles(filesAsync.value, indexAsync.value),
-      commits: commitsAsync.value ?? const [],
-      comments: reviewCommentsAsync.value ?? const [],
-      isLoading: filesAsync.isLoading && !indexAsync.hasValue,
-      error: filesAsync.hasError ? filesAsync.error : null,
+      allFiles: filesError == null
+          ? preferPatchedFiles(filesAsync.value, indexAsync.value)
+          : const [],
+      commits: commitsAsync.hasError
+          ? const []
+          : (commitsAsync.value ?? const []),
+      comments: reviewCommentsAsync.hasError
+          ? const []
+          : (reviewCommentsAsync.value ?? const []),
+      isLoading:
+          filesError == null && filesAsync.isLoading && !indexAsync.hasValue,
+      error: filesError,
       diffKey: _diffKey,
       splitView: splitView,
       onRequestSidebarSearch: _requestSidebarSearch,

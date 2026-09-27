@@ -473,6 +473,19 @@ class RpcPrReviewRepository implements PrReviewRepository {
     );
   }
 
+  /// Cached-first job steps/logs for the Actions accordion. The caller keeps
+  /// polling with [getJobRunDetail] while the job is running.
+  Stream<JobRunDetail?> watchJobRunDetail(int jobId) => _client
+      .watchCall('pr_review.getJobRunDetail', _coords({'job_id': jobId}))
+      .map((data) {
+        final raw = data['job'];
+        return raw is Map
+            ? _jobRunDetailFromDto(
+                JobRunDetailDto.fromJson(raw.cast<String, dynamic>()),
+              )
+            : null;
+      });
+
   @override
   Future<WorkflowGraph?> getWorkflowGraph(int workflowRunId) async {
     final data = await _client.call(

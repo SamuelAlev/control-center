@@ -380,6 +380,50 @@ class AppLocalizationsNl extends AppLocalizations {
       'Spaces in deze werkruimte verschijnen hier.';
 
   @override
+  String get newSpaceFolder => 'Nieuwe map';
+
+  @override
+  String get folderName => 'Mapnaam';
+
+  @override
+  String get renameSpaceFolder => 'Map hernoemen';
+
+  @override
+  String get deleteSpaceFolder => 'Map verwijderen';
+
+  @override
+  String get moveSpaceToFolder => 'Naar map verplaatsen';
+
+  @override
+  String get removeSpaceFromFolder => 'Uit map verwijderen';
+
+  @override
+  String get spaceFolderActions => 'Mapacties';
+
+  @override
+  String get deleteFolderWithSpacesWarning =>
+      'Als je ruimtes definitief verwijdert, verdwijnen hun berichten en werkmappen voor iedereen. Dit kan niet ongedaan worden gemaakt.';
+
+  @override
+  String get deleteSpacesInFolder =>
+      'Ruimtes in deze map definitief verwijderen';
+
+  @override
+  String get deleteFolderAndSpaces => 'Map en ruimtes verwijderen';
+
+  @override
+  String get keepSpacesInFolder => 'Anders blijven de ruimtes buiten een map.';
+
+  @override
+  String get create => 'Aanmaken';
+
+  @override
+  String get otherSpaces => 'Andere ruimtes';
+
+  @override
+  String get folderUpdateFailed => 'Kan mappen niet bijwerken';
+
+  @override
   String get thread => 'Thread';
 
   @override

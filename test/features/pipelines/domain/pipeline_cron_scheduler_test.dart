@@ -7,6 +7,7 @@ PipelineTrigger _trigger({
   DateTime? nextRunAt,
   DateTime? lastFiredAt,
   CronCatchUpPolicy catchUpPolicy = CronCatchUpPolicy.catchUpLatestOnly,
+  DateTime? createdAt,
 }) => PipelineTrigger(
   id: 't1',
   eventType: PipelineTrigger.scheduleEventType,
@@ -17,6 +18,7 @@ PipelineTrigger _trigger({
   nextRunAt: nextRunAt,
   lastFiredAt: lastFiredAt,
   catchUpPolicy: catchUpPolicy,
+  createdAt: createdAt ?? DateTime.utc(2026, 6, 30, 12),
 );
 
 void main() {
@@ -32,6 +34,38 @@ void main() {
       expect(eval.nextRunAt, isNotNull);
       // The next Monday 09:00 after the tick.
       expect(eval.nextRunAt, DateTime.utc(2026, 7, 6, 9));
+    });
+    test('restarts after first missed weekly slot and catches up once', () {
+      final now = DateTime.utc(2026, 7, 21, 12);
+      final first = scheduler.evaluate(
+        _trigger(createdAt: DateTime.utc(2026, 6, 30, 12)),
+        now,
+      );
+      expect(first.shouldFire, isTrue);
+      expect(first.plannedAt, DateTime.utc(2026, 7, 6, 9));
+      expect(first.nextRunAt, DateTime.utc(2026, 7, 27, 9));
+
+      final afterFire = scheduler.evaluate(
+        _trigger(
+          createdAt: DateTime.utc(2026, 6, 30, 12),
+          nextRunAt: first.nextRunAt,
+          lastFiredAt: now,
+        ),
+        now,
+      );
+      expect(afterFire.shouldFire, isFalse);
+    });
+
+    test('skip policy suppresses missed first slots without nextRunAt', () {
+      final eval = scheduler.evaluate(
+        _trigger(
+          createdAt: DateTime.utc(2026, 6, 30, 12),
+          catchUpPolicy: CronCatchUpPolicy.skip,
+        ),
+        DateTime.utc(2026, 7, 21, 12),
+      );
+      expect(eval.shouldFire, isFalse);
+      expect(eval.nextRunAt, DateTime.utc(2026, 7, 27, 9));
     });
 
     test('does not fire while nextRunAt is in the future', () {

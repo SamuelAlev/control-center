@@ -451,5 +451,19 @@
       "hours": { "type": "int" },
       "minutes": { "type": "int" }
     }
-  }
+  },
+  "newSpaceFolder": "پوشهٔ جدید",
+  "folderName": "نام پوشه",
+  "renameSpaceFolder": "تغییر نام پوشه",
+  "deleteSpaceFolder": "حذف پوشه",
+  "moveSpaceToFolder": "انتقال فضا به پوشه",
+  "removeSpaceFromFolder": "برداشتن فضا از پوشه",
+  "spaceFolderActions": "کنش‌های پوشه",
+  "deleteFolderWithSpacesWarning": "حذف دائمی فضاها، پیام‌ها و پوشه‌های کاری آن‌ها را برای همه پاک می‌کند. این کار بازگشت‌پذیر نیست.",
+  "deleteSpacesInFolder": "حذف دائمی فضاهای این پوشه",
+  "deleteFolderAndSpaces": "حذف پوشه و فضاها",
+  "keepSpacesInFolder": "در غیر این صورت، فضاها خارج از پوشه باقی می‌مانند.",
+  "create": "ایجاد",
+  "otherSpaces": "فضاهای دیگر",
+  "folderUpdateFailed": "به‌روزرسانی پوشه‌ها ممکن نشد"
 }

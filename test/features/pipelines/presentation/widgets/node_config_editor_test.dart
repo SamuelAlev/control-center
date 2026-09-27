@@ -348,6 +348,49 @@ void main() {
       expect(find.text('Bash script'), findsNothing);
     });
 
+    testWidgets('retention age accepts days and flags invalid input', (
+      tester,
+    ) async {
+      PipelineStepDefinition? updated;
+      final step = _step(
+        bodyKey: 'backup.deleteOlderThan',
+        config: const PipelineNodeConfig(extras: {'retentionDays': 30}),
+      );
+      await _pumpEditor(
+        tester,
+        NodeConfigEditor(
+          step: step,
+          allSteps: _allSteps(step),
+          workspaceAgents: const [],
+          workspaceRepos: const [],
+          onChange: (value) => updated = value,
+          onDelete: () {},
+        ),
+      );
+      final retention = find.descendant(
+        of: find.ancestor(
+          of: find.text('Delete backups older than (days)'),
+          matching: find.byType(NodeFieldLabel),
+        ),
+        matching: find.byType(CcTextField),
+      );
+      await _enterFTextField(
+        tester,
+        'Delete backups older than (days)',
+        '0',
+      );
+      expect(tester.widget<CcTextField>(retention).errorText, isNotNull);
+      expect(updated!.config.extras['retentionDays'], 30);
+
+      await _enterFTextField(
+        tester,
+        'Delete backups older than (days)',
+        '45',
+      );
+      expect(tester.widget<CcTextField>(retention).errorText, isNull);
+      expect(updated!.config.extras['retentionDays'], 45);
+    });
+
     // -----------------------------------------------------------------------
     // Rendering: step kind
     // -----------------------------------------------------------------------

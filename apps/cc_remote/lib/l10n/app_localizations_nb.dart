@@ -380,6 +380,50 @@ class AppLocalizationsNb extends AppLocalizations {
       'Områder i dette arbeidsområdet vises her.';
 
   @override
+  String get newSpaceFolder => 'Ny mappe';
+
+  @override
+  String get folderName => 'Mappenavn';
+
+  @override
+  String get renameSpaceFolder => 'Gi mappen nytt navn';
+
+  @override
+  String get deleteSpaceFolder => 'Slett mappe';
+
+  @override
+  String get moveSpaceToFolder => 'Flytt til mappe';
+
+  @override
+  String get removeSpaceFromFolder => 'Fjern fra mappe';
+
+  @override
+  String get spaceFolderActions => 'Mappehandlinger';
+
+  @override
+  String get deleteFolderWithSpacesWarning =>
+      'Hvis du sletter områder permanent, fjernes meldingene og arbeidskatalogene deres for alle. Dette kan ikke angres.';
+
+  @override
+  String get deleteSpacesInFolder => 'Slett områdene i denne mappen permanent';
+
+  @override
+  String get deleteFolderAndSpaces => 'Slett mappe og områder';
+
+  @override
+  String get keepSpacesInFolder =>
+      'Ellers blir områdene liggende utenfor mapper.';
+
+  @override
+  String get create => 'Opprett';
+
+  @override
+  String get otherSpaces => 'Andre områder';
+
+  @override
+  String get folderUpdateFailed => 'Kunne ikke oppdatere mappene';
+
+  @override
   String get thread => 'Tråd';
 
   @override

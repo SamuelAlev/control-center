@@ -134,6 +134,11 @@ abstract final class AppIcons {
     fontFamily: _family,
     fontPackage: _package,
   );
+  static const IconData folder = IconData(
+    0xe24a,
+    fontFamily: _family,
+    fontPackage: _package,
+  );
   static const IconData gitBranch = IconData(
     0xe278,
     fontFamily: _family,
@@ -237,6 +242,11 @@ abstract final class AppIcons {
   );
   static const IconData moon = IconData(
     0xe330,
+    fontFamily: _family,
+    fontPackage: _package,
+  );
+  static const IconData moreHorizontal = IconData(
+    0xe1fe,
     fontFamily: _family,
     fontPackage: _package,
   );

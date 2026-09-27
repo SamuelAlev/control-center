@@ -293,10 +293,8 @@ class _TurnBody extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isLive = live.isLive;
     // Segment source order: live registry → persisted metadata (one-shot /
-    // pre-lite rows) → transcript cache (seeded on turn finish) → one-time
-    // fetch for lite list rows (`segments_elided`). While the fetch is in
-    // flight the bubble renders `message.content` — the answer text — so a
-    // history row is never blank, just process-detail-light for a beat.
+    // pre-lite rows) → cached/read-through transcript for lite list rows.
+    // While a cold read is in flight, `message.content` remains the answer.
     List<TranscriptSegment> segments;
     if (isLive) {
       segments = live.snapshot ?? const [];
@@ -304,15 +302,13 @@ class _TurnBody extends ConsumerWidget {
       segments = message.transcript;
       if (segments.isEmpty) {
         final cached = ref.watch(transcriptCacheProvider).get(message.id);
-        // An EMPTY cache entry is not an answer — treat it as a miss so it can
-        // never shadow the `segments_elided` refetch below (which is the only
-        // path that can still load a transcript the relay never carried).
-        if (cached != null && cached.isNotEmpty) {
+        if (message.metadata?['segments_elided'] == true) {
+          final snapshot = ref.watch(messageTranscriptProvider(message.id));
+          segments = snapshot.hasError
+              ? const []
+              : snapshot.value ?? cached ?? const [];
+        } else if (cached != null) {
           segments = cached;
-        } else if (message.metadata?['segments_elided'] == true) {
-          segments =
-              ref.watch(messageTranscriptProvider(message.id)).value ??
-              const [];
         }
       }
     }

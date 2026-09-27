@@ -371,6 +371,49 @@ class AppLocalizationsKo extends AppLocalizations {
   String get spacesEmptyDescription => '이 워크스페이스의 스페이스가 여기에 표시됩니다.';
 
   @override
+  String get newSpaceFolder => '새 폴더';
+
+  @override
+  String get folderName => '폴더 이름';
+
+  @override
+  String get renameSpaceFolder => '폴더 이름 변경';
+
+  @override
+  String get deleteSpaceFolder => '폴더 삭제';
+
+  @override
+  String get moveSpaceToFolder => '폴더로 이동';
+
+  @override
+  String get removeSpaceFromFolder => '폴더에서 제거';
+
+  @override
+  String get spaceFolderActions => '폴더 작업';
+
+  @override
+  String get deleteFolderWithSpacesWarning =>
+      '스페이스를 영구 삭제하면 모든 사용자에게 해당 메시지와 작업 트리가 제거됩니다. 이 작업은 되돌릴 수 없습니다.';
+
+  @override
+  String get deleteSpacesInFolder => '이 폴더의 스페이스 영구 삭제';
+
+  @override
+  String get deleteFolderAndSpaces => '폴더와 스페이스 삭제';
+
+  @override
+  String get keepSpacesInFolder => '그렇지 않으면 스페이스가 폴더에 속하지 않은 상태로 남습니다.';
+
+  @override
+  String get create => '만들기';
+
+  @override
+  String get otherSpaces => '다른 스페이스';
+
+  @override
+  String get folderUpdateFailed => '폴더를 업데이트할 수 없습니다';
+
+  @override
   String get thread => '스레드';
 
   @override

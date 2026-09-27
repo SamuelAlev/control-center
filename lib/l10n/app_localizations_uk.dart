@@ -1815,6 +1815,13 @@ class AppLocalizationsUk extends AppLocalizations {
       'JSON Schema, якій має відповідати вивід кроку';
 
   @override
+  String get nodeConfigBackupRetentionDays => 'Видалити копії старші за (днів)';
+
+  @override
+  String get nodeConfigBackupRetentionDaysHelp =>
+      'Видаляються лише копії цього робочого простору. Укажіть додатну кількість днів.';
+
+  @override
   String get diffLineDisplay => 'Довгі рядки в diff';
 
   @override
@@ -9182,6 +9189,43 @@ class AppLocalizationsUk extends AppLocalizations {
   String get spaceReposHint => 'Репозиторії для включення';
 
   @override
+  String get newSpaceFolder => 'Нова папка';
+
+  @override
+  String get folderName => 'Назва папки';
+
+  @override
+  String get renameSpaceFolder => 'Перейменувати папку';
+
+  @override
+  String get deleteSpaceFolder => 'Видалити папку';
+
+  @override
+  String get moveSpaceToFolder => 'Перемістити до папки';
+
+  @override
+  String get removeSpaceFromFolder => 'Прибрати з папки';
+
+  @override
+  String get spaceFolderActions => 'Дії з папкою';
+
+  @override
+  String get deleteFolderWithSpacesWarning =>
+      'Остаточне видалення просторів вилучає їхні повідомлення та робочі дерева для всіх. Цю дію неможливо скасувати.';
+
+  @override
+  String get deleteSpacesInFolder => 'Остаточно видалити простори в цій папці';
+
+  @override
+  String get deleteFolderAndSpaces => 'Видалити папку й простори';
+
+  @override
+  String get keepSpacesInFolder => 'Інакше простори залишаться поза папками.';
+
+  @override
+  String get noSpaceFoldersYet => 'Папок ще немає';
+
+  @override
   String get ideSourceControl => 'Контроль версій';
 
   @override
@@ -14566,7 +14610,7 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get backupNoSnapshots =>
-      'Знімків ще немає. Знімок створюється лише на ваш запит — нічого не заплановано.';
+      'Знімків інсталяції ще немає. Створіть один зараз або використайте запланований конвеєр для копій робочого простору.';
 
   @override
   String get backupSnapshotComplete => 'Повний';
@@ -14577,6 +14621,29 @@ class AppLocalizationsUk extends AppLocalizations {
   @override
   String get backupSnapshotIncompleteNote =>
       'Маніфест відсутній або вказує на файли, яких немає, тож цей знімок не може відновити всю інсталяцію. Файли робочих просторів, які в ньому є, можна все одно прийняти по одному.';
+
+  @override
+  String get backupDeleteSnapshotLabel => 'Видалити знімок';
+
+  @override
+  String get backupDeleteSnapshotDescription =>
+      'Назавжди видалити цей знімок із сервера. Спочатку завантажте його, якщо хочете зберегти.';
+
+  @override
+  String get backupDeleteSnapshotAction => 'Видалити знімок';
+
+  @override
+  String get backupDeleteSnapshotTitle => 'Видалити цей знімок?';
+
+  @override
+  String backupDeleteSnapshotBody(String name) {
+    return 'Видалити $name із сервера? Усі бази даних у цьому знімку буде втрачено. Це не можна скасувати.';
+  }
+
+  @override
+  String backupDeleteSnapshotDone(String name) {
+    return 'Знімок $name видалено.';
+  }
 
   @override
   String backupSnapshotWorkspaces(int count) {

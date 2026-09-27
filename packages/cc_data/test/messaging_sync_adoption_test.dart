@@ -74,6 +74,9 @@ class _AdoptionHost {
     _push(subId, frame);
   }
 
+  void pushSpaces(Map<String, dynamic> snapshot) =>
+      _push(_subIdByQuery['messaging.watchSpaces']!, snapshot);
+
   bool get syncWatchSubscribed => _subIdByQuery.containsKey('sync.watch');
 
   void _push(String subId, Map<String, dynamic> data) {
@@ -134,6 +137,39 @@ void main() {
   });
 
   group('RpcMessagingRepository sync adoption', () {
+    test('revalidation replaces a stale seed even without a delta', () async {
+      host.legacySpacesSnapshot = {
+        'spaces': [_spaceWire('removed'), _spaceWire('retained', name: 'Old')],
+      };
+      final engine = ClientSyncEngine(
+        client: client,
+        storeEnabled: (_) => true,
+      );
+      final repo = RpcMessagingRepository(client, sync: engine);
+      final stale = Completer<void>();
+      final fresh = Completer<List<Space>>();
+      final sub = repo.watchSpacesByWorkspace('ws1').listen((rows) {
+        if (rows.any((row) => row.id == 'removed') && !stale.isCompleted) {
+          stale.complete();
+        }
+        if (rows.length == 1 &&
+            rows.single.name == 'Current' &&
+            !fresh.isCompleted) {
+          fresh.complete(rows);
+        }
+      });
+      addTearDown(sub.cancel);
+      addTearDown(engine.dispose);
+      await stale.future;
+      host.pushSpaces({
+        'spaces': [_spaceWire('retained', name: 'Current')],
+      });
+      expect(
+        (await fresh.future.timeout(const Duration(seconds: 2))).single.id,
+        'retained',
+      );
+    });
+
     test(
       'watchSpacesByWorkspace seeds from the legacy watch then follows deltas',
       () async {

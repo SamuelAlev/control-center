@@ -234,5 +234,19 @@
   "yesterday": "gestern",
   "durationMinutes": "{count}m",
   "durationHours": "{count}h",
-  "durationHoursMinutes": "{hours}h {minutes}m"
+  "durationHoursMinutes": "{hours}h {minutes}m",
+  "newSpaceFolder": "Neuer Ordner",
+  "folderName": "Ordnername",
+  "renameSpaceFolder": "Ordner umbenennen",
+  "deleteSpaceFolder": "Ordner löschen",
+  "moveSpaceToFolder": "Bereich in Ordner verschieben",
+  "removeSpaceFromFolder": "Bereich aus Ordner entfernen",
+  "spaceFolderActions": "Ordneraktionen",
+  "deleteFolderWithSpacesWarning": "Wenn Bereiche dauerhaft gelöscht werden, werden ihre Nachrichten und Arbeitsverzeichnisse für alle entfernt. Dies kann nicht rückgängig gemacht werden.",
+  "deleteSpacesInFolder": "Bereiche in diesem Ordner dauerhaft löschen",
+  "deleteFolderAndSpaces": "Ordner und Bereiche löschen",
+  "keepSpacesInFolder": "Andernfalls bleiben die Bereiche ohne Ordner.",
+  "create": "Erstellen",
+  "otherSpaces": "Weitere Bereiche",
+  "folderUpdateFailed": "Ordner konnten nicht aktualisiert werden"
 }

@@ -515,5 +515,19 @@
         "type": "int"
       }
     }
-  }
+  },
+  "newSpaceFolder": "Ny mappe",
+  "folderName": "Mappenavn",
+  "renameSpaceFolder": "Gi mappen nytt navn",
+  "deleteSpaceFolder": "Slett mappe",
+  "moveSpaceToFolder": "Flytt til mappe",
+  "removeSpaceFromFolder": "Fjern fra mappe",
+  "spaceFolderActions": "Mappehandlinger",
+  "deleteFolderWithSpacesWarning": "Hvis du sletter områder permanent, fjernes meldingene og arbeidskatalogene deres for alle. Dette kan ikke angres.",
+  "deleteSpacesInFolder": "Slett områdene i denne mappen permanent",
+  "deleteFolderAndSpaces": "Slett mappe og områder",
+  "keepSpacesInFolder": "Ellers blir områdene liggende utenfor mapper.",
+  "create": "Opprett",
+  "otherSpaces": "Andre områder",
+  "folderUpdateFailed": "Kunne ikke oppdatere mappene"
 }

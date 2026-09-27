@@ -452,5 +452,19 @@
       "hours": { "type": "int" },
       "minutes": { "type": "int" }
     }
-  }
+  },
+  "newSpaceFolder": "Folder baharu",
+  "folderName": "Nama folder",
+  "renameSpaceFolder": "Namakan semula folder",
+  "deleteSpaceFolder": "Padam folder",
+  "moveSpaceToFolder": "Alihkan ke folder",
+  "removeSpaceFromFolder": "Alih keluar daripada folder",
+  "spaceFolderActions": "Tindakan folder",
+  "deleteFolderWithSpacesWarning": "Memadam ruang secara kekal akan mengalih keluar mesej dan direktori kerja ruang itu untuk semua orang. Tindakan ini tidak boleh dibuat asal.",
+  "deleteSpacesInFolder": "Padam secara kekal ruang dalam folder ini",
+  "deleteFolderAndSpaces": "Padam folder dan ruang",
+  "keepSpacesInFolder": "Jika tidak, ruang akan kekal di luar folder.",
+  "create": "Cipta",
+  "otherSpaces": "Ruang lain",
+  "folderUpdateFailed": "Tidak dapat mengemas kini folder"
 }

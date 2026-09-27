@@ -14,6 +14,23 @@ abstract interface class DatabaseBackupPort {
   /// absolute path of the directory that was written. Throws on failure.
   Future<String> backupNow();
 
+  /// Backs up only [workspaceId] into a workspace-scoped snapshot, without
+  /// copying global data or any other workspace. Returns the `.db` file path.
+  Future<String> backupWorkspace(String workspaceId);
+
+  /// Deletes one whole-install snapshot by its listed directory [name].
+  ///
+  /// A path is never accepted; incomplete snapshots are deletable too.
+  Future<void> deleteBackup(String name);
+
+  /// Removes snapshots strictly older than [age]. With [workspaceId], only
+  /// that workspace's scoped backups are touched; without it, only install
+  /// snapshots are touched. Returns the number of directories removed.
+  Future<int> deleteBackupsOlderThan({
+    required Duration age,
+    String? workspaceId,
+  });
+
   /// Every snapshot [backupNow] has left behind, newest first.
   ///
   /// A snapshot the operator cannot find is a snapshot they do not have: the

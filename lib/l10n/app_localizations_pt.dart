@@ -1805,6 +1805,14 @@ class AppLocalizationsPt extends AppLocalizations {
       'Esquema JSON que a saída da etapa deve satisfazer';
 
   @override
+  String get nodeConfigBackupRetentionDays =>
+      'Excluir backups mais antigos que (dias)';
+
+  @override
+  String get nodeConfigBackupRetentionDaysHelp =>
+      'Apenas os backups deste espaço de trabalho são excluídos. Informe um número positivo de dias.';
+
+  @override
   String get diffLineDisplay => 'Linhas longas nos diffs';
 
   @override
@@ -9123,6 +9131,45 @@ class AppLocalizationsPt extends AppLocalizations {
   String get spaceReposHint => 'Repos a incluir';
 
   @override
+  String get newSpaceFolder => 'Nova pasta';
+
+  @override
+  String get folderName => 'Nome da pasta';
+
+  @override
+  String get renameSpaceFolder => 'Renomear pasta';
+
+  @override
+  String get deleteSpaceFolder => 'Excluir pasta';
+
+  @override
+  String get moveSpaceToFolder => 'Mover para uma pasta';
+
+  @override
+  String get removeSpaceFromFolder => 'Remover da pasta';
+
+  @override
+  String get spaceFolderActions => 'Ações da pasta';
+
+  @override
+  String get deleteFolderWithSpacesWarning =>
+      'Excluir espaços permanentemente remove suas mensagens e diretórios de trabalho para todos. Essa ação não pode ser desfeita.';
+
+  @override
+  String get deleteSpacesInFolder =>
+      'Excluir permanentemente os espaços desta pasta';
+
+  @override
+  String get deleteFolderAndSpaces => 'Excluir pasta e espaços';
+
+  @override
+  String get keepSpacesInFolder =>
+      'Caso contrário, os espaços ficarão fora de qualquer pasta.';
+
+  @override
+  String get noSpaceFoldersYet => 'Ainda não há pastas';
+
+  @override
   String get ideSourceControl => 'Controlo de código-fonte';
 
   @override
@@ -14451,7 +14498,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get backupNoSnapshots =>
-      'Ainda não há instantâneos. Um instantâneo só é criado quando você pede — nada é agendado.';
+      'Ainda não há instantâneos da instalação. Crie um agora ou use um pipeline agendado para backups do espaço de trabalho.';
 
   @override
   String get backupSnapshotComplete => 'Completo';
@@ -14462,6 +14509,29 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get backupSnapshotIncompleteNote =>
       'O manifesto está ausente ou aponta para arquivos que não existem, então este instantâneo não restaura a instalação inteira. Os arquivos de espaço de trabalho que ele tem ainda podem ser adotados um a um.';
+
+  @override
+  String get backupDeleteSnapshotLabel => 'Excluir instantâneo';
+
+  @override
+  String get backupDeleteSnapshotDescription =>
+      'Remova este instantâneo permanentemente do servidor. Baixe-o antes se quiser mantê-lo.';
+
+  @override
+  String get backupDeleteSnapshotAction => 'Excluir instantâneo';
+
+  @override
+  String get backupDeleteSnapshotTitle => 'Excluir este instantâneo?';
+
+  @override
+  String backupDeleteSnapshotBody(String name) {
+    return 'Excluir $name do servidor? Todos os bancos de dados deste instantâneo serão perdidos. Não é possível desfazer.';
+  }
+
+  @override
+  String backupDeleteSnapshotDone(String name) {
+    return 'Instantâneo $name excluído.';
+  }
 
   @override
   String backupSnapshotWorkspaces(int count) {

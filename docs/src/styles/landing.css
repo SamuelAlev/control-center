@@ -11,8 +11,6 @@ html[data-landing] {
   --motion-slow: var(--cc-motion-slow);
   --ease-standard: var(--cc-ease);
   --ease-emphasized: var(--cc-ease-emphasized);
-  --landing-max: 1248px;
-  --landing-gutter: clamp(16px, 3vw, 48px);
   --z-chrome: 20;
   --z-menu: 30;
   --z-skip: 40;
@@ -26,7 +24,7 @@ html[data-landing] [hidden] { display: none !important; }
 .landing-page { min-inline-size: 0; }
 .landing-page [id] { scroll-margin-top: 88px; }
 .landing-page .landing-section[id] { scroll-margin-top: 16px; }
-.landing-wrap { max-inline-size: var(--landing-max); padding-inline: var(--landing-gutter); margin-inline: auto; }
+.landing-wrap { max-inline-size: 1248px; padding-inline: clamp(16px, 3vw, 48px); margin-inline: auto; }
 .landing-section { padding-block: 96px; border-block-start: 1px solid var(--color-border); }
 .landing-page :is(h1, h2, h3) { font-weight: 600; text-wrap: balance; }
 .landing-page :is(h2, h3) { letter-spacing: -.035em; }
@@ -112,10 +110,11 @@ html[dir='rtl'] .tour-progress { transform-origin: right; }
 .integration-list span { display: inline-flex; align-items: center; gap: var(--spacing-2); font-size: 15px; font-weight: 600; }
 .integration-list :is(img, svg) { inline-size: 22px; block-size: 22px; flex: none; object-fit: contain; }
 html[data-theme='dark'] .integration-monochrome { filter: brightness(0) invert(1); }
-/* Two lead captures, three supporting captures, then a quiet row of daily tools. */
+/* Lead captures, compact feature rows, then paired supporting links. */
 .landing-feature-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); border-block-start: 1px solid var(--color-border); border-inline-start: 1px solid var(--color-border); }
 .landing-feature { min-inline-size: 0; display: flex; flex-direction: column; grid-column: span 4; border-inline-end: 1px solid var(--color-border); border-block-end: 1px solid var(--color-border); background: var(--color-panel); }
 .feature-agents, .feature-review { grid-column: span 6; }
+.feature-wide, .feature-supporting { grid-column: span 6; }
 .feature-copy { padding: var(--spacing-8); }
 .feature-copy h3 { font-size: 22px; line-height: 1.35; }
 .feature-copy p { margin-block-start: var(--spacing-3); max-inline-size: 56ch; color: var(--color-muted); font-size: 14px; line-height: 1.65; }
@@ -182,7 +181,6 @@ html[dir='rtl'] .workflow-track i { transform-origin: right; }
 .paraglider-poster { display: block; object-fit: contain; }
 .paraglider.is-ready .paraglider-poster { visibility: hidden; }
 .paraglider-stage canvas { display: block; inline-size: 100%; block-size: 100%; cursor: grab; }
-.paraglider-stage canvas:active { cursor: grabbing; }
 .install-platforms { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid var(--color-line-strong); }
 .install-platform { display: flex; flex-direction: column; color: var(--color-fg); text-decoration: none; padding: var(--spacing-8); border-inline-end: 1px solid var(--color-line-strong); transition: background var(--motion-base); }
 .install-platform:last-child { border-inline-end: 0; }
@@ -253,9 +251,8 @@ html[dir='rtl'] .workflow-track i { transform-origin: right; }
   .integrations-copy p { max-inline-size: none; }
   .integration-list { justify-content: flex-start; }
   .landing-feature { grid-column: span 6; }
-  .feature-pipelines { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; align-items: center; }
-  .feature-pipelines .feature-media { padding-block-end: var(--spacing-6); }
-  .feature-supporting { grid-column: span 4; }
+  .feature-pipelines { grid-column: span 6; }
+  .feature-supporting { grid-column: span 6; }
   .feature-supporting .feature-copy { padding: var(--spacing-4); }
   .workflow-steps { gap: var(--spacing-6); }
   .workflow-steps h3 { font-size: 19px; }

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cc_data/cc_data.dart';
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
+import 'package:cc_rpc/cc_rpc.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/core/settings/user_preference_sync.dart';
 import 'package:control_center/di/synced_preferences.dart';
@@ -24,10 +25,18 @@ final currentIdentityProvider = FutureProvider<IdentityMe>((ref) {
   return ref.watch(identityRepositoryProvider).me(workspaceId: workspaceId);
 });
 
-/// The authenticated user's id, or null while identity is still loading.
-final currentUserIdProvider = Provider<String?>(
-  (ref) => ref.watch(currentIdentityProvider).value?.user.id,
-);
+/// The authenticated user, retained through outages but never through denial.
+final currentUserIdProvider = Provider<String?>((ref) {
+  final identity = ref.watch(currentIdentityProvider);
+  final error = identity.error;
+  if (error is RemoteRpcException &&
+      (error.code == RpcErrorCodes.unauthorized ||
+          error.code == RpcErrorCodes.workspaceMismatch ||
+          error.code == RpcErrorCodes.notFound)) {
+    return null;
+  }
+  return identity.value?.user.id;
+});
 
 /// Whether the signed-in user is this INSTALL's operator (the recorded server
 /// owner), as reported by `identity.me`.
@@ -217,4 +226,3 @@ final ownDevicesProvider = StreamProvider<List<Map<String, dynamic>>>(
             .toList(),
       ),
 );
-

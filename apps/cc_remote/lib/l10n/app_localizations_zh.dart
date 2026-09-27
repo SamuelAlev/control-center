@@ -363,6 +363,48 @@ class AppLocalizationsZh extends AppLocalizations {
   String get spacesEmptyDescription => '此工作区中的空间会显示在这里。';
 
   @override
+  String get newSpaceFolder => '新建文件夹';
+
+  @override
+  String get folderName => '文件夹名称';
+
+  @override
+  String get renameSpaceFolder => '重命名文件夹';
+
+  @override
+  String get deleteSpaceFolder => '删除文件夹';
+
+  @override
+  String get moveSpaceToFolder => '移至文件夹';
+
+  @override
+  String get removeSpaceFromFolder => '从文件夹移除';
+
+  @override
+  String get spaceFolderActions => '文件夹操作';
+
+  @override
+  String get deleteFolderWithSpacesWarning => '永久删除空间会为所有人移除其中的消息和工作树。此操作无法撤销。';
+
+  @override
+  String get deleteSpacesInFolder => '永久删除此文件夹中的空间';
+
+  @override
+  String get deleteFolderAndSpaces => '删除文件夹和空间';
+
+  @override
+  String get keepSpacesInFolder => '否则，空间将不属于任何文件夹。';
+
+  @override
+  String get create => '创建';
+
+  @override
+  String get otherSpaces => '其他空间';
+
+  @override
+  String get folderUpdateFailed => '无法更新文件夹';
+
+  @override
   String get thread => '话题';
 
   @override
@@ -1196,6 +1238,48 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get spacesEmptyDescription => '此工作區中的空間會顯示於此。';
+
+  @override
+  String get newSpaceFolder => '新增資料夾';
+
+  @override
+  String get folderName => '資料夾名稱';
+
+  @override
+  String get renameSpaceFolder => '重新命名資料夾';
+
+  @override
+  String get deleteSpaceFolder => '刪除資料夾';
+
+  @override
+  String get moveSpaceToFolder => '移至資料夾';
+
+  @override
+  String get removeSpaceFromFolder => '從資料夾移除';
+
+  @override
+  String get spaceFolderActions => '資料夾操作';
+
+  @override
+  String get deleteFolderWithSpacesWarning => '永久刪除空間會為所有人移除其中的訊息和工作樹。此操作無法復原。';
+
+  @override
+  String get deleteSpacesInFolder => '永久刪除此資料夾中的空間';
+
+  @override
+  String get deleteFolderAndSpaces => '刪除資料夾和空間';
+
+  @override
+  String get keepSpacesInFolder => '否則，空間將不屬於任何資料夾。';
+
+  @override
+  String get create => '建立';
+
+  @override
+  String get otherSpaces => '其他空間';
+
+  @override
+  String get folderUpdateFailed => '無法更新資料夾';
 
   @override
   String get thread => '討論串';

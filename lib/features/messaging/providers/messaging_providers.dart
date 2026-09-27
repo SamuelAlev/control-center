@@ -870,15 +870,49 @@ final standingConversationIdProvider = FutureProvider.autoDispose
       if (workspaceId == null) {
         throw StateError('No active workspace to resolve a conversation in');
       }
-      // Held: the id is stable for the life of the space and every open of
-      // it gates the chat pane on this. A failure is let go, so the next open
-      // retries.
+      // Keep the resolved id warm, but let the conversation list revalidate it.
       final release = _holdAfterLastListener(ref, _spaceConversationsTtl);
+      final repository = ref.watch(conversationRepositoryProvider);
+      final spaces = ref.watch(workspaceSpacesProvider(workspaceId).future);
+      final conversations = ref.watch(spaceConversationsProvider(spaceId));
       final Conversation conversation;
       try {
-        conversation = await ref
-            .watch(conversationRepositoryProvider)
-            .ensure(workspaceId: workspaceId, spaceId: spaceId);
+        // Resolving an existing chat is a read. The cached conversation list
+        // must be enough to open it without waiting for an ensure mutation.
+        final ownedSpaces = await spaces;
+        if (!ref.mounted) {
+          throw StateError('Conversation resolution was disposed');
+        }
+        if (!ownedSpaces.any(
+          (space) => space.id == spaceId && space.workspaceId == workspaceId,
+        )) {
+          throw StateError('Space does not belong to the active workspace');
+        }
+        if (conversations.hasError) {
+          Error.throwWithStackTrace(
+            conversations.error!,
+            conversations.stackTrace!,
+          );
+        }
+        final List<Conversation> rows = conversations.hasValue
+            ? conversations.requireValue
+            : await ref.watch(spaceConversationsProvider(spaceId).future);
+        Conversation? standing;
+        for (final candidate in rows) {
+          if (candidate.workspaceId != workspaceId ||
+              candidate.spaceId != spaceId ||
+              candidate.isArchived ||
+              candidate.isThread) {
+            continue;
+          }
+          if (standing == null ||
+              candidate.createdAt.isBefore(standing.createdAt)) {
+            standing = candidate;
+          }
+        }
+        conversation =
+            standing ??
+            await repository.ensure(workspaceId: workspaceId, spaceId: spaceId);
       } catch (_) {
         release();
         rethrow;

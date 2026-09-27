@@ -15,8 +15,6 @@
   --color-panel: var(--cc-panel);
   --color-sidebar: #f6f5f0;
   --color-rail: var(--cc-rail);
-  /* Inverted slab (footer, solid CTAs). Ink in light, deep near-black in dark. */
-  --color-inverse-surface: #1f1f1f;
 
   /* Foreground */
   --color-fg: var(--cc-fg);
@@ -42,7 +40,7 @@
      body-size text and must never sit under a white label.
      --color-accent-strong is the accent that may be TEXT (4.5:1 or better on
      every surface in the ladder). Landing and docs use the shared functional
-     accent from brand.css; these defaults also serve older marketing pages.
+     accent from brand.css.
      --color-accent-fill is the accent as a solid button under
      --color-accent-on; it is deliberately theme-independent, because contrast
      against the white label is a property of the pair, not of the page. */
@@ -102,12 +100,16 @@
   --container-gutter-phone: 12px;
 
   /* Nav */
-  --nav-h: 64px;
+  --nav-h: 72px;
 
   /* Motion */
   --motion-fast: 150ms;
   --motion-base: 200ms;
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+}
+
+@media (max-width: 900px) {
+  :root { --nav-h: 64px; }
 }
 
 :root { color-scheme: light; }
@@ -118,7 +120,6 @@
   color-scheme: dark;
 
   --color-sidebar: #121110;
-  --color-inverse-surface: #100f0e;
 
   /* Accent — Flame (brand 500), one step brighter than the light signal.
      Accent text goes brighter still on a dark canvas; the solid-fill value is

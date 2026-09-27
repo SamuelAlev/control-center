@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'package:cc_domain/features/meetings/domain/entities/meeting.dart';
+import 'package:cc_domain/features/meetings/domain/entities/meeting_action_item.dart';
 import 'package:cc_ui/cc_ui.dart';
 
-import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/features/meetings/presentation/notifiers/meeting_recorder_controller.dart';
 import 'package:control_center/features/meetings/presentation/notifiers/meeting_recorder_state.dart';
 import 'package:control_center/features/meetings/presentation/utils/meeting_format.dart';
@@ -83,16 +83,6 @@ class _MeetingsScreenState extends ConsumerState<MeetingsScreen> {
   }
 
   Future<void> _startRecording() async {
-    // Recording needs audio capture and a speech model on the host; a demo
-    // ships neither and `meeting.startRecording` is refused. Say so in the
-    // demo's own words rather than letting the controller surface a raw
-    // transport error in a red toast.
-    if (ref.read(isDemoServerProvider)) {
-      CcToastScope.of(
-        context,
-      ).show(AppLocalizations.of(context).demoUnavailableAudio);
-      return;
-    }
     final ws = context.currentWorkspaceId!;
     final controller = ref.read(meetingRecorderControllerProvider.notifier);
     await controller.start();
@@ -136,7 +126,9 @@ class _MeetingsScreenState extends ConsumerState<MeetingsScreen> {
 
     final meetingsAsync = ref.watch(meetingsProvider(workspaceId));
     final recorder = ref.watch(meetingRecorderControllerProvider);
-    final meetings = meetingsAsync.asData?.value ?? const <Meeting>[];
+    final meetings = meetingsAsync.hasError
+        ? const <Meeting>[]
+        : meetingsAsync.value ?? const <Meeting>[];
     // Summarizing only. A meeting that is still *recording* is reported by the
     // live strip, in far more detail and with the controls to act on it — the
     // pill counting it too would say the same thing twice in one header.
@@ -159,11 +151,14 @@ class _MeetingsScreenState extends ConsumerState<MeetingsScreen> {
           onResume: _openRecording,
         ),
       ],
-      child: meetingsAsync.when(
-        loading: () => const Center(child: CcSpinner()),
-        error: (e, _) => InlineLoadError(e),
-        data: (data) => _buildBody(context, l10n, workspaceId, data, recorder),
-      ),
+      child: meetingsAsync.hasValue && !meetingsAsync.hasError
+          ? _buildBody(context, l10n, workspaceId, meetings, recorder)
+          : meetingsAsync.when(
+              loading: () => const Center(child: CcSpinner()),
+              error: (e, _) => InlineLoadError(e),
+              data: (data) =>
+                  _buildBody(context, l10n, workspaceId, data, recorder),
+            ),
     );
   }
 
@@ -173,12 +168,18 @@ class _MeetingsScreenState extends ConsumerState<MeetingsScreen> {
     List<Meeting> meetings,
     DateTime now,
   ) {
-    final actionStats =
-        ref.watch(meetingActionItemStatsProvider(workspaceId)).asData?.value ??
-        const {};
-    final decisionCounts =
-        ref.watch(meetingDecisionCountsProvider(workspaceId)).asData?.value ??
-        const {};
+    final actionStatsAsync = ref.watch(
+      meetingActionItemStatsProvider(workspaceId),
+    );
+    final decisionCountsAsync = ref.watch(
+      meetingDecisionCountsProvider(workspaceId),
+    );
+    final actionStats = actionStatsAsync.hasError
+        ? const <String, MeetingActionItemStats>{}
+        : actionStatsAsync.value ?? const <String, MeetingActionItemStats>{};
+    final decisionCounts = decisionCountsAsync.hasError
+        ? const <String, int>{}
+        : decisionCountsAsync.value ?? const <String, int>{};
 
     var thisWeek = 0;
     var recorded = Duration.zero;

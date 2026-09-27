@@ -1,4 +1,4 @@
-/* One header for the landing page and manual. No Tailwind dependency. */
+/* Shared header for marketing pages and the manual. No Tailwind dependency. */
 .landing-nav {
   position: sticky;
   inset-block-start: 0;

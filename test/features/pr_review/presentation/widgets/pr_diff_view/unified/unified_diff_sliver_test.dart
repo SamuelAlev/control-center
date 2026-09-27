@@ -481,6 +481,102 @@ void main() {
         expect(geometryMoved, greaterThan(0));
       },
     );
+    testWidgets('a hydrated PR patch gains syntax colour without scrolling', (
+      tester,
+    ) async {
+      PrFile pythonFile(String patch) => PrFile(
+        filename: 'evalkit/budget.py',
+        status: PrFileStatus.modified,
+        additions: 2,
+        deletions: 0,
+        patch: patch,
+      );
+
+      final document = PrDiffDocument(lineHeight: 20, headerHeight: 32)
+        ..setFiles([pythonFile('')]);
+      final store = DiffStructureStore(document: document, maxTokenFiles: 8);
+      final slots = [
+        const DiffSlot(
+          kind: DiffSlotKind.header,
+          key: 'hdr:budget.py',
+          fileIndex: 0,
+          offset: 0,
+          height: 32,
+        ),
+      ];
+      Widget view(int revision, {Brightness brightness = Brightness.light}) =>
+          MaterialApp(
+            home: CustomScrollView(
+              slivers: [
+                UnifiedDiffSliver(
+                  delegate: SliverChildBuilderDelegate(
+                    (_, _) => const SizedBox(height: 32),
+                    childCount: 1,
+                  ),
+                  document: document,
+                  store: store,
+                  config: UnifiedDiffPaintConfig(
+                    brightness: brightness,
+                    baseStyle: const TextStyle(fontSize: 13),
+                    gutterBgColor: const Color(0xFFF0F0F0),
+                    gutterBorderColor: const Color(0xFFDDDDDD),
+                    expandGapBgColor: const Color(0xFFEEEEEE),
+                    expandGapBorderColor: const Color(0xFFCCCCCC),
+                    expandGapTextColor: const Color(0xFF666666),
+                    commentHighlightColor: const Color(0x1A0000FF),
+                    commentHighlightActiveColor: const Color(0x330000FF),
+                    revision: revision,
+                  ),
+                  slots: slots,
+                ),
+              ],
+            ),
+          );
+
+      await tester.pumpWidget(view(0));
+      expect(store.tokensOf(0), isNull);
+
+      const patch =
+          '@@ -1,1 +1,3 @@\n class EvalBudget:\n'
+          '+    def remaining(self):\n+'
+          '+        return 80_000\n';
+      final repatched = document.setFiles([pythonFile(patch)]);
+      expect(repatched, [0]);
+      store.invalidateFile(0);
+      await tester.pumpWidget(view(1));
+      await tester.pump();
+
+      final tokens = store.tokensOf(0);
+      expect(
+        tokens?.values
+            .expand((line) => line)
+            .any(
+              (token) =>
+                  token.text.contains('return') && token.colorValue != null,
+            ),
+        isTrue,
+        reason: 'a patch arriving after its file index must gain syntax colour',
+      );
+      final lightReturn = tokens!.values
+          .expand((line) => line)
+          .firstWhere((token) => token.text.contains('return'))
+          .colorValue;
+      store.isDark = true;
+      await tester.pumpWidget(view(2, brightness: Brightness.dark));
+      await tester.pump();
+      final darkReturn = store
+          .tokensOf(0)!
+          .values
+          .expand((line) => line)
+          .firstWhere((token) => token.text.contains('return'))
+          .colorValue;
+      expect(darkReturn, isNotNull);
+      expect(darkReturn, isNot(lightReturn));
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      store.dispose();
+      await DiffWorkerPool.instance.shutdown();
+    });
   });
 
   // ── Pinned header owns the pointer ───────────────────────────────

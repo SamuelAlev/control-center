@@ -10,14 +10,15 @@ split this way, see [Workspaces and isolation](/manual/concepts/workspaces/).
 
 ## Artifacts
 
-There are two, and they are not interchangeable.
+There are three database-copy artifacts, with different scopes and deletion policies.
 
-| Artifact                | Written by          | Shape                             | Covers                            |
-| ----------------------- | ------------------- | --------------------------------- | --------------------------------- |
-| **Install snapshot**    | `server.backupNow`  | A timestamped **directory**       | Every database on the install     |
-| **Workspace export**    | `workspace.export`  | A single `.db` **file**           | One workspace's database          |
+| Artifact                | Written by                   | Shape                                 | Covers                        |
+| ----------------------- | ---------------------------- | ------------------------------------- | ----------------------------- |
+| **Install snapshot**    | `server.backupNow`           | A timestamped **directory**           | Every database on the install |
+| **Workspace backup**    | `Workspace backup` pipeline  | Timestamped directory with one `.db`  | One workspace's database      |
+| **Workspace export**    | `workspace.export`           | A single `.db` **file**               | One workspace's database      |
 
-Both are written with SQLite `VACUUM INTO`, which is safe against a live WAL database:
+All are written with SQLite `VACUUM INTO`, which is safe against a live WAL database:
 it takes a read transaction, produces a defragmented and transactionally consistent
 copy, and never requires stopping the server.
 
@@ -34,6 +35,15 @@ The layout mirrors the live data directory exactly, which is what makes restorin
 install a copy back rather than a translation. The directory name is the UTC timestamp
 with `:` and `.` replaced by `-`, so it is filesystem-safe on Windows and sorts
 chronologically as a plain string.
+
+Scheduled workspace backups live separately at
+`<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`.
+They do not include a manifest or `global.db` and are not install snapshots.
+The weekly pipeline's retention step removes only backups of its own workspace
+older than its configured age (30 days by default); manually created install
+snapshots are never rotated by that step. `server.listBackups` lists only install
+snapshots, including incomplete ones.
+
 
 ### `manifest.json`
 
@@ -94,7 +104,6 @@ database point at, `skills/` and `agents/` hold the files an agent runs with, an
 `secrets.json` holds every pairing key, provider credential and SSO setting on the
 install. See [Back up and restore](/manual/guides/back-up-and-restore/#copy-backups-off-the-machine)
 for covering the rest.
-
 :::note[Chat tokens deliberately stay behind]
 `chat_credentials/` sitting beside the database rather than inside it is why a workspace
 handed to somebody else carries no live bot tokens. See the
@@ -103,31 +112,33 @@ handed to somebody else carries no live bot tokens. See the
 
 ## Operations
 
-All four are `fullClient`-only: a paired phone can never trigger them. All four are
-absent entirely — not refused, structurally missing — on a server with no backup port
-wired, which is what a demo server is.
+Install backup RPCs and workspace export/import are `fullClient`-only: a paired
+phone cannot trigger them. All are absent entirely — not refused, structurally
+missing — on a server with no backup port wired, such as the demo server.
 
 | Op                   | Kind   | Scope     | Minimum role | Arguments     | Returns                       |
 | -------------------- | ------ | --------- | ------------ | ------------- | ----------------------------- |
 | `server.backupNow`   | mutate | Install   | install **owner** | none     | `{ok, path}`                  |
 | `server.listBackups` | read   | Install   | install **owner** | none     | `{backups: [...]}`            |
+| `server.deleteBackup` | mutate | Install | install **owner** | `name` | `{ok}` |
 | `workspace.export`   | read   | Workspace | `admin`      | none          | `{ok, path}`                  |
 | `workspace.import`   | mutate | Workspace | `owner`      | `source_path` | `{ok, workspace_id}`          |
-| `workspace.delete`   | mutate | Install\* | `owner`      | `id`          | registry row marked deleted   |
+| `workspace.delete`   | mutate | Install*  | `owner`      | `id`          | registry row marked deleted   |
 
-\* `workspace.delete` is unscoped because the row it marks lives in the global registry,
-so the dispatcher's role gate never fires for it; the handler checks the caller's
-membership of the named workspace itself and requires `owner`.
+* `workspace.delete` is unscoped because the row it marks lives in the global
+registry; its handler checks the caller's membership of the named workspace
+and requires `owner`.
 
 `path` in every response is a path on the **server host**.
 
 :::note[A whole-install snapshot is owner-gated on both lanes]
-`server.backupNow` and `server.listBackups` require the install **owner**
-(`ServerAuthority.serverOwner`), the same gate as `GET /backup/snapshot`. A snapshot
-captures every workspace's database, so being an admin of one workspace is not enough
-to copy the others. The Settings page is still listed for every full client; the ops
-refuse if you are not the operator. Per-workspace export/import stay on workspace
-admin/owner, not the install owner.
+`server.backupNow`, `server.listBackups`, and `server.deleteBackup` require the
+install **owner** (`ServerAuthority.serverOwner`), the same gate as
+`GET /backup/snapshot`. A snapshot captures every workspace's database, so
+being an admin of one workspace is not enough to manage the others. Deletion
+accepts only the listed timestamp directory name, not an arbitrary server
+path, and removes the whole snapshot (including incomplete snapshots).
+Per-workspace export/import stay on workspace admin/owner, not the install owner.
 :::
 
 ### `server.listBackups` response
@@ -234,15 +245,17 @@ connection, and the UI disables them with a note rather than failing mid-downloa
 | Thing                          | Value                                                        |
 | ------------------------------ | ------------------------------------------------------------ |
 | Snapshots                      | `<dataDir>/backups/<timestamp>/`                             |
+| Scheduled workspace backups    | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db` |
 | Workspace exports              | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`     |
 | Transfer staging               | `<dataDir>/backups/transfer/` — a workbench, swept by the route that writes it |
 | Snapshot archive name          | `<snapshot directory name>.zip`                              |
 | Upload ceiling                 | 8 GiB per `POST /backup/restore`                             |
-| Retention                      | None. Nothing rotates, prunes or schedules a snapshot        |
+| Retention                      | Install snapshots: manual deletion. Workspace backups: weekly pipeline, 30-day default |
 
-The `exports/` directory sits under `backups/` and is excluded from the snapshot listing
-by name — it is a pile of single-workspace files, not a snapshot, and counting it as one
-would report an install as having backups it does not have.
+The `exports/`, `transfer/`, and `workspace-backups/` directories are not
+install snapshots and are excluded from `server.listBackups`. Only the last
+directory has scheduled retention; deleting an install snapshot requires the
+install owner's explicit action.
 
 ## See also
 

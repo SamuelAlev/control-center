@@ -5,11 +5,10 @@ import 'package:cc_rpc/cc_rpc.dart';
 /// Reads/mutates meetings, transcript segments, diarized speakers and the
 /// structured action items / decisions over the RPC client.
 ///
-/// Meetings are workspace-scoped. No call here spells out a `workspace_id`: the
-/// RPC client injects its active workspace into any request that omits it and
-/// the host reads the workspace out of the args (it is stateless and binds
-/// nothing of its own). Mirrors the
-/// `meeting.*` ops + the `meeting.watch*` subscriptions in the host catalog.
+/// Meetings are workspace-scoped. Subscriptions carry the requested workspace
+/// explicitly so cached snapshots cannot cross a workspace switch; one-shot
+/// calls and mutations without a workspace still use the RPC client's active
+/// workspace. Mirrors the `meeting.*` ops and subscriptions in the host catalog.
 /// Returns the raw wire maps; the [RpcMeetingRepository] wrapper maps them back
 /// to domain entities. Recording itself stays device-only on the host, so the
 /// recorder-only writes (upsert/appendSegment/replace*) have no RPC surface.
@@ -167,41 +166,71 @@ class RemoteMeetingRepository {
 
   // ---- Watches ----
 
-  /// Live meetings in the bound workspace, newest first.
-  Stream<List<Map<String, dynamic>>> watchByWorkspace() => _client
-      .subscribe('meeting.watchByWorkspace', const {})
-      .map((data) => _list(data, 'meetings'));
+  /// Live meetings in [workspaceId], newest first.
+  Stream<List<Map<String, dynamic>>> watchByWorkspace({String? workspaceId}) =>
+      _client
+          .subscribe('meeting.watchByWorkspace', {'workspace_id': ?workspaceId})
+          .map((data) => _list(data, 'meetings'));
 
   /// Live transcript segments for [meetingId].
-  Stream<List<Map<String, dynamic>>> watchSegments(String meetingId) => _client
-      .subscribe('meeting.watchSegments', {'meeting_id': meetingId})
+  Stream<List<Map<String, dynamic>>> watchSegments(
+    String meetingId, {
+    String? workspaceId,
+  }) => _client
+      .subscribe('meeting.watchSegments', {
+        'meeting_id': meetingId,
+        'workspace_id': ?workspaceId,
+      })
       .map((data) => _list(data, 'segments'));
 
   /// Live diarized speakers for [meetingId].
-  Stream<List<Map<String, dynamic>>> watchSpeakers(String meetingId) => _client
-      .subscribe('meeting.watchSpeakers', {'meeting_id': meetingId})
+  Stream<List<Map<String, dynamic>>> watchSpeakers(
+    String meetingId, {
+    String? workspaceId,
+  }) => _client
+      .subscribe('meeting.watchSpeakers', {
+        'meeting_id': meetingId,
+        'workspace_id': ?workspaceId,
+      })
       .map((data) => _list(data, 'speakers'));
 
   /// Live action items for [meetingId].
-  Stream<List<Map<String, dynamic>>> watchActionItems(String meetingId) =>
-      _client
-          .subscribe('meeting.watchActionItems', {'meeting_id': meetingId})
-          .map((data) => _list(data, 'items'));
+  Stream<List<Map<String, dynamic>>> watchActionItems(
+    String meetingId, {
+    String? workspaceId,
+  }) => _client
+      .subscribe('meeting.watchActionItems', {
+        'meeting_id': meetingId,
+        'workspace_id': ?workspaceId,
+      })
+      .map((data) => _list(data, 'items'));
 
   /// Live decisions for [meetingId].
-  Stream<List<Map<String, dynamic>>> watchDecisions(String meetingId) => _client
-      .subscribe('meeting.watchDecisions', {'meeting_id': meetingId})
+  Stream<List<Map<String, dynamic>>> watchDecisions(
+    String meetingId, {
+    String? workspaceId,
+  }) => _client
+      .subscribe('meeting.watchDecisions', {
+        'meeting_id': meetingId,
+        'workspace_id': ?workspaceId,
+      })
       .map((data) => _list(data, 'decisions'));
 
   /// Live per-meeting action-item stats (a `{meetingId: {total, done}}` object).
-  Stream<Map<String, dynamic>> watchActionItemStats() => _client
-      .subscribe('meeting.watchActionItemStats', const {})
-      .map((data) => _object(data, 'stats'));
+  Stream<Map<String, dynamic>> watchActionItemStats({String? workspaceId}) =>
+      _client
+          .subscribe('meeting.watchActionItemStats', {
+            'workspace_id': ?workspaceId,
+          })
+          .map((data) => _object(data, 'stats'));
 
   /// Live per-meeting decision counts (a `{meetingId: count}` object).
-  Stream<Map<String, dynamic>> watchDecisionCounts() => _client
-      .subscribe('meeting.watchDecisionCounts', const {})
-      .map((data) => _object(data, 'counts'));
+  Stream<Map<String, dynamic>> watchDecisionCounts({String? workspaceId}) =>
+      _client
+          .subscribe('meeting.watchDecisionCounts', {
+            'workspace_id': ?workspaceId,
+          })
+          .map((data) => _object(data, 'counts'));
 
   List<Map<String, dynamic>> _list(Map<String, dynamic> data, String key) =>
       ((data[key] as List?) ?? const [])

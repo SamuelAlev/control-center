@@ -381,6 +381,50 @@ class AppLocalizationsHu extends AppLocalizations {
   String get spacesEmptyDescription => 'A munkaterület terei itt jelennek meg.';
 
   @override
+  String get newSpaceFolder => 'Új mappa';
+
+  @override
+  String get folderName => 'Mappa neve';
+
+  @override
+  String get renameSpaceFolder => 'Mappa átnevezése';
+
+  @override
+  String get deleteSpaceFolder => 'Mappa törlése';
+
+  @override
+  String get moveSpaceToFolder => 'Áthelyezés mappába';
+
+  @override
+  String get removeSpaceFromFolder => 'Eltávolítás a mappából';
+
+  @override
+  String get spaceFolderActions => 'Mappaműveletek';
+
+  @override
+  String get deleteFolderWithSpacesWarning =>
+      'A terek végleges törlése mindenki számára eltávolítja az üzeneteiket és a munkafáikat. Ez nem vonható vissza.';
+
+  @override
+  String get deleteSpacesInFolder => 'A mappában lévő terek végleges törlése';
+
+  @override
+  String get deleteFolderAndSpaces => 'Mappa és terek törlése';
+
+  @override
+  String get keepSpacesInFolder =>
+      'Ellenkező esetben a terek mappán kívül maradnak.';
+
+  @override
+  String get create => 'Létrehozás';
+
+  @override
+  String get otherSpaces => 'Egyéb terek';
+
+  @override
+  String get folderUpdateFailed => 'Nem sikerült frissíteni a mappákat';
+
+  @override
   String get thread => 'Szál';
 
   @override

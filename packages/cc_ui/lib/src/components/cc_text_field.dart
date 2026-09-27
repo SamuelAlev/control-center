@@ -415,9 +415,21 @@ class _CcTextFieldState extends State<CcTextField>
             child: Padding(
               padding: EdgeInsets.symmetric(
                 horizontal: 12,
-                vertical: widget.size == CcTextFieldSize.sm ? 6 : 10,
+                vertical: widget.isMultiline
+                    ? (widget.size == CcTextFieldSize.sm ? 6 : 10)
+                    : 0,
               ),
-              child: row,
+              // Single-line fields reserve the button-height box before a
+              // conditional suffix appears. Padding a 32px clear button by
+              // 10px on both sides used to enlarge the field while typing.
+              child: widget.isMultiline
+                  ? row
+                  : ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight: widget.size == CcTextFieldSize.sm ? 32 : 40,
+                      ),
+                      child: row,
+                    ),
             ),
           );
 

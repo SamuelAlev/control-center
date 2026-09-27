@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cc_domain/features/meetings/domain/entities/meeting_segment.dart';
 import 'package:cc_domain/features/meetings/domain/services/meeting_diarization.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/features/meetings/presentation/notifiers/meeting_detection_controller.dart';
 import 'package:control_center/features/meetings/presentation/notifiers/meeting_recorder_controller.dart';
 import 'package:control_center/features/meetings/presentation/notifiers/meeting_recorder_state.dart';
@@ -99,12 +100,23 @@ class _MeetingRecordScreenState extends ConsumerState<MeetingRecordScreen> {
     });
   }
 
-  void _stop(String meetingId) {
-    // Fire-and-forget: stop() drives the meeting through processing → done in
-    // the background while we jump straight to its detail, which reflects the
-    // status reactively.
-    unawaited(ref.read(meetingRecorderControllerProvider.notifier).stop());
-    context.go(meetingDetailRoute(context.currentWorkspaceId!, meetingId));
+  Future<void> _stop(String meetingId) async {
+    final controller = ref.read(meetingRecorderControllerProvider.notifier);
+    if (ref.read(isDemoServerProvider)) {
+      await controller.stop();
+      if (!mounted) {
+        return;
+      }
+      if (ref.read(meetingRecorderControllerProvider).isRecording) {
+        return;
+      }
+    } else {
+      // Production finalization may continue after navigating to detail.
+      unawaited(controller.stop());
+    }
+    if (mounted) {
+      context.go(meetingDetailRoute(context.currentWorkspaceId!, meetingId));
+    }
   }
 
   void _maybeAutoScroll(int segmentCount) {
@@ -124,6 +136,7 @@ class _MeetingRecordScreenState extends ConsumerState<MeetingRecordScreen> {
     final l10n = AppLocalizations.of(context);
     final workspaceId = ref.watch(activeWorkspaceIdProvider);
     final recorder = ref.watch(meetingRecorderControllerProvider);
+    final demo = ref.watch(isDemoServerProvider);
 
     if (workspaceId == null || recorder.meetingId == null) {
       return PageWrapper(
@@ -153,7 +166,11 @@ class _MeetingRecordScreenState extends ConsumerState<MeetingRecordScreen> {
         .suggestAutoStop;
 
     return PageWrapper(
-      overline: _CaptureLine(recorder: recorder, sourceApp: meeting?.sourceApp),
+      overline: _CaptureLine(
+        recorder: recorder,
+        sourceApp: meeting?.sourceApp,
+        demo: demo,
+      ),
       titleWidget: _RecordTitle(
         recorder: recorder,
         controller: _titleController,
@@ -233,10 +250,11 @@ class _MeetingRecordScreenState extends ConsumerState<MeetingRecordScreen> {
                     segments: segments,
                     transcriptScroll: _transcriptScroll,
                     paused: recorder.paused,
+                    demo: demo,
                   ),
                 ),
                 const SizedBox(height: AppSpacing.md),
-                const _SummaryPrivacyNotice(),
+                _SummaryPrivacyNotice(demo: demo),
               ],
             ),
           ),
@@ -246,15 +264,18 @@ class _MeetingRecordScreenState extends ConsumerState<MeetingRecordScreen> {
   }
 }
 
-/// The page overline while recording: a link back to the list on the left, and
-/// on the right what is actually being tapped plus the two live meters. The
-/// meters are reassurance, not controls, so they are the first thing dropped
-/// when the row gets tight.
+/// The page overline: real capture sources and meters in production, or a
+/// fiction notice in the demo. No demo screen claims to be tapping a mic.
 class _CaptureLine extends StatelessWidget {
-  const _CaptureLine({required this.recorder, required this.sourceApp});
+  const _CaptureLine({
+    required this.recorder,
+    required this.sourceApp,
+    required this.demo,
+  });
 
   final MeetingRecorderState recorder;
   final String? sourceApp;
+  final bool demo;
 
   @override
   Widget build(BuildContext context) {
@@ -281,40 +302,58 @@ class _CaptureLine extends StatelessWidget {
             const Spacer(),
             if (showMeta) ...[
               Flexible(
-                child: Text.rich(
-                  TextSpan(
-                    style: meetingMono(context, fontSize: 12),
-                    children: [
-                      TextSpan(text: '${l10n.meetingRecordTappingLabel} '),
-                      TextSpan(
-                        text: source,
-                        style: meetingMono(context, fontSize: 12, color: ds.fg),
+                child: demo
+                    ? Text(
+                        l10n.demoBadgeTooltip,
+                        style: meetingMono(context, fontSize: 12),
+                        overflow: TextOverflow.ellipsis,
+                      )
+                    : Text.rich(
+                        TextSpan(
+                          style: meetingMono(context, fontSize: 12),
+                          children: [
+                            TextSpan(
+                              text: '${l10n.meetingRecordTappingLabel} ',
+                            ),
+                            TextSpan(
+                              text: source,
+                              style: meetingMono(
+                                context,
+                                fontSize: 12,
+                                color: ds.fg,
+                              ),
+                            ),
+                            const TextSpan(text: ' + '),
+                            TextSpan(
+                              text: l10n.meetingRecordMic,
+                              style: meetingMono(
+                                context,
+                                fontSize: 12,
+                                color: ds.fg,
+                              ),
+                            ),
+                          ],
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      const TextSpan(text: ' + '),
-                      TextSpan(
-                        text: l10n.meetingRecordMic,
-                        style: meetingMono(context, fontSize: 12, color: ds.fg),
-                      ),
-                    ],
-                  ),
-                  overflow: TextOverflow.ellipsis,
+              ),
+              if (!demo) ...[
+                const SizedBox(width: AppSpacing.md),
+                MeetingLevelMeter(
+                  active: active,
+                  color: ds.success,
+                  seed: 0,
+                  level: recorder.inputLevel,
+                  height: 18,
                 ),
-              ),
-              const SizedBox(width: AppSpacing.md),
-              MeetingLevelMeter(
-                active: active,
-                color: ds.success,
-                seed: 0,
-                level: recorder.inputLevel,
-                height: 18,
-              ),
-              const SizedBox(width: 4),
-              MeetingLevelMeter(
-                active: active,
-                color: ds.muted,
-                seed: 2.5,
-                height: 18,
-              ),
+                const SizedBox(width: 4),
+                MeetingLevelMeter(
+                  active: active,
+                  color: ds.muted,
+                  seed: 2.5,
+                  height: 18,
+                ),
+              ],
             ],
           ],
         );
@@ -398,6 +437,7 @@ class _RecordSplit extends StatelessWidget {
     required this.segments,
     required this.transcriptScroll,
     required this.paused,
+    required this.demo,
   });
 
   final TextEditingController notesController;
@@ -405,6 +445,7 @@ class _RecordSplit extends StatelessWidget {
   final List<MeetingSegment> segments;
   final ScrollController transcriptScroll;
   final bool paused;
+  final bool demo;
 
   @override
   Widget build(BuildContext context) {
@@ -416,6 +457,7 @@ class _RecordSplit extends StatelessWidget {
       segments: segments,
       scroll: transcriptScroll,
       paused: paused,
+      demo: demo,
     );
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -527,11 +569,13 @@ class _LiveTranscriptPane extends StatelessWidget {
     required this.segments,
     required this.scroll,
     required this.paused,
+    required this.demo,
   });
 
   final List<MeetingSegment> segments;
   final ScrollController scroll;
   final bool paused;
+  final bool demo;
 
   @override
   Widget build(BuildContext context) {
@@ -561,6 +605,8 @@ class _LiveTranscriptPane extends StatelessWidget {
             child: Text(
               paused
                   ? l10n.meetingRecordPausedHint
+                  : demo
+                  ? l10n.demoBadgeLabel
                   : l10n.meetingRecordDecoding,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
@@ -609,7 +655,8 @@ class _LiveTranscriptPane extends StatelessWidget {
 /// it is still on screen for the whole recording, which is what the disclosure
 /// requires.
 class _SummaryPrivacyNotice extends StatelessWidget {
-  const _SummaryPrivacyNotice();
+  const _SummaryPrivacyNotice({required this.demo});
+  final bool demo;
 
   @override
   Widget build(BuildContext context) {
@@ -625,7 +672,7 @@ class _SummaryPrivacyNotice extends StatelessWidget {
         const SizedBox(width: AppSpacing.sm),
         Expanded(
           child: Text(
-            l10n.meetingSummaryPrivacyNotice,
+            demo ? l10n.demoUnavailableAudio : l10n.meetingSummaryPrivacyNotice,
             style: TextStyle(fontSize: 12, color: ds.muted, height: 1.4),
           ),
         ),

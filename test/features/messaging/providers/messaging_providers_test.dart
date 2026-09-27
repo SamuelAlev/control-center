@@ -434,7 +434,10 @@ void main() {
   group('space chat data holds past its last listener', () {
     const ws = 'ws-1';
 
-    ProviderContainer containerWith(ConversationRepository repo) {
+    ProviderContainer containerWith(
+      ConversationRepository repo, {
+      Stream<List<Conversation>>? conversations,
+    }) {
       final container = ProviderContainer(
         overrides: [
           activeWorkspaceIdProvider.overrideWith(_MutableActiveWorkspaceId.new),
@@ -450,11 +453,88 @@ void main() {
             ]),
           ),
           conversationRepositoryProvider.overrideWithValue(repo),
+          if (conversations != null)
+            spaceConversationsProvider(
+              'ch-a',
+            ).overrideWith((ref) => conversations),
         ],
       );
       addTearDown(container.dispose);
       return container;
     }
+
+    test(
+      'opens the cached standing conversation without an ensure call',
+      () async {
+        final repo = _RecordingConversationRepository();
+        final container = containerWith(repo);
+        final subscription = container.listen(
+          standingConversationIdProvider('ch-a'),
+          (_, _) {},
+        );
+        addTearDown(subscription.close);
+
+        expect(
+          await container.read(standingConversationIdProvider('ch-a').future),
+          'conv-of-ch-a',
+        );
+        // The repository deliberately throws for ensure: opening existing
+        // history must not require a live mutation-capable connection.
+      },
+    );
+
+    test(
+      'cached standing selection is scoped and follows revalidation',
+      () async {
+        final rows = StreamController<List<Conversation>>();
+        addTearDown(rows.close);
+        final container = containerWith(
+          _RecordingConversationRepository(),
+          conversations: rows.stream,
+        );
+        Conversation conversation(
+          String id,
+          int year, {
+          String workspaceId = ws,
+          String? anchor,
+        }) => Conversation(
+          id: id,
+          workspaceId: workspaceId,
+          spaceId: 'ch-a',
+          title: id,
+          anchorMessageId: anchor,
+          createdAt: DateTime(year),
+          updatedAt: DateTime(year),
+        );
+        final resolved = <String>[];
+        final subscription = container.listen(
+          standingConversationIdProvider('ch-a'),
+          (_, next) {
+            if (next.asData case final value?) {
+              resolved.add(value.value);
+            }
+          },
+        );
+        addTearDown(subscription.close);
+        rows.add([
+          conversation('thread', 2020, anchor: 'message'),
+          conversation('foreign', 2021, workspaceId: 'other'),
+          conversation('newer', 2025),
+          conversation('standing', 2024),
+        ]);
+        expect(
+          await container.read(standingConversationIdProvider('ch-a').future),
+          'standing',
+        );
+        rows.add([conversation('newer', 2025)]);
+        await container.pump();
+        expect(
+          await container.read(standingConversationIdProvider('ch-a').future),
+          'newer',
+        );
+        expect(resolved, containsAllInOrder(['standing', 'newer']));
+      },
+    );
 
     void visit(ProviderContainer container) {
       container.listen(spaceConversationsProvider('ch-a'), (_, _) {}).close();
@@ -1029,6 +1109,12 @@ class _EnsureCountingRepository implements ConversationRepository {
 
   bool fail;
   int ensures = 0;
+
+  @override
+  Stream<List<Conversation>> watchForSpace({
+    required String workspaceId,
+    required String spaceId,
+  }) => Stream.value(const []);
 
   @override
   Future<Conversation> ensure({

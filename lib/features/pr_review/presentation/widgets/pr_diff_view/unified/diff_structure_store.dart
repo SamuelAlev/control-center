@@ -47,6 +47,11 @@ class DiffStructureStore {
   /// [Listenable] the render object can register on its `repaint` space.
   final ValueNotifier<int> repaint = ValueNotifier<int>(0);
 
+  /// Advances when a visible file needs its syntax job requested again, even
+  /// if the viewport still contains exactly the same file indices.
+  int get tokenRequestRevision => _tokenRequestRevision;
+  int _tokenRequestRevision = 0;
+
   bool _isDark = false;
 
   /// Per-file syntax tokens (`lineIndex -> tokens`), LRU by file index.
@@ -120,6 +125,7 @@ class DiffStructureStore {
         }
       }
     }
+    _tokenRequestRevision++;
     repaint.value++;
   }
 
@@ -262,6 +268,7 @@ class DiffStructureStore {
     _settled.remove(i);
     _splices.remove(i);
     _spans.remove(i);
+    _tokenRequestRevision++;
   }
 
   /// Shifts file [i]'s cached tokens to account for a gap expand that replaced

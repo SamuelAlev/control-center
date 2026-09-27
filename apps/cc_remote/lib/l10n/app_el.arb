@@ -515,5 +515,19 @@
         "type": "int"
       }
     }
-  }
+  },
+  "newSpaceFolder": "Νέος φάκελος",
+  "folderName": "Όνομα φακέλου",
+  "renameSpaceFolder": "Μετονομασία φακέλου",
+  "deleteSpaceFolder": "Διαγραφή φακέλου",
+  "moveSpaceToFolder": "Μετακίνηση χώρου σε φάκελο",
+  "removeSpaceFromFolder": "Αφαίρεση χώρου από φάκελο",
+  "spaceFolderActions": "Ενέργειες φακέλου",
+  "deleteFolderWithSpacesWarning": "Η οριστική διαγραφή των χώρων αφαιρεί τα μηνύματα και τους καταλόγους εργασίας τους για όλους. Δεν είναι δυνατή η αναίρεση.",
+  "deleteSpacesInFolder": "Οριστική διαγραφή των χώρων σε αυτόν τον φάκελο",
+  "deleteFolderAndSpaces": "Διαγραφή φακέλου και χώρων",
+  "keepSpacesInFolder": "Διαφορετικά, οι χώροι θα παραμείνουν εκτός φακέλου.",
+  "create": "Δημιουργία",
+  "otherSpaces": "Άλλοι χώροι",
+  "folderUpdateFailed": "Δεν ήταν δυνατή η ενημέρωση των φακέλων"
 }

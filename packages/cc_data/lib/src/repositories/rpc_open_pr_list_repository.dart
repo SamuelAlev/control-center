@@ -126,6 +126,21 @@ class RpcOpenPrListRepository implements OpenPrListRepository {
     };
   }
 
+  /// Cached-first reviewed keys for the optional "reviewed by me" list filter.
+  /// Unlike the one-shot read, a fresh result can replace the persisted
+  /// snapshot after reconnecting.
+  Stream<Set<String>> watchReviewedByKeysForWorkspace(String workspaceId) =>
+      _client
+          .watchCall('pr.searchReviewedByForWorkspace', {
+            'workspace_id': workspaceId,
+          })
+          .map(
+            (data) => {
+              for (final key in (data['keys'] as List?) ?? const [])
+                if (key is String) key,
+            },
+          );
+
   @override
   Future<List<RepoOpenPrs>> closedByAuthorForWorkspace(
     String workspaceId,

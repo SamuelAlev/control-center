@@ -228,6 +228,7 @@ This is the visual contract for the client and site. [PRODUCT.md](PRODUCT.md) ow
 ## Surface, focus and motion
 
 - Default separation is a 1px warm hairline. A subtle amber soft shadow is for hover/sticky chrome; the lower-left amber golden float is for genuinely floating dialogs, menus and toasts, not ordinary cards. Avoid cool, symmetric shadows.
+- Sidebar row hover may reveal trailing actions; each action paints its active wash only when its own target is hovered, pressed or open.
 - Every interactive element retains a 2px accent focus outline at 2px offset and a 3px soft-accent halo or an equally visible replacement. Inputs are ~40px filled wells with a bottom underline, and use a whole-field 2px outline on focus/error/warning without shifting layout.
 - `CcMotion` uses fast 80ms (exit 60), moderate 160ms (exit 120), slow 240ms (exit 160); standard/emphasized easing has no bounce. Reduced motion drops travel/scale but preserves a short state-signaling fade. Running bars/dots settle or stop; content never waits for an entrance animation to become readable. Motion and color report real state, not decoration.
 

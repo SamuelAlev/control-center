@@ -1792,6 +1792,13 @@ class AppLocalizationsVi extends AppLocalizations {
       'JSON Schema mà đầu ra bước phải thỏa';
 
   @override
+  String get nodeConfigBackupRetentionDays => 'Xóa bản sao lưu cũ hơn (ngày)';
+
+  @override
+  String get nodeConfigBackupRetentionDaysHelp =>
+      'Chỉ xóa bản sao lưu của không gian làm việc này. Nhập số ngày dương.';
+
+  @override
   String get diffLineDisplay => 'Dòng dài trong diff';
 
   @override
@@ -9060,6 +9067,45 @@ class AppLocalizationsVi extends AppLocalizations {
   String get spaceReposHint => 'Repo cần đưa vào';
 
   @override
+  String get newSpaceFolder => 'Thư mục mới';
+
+  @override
+  String get folderName => 'Tên thư mục';
+
+  @override
+  String get renameSpaceFolder => 'Đổi tên thư mục';
+
+  @override
+  String get deleteSpaceFolder => 'Xóa thư mục';
+
+  @override
+  String get moveSpaceToFolder => 'Chuyển vào thư mục';
+
+  @override
+  String get removeSpaceFromFolder => 'Xóa khỏi thư mục';
+
+  @override
+  String get spaceFolderActions => 'Thao tác với thư mục';
+
+  @override
+  String get deleteFolderWithSpacesWarning =>
+      'Xóa vĩnh viễn các không gian sẽ xóa tin nhắn và thư mục làm việc của chúng đối với tất cả mọi người. Không thể hoàn tác.';
+
+  @override
+  String get deleteSpacesInFolder =>
+      'Xóa vĩnh viễn các không gian trong thư mục này';
+
+  @override
+  String get deleteFolderAndSpaces => 'Xóa thư mục và không gian';
+
+  @override
+  String get keepSpacesInFolder =>
+      'Nếu không, các không gian sẽ không thuộc thư mục nào.';
+
+  @override
+  String get noSpaceFoldersYet => 'Chưa có thư mục nào';
+
+  @override
   String get ideSourceControl => 'Quản lý mã nguồn';
 
   @override
@@ -14354,7 +14400,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get backupNoSnapshots =>
-      'Chưa có ảnh chụp. Chỉ chụp khi bạn yêu cầu — không có lịch tự động.';
+      'Chưa có ảnh chụp toàn bộ máy chủ. Tạo ngay hoặc dùng pipeline theo lịch để sao lưu không gian làm việc.';
 
   @override
   String get backupSnapshotComplete => 'Hoàn tất';
@@ -14365,6 +14411,29 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get backupSnapshotIncompleteNote =>
       'Manifest thiếu hoặc liệt kê tệp không tồn tại, nên ảnh chụp này không thể khôi phục cả cài đặt. Các tệp không gian làm việc có sẵn vẫn có thể được nhận từng cái.';
+
+  @override
+  String get backupDeleteSnapshotLabel => 'Xóa ảnh chụp';
+
+  @override
+  String get backupDeleteSnapshotDescription =>
+      'Xóa vĩnh viễn ảnh chụp này khỏi máy chủ. Hãy tải xuống trước nếu muốn giữ lại.';
+
+  @override
+  String get backupDeleteSnapshotAction => 'Xóa ảnh chụp';
+
+  @override
+  String get backupDeleteSnapshotTitle => 'Xóa ảnh chụp này?';
+
+  @override
+  String backupDeleteSnapshotBody(String name) {
+    return 'Xóa $name khỏi máy chủ? Tất cả cơ sở dữ liệu trong ảnh chụp sẽ mất. Không thể hoàn tác.';
+  }
+
+  @override
+  String backupDeleteSnapshotDone(String name) {
+    return 'Đã xóa ảnh chụp $name.';
+  }
 
   @override
   String backupSnapshotWorkspaces(int count) {

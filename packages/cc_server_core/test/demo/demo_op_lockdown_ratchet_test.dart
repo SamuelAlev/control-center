@@ -95,33 +95,36 @@ void main() {
     expect(ops['messaging.sendMessage'], 'mutate');
   });
 
-  test('every mutating op is classified — allowed or denied, never implicit', () {
-    final unclassified = <String>[];
-    for (final entry in ops.entries) {
-      if (entry.value == 'read') {
-        continue;
+  test(
+    'every mutating op is classified — allowed or denied, never implicit',
+    () {
+      final unclassified = <String>[];
+      for (final entry in ops.entries) {
+        if (entry.value == 'read') {
+          continue;
+        }
+        final name = entry.key;
+        final classified =
+            profile.allowedMutations.contains(name) ||
+            profile.deniedMutations.contains(name) ||
+            profile.deniedPrefixes.any(name.startsWith);
+        if (!classified) {
+          unclassified.add(name);
+        }
       }
-      final name = entry.key;
-      final classified =
-          profile.allowedMutations.contains(name) ||
-          profile.deniedMutations.contains(name) ||
-          profile.deniedPrefixes.any(name.startsWith);
-      if (!classified) {
-        unclassified.add(name);
-      }
-    }
-    expect(
-      unclassified..sort(),
-      isEmpty,
-      reason:
-          'These mutating ops are new to the catalog and nobody has decided '
-          'whether a public demo visitor may call them. Add each to '
-          'DemoProfile.defaultAllowedMutations or defaultDeniedMutations '
-          '(or cover it with a denied prefix). Default-deny means they are '
-          'unreachable until you do — this test just makes that a decision '
-          'instead of an accident.',
-    );
-  });
+      expect(
+        unclassified..sort(),
+        isEmpty,
+        reason:
+            'These mutating ops are new to the catalog and nobody has decided '
+            'whether a public demo visitor may call them. Add each to '
+            'DemoProfile.defaultAllowedMutations or defaultDeniedMutations '
+            '(or cover it with a denied prefix). Default-deny means they are '
+            'unreachable until you do — this test just makes that a decision '
+            'instead of an accident.',
+      );
+    },
+  );
 
   test('allow and deny never overlap, and every name is real', () {
     expect(
@@ -161,6 +164,27 @@ void main() {
     expect(contradictory..sort(), isEmpty);
   });
 
+  test('only fictional usage read escapes the subscriptions prefix', () {
+    RepoOp op(String name, RepoOpKind kind) => RepoOp(
+      name: name,
+      kind: kind,
+      handler: (_) async => const <String, dynamic>{},
+    );
+    expect(profile.admits(op('subscriptions.usage', RepoOpKind.read)), isTrue);
+    expect(
+      profile.admits(op('subscriptions.usage', RepoOpKind.mutate)),
+      isFalse,
+    );
+    expect(
+      profile.admits(op('subscriptions.accounts', RepoOpKind.read)),
+      isFalse,
+    );
+    expect(
+      profile.admits(op('subscriptions.refresh', RepoOpKind.mutate)),
+      isFalse,
+    );
+  });
+
   test('the execution surface is refused by name, not merely absent', () {
     // Layer 1 already removes these by passing null ports. This asserts the
     // belt: even if a port were wired by mistake, the profile still refuses.
@@ -180,6 +204,7 @@ void main() {
       'worktree.commitAndPush',
       'server.backupNow',
       'server.listBackups',
+      'server.deleteBackup',
       'workspace.export',
       'workspace.import',
       'repos.add',
@@ -264,10 +289,9 @@ void main() {
         if (classesMatch == null) {
           continue;
         }
-        final classes = RegExp(r'ActionClass\.(\w+)')
-            .allMatches(classesMatch.group(1)!)
-            .map((m) => m.group(1)!)
-            .toSet();
+        final classes = RegExp(
+          r'ActionClass\.(\w+)',
+        ).allMatches(classesMatch.group(1)!).map((m) => m.group(1)!).toSet();
         if (classes.any(
           (c) => DemoProfile.forbiddenClasses.any((f) => f.name == c),
         )) {
@@ -346,48 +370,69 @@ void main() {
       reason: 'expected the full watch catalog; the scan probably broke',
     );
 
-    final unreviewed = watches
-        .where(
-          (name) =>
-              !profile.reviewedWatchQueries.contains(name) &&
-              !profile.deniedWatchQueries.contains(name),
-        )
-        .toList()
-      ..sort();
-    expect(unreviewed, isEmpty,
-        reason: 'These watch queries are new to the catalog. A demo visitor '
-            'can sub/subscribe to any of them, so each must be checked '
-            '(workspace-scoped, DB-only or individually gated) and added to '
-            'DemoProfile.defaultReviewedWatchQueries — or, if it must stay '
-            'absent, defaultDeniedWatchQueries.');
+    final unreviewed =
+        watches
+            .where(
+              (name) =>
+                  !profile.reviewedWatchQueries.contains(name) &&
+                  !profile.deniedWatchQueries.contains(name),
+            )
+            .toList()
+          ..sort();
+    expect(
+      unreviewed,
+      isEmpty,
+      reason:
+          'These watch queries are new to the catalog. A demo visitor '
+          'can sub/subscribe to any of them, so each must be checked '
+          '(workspace-scoped, DB-only or individually gated) and added to '
+          'DemoProfile.defaultReviewedWatchQueries — or, if it must stay '
+          'absent, defaultDeniedWatchQueries.',
+    );
 
     // Dead entries are inert, same class of typo as a dead allowlist name.
-    final dead = profile.reviewedWatchQueries
-        .where((name) => !watches.contains(name))
-        .toList()
-      ..sort();
-    expect(dead, isEmpty,
-        reason: 'reviewedWatchQueries names a watch that does not exist');
+    final dead =
+        profile.reviewedWatchQueries
+            .where((name) => !watches.contains(name))
+            .toList()
+          ..sort();
+    expect(
+      dead,
+      isEmpty,
+      reason: 'reviewedWatchQueries names a watch that does not exist',
+    );
   });
 
   test('prefix exceptions lift a prefix without escaping the kind rules', () {
     for (final name in profile.prefixExceptions) {
       final kind = ops[name];
       // An exception naming nothing is inert.
-      expect(kind, isNotNull,
-          reason: 'prefix exception names an op that does not exist: '
-              '\${profile.prefixExceptions.lookup(name) ?? name}');
+      expect(
+        kind,
+        isNotNull,
+        reason:
+            'prefix exception names an op that does not exist: '
+            '\${profile.prefixExceptions.lookup(name) ?? name}',
+      );
       if (kind == 'read') {
         // A read exception must still not be one that dials out.
-        expect(profile.admits(_op(name, RepoOpKind.read)), isTrue,
-            reason: 'was lifted from its prefix but is still refused - check '
-                'deniedReads');
+        expect(
+          profile.admits(_op(name, RepoOpKind.read)),
+          isTrue,
+          reason:
+              'was lifted from its prefix but is still refused - check '
+              'deniedReads',
+        );
       } else {
         // A mutating exception must ALSO sit in allowedMutations: lifting
         // the prefix is not permission to mutate.
-        expect(profile.allowedMutations.contains(name), isTrue,
-            reason: 'lifts a denied prefix and mutates, but is not in '
-                'allowedMutations');
+        expect(
+          profile.allowedMutations.contains(name),
+          isTrue,
+          reason:
+              'lifts a denied prefix and mutates, but is not in '
+              'allowedMutations',
+        );
       }
     }
   });

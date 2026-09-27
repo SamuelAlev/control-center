@@ -378,6 +378,50 @@ class AppLocalizationsEn extends AppLocalizations {
   String get spacesEmptyDescription => 'Spaces in this workspace appear here.';
 
   @override
+  String get newSpaceFolder => 'New folder';
+
+  @override
+  String get folderName => 'Folder name';
+
+  @override
+  String get renameSpaceFolder => 'Rename folder';
+
+  @override
+  String get deleteSpaceFolder => 'Delete folder';
+
+  @override
+  String get moveSpaceToFolder => 'Move to folder';
+
+  @override
+  String get removeSpaceFromFolder => 'Remove from folder';
+
+  @override
+  String get spaceFolderActions => 'Folder actions';
+
+  @override
+  String get deleteFolderWithSpacesWarning =>
+      'Deleting spaces permanently removes their messages and worktrees for everyone. This cannot be undone.';
+
+  @override
+  String get deleteSpacesInFolder =>
+      'Permanently delete the spaces in this folder';
+
+  @override
+  String get deleteFolderAndSpaces => 'Delete folder and spaces';
+
+  @override
+  String get keepSpacesInFolder => 'Otherwise, spaces will remain unfiled.';
+
+  @override
+  String get create => 'Create';
+
+  @override
+  String get otherSpaces => 'Other spaces';
+
+  @override
+  String get folderUpdateFailed => 'Couldn\'t update folders';
+
+  @override
   String get thread => 'Thread';
 
   @override

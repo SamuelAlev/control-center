@@ -88,11 +88,11 @@ class _PipelinesScreenState extends ConsumerState<PipelinesScreen> {
     final runsAsync = ref.watch(workspacePipelineRunsProvider(workspaceId));
     final isDemo = ref.watch(isDemoServerProvider);
     // Friendly names for the run rows: templateId → human-readable name.
+    final templatesAsync = ref.watch(pipelineTemplatesProvider(workspaceId));
     final templateNames = {
-      for (final t
-          in ref.watch(pipelineTemplatesProvider(workspaceId)).value ??
-              const <PipelineDefinition>[])
-        t.templateId: t.name,
+      if (!templatesAsync.hasError)
+        for (final t in templatesAsync.value ?? const <PipelineDefinition>[])
+          t.templateId: t.name,
     };
     ref.watch(pipelineClockProvider); // tick for live duration display
 
@@ -108,57 +108,62 @@ class _PipelinesScreenState extends ConsumerState<PipelinesScreen> {
             child: Text(l10n.pipelinesRunPipeline),
           ),
       ],
-      child: runsAsync.when(
-        loading: () => _RunsLoadingSkeleton(tokens: tokens),
-        error: (e, _) =>
-            Center(child: Text(l10n.pipelinesLoadError(e.toString()))),
-        data: (runs) {
-          if (runs.isEmpty) {
-            return _EmptyState(l10n: l10n, tokens: tokens);
-          }
-          final visible = runs.where(_filter.matches).toList();
-          // Numbered over every run, not `visible`: filtering to "running"
-          // hides part of a queue, and renumbering what is left would promise
-          // a "next" that is third in line.
-          final queuePositions = pipelineQueuePositions(runs);
-          return Padding(
-            padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(
-                  width: _railWidth,
-                  child: SingleChildScrollView(
-                    child: PipelineRunFilterRail(
-                      counts: {
-                        for (final f in PipelineRunFilter.values)
-                          f: runs.where(f.matches).length,
-                      },
-                      selected: _filter,
-                      onSelect: (f) => setState(() => _filter = f),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.xl),
-                Expanded(
-                  child: visible.isEmpty
-                      ? _EmptyFilterState(l10n: l10n, tokens: tokens)
-                      : _RunsPane(
-                          filter: _filter,
-                          visible: visible,
-                          queuePositions: queuePositions,
-                          focusedRunId: _focusedRunId,
-                          templateNames: templateNames,
-                          onMoveFocus: (delta) => _moveFocus(visible, delta),
-                          onOpenFocused: () => _openFocused(visible),
-                          onOpen: _openRun,
+      child:
+          (!runsAsync.hasError && runsAsync.hasValue
+                  ? AsyncValue<List<PipelineRun>>.data(runsAsync.requireValue)
+                  : runsAsync)
+              .when(
+                loading: () => _RunsLoadingSkeleton(tokens: tokens),
+                error: (e, _) =>
+                    Center(child: Text(l10n.pipelinesLoadError(e.toString()))),
+                data: (runs) {
+                  if (runs.isEmpty) {
+                    return _EmptyState(l10n: l10n, tokens: tokens);
+                  }
+                  final visible = runs.where(_filter.matches).toList();
+                  // Numbered over every run, not `visible`: filtering to "running"
+                  // hides part of a queue, and renumbering what is left would promise
+                  // a "next" that is third in line.
+                  final queuePositions = pipelineQueuePositions(runs);
+                  return Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          width: _railWidth,
+                          child: SingleChildScrollView(
+                            child: PipelineRunFilterRail(
+                              counts: {
+                                for (final f in PipelineRunFilter.values)
+                                  f: runs.where(f.matches).length,
+                              },
+                              selected: _filter,
+                              onSelect: (f) => setState(() => _filter = f),
+                            ),
+                          ),
                         ),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
+                        const SizedBox(width: AppSpacing.xl),
+                        Expanded(
+                          child: visible.isEmpty
+                              ? _EmptyFilterState(l10n: l10n, tokens: tokens)
+                              : _RunsPane(
+                                  filter: _filter,
+                                  visible: visible,
+                                  queuePositions: queuePositions,
+                                  focusedRunId: _focusedRunId,
+                                  templateNames: templateNames,
+                                  onMoveFocus: (delta) =>
+                                      _moveFocus(visible, delta),
+                                  onOpenFocused: () => _openFocused(visible),
+                                  onOpen: _openRun,
+                                ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
     );
   }
 }

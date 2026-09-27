@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_rpc/src/channel/remote_rpc_channel_port.dart';
+import 'package:cc_rpc/src/client/remote_channel_auth.dart';
 import 'package:cc_rpc/src/client/remote_rpc_client.dart';
 import 'package:cc_rpc/src/crypto/server_identity.dart';
 import 'package:cc_rpc/src/resolver/reachability_resolver.dart';
@@ -22,7 +23,8 @@ enum ServerConnectionPhase {
   /// terminal until the user re-pairs (TOFU is not a dialog).
   identityMismatch,
 
-  /// [ServerConnectionSupervisor.close] was called.
+  /// [ServerConnectionSupervisor.close] was called, or the server rejected
+  /// the paired device during reconnect (see status.authenticationRejected).
   closed,
 }
 
@@ -37,6 +39,7 @@ class ServerConnectionStatus {
     this.attempt = 0,
     this.insecure = false,
     this.error,
+    this.authenticationRejected = false,
   });
 
   /// Current phase.
@@ -57,6 +60,10 @@ class ServerConnectionStatus {
 
   /// Last failure detail (diagnostics; no secrets).
   final String? error;
+
+  /// True only when the server explicitly rejected the device credential.
+  /// Distinguishes revocation from a transient network outage or normal close.
+  final bool authenticationRejected;
 
   /// Whether the live path relays through a broker.
   bool get relayed => path != null && !path!.isDirect;
@@ -327,6 +334,17 @@ class ServerConnectionSupervisor {
           ServerConnectionStatus(
             phase: ServerConnectionPhase.identityMismatch,
             insecure: _descriptor.insecureAllowed,
+            error: e.toString(),
+          ),
+        );
+        return;
+      } on AuthRejectedException catch (e) {
+        _reconnecting = false;
+        _emit(
+          ServerConnectionStatus(
+            phase: ServerConnectionPhase.closed,
+            insecure: _descriptor.insecureAllowed,
+            authenticationRejected: true,
             error: e.toString(),
           ),
         );

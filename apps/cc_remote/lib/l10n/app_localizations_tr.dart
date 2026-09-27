@@ -380,6 +380,50 @@ class AppLocalizationsTr extends AppLocalizations {
       'Bu çalışma alanındaki alanlar burada görünür.';
 
   @override
+  String get newSpaceFolder => 'Yeni klasör';
+
+  @override
+  String get folderName => 'Klasör adı';
+
+  @override
+  String get renameSpaceFolder => 'Klasörü yeniden adlandır';
+
+  @override
+  String get deleteSpaceFolder => 'Klasörü sil';
+
+  @override
+  String get moveSpaceToFolder => 'Klasöre taşı';
+
+  @override
+  String get removeSpaceFromFolder => 'Klasörden çıkar';
+
+  @override
+  String get spaceFolderActions => 'Klasör işlemleri';
+
+  @override
+  String get deleteFolderWithSpacesWarning =>
+      'Alanları kalıcı olarak silmek, mesajlarını ve çalışma dizinlerini herkes için kaldırır. Bu işlem geri alınamaz.';
+
+  @override
+  String get deleteSpacesInFolder => 'Bu klasördeki alanları kalıcı olarak sil';
+
+  @override
+  String get deleteFolderAndSpaces => 'Klasörü ve alanları sil';
+
+  @override
+  String get keepSpacesInFolder =>
+      'Aksi takdirde alanlar klasör dışında kalır.';
+
+  @override
+  String get create => 'Oluştur';
+
+  @override
+  String get otherSpaces => 'Diğer alanlar';
+
+  @override
+  String get folderUpdateFailed => 'Klasörler güncellenemedi';
+
+  @override
   String get thread => 'Konu';
 
   @override

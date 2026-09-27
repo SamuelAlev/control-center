@@ -72,6 +72,10 @@ class CcServer {
   /// whose owner can no longer reach it.
   DemoWiring? _demo;
 
+  /// Server-owned scripted demo meetings. Cancel timers before visitors' files
+  /// are reaped on shutdown.
+  DemoMeetingService? _demoMeeting;
+
   /// GitHub viewer-activity poller (review requests / mentions / merges →
   /// events + targeted refreshes). Disposed on [shutdown].
   GitHubViewerActivityPollingService? _githubActivityPoller;
@@ -244,13 +248,17 @@ class CcServer {
     // exceeds [_stepTimeout] or throws is logged and skipped rather than
     // aborting the rest of teardown. `.timeout` does not cancel the underlying
     // work, but we hard-exit moments later so the abandoned future is moot.
-    Future<void> guard(String id, Future<void> Function() action) async {
+    Future<void> guard(
+      String id,
+      Future<void> Function() action, {
+      Duration timeout = _stepTimeout,
+    }) async {
       try {
-        await action().timeout(_stepTimeout);
+        await action().timeout(timeout);
       } on TimeoutException {
         CcHostLog.warning(
           'shutdown: step "$id" did not finish within '
-          '${_stepTimeout.inSeconds}s — skipping',
+          '${timeout.inSeconds}s — skipping',
         );
       } on Object catch (e) {
         CcHostLog.warning('shutdown: step "$id" failed: $e — skipping');
@@ -258,8 +266,12 @@ class CcServer {
     }
 
     // A guarded step that also reports progress to connected thin clients.
-    Future<void> step(String id, Future<void> Function() action) async {
-      await guard(id, action);
+    Future<void> step(
+      String id,
+      Future<void> Function() action, {
+      Duration timeout = _stepTimeout,
+    }) async {
+      await guard(id, action, timeout: timeout);
       rpc.broadcast('server/shutdown_progress', <String, dynamic>{
         'phase': 'step',
         'service': id,
@@ -268,7 +280,14 @@ class CcServer {
 
     // First: a visitor's workspace must be reaped while its database is still
     // open, and their session dropped before the socket layer goes away.
-    await step('demo', () async => _demo?.stop());
+    await step('demoMeetings', () async => _demoMeeting?.dispose());
+    await step(
+      'demo',
+      () async => _demo?.stop(),
+      // An in-flight workspace seed must finish before its databases close.
+      // A fresh pool slot can take longer than the default 3-second step cap.
+      timeout: const Duration(seconds: 10),
+    );
     await step('approvals', () async {
       _pendingConfirmations?.dispose();
       _approvalEscalation?.stop();

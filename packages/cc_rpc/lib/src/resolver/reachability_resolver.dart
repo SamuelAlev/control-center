@@ -237,8 +237,10 @@ class ReachabilityResolver {
   ///
   /// Throws [ServerIdentityMismatchException] immediately (no fallback) when
   /// any path presents a wrong identity — a rebind is a hard stop, not a
-  /// path-selection problem. Throws [NoReachablePathException] when nothing
-  /// connects.
+  /// path-selection problem. A rejected credential is reported as
+  /// [AuthRejectedException] after trying all other reachable paths; an
+  /// unreachable or otherwise failed connection throws
+  /// [NoReachablePathException].
   Future<ResolvedConnection> connect(
     ConnectionDescriptor descriptor, {
     required String deviceId,
@@ -251,6 +253,7 @@ class ReachabilityResolver {
       for (final p in probes.where((p) => !p.reachable))
         '${p.path.toJson()['t']}: ${p.detail ?? 'unreachable'}',
     ];
+    AuthRejectedException? authRejection;
     for (final probe in reachable) {
       final path = probe.path;
       try {
@@ -280,9 +283,17 @@ class ReachabilityResolver {
         );
       } on ServerIdentityMismatchException {
         rethrow;
+      } on AuthRejectedException catch (error) {
+        // Another path might still accept this device; only declare revocation
+        // after every reachable path has had its chance to authenticate.
+        authRejection ??= error;
+        failures.add('${path.toJson()['t']}: connect failed: $error');
       } catch (e) {
         failures.add('${path.toJson()['t']}: connect failed: $e');
       }
+    }
+    if (authRejection != null) {
+      throw authRejection;
     }
     throw NoReachablePathException(descriptor.serverId, failures);
   }

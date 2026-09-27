@@ -234,5 +234,19 @@
   "yesterday": "ayer",
   "durationMinutes": "{count}m",
   "durationHours": "{count}h",
-  "durationHoursMinutes": "{hours}h {minutes}m"
+  "durationHoursMinutes": "{hours}h {minutes}m",
+  "newSpaceFolder": "Nueva carpeta",
+  "folderName": "Nombre de la carpeta",
+  "renameSpaceFolder": "Cambiar nombre de la carpeta",
+  "deleteSpaceFolder": "Eliminar carpeta",
+  "moveSpaceToFolder": "Mover a una carpeta",
+  "removeSpaceFromFolder": "Quitar de la carpeta",
+  "spaceFolderActions": "Acciones de la carpeta",
+  "deleteFolderWithSpacesWarning": "Eliminar espacios de forma permanente borra sus mensajes y árboles de trabajo para todos. Esta acción no se puede deshacer.",
+  "deleteSpacesInFolder": "Eliminar permanentemente los espacios de esta carpeta",
+  "deleteFolderAndSpaces": "Eliminar carpeta y espacios",
+  "keepSpacesInFolder": "De lo contrario, los espacios quedarán fuera de cualquier carpeta.",
+  "create": "Crear",
+  "otherSpaces": "Otros espacios",
+  "folderUpdateFailed": "No se pudieron actualizar las carpetas"
 }

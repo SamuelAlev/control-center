@@ -70,30 +70,39 @@ class PipelineTemplatesSettingsScreen extends ConsumerWidget {
               ),
             ),
           Expanded(
-            child: templatesAsync.when(
-              loading: () => const Center(child: CcSpinner()),
-              error: (e, _) => Center(
-                child: Text('$e', style: TextStyle(color: ds.textTertiary)),
-              ),
-              data: (templates) {
-                if (templates.isEmpty) {
-                  return Center(
-                    child: Text(
-                      l10n.pipelineTemplatesEmpty,
-                      style: TextStyle(color: ds.textTertiary),
+            child:
+                (!templatesAsync.hasError && templatesAsync.hasValue
+                        ? AsyncValue<List<PipelineDefinition>>.data(
+                            templatesAsync.requireValue,
+                          )
+                        : templatesAsync)
+                    .when(
+                      loading: () => const Center(child: CcSpinner()),
+                      error: (e, _) => Center(
+                        child: Text(
+                          '$e',
+                          style: TextStyle(color: ds.textTertiary),
+                        ),
+                      ),
+                      data: (templates) {
+                        if (templates.isEmpty) {
+                          return Center(
+                            child: Text(
+                              l10n.pipelineTemplatesEmpty,
+                              style: TextStyle(color: ds.textTertiary),
+                            ),
+                          );
+                        }
+                        return ListView.separated(
+                          padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+                          itemCount: templates.length,
+                          separatorBuilder: (_, _) => const SizedBox(height: 8),
+                          itemBuilder: (context, index) {
+                            return _TemplateTile(template: templates[index]);
+                          },
+                        );
+                      },
                     ),
-                  );
-                }
-                return ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-                  itemCount: templates.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 8),
-                  itemBuilder: (context, index) {
-                    return _TemplateTile(template: templates[index]);
-                  },
-                );
-              },
-            ),
           ),
         ],
       ),

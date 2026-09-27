@@ -1730,6 +1730,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get nodeConfigOutputSchemaHelp => '步骤输出必须满足的 JSON Schema';
 
   @override
+  String get nodeConfigBackupRetentionDays => '删除早于指定天数的备份';
+
+  @override
+  String get nodeConfigBackupRetentionDaysHelp => '仅删除此工作区的备份。请输入正数天数。';
+
+  @override
   String get diffLineDisplay => 'Diff 中的长行';
 
   @override
@@ -8788,6 +8794,42 @@ class AppLocalizationsZh extends AppLocalizations {
   String get spaceReposHint => '要包含的仓库';
 
   @override
+  String get newSpaceFolder => '新建文件夹';
+
+  @override
+  String get folderName => '文件夹名称';
+
+  @override
+  String get renameSpaceFolder => '重命名文件夹';
+
+  @override
+  String get deleteSpaceFolder => '删除文件夹';
+
+  @override
+  String get moveSpaceToFolder => '移至文件夹';
+
+  @override
+  String get removeSpaceFromFolder => '从文件夹移除';
+
+  @override
+  String get spaceFolderActions => '文件夹操作';
+
+  @override
+  String get deleteFolderWithSpacesWarning => '永久删除空间会为所有人移除其中的消息和工作树。此操作无法撤销。';
+
+  @override
+  String get deleteSpacesInFolder => '永久删除此文件夹中的空间';
+
+  @override
+  String get deleteFolderAndSpaces => '删除文件夹和空间';
+
+  @override
+  String get keepSpacesInFolder => '否则，空间将不属于任何文件夹。';
+
+  @override
+  String get noSpaceFoldersYet => '还没有文件夹';
+
+  @override
   String get ideSourceControl => '源代码管理';
 
   @override
@@ -13913,7 +13955,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get backupNoSnapshots => '暂无快照。仅在你主动请求时才会拍摄——没有任何计划任务。';
+  String get backupNoSnapshots => '尚无全局安装快照。现在创建一个，或使用定时流水线备份工作区。';
 
   @override
   String get backupSnapshotComplete => '完成';
@@ -13924,6 +13966,28 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get backupSnapshotIncompleteNote =>
       '清单缺失或引用了不存在的文件，因此此快照无法恢复整个安装。其中包含的工作区文件仍可逐个采用。';
+
+  @override
+  String get backupDeleteSnapshotLabel => '删除快照';
+
+  @override
+  String get backupDeleteSnapshotDescription => '从服务器永久删除此快照。如需保留，请先下载。';
+
+  @override
+  String get backupDeleteSnapshotAction => '删除快照';
+
+  @override
+  String get backupDeleteSnapshotTitle => '删除此快照？';
+
+  @override
+  String backupDeleteSnapshotBody(String name) {
+    return '从服务器删除$name？此快照中的所有数据库都将丢失，且无法撤销。';
+  }
+
+  @override
+  String backupDeleteSnapshotDone(String name) {
+    return '已删除快照$name。';
+  }
 
   @override
   String backupSnapshotWorkspaces(int count) {
@@ -16324,6 +16388,12 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get nodeConfigOutputSchemaHelp => '步驟輸出必須符合的 JSON Schema';
+
+  @override
+  String get nodeConfigBackupRetentionDays => '刪除早於指定天數的備份';
+
+  @override
+  String get nodeConfigBackupRetentionDaysHelp => '只會刪除此工作區的備份。請輸入正數天數。';
 
   @override
   String get diffLineDisplay => 'diff 中的長行';
@@ -23384,6 +23454,42 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get spaceReposHint => '要包含的儲存庫';
 
   @override
+  String get newSpaceFolder => '新增資料夾';
+
+  @override
+  String get folderName => '資料夾名稱';
+
+  @override
+  String get renameSpaceFolder => '重新命名資料夾';
+
+  @override
+  String get deleteSpaceFolder => '刪除資料夾';
+
+  @override
+  String get moveSpaceToFolder => '移至資料夾';
+
+  @override
+  String get removeSpaceFromFolder => '從資料夾移除';
+
+  @override
+  String get spaceFolderActions => '資料夾操作';
+
+  @override
+  String get deleteFolderWithSpacesWarning => '永久刪除空間會為所有人移除其中的訊息和工作樹。此操作無法復原。';
+
+  @override
+  String get deleteSpacesInFolder => '永久刪除此資料夾中的空間';
+
+  @override
+  String get deleteFolderAndSpaces => '刪除資料夾和空間';
+
+  @override
+  String get keepSpacesInFolder => '否則，空間將不屬於任何資料夾。';
+
+  @override
+  String get noSpaceFoldersYet => '還沒有資料夾';
+
+  @override
   String get ideSourceControl => '原始檔控制';
 
   @override
@@ -28512,7 +28618,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   }
 
   @override
-  String get backupNoSnapshots => '尚無快照。只有在你要求時才會建立——沒有任何排程。';
+  String get backupNoSnapshots => '尚無整個安裝的快照。立即建立一份，或使用排程管線備份工作區。';
 
   @override
   String get backupSnapshotComplete => '完整';
@@ -28523,6 +28629,28 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   @override
   String get backupSnapshotIncompleteNote =>
       '資訊清單遺失，或指到了不存在的檔案，因此此快照無法還原整個安裝。它確實擁有的工作區檔案仍可逐一採用。';
+
+  @override
+  String get backupDeleteSnapshotLabel => '刪除快照';
+
+  @override
+  String get backupDeleteSnapshotDescription => '從伺服器永久刪除此快照。如需保留，請先下載。';
+
+  @override
+  String get backupDeleteSnapshotAction => '刪除快照';
+
+  @override
+  String get backupDeleteSnapshotTitle => '刪除此快照？';
+
+  @override
+  String backupDeleteSnapshotBody(String name) {
+    return '從伺服器刪除$name？此快照中的所有資料庫都會遺失，且無法復原。';
+  }
+
+  @override
+  String backupDeleteSnapshotDone(String name) {
+    return '已刪除快照$name。';
+  }
 
   @override
   String backupSnapshotWorkspaces(int count) {

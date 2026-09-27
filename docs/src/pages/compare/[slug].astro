@@ -14,7 +14,7 @@ import StructuredData from '../../components/shared/StructuredData.astro';
 import RevealScript from '../../components/shared/RevealScript.astro';
 import CompareCell from '../../components/compare/CompareCell.astro';
 import CompareTooltip from '../../components/compare/CompareTooltip.astro';
-import { columns, tools, vsTools, compareReviewed, priceNote, trackedUrl } from '../../data/compare';
+import { columns, tools, vsTools, compareReviewed, reviewScopeNote, priceNote, trackedUrl } from '../../data/compare';
 
 export const getStaticPaths = (() => vsTools.map((tool) => ({ params: { slug: tool.id } }))) satisfies GetStaticPaths;
 
@@ -85,7 +85,7 @@ const externalIcon =
             </a>
             <span class="font-mono text-[11.5px] text-muted">Starts at {tool.price}</span>
           </p>
-          <p class="mt-5 font-mono text-[11px] uppercase tracking-[0.08em] text-idle">Checked against {tool.name}’s public site · {compareReviewed}</p>
+          <p class="mt-5 font-mono text-[11px] uppercase tracking-[0.08em] text-idle">Last updated · {compareReviewed} · Checked against {tool.name}’s public site</p>
         </div>
       </div>
     </section>
@@ -98,6 +98,7 @@ const externalIcon =
           <p class="mt-[14px] max-w-[52ch] text-[15px] leading-[1.6] text-muted">
             <span class="font-mono">✓</span> yes · <span class="font-mono">≈</span> partial — hover or focus a <span class="font-mono">≈</span> for the reason · <span class="font-mono">—</span> not offered.
           </p>
+          <p class="mt-[10px] max-w-[56ch] text-[13.5px] leading-[1.6] text-idle">{reviewScopeNote}</p>
         </div>
 
         {/* Focusable + named: see the note on the hub matrix (WCAG 2.1.1). */}
@@ -137,7 +138,7 @@ const externalIcon =
         </div>
 
         {tool.footnote && (
-          <p class="reveal mt-4 max-w-[72ch] font-mono text-[11px] leading-[1.6] text-idle">How {tool.name}’s partial cells read: {tool.footnote}</p>
+          <p class="reveal mt-4 max-w-[72ch] font-mono text-[11px] leading-[1.6] text-idle">About {tool.name}: {tool.footnote}</p>
         )}
         <p class="reveal mt-3 max-w-[72ch] font-mono text-[11px] leading-[1.6] text-idle">{priceNote}</p>
       </div>

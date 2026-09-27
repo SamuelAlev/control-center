@@ -2,16 +2,19 @@
 /** One Umami tracker and one delegated click listener per marketing/docs page. */
 ---
 
-<script
-  is:inline
-  defer
-  src="https://analytics.alev.dev/script.js"
-  data-website-id="d84f01cc-5611-4363-b598-ddd31e3011c1"
-  data-domains="usectrl.dev"
-  data-exclude-search="true"
-  data-exclude-hash="true"
-  data-do-not-track="true"
-></script>
+<script is:inline>
+  // Only the public site loads Umami; local dev and Wrangler previews never contact it.
+  if (location.hostname === 'usectrl.dev') {
+    const umami = document.createElement('script');
+    umami.src = 'https://analytics.alev.dev/script.js';
+    umami.dataset.websiteId = 'd84f01cc-5611-4363-b598-ddd31e3011c1';
+    umami.dataset.domains = 'usectrl.dev';
+    umami.dataset.excludeSearch = 'true';
+    umami.dataset.excludeHash = 'true';
+    umami.dataset.doNotTrack = 'true';
+    document.head.append(umami);
+  }
+</script>
 
 <script>
   type EventName = 'release_page_click' | 'demo_open_click' | 'install_section_click';

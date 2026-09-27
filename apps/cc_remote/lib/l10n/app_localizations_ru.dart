@@ -381,6 +381,51 @@ class AppLocalizationsRu extends AppLocalizations {
       'Здесь появятся пространства этой рабочей области.';
 
   @override
+  String get newSpaceFolder => 'Новая папка';
+
+  @override
+  String get folderName => 'Название папки';
+
+  @override
+  String get renameSpaceFolder => 'Переименовать папку';
+
+  @override
+  String get deleteSpaceFolder => 'Удалить папку';
+
+  @override
+  String get moveSpaceToFolder => 'Переместить в папку';
+
+  @override
+  String get removeSpaceFromFolder => 'Убрать из папки';
+
+  @override
+  String get spaceFolderActions => 'Действия с папкой';
+
+  @override
+  String get deleteFolderWithSpacesWarning =>
+      'При безвозвратном удалении пространств их сообщения и рабочие деревья удаляются для всех. Это действие нельзя отменить.';
+
+  @override
+  String get deleteSpacesInFolder =>
+      'Безвозвратно удалить пространства в этой папке';
+
+  @override
+  String get deleteFolderAndSpaces => 'Удалить папку и пространства';
+
+  @override
+  String get keepSpacesInFolder =>
+      'В противном случае пространства останутся вне папок.';
+
+  @override
+  String get create => 'Создать';
+
+  @override
+  String get otherSpaces => 'Другие пространства';
+
+  @override
+  String get folderUpdateFailed => 'Не удалось обновить папки';
+
+  @override
   String get thread => 'Переписка';
 
   @override

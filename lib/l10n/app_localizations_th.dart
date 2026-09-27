@@ -1782,6 +1782,13 @@ class AppLocalizationsTh extends AppLocalizations {
       'JSON Schema ที่เอาต์พุตของขั้นตอนต้องผ่าน';
 
   @override
+  String get nodeConfigBackupRetentionDays => 'ลบข้อมูลสำรองที่เก่ากว่า (วัน)';
+
+  @override
+  String get nodeConfigBackupRetentionDaysHelp =>
+      'ลบเฉพาะข้อมูลสำรองของเวิร์กสเปซนี้ โปรดระบุจำนวนวันเป็นบวก';
+
+  @override
   String get diffLineDisplay => 'บรรทัดยาวใน diff';
 
   @override
@@ -8993,6 +9000,43 @@ class AppLocalizationsTh extends AppLocalizations {
   String get spaceReposHint => 'รีโพที่จะรวม';
 
   @override
+  String get newSpaceFolder => 'โฟลเดอร์ใหม่';
+
+  @override
+  String get folderName => 'ชื่อโฟลเดอร์';
+
+  @override
+  String get renameSpaceFolder => 'เปลี่ยนชื่อโฟลเดอร์';
+
+  @override
+  String get deleteSpaceFolder => 'ลบโฟลเดอร์';
+
+  @override
+  String get moveSpaceToFolder => 'ย้ายไปยังโฟลเดอร์';
+
+  @override
+  String get removeSpaceFromFolder => 'นำออกจากโฟลเดอร์';
+
+  @override
+  String get spaceFolderActions => 'การดำเนินการของโฟลเดอร์';
+
+  @override
+  String get deleteFolderWithSpacesWarning =>
+      'การลบพื้นที่อย่างถาวรจะนำข้อความและไดเรกทอรีงานของพื้นที่ออกสำหรับทุกคน ไม่สามารถยกเลิกการดำเนินการนี้ได้';
+
+  @override
+  String get deleteSpacesInFolder => 'ลบพื้นที่ในโฟลเดอร์นี้อย่างถาวร';
+
+  @override
+  String get deleteFolderAndSpaces => 'ลบโฟลเดอร์และพื้นที่';
+
+  @override
+  String get keepSpacesInFolder => 'มิฉะนั้น พื้นที่จะยังคงอยู่นอกโฟลเดอร์';
+
+  @override
+  String get noSpaceFoldersYet => 'ยังไม่มีโฟลเดอร์';
+
+  @override
   String get ideSourceControl => 'การควบคุมซอร์ส';
 
   @override
@@ -14256,7 +14300,7 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get backupNoSnapshots =>
-      'ยังไม่มีสแนปช็อต จะถ่ายเมื่อคุณขอเท่านั้น — ไม่มีตารางเวลา';
+      'ยังไม่มีสแนปช็อตทั้งระบบ สร้างตอนนี้หรือใช้ไปป์ไลน์ตามกำหนดเวลาเพื่อสำรองเวิร์กสเปซ';
 
   @override
   String get backupSnapshotComplete => 'ครบ';
@@ -14267,6 +14311,29 @@ class AppLocalizationsTh extends AppLocalizations {
   @override
   String get backupSnapshotIncompleteNote =>
       'แมนิเฟสต์หายไปหรือระบุไฟล์ที่ไม่มี ดังนั้นสแนปช็อตนี้กู้คืนทั้งการติดตั้งไม่ได้ ไฟล์เวิร์กสเปซที่มียังนำมาใช้ทีละรายการได้';
+
+  @override
+  String get backupDeleteSnapshotLabel => 'ลบสแนปช็อต';
+
+  @override
+  String get backupDeleteSnapshotDescription =>
+      'ลบสแนปช็อตนี้ออกจากเซิร์ฟเวอร์อย่างถาวร ดาวน์โหลดก่อนหากต้องการเก็บไว้';
+
+  @override
+  String get backupDeleteSnapshotAction => 'ลบสแนปช็อต';
+
+  @override
+  String get backupDeleteSnapshotTitle => 'ลบสแนปช็อตนี้หรือไม่?';
+
+  @override
+  String backupDeleteSnapshotBody(String name) {
+    return 'ลบ $name จากเซิร์ฟเวอร์หรือไม่? ฐานข้อมูลทั้งหมดในสแนปช็อตนี้จะสูญหายและกู้คืนไม่ได้';
+  }
+
+  @override
+  String backupDeleteSnapshotDone(String name) {
+    return 'ลบสแนปช็อต $name แล้ว';
+  }
 
   @override
   String backupSnapshotWorkspaces(int count) {

@@ -144,7 +144,7 @@ class RpcMeetingRepository implements MeetingRepository {
 
   @override
   Stream<List<Meeting>> watchByWorkspace(String workspaceId) => _remote
-      .watchByWorkspace()
+      .watchByWorkspace(workspaceId: workspaceId)
       .map((list) => decodeRows(list, _meetingFromWire, what: 'meeting'));
 
   @override
@@ -164,7 +164,7 @@ class RpcMeetingRepository implements MeetingRepository {
     String workspaceId,
     String meetingId,
   ) => _remote
-      .watchSegments(meetingId)
+      .watchSegments(meetingId, workspaceId: workspaceId)
       .map(
         (list) => decodeRows(list, _segmentFromWire, what: 'meeting segment'),
       );
@@ -183,7 +183,7 @@ class RpcMeetingRepository implements MeetingRepository {
     String workspaceId,
     String meetingId,
   ) => _remote
-      .watchSpeakers(meetingId)
+      .watchSpeakers(meetingId, workspaceId: workspaceId)
       .map(
         (list) => decodeRows(list, _speakerFromWire, what: 'meeting speaker'),
       );
@@ -202,7 +202,7 @@ class RpcMeetingRepository implements MeetingRepository {
     String workspaceId,
     String meetingId,
   ) => _remote
-      .watchActionItems(meetingId)
+      .watchActionItems(meetingId, workspaceId: workspaceId)
       .map(
         (list) =>
             decodeRows(list, _actionItemFromWire, what: 'meeting action item'),
@@ -213,7 +213,7 @@ class RpcMeetingRepository implements MeetingRepository {
     String workspaceId,
     String meetingId,
   ) => _remote
-      .watchDecisions(meetingId)
+      .watchDecisions(meetingId, workspaceId: workspaceId)
       .map(
         (list) => decodeRows(list, _decisionFromWire, what: 'meeting decision'),
       );
@@ -221,7 +221,7 @@ class RpcMeetingRepository implements MeetingRepository {
   @override
   Stream<Map<String, MeetingActionItemStats>> watchActionItemStats(
     String workspaceId,
-  ) => _remote.watchActionItemStats().map((object) {
+  ) => _remote.watchActionItemStats(workspaceId: workspaceId).map((object) {
     final out = <String, MeetingActionItemStats>{};
     for (final entry in object.entries) {
       final value = entry.value;
@@ -237,7 +237,7 @@ class RpcMeetingRepository implements MeetingRepository {
 
   @override
   Stream<Map<String, int>> watchDecisionCounts(String workspaceId) =>
-      _remote.watchDecisionCounts().map((object) {
+      _remote.watchDecisionCounts(workspaceId: workspaceId).map((object) {
         final out = <String, int>{};
         for (final entry in object.entries) {
           out[entry.key] = (entry.value as num?)?.toInt() ?? 0;

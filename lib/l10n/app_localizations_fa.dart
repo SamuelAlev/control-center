@@ -1786,6 +1786,14 @@ class AppLocalizationsFa extends AppLocalizations {
       'JSON Schema که خروجی گام باید برآورده کند';
 
   @override
+  String get nodeConfigBackupRetentionDays =>
+      'حذف پشتیبان‌های قدیمی‌تر از (روز)';
+
+  @override
+  String get nodeConfigBackupRetentionDaysHelp =>
+      'فقط پشتیبان‌های همین فضای کاری حذف می‌شوند. تعداد روز مثبت وارد کنید.';
+
+  @override
   String get diffLineDisplay => 'خطوط بلند در دیف‌ها';
 
   @override
@@ -9039,6 +9047,44 @@ class AppLocalizationsFa extends AppLocalizations {
   String get spaceReposHint => 'مخزن‌های شامل';
 
   @override
+  String get newSpaceFolder => 'پوشهٔ جدید';
+
+  @override
+  String get folderName => 'نام پوشه';
+
+  @override
+  String get renameSpaceFolder => 'تغییر نام پوشه';
+
+  @override
+  String get deleteSpaceFolder => 'حذف پوشه';
+
+  @override
+  String get moveSpaceToFolder => 'انتقال فضا به پوشه';
+
+  @override
+  String get removeSpaceFromFolder => 'برداشتن فضا از پوشه';
+
+  @override
+  String get spaceFolderActions => 'کنش‌های پوشه';
+
+  @override
+  String get deleteFolderWithSpacesWarning =>
+      'حذف دائمی فضاها، پیام‌ها و پوشه‌های کاری آن‌ها را برای همه پاک می‌کند. این کار بازگشت‌پذیر نیست.';
+
+  @override
+  String get deleteSpacesInFolder => 'حذف دائمی فضاهای این پوشه';
+
+  @override
+  String get deleteFolderAndSpaces => 'حذف پوشه و فضاها';
+
+  @override
+  String get keepSpacesInFolder =>
+      'در غیر این صورت، فضاها خارج از پوشه باقی می‌مانند.';
+
+  @override
+  String get noSpaceFoldersYet => 'هنوز پوشه‌ای وجود ندارد';
+
+  @override
   String get ideSourceControl => 'کنترل منبع';
 
   @override
@@ -14329,7 +14375,7 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get backupNoSnapshots =>
-      'هنوز اسنپ‌شاتی نیست. فقط وقتی بخواهید گرفته می‌شود — زمان‌بندی نشده.';
+      'هنوز اسنپ‌شاتی از نصب وجود ندارد. اکنون یکی بگیرید یا برای پشتیبان‌گیری فضای کاری از پایپ‌لاین زمان‌بندی‌شده استفاده کنید.';
 
   @override
   String get backupSnapshotComplete => 'کامل';
@@ -14340,6 +14386,29 @@ class AppLocalizationsFa extends AppLocalizations {
   @override
   String get backupSnapshotIncompleteNote =>
       'مانیفست غایب است یا فایل‌هایی را نام می‌برد که نیستند، پس این اسنپ‌شات کل نصب را بازیابی نمی‌کند. فایل‌های فضای کاری موجود هنوز یکی‌یکی قابل پذیرش‌اند.';
+
+  @override
+  String get backupDeleteSnapshotLabel => 'حذف اسنپ‌شات';
+
+  @override
+  String get backupDeleteSnapshotDescription =>
+      'این اسنپ‌شات را برای همیشه از سرور حذف کنید. اگر به آن نیاز دارید، ابتدا دانلودش کنید.';
+
+  @override
+  String get backupDeleteSnapshotAction => 'حذف اسنپ‌شات';
+
+  @override
+  String get backupDeleteSnapshotTitle => 'این اسنپ‌شات حذف شود؟';
+
+  @override
+  String backupDeleteSnapshotBody(String name) {
+    return '⁨$name⁩ از سرور حذف شود؟ همهٔ پایگاه‌های دادهٔ آن از دست می‌روند و این کار برگشت‌ناپذیر است.';
+  }
+
+  @override
+  String backupDeleteSnapshotDone(String name) {
+    return 'اسنپ‌شات ⁨$name⁩ حذف شد.';
+  }
 
   @override
   String backupSnapshotWorkspaces(int count) {

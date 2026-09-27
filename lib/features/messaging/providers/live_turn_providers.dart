@@ -1,11 +1,14 @@
 import 'dart:async';
 import 'dart:collection';
 
+import 'package:cc_data/cc_data.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_update.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_update_codec.dart';
+import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
+import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_scope.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -108,32 +111,34 @@ int _valueChars(Object? value) {
   return 0;
 }
 
-/// Process-lifetime transcript cache shared by the relay fold and the
-/// per-message fetch provider.
-final transcriptCacheProvider = Provider<TranscriptLruCache>(
-  (_) => TranscriptLruCache(),
-);
+/// Workspace-local transcript memo shared by the relay fold and read provider.
+final transcriptCacheProvider = Provider<TranscriptLruCache>((ref) {
+  ref.watch(activeWorkspaceIdProvider);
+  return TranscriptLruCache();
+});
 
 /// The finalized transcript of one agent-turn message.
 ///
-/// Cache-first: a hit (seeded by the relay on turn finish, or a previous
-/// fetch) resolves synchronously; a miss pulls the full message once via
-/// `messaging.getMessageById` (the only surface that still carries
-/// `segments`). Live turns never come through here — the bubble reads the
-/// active-stream registry while `isActive`.
-final messageTranscriptProvider = FutureProvider.autoDispose
-    .family<List<TranscriptSegment>, String>((ref, messageId) async {
+/// The RPC snapshot holds full transcripts across navigation and restarts.
+/// The live-turn memo may render immediately too; the read still revalidates
+/// so edits and deletion are not hidden behind an immutable local answer.
+final messageTranscriptProvider = StreamProvider.autoDispose
+    .family<List<TranscriptSegment>, String>((ref, messageId) {
       final cache = ref.watch(transcriptCacheProvider);
-      final hit = cache.get(messageId);
-      if (hit != null) {
-        return hit;
-      }
-      final message = await ref
-          .watch(messagingRepositoryProvider)
-          .getMessageById(ref.requireWorkspaceId(), messageId);
-      final segments = message?.transcript ?? const <TranscriptSegment>[];
-      cache.put(messageId, segments);
-      return segments;
+      final repository = RpcMessagingRepository(ref.watch(rpcClientProvider));
+      return repository
+          .watchMessageById(ref.requireWorkspaceId(), messageId)
+          .map((message) {
+            final segments = message?.transcript ?? const <TranscriptSegment>[];
+            cache.put(messageId, segments);
+            return segments;
+          })
+          .handleError((Object error, StackTrace stack) {
+            // A denied/deleted transcript must not return from the live-turn
+            // memo when this provider is recreated.
+            cache.put(messageId, const []);
+            Error.throwWithStackTrace(error, stack);
+          });
     });
 
 /// Live turn relay fold for one space.

@@ -381,6 +381,51 @@ class AppLocalizationsPt extends AppLocalizations {
       'Os spaces deste workspace aparecem aqui.';
 
   @override
+  String get newSpaceFolder => 'Nova pasta';
+
+  @override
+  String get folderName => 'Nome da pasta';
+
+  @override
+  String get renameSpaceFolder => 'Renomear pasta';
+
+  @override
+  String get deleteSpaceFolder => 'Excluir pasta';
+
+  @override
+  String get moveSpaceToFolder => 'Mover para uma pasta';
+
+  @override
+  String get removeSpaceFromFolder => 'Remover da pasta';
+
+  @override
+  String get spaceFolderActions => 'Ações da pasta';
+
+  @override
+  String get deleteFolderWithSpacesWarning =>
+      'Excluir espaços permanentemente remove suas mensagens e diretórios de trabalho para todos. Essa ação não pode ser desfeita.';
+
+  @override
+  String get deleteSpacesInFolder =>
+      'Excluir permanentemente os espaços desta pasta';
+
+  @override
+  String get deleteFolderAndSpaces => 'Excluir pasta e espaços';
+
+  @override
+  String get keepSpacesInFolder =>
+      'Caso contrário, os espaços ficarão fora de qualquer pasta.';
+
+  @override
+  String get create => 'Criar';
+
+  @override
+  String get otherSpaces => 'Outros espaços';
+
+  @override
+  String get folderUpdateFailed => 'Não foi possível atualizar as pastas';
+
+  @override
   String get thread => 'Conversa';
 
   @override

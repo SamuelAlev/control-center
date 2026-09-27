@@ -72,6 +72,7 @@ class ScriptedAgentLoop implements AgentLoop {
   ScriptedAgentLoop({
     required this.scripts,
     this.pacing = const DemoPacing(),
+    this.onPeerStep,
     Random? random,
   }) : _random = random ?? Random();
 
@@ -81,11 +82,19 @@ class ScriptedAgentLoop implements AgentLoop {
   /// Stream pacing.
   final DemoPacing pacing;
 
+  /// Persists a scripted peer's own agent turn in the current demo conversation.
+  /// The callback must validate workspace/space/conversation ownership and
+  /// never execute the fixture's displayed tools.
+  final Future<void> Function(DemoPeerStep step, HarnessToolContext context)?
+  onPeerStep;
+
   final Random _random;
 
   /// Marker a seeded message can carry to demand a specific script, bypassing
   /// keyword matching: `[[demo:script=review-auth-pr]]`.
-  static final RegExp scriptMarker = RegExp(r'\[\[demo:script=([a-z0-9._-]+)\]\]');
+  static final RegExp scriptMarker = RegExp(
+    r'\[\[demo:script=([a-z0-9._-]+)\]\]',
+  );
 
   /// The script [message] selects: an explicit marker wins, then the best
   /// keyword match, then the first script as a generic fallback.
@@ -165,7 +174,12 @@ class ScriptedAgentLoop implements AgentLoop {
             cancel,
             LoopTextDelta.new,
           );
-        case DemoToolStep(:final tool, :final args, :final result, :final isError):
+        case DemoToolStep(
+          :final tool,
+          :final args,
+          :final result,
+          :final isError,
+        ):
           await _pause(pacing.beforeToolMin, pacing.beforeToolMax, cancel);
           if (cancel?.isCancelled ?? false) {
             break;
@@ -180,6 +194,20 @@ class ScriptedAgentLoop implements AgentLoop {
                 ? HarnessToolResult.error(result)
                 : HarnessToolResult.success(result),
           );
+        case DemoPeerStep():
+          final peer = onPeerStep;
+          if (peer == null || context == null) {
+            yield const LoopError('Demo peer replay is unavailable.');
+            yield const LoopDone(LoopDoneReason.completed);
+            return;
+          }
+          try {
+            await peer(step, context);
+          } on Object catch (error) {
+            yield LoopError('Demo peer replay failed: $error');
+            yield const LoopDone(LoopDoneReason.completed);
+            return;
+          }
         case DemoUsageStep(
           :final inputTokens,
           :final outputTokens,
@@ -247,7 +275,11 @@ class ScriptedAgentLoop implements AgentLoop {
   }
 
   /// Waits a jittered duration between [lo] and [hi], returning early on cancel.
-  Future<void> _pause(Duration lo, Duration hi, CancellationToken? cancel) async {
+  Future<void> _pause(
+    Duration lo,
+    Duration hi,
+    CancellationToken? cancel,
+  ) async {
     final span = hi.inMilliseconds - lo.inMilliseconds;
     final ms = lo.inMilliseconds + (span <= 0 ? 0 : _random.nextInt(span + 1));
     if (ms <= 0) {

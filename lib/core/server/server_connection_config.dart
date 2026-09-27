@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:cc_domain/cc_domain.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
+import 'package:control_center/core/storage/client_snapshot_store.dart';
 
 /// How the desktop reaches the `cc_server` that owns its data.
 ///
@@ -301,7 +302,9 @@ class ServerConnectionStore {
   }
 
   /// Removes [serverId] and deletes its keychain PSK.
+  /// Removing a pairing also removes its render-only snapshots for all users.
   Future<void> removeEntry(String serverId) async {
+    await forgetSnapshotServer(serverId);
     final entries = [...readEntries()]
       ..removeWhere((e) => e.serverId == serverId);
     await _writeEntries(entries);
@@ -326,6 +329,7 @@ class ServerConnectionStore {
   /// in the browser).
   Future<void> clear() async {
     for (final e in readEntries()) {
+      await forgetSnapshotServer(e.serverId);
       await _secure.delete(key: pskKeyFor(e.serverId));
     }
     await _prefs.remove(entriesKey);

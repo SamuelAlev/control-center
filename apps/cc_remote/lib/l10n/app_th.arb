@@ -234,5 +234,19 @@
   "yesterday": "เมื่อวาน",
   "durationMinutes": "{count} นาที",
   "durationHours": "{count} ชม.",
-  "durationHoursMinutes": "{hours} ชม. {minutes} นาที"
+  "durationHoursMinutes": "{hours} ชม. {minutes} นาที",
+  "newSpaceFolder": "โฟลเดอร์ใหม่",
+  "folderName": "ชื่อโฟลเดอร์",
+  "renameSpaceFolder": "เปลี่ยนชื่อโฟลเดอร์",
+  "deleteSpaceFolder": "ลบโฟลเดอร์",
+  "moveSpaceToFolder": "ย้ายไปยังโฟลเดอร์",
+  "removeSpaceFromFolder": "นำออกจากโฟลเดอร์",
+  "spaceFolderActions": "การดำเนินการของโฟลเดอร์",
+  "deleteFolderWithSpacesWarning": "การลบพื้นที่อย่างถาวรจะนำข้อความและไดเรกทอรีงานของพื้นที่ออกสำหรับทุกคน ไม่สามารถยกเลิกการดำเนินการนี้ได้",
+  "deleteSpacesInFolder": "ลบพื้นที่ในโฟลเดอร์นี้อย่างถาวร",
+  "deleteFolderAndSpaces": "ลบโฟลเดอร์และพื้นที่",
+  "keepSpacesInFolder": "มิฉะนั้น พื้นที่จะยังคงอยู่นอกโฟลเดอร์",
+  "create": "สร้าง",
+  "otherSpaces": "พื้นที่อื่น ๆ",
+  "folderUpdateFailed": "อัปเดตโฟลเดอร์ไม่ได้"
 }

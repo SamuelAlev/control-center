@@ -7,6 +7,7 @@ import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_infra/cc_infra.dart';
 import 'package:cc_natives/native_library_paths.dart' show nativeLibDirEnvVar;
 import 'package:cc_rpc/cc_rpc.dart';
+import 'package:control_center/core/server/snapshot_cache_binding.dart';
 import 'package:control_center/core/storage/control_center_paths.dart';
 import 'package:control_center/core/theme/font_loader_install.dart';
 import 'package:control_center/core/utils/app_log.dart';
@@ -190,6 +191,12 @@ Future<ThinClientBackend> startThinClientBackend() async {
   );
   await supervisor.start();
   final client = ResilientRpcClient(supervisor);
+  await attachVerifiedSnapshotCache(
+    client: client,
+    serverId: probe.serverId,
+    fingerprint: supervisor.pinnedFingerprint,
+    supervisor: supervisor,
+  );
   AppLog.i('cc_server', 'thin client connected on ${endpoint.rpcUri}');
   final mediaProxy = MediaProxyConfig.fromConnection(
     serverUri: endpoint.rpcUri,

@@ -41,7 +41,13 @@ class PipelineSchedulerService {
 
   /// Begins ticking on a fixed interval. Idempotent.
   void start() {
-    _timer ??= Timer.periodic(_tickInterval, (_) {
+    if (_timer != null) {
+      return;
+    }
+    // A trigger that became due while the server was stopped should not wait
+    // another whole tick interval after boot before its catch-up run starts.
+    unawaited(tick(DateTime.now().toUtc()));
+    _timer = Timer.periodic(_tickInterval, (_) {
       unawaited(tick(DateTime.now().toUtc()));
     });
   }

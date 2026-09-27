@@ -1815,6 +1815,14 @@ class AppLocalizationsEl extends AppLocalizations {
       'JSON Schema που πρέπει να ικανοποιεί η έξοδος του βήματος';
 
   @override
+  String get nodeConfigBackupRetentionDays =>
+      'Διαγραφή αντιγράφων παλαιότερων από (ημέρες)';
+
+  @override
+  String get nodeConfigBackupRetentionDaysHelp =>
+      'Διαγράφονται μόνο αντίγραφα αυτού του χώρου εργασίας. Εισαγάγετε θετικό αριθμό ημερών.';
+
+  @override
   String get diffLineDisplay => 'Μεγάλες γραμμές στα diffs';
 
   @override
@@ -9167,6 +9175,45 @@ class AppLocalizationsEl extends AppLocalizations {
   String get spaceReposHint => 'Αποθετήρια προς συμπερίληψη';
 
   @override
+  String get newSpaceFolder => 'Νέος φάκελος';
+
+  @override
+  String get folderName => 'Όνομα φακέλου';
+
+  @override
+  String get renameSpaceFolder => 'Μετονομασία φακέλου';
+
+  @override
+  String get deleteSpaceFolder => 'Διαγραφή φακέλου';
+
+  @override
+  String get moveSpaceToFolder => 'Μετακίνηση χώρου σε φάκελο';
+
+  @override
+  String get removeSpaceFromFolder => 'Αφαίρεση χώρου από φάκελο';
+
+  @override
+  String get spaceFolderActions => 'Ενέργειες φακέλου';
+
+  @override
+  String get deleteFolderWithSpacesWarning =>
+      'Η οριστική διαγραφή των χώρων αφαιρεί τα μηνύματα και τους καταλόγους εργασίας τους για όλους. Δεν είναι δυνατή η αναίρεση.';
+
+  @override
+  String get deleteSpacesInFolder =>
+      'Οριστική διαγραφή των χώρων σε αυτόν τον φάκελο';
+
+  @override
+  String get deleteFolderAndSpaces => 'Διαγραφή φακέλου και χώρων';
+
+  @override
+  String get keepSpacesInFolder =>
+      'Διαφορετικά, οι χώροι θα παραμείνουν εκτός φακέλου.';
+
+  @override
+  String get noSpaceFoldersYet => 'Δεν υπάρχουν φάκελοι ακόμα';
+
+  @override
   String get ideSourceControl => 'Έλεγχος εκδόσεων';
 
   @override
@@ -14511,7 +14558,7 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get backupNoSnapshots =>
-      'Δεν υπάρχουν ακόμη στιγμιότυπα. Ένα λαμβάνεται μόνο όταν το ζητήσετε — τίποτα δεν είναι προγραμματισμένο.';
+      'Δεν υπάρχουν ακόμη στιγμιότυπα εγκατάστασης. Δημιουργήστε ένα τώρα ή χρησιμοποιήστε προγραμματισμένο pipeline για αντίγραφα χώρου εργασίας.';
 
   @override
   String get backupSnapshotComplete => 'Πλήρες';
@@ -14522,6 +14569,29 @@ class AppLocalizationsEl extends AppLocalizations {
   @override
   String get backupSnapshotIncompleteNote =>
       'Το μανιφέστο λείπει ή ονομάζει αρχεία που δεν υπάρχουν, οπότε αυτό το στιγμιότυπο δεν μπορεί να επαναφέρει ολόκληρη την εγκατάσταση. Τα αρχεία χώρου εργασίας που έχει μπορούν ακόμη να υιοθετηθούν ένα προς ένα.';
+
+  @override
+  String get backupDeleteSnapshotLabel => 'Διαγραφή στιγμιότυπου';
+
+  @override
+  String get backupDeleteSnapshotDescription =>
+      'Μόνιμη αφαίρεση αυτού του στιγμιότυπου από τον διακομιστή. Κατεβάστε το πρώτα αν θέλετε να το κρατήσετε.';
+
+  @override
+  String get backupDeleteSnapshotAction => 'Διαγραφή στιγμιότυπου';
+
+  @override
+  String get backupDeleteSnapshotTitle => 'Να διαγραφεί αυτό το στιγμιότυπο;';
+
+  @override
+  String backupDeleteSnapshotBody(String name) {
+    return 'Να διαγραφεί το $name από τον διακομιστή; Όλες οι βάσεις δεδομένων του θα χαθούν. Αυτή η ενέργεια δεν αναιρείται.';
+  }
+
+  @override
+  String backupDeleteSnapshotDone(String name) {
+    return 'Το στιγμιότυπο $name διαγράφηκε.';
+  }
 
   @override
   String backupSnapshotWorkspaces(int count) {

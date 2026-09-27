@@ -378,6 +378,49 @@ class AppLocalizationsHe extends AppLocalizations {
   String get spacesEmptyDescription => 'מרחבים בסביבת העבודה הזו יופיעו כאן.';
 
   @override
+  String get newSpaceFolder => 'תיקייה חדשה';
+
+  @override
+  String get folderName => 'שם התיקייה';
+
+  @override
+  String get renameSpaceFolder => 'שינוי שם התיקייה';
+
+  @override
+  String get deleteSpaceFolder => 'מחיקת התיקייה';
+
+  @override
+  String get moveSpaceToFolder => 'העברה לתיקייה';
+
+  @override
+  String get removeSpaceFromFolder => 'הסרה מהתיקייה';
+
+  @override
+  String get spaceFolderActions => 'פעולות התיקייה';
+
+  @override
+  String get deleteFolderWithSpacesWarning =>
+      'מחיקה לצמיתות של מרחבים מסירה את ההודעות ועצי העבודה שלהם עבור כולם. אי אפשר לבטל פעולה זו.';
+
+  @override
+  String get deleteSpacesInFolder => 'מחיקת המרחבים שבתיקייה הזו לצמיתות';
+
+  @override
+  String get deleteFolderAndSpaces => 'מחיקת התיקייה והמרחבים';
+
+  @override
+  String get keepSpacesInFolder => 'אחרת, המרחבים יישארו מחוץ לתיקיות.';
+
+  @override
+  String get create => 'יצירה';
+
+  @override
+  String get otherSpaces => 'מרחבים אחרים';
+
+  @override
+  String get folderUpdateFailed => 'לא ניתן לעדכן את התיקיות';
+
+  @override
   String get thread => 'שרשור';
 
   @override

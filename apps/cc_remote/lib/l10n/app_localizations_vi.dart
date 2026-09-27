@@ -378,6 +378,51 @@ class AppLocalizationsVi extends AppLocalizations {
       'Không gian trong workspace này sẽ hiện ở đây.';
 
   @override
+  String get newSpaceFolder => 'Thư mục mới';
+
+  @override
+  String get folderName => 'Tên thư mục';
+
+  @override
+  String get renameSpaceFolder => 'Đổi tên thư mục';
+
+  @override
+  String get deleteSpaceFolder => 'Xóa thư mục';
+
+  @override
+  String get moveSpaceToFolder => 'Chuyển vào thư mục';
+
+  @override
+  String get removeSpaceFromFolder => 'Xóa khỏi thư mục';
+
+  @override
+  String get spaceFolderActions => 'Thao tác với thư mục';
+
+  @override
+  String get deleteFolderWithSpacesWarning =>
+      'Xóa vĩnh viễn các không gian sẽ xóa tin nhắn và thư mục làm việc của chúng đối với tất cả mọi người. Không thể hoàn tác.';
+
+  @override
+  String get deleteSpacesInFolder =>
+      'Xóa vĩnh viễn các không gian trong thư mục này';
+
+  @override
+  String get deleteFolderAndSpaces => 'Xóa thư mục và không gian';
+
+  @override
+  String get keepSpacesInFolder =>
+      'Nếu không, các không gian sẽ không thuộc thư mục nào.';
+
+  @override
+  String get create => 'Tạo';
+
+  @override
+  String get otherSpaces => 'Không gian khác';
+
+  @override
+  String get folderUpdateFailed => 'Không thể cập nhật thư mục';
+
+  @override
   String get thread => 'Luồng';
 
   @override

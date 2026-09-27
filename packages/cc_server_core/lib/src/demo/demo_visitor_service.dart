@@ -173,6 +173,7 @@ class DemoVisitorService {
     required this._relayRoom,
     required this._publicUrl,
     required this._signalingUrl,
+    this.onVisitorReap,
     void Function(String message)? log,
     DateTime Function()? now,
   }) : _workspaces = workspaceRepository,
@@ -203,6 +204,9 @@ class DemoVisitorService {
   final String _publicUrl;
   final String _signalingUrl;
   final void Function(String) _log;
+
+  /// Cancels simulated meeting timers before the visitor's database is reaped.
+  final Future<void> Function(String workspaceId)? onVisitorReap;
   final DateTime Function() _now;
 
   static const _uuid = Uuid();
@@ -264,6 +268,14 @@ class DemoVisitorService {
     _stopped = true;
     _reaper?.cancel();
     _reaper = null;
+    // An in-flight redemption or warm seed must finish before the runtime
+    // closes the shared database manager. The pool filler checks _stopped
+    // before beginning its next workspace.
+    await _door;
+    final filling = _fill;
+    if (filling != null) {
+      await filling;
+    }
     for (final visitor in [..._state.visitors]) {
       await _reap(visitor);
     }
@@ -421,6 +433,14 @@ class DemoVisitorService {
     // the very one at the head of the queue. Checking here as well means no
     // visitor can ever be handed a workspace older than the TTL, whatever the
     // timer happened to be doing.
+    // The boot-time pool filler may already be seeding the next workspace.
+    // Wait for it rather than running two seeds against shared services.
+    if (_state.pool.isEmpty) {
+      final filling = _fill;
+      if (filling != null) {
+        await filling;
+      }
+    }
     while (_state.pool.isNotEmpty) {
       final warm = _state.pool.removeAt(0);
       if (!_isStale(warm)) {
@@ -543,6 +563,9 @@ class DemoVisitorService {
       // Closes the socket (the paired-device watch), then removes the secret.
       await _globalDb.pairedDeviceDao.remove(visitor.deviceId);
       await _secrets.deletePsk(visitor.deviceId);
+      // Stop server-owned transcript writes only after the device is revoked,
+      // and before its workspace database is removed.
+      await onVisitorReap?.call(visitor.workspaceId);
 
       // Deletes the directory AND the workspace_routes rows.
       await _workspaces.delete(visitor.workspaceId);

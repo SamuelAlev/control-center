@@ -19,6 +19,8 @@ CcTheme(
 
 Components under `lib/src/components/` cover buttons; text/select/toggle inputs; badges, alerts, progress and toasts; cards, tiles and avatars; tabs, menus, popovers, dialogs and sidebars; and resizable layout. See the gallery for actual component states rather than maintaining another component inventory here. Foundations include focus modality (`:focus-visible` style), token resolvers, tappable surfaces and overlay anchors.
 
+Decorated single-line `CcTextField` inputs reserve their control height (~40px default, ~32px compact) before a conditional suffix appears; a 32px clear button does not resize the field as text changes. Multiline fields grow with their content, while chromeless fields leave sizing to their host.
+
 ## Adding a component
 
 1. Build `lib/src/components/cc_<name>.dart` on `flutter/widgets.dart`, using `context.designSystem` or shared `CcCardTokens`/`CcInputTokens` resolvers.

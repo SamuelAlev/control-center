@@ -16,6 +16,12 @@ client tier — desktop, web PWA and the `cc_remote` phone.
   the mutual HMAC challenge/response and `verifyProxyTarget` (the signed
   media-proxy URL check). Both the client and the server (`cc_host`,
   `cc_server_core`) use this one implementation so both sides agree.
+- **`RpcSnapshotCache` / `ResilientRpcClient`** — optional bounded, persisted
+  stale-while-revalidate snapshots for allowlisted presentation subscriptions
+  and explicit `watchCall` reads. Callers supply storage isolated by verified
+  server/user identity. Full request arguments isolate workspace/entity/range
+  variants; outages retain data, authoritative denials invalidate it. Ordinary
+  RPC calls and mutations are never answered from snapshots.
 
 ## Invariants
 

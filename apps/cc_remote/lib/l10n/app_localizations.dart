@@ -834,6 +834,90 @@ abstract class AppLocalizations {
   /// **'Spaces in this workspace appear here.'**
   String get spacesEmptyDescription;
 
+  /// Action to create a folder for organizing spaces in the current workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'New folder'**
+  String get newSpaceFolder;
+
+  /// Label for the name field when creating or renaming a space folder.
+  ///
+  /// In en, this message translates to:
+  /// **'Folder name'**
+  String get folderName;
+
+  /// Action to rename a folder containing spaces.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename folder'**
+  String get renameSpaceFolder;
+
+  /// Action to delete a folder; its spaces remain unless the user explicitly chooses permanent deletion.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete folder'**
+  String get deleteSpaceFolder;
+
+  /// Action to put a space inside a selected folder.
+  ///
+  /// In en, this message translates to:
+  /// **'Move to folder'**
+  String get moveSpaceToFolder;
+
+  /// Action to leave a space unfiled without deleting the space.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from folder'**
+  String get removeSpaceFromFolder;
+
+  /// Accessible label for the menu of actions on a space folder.
+  ///
+  /// In en, this message translates to:
+  /// **'Folder actions'**
+  String get spaceFolderActions;
+
+  /// Irreversible-deletion warning in the folder delete confirmation: choosing to permanently delete the contained spaces also removes their messages and worktrees for all users.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleting spaces permanently removes their messages and worktrees for everyone. This cannot be undone.'**
+  String get deleteFolderWithSpacesWarning;
+
+  /// Opt-in checkbox when deleting a folder: also permanently delete every space inside it.
+  ///
+  /// In en, this message translates to:
+  /// **'Permanently delete the spaces in this folder'**
+  String get deleteSpacesInFolder;
+
+  /// Confirmation button when permanently deleting both a folder and its spaces.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete folder and spaces'**
+  String get deleteFolderAndSpaces;
+
+  /// Explains that spaces remain available without a folder if the permanent-delete option is not selected.
+  ///
+  /// In en, this message translates to:
+  /// **'Otherwise, spaces will remain unfiled.'**
+  String get keepSpacesInFolder;
+
+  /// Button to create a space folder after entering its name.
+  ///
+  /// In en, this message translates to:
+  /// **'Create'**
+  String get create;
+
+  /// Heading for spaces in the workspace that are not assigned to any folder.
+  ///
+  /// In en, this message translates to:
+  /// **'Other spaces'**
+  String get otherSpaces;
+
+  /// Error notice when creating, renaming, moving, or deleting a space folder fails to save.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t update folders'**
+  String get folderUpdateFailed;
+
   /// Conversation screen header title.
   ///
   /// In en, this message translates to:

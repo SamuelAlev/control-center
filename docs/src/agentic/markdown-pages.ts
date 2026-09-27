@@ -12,7 +12,7 @@
  */
 import { getCollection } from 'astro:content';
 import { releases } from '../data/changelog';
-import { columns, tools, vsTools, compareSummary, compareReviewed } from '../data/compare';
+import { columns, tools, vsTools, compareSummary, compareReviewed, reviewScopeNote } from '../data/compare';
 import { sitePages } from '../data/pages';
 import { OVERVIEW, REPO_URL } from '../data/site';
 import { landingCopy } from '../data/landing';
@@ -71,7 +71,9 @@ function compareIndexMarkdown(origin: string): string {
     '',
     compareSummary,
     '',
-    `Legend: ✓ yes, ≈ partial, — not offered. Checked against each product's public site, ${compareReviewed}.`,
+    `Legend: ✓ yes, ≈ partial, — not offered. Last updated: ${compareReviewed}. Checked against each product's public site.`,
+    '',
+    reviewScopeNote,
     '',
     `| Tool | ${columns.map((c) => c.label).join(' | ')} |`,
     `| ${columns.map(() => '---').join(' | ')} |`,
@@ -100,6 +102,8 @@ function compareToolMarkdown(origin: string, id: string): string | null {
     '',
     `> ${tool.verdict ?? tool.blurb}`,
     '',
+    `Last updated: ${compareReviewed}. Checked against ${tool.name}'s public site.`,
+    '',
     `## ${tool.name}`,
     '',
     `${tool.blurb}`,
@@ -111,6 +115,8 @@ function compareToolMarkdown(origin: string, id: string): string | null {
     tool.ccEdge ?? '',
     '',
     '## Side by side',
+    '',
+    reviewScopeNote,
     '',
     `| | ${columns.map((c) => c.label).join(' | ')} |`,
     `| ${columns.map(() => '---').join(' | ')} |`,

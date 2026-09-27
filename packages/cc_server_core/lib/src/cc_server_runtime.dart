@@ -161,6 +161,7 @@ import 'package:cc_server_core/src/dao_newsfeed_repository.dart';
 import 'package:cc_server_core/src/dao_pr_lifecycle_repository.dart';
 import 'package:cc_server_core/src/demo/demo_hooks.dart';
 import 'package:cc_server_core/src/demo/demo_limits.dart';
+import 'package:cc_server_core/src/demo/demo_meeting_service.dart';
 import 'package:cc_server_core/src/demo/demo_world.dart'
     show kDemoPipelineTemplateIds;
 import 'package:cc_server_core/src/dotenv.dart';
@@ -1768,6 +1769,7 @@ Future<CcServer> runCcServer({
   // runs after the ready banner, so the late binding is never observed unset —
   // the same shape as `networkRuntimeHolder`.
   WorkspaceSeeder? demoBaseSeeder;
+  DemoMeetingService? demoMeeting;
   final demo = demoBuilder == null
       ? null
       : await demoBuilder(
@@ -1788,6 +1790,9 @@ Future<CcServer> runCcServer({
             describeDescriptor: () async =>
                 (await descriptorService.describe()).toJson(),
             relayRoom: () => serverIdentity.relayRoom,
+            onVisitorReap: (workspaceId) async {
+              await demoMeeting?.retireWorkspace(workspaceId);
+            },
             // The product's own seeder, so a demo workspace starts as a
             // NORMAL workspace (CEO, specialists, the built-in pipeline
             // templates) that the demo then furnishes and prunes.
@@ -1797,7 +1802,8 @@ Future<CcServer> runCcServer({
             // pending approval per workspace. No timeout: it stays pending
             // until a visitor resolves it through `confirmation.respond`.
             registerConfirmation: (request) => pendingConfirmationRegistry
-                .register(request, timeoutOverride: null),
+                .register(request, timeoutOverride: null)
+                .approved,
             // Real newsfeed articles within seconds of a claim, not on the
             // next 30-minute sweep. Best-effort inside; failures are logged
             // there, never surfaced to the visitor.
@@ -1815,6 +1821,7 @@ Future<CcServer> runCcServer({
             log: (message) => _announce('cc_server: $message'),
           ),
         );
+  demoMeeting = demo != null ? DemoMeetingService(meetingRepository) : null;
   if (demo != null) {
     _announce(
       'cc_server: DEMO MODE — ${demo.profile.runtimeType} lockdown, '
@@ -2999,6 +3006,17 @@ Future<CcServer> runCcServer({
       );
       return;
     }
+    // Public demo rooms are repo-less: never touch the real provisioner,
+    // whose worktree setup can invoke Git and repository scripts.
+    if (demo != null) {
+      unawaited(
+        workspaceDbs
+            .of(workspaceId)
+            .messagingDao
+            .updateSpaceProvisioningStatus(e.spaceId, 'ready'),
+      );
+      return;
+    }
     unawaited(
       spaceProvisioningService
           .provision(workspaceId: workspaceId, spaceId: e.spaceId)
@@ -3023,45 +3041,47 @@ Future<CcServer> runCcServer({
   // spinner — dispatch gated, no retry affordance (retry only shows on
   // `failed`). provision() is idempotent: existing worktrees are reused. One
   // best-effort sweep at boot, mirroring the orphan-run reaper.
-  unawaited(() async {
-    try {
-      // CROSS-WORKSPACE BY DESIGN: a boot reconciler, so it visits every
-      // workspace's database once. Each workspace's stranded spaces are
-      // resumed with that workspace's own id in hand.
-      await crossWorkspace.forEachWorkspace((wsDb) async {
-        final workspaceId = wsDb.workspaceId;
-        final stranded = await wsDb.messagingDao.spacesByProvisioningStatus(
-          'provisioning',
+  if (demo == null) {
+    unawaited(() async {
+      try {
+        // CROSS-WORKSPACE BY DESIGN: a boot reconciler, so it visits every
+        // workspace's database once. Each workspace's stranded spaces are
+        // resumed with that workspace's own id in hand.
+        await crossWorkspace.forEachWorkspace((wsDb) async {
+          final workspaceId = wsDb.workspaceId;
+          final stranded = await wsDb.messagingDao.spacesByProvisioningStatus(
+            'provisioning',
+          );
+          for (final row in stranded) {
+            CcHostLog.info(
+              'channel provisioning: resuming stranded channel ${row.id}',
+            );
+            unawaited(
+              spaceProvisioningService
+                  .provision(workspaceId: workspaceId, spaceId: row.id)
+                  .catchError((Object err, StackTrace st) {
+                    CcHostLog.error(
+                      'channel provisioning: resume failed for ${row.id}: $err',
+                      err,
+                      st,
+                    );
+                    wsDb.messagingDao.updateSpaceProvisioningStatus(
+                      row.id,
+                      'failed',
+                    );
+                  }),
+            );
+          }
+        });
+      } on Object catch (e, st) {
+        CcHostLog.error(
+          'cc_server: stranded-channel provisioning sweep failed: $e',
+          e,
+          st,
         );
-        for (final row in stranded) {
-          CcHostLog.info(
-            'channel provisioning: resuming stranded channel ${row.id}',
-          );
-          unawaited(
-            spaceProvisioningService
-                .provision(workspaceId: workspaceId, spaceId: row.id)
-                .catchError((Object err, StackTrace st) {
-                  CcHostLog.error(
-                    'channel provisioning: resume failed for ${row.id}: $err',
-                    err,
-                    st,
-                  );
-                  wsDb.messagingDao.updateSpaceProvisioningStatus(
-                    row.id,
-                    'failed',
-                  );
-                }),
-          );
-        }
-      });
-    } on Object catch (e, st) {
-      CcHostLog.error(
-        'cc_server: stranded-channel provisioning sweep failed: $e',
-        e,
-        st,
-      );
-    }
-  }());
+      }
+    }());
+  }
   // Enclosures (rigs): disposable VMs an agent or a human drives, and the
   // machines the interactive terminals move into. Constructed unconditionally
   // and cheap to build — `probe()` is what decides whether anything can
@@ -3270,6 +3290,8 @@ Future<CcServer> runCcServer({
   final codeServerSessions = CodeServerService(
     isolatedRepos: isolatedRepoRepository,
     dataRoot: config.dataDir,
+    // A public demo cannot download an editor or run its archive extractor.
+    attemptManagedDownload: demo == null,
   );
 
   // Persisted ASR model selection (HOST-GLOBAL; a model is a device-local
@@ -3418,12 +3440,15 @@ Future<CcServer> runCcServer({
     // the transcriber reusable, so a meeting going idle mid-dictation cannot
     // strand a window (the next chunk re-initializes lazily).
     dictationService = DictationService(transcriber: transcriber);
+  } else if (demo != null) {
+    CcHostLog.info(
+      'cc_server: demo: audio recording and dictation are disabled; '
+      'meeting.demoStart produces a fictional transcript without capturing '
+      'audio or downloading a speech model.',
+    );
   } else {
-    // Not "until a voice model is installed" any more: the warm-up at the end
-    // of boot is about to fetch one unconditionally. Saying so is the whole
-    // difference between "go do something" and "wait, then restart" — the
-    // transcriber resolved its model here, minutes before that download can
-    // land, so this boot serves no speech ops however the fetch goes.
+    // The warm-up at the end of a real server boot fetches a missing model,
+    // but this boot cannot serve speech ops until the server is restarted.
     CcHostLog.warning(
       'cc_server: no speech model installed under ${config.dataDir} — meeting '
       'recording and composer dictation over RPC are unavailable FOR THIS RUN '
@@ -3620,6 +3645,24 @@ Future<CcServer> runCcServer({
   })
   finalizeReviewFn;
 
+  // On-demand backup: a timestamped snapshot DIRECTORY under
+  // `<dataDir>/backups/` holding global.db, one file per workspace and a
+  // manifest. Backs the `server.backupNow` / `server.listBackups` ops, the
+  // `workspace.export` / `workspace.import` pair, AND the `/backup/*` HTTP
+  // routes below — which is why it is hoisted here rather than built inline:
+  // the RPC lane names paths on the server and the HTTP lane carries the bytes
+  // to a client, and both have to be the same service or they describe
+  // different files.
+  // demo: no backup/export of a shared public database.
+  final AppDatabaseBackupService? databaseBackupService = demo != null
+      ? null
+      : AppDatabaseBackupService(
+          global: globalDb,
+          workspaces: workspaceDbs,
+          backupsDir: '${config.dataDir}/backups',
+          onWarn: CcHostLog.warning,
+        );
+
   final pipeline = buildServerPipelineExecutor(
     templateRepository: pipelineTemplateRepository,
     runRepository: pipelineRunRepository,
@@ -3637,6 +3680,7 @@ Future<CcServer> runCcServer({
     codeIndexer: codeIndexer,
     skillAnalysis: skillAnalysis,
     eventBus: eventBus,
+    databaseBackup: databaseBackupService,
     schemaValidator: const JsonSchemaValidator(),
     runDirPath: (runId) async => (await paths.pipelineRunDir(runId)).path,
     // `messaging.createSpace`: the review pipeline's first step resolves the
@@ -5165,24 +5209,6 @@ Future<CcServer> runCcServer({
     deepLinks: ChatDeepLinks.fromServerUrl(config.publicUrl),
   );
 
-  // On-demand backup: a timestamped snapshot DIRECTORY under
-  // `<dataDir>/backups/` holding global.db, one file per workspace and a
-  // manifest. Backs the `server.backupNow` / `server.listBackups` ops, the
-  // `workspace.export` / `workspace.import` pair, AND the `/backup/*` HTTP
-  // routes below — which is why it is hoisted here rather than built inline:
-  // the RPC lane names paths on the server and the HTTP lane carries the bytes
-  // to a client, and both have to be the same service or they describe
-  // different files.
-  // demo: no backup/export of a shared public database.
-  final AppDatabaseBackupService? databaseBackupService = demo != null
-      ? null
-      : AppDatabaseBackupService(
-          global: globalDb,
-          workspaces: workspaceDbs,
-          backupsDir: '${config.dataDir}/backups',
-          onWarn: CcHostLog.warning,
-        );
-
   // Where the `/backup/*` routes put transient bytes: an upload on its way in
   // and a snapshot archive on its way out. Both are deleted by the route that
   // made them, on every path out — this directory is a workbench, not a store.
@@ -5487,6 +5513,7 @@ Future<CcServer> runCcServer({
     // the recording ops stay absent and the web recorder reports unavailable).
     // demo: no audio capture.
     meetingRecording: demo != null ? null : meetingRecording,
+    demoMeeting: demoMeeting,
     // Composer voice dictation over RPC (same null-when-no-ASR-model contract →
     // the `dictation.*` ops + `dictation.watchPartials` stay absent).
     // demo: no dictation.
@@ -5906,19 +5933,21 @@ Future<CcServer> runCcServer({
       createDio(),
       summaryUrl: kimiStatusSummaryUrl,
     ).fetchSummaryJson(),
-    // Live subscription-usage quotas. Every provider fans out through the
-    // same [SubscriptionUsageAccount] list so pinned / round-robin / serial
-    // rotation can show remaining quota per login. Claude Code accounts are
-    // merged here (they live in the CLI store, not the harness credential
-    // file); Codex / Cursor / z.ai / Kimi arrive already collected by the op.
-    fetchSubscriptionUsage: (accounts) async {
-      final claude = await _claudeUsageAccounts(store: claudeAccountStore);
-      final all = await SubscriptionUsageService(
-        dio: createDio(),
-        fetchClaudeCached: claudeUsageCache.get,
-      ).fetchAll(accounts: [...accounts, ...claude]);
-      return [for (final u in all) u.toJson()];
-    },
+    // Demo readings are fictional. Never collect CLI/harness credentials or
+    // call a provider usage endpoint on the public binary.
+    collectSubscriptionAccounts: demo == null,
+    fetchSubscriptionUsage: demo == null
+        ? (accounts) async {
+            final claude = await _claudeUsageAccounts(
+              store: claudeAccountStore,
+            );
+            final all = await SubscriptionUsageService(
+              dio: createDio(),
+              fetchClaudeCached: claudeUsageCache.get,
+            ).fetchAll(accounts: [...accounts, ...claude]);
+            return [for (final u in all) u.toJson()];
+          }
+        : (accounts) => demo.fetchSubscriptionUsage(),
     // The Claude Code logins this host manages, and the per-account quota the
     // composer picker shows so "which account should this run use?" can be
     // answered on remaining headroom rather than from memory.
@@ -6020,8 +6049,14 @@ Future<CcServer> runCcServer({
           workspaceId: workspaceId,
           spaceId: spaceId,
         )).affectedMessageIds,
-    retrySpaceProvisioning: spaceProvisioningService.provision,
-    cancelSpaceProvisioning: spaceProvisioningService.cancel,
+    // A public visitor may not retry or cancel real worktree provisioning.
+    retrySpaceProvisioning: demo == null
+        ? spaceProvisioningService.provision
+        : null,
+    cancelSpaceProvisioning: demo == null
+        ? spaceProvisioningService.cancel
+        : null,
+    repoLessSpacesOnly: demo != null,
     // Review-fix agent: dispatch a sandboxed/relay agent server-side, as a
     // real turn in the space's chat. Goes through the messaging path (the only
     // place the `agent_turn` row and the stream processor that fills it live)
@@ -7042,26 +7077,28 @@ Future<CcServer> runCcServer({
   // language extensions, OFF the ready path so the embedded editor is warm by
   // the time a user opens a file — the first `codeServer.open` then only spawns
   // an already-installed binary instead of paying a multi-second download.
-  // Best-effort + non-fatal: a failed warm-up degrades to a lazy on-demand
-  // download on first open (or `unavailable` if that also fails).
-  CcHostLog.info(
-    'cc_server: warming code-server (managed dir: ${config.dataDir}/code-server)',
-  );
-  unawaited(
-    codeServerSessions
-        .warmUp()
-        .then((_) {
-          CcHostLog.info(
-            'cc_server: code-server ready — embedded editor enabled',
-          );
-        })
-        .catchError((Object e) {
-          CcHostLog.warning(
-            'cc_server: code-server warm-up failed — the editor will retry on '
-            'first open. Cause: $e',
-          );
-        }),
-  );
+  // Best-effort + non-fatal on real servers. The public demo offers no editor
+  // and must not download or extract the archive at boot.
+  if (demo == null) {
+    CcHostLog.info(
+      'cc_server: warming code-server (managed dir: ${config.dataDir}/code-server)',
+    );
+    unawaited(
+      codeServerSessions
+          .warmUp()
+          .then((_) {
+            CcHostLog.info(
+              'cc_server: code-server ready — embedded editor enabled',
+            );
+          })
+          .catchError((Object e) {
+            CcHostLog.warning(
+              'cc_server: code-server warm-up failed — the editor will retry on '
+              'first open. Cause: $e',
+            );
+          }),
+    );
+  }
 
   // On-device model warm-up (embedding + diarization + ASR) via the same
   // [ManagedModelControl]s as `models.*` RPC: no-op if on disk; clients see
@@ -7300,6 +7337,7 @@ Future<CcServer> runCcServer({
     ledger: CronExecutionLedgerImpl(workspaceDbs),
   );
   if (demo == null) {
+    await templateReconcile;
     pipelineScheduler.start();
   }
   final subPipelineResumeListener = SubPipelineResumeListener(
@@ -7610,6 +7648,7 @@ Future<CcServer> runCcServer({
   }
   ccServer._openPrPoller = openPrPoller;
   ccServer._demo = demo;
+  ccServer._demoMeeting = demoMeeting;
   ccServer._prChangeSignals = prChangeSignals;
 
   // Viewer-activity poll: owner's PR activity (pending reviews incl. team,

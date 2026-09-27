@@ -24,6 +24,7 @@ class _TextFieldDemo extends StatefulWidget {
     this.initialText,
     this.prefix,
     this.suffix,
+    this.clearable = false,
     this.enabled = true,
     this.obscureText = false,
     this.errorText,
@@ -34,6 +35,7 @@ class _TextFieldDemo extends StatefulWidget {
   final String? initialText;
   final Widget? prefix;
   final Widget? suffix;
+  final bool clearable;
   final bool enabled;
   final bool obscureText;
   final String? errorText;
@@ -57,16 +59,32 @@ class _TextFieldDemoState extends State<_TextFieldDemo> {
   @override
   Widget build(BuildContext context) => SizedBox(
     width: 320,
-    child: CcTextField(
-      controller: _controller,
-      hintText: widget.hintText,
-      prefix: widget.prefix,
-      suffix: widget.suffix,
-      enabled: widget.enabled,
-      obscureText: widget.obscureText,
-      errorText: widget.errorText,
-      size: widget.size,
-    ),
+    child: widget.clearable
+        ? ValueListenableBuilder<TextEditingValue>(
+            valueListenable: _controller,
+            builder: (context, value, _) => _buildField(
+              value.text.isEmpty
+                  ? null
+                  : CcIconButton(
+                      icon: CcIcons.x,
+                      size: CcButtonSize.sm,
+                      tooltip: 'Clear',
+                      onPressed: _controller.clear,
+                    ),
+            ),
+          )
+        : _buildField(widget.suffix),
+  );
+
+  Widget _buildField(Widget? suffix) => CcTextField(
+    controller: _controller,
+    hintText: widget.hintText,
+    prefix: widget.prefix,
+    suffix: suffix,
+    enabled: widget.enabled,
+    obscureText: widget.obscureText,
+    errorText: widget.errorText,
+    size: widget.size,
   );
 }
 
@@ -90,7 +108,8 @@ Widget ccTextFieldStatesUseCase(BuildContext context) {
   );
 }
 
-/// Leading and trailing affordances: a search prefix and a password suffix.
+/// Leading and trailing affordances, including a clear button that appears
+/// while typing.
 @widgetbook.UseCase(name: 'Prefix and suffix', type: CcTextField, path: _path)
 Widget ccTextFieldAffordancesUseCase(BuildContext context) {
   return const Center(
@@ -101,6 +120,11 @@ Widget ccTextFieldAffordancesUseCase(BuildContext context) {
         _TextFieldDemo(
           hintText: 'Filter agents…',
           prefix: Icon(CcIcons.search, size: 16),
+        ),
+        _TextFieldDemo(
+          hintText: 'Search articles',
+          prefix: Icon(CcIcons.search, size: 16),
+          clearable: true,
         ),
         _TextFieldDemo(
           hintText: 'GitHub token',

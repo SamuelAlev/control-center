@@ -379,6 +379,51 @@ class AppLocalizationsRo extends AppLocalizations {
       'Spațiile din acest spațiu de lucru apar aici.';
 
   @override
+  String get newSpaceFolder => 'Dosar nou';
+
+  @override
+  String get folderName => 'Numele dosarului';
+
+  @override
+  String get renameSpaceFolder => 'Redenumește dosarul';
+
+  @override
+  String get deleteSpaceFolder => 'Șterge dosarul';
+
+  @override
+  String get moveSpaceToFolder => 'Mută în dosar';
+
+  @override
+  String get removeSpaceFromFolder => 'Elimină din dosar';
+
+  @override
+  String get spaceFolderActions => 'Acțiuni pentru dosar';
+
+  @override
+  String get deleteFolderWithSpacesWarning =>
+      'Ștergerea definitivă a spațiilor le elimină mesajele și directoarele de lucru pentru toată lumea. Această acțiune nu poate fi anulată.';
+
+  @override
+  String get deleteSpacesInFolder =>
+      'Șterge definitiv spațiile din acest dosar';
+
+  @override
+  String get deleteFolderAndSpaces => 'Șterge dosarul și spațiile';
+
+  @override
+  String get keepSpacesInFolder =>
+      'Altfel, spațiile vor rămâne în afara dosarelor.';
+
+  @override
+  String get create => 'Creează';
+
+  @override
+  String get otherSpaces => 'Alte spații';
+
+  @override
+  String get folderUpdateFailed => 'Dosarele nu au putut fi actualizate';
+
+  @override
   String get thread => 'Fir';
 
   @override

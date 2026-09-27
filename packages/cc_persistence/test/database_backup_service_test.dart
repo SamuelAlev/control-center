@@ -325,6 +325,165 @@ void main() {
     });
   });
 
+  group('snapshot lifecycle', () {
+    test('deletes a selected incomplete install snapshot by name', () async {
+      await seedWorkspace('ws1', agentName: 'Ada');
+      final svc = service();
+      final removed = await svc.backupNow();
+      File(
+        '$removed/${AppDatabaseBackupService.manifestFileName}',
+      ).deleteSync();
+      now = now.add(const Duration(seconds: 1));
+      final retained = await svc.backupNow();
+
+      await svc.deleteBackup(removed.split(Platform.pathSeparator).last);
+
+      expect(Directory(removed).existsSync(), isFalse);
+      expect(Directory(retained).existsSync(), isTrue);
+      expect((await svc.listBackups()).single.path, retained);
+    });
+
+    test(
+      'refuses arbitrary names, paths, and symbolic-link snapshots',
+      () async {
+        final svc = service();
+        final outside = Directory('${tmp.path}/outside')..createSync();
+        final sentinel = File('${outside.path}/keep')
+          ..writeAsStringSync('safe');
+        final root = Directory('${tmp.path}/backups')..createSync();
+        const name = '2026-07-05T12-34-56-000Z';
+        Link('${root.path}/$name').createSync(outside.path);
+
+        for (final input in ['../outside', outside.path, 'exports', 'ws1']) {
+          await expectLater(svc.deleteBackup(input), throwsArgumentError);
+        }
+        await expectLater(svc.deleteBackup(name), throwsStateError);
+        expect(sentinel.readAsStringSync(), 'safe');
+      },
+    );
+
+    test(
+      'unlinks children without following symlinks out of a snapshot',
+      () async {
+        await seedWorkspace('ws1', agentName: 'Ada');
+        final svc = service();
+        final path = await svc.backupNow();
+        final outside = Directory('${tmp.path}/outside')..createSync();
+        final sentinel = File('${outside.path}/keep')
+          ..writeAsStringSync('safe');
+        Link('$path/external').createSync(outside.path);
+
+        await svc.deleteBackup(path.split(Platform.pathSeparator).last);
+
+        expect(Directory(path).existsSync(), isFalse);
+        expect(sentinel.readAsStringSync(), 'safe');
+      },
+    );
+
+    test(
+      'workspace backups copy only their workspace and remain unlisted',
+      () async {
+        await seedWorkspace('ws1', agentName: 'Ada');
+        await seedWorkspace('ws2', agentName: 'Grace');
+        final svc = service();
+        final path = await svc.backupWorkspace('ws1');
+
+        expect(path, contains('/workspace-backups/ws1/'));
+        expect(File(path).existsSync(), isTrue);
+        expect(
+          File(path).parent.listSync().map(
+            (entry) => entry.path.split(Platform.pathSeparator).last,
+          ),
+          [workspaceDatabaseFileName],
+        );
+        expect(
+          Directory('${tmp.path}/backups/workspace-backups/ws2').existsSync(),
+          isFalse,
+        );
+        expect(await svc.listBackups(), isEmpty);
+        final copy = WorkspaceDatabase(
+          NativeDatabase(File(path)),
+          workspaceId: 'ws1',
+        );
+        addTearDown(copy.close);
+        expect((await copy.agentDao.getAll()).single.name, 'Ada');
+        await expectLater(svc.backupWorkspace('../ws2'), throwsArgumentError);
+        await expectLater(svc.backupWorkspace('missing'), throwsStateError);
+      },
+    );
+
+    test(
+      'workspace snapshot path is immutable and scoped roots refuse links',
+      () async {
+        await seedWorkspace('ws1', agentName: 'Ada');
+        final svc = service();
+        final first = await svc.backupWorkspace('ws1');
+        await expectLater(svc.backupWorkspace('ws1'), throwsStateError);
+        expect(File(first).existsSync(), isTrue);
+
+        final outside = Directory('${tmp.path}/outside')..createSync();
+        Link(
+          '${tmp.path}/backups/workspace-backups/ws2',
+        ).createSync(outside.path);
+        await expectLater(
+          svc.deleteBackupsOlderThan(
+            age: const Duration(days: 1),
+            workspaceId: 'ws2',
+          ),
+          throwsStateError,
+        );
+      },
+    );
+
+    test(
+      'retention prunes only matching scope and strictly older snapshots',
+      () async {
+        await seedWorkspace('ws1', agentName: 'Ada');
+        await seedWorkspace('ws2', agentName: 'Grace');
+        final svc = service();
+        final oldInstall = await svc.backupNow();
+        final oldWs1 = await svc.backupWorkspace('ws1');
+        final oldWs2 = await svc.backupWorkspace('ws2');
+        now = now.add(const Duration(days: 8));
+        final newInstall = await svc.backupNow();
+        final newWs1 = await svc.backupWorkspace('ws1');
+
+        expect(
+          await svc.deleteBackupsOlderThan(
+            age: const Duration(days: 8),
+            workspaceId: 'ws1',
+          ),
+          0,
+        );
+        expect(
+          await svc.deleteBackupsOlderThan(
+            age: const Duration(days: 7),
+            workspaceId: 'ws1',
+          ),
+          1,
+        );
+        expect(File(oldWs1).existsSync(), isFalse);
+        expect(File(newWs1).existsSync(), isTrue);
+        expect(File(oldWs2).existsSync(), isTrue);
+        expect(Directory(oldInstall).existsSync(), isTrue);
+        expect(
+          await svc.deleteBackupsOlderThan(age: const Duration(days: 7)),
+          1,
+        );
+        expect(Directory(oldInstall).existsSync(), isFalse);
+        expect(Directory(newInstall).existsSync(), isTrue);
+        expect(File(oldWs2).existsSync(), isTrue);
+        await expectLater(
+          svc.deleteBackupsOlderThan(
+            age: const Duration(days: 7),
+            workspaceId: '../ws2',
+          ),
+          throwsArgumentError,
+        );
+      },
+    );
+  });
+
   group('exportWorkspace', () {
     test('writes one workspace as one file', () async {
       await seedWorkspace('ws1', agentName: 'Ada');

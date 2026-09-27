@@ -6,7 +6,6 @@ import 'package:control_center/core/constants/app_constants.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/calendar/presentation/calendar_view_mode.dart';
-import 'package:control_center/features/calendar/presentation/providers/calendar_event_cache.dart';
 import 'package:control_center/features/calendar/presentation/utils/calendar_format.dart';
 import 'package:control_center/features/calendar/providers/calendar_sync_providers.dart';
 import 'package:control_center/features/calendar/providers/google_auth_providers.dart';
@@ -71,30 +70,17 @@ CalendarRangeRef calendarRangeFor({
 }) => (workspaceId: workspaceId, range: DateTimeRange(start: start, end: end));
 
 /// Streams the events overlapping a range for a workspace (earliest first).
-///
-/// Every emission refreshes the [CalendarEventCache] slice for the range, so a
-/// later visit (or cold start) can render the last-known events synchronously
-/// instead of popping from empty to loaded — the layout shift the
-/// stale-while-revalidate cache exists to kill.
+/// The RPC subscription replays its authenticated, workspace-scoped snapshot
+/// before refreshing in the background.
 final eventsInRangeProvider =
     StreamProvider.family<List<CalendarEvent>, CalendarRangeRef>((ref, args) {
-      final cache = ref.read(calendarEventCacheProvider);
       return ref
           .watch(calendarRepositoryProvider)
           .watchEventsInRange(
             args.workspaceId,
             args.range.start,
             args.range.end,
-          )
-          .map((events) {
-            cache.replaceRange(
-              args.workspaceId,
-              args.range.start,
-              args.range.end,
-              events,
-            );
-            return events;
-          });
+          );
     });
 
 /// Identifies a workspace + meeting (for the calendar link lookups).

@@ -451,5 +451,19 @@
       "hours": { "type": "int" },
       "minutes": { "type": "int" }
     }
-  }
+  },
+  "newSpaceFolder": "نیا فولڈر",
+  "folderName": "فولڈر کا نام",
+  "renameSpaceFolder": "فولڈر کا نام تبدیل کریں",
+  "deleteSpaceFolder": "فولڈر حذف کریں",
+  "moveSpaceToFolder": "فولڈر میں منتقل کریں",
+  "removeSpaceFromFolder": "فولڈر سے ہٹائیں",
+  "spaceFolderActions": "فولڈر کے اقدامات",
+  "deleteFolderWithSpacesWarning": "اسپیسز کو مستقل طور پر حذف کرنے سے ان کے پیغامات اور ورک ٹریز سب کے لیے ختم ہو جاتے ہیں۔ اسے واپس نہیں کیا جا سکتا۔",
+  "deleteSpacesInFolder": "اس فولڈر میں موجود اسپیسز مستقل طور پر حذف کریں",
+  "deleteFolderAndSpaces": "فولڈر اور اسپیسز حذف کریں",
+  "keepSpacesInFolder": "بصورتِ دیگر، اسپیسز کسی فولڈر میں نہیں رہیں گی۔",
+  "create": "بنائیں",
+  "otherSpaces": "دیگر اسپیسز",
+  "folderUpdateFailed": "فولڈرز اپ ڈیٹ نہیں ہو سکے"
 }

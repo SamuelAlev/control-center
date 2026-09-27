@@ -1801,6 +1801,14 @@ class AppLocalizationsSv extends AppLocalizations {
       'JSON Schema som stegets utdata måste uppfylla';
 
   @override
+  String get nodeConfigBackupRetentionDays =>
+      'Radera säkerhetskopior äldre än (dagar)';
+
+  @override
+  String get nodeConfigBackupRetentionDaysHelp =>
+      'Endast kopior från den här arbetsytan raderas. Ange ett positivt antal dagar.';
+
+  @override
   String get diffLineDisplay => 'Långa rader i diffar';
 
   @override
@@ -9080,6 +9088,44 @@ class AppLocalizationsSv extends AppLocalizations {
   String get spaceReposHint => 'Arkiv att ta med';
 
   @override
+  String get newSpaceFolder => 'Ny mapp';
+
+  @override
+  String get folderName => 'Mappnamn';
+
+  @override
+  String get renameSpaceFolder => 'Byt namn på mapp';
+
+  @override
+  String get deleteSpaceFolder => 'Ta bort mapp';
+
+  @override
+  String get moveSpaceToFolder => 'Flytta till mapp';
+
+  @override
+  String get removeSpaceFromFolder => 'Ta bort från mapp';
+
+  @override
+  String get spaceFolderActions => 'Mappåtgärder';
+
+  @override
+  String get deleteFolderWithSpacesWarning =>
+      'Om du tar bort utrymmen permanent försvinner deras meddelanden och arbetskataloger för alla. Det går inte att ångra.';
+
+  @override
+  String get deleteSpacesInFolder =>
+      'Ta bort utrymmena i den här mappen permanent';
+
+  @override
+  String get deleteFolderAndSpaces => 'Ta bort mapp och utrymmen';
+
+  @override
+  String get keepSpacesInFolder => 'Annars blir utrymmena kvar utanför mappar.';
+
+  @override
+  String get noSpaceFoldersYet => 'Inga mappar än';
+
+  @override
   String get ideSourceControl => 'Källkontroll';
 
   @override
@@ -14392,7 +14438,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get backupNoSnapshots =>
-      'Inga ögonblicksbilder ännu. En tas bara när du ber om den – ingenting är schemalagt.';
+      'Inga installationsögonblicksbilder ännu. Ta en nu eller använd en schemalagd pipeline för säkerhetskopior av arbetsytan.';
 
   @override
   String get backupSnapshotComplete => 'Komplett';
@@ -14403,6 +14449,29 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get backupSnapshotIncompleteNote =>
       'Manifestet saknas eller namnger filer som inte finns, så den här ögonblicksbilden kan inte återställa hela installationen. Arbetsytefilerna den har kan fortfarande antas en i taget.';
+
+  @override
+  String get backupDeleteSnapshotLabel => 'Radera ögonblicksbild';
+
+  @override
+  String get backupDeleteSnapshotDescription =>
+      'Ta bort den här ögonblicksbilden permanent från servern. Ladda ner den först om du vill behålla den.';
+
+  @override
+  String get backupDeleteSnapshotAction => 'Radera ögonblicksbild';
+
+  @override
+  String get backupDeleteSnapshotTitle => 'Radera den här ögonblicksbilden?';
+
+  @override
+  String backupDeleteSnapshotBody(String name) {
+    return 'Radera $name från servern? Alla databaser i ögonblicksbilden försvinner. Det går inte att ångra.';
+  }
+
+  @override
+  String backupDeleteSnapshotDone(String name) {
+    return 'Ögonblicksbilden $name raderades.';
+  }
 
   @override
   String backupSnapshotWorkspaces(int count) {

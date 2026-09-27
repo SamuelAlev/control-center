@@ -84,8 +84,19 @@ class PendingConfirmationRegistry {
       StreamController<List<PendingConfirmation>>.broadcast();
   int _counter = 0;
 
-  /// A live snapshot stream of pending approvals (full snapshot per change).
-  Stream<List<PendingConfirmation>> get pending => _pending.stream;
+  /// Each subscriber receives the current entries before subsequent changes.
+  /// Subscribe to the broadcast FIRST, then snapshot synchronously: a request
+  /// registered during setup cannot fall between the snapshot and listener.
+  /// The catalog applies membership and routing to every emitted snapshot.
+  Stream<List<PendingConfirmation>> get pending => Stream.multi((controller) {
+    final sub = _pending.stream.listen(
+      controller.add,
+      onError: controller.addError,
+      onDone: controller.close,
+    );
+    controller.add(snapshot);
+    controller.onCancel = sub.cancel;
+  });
 
   /// The current pending approvals.
   List<PendingConfirmation> get snapshot =>
@@ -217,10 +228,7 @@ class RemoteConfirmationPort implements ConfirmationPort {
 class RemoteAwareConfirmationPort implements ConfirmationPort {
   /// Creates a [RemoteAwareConfirmationPort] over [_local], publishing pending
   /// requests to [_registry].
-  RemoteAwareConfirmationPort({
-    required this._local,
-    required this._registry,
-  });
+  RemoteAwareConfirmationPort({required this._local, required this._registry});
 
   final ConfirmationPort _local;
   final PendingConfirmationRegistry _registry;

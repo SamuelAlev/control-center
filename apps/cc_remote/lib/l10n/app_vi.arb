@@ -234,5 +234,19 @@
   "yesterday": "Hôm qua",
   "durationMinutes": "{count}m",
   "durationHours": "{count}h",
-  "durationHoursMinutes": "{hours}h {minutes}m"
+  "durationHoursMinutes": "{hours}h {minutes}m",
+  "newSpaceFolder": "Thư mục mới",
+  "folderName": "Tên thư mục",
+  "renameSpaceFolder": "Đổi tên thư mục",
+  "deleteSpaceFolder": "Xóa thư mục",
+  "moveSpaceToFolder": "Chuyển vào thư mục",
+  "removeSpaceFromFolder": "Xóa khỏi thư mục",
+  "spaceFolderActions": "Thao tác với thư mục",
+  "deleteFolderWithSpacesWarning": "Xóa vĩnh viễn các không gian sẽ xóa tin nhắn và thư mục làm việc của chúng đối với tất cả mọi người. Không thể hoàn tác.",
+  "deleteSpacesInFolder": "Xóa vĩnh viễn các không gian trong thư mục này",
+  "deleteFolderAndSpaces": "Xóa thư mục và không gian",
+  "keepSpacesInFolder": "Nếu không, các không gian sẽ không thuộc thư mục nào.",
+  "create": "Tạo",
+  "otherSpaces": "Không gian khác",
+  "folderUpdateFailed": "Không thể cập nhật thư mục"
 }

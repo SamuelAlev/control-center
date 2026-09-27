@@ -1,8 +1,10 @@
 import 'package:cc_domain/features/messaging/domain/entities/space.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/messaging/presentation/widgets/conversations_sidebar_section.dart';
+import 'package:control_center/features/messaging/presentation/widgets/space_folders_list.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_sidebar_item.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
+import 'package:control_center/features/messaging/providers/space_folder_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/router/routes.dart';
@@ -69,6 +71,9 @@ class _SpacesSubSidebarState extends ConsumerState<SpacesSubSidebar> {
     final spaces = workspaceId != null
         ? ref.watch(workspaceVisibleSpacesProvider(workspaceId))
         : ref.watch(visibleSpacesProvider);
+    final folders = workspaceId == null
+        ? const <SpaceFolder>[]
+        : ref.watch(spaceFoldersProvider(workspaceId));
 
     final filter = _filter.trim().toLowerCase();
     bool matches(Space c) {
@@ -97,7 +102,7 @@ class _SpacesSubSidebarState extends ConsumerState<SpacesSubSidebar> {
       width: 240,
       header: _SpacesSidebarHeader(controller: _filterController),
       children: [
-        if (spaces.isEmpty)
+        if (spaces.isEmpty && folders.isEmpty)
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
             child: Text(
@@ -105,7 +110,9 @@ class _SpacesSubSidebarState extends ConsumerState<SpacesSubSidebar> {
               style: CcTypography.caption.copyWith(color: t.textTertiary),
             ),
           )
-        else if (humanSpaces.isEmpty && agentSpaces.isEmpty)
+        else if (humanSpaces.isEmpty &&
+            agentSpaces.isEmpty &&
+            (filter.isNotEmpty || folders.isEmpty))
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
             child: Text(
@@ -117,12 +124,27 @@ class _SpacesSubSidebarState extends ConsumerState<SpacesSubSidebar> {
           CcSidebarGroup(
             label: l10n.spaces,
             children: [
-              for (final space in humanSpaces)
-                SpaceSidebarItem(
-                  space: space,
-                  selected: space.id == routeSpaceId,
-                  onPress: () => open(space.id),
+              if (workspaceId != null)
+                SpaceFoldersList(
+                  workspaceId: workspaceId,
+                  spaces: humanSpaces,
+                  routeSpaceId: routeSpaceId,
+                  filter: _filter,
+                  spaceBuilder: (space) => SpaceSidebarItem(
+                    key: ValueKey(space.id),
+                    space: space,
+                    selected: space.id == routeSpaceId,
+                    onPress: () => open(space.id),
+                  ),
                 ),
+              if (workspaceId == null)
+                for (final space in humanSpaces)
+                  SpaceSidebarItem(
+                    key: ValueKey(space.id),
+                    space: space,
+                    selected: space.id == routeSpaceId,
+                    onPress: () => open(space.id),
+                  ),
             ],
           ),
           if (agentSpaces.isNotEmpty)
@@ -176,6 +198,18 @@ class _SpacesSidebarHeader extends ConsumerWidget {
                     color: context.ds.textPrimary,
                   ),
                 ),
+              ),
+              CcIconButton(
+                icon: AppIcons.folder,
+                size: CcButtonSize.sm,
+                variant: CcButtonVariant.ghost,
+                tooltip: l10n.newSpaceFolder,
+                onPressed: () {
+                  final workspaceId = ref.read(activeWorkspaceIdProvider);
+                  if (workspaceId != null) {
+                    showNewSpaceFolderDialog(context, ref, workspaceId);
+                  }
+                },
               ),
               CcIconButton(
                 icon: AppIcons.plus,

@@ -5,6 +5,7 @@ import 'package:cc_domain/core/domain/value_objects/principal.dart';
 import 'package:cc_domain/features/messaging/domain/entities/conversation.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/space_provisioning_status.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/messaging/presentation/utils/conversation_display_name.dart';
@@ -14,11 +15,13 @@ import 'package:control_center/features/messaging/presentation/widgets/conversat
 import 'package:control_center/features/messaging/presentation/widgets/message_feed.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_header.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_input_bar.dart';
+import 'package:control_center/features/messaging/presentation/widgets/space_sidebar_item.dart';
 import 'package:control_center/features/messaging/presentation/widgets/steering_queue_list.dart';
 import 'package:control_center/features/messaging/presentation/widgets/takeover_banner.dart';
 import 'package:control_center/features/messaging/presentation/widgets/visible_conversation_registrar.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/features/messaging/providers/pending_space_sends_provider.dart';
+import 'package:control_center/features/messaging/providers/space_folder_providers.dart';
 import 'package:control_center/features/presence/presentation/widgets/spotlight_banner.dart';
 import 'package:control_center/features/presence/providers/presence_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
@@ -179,19 +182,19 @@ class ConversationPane extends ConsumerWidget {
     );
   }
 
-  /// Archives the space — reversible, so no confirmation. The space leaves
-  /// the sidebar and the URL drops back to the space list (its data still
-  /// exists, so without navigation the pane would keep rendering a space the
-  /// sidebar has already shelved); the archive trigger beside the sidebar's
-  /// `+` restores it.
+  /// Archives the space and unlinks its personal folder. The URL drops back
+  /// to the list, while messages, participants and worktrees remain restorable.
   Future<void> _handleArchiveSpace(BuildContext context, WidgetRef ref) async {
-    final workspaceId = ref.read(activeWorkspaceIdProvider);
-    await ref
-        .read(messagingServiceProvider)
-        .archiveSpace(ref.requireWorkspaceId(), spaceId);
-    if (context.mounted && workspaceId != null) {
-      // URL is the source of truth: drop back to the space list (no selection).
-      GoRouter.of(context).go(spacesRoute(workspaceId));
+    final workspaceId = ref.requireWorkspaceId();
+    final router = GoRouter.of(context);
+    await archiveSpaceAndUnlink(ref, workspaceId, spaceId);
+    // The archive stream can unmount the pane before the folder write returns.
+    if (selectedSpaceIdFromLocation(
+          router.routeInformationProvider.value.uri.path,
+          workspaceId,
+        ) ==
+        spaceId) {
+      router.go(spacesRoute(workspaceId));
     }
   }
 
@@ -373,6 +376,7 @@ class SpaceProvisioningBanner extends ConsumerWidget {
     if (status == SpaceProvisioningStatus.ready) {
       return const SizedBox.shrink();
     }
+    final isDemo = ref.watch(isDemoServerProvider);
     final l10n = AppLocalizations.of(context);
     final ds = context.designSystem ?? DesignSystemTokens.light();
 
@@ -411,13 +415,14 @@ class SpaceProvisioningBanner extends ConsumerWidget {
                 ),
               ),
             ),
-            CcButton(
-              variant: CcButtonVariant.secondary,
-              size: CcButtonSize.sm,
-              onPressed: () =>
-                  ref.read(retrySpaceProvisioningProvider)(spaceId),
-              child: Text(l10n.retry),
-            ),
+            if (!isDemo)
+              CcButton(
+                variant: CcButtonVariant.secondary,
+                size: CcButtonSize.sm,
+                onPressed: () =>
+                    ref.read(retrySpaceProvisioningProvider)(spaceId),
+                child: Text(l10n.retry),
+              ),
           ],
         ),
       );
@@ -471,14 +476,14 @@ class SpaceProvisioningBanner extends ConsumerWidget {
               ],
             ),
           ),
-          // Cloning a large repo is minutes of work with nothing to do but
-          // wait, and it is not always the repo you meant. The stop is here,
-          // next to what it stops.
-          CcIconButton(
-            icon: AppIcons.circleStop,
-            tooltip: l10n.stopWorkspacePrepTooltip,
-            onPressed: () => _confirmStop(context, ref, l10n),
-          ),
+          // Only real servers prepare repo worktrees. The public demo's
+          // repo-less spaces become ready without a stoppable operation.
+          if (!isDemo)
+            CcIconButton(
+              icon: AppIcons.circleStop,
+              tooltip: l10n.stopWorkspacePrepTooltip,
+              onPressed: () => _confirmStop(context, ref, l10n),
+            ),
         ],
       ),
     );

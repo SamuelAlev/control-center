@@ -380,6 +380,51 @@ class AppLocalizationsUr extends AppLocalizations {
       'اس ورک اسپیس کی اسپیسز یہاں نظر آتی ہیں۔';
 
   @override
+  String get newSpaceFolder => 'نیا فولڈر';
+
+  @override
+  String get folderName => 'فولڈر کا نام';
+
+  @override
+  String get renameSpaceFolder => 'فولڈر کا نام تبدیل کریں';
+
+  @override
+  String get deleteSpaceFolder => 'فولڈر حذف کریں';
+
+  @override
+  String get moveSpaceToFolder => 'فولڈر میں منتقل کریں';
+
+  @override
+  String get removeSpaceFromFolder => 'فولڈر سے ہٹائیں';
+
+  @override
+  String get spaceFolderActions => 'فولڈر کے اقدامات';
+
+  @override
+  String get deleteFolderWithSpacesWarning =>
+      'اسپیسز کو مستقل طور پر حذف کرنے سے ان کے پیغامات اور ورک ٹریز سب کے لیے ختم ہو جاتے ہیں۔ اسے واپس نہیں کیا جا سکتا۔';
+
+  @override
+  String get deleteSpacesInFolder =>
+      'اس فولڈر میں موجود اسپیسز مستقل طور پر حذف کریں';
+
+  @override
+  String get deleteFolderAndSpaces => 'فولڈر اور اسپیسز حذف کریں';
+
+  @override
+  String get keepSpacesInFolder =>
+      'بصورتِ دیگر، اسپیسز کسی فولڈر میں نہیں رہیں گی۔';
+
+  @override
+  String get create => 'بنائیں';
+
+  @override
+  String get otherSpaces => 'دیگر اسپیسز';
+
+  @override
+  String get folderUpdateFailed => 'فولڈرز اپ ڈیٹ نہیں ہو سکے';
+
+  @override
   String get thread => 'تھریڈ';
 
   @override

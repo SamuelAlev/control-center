@@ -10,17 +10,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Settings → Server → Backup & restore.
 ///
-/// The three operations behind this page — `server.backupNow`,
-/// `workspace.export` and `workspace.import` — plus `workspace.delete` have all
-/// existed since persistence was split by workspace, and none of them had a
-/// button. They were reachable only by a caller speaking the RPC surface
-/// directly, and the only trace in the app was an activity-log entry after the
-/// fact. An operation an operator cannot reach is one they do not have, so a
-/// backup nobody could take and a snapshot nobody could find were, in practice,
-/// no backup at all.
-///
-/// Server-scoped because that is what a snapshot covers: every database on the
-/// install, not the workspace you happen to be standing in.
+/// Install snapshots are owner-scoped; workspace export/import and deletion
+/// use their own workspace role gates. This client renders server state and
+/// forwards actions without reading databases or snapshot files locally.
 class BackupSettingsScreen extends ConsumerWidget {
   /// Creates a [BackupSettingsScreen].
   const BackupSettingsScreen({super.key});
@@ -28,10 +20,8 @@ class BackupSettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    // A demo server refuses all four ops by name — `workspace.export` VACUUMs a
-    // whole database onto a public endpoint and the rest are install-wide. The
-    // page keeps its chrome so the feature stays discoverable and says why the
-    // body is empty, rather than firing three calls that are known to fail.
+    // Demo servers do not expose backup operations. Keep the page chrome
+    // discoverable without offering actions that the server rejects.
     if (ref.watch(isDemoServerProvider)) {
       return PageWrapper(
         title: l10n.settingsBackupRestore,

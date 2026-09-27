@@ -379,6 +379,50 @@ class AppLocalizationsFa extends AppLocalizations {
       'فضاهای این فضای کاری اینجا ظاهر می‌شوند.';
 
   @override
+  String get newSpaceFolder => 'پوشهٔ جدید';
+
+  @override
+  String get folderName => 'نام پوشه';
+
+  @override
+  String get renameSpaceFolder => 'تغییر نام پوشه';
+
+  @override
+  String get deleteSpaceFolder => 'حذف پوشه';
+
+  @override
+  String get moveSpaceToFolder => 'انتقال فضا به پوشه';
+
+  @override
+  String get removeSpaceFromFolder => 'برداشتن فضا از پوشه';
+
+  @override
+  String get spaceFolderActions => 'کنش‌های پوشه';
+
+  @override
+  String get deleteFolderWithSpacesWarning =>
+      'حذف دائمی فضاها، پیام‌ها و پوشه‌های کاری آن‌ها را برای همه پاک می‌کند. این کار بازگشت‌پذیر نیست.';
+
+  @override
+  String get deleteSpacesInFolder => 'حذف دائمی فضاهای این پوشه';
+
+  @override
+  String get deleteFolderAndSpaces => 'حذف پوشه و فضاها';
+
+  @override
+  String get keepSpacesInFolder =>
+      'در غیر این صورت، فضاها خارج از پوشه باقی می‌مانند.';
+
+  @override
+  String get create => 'ایجاد';
+
+  @override
+  String get otherSpaces => 'فضاهای دیگر';
+
+  @override
+  String get folderUpdateFailed => 'به‌روزرسانی پوشه‌ها ممکن نشد';
+
+  @override
   String get thread => 'رشته';
 
   @override

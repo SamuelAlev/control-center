@@ -1,6 +1,4 @@
 ---
-import MarketingNav from '../components/shared/MarketingNav.astro';
-import Footer from '../components/shared/Footer.astro';
 import StructuredData from '../components/shared/StructuredData.astro';
 import WebMcpScript from '../components/shared/WebMcpScript.astro';
 import AcquisitionScript from '../components/shared/AcquisitionScript.astro';
@@ -197,12 +195,11 @@ if (breadcrumbName) {
   </script>
 </head>
 <body>
-  {/* Bypass block (WCAG 2.4.1): the nav is ~10 links deep and it repeats on
-      every page. Every marketing page opens its <main> with id="top", which
-      is also what the in-page "back to top" anchors target. */}
-  <a class="skip-link" href="#top">{isLanding ? copy.nav.skip : 'Skip to content'}</a>
-  {isLanding ? <LandingNav copy={copy} locale={locale} /> : <MarketingNav currentPath={Astro.url.pathname} />}
+  {/* Bypass the repeated site navigation; every marketing page opens its
+      <main> with id="top", also used by the footer's back-to-top link. */}
+  <a class="skip-link" href="#top">{copy.nav.skip}</a>
+  <LandingNav copy={copy} locale={locale} />
   <slot />
-  {isLanding ? <LandingFooter copy={copy} locale={locale} /> : <Footer />}
+  <LandingFooter copy={copy} locale={locale} />
 </body>
 </html>

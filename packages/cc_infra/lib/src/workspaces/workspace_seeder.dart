@@ -131,6 +131,18 @@ class WorkspaceSeeder {
       await ensureSkillAnalysisTemplate(workspaceId);
     }
 
+    if (wanted('workspace_backup')) {
+      await _upsertBuiltIn(workspaceBackupTemplate(workspaceId));
+      final existingKeys = (await _triggerRepository.forWorkspace(
+        workspaceId,
+      )).map((t) => '${t.templateId}|${t.eventType}').toSet();
+      await _seedBuiltInTriggers(
+        workspaceId: workspaceId,
+        templateId: 'workspace_backup',
+        existingKeys: existingKeys,
+      );
+    }
+
     Agent? bySlug(String slug) {
       for (final a in specialists) {
         if (a.name == slug) {

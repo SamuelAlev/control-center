@@ -381,6 +381,50 @@ class AppLocalizationsPl extends AppLocalizations {
       'Przestrzenie z tego obszaru roboczego pojawią się tutaj.';
 
   @override
+  String get newSpaceFolder => 'Nowy folder';
+
+  @override
+  String get folderName => 'Nazwa folderu';
+
+  @override
+  String get renameSpaceFolder => 'Zmień nazwę folderu';
+
+  @override
+  String get deleteSpaceFolder => 'Usuń folder';
+
+  @override
+  String get moveSpaceToFolder => 'Przenieś do folderu';
+
+  @override
+  String get removeSpaceFromFolder => 'Usuń z folderu';
+
+  @override
+  String get spaceFolderActions => 'Akcje folderu';
+
+  @override
+  String get deleteFolderWithSpacesWarning =>
+      'Trwałe usunięcie przestrzeni usuwa ich wiadomości i drzewa robocze dla wszystkich. Tej czynności nie można cofnąć.';
+
+  @override
+  String get deleteSpacesInFolder => 'Trwale usuń przestrzenie w tym folderze';
+
+  @override
+  String get deleteFolderAndSpaces => 'Usuń folder i przestrzenie';
+
+  @override
+  String get keepSpacesInFolder =>
+      'W przeciwnym razie przestrzenie pozostaną poza folderami.';
+
+  @override
+  String get create => 'Utwórz';
+
+  @override
+  String get otherSpaces => 'Inne przestrzenie';
+
+  @override
+  String get folderUpdateFailed => 'Nie udało się zaktualizować folderów';
+
+  @override
   String get thread => 'Wątek';
 
   @override

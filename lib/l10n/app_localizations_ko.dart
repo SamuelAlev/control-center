@@ -1762,6 +1762,13 @@ class AppLocalizationsKo extends AppLocalizations {
   String get nodeConfigOutputSchemaHelp => '단계 출력이 충족해야 하는 JSON 스키마';
 
   @override
+  String get nodeConfigBackupRetentionDays => '다음 일수보다 오래된 백업 삭제';
+
+  @override
+  String get nodeConfigBackupRetentionDaysHelp =>
+      '이 워크스페이스의 백업만 삭제됩니다. 양의 일수를 입력하세요.';
+
+  @override
   String get diffLineDisplay => 'diff의 긴 줄 처리';
 
   @override
@@ -8882,6 +8889,43 @@ class AppLocalizationsKo extends AppLocalizations {
   String get spaceReposHint => '포함할 리포';
 
   @override
+  String get newSpaceFolder => '새 폴더';
+
+  @override
+  String get folderName => '폴더 이름';
+
+  @override
+  String get renameSpaceFolder => '폴더 이름 변경';
+
+  @override
+  String get deleteSpaceFolder => '폴더 삭제';
+
+  @override
+  String get moveSpaceToFolder => '폴더로 이동';
+
+  @override
+  String get removeSpaceFromFolder => '폴더에서 제거';
+
+  @override
+  String get spaceFolderActions => '폴더 작업';
+
+  @override
+  String get deleteFolderWithSpacesWarning =>
+      '스페이스를 영구 삭제하면 모든 사용자에게 해당 메시지와 작업 트리가 제거됩니다. 이 작업은 되돌릴 수 없습니다.';
+
+  @override
+  String get deleteSpacesInFolder => '이 폴더의 스페이스 영구 삭제';
+
+  @override
+  String get deleteFolderAndSpaces => '폴더와 스페이스 삭제';
+
+  @override
+  String get keepSpacesInFolder => '그렇지 않으면 스페이스가 폴더에 속하지 않은 상태로 남습니다.';
+
+  @override
+  String get noSpaceFoldersYet => '아직 폴더가 없습니다';
+
+  @override
   String get ideSourceControl => '소스 제어';
 
   @override
@@ -14073,7 +14117,8 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get backupNoSnapshots => '아직 스냅샷이 없습니다. 요청할 때만 생성되며 예약 실행은 없습니다.';
+  String get backupNoSnapshots =>
+      '설치 스냅샷이 아직 없습니다. 지금 만들거나 워크스페이스 예약 백업용 파이프라인을 사용하세요.';
 
   @override
   String get backupSnapshotComplete => '완료';
@@ -14084,6 +14129,29 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get backupSnapshotIncompleteNote =>
       '매니페스트가 없거나 없는 파일을 가리켜 이 스냅샷으로는 설치 전체를 복원할 수 없습니다. 있는 워크스페이스 파일은 하나씩 가져올 수 있습니다.';
+
+  @override
+  String get backupDeleteSnapshotLabel => '스냅샷 삭제';
+
+  @override
+  String get backupDeleteSnapshotDescription =>
+      '서버에서 이 스냅샷을 영구 삭제합니다. 보관하려면 먼저 다운로드하세요.';
+
+  @override
+  String get backupDeleteSnapshotAction => '스냅샷 삭제';
+
+  @override
+  String get backupDeleteSnapshotTitle => '이 스냅샷을 삭제할까요?';
+
+  @override
+  String backupDeleteSnapshotBody(String name) {
+    return '서버에서 $name을(를) 삭제할까요? 포함된 모든 데이터베이스가 사라지며 되돌릴 수 없습니다.';
+  }
+
+  @override
+  String backupDeleteSnapshotDone(String name) {
+    return '스냅샷 $name을(를) 삭제했습니다.';
+  }
 
   @override
   String backupSnapshotWorkspaces(int count) {

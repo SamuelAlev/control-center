@@ -4,6 +4,8 @@ import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/github_profile_activity.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_domain/features/pr_review/domain/repositories/open_pr_list_repository.dart';
+import 'package:control_center/di/providers.dart';
+import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/inbox/providers/inbox_providers.dart';
 import 'package:control_center/features/pr_review/providers/pr_filter_providers.dart';
 import 'package:control_center/features/pr_review/providers/pr_list_providers.dart';
@@ -46,12 +48,16 @@ void main() {
   ProviderContainer containerFor(
     _FakeOpenPrListRepository fake, {
     required ActiveWorkspaceIdNotifier Function() workspace,
+    String? Function()? userId,
+    String Function()? login,
   }) {
     return ProviderContainer(
       overrides: [
+        githubUserProvider.overrideWith((ref) async => null),
         openPrListRepositoryProvider.overrideWithValue(fake),
         activeWorkspaceIdProvider.overrideWith(workspace),
-        currentUserLoginProvider.overrideWithValue('me'),
+        currentUserIdProvider.overrideWith((ref) => userId?.call() ?? 'user-1'),
+        currentUserLoginProvider.overrideWith((ref) => login?.call() ?? 'me'),
         reposForWorkspaceProvider(
           'w1',
         ).overrideWith((ref) => Stream.value([repo])),
@@ -135,8 +141,112 @@ void main() {
           container.read(prsByRepoProvider).value?.repos.single.prs.length,
           2,
         );
+
+        // A genuinely empty fresh queue must replace the cached PRs after
+        // they were merged or closed elsewhere.
+        fake.watchControllers.last.add(
+          const WorkspaceOpenPrs(authenticated: true, groups: []),
+        );
+        await _pump();
+        expect(container.read(prsByRepoProvider).value?.repos, isEmpty);
       },
     );
+    test('a different account cannot render the prior account queue', () async {
+      var userId = 'user-1';
+      final fake = _FakeOpenPrListRepository()..autoEmit = false;
+      final container = containerFor(
+        fake,
+        workspace: _FixedWorkspace.new,
+        userId: () => userId,
+      );
+      addTearDown(container.dispose);
+      final repos = container.listen(
+        reposForWorkspaceProvider('w1'),
+        (_, _) {},
+      );
+      addTearDown(repos.close);
+      await _pump();
+
+      final listener = container.listen(prListDataProvider, (_, _) {});
+      addTearDown(listener.close);
+      fake.watchControllers.single.add(
+        WorkspaceOpenPrs(
+          authenticated: true,
+          groups: [
+            RepoOpenPrs(repoId: 'o/r', hasMore: false, prs: [pr(1)]),
+          ],
+        ),
+      );
+      await _pump();
+      expect(
+        container
+            .read(prListDataProvider)
+            .value
+            ?.byRepo
+            .single
+            .prs
+            .single
+            .number,
+        1,
+      );
+
+      fake.autoEmit = false;
+      userId = 'user-2';
+      container.invalidate(currentUserIdProvider);
+      await _pump();
+      expect(container.read(lastGoodOpenPrsProvider)['user-2|w1'], isNull);
+      expect(container.read(prListDataProvider).hasValue, isFalse);
+
+      fake.watchControllers.last.add(
+        WorkspaceOpenPrs(
+          authenticated: true,
+          groups: [
+            RepoOpenPrs(repoId: 'o/r', hasMore: false, prs: [pr(2)]),
+          ],
+        ),
+      );
+      await _pump();
+      expect(
+        container
+            .read(prListDataProvider)
+            .value
+            ?.byRepo
+            .single
+            .prs
+            .single
+            .number,
+        2,
+      );
+    });
+
+    test('an authoritative list rejection discards the revisit seed', () async {
+      final fake = _FakeOpenPrListRepository()..autoEmit = false;
+      final container = containerFor(fake, workspace: _FixedWorkspace.new);
+      addTearDown(container.dispose);
+      final repos = container.listen(
+        reposForWorkspaceProvider('w1'),
+        (_, _) {},
+      );
+      addTearDown(repos.close);
+      await _pump();
+      final listener = container.listen(prsByRepoProvider, (_, _) {});
+      addTearDown(listener.close);
+      fake.watchControllers.single.add(
+        WorkspaceOpenPrs(
+          authenticated: true,
+          groups: [
+            RepoOpenPrs(repoId: 'o/r', hasMore: false, prs: [pr(1)]),
+          ],
+        ),
+      );
+      await _pump();
+      expect(container.read(lastGoodOpenPrsProvider)['user-1|w1'], isNotNull);
+
+      fake.watchControllers.single.addError(StateError('Access denied'));
+      await _pump();
+      expect(container.read(lastGoodOpenPrsProvider)['user-1|w1'], isNull);
+      expect(container.read(prsByRepoProvider).hasError, isTrue);
+    });
   });
 
   group('reviewedByMePrKeysProvider last-good seeding', () {
@@ -201,7 +311,7 @@ void main() {
       await _pump();
 
       expect(
-        container.read(lastGoodReviewedKeysProvider)['w2'],
+        container.read(lastGoodReviewedKeysProvider)['user-1|w2|me'],
         isNull,
         reason: 'w1\'s set must never be stamped or read as w2\'s',
       );
@@ -209,8 +319,102 @@ void main() {
       gate.complete({'o/r#2'});
       await _pump();
       expect(container.read(reviewedByMePrKeysProvider).value, {'o/r#2'});
-      expect(container.read(lastGoodReviewedKeysProvider)['w2'], {'o/r#2'});
+      expect(container.read(lastGoodReviewedKeysProvider)['user-1|w2|me'], {
+        'o/r#2',
+      });
     });
+    test(
+      'changing forge login does not reuse another login review filter',
+      () async {
+        var login = 'me';
+        final fake = _FakeOpenPrListRepository()
+          ..autoEmit = false
+          ..reviewedKeys = {'o/r#1'};
+        final container = containerFor(
+          fake,
+          workspace: _FixedWorkspace.new,
+          login: () => login,
+        );
+        addTearDown(container.dispose);
+        final repos = container.listen(
+          reposForWorkspaceProvider('w1'),
+          (_, _) {},
+        );
+        addTearDown(repos.close);
+        await _pump();
+
+        final listener = container.listen(prListDataProvider, (_, _) {});
+        addTearDown(listener.close);
+        fake.watchControllers.single.add(
+          WorkspaceOpenPrs(
+            authenticated: true,
+            groups: [
+              RepoOpenPrs(repoId: 'o/r', hasMore: false, prs: [pr(1)]),
+            ],
+          ),
+        );
+        container.read(prListFiltersProvider.notifier).toggleReviewedByMe();
+        await _pump();
+        expect(
+          container
+              .read(prListDataProvider)
+              .value
+              ?.byRepo
+              .single
+              .prs
+              .single
+              .reviewedByMe,
+          isTrue,
+        );
+
+        final oldRefresh = Completer<Set<String>>();
+        fake.onReviewed = (_) => oldRefresh.future;
+        final refreshing = container
+            .read(reviewedByMePrKeysProvider.notifier)
+            .refreshNow();
+
+        final gate = Completer<Set<String>>();
+        fake.onReviewed = (_) => gate.future;
+        login = 'other';
+        container.invalidate(currentUserLoginProvider);
+        await _pump();
+        expect(
+          container.read(lastGoodReviewedKeysProvider)['user-1|w1|other'],
+          isNull,
+        );
+        expect(container.read(prListDataProvider).hasValue, isFalse);
+
+        gate.complete(const <String>{});
+        await _pump();
+        expect(
+          container
+              .read(prListDataProvider)
+              .value
+              ?.byRepo
+              .single
+              .prs
+              .single
+              .reviewedByMe,
+          isFalse,
+        );
+
+        oldRefresh.complete({'o/r#1'});
+        await refreshing;
+        await _pump();
+        expect(
+          container
+              .read(prListDataProvider)
+              .requireValue
+              .byRepo
+              .single
+              .prs
+              .single
+              .reviewedByMe,
+          isFalse,
+          reason: 'a late refresh from the old login cannot replace fresh data',
+        );
+      },
+    );
   });
 
   group('recentlyMergedPrsProvider last-good seeding', () {

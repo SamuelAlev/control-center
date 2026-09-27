@@ -44,6 +44,7 @@ void main() {
   _Conn scriptedConnection({
     String fingerprint = 'fp-AAAA',
     Map<String, dynamic> Function(String op)? answer,
+    int? callErrorCode,
   }) {
     final (server, client) = makeClient();
     final sentIds = <String, List<Object>>{};
@@ -80,6 +81,14 @@ void main() {
       if (method == RpcMethods.repoCall) {
         final params = (frame['params'] as Map?)?.cast<String, dynamic>() ?? {};
         final op = params['op'] as String? ?? '';
+        if (callErrorCode != null) {
+          await server.send({
+            'jsonrpc': '2.0',
+            'id': id,
+            'error': {'code': callErrorCode, 'message': 'Read denied'},
+          });
+          return;
+        }
         if (answer != null) {
           final data = answer(op);
           await server.send({
@@ -551,14 +560,410 @@ void main() {
       },
     );
   });
+
+  group('scoped RPC snapshot reconciliation', () {
+    Future<void> deliver(_Conn c, String id, Map<String, dynamic> data) async {
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+      await c.server.send({
+        'jsonrpc': '2.0',
+        'id': c.subIdFor(RpcMethods.subscribe),
+        'result': {'subscriptionId': id},
+      });
+      await c.server.send({
+        'jsonrpc': '2.0',
+        'method': RpcMethods.subSnapshot,
+        'params': {'subscriptionId': id, 'rev': 1, 'full': true, 'data': data},
+      });
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+    }
+
+    test(
+      'replays stale across cancellation/outage, then retains fresh empty snapshot',
+      () async {
+        final first = scriptedConnection();
+        final second = scriptedConnection();
+        final sup = ServerConnectionSupervisor(
+          descriptor: descriptor(),
+          deviceId: 'dev-1',
+          psk: psk,
+          resolver: resolver([first.connection, second.connection]),
+        );
+        addTearDown(
+          () =>
+              sup.close().timeout(const Duration(seconds: 1), onTimeout: () {}),
+        );
+        await sup.start();
+        final cache = RpcSnapshotCache();
+        final resilient = ResilientRpcClient(sup, snapshotCache: cache)
+          ..activeWorkspaceId = 'ws-1';
+        addTearDown(resilient.close);
+
+        final firstValues = <Map<String, dynamic>>[];
+        final initial = resilient
+            .subscribe('meeting.watchByWorkspace', const {})
+            .listen(firstValues.add);
+        await deliver(first, 'snapshot-initial', {
+          'meetings': [1],
+        });
+        expect(firstValues, [
+          {
+            'meetings': [1],
+          },
+        ]);
+        await initial.cancel();
+        // A late frame for an unsubscribed server id must not poison the cache.
+        await first.server.send({
+          'jsonrpc': '2.0',
+          'method': RpcMethods.subSnapshot,
+          'params': {
+            'subscriptionId': 'snapshot-initial',
+            'rev': 2,
+            'full': true,
+            'data': {
+              'meetings': [99],
+            },
+          },
+        });
+
+        final values = <Map<String, dynamic>>[];
+        final active = resilient
+            .subscribe('meeting.watchByWorkspace', const {})
+            .listen(values.add);
+        await Future<void>.delayed(const Duration(milliseconds: 30));
+        expect(values, [
+          {
+            'meetings': [1],
+          },
+        ]); // before second subscribe ack
+        await deliver(first, 'snapshot-refresh', {'meetings': []});
+        expect(values.last, {'meetings': []});
+        await first.server.close();
+        await first.sub.cancel();
+        await Future<void>.delayed(const Duration(milliseconds: 200));
+        expect(values.last, {
+          'meetings': [],
+        }); // no synthetic empty/error on outage
+        await deliver(second, 'snapshot-reconnected', {
+          'meetings': [2],
+        });
+        expect(values.last, {
+          'meetings': [2],
+        });
+        await active.cancel();
+
+        final replay = <Map<String, dynamic>>[];
+        final latest = resilient
+            .subscribe('meeting.watchByWorkspace', const {})
+            .listen(replay.add);
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+        expect(replay.single, {
+          'meetings': [2],
+        });
+        await latest.cancel();
+      },
+    );
+
+    test(
+      'freezes workspace and never caches unsafe live-control queries',
+      () async {
+        final c = scriptedConnection();
+        final sup = ServerConnectionSupervisor(
+          descriptor: descriptor(),
+          deviceId: 'dev-1',
+          psk: psk,
+          resolver: resolver([c.connection]),
+        );
+        addTearDown(
+          () =>
+              sup.close().timeout(const Duration(seconds: 1), onTimeout: () {}),
+        );
+        await sup.start();
+        final resilient = ResilientRpcClient(
+          sup,
+          snapshotCache: RpcSnapshotCache(),
+        )..activeWorkspaceId = 'ws-one';
+        addTearDown(resilient.close);
+        final sent = <Map<String, dynamic>>[];
+        final observe = c.server.incoming.listen(sent.add);
+        addTearDown(observe.cancel);
+        final first = resilient
+            .subscribe('workspace.watchReposForWorkspace', const {})
+            .listen((_) {});
+        await deliver(c, 'workspace-one', {
+          'repos': [1],
+        });
+        await first.cancel();
+
+        resilient.activeWorkspaceId = 'ws-two';
+        final values = <Map<String, dynamic>>[];
+        final next = resilient.subscribe(
+          'workspace.watchReposForWorkspace',
+          const {},
+        );
+        resilient.activeWorkspaceId = 'ws-three'; // before onListen
+        final second = next.listen(values.add);
+        await Future<void>.delayed(const Duration(milliseconds: 30));
+        expect(values, isEmpty); // never read ws-one's snapshot for ws-two
+        final frame = sent.lastWhere(
+          (f) => f['method'] == RpcMethods.subscribe,
+        );
+        final params = (frame['params'] as Map).cast<String, dynamic>();
+        expect((params['args'] as Map)['workspace_id'], 'ws-two');
+        await second.cancel();
+
+        final unsafe = resilient
+            .subscribe('presence.watch', const {})
+            .listen(values.add);
+        await deliver(c, 'presence-first', {
+          'participants': [1],
+        });
+        await unsafe.cancel();
+        values.clear();
+        final again = resilient
+            .subscribe('presence.watch', const {})
+            .listen(values.add);
+        await Future<void>.delayed(const Duration(milliseconds: 30));
+        expect(values, isEmpty);
+        await again.cancel();
+      },
+    );
+
+    test(
+      'server denial evicts cached subscription and surfaces error',
+      () async {
+        final c = scriptedConnection();
+        final sup = ServerConnectionSupervisor(
+          descriptor: descriptor(),
+          deviceId: 'dev-1',
+          psk: psk,
+          resolver: resolver([c.connection]),
+        );
+        addTearDown(
+          () =>
+              sup.close().timeout(const Duration(seconds: 1), onTimeout: () {}),
+        );
+        await sup.start();
+        final resilient = ResilientRpcClient(
+          sup,
+          snapshotCache: RpcSnapshotCache(),
+        )..activeWorkspaceId = 'ws-1';
+        addTearDown(resilient.close);
+        final seed = resilient
+            .subscribe('calendar.watchAccounts', const {})
+            .listen((_) {});
+        await deliver(c, 'accounts', {
+          'accounts': [1],
+        });
+        await seed.cancel();
+
+        final values = <Map<String, dynamic>>[];
+        final errors = <Object>[];
+        final denied = resilient
+            .subscribe('calendar.watchAccounts', const {})
+            .listen(values.add, onError: errors.add);
+        await Future<void>.delayed(const Duration(milliseconds: 30));
+        expect(values, [
+          {
+            'accounts': [1],
+          },
+        ]);
+        await c.server.send({
+          'jsonrpc': '2.0',
+          'id': c.subIdFor(RpcMethods.subscribe),
+          'error': {'code': RpcErrorCodes.unauthorized, 'message': 'revoked'},
+        });
+        await Future<void>.delayed(const Duration(milliseconds: 30));
+        expect(
+          (errors.single as RemoteRpcException).code,
+          RpcErrorCodes.unauthorized,
+        );
+        await denied.cancel();
+
+        final after = <Map<String, dynamic>>[];
+        final retry = resilient
+            .subscribe('calendar.watchAccounts', const {})
+            .listen(after.add);
+        await Future<void>.delayed(const Duration(milliseconds: 30));
+        expect(after, isEmpty);
+        await retry.cancel();
+      },
+    );
+
+    test(
+      'watchCall revalidates allowed reads and rejects mutation names',
+      () async {
+        var count = 0;
+        Map<String, dynamic> answer(String op) =>
+            op == 'messaging.getMessageById' ? {'revision': ++count} : const {};
+        final first = scriptedConnection(answer: answer);
+        final second = scriptedConnection(answer: answer);
+        final sup = ServerConnectionSupervisor(
+          descriptor: descriptor(),
+          deviceId: 'dev-1',
+          psk: psk,
+          resolver: resolver([first.connection, second.connection]),
+        );
+        addTearDown(
+          () =>
+              sup.close().timeout(const Duration(seconds: 1), onTimeout: () {}),
+        );
+        await sup.start();
+        final resilient = ResilientRpcClient(
+          sup,
+          snapshotCache: RpcSnapshotCache(),
+        )..activeWorkspaceId = 'ws-1';
+        addTearDown(resilient.close);
+        expect(
+          () => resilient.watchCall('messaging.sendMessage', const {}),
+          throwsArgumentError,
+        );
+        final firstValues = <Map<String, dynamic>>[];
+        final original = resilient
+            .watchCall('messaging.getMessageById', const {'message_id': 'm'})
+            .listen(firstValues.add);
+        await Future<void>.delayed(const Duration(milliseconds: 30));
+        expect(firstValues, [
+          {'revision': 1},
+        ]);
+        await original.cancel();
+        final values = <Map<String, dynamic>>[];
+        final active = resilient
+            .watchCall('messaging.getMessageById', const {'message_id': 'm'})
+            .listen(values.add);
+        await Future<void>.delayed(const Duration(milliseconds: 30));
+        expect(values, [
+          {'revision': 1},
+          {'revision': 2},
+        ]);
+        await first.server.close();
+        await first.sub.cancel();
+        await Future<void>.delayed(const Duration(milliseconds: 200));
+        expect(values.last, {'revision': 3});
+        await active.cancel();
+      },
+    );
+
+    test(
+      'watchCall authoritative not-found clears previously cached read',
+      () async {
+        final first = scriptedConnection(answer: (_) => {'message': 'old'});
+        final second = scriptedConnection(
+          callErrorCode: RpcErrorCodes.notFound,
+        );
+        final sup = ServerConnectionSupervisor(
+          descriptor: descriptor(),
+          deviceId: 'dev-1',
+          psk: psk,
+          resolver: resolver([first.connection, second.connection]),
+        );
+        addTearDown(
+          () =>
+              sup.close().timeout(const Duration(seconds: 1), onTimeout: () {}),
+        );
+        await sup.start();
+        final resilient = ResilientRpcClient(
+          sup,
+          snapshotCache: RpcSnapshotCache(),
+        )..activeWorkspaceId = 'ws-1';
+        addTearDown(resilient.close);
+        final values = <Map<String, dynamic>>[];
+        final errors = <Object>[];
+        final active = resilient
+            .watchCall('messaging.getMessageById', const {'message_id': 'm'})
+            .listen(values.add, onError: errors.add);
+        await Future<void>.delayed(const Duration(milliseconds: 30));
+        await first.server.close();
+        await first.sub.cancel();
+        await Future<void>.delayed(const Duration(milliseconds: 200));
+        expect(values, [
+          {'message': 'old'},
+        ]);
+        expect(
+          (errors.single as RemoteRpcException).code,
+          RpcErrorCodes.notFound,
+        );
+        await active.cancel();
+        final replay = <Map<String, dynamic>>[];
+        final retry = resilient
+            .watchCall('messaging.getMessageById', const {'message_id': 'm'})
+            .listen(replay.add, onError: (_) {});
+        await Future<void>.delayed(const Duration(milliseconds: 30));
+        expect(replay, isEmpty);
+        await retry.cancel();
+      },
+    );
+
+    test(
+      'terminal authentication rejection clears offline data and fails reads',
+      () async {
+        final c = scriptedConnection();
+        final sup = ServerConnectionSupervisor(
+          descriptor: descriptor(),
+          deviceId: 'dev-1',
+          psk: psk,
+          resolver: _ScriptedResolver([
+            c.connection,
+          ], failureOnEmpty: const AuthRejectedException('pairing revoked')),
+        );
+        addTearDown(
+          () =>
+              sup.close().timeout(const Duration(seconds: 1), onTimeout: () {}),
+        );
+        await sup.start();
+        final cache = RpcSnapshotCache();
+        final resilient = ResilientRpcClient(sup, snapshotCache: cache)
+          ..activeWorkspaceId = 'ws-1';
+        addTearDown(resilient.close);
+        final activeErrors = <Object>[];
+        final seed = resilient
+            .subscribe('meeting.watchByWorkspace', const {})
+            .listen((_) {}, onError: activeErrors.add);
+        await deliver(c, 'authenticated', {
+          'meetings': [1],
+        });
+
+        await c.server.close();
+        await c.sub.cancel();
+        await Future<void>.delayed(const Duration(milliseconds: 200));
+        expect(
+          (activeErrors.single as RemoteRpcException).code,
+          RpcErrorCodes.unauthorized,
+        );
+        await seed.cancel();
+        await expectLater(
+          resilient.call('meeting.getByWorkspace', const {}),
+          throwsA(
+            isA<RemoteRpcException>().having(
+              (e) => e.code,
+              'code',
+              RpcErrorCodes.unauthorized,
+            ),
+          ),
+        );
+        final values = <Map<String, dynamic>>[];
+        final errors = <Object>[];
+        final retry = resilient
+            .subscribe('meeting.watchByWorkspace', const {})
+            .listen(values.add, onError: errors.add);
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+        expect(values, isEmpty);
+        expect(
+          (errors.single as RemoteRpcException).code,
+          RpcErrorCodes.unauthorized,
+        );
+        await retry.cancel();
+      },
+    );
+  });
 }
 
 /// A scripted [ReachabilityResolver]: [connect] pops the next prepared
 /// [ResolvedConnection] in order.
 class _ScriptedResolver extends ReachabilityResolver {
-  _ScriptedResolver(this._connections);
+  _ScriptedResolver(this._connections, {this.failureOnEmpty});
 
   final List<ResolvedConnection> _connections;
+  final Object? failureOnEmpty;
 
   @override
   Future<ResolvedConnection> connect(
@@ -568,7 +973,7 @@ class _ScriptedResolver extends ReachabilityResolver {
     String? pinnedFingerprint,
   }) async {
     if (_connections.isEmpty) {
-      throw StateError('scripted resolver is dry');
+      throw failureOnEmpty ?? StateError('scripted resolver is dry');
     }
     return _connections.removeAt(0);
   }

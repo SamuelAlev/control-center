@@ -234,5 +234,19 @@
   "yesterday": "gisteren",
   "durationMinutes": "{count}m",
   "durationHours": "{count}u",
-  "durationHoursMinutes": "{hours}u {minutes}m"
+  "durationHoursMinutes": "{hours}u {minutes}m",
+  "newSpaceFolder": "Nieuwe map",
+  "folderName": "Mapnaam",
+  "renameSpaceFolder": "Map hernoemen",
+  "deleteSpaceFolder": "Map verwijderen",
+  "moveSpaceToFolder": "Naar map verplaatsen",
+  "removeSpaceFromFolder": "Uit map verwijderen",
+  "spaceFolderActions": "Mapacties",
+  "deleteFolderWithSpacesWarning": "Als je ruimtes definitief verwijdert, verdwijnen hun berichten en werkmappen voor iedereen. Dit kan niet ongedaan worden gemaakt.",
+  "deleteSpacesInFolder": "Ruimtes in deze map definitief verwijderen",
+  "deleteFolderAndSpaces": "Map en ruimtes verwijderen",
+  "keepSpacesInFolder": "Anders blijven de ruimtes buiten een map.",
+  "create": "Aanmaken",
+  "otherSpaces": "Andere ruimtes",
+  "folderUpdateFailed": "Kan mappen niet bijwerken"
 }

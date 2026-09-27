@@ -13,15 +13,15 @@ Everything here lives at **Settings → Server → Backup & restore**.
 ## Prerequisites
 
 - A **full client** — the desktop or web app. A paired phone can trigger none of this, by design.
-- To take or list an **install snapshot**: the install's **owner**. The same gate applies to downloading the whole snapshot as a zip.
-- For per-workspace actions: **admin** of that workspace to export it, **owner** to import or delete it.
+- To take, list, download or delete an **install snapshot**: the install's **owner**.
+- For per-workspace actions: **admin** of that workspace to export, **owner** to import or delete it.
 - For downloads and uploads: a **direct** connection to the server. The brokered relay carries RPC frames, not file transfers, and the transfer controls disable themselves with a note when you are on one.
 
-:::caution[Nothing is scheduled]
-A snapshot is taken only when somebody asks for one. Nothing runs on a timer, nothing
-rotates old snapshots and there is no `cc_server backup` subcommand. If you want
-unattended backups, set them up yourself — see
-[Copy backups off the machine](#copy-backups-off-the-machine).
+:::caution[Install snapshots are manual]
+**Back up now** still creates a whole-install snapshot only on request. The built-in
+**Workspace backup** pipeline can instead take a workspace database backup once a week
+and remove that workspace's backups older than 30 days. It does not copy `global.db`,
+other workspaces, or files beside the database. Keep off-machine copies separately.
 :::
 
 ## What a backup covers
@@ -57,6 +57,34 @@ workspace files it does hold can still be adopted one at a time.
 
 A row may also say **_n_ workspaces not captured**. That is a workspace registered but
 never written to (there is no file yet), or one whose copy failed — check the server log.
+
+## Schedule workspace backups and retention
+
+Open **Settings → Pipelines → Pipeline templates** for the workspace and find
+**Workspace backup**. Its enabled schedule runs every Sunday at 03:00 UTC:
+**Back up workspace**, followed by **Delete backups older than** (30 days by
+default). The second node runs only after the backup succeeds. You can change
+the retention days on the node or disable the schedule. If the server is offline
+at the scheduled time, the schedule catches up once when it comes back, rather
+than replaying every missed week.
+
+Workspace backups live on the server under
+`backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`. The retention
+node deletes only old backups for this workspace; it never deletes install snapshots
+or backups for other workspaces. These files are database-only. For off-machine
+retention, copy them independently.
+
+These backups are separate from the **Install snapshots** list. To restore one,
+use **Workspace data → Import** with the backup's server-side `workspace.db`
+path. Import replaces that workspace's current database, so export it first if
+you may need to undo the restore.
+
+## Delete an install snapshot
+
+Under **Install snapshots**, expand the snapshot, including an incomplete one,
+and use **Delete snapshot** in the danger section. Confirm its name. The entire
+snapshot directory is permanently removed from the server; download it first if
+you need a copy. A workspace backup pipeline never deletes these snapshots.
 
 ## Collect a copy on your own machine
 
@@ -213,11 +241,12 @@ Skip `spaces/` (copy-on-write worktrees, re-provisioned from your repos), `pr_cl
 (a cache), `models/` (re-downloaded), `media_cache/` and `rigs/` (machine state, and
 large). Recorded meeting audio under `meetings/` is worth including if you keep meetings.
 
-### Snapshot on a schedule, without the UI
+### Schedule a whole-install snapshot outside the app
 
-There is no CLI subcommand and the snapshot RPC ops need a paired full client that is the install owner, so the practical
-way to automate this on the server host is to do what the server does — `VACUUM INTO`,
-which is safe against the live databases:
+The built-in pipeline backs up only one workspace. For an unattended **whole-install**
+snapshot, there is no CLI subcommand, and the snapshot RPC requires a paired full
+client that is the install owner. A host-side timer can use `VACUUM INTO` against
+the live databases:
 
 ```bash
 #!/usr/bin/env bash
@@ -243,13 +272,14 @@ Write it **outside** `<dataDir>/backups/`. A hand-made directory there has no
 `manifest.json`, so the app would list it as an incomplete snapshot and the list would
 stop being an honest record of what the server itself produced.
 
-### Prune old snapshots
+### Prune old whole-install snapshots
 
-Nothing rotates them, and each one is roughly the size of your databases.
+You can delete individual install snapshots in the app. For a host-side retention
+policy, keep the workspace backup directory separate from the install snapshots:
 
 ```bash
 find "$DATA_DIR/backups" -mindepth 1 -maxdepth 1 -type d \
-  ! -name exports ! -name transfer \
+  ! -name exports ! -name transfer ! -name workspace-backups \
   -mtime +30 -exec rm -rf {} +
 ```
 

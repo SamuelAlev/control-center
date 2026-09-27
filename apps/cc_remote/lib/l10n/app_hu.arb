@@ -515,5 +515,19 @@
         "type": "int"
       }
     }
-  }
+  },
+  "newSpaceFolder": "Új mappa",
+  "folderName": "Mappa neve",
+  "renameSpaceFolder": "Mappa átnevezése",
+  "deleteSpaceFolder": "Mappa törlése",
+  "moveSpaceToFolder": "Áthelyezés mappába",
+  "removeSpaceFromFolder": "Eltávolítás a mappából",
+  "spaceFolderActions": "Mappaműveletek",
+  "deleteFolderWithSpacesWarning": "A terek végleges törlése mindenki számára eltávolítja az üzeneteiket és a munkafáikat. Ez nem vonható vissza.",
+  "deleteSpacesInFolder": "A mappában lévő terek végleges törlése",
+  "deleteFolderAndSpaces": "Mappa és terek törlése",
+  "keepSpacesInFolder": "Ellenkező esetben a terek mappán kívül maradnak.",
+  "create": "Létrehozás",
+  "otherSpaces": "Egyéb terek",
+  "folderUpdateFailed": "Nem sikerült frissíteni a mappákat"
 }

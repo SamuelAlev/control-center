@@ -1786,6 +1786,14 @@ class AppLocalizationsUr extends AppLocalizations {
       'JSON Schema جسے مرحلے کے آؤٹ پٹ کو پورا کرنا چاہیے';
 
   @override
+  String get nodeConfigBackupRetentionDays =>
+      'اتنے دن سے پرانے بیک اپ حذف کریں';
+
+  @override
+  String get nodeConfigBackupRetentionDaysHelp =>
+      'صرف اسی ورک اسپیس کے بیک اپ حذف ہوں گے۔ دنوں کی مثبت تعداد درج کریں۔';
+
+  @override
   String get diffLineDisplay => 'Diff میں لمبی لائنیں';
 
   @override
@@ -9039,6 +9047,45 @@ class AppLocalizationsUr extends AppLocalizations {
   String get spaceReposHint => 'شامل کرنے کے ریپوز';
 
   @override
+  String get newSpaceFolder => 'نیا فولڈر';
+
+  @override
+  String get folderName => 'فولڈر کا نام';
+
+  @override
+  String get renameSpaceFolder => 'فولڈر کا نام تبدیل کریں';
+
+  @override
+  String get deleteSpaceFolder => 'فولڈر حذف کریں';
+
+  @override
+  String get moveSpaceToFolder => 'فولڈر میں منتقل کریں';
+
+  @override
+  String get removeSpaceFromFolder => 'فولڈر سے ہٹائیں';
+
+  @override
+  String get spaceFolderActions => 'فولڈر کے اقدامات';
+
+  @override
+  String get deleteFolderWithSpacesWarning =>
+      'اسپیسز کو مستقل طور پر حذف کرنے سے ان کے پیغامات اور ورک ٹریز سب کے لیے ختم ہو جاتے ہیں۔ اسے واپس نہیں کیا جا سکتا۔';
+
+  @override
+  String get deleteSpacesInFolder =>
+      'اس فولڈر میں موجود اسپیسز مستقل طور پر حذف کریں';
+
+  @override
+  String get deleteFolderAndSpaces => 'فولڈر اور اسپیسز حذف کریں';
+
+  @override
+  String get keepSpacesInFolder =>
+      'بصورتِ دیگر، اسپیسز کسی فولڈر میں نہیں رہیں گی۔';
+
+  @override
+  String get noSpaceFoldersYet => 'ابھی کوئی فولڈر نہیں';
+
+  @override
   String get ideSourceControl => 'سورس کنٹرول';
 
   @override
@@ -14325,7 +14372,7 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get backupNoSnapshots =>
-      'ابھی کوئی اسنیپ شاٹ نہیں۔ صرف آپ کے مانگنے پر لیا جاتا ہے — کچھ شیڈول نہیں۔';
+      'ابھی تنصیب کا کوئی اسنیپ شاٹ نہیں۔ ابھی بنائیں یا ورک اسپیس کے طے شدہ بیک اپ کے لیے پائپ لائن استعمال کریں۔';
 
   @override
   String get backupSnapshotComplete => 'مکمل';
@@ -14336,6 +14383,29 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String get backupSnapshotIncompleteNote =>
       'مانی فیسٹ غائب ہے یا ایسی فائلیں نامزد کرتا ہے جو وہاں نہیں، اس لیے یہ اسنیپ شاٹ پورا انسٹال بحال نہیں کر سکتا۔ جو ورک اسپیس فائلیں ہیں وہ ایک ایک کر کے اپنائی جا سکتی ہیں۔';
+
+  @override
+  String get backupDeleteSnapshotLabel => 'اسنیپ شاٹ حذف کریں';
+
+  @override
+  String get backupDeleteSnapshotDescription =>
+      'اس اسنیپ شاٹ کو سرور سے مستقل طور پر ہٹا دیں۔ محفوظ رکھنا ہو تو پہلے ڈاؤن لوڈ کریں۔';
+
+  @override
+  String get backupDeleteSnapshotAction => 'اسنیپ شاٹ حذف کریں';
+
+  @override
+  String get backupDeleteSnapshotTitle => 'یہ اسنیپ شاٹ حذف کریں؟';
+
+  @override
+  String backupDeleteSnapshotBody(String name) {
+    return 'سرور سے ⁨$name⁩ حذف کریں؟ اس میں موجود تمام ڈیٹابیس ضائع ہو جائیں گے۔ اسے واپس نہیں لایا جا سکتا۔';
+  }
+
+  @override
+  String backupDeleteSnapshotDone(String name) {
+    return 'اسنیپ شاٹ ⁨$name⁩ حذف ہو گیا۔';
+  }
 
   @override
   String backupSnapshotWorkspaces(int count) {

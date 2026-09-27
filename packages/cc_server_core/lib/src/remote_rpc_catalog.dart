@@ -187,6 +187,7 @@ import 'package:cc_server_core/src/collab/checker_listener.dart';
 import 'package:cc_server_core/src/collab/takeover_service.dart';
 import 'package:cc_server_core/src/connection/network_runtime.dart';
 import 'package:cc_server_core/src/connection/server_descriptor_service.dart';
+import 'package:cc_server_core/src/demo/demo_meeting_service.dart';
 import 'package:cc_server_core/src/google_calendar_server.dart';
 import 'package:cc_server_core/src/harness_model_override_cache.dart';
 import 'package:cc_server_core/src/identity/approval_escalation_sweeper.dart';
@@ -394,6 +395,9 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   // cc_server with a model installed). When null those three ops are absent
   // (default-deny) and the web recorder surfaces "recording unavailable".
   MeetingRecordingService? meetingRecording,
+  // Only the public demo runtime supplies this. No real audio or model is
+  // involved, and production catalogs do not contain its control operations.
+  DemoMeetingService? demoMeeting,
   // Voice dictation over RPC (PRD 25 §2): reuses the host's windowed
   // transcriber to stream finalized text back to the composer. Optional —
   // declared only when a voice model is installed (same gate as meeting.*).
@@ -573,6 +577,10 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   // Fetches live subscription-usage quotas (Claude/Codex/Cursor/z.ai/Kimi)
   // for the `subscriptions.usage` op. Null → the op returns an empty list.
   SubscriptionUsageFetcher? fetchSubscriptionUsage,
+  // Demo quota snapshots are synthetic. Skipping collection here matters:
+  // the normal collector reads credentials and may refresh OAuth tokens
+  // before it invokes the fetcher, even when that fetcher is inert.
+  bool collectSubscriptionAccounts = true,
   // The Claude Code login store behind the `claude_accounts.*` ops: one
   // config dir per account, so an operator can pick which login a run uses.
   // Server-side only; null ⇒ the ops are omitted.
@@ -739,6 +747,9 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   // Server-side only; null ⇒ the op is omitted.
   Future<void> Function({required String workspaceId, required String spaceId})?
   cancelSpaceProvisioning,
+  // A public demo creates chat-only rooms. Omitted selection normally means
+  // "all repos", so normalize it to none and refuse explicit checkouts.
+  bool repoLessSpacesOnly = false,
   // Working-tree diff (vs HEAD, incl. untracked) WITH patches for a linked
   // repo, computed SERVER-SIDE via `git diff HEAD` on the owned checkout. The
   // messaging IDE's Source Control panel renders these `PrFile`s. Absent on a
@@ -2044,6 +2055,22 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           return {
             'backups': [for (final s in snapshots) backupSnapshotToWire(s)],
           };
+        },
+      ),
+    // Removes one listed install snapshot, including interrupted snapshots.
+    // Never accepts a path from the client: persistence validates the immutable
+    // timestamp name and resolves it strictly under its configured backup root.
+    if (databaseBackup != null)
+      RepoOp(
+        name: 'server.deleteBackup',
+        kind: RepoOpKind.mutate,
+        workspaceScoped: false,
+        requiredCapability: SessionCapability.fullClient,
+        serverAuthority: ServerAuthority.serverOwner,
+        requiredArgs: ['name'],
+        handler: (ctx) async {
+          await databaseBackup.deleteBackup(ctx.args['name'] as String);
+          return {'ok': true};
         },
       ),
     // Exports ONE workspace as a single file. Workspace-scoped (the operator
@@ -6675,6 +6702,12 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       kind: RepoOpKind.mutate,
       requiredArgs: ['name', 'agent_ids'],
       handler: (ctx) async {
+        final selectedRepoIds = (ctx.args['repo_ids'] as List?)?.cast<String>();
+        if (repoLessSpacesOnly &&
+            ((selectedRepoIds?.isNotEmpty ?? false) ||
+                (ctx.args['repo_branches'] as Map?)?.isNotEmpty == true)) {
+          throw ArgumentError('Repository worktrees require a real server.');
+        }
         // Through [SpaceFactory] — the same chokepoint the in-process
         // [MessagingService] uses — so the row and its `SpaceCreated` stay one
         // operation. A space created without the event never provisions its
@@ -6695,7 +6728,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
               createdByUserId: ctx.userId,
               // Optional per-space repo selection; absent → all workspace
               // repos, an EMPTY list → the space checks out no repos at all.
-              repoIds: (ctx.args['repo_ids'] as List?)?.cast<String>(),
+              repoIds: repoLessSpacesOnly ? const <String>[] : selectedRepoIds,
               // The base branch each selected repo's worktree is cut from,
               // keyed by repo id. Absent → the repo's own default branch.
               repoBranches: (ctx.args['repo_branches'] as Map?)
@@ -10362,6 +10395,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     ...buildMeetingOps(
       meetingRepository: meetingRepository,
       meetingRecording: meetingRecording,
+      demoMeeting: demoMeeting,
       dictationService: dictationService,
     ),
     // READ surface only. Every read sources `ctx.workspaceId!` (the bound
@@ -11381,7 +11415,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         if (fetch == null) {
           return {'providers': <Map<String, dynamic>>[]};
         }
-        final accounts = harnessCreds == null
+        final accounts = !collectSubscriptionAccounts || harnessCreds == null
             ? const <SubscriptionUsageAccount>[]
             : await collectHarnessUsageAccounts(
                 store: harnessCreds,

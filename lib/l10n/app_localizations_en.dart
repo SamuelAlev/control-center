@@ -1789,6 +1789,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'JSON Schema the step output must satisfy';
 
   @override
+  String get nodeConfigBackupRetentionDays =>
+      'Delete backups older than (days)';
+
+  @override
+  String get nodeConfigBackupRetentionDaysHelp =>
+      'Only backups from this workspace are deleted. Enter a positive number of days.';
+
+  @override
   String get diffLineDisplay => 'Long lines in diffs';
 
   @override
@@ -9052,6 +9060,44 @@ class AppLocalizationsEn extends AppLocalizations {
   String get spaceReposHint => 'Repos to include';
 
   @override
+  String get newSpaceFolder => 'New folder';
+
+  @override
+  String get folderName => 'Folder name';
+
+  @override
+  String get renameSpaceFolder => 'Rename folder';
+
+  @override
+  String get deleteSpaceFolder => 'Delete folder';
+
+  @override
+  String get moveSpaceToFolder => 'Move to folder';
+
+  @override
+  String get removeSpaceFromFolder => 'Remove from folder';
+
+  @override
+  String get spaceFolderActions => 'Folder actions';
+
+  @override
+  String get deleteFolderWithSpacesWarning =>
+      'Deleting spaces permanently removes their messages and worktrees for everyone. This cannot be undone.';
+
+  @override
+  String get deleteSpacesInFolder =>
+      'Permanently delete the spaces in this folder';
+
+  @override
+  String get deleteFolderAndSpaces => 'Delete folder and spaces';
+
+  @override
+  String get keepSpacesInFolder => 'Otherwise, spaces will remain unfiled.';
+
+  @override
+  String get noSpaceFoldersYet => 'No folders yet';
+
+  @override
   String get ideSourceControl => 'Source control';
 
   @override
@@ -14343,7 +14389,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get backupNoSnapshots =>
-      'No snapshots yet. One is taken only when you ask for it — nothing is scheduled.';
+      'No install snapshots yet. Take one now, or use a workspace backup pipeline for scheduled copies.';
 
   @override
   String get backupSnapshotComplete => 'Complete';
@@ -14354,6 +14400,29 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get backupSnapshotIncompleteNote =>
       'The manifest is missing or names files that are not there, so this snapshot cannot restore the whole install. The workspace files it does have can still be adopted one by one.';
+
+  @override
+  String get backupDeleteSnapshotLabel => 'Delete snapshot';
+
+  @override
+  String get backupDeleteSnapshotDescription =>
+      'Permanently remove this snapshot from the server. Download it first if you need to keep a copy.';
+
+  @override
+  String get backupDeleteSnapshotAction => 'Delete snapshot';
+
+  @override
+  String get backupDeleteSnapshotTitle => 'Delete this snapshot?';
+
+  @override
+  String backupDeleteSnapshotBody(String name) {
+    return 'Delete $name from the server? All databases in this snapshot will be lost. This cannot be undone.';
+  }
+
+  @override
+  String backupDeleteSnapshotDone(String name) {
+    return 'Deleted snapshot $name.';
+  }
 
   @override
   String backupSnapshotWorkspaces(int count) {

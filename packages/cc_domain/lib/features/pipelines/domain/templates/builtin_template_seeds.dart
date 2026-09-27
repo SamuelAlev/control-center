@@ -84,6 +84,12 @@ class BuiltInBodyKeys {
   /// worktree in the workspace. See `registerCleanupReposBody`.
   static const String cleanupRepos = 'repos.cleanup';
 
+  /// Takes a consistent snapshot of the current workspace database.
+  static const String backupWorkspace = 'backup.workspace';
+
+  /// Removes old snapshots of the current workspace only.
+  static const String deleteOldBackups = 'backup.deleteOlderThan';
+
   /// Map / fan-out: runs an agent task per item in a state collection.
   static const String forEach = 'flow.forEach';
 
@@ -225,8 +231,8 @@ class BuiltInTriggerSeed {
     this.enabled = true,
   }) : cronExpression = null;
 
-  /// Scheduled (`every:<seconds>`) trigger. Defaults to disabled so it is
-  /// opt-in (the user enables it from the trigger panel).
+  /// Scheduled cron or `every:<seconds>` trigger. Defaults to disabled unless
+  /// the built-in requires an automatic sweep.
   const BuiltInTriggerSeed.schedule(this.cronExpression, {this.enabled = false})
     : eventType = PipelineTrigger.scheduleEventType,
       match = const {};
@@ -338,6 +344,11 @@ Map<String, List<BuiltInTriggerSeed>> builtInTriggerSeeds() => {
     // code-graph partition and a CoW copy on disk. Events cover the normal
     // path; this catches everything they missed while the server was down.
     BuiltInTriggerSeed.schedule('every:86400', enabled: true),
+  ],
+  // One workspace per run; old snapshots are pruned only after a fresh
+  // snapshot succeeds. Cron runs every Sunday at 03:00 UTC.
+  'workspace_backup': const [
+    BuiltInTriggerSeed.schedule('0 3 * * 0', enabled: true),
   ],
   'cross_review': const [BuiltInTriggerSeed.manual()],
   'ticket_to_pr': const [
@@ -541,6 +552,64 @@ List<PipelineDefinition> builtInTemplateSeeds({
     ),
     _meetingSummarySeed(workspaceId: workspaceId, agentIds: agentIds),
   ].map(_triggerFirst).toList();
+}
+
+/// Weekly, agentless workspace snapshot and retention. The dependency edge is
+/// intentional: an unsuccessful snapshot must never remove an older recovery
+/// point.
+PipelineDefinition workspaceBackupTemplate(String workspaceId) =>
+    _triggerFirst(_workspaceBackupSeed(workspaceId: workspaceId));
+
+PipelineDefinition _workspaceBackupSeed({required String workspaceId}) {
+  const backupId = 'backup';
+  const deleteId = 'delete_old_backups';
+  return PipelineDefinition(
+    templateId: 'workspace_backup',
+    workspaceId: workspaceId,
+    name: 'Workspace backup',
+    description:
+        'Backs up this workspace every week and removes only its backups '
+        'older than the configured retention period.',
+    isBuiltIn: true,
+    maxParallelRuns: 1,
+    steps: [
+      PipelineStepDefinition(
+        id: backupId,
+        kind: StepKind.listen,
+        bodyKey: BuiltInBodyKeys.backupWorkspace,
+        config: const PipelineNodeConfig(
+          label: 'Back up workspace',
+          outputKey: 'backup_path',
+          extras: {'idempotent': false},
+        ),
+        x: 0,
+        y: 0,
+      ),
+      PipelineStepDefinition(
+        id: deleteId,
+        kind: StepKind.listen,
+        bodyKey: BuiltInBodyKeys.deleteOldBackups,
+        triggers: [
+          const StepTrigger(sourceStepIds: [backupId]),
+        ],
+        config: const PipelineNodeConfig(
+          label: 'Delete backups older than',
+          outputKey: 'deleted_backups',
+          extras: {'retentionDays': 30, 'idempotent': false},
+        ),
+        x: 280,
+        y: 0,
+      ),
+      PipelineStepDefinition(
+        id: 'delete_old_backups_terminal',
+        kind: StepKind.terminal,
+        bodyKey: '_terminal_delete_old_backups',
+        triggers: [
+          const StepTrigger(sourceStepIds: [deleteId]),
+        ],
+      ),
+    ],
+  );
 }
 
 /// Rewrites [def] so it begins with the mandatory [StepKind.trigger] entry

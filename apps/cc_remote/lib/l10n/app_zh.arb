@@ -234,5 +234,19 @@
   "yesterday": "昨天",
   "durationMinutes": "{count} 分钟",
   "durationHours": "{count} 小时",
-  "durationHoursMinutes": "{hours} 小时 {minutes} 分钟"
+  "durationHoursMinutes": "{hours} 小时 {minutes} 分钟",
+  "newSpaceFolder": "新建文件夹",
+  "folderName": "文件夹名称",
+  "renameSpaceFolder": "重命名文件夹",
+  "deleteSpaceFolder": "删除文件夹",
+  "moveSpaceToFolder": "移至文件夹",
+  "removeSpaceFromFolder": "从文件夹移除",
+  "spaceFolderActions": "文件夹操作",
+  "deleteFolderWithSpacesWarning": "永久删除空间会为所有人移除其中的消息和工作树。此操作无法撤销。",
+  "deleteSpacesInFolder": "永久删除此文件夹中的空间",
+  "deleteFolderAndSpaces": "删除文件夹和空间",
+  "keepSpacesInFolder": "否则，空间将不属于任何文件夹。",
+  "create": "创建",
+  "otherSpaces": "其他空间",
+  "folderUpdateFailed": "无法更新文件夹"
 }

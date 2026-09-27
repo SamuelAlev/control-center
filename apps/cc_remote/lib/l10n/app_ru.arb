@@ -234,5 +234,19 @@
   "yesterday": "Вчера",
   "durationMinutes": "{count}м",
   "durationHours": "{count}ч",
-  "durationHoursMinutes": "{hours}ч {minutes}м"
+  "durationHoursMinutes": "{hours}ч {minutes}м",
+  "newSpaceFolder": "Новая папка",
+  "folderName": "Название папки",
+  "renameSpaceFolder": "Переименовать папку",
+  "deleteSpaceFolder": "Удалить папку",
+  "moveSpaceToFolder": "Переместить в папку",
+  "removeSpaceFromFolder": "Убрать из папки",
+  "spaceFolderActions": "Действия с папкой",
+  "deleteFolderWithSpacesWarning": "При безвозвратном удалении пространств их сообщения и рабочие деревья удаляются для всех. Это действие нельзя отменить.",
+  "deleteSpacesInFolder": "Безвозвратно удалить пространства в этой папке",
+  "deleteFolderAndSpaces": "Удалить папку и пространства",
+  "keepSpacesInFolder": "В противном случае пространства останутся вне папок.",
+  "create": "Создать",
+  "otherSpaces": "Другие пространства",
+  "folderUpdateFailed": "Не удалось обновить папки"
 }

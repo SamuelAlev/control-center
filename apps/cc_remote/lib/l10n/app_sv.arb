@@ -515,5 +515,19 @@
         "type": "int"
       }
     }
-  }
+  },
+  "newSpaceFolder": "Ny mapp",
+  "folderName": "Mappnamn",
+  "renameSpaceFolder": "Byt namn på mapp",
+  "deleteSpaceFolder": "Ta bort mapp",
+  "moveSpaceToFolder": "Flytta till mapp",
+  "removeSpaceFromFolder": "Ta bort från mapp",
+  "spaceFolderActions": "Mappåtgärder",
+  "deleteFolderWithSpacesWarning": "Om du tar bort utrymmen permanent försvinner deras meddelanden och arbetskataloger för alla. Det går inte att ångra.",
+  "deleteSpacesInFolder": "Ta bort utrymmena i den här mappen permanent",
+  "deleteFolderAndSpaces": "Ta bort mapp och utrymmen",
+  "keepSpacesInFolder": "Annars blir utrymmena kvar utanför mappar.",
+  "create": "Skapa",
+  "otherSpaces": "Andra utrymmen",
+  "folderUpdateFailed": "Det gick inte att uppdatera mapparna"
 }

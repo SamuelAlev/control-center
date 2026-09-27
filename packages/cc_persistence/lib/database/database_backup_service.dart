@@ -10,10 +10,12 @@ import 'package:sqlite3/sqlite3.dart' as sqlite;
 
 /// [DatabaseBackupPort] via SQLite `VACUUM INTO`.
 ///
-/// Snapshot is a timestamped directory mirroring the live data dir
-/// (`manifest.json`, `global.db`, `<workspaceId>/workspace.db`). Safe on live
-/// WAL; fresh dir each time. Manifest records schema versions/sizes.
-/// [exportWorkspace]/[importWorkspace] are single-file VACUUM INTO.
+/// Whole-install snapshots are timestamped directories under `backupsDir`
+/// holding `manifest.json`, `global.db`, and `<workspaceId>/workspace.db`.
+/// Scoped backups live separately at
+/// `workspace-backups/<workspaceId>/<timestamp>/workspace.db` and contain no
+/// global or other workspace data. Both are safe on live WAL databases.
+/// [exportWorkspace]/[importWorkspace] remain single-file transfer operations.
 class AppDatabaseBackupService implements DatabaseBackupPort {
   /// Creates a backup service writing into [backupsDir].
   ///
@@ -40,6 +42,65 @@ class AppDatabaseBackupService implements DatabaseBackupPort {
   /// Filename of the manifest inside a snapshot directory.
   static const manifestFileName = 'manifest.json';
 
+  static final _snapshotNamePattern = RegExp(
+    r'^(\d{4}-\d{2}-\d{2})T(\d{2})-(\d{2})-(\d{2})-(\d{3})Z$',
+  );
+
+  Directory get _workspaceBackups =>
+      Directory('$_backupsDir${Platform.pathSeparator}workspace-backups');
+
+  DateTime? _snapshotDate(String name) {
+    final match = _snapshotNamePattern.firstMatch(name);
+    if (match == null) {
+      return null;
+    }
+    return DateTime.tryParse(
+      '${match[1]}T${match[2]}:${match[3]}:${match[4]}.${match[5]}Z',
+    );
+  }
+
+  /// Do not let an externally substituted backups root or scope redirect I/O.
+  void _requireRealDirectory(Directory dir) {
+    final type = FileSystemEntity.typeSync(dir.path, followLinks: false);
+    if (type == FileSystemEntityType.link ||
+        (type != FileSystemEntityType.notFound &&
+            type != FileSystemEntityType.directory)) {
+      throw StateError('backup directory is not a real directory: ${dir.path}');
+    }
+  }
+
+  Future<Directory> _newSnapshot(Directory parent) async {
+    _requireRealDirectory(Directory(_backupsDir));
+    _requireRealDirectory(parent);
+    await parent.create(recursive: true);
+    final dir = Directory(
+      '${parent.path}${Platform.pathSeparator}${_timestamp()}',
+    );
+    if (FileSystemEntity.typeSync(dir.path, followLinks: false) !=
+        FileSystemEntityType.notFound) {
+      throw StateError('snapshot already exists: ${dir.path}');
+    }
+    await dir.create();
+    return dir;
+  }
+
+  /// Traversal is explicit: `followLinks: false` includes links as links,
+  /// which are unlinked rather than traversed into their external targets.
+  Future<void> _removeSnapshot(Directory dir) async {
+    if (FileSystemEntity.typeSync(dir.path, followLinks: false) !=
+        FileSystemEntityType.directory) {
+      throw StateError('snapshot is not a real directory: ${dir.path}');
+    }
+    await for (final child in dir.list(followLinks: false)) {
+      if (child is Directory) {
+        await _removeSnapshot(child);
+      } else {
+        await child.delete();
+      }
+    }
+    await dir.delete();
+  }
+
   /// Schema version recorded for the per-workspace files in the manifest.
   ///
   /// Read from a live workspace database when the snapshot contains one, so it
@@ -58,10 +119,7 @@ class AppDatabaseBackupService implements DatabaseBackupPort {
 
   @override
   Future<String> backupNow() async {
-    final dir = Directory(
-      '$_backupsDir${Platform.pathSeparator}${_timestamp()}',
-    );
-    await dir.create(recursive: true);
+    final dir = await _newSnapshot(Directory(_backupsDir));
 
     final globalPath = '${dir.path}${Platform.pathSeparator}global.db';
     await _global.backupTo(globalPath);
@@ -122,8 +180,81 @@ class AppDatabaseBackupService implements DatabaseBackupPort {
   }
 
   @override
+  Future<String> backupWorkspace(String workspaceId) async {
+    if (!WorkspaceDatabaseManager.isValidWorkspaceId(workspaceId)) {
+      throw ArgumentError.value(workspaceId, 'workspaceId', 'invalid');
+    }
+    if (!_workspaces.existsOnDisk(workspaceId)) {
+      throw StateError(
+        'workspace $workspaceId has no database file to back up',
+      );
+    }
+    _requireRealDirectory(_workspaceBackups);
+    final parent = Directory(
+      '${_workspaceBackups.path}${Platform.pathSeparator}$workspaceId',
+    );
+    final dir = await _newSnapshot(parent);
+    final path =
+        '${dir.path}${Platform.pathSeparator}$workspaceDatabaseFileName';
+    await _workspaces.of(workspaceId).backupTo(path);
+    return path;
+  }
+
+  @override
+  Future<void> deleteBackup(String name) async {
+    if (_snapshotDate(name) == null) {
+      throw ArgumentError.value(name, 'name', 'invalid snapshot name');
+    }
+    final root = Directory(_backupsDir);
+    _requireRealDirectory(root);
+    final dir = Directory('${root.path}${Platform.pathSeparator}$name');
+    await _removeSnapshot(dir);
+  }
+
+  @override
+  Future<int> deleteBackupsOlderThan({
+    required Duration age,
+    String? workspaceId,
+  }) async {
+    if (age.isNegative) {
+      throw ArgumentError.value(age, 'age', 'must not be negative');
+    }
+    final root = Directory(_backupsDir);
+    _requireRealDirectory(root);
+    Directory scope = root;
+    if (workspaceId != null) {
+      if (!WorkspaceDatabaseManager.isValidWorkspaceId(workspaceId)) {
+        throw ArgumentError.value(workspaceId, 'workspaceId', 'invalid');
+      }
+      _requireRealDirectory(_workspaceBackups);
+      scope = Directory(
+        '${_workspaceBackups.path}${Platform.pathSeparator}$workspaceId',
+      );
+      _requireRealDirectory(scope);
+    }
+    if (!scope.existsSync()) {
+      return 0;
+    }
+    final cutoff = _now().toUtc().subtract(age);
+    var deleted = 0;
+    for (final entity in scope.listSync(followLinks: false)) {
+      if (entity is! Directory) {
+        continue;
+      }
+      final name = entity.path.split(Platform.pathSeparator).last;
+      final date = _snapshotDate(name);
+      if (date != null && date.isBefore(cutoff)) {
+        await _removeSnapshot(entity);
+        deleted++;
+      }
+    }
+    return deleted;
+  }
+
+  @override
   Future<List<BackupSnapshot>> listBackups() async {
     final root = Directory(_backupsDir);
+    _requireRealDirectory(root);
     if (!root.existsSync()) {
       return const [];
     }
@@ -133,11 +264,9 @@ class AppDatabaseBackupService implements DatabaseBackupPort {
         continue;
       }
       final name = entity.path.split(Platform.pathSeparator).last;
-      // The exports lane lives under the backups directory by default. It is a
-      // pile of single-workspace files, not a snapshot, and listing it as one
-      // would report an install as having backups it does not have. A snapshot
-      // directory is always a timestamp, so the name check cannot collide.
-      if (entity.path == _exportsDir || name == 'exports') {
+      // Only immutable timestamp-named install snapshots belong in this list.
+      // Exports and scoped workspace backups have their own lanes.
+      if (_snapshotDate(name) == null) {
         continue;
       }
       snapshots.add(_readSnapshot(entity, name));

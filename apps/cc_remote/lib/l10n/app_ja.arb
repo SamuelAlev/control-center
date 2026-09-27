@@ -234,5 +234,19 @@
   "yesterday": "昨日",
   "durationMinutes": "{count}分",
   "durationHours": "{count}時間",
-  "durationHoursMinutes": "{hours}時間 {minutes}分"
+  "durationHoursMinutes": "{hours}時間 {minutes}分",
+  "newSpaceFolder": "新しいフォルダー",
+  "folderName": "フォルダー名",
+  "renameSpaceFolder": "フォルダー名を変更",
+  "deleteSpaceFolder": "フォルダーを削除",
+  "moveSpaceToFolder": "フォルダーに移動",
+  "removeSpaceFromFolder": "フォルダーから取り除く",
+  "spaceFolderActions": "フォルダーの操作",
+  "deleteFolderWithSpacesWarning": "スペースを完全に削除すると、そのメッセージと作業ツリーが全員から削除されます。この操作は元に戻せません。",
+  "deleteSpacesInFolder": "このフォルダー内のスペースを完全に削除する",
+  "deleteFolderAndSpaces": "フォルダーとスペースを削除",
+  "keepSpacesInFolder": "それ以外の場合、スペースはどのフォルダーにも属さない状態になります。",
+  "create": "作成",
+  "otherSpaces": "その他のスペース",
+  "folderUpdateFailed": "フォルダーを更新できませんでした"
 }

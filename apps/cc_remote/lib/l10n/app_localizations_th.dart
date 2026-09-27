@@ -378,6 +378,49 @@ class AppLocalizationsTh extends AppLocalizations {
   String get spacesEmptyDescription => 'สเปซในเวิร์กสเปซนี้จะปรากฏที่นี่';
 
   @override
+  String get newSpaceFolder => 'โฟลเดอร์ใหม่';
+
+  @override
+  String get folderName => 'ชื่อโฟลเดอร์';
+
+  @override
+  String get renameSpaceFolder => 'เปลี่ยนชื่อโฟลเดอร์';
+
+  @override
+  String get deleteSpaceFolder => 'ลบโฟลเดอร์';
+
+  @override
+  String get moveSpaceToFolder => 'ย้ายไปยังโฟลเดอร์';
+
+  @override
+  String get removeSpaceFromFolder => 'นำออกจากโฟลเดอร์';
+
+  @override
+  String get spaceFolderActions => 'การดำเนินการของโฟลเดอร์';
+
+  @override
+  String get deleteFolderWithSpacesWarning =>
+      'การลบพื้นที่อย่างถาวรจะนำข้อความและไดเรกทอรีงานของพื้นที่ออกสำหรับทุกคน ไม่สามารถยกเลิกการดำเนินการนี้ได้';
+
+  @override
+  String get deleteSpacesInFolder => 'ลบพื้นที่ในโฟลเดอร์นี้อย่างถาวร';
+
+  @override
+  String get deleteFolderAndSpaces => 'ลบโฟลเดอร์และพื้นที่';
+
+  @override
+  String get keepSpacesInFolder => 'มิฉะนั้น พื้นที่จะยังคงอยู่นอกโฟลเดอร์';
+
+  @override
+  String get create => 'สร้าง';
+
+  @override
+  String get otherSpaces => 'พื้นที่อื่น ๆ';
+
+  @override
+  String get folderUpdateFailed => 'อัปเดตโฟลเดอร์ไม่ได้';
+
+  @override
   String get thread => 'เธรด';
 
   @override

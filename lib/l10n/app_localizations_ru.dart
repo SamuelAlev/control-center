@@ -1814,6 +1814,13 @@ class AppLocalizationsRu extends AppLocalizations {
       'JSON Schema, которой должен соответствовать выход шага';
 
   @override
+  String get nodeConfigBackupRetentionDays => 'Удалить копии старше (дней)';
+
+  @override
+  String get nodeConfigBackupRetentionDaysHelp =>
+      'Удаляются только копии этого рабочего пространства. Укажите положительное число дней.';
+
+  @override
   String get diffLineDisplay => 'Длинные строки в diff';
 
   @override
@@ -9181,6 +9188,45 @@ class AppLocalizationsRu extends AppLocalizations {
   String get spaceReposHint => 'Репозитории для включения';
 
   @override
+  String get newSpaceFolder => 'Новая папка';
+
+  @override
+  String get folderName => 'Название папки';
+
+  @override
+  String get renameSpaceFolder => 'Переименовать папку';
+
+  @override
+  String get deleteSpaceFolder => 'Удалить папку';
+
+  @override
+  String get moveSpaceToFolder => 'Переместить в папку';
+
+  @override
+  String get removeSpaceFromFolder => 'Убрать из папки';
+
+  @override
+  String get spaceFolderActions => 'Действия с папкой';
+
+  @override
+  String get deleteFolderWithSpacesWarning =>
+      'При безвозвратном удалении пространств их сообщения и рабочие деревья удаляются для всех. Это действие нельзя отменить.';
+
+  @override
+  String get deleteSpacesInFolder =>
+      'Безвозвратно удалить пространства в этой папке';
+
+  @override
+  String get deleteFolderAndSpaces => 'Удалить папку и пространства';
+
+  @override
+  String get keepSpacesInFolder =>
+      'В противном случае пространства останутся вне папок.';
+
+  @override
+  String get noSpaceFoldersYet => 'Папок пока нет';
+
+  @override
   String get ideSourceControl => 'Контроль версий';
 
   @override
@@ -14567,7 +14613,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get backupNoSnapshots =>
-      'Снимков пока нет. Они создаются только по запросу — расписания нет.';
+      'Снимков установки пока нет. Создайте один сейчас или используйте запланированный конвейер для резервных копий рабочего пространства.';
 
   @override
   String get backupSnapshotComplete => 'Полный';
@@ -14578,6 +14624,29 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get backupSnapshotIncompleteNote =>
       'Нет манифеста или в нём указаны отсутствующие файлы, поэтому этот снимок не восстановит всю установку. Файлы рабочих пространств, которые в нём есть, можно принять по одному.';
+
+  @override
+  String get backupDeleteSnapshotLabel => 'Удалить снимок';
+
+  @override
+  String get backupDeleteSnapshotDescription =>
+      'Безвозвратно удалить этот снимок с сервера. Сначала скачайте его, если хотите сохранить.';
+
+  @override
+  String get backupDeleteSnapshotAction => 'Удалить снимок';
+
+  @override
+  String get backupDeleteSnapshotTitle => 'Удалить этот снимок?';
+
+  @override
+  String backupDeleteSnapshotBody(String name) {
+    return 'Удалить $name с сервера? Все базы данных в этом снимке будут потеряны. Действие необратимо.';
+  }
+
+  @override
+  String backupDeleteSnapshotDone(String name) {
+    return 'Снимок $name удалён.';
+  }
 
   @override
   String backupSnapshotWorkspaces(int count) {

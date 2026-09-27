@@ -251,37 +251,39 @@ final manuallyRunnablePipelinesProvider =
       final triggersAsync = ref.watch(
         pipelineTriggersForWorkspaceProvider(workspaceId),
       );
-      return templatesAsync.when(
-        loading: () => const AsyncValue.loading(),
-        error: AsyncValue.error,
-        data: (templates) => triggersAsync.when(
-          loading: () => const AsyncValue.loading(),
-          error: AsyncValue.error,
-          data: (triggers) {
-            final manualTemplateIds = triggers
-                .where(
-                  (t) =>
-                      t.enabled &&
-                      t.eventType == PipelineTrigger.manualEventType,
-                )
-                .map((t) => t.templateId)
-                .toSet();
-            final runnable =
-                templates
-                    .where(
-                      (t) =>
-                          t.isEnabled &&
-                          manualTemplateIds.contains(t.templateId),
-                    )
-                    .toList()
-                  ..sort(
-                    (a, b) =>
-                        a.name.toLowerCase().compareTo(b.name.toLowerCase()),
-                  );
-            return AsyncValue.data(runnable);
-          },
-        ),
-      );
+      if (templatesAsync.hasError) {
+        return AsyncValue.error(
+          templatesAsync.error!,
+          templatesAsync.stackTrace!,
+        );
+      }
+      if (triggersAsync.hasError) {
+        return AsyncValue.error(
+          triggersAsync.error!,
+          triggersAsync.stackTrace!,
+        );
+      }
+      final templates = templatesAsync.value;
+      final triggers = triggersAsync.value;
+      if (templates == null || triggers == null) {
+        return const AsyncValue.loading();
+      }
+      final manualTemplateIds = triggers
+          .where(
+            (t) => t.enabled && t.eventType == PipelineTrigger.manualEventType,
+          )
+          .map((t) => t.templateId)
+          .toSet();
+      final runnable =
+          templates
+              .where(
+                (t) => t.isEnabled && manualTemplateIds.contains(t.templateId),
+              )
+              .toList()
+            ..sort(
+              (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+            );
+      return AsyncValue.data(runnable);
     });
 
 /// The `manual` trigger for a single template, or null if the template is not

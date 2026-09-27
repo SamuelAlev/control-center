@@ -1,3 +1,6 @@
+import 'package:cc_ui/src/components/cc_button.dart';
+import 'package:cc_ui/src/components/cc_icon_button.dart';
+import 'package:cc_ui/src/components/cc_icons.dart';
 import 'package:cc_ui/src/components/cc_text_field.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/widgets.dart';
@@ -230,6 +233,54 @@ void main() {
       expect(find.text('pre'), findsOneWidget);
       expect(find.text('post'), findsOneWidget);
     });
+
+    for (final size in CcTextFieldSize.values) {
+      testWidgets('${size.name} field keeps its height when Clear appears', (
+        tester,
+      ) async {
+        final controller = TextEditingController();
+        addTearDown(controller.dispose);
+        await tester.pumpWidget(
+          ccTestApp(
+            Align(
+              alignment: Alignment.topCenter,
+              child: SizedBox(
+                width: 320,
+                child: ValueListenableBuilder<TextEditingValue>(
+                  valueListenable: controller,
+                  builder: (context, value, _) => CcTextField(
+                    size: size,
+                    controller: controller,
+                    hintText: 'Search articles',
+                    prefix: const Icon(CcIcons.search, size: 16),
+                    suffix: value.text.isEmpty
+                        ? null
+                        : CcIconButton(
+                            icon: CcIcons.x,
+                            size: CcButtonSize.sm,
+                            tooltip: 'Clear',
+                            onPressed: controller.clear,
+                          ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        final field = find.byType(CcTextField);
+        final height = tester.getSize(field).height;
+        await tester.enterText(find.byType(EditableText), 'd');
+        await tester.pump();
+        expect(find.byType(CcIconButton), findsOneWidget);
+        expect(tester.getSize(field).height, height);
+
+        await tester.tap(find.byType(CcIconButton));
+        await tester.pump();
+        expect(controller.text, isEmpty);
+        expect(find.byType(CcIconButton), findsNothing);
+        expect(tester.getSize(field).height, height);
+      });
+    }
 
     testWidgets('a disabled field renders without throwing', (tester) async {
       await tester.pumpWidget(

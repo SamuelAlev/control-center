@@ -73,7 +73,7 @@ void main() {
       expect(accounts.first.lastSyncedAt, isNull);
       final sub = host.lastSubscribe!;
       expect(sub.query, 'calendar.watchAccounts');
-      expect(sub.args, isEmpty);
+      expect(sub.args['workspace_id'], 'ws-1');
     });
   });
 
@@ -105,6 +105,7 @@ void main() {
         expect(s.backgroundColor, '#ff0000');
         final sub = host.lastSubscribe!;
         expect(sub.args['account_id'], 'acc-1');
+        expect(sub.args['workspace_id'], 'ws-1');
       },
     );
   });
@@ -165,6 +166,7 @@ void main() {
         final sub = host.lastSubscribe!;
         expect(sub.args['from'], from.toIso8601String());
         expect(sub.args['to'], to.toIso8601String());
+        expect(sub.args['workspace_id'], 'ws-1');
       },
     );
 
@@ -223,7 +225,11 @@ void main() {
         });
         final repo = RpcCalendarRepository(client);
         final events = await repo
-            .watchEventsInRange('ws-1', DateTime(2026, 8, 1), DateTime(2026, 9, 1))
+            .watchEventsInRange(
+              'ws-1',
+              DateTime(2026, 8, 1),
+              DateTime(2026, 9, 1),
+            )
             .first;
         final e = events.single;
         expect(e.isAllDay, isTrue);
@@ -255,6 +261,7 @@ void main() {
       expect(e.alertedAt, DateTime(2026, 7, 1, 8, 30));
       final sub = host.lastSubscribe!;
       expect(sub.args['event_id'], 'ev-1');
+      expect(sub.args['workspace_id'], 'ws-1');
     });
 
     test('watchEventById emits null when the event key is absent', () async {

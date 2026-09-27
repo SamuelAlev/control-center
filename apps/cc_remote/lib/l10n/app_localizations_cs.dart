@@ -380,6 +380,49 @@ class AppLocalizationsCs extends AppLocalizations {
       'Prostory v tomto pracovním prostoru se zobrazí tady.';
 
   @override
+  String get newSpaceFolder => 'Nová složka';
+
+  @override
+  String get folderName => 'Název složky';
+
+  @override
+  String get renameSpaceFolder => 'Přejmenovat složku';
+
+  @override
+  String get deleteSpaceFolder => 'Smazat složku';
+
+  @override
+  String get moveSpaceToFolder => 'Přesunout prostor do složky';
+
+  @override
+  String get removeSpaceFromFolder => 'Odebrat prostor ze složky';
+
+  @override
+  String get spaceFolderActions => 'Akce složky';
+
+  @override
+  String get deleteFolderWithSpacesWarning =>
+      'Trvalým smazáním prostorů se všem odstraní jejich zprávy a pracovní stromy. Tuto akci nelze vrátit zpět.';
+
+  @override
+  String get deleteSpacesInFolder => 'Trvale smazat prostory v této složce';
+
+  @override
+  String get deleteFolderAndSpaces => 'Smazat složku a prostory';
+
+  @override
+  String get keepSpacesInFolder => 'Jinak prostory zůstanou nezařazené.';
+
+  @override
+  String get create => 'Vytvořit';
+
+  @override
+  String get otherSpaces => 'Ostatní prostory';
+
+  @override
+  String get folderUpdateFailed => 'Nepodařilo se aktualizovat složky';
+
+  @override
   String get thread => 'Vlákno';
 
   @override

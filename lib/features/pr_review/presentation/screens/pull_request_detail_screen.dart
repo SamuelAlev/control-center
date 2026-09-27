@@ -981,8 +981,10 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
         return SingleChildScrollView(
           child: ChecksTab(
             prRef: widget.prRef,
-            checks: checksAsync.value ?? const [],
-            isLoading: checksAsync.isLoading,
+            checks: checksAsync.hasError
+                ? const []
+                : (checksAsync.value ?? const []),
+            isLoading: checksAsync.isLoading && !checksAsync.hasValue,
             error: checksAsync.hasError ? checksAsync.error : null,
           ),
         );

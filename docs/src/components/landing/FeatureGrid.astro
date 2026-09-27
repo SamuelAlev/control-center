@@ -8,8 +8,8 @@ const { copy: t } = Astro.props;
   <div class="landing-wrap">
     <header class="section-intro"><h2 id="features-title">{t.grid.title}</h2><p>{t.grid.description}</p></header>
     <div class="landing-feature-grid">
-      {t.grid.items.map((item, i) => <article id={item.kind === 'meetings' ? 'day' : undefined} class:list={['landing-feature', `feature-${item.kind}`]} data-enter style={`--enter-order:${i % 3}`}>
-        <div class="feature-media"><ProductMedia kind={`feature-${item.kind}`} description={t.tour.stops.find(stop => stop.kind === item.kind)!.alt} label={t.tour.imageLanguage} compact /></div>
+      {t.grid.items.map((item, i) => <article id={item.kind === 'meetings' ? 'day' : undefined} class:list={['landing-feature', `feature-${item.kind}`, { 'feature-wide': i >= t.grid.items.length - 2 }]} data-enter style={`--enter-order:${i % 3}`}>
+        <div class="feature-media"><ProductMedia kind={`feature-${item.kind}`} description={'alt' in item ? item.alt : t.tour.stops.find(stop => stop.kind === item.kind)!.alt} label={t.tour.imageLanguage} compact /></div>
         <div class="feature-copy"><h3>{item.title}</h3><p>{item.description}</p><a class="landing-text-link" href={item.href}>{item.link}<span aria-hidden="true">↗</span></a></div>
       </article>)}
       {t.grid.supporting.map(item => <article class="landing-feature feature-supporting">

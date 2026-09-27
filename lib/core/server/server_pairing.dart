@@ -4,6 +4,8 @@ import 'package:cc_rpc/cc_rpc.dart';
 import 'package:control_center/core/server/invite_redeemer.dart';
 import 'package:control_center/core/server/server_connection_config.dart';
 import 'package:control_center/core/server/server_entry_factory.dart';
+import 'package:control_center/core/server/snapshot_cache_binding.dart';
+import 'package:control_center/core/storage/client_snapshot_store.dart';
 import 'package:control_center/core/theme/font_loader_install.dart';
 import 'package:control_center/core/utils/app_log.dart';
 import 'package:control_center/shared/widgets/media_proxy_scope.dart';
@@ -44,6 +46,7 @@ Future<RemoteServerConnection> connectToEntry({
   required ServerConnectionStore store,
   required ServerEntry entry,
   required String psk,
+  bool persistSnapshots = true,
 }) async {
   final supervisor = ServerConnectionSupervisor(
     descriptor: entry.descriptor,
@@ -55,8 +58,22 @@ Future<RemoteServerConnection> connectToEntry({
     onFingerprintPinned: (fingerprint) =>
         unawaited(store.updatePin(entry.serverId, fingerprint)),
   );
-  await supervisor.start();
+  try {
+    await supervisor.start();
+  } on AuthRejectedException {
+    if (persistSnapshots) {
+      await forgetSnapshotServer(entry.serverId);
+    }
+    rethrow;
+  }
   final client = ResilientRpcClient(supervisor);
+  await attachVerifiedSnapshotCache(
+    client: client,
+    serverId: entry.serverId,
+    fingerprint: supervisor.pinnedFingerprint,
+    persist: persistSnapshots,
+    supervisor: supervisor,
+  );
   AppLog.i(
     'cc_server',
     'connected to ${entry.name} via ${supervisor.current.path} '

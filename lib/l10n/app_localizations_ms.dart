@@ -1798,6 +1798,14 @@ class AppLocalizationsMs extends AppLocalizations {
       'JSON Schema yang output langkah mesti penuhi';
 
   @override
+  String get nodeConfigBackupRetentionDays =>
+      'Padam sandaran yang lebih lama daripada (hari)';
+
+  @override
+  String get nodeConfigBackupRetentionDaysHelp =>
+      'Hanya sandaran ruang kerja ini dipadam. Masukkan bilangan hari positif.';
+
+  @override
   String get diffLineDisplay => 'Baris panjang dalam diff';
 
   @override
@@ -9090,6 +9098,45 @@ class AppLocalizationsMs extends AppLocalizations {
   String get spaceReposHint => 'Repo untuk disertakan';
 
   @override
+  String get newSpaceFolder => 'Folder baharu';
+
+  @override
+  String get folderName => 'Nama folder';
+
+  @override
+  String get renameSpaceFolder => 'Namakan semula folder';
+
+  @override
+  String get deleteSpaceFolder => 'Padam folder';
+
+  @override
+  String get moveSpaceToFolder => 'Alihkan ke folder';
+
+  @override
+  String get removeSpaceFromFolder => 'Alih keluar daripada folder';
+
+  @override
+  String get spaceFolderActions => 'Tindakan folder';
+
+  @override
+  String get deleteFolderWithSpacesWarning =>
+      'Memadam ruang secara kekal akan mengalih keluar mesej dan direktori kerja ruang itu untuk semua orang. Tindakan ini tidak boleh dibuat asal.';
+
+  @override
+  String get deleteSpacesInFolder =>
+      'Padam secara kekal ruang dalam folder ini';
+
+  @override
+  String get deleteFolderAndSpaces => 'Padam folder dan ruang';
+
+  @override
+  String get keepSpacesInFolder =>
+      'Jika tidak, ruang akan kekal di luar folder.';
+
+  @override
+  String get noSpaceFoldersYet => 'Belum ada folder';
+
+  @override
   String get ideSourceControl => 'Kawalan sumber';
 
   @override
@@ -14399,7 +14446,7 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get backupNoSnapshots =>
-      'Belum ada snapshot. Satu diambil hanya apabila anda memintanya — tiada yang dijadualkan.';
+      'Belum ada snapshot pemasangan. Buat satu sekarang atau gunakan pipeline berjadual untuk sandaran ruang kerja.';
 
   @override
   String get backupSnapshotComplete => 'Lengkap';
@@ -14410,6 +14457,29 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String get backupSnapshotIncompleteNote =>
       'Manifes hilang atau menamakan fail yang tidak ada, jadi snapshot ini tidak dapat memulihkan seluruh pemasangan. Fail ruang kerja yang ada masih boleh diambil satu demi satu.';
+
+  @override
+  String get backupDeleteSnapshotLabel => 'Padam snapshot';
+
+  @override
+  String get backupDeleteSnapshotDescription =>
+      'Buang snapshot ini secara kekal dari pelayan. Muat turun dahulu jika anda mahu menyimpannya.';
+
+  @override
+  String get backupDeleteSnapshotAction => 'Padam snapshot';
+
+  @override
+  String get backupDeleteSnapshotTitle => 'Padam snapshot ini?';
+
+  @override
+  String backupDeleteSnapshotBody(String name) {
+    return 'Padam $name dari pelayan? Semua pangkalan data dalam snapshot ini akan hilang dan tindakan ini tidak boleh dibatalkan.';
+  }
+
+  @override
+  String backupDeleteSnapshotDone(String name) {
+    return 'Snapshot $name dipadam.';
+  }
 
   @override
   String backupSnapshotWorkspaces(int count) {

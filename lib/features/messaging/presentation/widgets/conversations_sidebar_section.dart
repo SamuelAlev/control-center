@@ -5,6 +5,7 @@ import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/features/messaging/domain/entities/space.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/agents/providers/agent_providers.dart';
+import 'package:control_center/features/messaging/presentation/widgets/space_folders_list.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_sidebar_group.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_sidebar_item.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
@@ -78,6 +79,15 @@ class ConversationsSidebarSection extends ConsumerWidget {
                 onPressed: () => showArchivedSpacesDialog(context),
               ),
               CcIconButton(
+                icon: AppIcons.folder,
+                size: CcButtonSize.sm,
+                variant: CcButtonVariant.ghost,
+                tooltip: l10n.newSpaceFolder,
+                onPressed: workspaceId == null
+                    ? null
+                    : () => showNewSpaceFolderDialog(context, ref, workspaceId),
+              ),
+              CcIconButton(
                 icon: AppIcons.plus,
                 size: CcButtonSize.sm,
                 variant: CcButtonVariant.ghost,
@@ -87,8 +97,19 @@ class ConversationsSidebarSection extends ConsumerWidget {
             ],
           ),
           children: [
-            if (humanSpaces.isEmpty)
-              _EmptyHint(text: l10n.noSpacesYet)
+            if (humanSpaces.isEmpty) _EmptyHint(text: l10n.noSpacesYet),
+            if (workspaceId != null)
+              SpaceFoldersList(
+                workspaceId: workspaceId,
+                spaces: humanSpaces,
+                routeSpaceId: routeSpaceId,
+                spaceBuilder: (space) => SpaceSidebarGroup(
+                  key: ValueKey(space.id),
+                  space: space,
+                  routeSpaceId: routeSpaceId,
+                  onOpenSpace: () => _selectAndNavigate(context, ref, space.id),
+                ),
+              )
             else
               for (final space in humanSpaces)
                 SpaceSidebarGroup(

@@ -443,6 +443,31 @@ void main() {
       expect(sup.current.phase, ServerConnectionPhase.identityMismatch);
       expect(sup.current.error, isNotNull);
     });
+    test(
+      'rejected device ends reconnect, distinguishing revocation from outage',
+      () async {
+        final first = scriptedConnection();
+        final rejecting = _AuthRejectingResolver(first.connection);
+        final sup = ServerConnectionSupervisor(
+          descriptor: descriptor(),
+          deviceId: 'dev-1',
+          psk: psk,
+          resolver: rejecting,
+        );
+        addTearDown(sup.close);
+
+        await sup.start();
+        final revoked = sup.status.firstWhere((s) => s.authenticationRejected);
+        unawaited(first.connection.client.close());
+        unawaited(first.server.close());
+
+        final status = await revoked;
+        expect(status.phase, ServerConnectionPhase.closed);
+        expect(status.authenticationRejected, isTrue);
+        expect(sup.client, isNull);
+        expect(rejecting.attempts, 2);
+      },
+    );
   });
 
   group('ServerConnectionSupervisor adoptDescriptor', () {
@@ -571,6 +596,28 @@ void main() {
       expect(s.error, isNull);
     });
   });
+}
+
+/// Returns one healthy session, then a typed device rejection on reconnect.
+class _AuthRejectingResolver extends ReachabilityResolver {
+  _AuthRejectingResolver(this.initial);
+
+  final ResolvedConnection initial;
+  int attempts = 0;
+
+  @override
+  Future<ResolvedConnection> connect(
+    ConnectionDescriptor descriptor, {
+    required String deviceId,
+    required String psk,
+    String? pinnedFingerprint,
+  }) async {
+    attempts++;
+    if (attempts == 1) {
+      return initial;
+    }
+    throw const AuthRejectedException('Device revoked');
+  }
 }
 
 /// A [ReachabilityResolver] whose [connect] returns a scripted sequence of

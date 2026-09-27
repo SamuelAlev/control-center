@@ -149,10 +149,10 @@ class DemoProfile {
   ///
   /// The newsfeed lane: a demo fetches REAL feeds server-side and a visitor
   /// reads them, marks articles read/saved and clears the list — the feed
-  /// MANAGEMENT verbs (add/delete/toggle/refresh/seed) stay denied, which is
-  /// what "read-only feeds" means here. The providers lane: the model list a
-  /// demo answers from static data (see `DemoInertProvider.listModels`); every
-  /// credential-touching verb in that family stays refused.
+  /// MANAGEMENT verbs stay denied. The providers lane answers a model list
+  /// from static data; credential-touching verbs remain refused. The
+  /// subscriptions lane admits only `subscriptions.usage`, which the demo
+  /// answers from explicitly fictional quotas without reading credentials.
   static const Set<String> defaultPrefixExceptions = {
     'newsfeed.listArticles',
     'newsfeed.getArticle',
@@ -161,6 +161,7 @@ class DemoProfile {
     'newsfeed.markAllRead',
     'providers.list',
     'providers.listModels',
+    'subscriptions.usage',
     // Cached models.dev document (install-wide reference data). The fetch
     // itself is host-side and gated off on the demo (`allowNetwork: false`);
     // this exception is the READ of whatever is already on disk. Refresh and
@@ -367,6 +368,13 @@ class DemoProfile {
     // Meetings. The demo seeds finished meetings with transcripts, speakers,
     // decisions and action items; these are the edits a visitor can make to
     // them, and every one is a local database write.
+    // Fixed server-owned fictional script; authenticated visitor controls only
+    // the meeting they started in their own workspace. Real audio ops remain
+    // denied below.
+    'meeting.demoStart',
+    'meeting.demoPause',
+    'meeting.demoResume',
+    'meeting.demoStop',
     'meeting.updateTitle',
     'meeting.updateNotes',
     'meeting.addActionItem',

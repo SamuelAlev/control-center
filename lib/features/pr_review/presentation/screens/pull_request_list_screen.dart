@@ -3,6 +3,7 @@ import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_domain/features/pr_review/domain/usecases/classify_pr_inbox_use_case.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/di/providers.dart';
+import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_filter/pr_filter_bar.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_filter/pr_filter_menu.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_table/pr_repo_view.dart';
@@ -142,9 +143,13 @@ class _PullRequestListScreenState extends ConsumerState<PullRequestListScreen> {
     required PrListFilters filters,
     required String login,
     required bool showDrafts,
+    required Set<String> reviewedKeys,
     Map<String, Set<String>> viewerTeamsByOrg = const {},
   }) {
-    final prsByRepoId = {for (final rp in state.repos) rp.repo.id: rp.prs};
+    final groups = filters.reviewedByMe
+        ? overlayReviewedByMe(state.repos, reviewedKeys)
+        : state.repos;
+    final prsByRepoId = {for (final group in groups) group.repo.id: group.prs};
     return [
       for (final repo in linkedRepos)
         (
@@ -167,23 +172,56 @@ class _PullRequestListScreenState extends ConsumerState<PullRequestListScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final prDataAsync = ref.watch(prsByRepoProvider);
+    final rawPrData = ref.watch(prsByRepoProvider);
+    final workspaceId = ref.watch(activeWorkspaceIdProvider);
+    final userId = ref.watch(currentUserIdProvider);
+    final expectedScope = workspaceId == null || userId == null
+        ? null
+        : '$userId|$workspaceId';
+    // Riverpod retains the previous AsyncValue during dependency reloads. A
+    // different account/workspace must never see that previous PR queue.
+    final prDataAsync =
+        rawPrData.value?.scopeKey != null &&
+            rawPrData.value!.scopeKey != expectedScope
+        ? const AsyncLoading<PrsByRepoState>()
+        : rawPrData;
     // The thin client holds no GitHub token; auth is the SERVER's. Optimistic
     // while loading so the "connect GitHub" gate never flashes.
     final isAuthed = prDataAsync.maybeWhen(
       data: (s) => s.authenticated,
       orElse: () => true,
     );
-    final workspaceId = ref.watch(activeWorkspaceIdProvider);
     final reposAsync = workspaceId != null
         ? ref.watch(reposForWorkspaceProvider(workspaceId))
         : const AsyncData(<Repo>[]);
-    final linkedRepos = forgeLinkedReposOf(reposAsync);
+    final linkedRepos = reposAsync.hasError
+        ? const <Repo>[]
+        : forgeLinkedReposOf(reposAsync);
     final filters = ref.watch(prListFiltersProvider);
     final showDrafts = ref.watch(
       prListDisplayPrefsProvider.select((p) => p.showDrafts),
     );
     final login = ref.watch(currentUserLoginProvider);
+    final reviewedAsync = filters.reviewedByMe
+        ? ref.watch(reviewedByMePrKeysProvider)
+        : null;
+    final reviewedScope = expectedScope == null || login.isEmpty
+        ? null
+        : '$expectedScope|${login.toLowerCase()}';
+    final reviewedMatchesScope =
+        reviewedAsync != null &&
+        reviewedScope != null &&
+        ref.read(reviewedByMePrKeysProvider.notifier).scopeKey == reviewedScope;
+    final reviewedPending =
+        filters.reviewedByMe &&
+        (!reviewedMatchesScope ||
+            (!reviewedAsync.hasValue && !reviewedAsync.hasError));
+    final reviewedError = reviewedMatchesScope && reviewedAsync.hasError
+        ? reviewedAsync.error
+        : null;
+    final reviewedKeys = reviewedMatchesScope && !reviewedAsync.hasError
+        ? (reviewedAsync.value ?? const <String>{})
+        : const <String>{};
     final viewerTeams =
         ref.watch(viewerGitHubTeamsProvider).value ??
         const <String, Set<String>>{};
@@ -246,6 +284,10 @@ class _PullRequestListScreenState extends ConsumerState<PullRequestListScreen> {
           prDataAsync: prDataAsync,
           isAuthed: isAuthed,
           linkedRepos: linkedRepos,
+          repoError: reposAsync.hasError ? reposAsync.error : null,
+          reviewedKeys: reviewedKeys,
+          reviewedPending: reviewedPending,
+          reviewedError: reviewedError,
           filters: filters,
           login: login,
           showDrafts: showDrafts,
@@ -261,6 +303,10 @@ class _PullRequestListScreenState extends ConsumerState<PullRequestListScreen> {
     required bool isAuthed,
     required List<Repo> linkedRepos,
     required PrListFilters filters,
+    required Object? repoError,
+    required Set<String> reviewedKeys,
+    required bool reviewedPending,
+    required Object? reviewedError,
     required String login,
     required bool showDrafts,
     required Map<String, Set<String>> viewerTeamsByOrg,
@@ -272,17 +318,22 @@ class _PullRequestListScreenState extends ConsumerState<PullRequestListScreen> {
         hint: l10n.connectGitHubHint,
       );
     }
-    if (prDataAsync.hasError && !prDataAsync.hasValue) {
+    if (prDataAsync.hasError || repoError != null || reviewedError != null) {
       return Center(
         child: CcAlert(
           variant: CcAlertVariant.danger,
           title: l10n.failedToLoad,
-          description: Text(prDataAsync.error.toString()),
+          description: Text(
+            (prDataAsync.error ?? repoError ?? reviewedError).toString(),
+          ),
         ),
       );
     }
     final state = prDataAsync.value;
     if (state == null) {
+      return const Center(child: CcSpinner());
+    }
+    if (reviewedPending) {
       return const Center(child: CcSpinner());
     }
     if (linkedRepos.isEmpty) {
@@ -306,6 +357,7 @@ class _PullRequestListScreenState extends ConsumerState<PullRequestListScreen> {
       filters: filters,
       login: login,
       showDrafts: showDrafts,
+      reviewedKeys: reviewedKeys,
       viewerTeamsByOrg: viewerTeamsByOrg,
     );
 

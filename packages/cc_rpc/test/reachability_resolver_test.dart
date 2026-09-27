@@ -602,5 +602,11 @@ class _NullClient implements RemoteRpcClient {
   ) => const Stream<Map<String, dynamic>>.empty();
 
   @override
+  Stream<Map<String, dynamic>> watchCall(
+    String op,
+    Map<String, dynamic> args,
+  ) => throw UnimplementedError('This data-only client cannot read');
+
+  @override
   Future<void> close() async {}
 }

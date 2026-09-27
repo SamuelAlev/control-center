@@ -42,6 +42,9 @@ export async function mountParaglider(root: HTMLElement, signal: AbortSignal): P
   controls.enablePan = false;
   controls.enableZoom = false;
   controls.rotateSpeed = .65;
+  // Open hand at rest, closed hand for the whole press. A CSS :active rule
+  // never lands: OrbitControls captures the pointer on pointerdown.
+  controls.cursorStyle = 'grab';
   controls.minPolarAngle = Math.PI / 3;
   controls.maxPolarAngle = Math.PI * .7;
   canvas.style.touchAction = 'pan-y'; // OrbitControls defaults to none; allow vertical touch scrolling.
@@ -68,6 +71,14 @@ export async function mountParaglider(root: HTMLElement, signal: AbortSignal): P
   let loopStart = 0;
   const loopDuration = 900;
   let steeringUntil = 0;
+  let nextAutoTurnAt = 5;
+  let autoTurnSince = -1;
+  let autoTurnSide = 1;
+  const deferAutoTurn = () => {
+    if (autoTurnSince >= 0) targetTurn = 0;
+    autoTurnSince = -1;
+    nextAutoTurnAt = elapsed + 5;
+  };
   let dragging = false;
   let lastAzimuth = 0;
   let lastPolar = 0;
@@ -90,6 +101,24 @@ export async function mountParaglider(root: HTMLElement, signal: AbortSignal): P
     previousFrame = time;
     elapsed += delta;
     if (!dragging && !tracking && time >= steeringUntil) targetTurn = targetPitch = 0;
+    if (!install && !dragging && !tracking && time >= steeringUntil) {
+      if (elapsed >= nextAutoTurnAt) {
+        autoTurnSince = elapsed;
+        autoTurnSide = -autoTurnSide;
+        nextAutoTurnAt = elapsed + (autoTurnSide < 0 ? 8 : 9);
+      }
+      if (autoTurnSince >= 0) {
+        const phase = elapsed - autoTurnSince;
+        if (phase >= 2.2) {
+          autoTurnSince = -1;
+        } else {
+          // Pull, hold, then release the same baked brake/cord/bank clip.
+          const pull = phase < .65 ? phase / .65 :
+            phase < 1.35 ? 1 : (2.2 - phase) / .85;
+          targetTurn = autoTurnSide * pull * pull * (3 - 2 * pull);
+        }
+      }
+    }
     turn += (targetTurn - turn) * (1 - Math.exp(-delta * 8));
     pitch += (targetPitch - pitch) * (1 - Math.exp(-delta * 7));
     yaw += (targetYaw - yaw) * (1 - Math.exp(-delta * 7));
@@ -102,7 +131,7 @@ export async function mountParaglider(root: HTMLElement, signal: AbortSignal): P
     mixer?.update(delta);
     model.position.y = (loopPivot ? -center.y : 0) + Math.sin(elapsed * .9) * .035;
     model.position.x = (loopPivot ? -center.x : 0) + Math.sin(elapsed * .65) * .035;
-    model.rotation.set(pitch, yaw, Math.sin(elapsed * .55) * .007);
+    model.rotation.set(pitch, yaw, Math.sin(elapsed * .55) * .007 - (install ? 0 : turn * .08));
     if (loopPivot && loopStart) {
       const progress = Math.min((time - loopStart) / loopDuration, 1);
       const eased = progress * progress * (3 - 2 * progress);
@@ -132,6 +161,7 @@ export async function mountParaglider(root: HTMLElement, signal: AbortSignal): P
       dragging = tracking = false;
       targetTurn = targetPitch = targetYaw = steeringUntil = 0;
     }
+    if (!visible || document.hidden || reduced.matches || userPaused) deferAutoTurn();
     if (wind) {
       const wasVisible = wind.visible;
       wind.visible = !reduced.matches;
@@ -177,17 +207,20 @@ export async function mountParaglider(root: HTMLElement, signal: AbortSignal): P
   };
   const steer = (direction: number) => {
     if (userPaused || reduced.matches || !visible || document.hidden) return;
+    deferAutoTurn();
     targetTurn = direction;
     steeringUntil = performance.now() + 450;
   };
   const pitchTo = (angle: number) => {
     if (userPaused || reduced.matches || !visible || document.hidden) return;
     targetPitch = Math.max(-maxPitch, Math.min(maxPitch, angle));
+    deferAutoTurn();
     steeringUntil = performance.now() + 450;
   };
   const onCardMove = (event: PointerEvent) => {
     if (event.pointerType === 'touch' || userPaused || reduced.matches || !visible || document.hidden) return;
     const bounds = root.getBoundingClientRect();
+    deferAutoTurn();
     tracking = true;
     // A restrained glance keeps the face visible even over the far card edges.
     targetYaw = Math.max(-.2, Math.min(.2,
@@ -198,6 +231,7 @@ export async function mountParaglider(root: HTMLElement, signal: AbortSignal): P
   };
   const onCardLeave = () => {
     tracking = false;
+    deferAutoTurn();
     targetYaw = targetTurn = targetPitch = 0;
   };
   const onDownload = (event: MouseEvent) => {
@@ -225,6 +259,7 @@ export async function mountParaglider(root: HTMLElement, signal: AbortSignal): P
   };
   const onStart = () => {
     dragging = true;
+    deferAutoTurn();
     targetTurn = targetPitch = 0;
     lastAzimuth = controls.getAzimuthalAngle();
     lastPolar = controls.getPolarAngle();
@@ -232,6 +267,7 @@ export async function mountParaglider(root: HTMLElement, signal: AbortSignal): P
   const onEnd = () => {
     dragging = false;
     targetTurn = targetPitch = steeringUntil = 0;
+    deferAutoTurn();
   };
   const onKey = (event: KeyboardEvent) => {
     if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
@@ -250,6 +286,8 @@ export async function mountParaglider(root: HTMLElement, signal: AbortSignal): P
     } else if (event.key.toLowerCase() === 'r') {
       event.preventDefault();
       turn = targetTurn = pitch = targetPitch = yaw = targetYaw = steeringUntil = loopStart = 0;
+      autoTurnSide = 1;
+      deferAutoTurn();
       if (leftTurn) leftTurn.time = 0;
       if (rightTurn) rightTurn.time = 0;
       mixer?.update(0);
@@ -263,6 +301,7 @@ export async function mountParaglider(root: HTMLElement, signal: AbortSignal): P
     } else if (event.key === ' ' || event.key === 'Spacebar') {
       event.preventDefault();
       userPaused = !userPaused;
+      deferAutoTurn();
       update();
     }
   };
@@ -376,9 +415,9 @@ export async function mountParaglider(root: HTMLElement, signal: AbortSignal): P
       model.position.copy(center).multiplyScalar(-1);
     }
     mixer?.setTime(0);
-    // The animation envelope is in local model coordinates. Its center moves
-    // slightly when the idle roll rotates the whole group around the origin.
-    fitRadius += 2 * center.length() * Math.sin(.007 / 2) + Math.SQRT2 * .035;
+    // The authored sphere covers baked turns; expand it for the outer hero roll
+    // and its displaced center, as well as the existing flight bob.
+    fitRadius += 2 * center.length() * Math.sin((.007 + (install ? 0 : .08)) / 2) + Math.SQRT2 * .035;
     wind = new Group();
     wind.name = 'Airflow';
     // Short, prebuilt tubes never enter the pilot/wing envelope or expand the

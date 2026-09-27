@@ -58,7 +58,7 @@ Future<void> _run(List<String> args) async {
   // must exit ourselves; the reconcilers and drift's isolate otherwise keep
   // the event loop alive forever. Teardown reaps every live visitor first.
   try {
-    await server.shutdown().timeout(const Duration(seconds: 12));
+    await server.shutdown().timeout(const Duration(seconds: 20));
   } on Object catch (e) {
     stderr.writeln('cc_demo_server: shutdown did not complete cleanly: $e');
   }

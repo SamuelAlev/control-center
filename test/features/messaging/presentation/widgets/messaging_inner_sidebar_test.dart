@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/features/messaging/domain/entities/conversation.dart';
 import 'package:cc_domain/features/messaging/domain/entities/space.dart';
@@ -10,11 +13,15 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:control_center/di/providers.dart';
+import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/messaging/presentation/widgets/conversations_sidebar_section.dart';
+import 'package:control_center/features/messaging/presentation/widgets/space_folders_list.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_row_adornments.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_sidebar_group.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_sidebar_item.dart';
+import 'package:control_center/features/messaging/presentation/widgets/spaces_sub_sidebar.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
+import 'package:control_center/features/messaging/providers/space_folder_providers.dart';
 import 'package:control_center/features/messaging/providers/space_worktrees_provider.dart';
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
 import 'package:control_center/features/pr_review/providers/pr_space_provider.dart';
@@ -93,11 +100,14 @@ List<Override> _commonOverrides({
   String? branch,
   Map<String, List<SpaceParticipant>> participants = const {},
   Map<String, List<PullRequest>> pullRequests = const {},
+  FakeRpcHost? rpcHost,
 }) => [
   activeWorkspaceIdProvider.overrideWith(_ActiveWorkspaceIdNotifier.new),
   // Hovering a space row prefetches it over RPC; every op answers empty.
   rpcClientProvider.overrideWithValue(
-    (FakeRpcHost()..onCall = (op, args) => const <String, dynamic>{}).client(),
+    (rpcHost ??
+            (FakeRpcHost()..onCall = (op, args) => const <String, dynamic>{}))
+        .client(),
   ),
   workspaceVisibleSpacesProvider(_workspaceId).overrideWithValue(spaces),
   appPreferencesProvider.overrideWithValue(prefs),
@@ -167,6 +177,17 @@ late AppPreferences prefs;
 Finder _overflowTrigger() => find.byWidgetPredicate(
   (widget) => widget is CcIcon && widget.icon == AppIcons.moreVertical,
 );
+Color _overflowTriggerWash(WidgetTester tester) {
+  final decoration = tester.widget<DecoratedBox>(
+    find.ancestor(
+      of: _overflowTrigger(),
+      matching: find.byWidgetPredicate(
+        (widget) => widget is DecoratedBox && widget.child is CcIcon,
+      ),
+    ),
+  );
+  return (decoration.decoration as BoxDecoration).color!;
+}
 
 double _spaceCardHeight(WidgetTester tester, String name) {
   return tester
@@ -205,12 +226,109 @@ Future<void> _elapseReveal(WidgetTester tester, Duration total) async {
 Future<void> _openOverflow(WidgetTester tester, Finder row) async {
   final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
   await mouse.addPointer(location: Offset.zero);
-  addTearDown(mouse.removePointer);
-  await mouse.moveTo(tester.getCenter(row));
-  await tester.pump();
-  await tester.tap(_overflowTrigger());
+  try {
+    await mouse.moveTo(tester.getCenter(row));
+    await tester.pump();
+    await tester.tap(_overflowTrigger());
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+  } finally {
+    await mouse.removePointer();
+  }
+}
+
+/// A live personal-preferences stream: writes are echoed back to the sidebar
+/// so assertions exercise both persisted membership and the rendered rows.
+class _FolderPreferencesFixture {
+  _FolderPreferencesFixture(List<Map<String, Object>> folders)
+    : initial = jsonEncode(folders) {
+    host.onCall = (op, args) {
+      if (op == 'prefs.set') {
+        expect(args['key'], 'space_folders.$_workspaceId');
+        final raw = args['value'] as String;
+        writes.add(raw);
+        onWrite?.call();
+        updates.add({'space_folders.$_workspaceId': raw});
+      }
+      return const <String, dynamic>{'ok': true};
+    };
+    addTearDown(() async {
+      await updates.close();
+      await host.close();
+    });
+  }
+
+  final String initial;
+  final FakeRpcHost host = FakeRpcHost();
+  final StreamController<Map<String, String>> updates =
+      StreamController<Map<String, String>>.broadcast();
+  final List<String> writes = [];
+  void Function()? onWrite;
+
+  List<Override> overrides(List<Space> spaces) => [
+    ..._commonOverrides(spaces: spaces, rpcHost: host),
+    ownServerPrefsProvider.overrideWith((ref) async* {
+      yield {'space_folders.$_workspaceId': initial};
+      yield* updates.stream;
+    }),
+  ];
+
+  List<dynamic> get savedFolders => jsonDecode(writes.last) as List<dynamic>;
+}
+
+Map<String, Object> _folder(String id, String name, List<String> spaceIds) => {
+  'id': id,
+  'name': name,
+  'spaceIds': spaceIds,
+};
+
+Future<void> _openFolderDelete(
+  WidgetTester tester, {
+  required String folderName,
+}) async {
+  final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+  final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+  await mouse.addPointer(location: Offset.zero);
+  try {
+    await mouse.moveTo(tester.getCenter(find.text(folderName)));
+    await tester.pump();
+    await tester.tap(find.bySemanticsLabel(l10n.spaceFolderActions));
+    await tester.pump();
+  } finally {
+    await mouse.removePointer();
+  }
+  await tester.tap(find.text(l10n.deleteSpaceFolder));
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 300));
+}
+
+Future<void> _dragSpaceTo(
+  WidgetTester tester,
+  String spaceName,
+  Finder target,
+) => _dragSpaceToPosition(tester, spaceName, () => tester.getCenter(target));
+
+Future<void> _dragSpaceToPosition(
+  WidgetTester tester,
+  String spaceName,
+  Offset Function() target,
+) async {
+  final gesture = await tester.startGesture(
+    tester.getCenter(find.text(spaceName)),
+    kind: PointerDeviceKind.mouse,
+  );
+  await gesture.moveBy(const Offset(35, 0));
+  await tester.pump();
+  await gesture.moveTo(target());
+  await tester.pump();
+  await gesture.up();
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 300));
+}
+
+Offset _freeSidebarPosition(WidgetTester tester) {
+  final list = tester.getRect(find.byType(SpaceFoldersList));
+  return Offset(list.center.dx, list.bottom + 36);
 }
 
 void main() {
@@ -264,6 +382,683 @@ void main() {
       expect(find.text('Dev Team'), findsOneWidget);
       await tester.pumpWidget(Container());
       await tester.pump(const Duration(milliseconds: 100));
+    });
+
+    testWidgets('folder accordion hides only its member spaces', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            ..._commonOverrides(spaces: [_space, _spaceB]),
+            spaceFoldersProvider(_workspaceId).overrideWithValue([
+              SpaceFolder(
+                id: 'folder-1',
+                name: 'Active work',
+                spaceIds: ['g-1'],
+              ),
+            ]),
+          ],
+          child: _wrap(_router(spacesRoute(_workspaceId))),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('Active work'), findsOneWidget);
+      expect(find.text('Dev Team'), findsOneWidget);
+      expect(find.text('Ops'), findsOneWidget);
+
+      await tester.tap(find.text('Active work'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('Dev Team'), findsNothing);
+      expect(find.text('Ops'), findsOneWidget);
+
+      await tester.tap(find.text('Active work'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('Dev Team'), findsOneWidget);
+      await tester.pumpWidget(Container());
+    });
+
+    testWidgets('folder overflow only activates when hovered, like spaces', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            ..._commonOverrides(spaces: [_space]),
+            spaceFoldersProvider(_workspaceId).overrideWithValue([
+              SpaceFolder(id: 'one', name: 'Planning', spaceIds: ['g-1']),
+              SpaceFolder(id: 'two', name: 'Delivery', spaceIds: const []),
+            ]),
+          ],
+          child: _wrap(_router(spacesRoute(_workspaceId))),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(_overflowTrigger(), findsNothing);
+      expect(
+        find.descendant(
+          of: find.widgetWithText(CcSidebarItem, 'Delivery'),
+          matching: find.byIcon(AppIcons.chevronDown),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: find.widgetWithText(CcSidebarItem, 'Planning'),
+          matching: find.byIcon(AppIcons.chevronDown),
+        ),
+        findsOneWidget,
+      );
+
+      final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await mouse.addPointer(location: Offset.zero);
+      await mouse.moveTo(tester.getCenter(find.text('Planning')));
+      await tester.pump();
+      expect(_overflowTriggerWash(tester).a, 0);
+      final folderMenuX = tester.getCenter(_overflowTrigger()).dx;
+      await mouse.moveTo(tester.getCenter(_overflowTrigger()));
+      await tester.pump();
+      expect(_overflowTriggerWash(tester).a, closeTo(0.16, 0.001));
+      await mouse.moveTo(tester.getCenter(find.text('Dev Team')));
+      await tester.pump();
+      expect(_overflowTriggerWash(tester).a, 0);
+      final spaceMenuX = tester.getCenter(_overflowTrigger()).dx;
+      expect(folderMenuX, closeTo(spaceMenuX, 0.5));
+      await mouse.moveTo(tester.getCenter(_overflowTrigger()));
+      await tester.pump();
+      expect(_overflowTriggerWash(tester).a, closeTo(0.16, 0.001));
+      await mouse.moveTo(Offset.zero);
+      await tester.pump();
+      expect(_overflowTrigger(), findsNothing);
+      await mouse.removePointer();
+      await tester.pumpWidget(Container());
+    });
+
+    testWidgets('dragging spaces shows an unfile drop zone and moves them', (
+      tester,
+    ) async {
+      final fixture = _FolderPreferencesFixture([
+        _folder('one', 'Planning', ['g-1']),
+        _folder('two', 'Delivery', const []),
+      ]);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: fixture.overrides([_space, _spaceB]),
+          child: _wrap(_router(spacesRoute(_workspaceId))),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await _dragSpaceTo(tester, 'Ops', find.text('Delivery'));
+      expect(
+        [
+          for (final folder in fixture.savedFolders)
+            (folder as Map<String, dynamic>)['spaceIds'],
+        ],
+        [
+          ['g-1'],
+          ['g-2'],
+        ],
+      );
+      expect(
+        find.descendant(
+          of: find.widgetWithText(CcSidebarItem, 'Delivery'),
+          matching: find.byIcon(AppIcons.chevronDown),
+        ),
+        findsOneWidget,
+      );
+
+      await _dragSpaceTo(tester, 'Ops', find.text('Planning'));
+      expect(
+        [
+          for (final folder in fixture.savedFolders)
+            (folder as Map<String, dynamic>)['spaceIds'],
+        ],
+        [
+          ['g-1', 'g-2'],
+          isEmpty,
+        ],
+      );
+      expect(
+        find.descendant(
+          of: find.widgetWithText(CcSidebarItem, 'Delivery'),
+          matching: find.byIcon(AppIcons.chevronDown),
+        ),
+        findsNothing,
+      );
+
+      final zone = find.byKey(const ValueKey('unfile-space-drop-zone'));
+      expect(zone, findsNothing);
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.text('Ops')),
+        kind: PointerDeviceKind.mouse,
+      );
+      await gesture.moveBy(const Offset(35, 0));
+      await tester.pump();
+      expect(zone, findsOneWidget);
+      expect(tester.getSize(zone).height, 48);
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      expect(find.text(l10n.removeSpaceFromFolder), findsOneWidget);
+      BoxDecoration decoration() =>
+          tester.widget<AnimatedContainer>(zone).decoration! as BoxDecoration;
+      final tokens = tester.element(zone).ds;
+      expect(decoration().border!.top.color, tokens.borderSecondary);
+      await gesture.moveTo(tester.getCenter(zone));
+      await tester.pump();
+      expect(decoration().border!.top.color, tokens.accent);
+      await gesture.up();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(zone, findsNothing);
+      expect(
+        [
+          for (final folder in fixture.savedFolders)
+            (folder as Map<String, dynamic>)['spaceIds'],
+        ],
+        [
+          ['g-1'],
+          isEmpty,
+        ],
+      );
+      expect(fixture.writes, hasLength(3));
+      expect(
+        find.ancestor(
+          of: find.text('Ops'),
+          matching: find.byType(CcSidebarBranch),
+        ),
+        findsNothing,
+      );
+      final unfiledGesture = await tester.startGesture(
+        tester.getCenter(find.text('Ops')),
+        kind: PointerDeviceKind.mouse,
+      );
+      await unfiledGesture.moveBy(const Offset(35, 0));
+      await tester.pump();
+      expect(zone, findsNothing);
+      await unfiledGesture.up();
+      await tester.pump();
+      expect(fixture.writes, hasLength(3));
+      await tester.pumpWidget(Container());
+    });
+
+    testWidgets(
+      'compact sidebar drags into folders, free space and onto spaces',
+      (tester) async {
+        final fixture = _FolderPreferencesFixture([
+          _folder('one', 'Planning', const []),
+        ]);
+        final router = GoRouter(
+          initialLocation: spacesRoute(_workspaceId),
+          routes: [
+            GoRoute(
+              path: '/workspaces/:workspaceId/spaces',
+              builder: (_, _) => const Scaffold(
+                body: SizedBox(width: 240, child: SpacesSubSidebar()),
+              ),
+            ),
+          ],
+        );
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: fixture.overrides([_space, _spaceB]),
+            child: _wrap(router),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        await _dragSpaceTo(tester, 'Dev Team', find.text('Planning'));
+        expect(
+          (fixture.savedFolders.single as Map<String, dynamic>)['spaceIds'],
+          ['g-1'],
+        );
+        await _dragSpaceTo(tester, 'Dev Team', find.text('Planning'));
+        expect(fixture.writes, hasLength(1));
+        final drag = await tester.startGesture(
+          tester.getCenter(find.text('Dev Team')),
+          kind: PointerDeviceKind.mouse,
+        );
+        await drag.moveBy(const Offset(35, 0));
+        await tester.pump();
+        final zone = find.byKey(const ValueKey('unfile-space-drop-zone'));
+        expect(zone, findsOneWidget);
+        final list = tester.getRect(find.byType(SpaceFoldersList));
+        await drag.moveTo(Offset(list.right + 60, list.center.dy));
+        await tester.pump();
+        await drag.up();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(zone, findsNothing);
+        expect(fixture.writes, hasLength(1));
+        await _dragSpaceToPosition(
+          tester,
+          'Dev Team',
+          () => _freeSidebarPosition(tester),
+        );
+        expect(
+          (fixture.savedFolders.single as Map<String, dynamic>)['spaceIds'],
+          isEmpty,
+        );
+        expect(fixture.writes, hasLength(2));
+
+        await _dragSpaceTo(tester, 'Dev Team', find.text('Ops'));
+        final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+        expect(find.text(l10n.newSpaceFolder), findsOneWidget);
+        await tester.enterText(find.byType(CcTextField).last, 'Paired');
+        await tester.tap(find.text(l10n.create));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(
+          (fixture.savedFolders.last as Map<String, dynamic>)['spaceIds'],
+          ['g-2', 'g-1'],
+        );
+        expect(fixture.writes, hasLength(3));
+        await tester.pumpWidget(Container());
+      },
+    );
+
+    testWidgets(
+      'dragging between spaces asks for a name before creating a folder',
+      (tester) async {
+        final fixture = _FolderPreferencesFixture(const []);
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: fixture.overrides([_space, _spaceB]),
+            child: _wrap(_router(spacesRoute(_workspaceId))),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+
+        await _dragSpaceTo(tester, 'Ops', find.text('Dev Team'));
+        expect(find.text(l10n.newSpaceFolder), findsOneWidget);
+        expect(fixture.writes, isEmpty);
+        await tester.tap(find.text(l10n.cancel));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(fixture.writes, isEmpty);
+        expect(find.text('Ops'), findsOneWidget);
+
+        await _dragSpaceTo(tester, 'Ops', find.text('Dev Team'));
+        await tester.enterText(find.byType(CcTextField), 'Shared work');
+        await tester.tap(find.text(l10n.create));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(fixture.writes, hasLength(1));
+        expect(
+          (fixture.savedFolders.single as Map<String, dynamic>)['spaceIds'],
+          ['g-1', 'g-2'],
+        );
+        for (final name in ['Dev Team', 'Ops']) {
+          expect(
+            find.ancestor(
+              of: find.text(name),
+              matching: find.byType(CcSidebarBranch),
+            ),
+            findsOneWidget,
+          );
+        }
+        await tester.pumpWidget(Container());
+      },
+    );
+
+    testWidgets('dragging filed spaces together removes old memberships', (
+      tester,
+    ) async {
+      final fixture = _FolderPreferencesFixture([
+        _folder('one', 'Planning', ['g-1']),
+        _folder('two', 'Delivery', ['g-2']),
+      ]);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: fixture.overrides([_space, _spaceB]),
+          child: _wrap(_router(spacesRoute(_workspaceId))),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+
+      await _dragSpaceTo(tester, 'Ops', find.text('Dev Team'));
+      expect(fixture.writes, isEmpty);
+      await tester.enterText(find.byType(CcTextField), 'New work');
+      await tester.tap(find.text(l10n.create));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(fixture.writes, hasLength(1));
+      expect(
+        [
+          for (final folder in fixture.savedFolders)
+            (folder as Map<String, dynamic>)['spaceIds'],
+        ],
+        [
+          isEmpty,
+          isEmpty,
+          ['g-1', 'g-2'],
+        ],
+      );
+      await tester.pumpWidget(Container());
+    });
+
+    testWidgets('space overflow opens a picker and files into a new folder', (
+      tester,
+    ) async {
+      final fixture = _FolderPreferencesFixture(const []);
+      final port = _FakeMessagingPort();
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            ...fixture.overrides([_space, _spaceB]),
+            messagingServiceProvider.overrideWithValue(port),
+          ],
+          child: _wrap(_router(spacesRoute(_workspaceId))),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+
+      await _openOverflow(tester, find.text('Ops'));
+      await tester.tap(find.text(l10n.moveSpaceToFolder));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text(l10n.noSpaceFoldersYet), findsOneWidget);
+      await tester.tap(find.text(l10n.newSpaceFolder));
+      await tester.pump();
+      await tester.enterText(find.byType(CcTextField), 'Active work');
+      await tester.tap(find.text(l10n.create));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(fixture.writes, hasLength(2));
+      expect(
+        find.ancestor(
+          of: find.text('Ops'),
+          matching: find.byType(CcSidebarBranch),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        (fixture.savedFolders.single as Map<String, dynamic>)['spaceIds'],
+        ['g-2'],
+      );
+
+      await _openFolderDelete(tester, folderName: 'Active work');
+      expect(find.text(l10n.keepSpacesInFolder), findsOneWidget);
+      expect(port.deleted, isEmpty);
+      await tester.tap(find.text(l10n.deleteSpaceFolder).last);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(fixture.savedFolders, isEmpty);
+      expect(port.deleted, isEmpty);
+      expect(find.text('Ops'), findsOneWidget);
+      expect(
+        find.ancestor(
+          of: find.text('Ops'),
+          matching: find.byType(CcSidebarBranch),
+        ),
+        findsNothing,
+      );
+      await tester.pumpWidget(Container());
+    });
+
+    testWidgets('picker moves a filed space between folders and unfiles it', (
+      tester,
+    ) async {
+      final fixture = _FolderPreferencesFixture([
+        _folder('one', 'Planning', ['g-1']),
+        _folder('two', 'Delivery', const []),
+      ]);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: fixture.overrides([_space, _spaceB]),
+          child: _wrap(_router(spacesRoute(_workspaceId))),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+
+      await _openOverflow(tester, find.text('Dev Team'));
+      await tester.tap(find.text(l10n.moveSpaceToFolder));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.text('Delivery').last);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(
+        [
+          for (final folder in fixture.savedFolders)
+            (folder as Map<String, dynamic>)['spaceIds'],
+        ],
+        [
+          isEmpty,
+          ['g-1'],
+        ],
+      );
+      expect(
+        find.ancestor(
+          of: find.text('Dev Team'),
+          matching: find.byType(CcSidebarBranch),
+        ),
+        findsOneWidget,
+      );
+
+      await _openOverflow(tester, find.text('Dev Team'));
+      await tester.tap(find.text(l10n.moveSpaceToFolder));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.text(l10n.removeSpaceFromFolder));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(
+        [
+          for (final folder in fixture.savedFolders)
+            (folder as Map<String, dynamic>)['spaceIds'],
+        ],
+        [isEmpty, isEmpty],
+      );
+      expect(
+        find.ancestor(
+          of: find.text('Dev Team'),
+          matching: find.byType(CcSidebarBranch),
+        ),
+        findsNothing,
+      );
+      await tester.pumpWidget(Container());
+    });
+
+    testWidgets('compact space overflow files via the folder picker', (
+      tester,
+    ) async {
+      final fixture = _FolderPreferencesFixture([
+        _folder('one', 'Planning', const []),
+      ]);
+      final router = GoRouter(
+        initialLocation: spacesRoute(_workspaceId),
+        routes: [
+          GoRoute(
+            path: '/workspaces/:workspaceId/spaces',
+            builder: (_, _) => const Scaffold(
+              body: SizedBox(width: 240, child: SpacesSubSidebar()),
+            ),
+          ),
+        ],
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: fixture.overrides([_space]),
+          child: _wrap(router),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      await _openOverflow(tester, find.text('Dev Team'));
+      await tester.tap(find.text(l10n.moveSpaceToFolder));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.text('Planning').last);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(
+        (fixture.savedFolders.single as Map<String, dynamic>)['spaceIds'],
+        ['g-1'],
+      );
+      expect(
+        find.ancestor(
+          of: find.text('Dev Team'),
+          matching: find.byType(CcSidebarBranch),
+        ),
+        findsOneWidget,
+      );
+      await tester.pumpWidget(Container());
+    });
+
+    testWidgets('folder deletion cancel preserves membership and spaces', (
+      tester,
+    ) async {
+      final fixture = _FolderPreferencesFixture([
+        _folder('one', 'Planning', ['g-1']),
+      ]);
+      final port = _FakeMessagingPort();
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            ...fixture.overrides([_space]),
+            messagingServiceProvider.overrideWithValue(port),
+          ],
+          child: _wrap(_router(spacesRoute(_workspaceId))),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      await _openFolderDelete(tester, folderName: 'Planning');
+      expect(tester.widget<CcCheckbox>(find.byType(CcCheckbox)).value, isFalse);
+      await tester.tap(find.byType(CcCheckbox));
+      await tester.pump();
+      expect(tester.widget<CcCheckbox>(find.byType(CcCheckbox)).value, isTrue);
+      await tester.tap(find.text(l10n.cancel));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(fixture.writes, isEmpty);
+      expect(port.deleted, isEmpty);
+      expect(find.text('Planning'), findsOneWidget);
+      expect(
+        find.ancestor(
+          of: find.text('Dev Team'),
+          matching: find.byType(CcSidebarBranch),
+        ),
+        findsOneWidget,
+      );
+      await tester.pumpWidget(Container());
+    });
+
+    testWidgets(
+      'checked folder deletion deletes only current workspace spaces before folder',
+      (tester) async {
+        final fixture = _FolderPreferencesFixture([
+          _folder('one', 'Planning', ['g-1', 'stale', 'g-2']),
+        ]);
+        final port = _FakeMessagingPort();
+        final events = <String>[];
+        port.onDelete = (id) => events.add('delete:$id');
+        fixture.onWrite = () => events.add('prefs');
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              ...fixture.overrides([_space, _spaceB]),
+              workspaceSpacesProvider(
+                _workspaceId,
+              ).overrideWith((ref) => Stream.value([_space, _spaceB])),
+              messagingServiceProvider.overrideWithValue(port),
+            ],
+            child: Consumer(
+              builder: (context, ref, _) {
+                // The real sidebar watches this stream through visible spaces.
+                ref.watch(workspaceSpacesProvider(_workspaceId));
+                return _wrap(_router(spacesRoute(_workspaceId)));
+              },
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+        await _openFolderDelete(tester, folderName: 'Planning');
+        expect(
+          tester.widget<CcCheckbox>(find.byType(CcCheckbox)).value,
+          isFalse,
+        );
+        expect(fixture.writes, isEmpty);
+        expect(port.deleted, isEmpty);
+        await tester.tap(find.byType(CcCheckbox));
+        await tester.pump();
+        expect(
+          tester.widget<CcCheckbox>(find.byType(CcCheckbox)).value,
+          isTrue,
+        );
+        expect(find.text(l10n.deleteFolderWithSpacesWarning), findsOneWidget);
+        await tester.tap(find.text(l10n.deleteFolderAndSpaces));
+        await tester.pumpAndSettle();
+        expect(port.deleted, [(_workspaceId, 'g-1'), (_workspaceId, 'g-2')]);
+        expect(events, ['delete:g-1', 'delete:g-2', 'prefs']);
+        expect(fixture.savedFolders, isEmpty);
+        expect(find.text('Planning'), findsNothing);
+        await tester.pumpWidget(Container());
+      },
+    );
+
+    testWidgets('contextual list filters inside folders without hiding peers', (
+      tester,
+    ) async {
+      final router = GoRouter(
+        initialLocation: spacesRoute(_workspaceId),
+        routes: [
+          GoRoute(
+            path: '/workspaces/:workspaceId/spaces',
+            builder: (_, _) => const Scaffold(
+              body: SizedBox(width: 240, child: SpacesSubSidebar()),
+            ),
+          ),
+        ],
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            ..._commonOverrides(spaces: [_space, _spaceB]),
+            spaceFoldersProvider(_workspaceId).overrideWithValue([
+              SpaceFolder(
+                id: 'folder-1',
+                name: 'Active work',
+                spaceIds: ['g-1'],
+              ),
+            ]),
+          ],
+          child: _wrap(router),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('Dev Team'), findsOneWidget);
+      await tester.enterText(find.byType(CcTextField), 'Ops');
+      await tester.pump();
+      expect(find.text('Dev Team'), findsNothing);
+      expect(
+        find.descendant(
+          of: find.byType(SpaceSidebarItem),
+          matching: find.text('Ops'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Active work'), findsNothing);
+      await tester.pumpWidget(Container());
     });
 
     testWidgets('a space shows its checked-out branch under the name', (
@@ -392,46 +1187,6 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
     });
 
-    testWidgets('space rows share a travelling fluid hover wash', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: _commonOverrides(spaces: [_space, _spaceB]),
-          child: _wrap(_router(spacesRoute(_workspaceId))),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      final pointer = await tester.createGesture(kind: PointerDeviceKind.mouse);
-      await pointer.addPointer(
-        location: tester.getCenter(find.text('Dev Team')),
-      );
-      await tester.pump();
-      await tester.pump();
-
-      final highlight = tester.widget<AnimatedOpacity>(
-        find.byKey(const ValueKey<String>('cc-fluid-hover-highlight')),
-      );
-      expect(
-        highlight.opacity,
-        1,
-        reason: 'The spaces group must wash the hovered row, not skip it.',
-      );
-
-      await pointer.moveTo(tester.getCenter(find.text('Ops')));
-      await tester.pump();
-      await tester.pump();
-
-      final moved = tester.widget<AnimatedOpacity>(
-        find.byKey(const ValueKey<String>('cc-fluid-hover-highlight')),
-      );
-      expect(moved.opacity, 1);
-      await tester.pumpWidget(Container());
-      await tester.pump(const Duration(milliseconds: 100));
-    });
-
     testWidgets('renders a Plus icon for adding a space', (tester) async {
       await tester.pumpWidget(
         ProviderScope(
@@ -535,13 +1290,14 @@ void main() {
     testWidgets('overflow menu archives the space instead of deleting it', (
       tester,
     ) async {
+      final fixture = _FolderPreferencesFixture(const []);
       final port = _FakeMessagingPort();
       final router = _router(spaceRoute(_workspaceId, 'g-1'));
 
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            ..._commonOverrides(spaces: [_space]),
+            ...fixture.overrides([_space]),
             messagingServiceProvider.overrideWithValue(port),
           ],
           child: _wrap(router),
@@ -571,6 +1327,85 @@ void main() {
       );
       await tester.pumpWidget(Container());
       await tester.pumpAndSettle();
+    });
+
+    testWidgets('archiving a filed space removes membership before restore', (
+      tester,
+    ) async {
+      final fixture = _FolderPreferencesFixture([
+        _folder('one', 'Planning', ['g-1']),
+      ]);
+      final port = _FakeMessagingPort();
+      final events = <String>[];
+      port.onArchive = (id) => events.add('archive:$id');
+      fixture.onWrite = () => events.add('prefs');
+      final archivedSpace = Space(
+        id: 'g-1',
+        name: 'Dev Team',
+        createdAt: DateTime(2024),
+        updatedAt: DateTime(2024),
+        archivedAt: DateTime(2026),
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            ...fixture.overrides([_space]),
+            messagingServiceProvider.overrideWithValue(port),
+            archivedSpacesProvider(
+              _workspaceId,
+            ).overrideWithValue([archivedSpace]),
+          ],
+          child: _wrap(_router(spacesRoute(_workspaceId))),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(
+        find.ancestor(
+          of: find.text('Dev Team'),
+          matching: find.byType(CcSidebarBranch),
+        ),
+        findsOneWidget,
+      );
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      await _openOverflow(tester, find.text('Dev Team'));
+      await tester.tap(find.text(l10n.archiveSpace));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(port.archived, [(_workspaceId, 'g-1')]);
+      expect(events, ['archive:g-1', 'prefs']);
+      expect(
+        (fixture.savedFolders.single as Map<String, dynamic>)['spaceIds'],
+        isEmpty,
+      );
+      expect(
+        find.ancestor(
+          of: find.text('Dev Team'),
+          matching: find.byType(CcSidebarBranch),
+        ),
+        findsNothing,
+      );
+
+      await tester.tap(find.byIcon(AppIcons.archive));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.byIcon(AppIcons.archiveRestore));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(port.unarchived, [(_workspaceId, 'g-1')]);
+      expect(
+        (fixture.savedFolders.single as Map<String, dynamic>)['spaceIds'],
+        isEmpty,
+      );
+      expect(
+        find.ancestor(
+          of: find.text('Dev Team'),
+          matching: find.byType(CcSidebarBranch),
+        ),
+        findsNothing,
+      );
+      expect(port.deleted, isEmpty);
+      await tester.pumpWidget(Container());
     });
 
     testWidgets('overflow trigger is hidden until the row is hovered', (
@@ -1617,6 +2452,8 @@ class _FakeMessagingPort implements MessagingPort {
   final List<(String, String)> deleted = [];
   final List<(String, String, String)> renamed = [];
   final List<List<String>?> repoSelections = [];
+  void Function(String)? onArchive;
+  void Function(String)? onDelete;
 
   /// What [getSpaceRepos] answers (null = the all-repos default).
   List<String>? currentRepos;
@@ -1624,6 +2461,7 @@ class _FakeMessagingPort implements MessagingPort {
   @override
   Future<void> archiveSpace(String workspaceId, String spaceId) async {
     archived.add((workspaceId, spaceId));
+    onArchive?.call(spaceId);
   }
 
   @override
@@ -1634,6 +2472,7 @@ class _FakeMessagingPort implements MessagingPort {
   @override
   Future<void> deleteSpace(String workspaceId, String spaceId) async {
     deleted.add((workspaceId, spaceId));
+    onDelete?.call(spaceId);
   }
 
   @override

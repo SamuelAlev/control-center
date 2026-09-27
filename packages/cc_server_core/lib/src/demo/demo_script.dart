@@ -32,6 +32,14 @@ sealed class DemoScriptStep {
         result: json['result'] as String? ?? '',
         isError: json['is_error'] as bool? ?? false,
       ),
+      'peer' => DemoPeerStep(
+        agent: json['agent'] as String,
+        text: json['text'] as String,
+        tools: [
+          for (final raw in json['tools'] as List? ?? const [])
+            DemoToolStep.fromPeerJson(Map<String, dynamic>.from(raw as Map)),
+        ],
+      ),
       'usage' => DemoUsageStep(
         inputTokens: json['input'] as int? ?? 0,
         outputTokens: json['output'] as int? ?? 0,
@@ -76,6 +84,14 @@ final class DemoToolStep extends DemoScriptStep {
     this.isError = false,
   });
 
+  /// Parses a fictional peer's displayed tool card without running it.
+  factory DemoToolStep.fromPeerJson(Map<String, dynamic> json) => DemoToolStep(
+    tool: json['tool'] as String,
+    args: Map<String, dynamic>.from(json['args'] as Map),
+    result: json['result'] as String,
+    isError: json['is_error'] as bool? ?? false,
+  );
+
   /// The tool name shown on the card (e.g. `read`, `grep`, `edit`).
   final String tool;
 
@@ -87,6 +103,26 @@ final class DemoToolStep extends DemoScriptStep {
 
   /// Whether the card renders as a failure.
   final bool isError;
+}
+
+/// A second agent's persisted turn in the same demo conversation. The
+/// callback produces a real chat sender and transcript from inert fixture data.
+final class DemoPeerStep extends DemoScriptStep {
+  /// Creates a fictional peer turn.
+  const DemoPeerStep({
+    required this.agent,
+    required this.text,
+    required this.tools,
+  });
+
+  /// The demo cast name; the persistence callback resolves its real agent id.
+  final String agent;
+
+  /// Text the peer sends to the initiating agent.
+  final String text;
+
+  /// Recorded-looking tool cards; none of these execute.
+  final List<DemoToolStep> tools;
 }
 
 /// A token-usage report for the turn just streamed.

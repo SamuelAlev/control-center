@@ -42,6 +42,10 @@ void main() {
     // Gated by `isDemoServerProvider` before the call — see
     // `lib/features/demo/presentation/widgets/demo_unavailable.dart` and its
     // call sites (terminal, rigs, editor, skills, MCP, forge card).
+    // Repo-less demo spaces need no worktree provisioning. Even during a
+    // transient status update the banner hides retry/stop for demo visitors.
+    'messaging.retrySpaceProvisioning',
+    'messaging.cancelSpaceProvisioning',
     'forge.listConnections',
     'forge.capabilities',
     // The merge button's conflicts flyout: the merge itself is denied on a
@@ -89,12 +93,11 @@ void main() {
     // site is therefore unreachable on a demo rather than gated by a flag.
     'roles.assign',
     // Settings → Server → Backup & restore gates the WHOLE page on
-    // `isDemoServerProvider` and renders the serverAdmin notice instead, so a
-    // visitor never issues one of these. They are denied for good reason:
-    // `workspace.export` VACUUMs a whole database onto a public endpoint and
-    // the other three are install-wide.
+    // `isDemoServerProvider`. Database backup ops are absent on a demo:
+    // exports expose workspace data and snapshots expose the whole install.
     'server.backupNow',
     'server.listBackups',
+    'server.deleteBackup',
     'workspace.export',
     'workspace.import',
     // Repo + worktree surfaces: the demo registers a repo row but owns no

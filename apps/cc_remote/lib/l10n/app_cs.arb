@@ -515,5 +515,19 @@
         "type": "int"
       }
     }
-  }
+  },
+  "newSpaceFolder": "Nová složka",
+  "folderName": "Název složky",
+  "renameSpaceFolder": "Přejmenovat složku",
+  "deleteSpaceFolder": "Smazat složku",
+  "moveSpaceToFolder": "Přesunout prostor do složky",
+  "removeSpaceFromFolder": "Odebrat prostor ze složky",
+  "spaceFolderActions": "Akce složky",
+  "deleteFolderWithSpacesWarning": "Trvalým smazáním prostorů se všem odstraní jejich zprávy a pracovní stromy. Tuto akci nelze vrátit zpět.",
+  "deleteSpacesInFolder": "Trvale smazat prostory v této složce",
+  "deleteFolderAndSpaces": "Smazat složku a prostory",
+  "keepSpacesInFolder": "Jinak prostory zůstanou nezařazené.",
+  "create": "Vytvořit",
+  "otherSpaces": "Ostatní prostory",
+  "folderUpdateFailed": "Nepodařilo se aktualizovat složky"
 }

@@ -234,5 +234,19 @@
   "yesterday": "ieri",
   "durationMinutes": "{count}m",
   "durationHours": "{count}h",
-  "durationHoursMinutes": "{hours}h {minutes}m"
+  "durationHoursMinutes": "{hours}h {minutes}m",
+  "newSpaceFolder": "Nuova cartella",
+  "folderName": "Nome della cartella",
+  "renameSpaceFolder": "Rinomina cartella",
+  "deleteSpaceFolder": "Elimina cartella",
+  "moveSpaceToFolder": "Sposta in una cartella",
+  "removeSpaceFromFolder": "Rimuovi dalla cartella",
+  "spaceFolderActions": "Azioni della cartella",
+  "deleteFolderWithSpacesWarning": "Eliminare definitivamente gli spazi rimuove i loro messaggi e le directory di lavoro per tutti. Questa operazione non può essere annullata.",
+  "deleteSpacesInFolder": "Elimina definitivamente gli spazi in questa cartella",
+  "deleteFolderAndSpaces": "Elimina cartella e spazi",
+  "keepSpacesInFolder": "Altrimenti gli spazi rimarranno fuori dalle cartelle.",
+  "create": "Crea",
+  "otherSpaces": "Altri spazi",
+  "folderUpdateFailed": "Impossibile aggiornare le cartelle"
 }

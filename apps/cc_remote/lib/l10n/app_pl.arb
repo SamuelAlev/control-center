@@ -234,5 +234,19 @@
   "yesterday": "Wczoraj",
   "durationMinutes": "{count}m",
   "durationHours": "{count}h",
-  "durationHoursMinutes": "{hours}h {minutes}m"
+  "durationHoursMinutes": "{hours}h {minutes}m",
+  "newSpaceFolder": "Nowy folder",
+  "folderName": "Nazwa folderu",
+  "renameSpaceFolder": "Zmień nazwę folderu",
+  "deleteSpaceFolder": "Usuń folder",
+  "moveSpaceToFolder": "Przenieś do folderu",
+  "removeSpaceFromFolder": "Usuń z folderu",
+  "spaceFolderActions": "Akcje folderu",
+  "deleteFolderWithSpacesWarning": "Trwałe usunięcie przestrzeni usuwa ich wiadomości i drzewa robocze dla wszystkich. Tej czynności nie można cofnąć.",
+  "deleteSpacesInFolder": "Trwale usuń przestrzenie w tym folderze",
+  "deleteFolderAndSpaces": "Usuń folder i przestrzenie",
+  "keepSpacesInFolder": "W przeciwnym razie przestrzenie pozostaną poza folderami.",
+  "create": "Utwórz",
+  "otherSpaces": "Inne przestrzenie",
+  "folderUpdateFailed": "Nie udało się zaktualizować folderów"
 }

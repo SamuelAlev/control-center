@@ -18,11 +18,14 @@ class RemotePipelineTemplateRepository {
 
   final RemoteRpcClient _client;
 
-  /// Live templates for the bound workspace — a fresh snapshot
-  /// ([PipelineTemplateDto] list) on every change, built-ins first then alpha.
-  Stream<List<PipelineTemplateDto>> watchForWorkspace() => _client
-      .subscribe('pipeline_template.watchForWorkspace', const {})
-      .map(_templates);
+  /// Live templates for [workspaceId] — a fresh snapshot on every change,
+  /// built-ins first then alpha.
+  Stream<List<PipelineTemplateDto>> watchForWorkspace(String workspaceId) =>
+      _client
+          .subscribe('pipeline_template.watchForWorkspace', {
+            'workspace_id': workspaceId,
+          })
+          .map(_templates);
 
   /// One-shot fetch of every template in the bound workspace.
   Future<List<PipelineTemplateDto>> forWorkspace() async {

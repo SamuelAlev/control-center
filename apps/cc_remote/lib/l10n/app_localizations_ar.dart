@@ -375,6 +375,50 @@ class AppLocalizationsAr extends AppLocalizations {
       'تظهر هنا المساحات الموجودة في مساحة العمل هذه.';
 
   @override
+  String get newSpaceFolder => 'مجلد جديد';
+
+  @override
+  String get folderName => 'اسم المجلد';
+
+  @override
+  String get renameSpaceFolder => 'إعادة تسمية المجلد';
+
+  @override
+  String get deleteSpaceFolder => 'حذف المجلد';
+
+  @override
+  String get moveSpaceToFolder => 'نقل المساحة إلى مجلد';
+
+  @override
+  String get removeSpaceFromFolder => 'إزالة المساحة من المجلد';
+
+  @override
+  String get spaceFolderActions => 'إجراءات المجلد';
+
+  @override
+  String get deleteFolderWithSpacesWarning =>
+      'يؤدي حذف المساحات نهائيًا إلى إزالة رسائلها ومجلدات العمل الخاصة بها للجميع. لا يمكن التراجع عن هذا الإجراء.';
+
+  @override
+  String get deleteSpacesInFolder =>
+      'حذف المساحات الموجودة في هذا المجلد نهائيًا';
+
+  @override
+  String get deleteFolderAndSpaces => 'حذف المجلد والمساحات';
+
+  @override
+  String get keepSpacesInFolder => 'وإلا فستبقى المساحات خارج أي مجلد.';
+
+  @override
+  String get create => 'إنشاء';
+
+  @override
+  String get otherSpaces => 'مساحات أخرى';
+
+  @override
+  String get folderUpdateFailed => 'تعذّر تحديث المجلدات';
+
+  @override
   String get thread => 'سلسلة الرسائل';
 
   @override

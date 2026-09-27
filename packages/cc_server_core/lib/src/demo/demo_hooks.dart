@@ -46,6 +46,7 @@ class DemoRuntimeContext {
     this.registerConfirmation,
     this.refreshNewsfeed,
     this.log,
+    this.onVisitorReap,
   });
 
   /// Operational bounds, read from the environment.
@@ -94,14 +95,20 @@ class DemoRuntimeContext {
   final String Function() relayRoom;
 
   /// Registers a PENDING approval in the host's live confirmation registry —
-  /// the lane the inbox's "agent is waiting on you" strip reads. Null on a
-  /// host without the registry; the demo seeder uses it to furnish the inbox.
-  final void Function(ConfirmationRequest request)? registerConfirmation;
+  /// the lane the inbox's "agent is waiting on you" strip reads. The future
+  /// resolves to the visitor's decision without executing the fictional push.
+  /// Null on hosts without the registry.
+  final Future<bool> Function(ConfirmationRequest request)?
+  registerConfirmation;
 
   /// Kicks a newsfeed refresh for one user at claim time, so a visitor sees
   /// real articles within seconds instead of waiting for the 30-minute
   /// sweep. Null leaves the demo with its seeded fallback articles only.
   final Future<void> Function(String userId)? refreshNewsfeed;
+
+  /// Cancels server-owned simulated meeting ticks before a visitor's workspace
+  /// database is deleted. Bound only by the public demo runtime.
+  final Future<void> Function(String workspaceId)? onVisitorReap;
 
   /// The product's OWN workspace seeder (CEO + specialists + the built-in
   /// pipeline templates), run before the demo's flavour data.
@@ -147,6 +154,9 @@ abstract interface class DemoWiring {
 
   /// Builds inert providers that answer metadata and throw on completion.
   HarnessProviderFactory get harnessProviderFactory;
+
+  /// Fictional quota snapshots for the usage pill; never reads a credential.
+  Future<List<Map<String, dynamic>>> fetchSubscriptionUsage();
 
   /// The cache-backed, structurally offline PR review surface for [userId].
   ForgeProviderRegistry forgeRegistryFor(String? userId);

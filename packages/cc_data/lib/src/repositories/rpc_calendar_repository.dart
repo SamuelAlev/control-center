@@ -89,13 +89,13 @@ class RpcCalendarRepository implements CalendarRepository {
 
   @override
   Future<List<CalendarAccount>> getAccounts(String workspaceId) async {
-    final dtos = await _remote.getAccounts();
+    final dtos = await _remote.getAccounts(workspaceId);
     return dtos.map((d) => _accountFromDto(workspaceId, d)).toList();
   }
 
   @override
   Stream<List<CalendarAccount>> watchAccounts(String workspaceId) => _remote
-      .watchAccounts()
+      .watchAccounts(workspaceId: workspaceId)
       .map((list) => list.map((d) => _accountFromDto(workspaceId, d)).toList());
 
   @override
@@ -103,7 +103,7 @@ class RpcCalendarRepository implements CalendarRepository {
     String workspaceId,
     String accountId,
   ) => _remote
-      .watchSources(accountId)
+      .watchSources(accountId, workspaceId: workspaceId)
       .map((list) => list.map((d) => _sourceFromDto(workspaceId, d)).toList());
 
   @override
@@ -112,13 +112,13 @@ class RpcCalendarRepository implements CalendarRepository {
     DateTime from,
     DateTime to,
   ) => _remote
-      .watchEventsInRange(from, to)
+      .watchEventsInRange(from, to, workspaceId: workspaceId)
       .map((list) => list.map((d) => _eventFromDto(workspaceId, d)).toList());
 
   @override
   Stream<CalendarEvent?> watchEventById(String workspaceId, String eventId) =>
       _remote
-          .watchEventById(eventId)
+          .watchEventById(eventId, workspaceId: workspaceId)
           .map((d) => d == null ? null : _eventFromDto(workspaceId, d));
 
   @override

@@ -234,5 +234,19 @@
   "yesterday": "hier",
   "durationMinutes": "{count} min",
   "durationHours": "{count} h",
-  "durationHoursMinutes": "{hours} h {minutes} min"
+  "durationHoursMinutes": "{hours} h {minutes} min",
+  "newSpaceFolder": "Nouveau dossier",
+  "folderName": "Nom du dossier",
+  "renameSpaceFolder": "Renommer le dossier",
+  "deleteSpaceFolder": "Supprimer le dossier",
+  "moveSpaceToFolder": "Déplacer vers un dossier",
+  "removeSpaceFromFolder": "Retirer du dossier",
+  "spaceFolderActions": "Actions du dossier",
+  "deleteFolderWithSpacesWarning": "La suppression définitive des espaces efface leurs messages et leurs répertoires de travail pour tout le monde. Cette action est irréversible.",
+  "deleteSpacesInFolder": "Supprimer définitivement les espaces de ce dossier",
+  "deleteFolderAndSpaces": "Supprimer le dossier et les espaces",
+  "keepSpacesInFolder": "Sinon, les espaces resteront hors de tout dossier.",
+  "create": "Créer",
+  "otherSpaces": "Autres espaces",
+  "folderUpdateFailed": "Impossible de mettre à jour les dossiers"
 }

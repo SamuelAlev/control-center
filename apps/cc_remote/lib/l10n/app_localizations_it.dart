@@ -380,6 +380,51 @@ class AppLocalizationsIt extends AppLocalizations {
       'Qui compaiono gli spazi di questo spazio di lavoro.';
 
   @override
+  String get newSpaceFolder => 'Nuova cartella';
+
+  @override
+  String get folderName => 'Nome della cartella';
+
+  @override
+  String get renameSpaceFolder => 'Rinomina cartella';
+
+  @override
+  String get deleteSpaceFolder => 'Elimina cartella';
+
+  @override
+  String get moveSpaceToFolder => 'Sposta in una cartella';
+
+  @override
+  String get removeSpaceFromFolder => 'Rimuovi dalla cartella';
+
+  @override
+  String get spaceFolderActions => 'Azioni della cartella';
+
+  @override
+  String get deleteFolderWithSpacesWarning =>
+      'Eliminare definitivamente gli spazi rimuove i loro messaggi e le directory di lavoro per tutti. Questa operazione non può essere annullata.';
+
+  @override
+  String get deleteSpacesInFolder =>
+      'Elimina definitivamente gli spazi in questa cartella';
+
+  @override
+  String get deleteFolderAndSpaces => 'Elimina cartella e spazi';
+
+  @override
+  String get keepSpacesInFolder =>
+      'Altrimenti gli spazi rimarranno fuori dalle cartelle.';
+
+  @override
+  String get create => 'Crea';
+
+  @override
+  String get otherSpaces => 'Altri spazi';
+
+  @override
+  String get folderUpdateFailed => 'Impossibile aggiornare le cartelle';
+
+  @override
   String get thread => 'Thread';
 
   @override

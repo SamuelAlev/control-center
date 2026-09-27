@@ -382,6 +382,51 @@ class AppLocalizationsFr extends AppLocalizations {
       'Les espaces de cet espace de travail s’affichent ici.';
 
   @override
+  String get newSpaceFolder => 'Nouveau dossier';
+
+  @override
+  String get folderName => 'Nom du dossier';
+
+  @override
+  String get renameSpaceFolder => 'Renommer le dossier';
+
+  @override
+  String get deleteSpaceFolder => 'Supprimer le dossier';
+
+  @override
+  String get moveSpaceToFolder => 'Déplacer vers un dossier';
+
+  @override
+  String get removeSpaceFromFolder => 'Retirer du dossier';
+
+  @override
+  String get spaceFolderActions => 'Actions du dossier';
+
+  @override
+  String get deleteFolderWithSpacesWarning =>
+      'La suppression définitive des espaces efface leurs messages et leurs répertoires de travail pour tout le monde. Cette action est irréversible.';
+
+  @override
+  String get deleteSpacesInFolder =>
+      'Supprimer définitivement les espaces de ce dossier';
+
+  @override
+  String get deleteFolderAndSpaces => 'Supprimer le dossier et les espaces';
+
+  @override
+  String get keepSpacesInFolder =>
+      'Sinon, les espaces resteront hors de tout dossier.';
+
+  @override
+  String get create => 'Créer';
+
+  @override
+  String get otherSpaces => 'Autres espaces';
+
+  @override
+  String get folderUpdateFailed => 'Impossible de mettre à jour les dossiers';
+
+  @override
   String get thread => 'Fil';
 
   @override

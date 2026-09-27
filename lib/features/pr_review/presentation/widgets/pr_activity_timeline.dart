@@ -7,6 +7,7 @@ import 'package:cc_domain/features/pr_review/domain/entities/pr_commit.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_label.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_review_submission.dart';
+import 'package:cc_domain/features/pr_review/domain/entities/pr_timeline_event.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_user.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_ui/cc_ui.dart';
@@ -200,20 +201,31 @@ class _PrActivityTimelineState extends ConsumerState<PrActivityTimeline> {
     final t = context.designSystem ?? DesignSystemTokens.light();
     final l10n = AppLocalizations.of(context);
 
-    final reviews =
-        ref.watch(prReviewsProvider(prRef)).value ??
-        const <PrReviewSubmission>[];
-    final comments =
-        ref.watch(prIssueCommentsProvider(prRef)).value ??
-        const <IssueComment>[];
-    final commits =
-        ref.watch(prCommitsProvider(prRef)).value ?? const <PrCommit>[];
-    final events = ref.watch(prTimelineEventsProvider(prRef)).value ?? const [];
-    final codeComments =
-        ref.watch(prReviewCommentIndexProvider(prRef)).value ??
-        const <PrCodeReviewComment>[];
+    final reviewsAsync = ref.watch(prReviewsProvider(prRef));
+    final reviews = reviewsAsync.hasError
+        ? const <PrReviewSubmission>[]
+        : (reviewsAsync.value ?? const <PrReviewSubmission>[]);
+    final commentsAsync = ref.watch(prIssueCommentsProvider(prRef));
+    final comments = commentsAsync.hasError
+        ? const <IssueComment>[]
+        : (commentsAsync.value ?? const <IssueComment>[]);
+    final commitsAsync = ref.watch(prCommitsProvider(prRef));
+    final commits = commitsAsync.hasError
+        ? const <PrCommit>[]
+        : (commitsAsync.value ?? const <PrCommit>[]);
+    final eventsAsync = ref.watch(prTimelineEventsProvider(prRef));
+    final events = eventsAsync.hasError
+        ? const <PrTimelineEvent>[]
+        : (eventsAsync.value ?? const <PrTimelineEvent>[]);
+    final codeCommentsAsync = ref.watch(prReviewCommentIndexProvider(prRef));
+    final codeComments = codeCommentsAsync.hasError
+        ? const <PrCodeReviewComment>[]
+        : (codeCommentsAsync.value ?? const <PrCodeReviewComment>[]);
+    final filesAsync = ref.watch(prFileIndexProvider(prRef));
     final orderedFiles = sortFilesByTreeOrder(
-      ref.watch(prFileIndexProvider(prRef)).value ?? const <PrFile>[],
+      filesAsync.hasError
+          ? const <PrFile>[]
+          : (filesAsync.value ?? const <PrFile>[]),
     );
 
     // Conversations, keyed by the review that STARTED each one.

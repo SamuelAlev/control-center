@@ -1,4 +1,5 @@
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
+import 'package:cc_domain/core/domain/ports/database_backup_port.dart';
 import 'package:cc_domain/core/domain/ports/pr_worktree_port.dart';
 import 'package:cc_domain/core/domain/ports/repo_workspace_provisioner_port.dart';
 import 'package:cc_domain/core/domain/ports/schema_validator_port.dart';
@@ -30,6 +31,7 @@ import 'package:cc_domain/features/pipelines/domain/templates/register_cleanup_r
 import 'package:cc_domain/features/pipelines/domain/templates/register_create_space_body.dart';
 import 'package:cc_domain/features/pipelines/domain/templates/register_index_code_body.dart';
 import 'package:cc_domain/features/pipelines/domain/templates/register_skill_analysis_body.dart';
+import 'package:cc_domain/features/pipelines/domain/templates/register_workspace_backup_bodies.dart';
 import 'package:cc_domain/features/pipelines/domain/templates/team_dispatch_template.dart';
 import 'package:cc_domain/features/pipelines/domain/templates/trigger_template.dart';
 import 'package:cc_domain/features/pr_review/domain/value_objects/review_level.dart';
@@ -79,6 +81,7 @@ ServerPipelineExecutor buildServerPipelineExecutor({
   required TicketWorkflowService ticketWorkflow,
   required CodeIndexer codeIndexer,
   required SkillAnalysisPort skillAnalysis,
+  required DatabaseBackupPort? databaseBackup,
   required DomainEventBus eventBus,
   required SchemaValidatorPort schemaValidator,
   required Future<String> Function(String runId) runDirPath,
@@ -237,6 +240,11 @@ ServerPipelineExecutor buildServerPipelineExecutor({
     templateRepository: templateRepository,
     provisioner: provisioner,
     prWorktrees: prWorktrees,
+  );
+  registerWorkspaceBackupBodies(
+    registry,
+    backups: databaseBackup,
+    templateRepository: templateRepository,
   );
   // The deterministic `meeting.*` persist bodies of the `meeting_summary`
   // pipeline (diarize → identifySpeakers → saveNotes / addActionItems /

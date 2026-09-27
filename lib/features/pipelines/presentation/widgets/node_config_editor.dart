@@ -63,6 +63,7 @@ class _NodeConfigEditorState extends State<NodeConfigEditor> {
   late TextEditingController _retryCtrl;
   late TextEditingController _teamIdCtrl;
   late TextEditingController _schemaCtrl;
+  late TextEditingController _retentionDaysCtrl;
 
   /// The name of the conversation this node works in: the stream a space node
   /// opens, or the one an agent node writes its turn into. Kept out of [_extras]
@@ -134,6 +135,9 @@ class _NodeConfigEditorState extends State<NodeConfigEditor> {
     _schemaCtrl = TextEditingController(
       text: c.outputSchema == null ? '' : jsonEncode(c.outputSchema),
     );
+    _retentionDaysCtrl = TextEditingController(
+      text: '${c.extras['retentionDays'] ?? 30}',
+    );
     _conversationTitleCtrl = TextEditingController(
       text: c.conversationTitle ?? '',
     );
@@ -164,11 +168,11 @@ class _NodeConfigEditorState extends State<NodeConfigEditor> {
     _timeoutCtrl,
     _retryCtrl,
     _teamIdCtrl,
+    _retentionDaysCtrl,
     _schemaCtrl,
     _conversationTitleCtrl,
     _spaceNameCtrl,
   ];
-
 
   void _disposeControllers() {
     for (final ctrl in _listenedControllers) {
@@ -230,6 +234,12 @@ class _NodeConfigEditorState extends State<NodeConfigEditor> {
         _extras['conversationTitle'] = title;
       } else {
         _extras.remove('conversationTitle');
+      }
+    }
+    if (widget.step.bodyKey == BuiltInBodyKeys.deleteOldBackups) {
+      final days = int.tryParse(_retentionDaysCtrl.text.trim());
+      if (days != null && days > 0) {
+        _extras['retentionDays'] = days;
       }
     }
     final cleanInputs = _inputsCtrl.text
@@ -548,6 +558,22 @@ class _NodeConfigEditorState extends State<NodeConfigEditor> {
                 controller: _scriptCtrl,
                 minLines: 4,
                 maxLines: 18,
+              ),
+            ),
+          ],
+          if (bodyKey == BuiltInBodyKeys.deleteOldBackups) ...[
+            const SizedBox(height: 12),
+            NodeFieldLabel(
+              label: l10n.nodeConfigBackupRetentionDays,
+              description: l10n.nodeConfigBackupRetentionDaysHelp,
+              child: CcTextField(
+                controller: _retentionDaysCtrl,
+                errorText:
+                    (int.tryParse(_retentionDaysCtrl.text.trim()) ?? 0) <= 0
+                    ? l10n.nodeConfigBackupRetentionDaysHelp
+                    : null,
+                keyboardType: TextInputType.number,
+                onChanged: (_) => setState(() {}),
               ),
             ),
           ],

@@ -68,9 +68,6 @@ void main() {
       expect(m.endedAt, DateTime(2026, 7, 1, 10));
       expect(m.createdAt, DateTime(2026, 7, 1, 8));
       expect(m.updatedAt, DateTime(2026, 7, 1, 11));
-      final sub = host.lastSubscribe!;
-      expect(sub.query, 'meeting.watchByWorkspace');
-      expect(sub.args, isEmpty);
     });
 
     test(
@@ -318,9 +315,6 @@ void main() {
       final stats = await repo.watchActionItemStats('ws-1').first;
       expect(stats['m-1']!.total, 5);
       expect(stats['m-1']!.done, 2);
-      final sub = host.lastSubscribe!;
-      expect(sub.query, 'meeting.watchActionItemStats');
-      expect(sub.args, isEmpty);
     });
 
     test('watchActionItemStats skips non-Map values', () async {

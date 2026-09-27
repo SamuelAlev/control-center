@@ -100,7 +100,9 @@ class RpcPipelineTemplateRepository implements PipelineTemplateRepository {
 
   @override
   Stream<List<PipelineDefinition>> watchForWorkspace(String workspaceId) =>
-      _remote.watchForWorkspace().map((dtos) => dtos.map(_fromDto).toList());
+      _remote
+          .watchForWorkspace(workspaceId)
+          .map((dtos) => dtos.map(_fromDto).toList());
 
   @override
   Future<List<PipelineDefinition>> forWorkspace(String workspaceId) async {

@@ -1790,6 +1790,13 @@ class AppLocalizationsHe extends AppLocalizations {
   String get nodeConfigOutputSchemaHelp => 'סכמת JSON שפלט השלב חייב לעמוד בה';
 
   @override
+  String get nodeConfigBackupRetentionDays => 'מחיקת גיבויים ישנים מ־(ימים)';
+
+  @override
+  String get nodeConfigBackupRetentionDaysHelp =>
+      'רק גיבויים של סביבת עבודה זו יימחקו. יש להזין מספר ימים חיובי.';
+
+  @override
   String get diffLineDisplay => 'שורות ארוכות ב-diff';
 
   @override
@@ -9062,6 +9069,43 @@ class AppLocalizationsHe extends AppLocalizations {
   String get spaceReposHint => 'מאגרים לצירוף';
 
   @override
+  String get newSpaceFolder => 'תיקייה חדשה';
+
+  @override
+  String get folderName => 'שם התיקייה';
+
+  @override
+  String get renameSpaceFolder => 'שינוי שם התיקייה';
+
+  @override
+  String get deleteSpaceFolder => 'מחיקת התיקייה';
+
+  @override
+  String get moveSpaceToFolder => 'העברה לתיקייה';
+
+  @override
+  String get removeSpaceFromFolder => 'הסרה מהתיקייה';
+
+  @override
+  String get spaceFolderActions => 'פעולות התיקייה';
+
+  @override
+  String get deleteFolderWithSpacesWarning =>
+      'מחיקה לצמיתות של מרחבים מסירה את ההודעות ועצי העבודה שלהם עבור כולם. אי אפשר לבטל פעולה זו.';
+
+  @override
+  String get deleteSpacesInFolder => 'מחיקת המרחבים שבתיקייה הזו לצמיתות';
+
+  @override
+  String get deleteFolderAndSpaces => 'מחיקת התיקייה והמרחבים';
+
+  @override
+  String get keepSpacesInFolder => 'אחרת, המרחבים יישארו מחוץ לתיקיות.';
+
+  @override
+  String get noSpaceFoldersYet => 'עדיין אין תיקיות';
+
+  @override
   String get ideSourceControl => 'בקרת מקור';
 
   @override
@@ -14389,7 +14433,7 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get backupNoSnapshots =>
-      'אין תמונות מצב עדיין. תמונה נוצרת רק כשתבקשו — שום דבר לא מתוזמן.';
+      'אין עדיין תמונות מצב של ההתקנה. אפשר ליצור אחת עכשיו או להשתמש בצינור מתוזמן לגיבוי סביבת עבודה.';
 
   @override
   String get backupSnapshotComplete => 'שלמה';
@@ -14400,6 +14444,29 @@ class AppLocalizationsHe extends AppLocalizations {
   @override
   String get backupSnapshotIncompleteNote =>
       'המניפסט חסר או מפנה לקבצים שאינם שם, ולכן תמונת המצב הזו לא יכולה לשחזר את ההתקנה כולה. את קובצי סביבות העבודה שכן יש בה עדיין אפשר לאמץ אחד-אחד.';
+
+  @override
+  String get backupDeleteSnapshotLabel => 'מחיקת תמונת מצב';
+
+  @override
+  String get backupDeleteSnapshotDescription =>
+      'מחיקה לצמיתות של תמונת המצב מהשרת. אם רוצים לשמור עותק, יש להוריד אותה תחילה.';
+
+  @override
+  String get backupDeleteSnapshotAction => 'מחיקת תמונת מצב';
+
+  @override
+  String get backupDeleteSnapshotTitle => 'למחוק את תמונת המצב?';
+
+  @override
+  String backupDeleteSnapshotBody(String name) {
+    return 'למחוק את ⁨$name⁩ מהשרת? כל מסדי הנתונים שבתמונה יאבדו. לא ניתן לבטל זאת.';
+  }
+
+  @override
+  String backupDeleteSnapshotDone(String name) {
+    return 'תמונת המצב ⁨$name⁩ נמחקה.';
+  }
 
   @override
   String backupSnapshotWorkspaces(int count) {

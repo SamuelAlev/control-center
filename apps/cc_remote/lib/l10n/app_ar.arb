@@ -451,5 +451,19 @@
       "hours": { "type": "int" },
       "minutes": { "type": "int" }
     }
-  }
+  },
+  "newSpaceFolder": "مجلد جديد",
+  "folderName": "اسم المجلد",
+  "renameSpaceFolder": "إعادة تسمية المجلد",
+  "deleteSpaceFolder": "حذف المجلد",
+  "moveSpaceToFolder": "نقل المساحة إلى مجلد",
+  "removeSpaceFromFolder": "إزالة المساحة من المجلد",
+  "spaceFolderActions": "إجراءات المجلد",
+  "deleteFolderWithSpacesWarning": "يؤدي حذف المساحات نهائيًا إلى إزالة رسائلها ومجلدات العمل الخاصة بها للجميع. لا يمكن التراجع عن هذا الإجراء.",
+  "deleteSpacesInFolder": "حذف المساحات الموجودة في هذا المجلد نهائيًا",
+  "deleteFolderAndSpaces": "حذف المجلد والمساحات",
+  "keepSpacesInFolder": "وإلا فستبقى المساحات خارج أي مجلد.",
+  "create": "إنشاء",
+  "otherSpaces": "مساحات أخرى",
+  "folderUpdateFailed": "تعذّر تحديث المجلدات"
 }

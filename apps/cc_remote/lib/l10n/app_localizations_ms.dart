@@ -380,6 +380,51 @@ class AppLocalizationsMs extends AppLocalizations {
       'Ruang dalam ruang kerja ini muncul di sini.';
 
   @override
+  String get newSpaceFolder => 'Folder baharu';
+
+  @override
+  String get folderName => 'Nama folder';
+
+  @override
+  String get renameSpaceFolder => 'Namakan semula folder';
+
+  @override
+  String get deleteSpaceFolder => 'Padam folder';
+
+  @override
+  String get moveSpaceToFolder => 'Alihkan ke folder';
+
+  @override
+  String get removeSpaceFromFolder => 'Alih keluar daripada folder';
+
+  @override
+  String get spaceFolderActions => 'Tindakan folder';
+
+  @override
+  String get deleteFolderWithSpacesWarning =>
+      'Memadam ruang secara kekal akan mengalih keluar mesej dan direktori kerja ruang itu untuk semua orang. Tindakan ini tidak boleh dibuat asal.';
+
+  @override
+  String get deleteSpacesInFolder =>
+      'Padam secara kekal ruang dalam folder ini';
+
+  @override
+  String get deleteFolderAndSpaces => 'Padam folder dan ruang';
+
+  @override
+  String get keepSpacesInFolder =>
+      'Jika tidak, ruang akan kekal di luar folder.';
+
+  @override
+  String get create => 'Cipta';
+
+  @override
+  String get otherSpaces => 'Ruang lain';
+
+  @override
+  String get folderUpdateFailed => 'Tidak dapat mengemas kini folder';
+
+  @override
   String get thread => 'Benang';
 
   @override

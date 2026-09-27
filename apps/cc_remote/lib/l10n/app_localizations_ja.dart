@@ -373,6 +373,49 @@ class AppLocalizationsJa extends AppLocalizations {
   String get spacesEmptyDescription => 'このワークスペースのスペースがここに表示されます。';
 
   @override
+  String get newSpaceFolder => '新しいフォルダー';
+
+  @override
+  String get folderName => 'フォルダー名';
+
+  @override
+  String get renameSpaceFolder => 'フォルダー名を変更';
+
+  @override
+  String get deleteSpaceFolder => 'フォルダーを削除';
+
+  @override
+  String get moveSpaceToFolder => 'フォルダーに移動';
+
+  @override
+  String get removeSpaceFromFolder => 'フォルダーから取り除く';
+
+  @override
+  String get spaceFolderActions => 'フォルダーの操作';
+
+  @override
+  String get deleteFolderWithSpacesWarning =>
+      'スペースを完全に削除すると、そのメッセージと作業ツリーが全員から削除されます。この操作は元に戻せません。';
+
+  @override
+  String get deleteSpacesInFolder => 'このフォルダー内のスペースを完全に削除する';
+
+  @override
+  String get deleteFolderAndSpaces => 'フォルダーとスペースを削除';
+
+  @override
+  String get keepSpacesInFolder => 'それ以外の場合、スペースはどのフォルダーにも属さない状態になります。';
+
+  @override
+  String get create => '作成';
+
+  @override
+  String get otherSpaces => 'その他のスペース';
+
+  @override
+  String get folderUpdateFailed => 'フォルダーを更新できませんでした';
+
+  @override
   String get thread => 'スレッド';
 
   @override

@@ -1814,6 +1814,14 @@ class AppLocalizationsRo extends AppLocalizations {
       'JSON Schema pe care ieșirea pasului trebuie să o îndeplinească';
 
   @override
+  String get nodeConfigBackupRetentionDays =>
+      'Șterge copiile mai vechi de (zile)';
+
+  @override
+  String get nodeConfigBackupRetentionDaysHelp =>
+      'Se șterg doar copiile acestui spațiu de lucru. Introdu un număr pozitiv de zile.';
+
+  @override
   String get diffLineDisplay => 'Linii lungi în diff-uri';
 
   @override
@@ -9167,6 +9175,45 @@ class AppLocalizationsRo extends AppLocalizations {
   String get spaceReposHint => 'Depozite de inclus';
 
   @override
+  String get newSpaceFolder => 'Dosar nou';
+
+  @override
+  String get folderName => 'Numele dosarului';
+
+  @override
+  String get renameSpaceFolder => 'Redenumește dosarul';
+
+  @override
+  String get deleteSpaceFolder => 'Șterge dosarul';
+
+  @override
+  String get moveSpaceToFolder => 'Mută în dosar';
+
+  @override
+  String get removeSpaceFromFolder => 'Elimină din dosar';
+
+  @override
+  String get spaceFolderActions => 'Acțiuni pentru dosar';
+
+  @override
+  String get deleteFolderWithSpacesWarning =>
+      'Ștergerea definitivă a spațiilor le elimină mesajele și directoarele de lucru pentru toată lumea. Această acțiune nu poate fi anulată.';
+
+  @override
+  String get deleteSpacesInFolder =>
+      'Șterge definitiv spațiile din acest dosar';
+
+  @override
+  String get deleteFolderAndSpaces => 'Șterge dosarul și spațiile';
+
+  @override
+  String get keepSpacesInFolder =>
+      'Altfel, spațiile vor rămâne în afara dosarelor.';
+
+  @override
+  String get noSpaceFoldersYet => 'Nu există încă dosare';
+
+  @override
   String get ideSourceControl => 'Control sursă';
 
   @override
@@ -14532,7 +14579,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get backupNoSnapshots =>
-      'Niciun snapshot încă. Unul e făcut doar când îl ceri — nimic nu e programat.';
+      'Nu există încă snapshoturi ale instalării. Creează unul acum sau folosește un pipeline programat pentru copiile spațiului de lucru.';
 
   @override
   String get backupSnapshotComplete => 'Complet';
@@ -14543,6 +14590,29 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get backupSnapshotIncompleteNote =>
       'Manifestul lipsește sau numește fișiere care nu sunt acolo, deci acest snapshot nu poate restaura întreaga instalare. Fișierele de spațiu de lucru pe care le are pot fi totuși adoptate unul câte unul.';
+
+  @override
+  String get backupDeleteSnapshotLabel => 'Șterge snapshotul';
+
+  @override
+  String get backupDeleteSnapshotDescription =>
+      'Elimină permanent acest snapshot de pe server. Descarcă-l mai întâi dacă vrei să-l păstrezi.';
+
+  @override
+  String get backupDeleteSnapshotAction => 'Șterge snapshotul';
+
+  @override
+  String get backupDeleteSnapshotTitle => 'Ștergi acest snapshot?';
+
+  @override
+  String backupDeleteSnapshotBody(String name) {
+    return 'Ștergi $name de pe server? Toate bazele de date din acest snapshot vor fi pierdute. Acțiunea nu poate fi anulată.';
+  }
+
+  @override
+  String backupDeleteSnapshotDone(String name) {
+    return 'Snapshotul $name a fost șters.';
+  }
 
   @override
   String backupSnapshotWorkspaces(int count) {

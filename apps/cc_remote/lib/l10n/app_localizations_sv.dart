@@ -379,6 +379,50 @@ class AppLocalizationsSv extends AppLocalizations {
   String get spacesEmptyDescription => 'Ytor i den här arbetsytan visas här.';
 
   @override
+  String get newSpaceFolder => 'Ny mapp';
+
+  @override
+  String get folderName => 'Mappnamn';
+
+  @override
+  String get renameSpaceFolder => 'Byt namn på mapp';
+
+  @override
+  String get deleteSpaceFolder => 'Ta bort mapp';
+
+  @override
+  String get moveSpaceToFolder => 'Flytta till mapp';
+
+  @override
+  String get removeSpaceFromFolder => 'Ta bort från mapp';
+
+  @override
+  String get spaceFolderActions => 'Mappåtgärder';
+
+  @override
+  String get deleteFolderWithSpacesWarning =>
+      'Om du tar bort utrymmen permanent försvinner deras meddelanden och arbetskataloger för alla. Det går inte att ångra.';
+
+  @override
+  String get deleteSpacesInFolder =>
+      'Ta bort utrymmena i den här mappen permanent';
+
+  @override
+  String get deleteFolderAndSpaces => 'Ta bort mapp och utrymmen';
+
+  @override
+  String get keepSpacesInFolder => 'Annars blir utrymmena kvar utanför mappar.';
+
+  @override
+  String get create => 'Skapa';
+
+  @override
+  String get otherSpaces => 'Andra utrymmen';
+
+  @override
+  String get folderUpdateFailed => 'Det gick inte att uppdatera mapparna';
+
+  @override
   String get thread => 'Tråd';
 
   @override

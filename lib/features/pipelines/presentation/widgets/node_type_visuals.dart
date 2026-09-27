@@ -255,6 +255,14 @@ const Map<String, PipelineNodeVisual> kPipelineNodeTypeVisuals = {
     icon: AppIcons.trash2,
     category: PipelineNodeCategory.flow,
   ),
+  'backup.workspace': PipelineNodeVisual(
+    icon: AppIcons.archive,
+    category: PipelineNodeCategory.flow,
+  ),
+  'backup.deleteOlderThan': PipelineNodeVisual(
+    icon: AppIcons.trash2,
+    category: PipelineNodeCategory.flow,
+  ),
 };
 
 /// Icon + category for a library [NodeType.id].

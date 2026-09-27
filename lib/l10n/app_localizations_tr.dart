@@ -1796,6 +1796,13 @@ class AppLocalizationsTr extends AppLocalizations {
       'Adım çıktısının uyması gereken JSON Schema';
 
   @override
+  String get nodeConfigBackupRetentionDays => 'Şundan eski yedekleri sil (gün)';
+
+  @override
+  String get nodeConfigBackupRetentionDaysHelp =>
+      'Yalnızca bu çalışma alanının yedekleri silinir. Pozitif bir gün sayısı girin.';
+
+  @override
   String get diffLineDisplay => 'Farklardaki uzun satırlar';
 
   @override
@@ -9073,6 +9080,44 @@ class AppLocalizationsTr extends AppLocalizations {
   String get spaceReposHint => 'Dahil edilecek repolar';
 
   @override
+  String get newSpaceFolder => 'Yeni klasör';
+
+  @override
+  String get folderName => 'Klasör adı';
+
+  @override
+  String get renameSpaceFolder => 'Klasörü yeniden adlandır';
+
+  @override
+  String get deleteSpaceFolder => 'Klasörü sil';
+
+  @override
+  String get moveSpaceToFolder => 'Klasöre taşı';
+
+  @override
+  String get removeSpaceFromFolder => 'Klasörden çıkar';
+
+  @override
+  String get spaceFolderActions => 'Klasör işlemleri';
+
+  @override
+  String get deleteFolderWithSpacesWarning =>
+      'Alanları kalıcı olarak silmek, mesajlarını ve çalışma dizinlerini herkes için kaldırır. Bu işlem geri alınamaz.';
+
+  @override
+  String get deleteSpacesInFolder => 'Bu klasördeki alanları kalıcı olarak sil';
+
+  @override
+  String get deleteFolderAndSpaces => 'Klasörü ve alanları sil';
+
+  @override
+  String get keepSpacesInFolder =>
+      'Aksi takdirde alanlar klasör dışında kalır.';
+
+  @override
+  String get noSpaceFoldersYet => 'Henüz klasör yok';
+
+  @override
   String get ideSourceControl => 'Kaynak denetimi';
 
   @override
@@ -14381,7 +14426,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get backupNoSnapshots =>
-      'Henüz anlık görüntü yok. Yalnızca siz istediğinizde alınır — zamanlanmış bir iş yoktur.';
+      'Henüz kurulum anlık görüntüsü yok. Şimdi oluşturun veya çalışma alanı yedekleri için zamanlanmış bir işlem hattı kullanın.';
 
   @override
   String get backupSnapshotComplete => 'Tamamlandı';
@@ -14392,6 +14437,29 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get backupSnapshotIncompleteNote =>
       'Manifest eksik veya olmayan dosyaları adlandırıyor, bu yüzden bu anlık görüntü tüm kurulumu geri yükleyemez. Var olan çalışma alanı dosyaları yine de tek tek alınabilir.';
+
+  @override
+  String get backupDeleteSnapshotLabel => 'Anlık görüntüyü sil';
+
+  @override
+  String get backupDeleteSnapshotDescription =>
+      'Bu anlık görüntüyü sunucudan kalıcı olarak kaldırın. Saklamak istiyorsanız önce indirin.';
+
+  @override
+  String get backupDeleteSnapshotAction => 'Anlık görüntüyü sil';
+
+  @override
+  String get backupDeleteSnapshotTitle => 'Bu anlık görüntü silinsin mi?';
+
+  @override
+  String backupDeleteSnapshotBody(String name) {
+    return '$name sunucudan silinsin mi? Bu görüntüdeki tüm veritabanları kaybolur. İşlem geri alınamaz.';
+  }
+
+  @override
+  String backupDeleteSnapshotDone(String name) {
+    return '$name anlık görüntüsü silindi.';
+  }
 
   @override
   String backupSnapshotWorkspaces(int count) {

@@ -1819,6 +1819,13 @@ class AppLocalizationsPl extends AppLocalizations {
       'Schemat JSON, jaki musi spełniać wyjście kroku';
 
   @override
+  String get nodeConfigBackupRetentionDays => 'Usuń kopie starsze niż (dni)';
+
+  @override
+  String get nodeConfigBackupRetentionDaysHelp =>
+      'Usuwane są tylko kopie tego obszaru roboczego. Podaj dodatnią liczbę dni.';
+
+  @override
   String get diffLineDisplay => 'Długie wiersze w diffach';
 
   @override
@@ -9207,6 +9214,44 @@ class AppLocalizationsPl extends AppLocalizations {
   String get spaceReposHint => 'Repozytoria do uwzględnienia';
 
   @override
+  String get newSpaceFolder => 'Nowy folder';
+
+  @override
+  String get folderName => 'Nazwa folderu';
+
+  @override
+  String get renameSpaceFolder => 'Zmień nazwę folderu';
+
+  @override
+  String get deleteSpaceFolder => 'Usuń folder';
+
+  @override
+  String get moveSpaceToFolder => 'Przenieś do folderu';
+
+  @override
+  String get removeSpaceFromFolder => 'Usuń z folderu';
+
+  @override
+  String get spaceFolderActions => 'Akcje folderu';
+
+  @override
+  String get deleteFolderWithSpacesWarning =>
+      'Trwałe usunięcie przestrzeni usuwa ich wiadomości i drzewa robocze dla wszystkich. Tej czynności nie można cofnąć.';
+
+  @override
+  String get deleteSpacesInFolder => 'Trwale usuń przestrzenie w tym folderze';
+
+  @override
+  String get deleteFolderAndSpaces => 'Usuń folder i przestrzenie';
+
+  @override
+  String get keepSpacesInFolder =>
+      'W przeciwnym razie przestrzenie pozostaną poza folderami.';
+
+  @override
+  String get noSpaceFoldersYet => 'Nie ma jeszcze folderów';
+
+  @override
   String get ideSourceControl => 'Kontrola źródła';
 
   @override
@@ -14590,7 +14635,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get backupNoSnapshots =>
-      'Nie ma jeszcze migawek. Wykonywana jest tylko na Twoje żądanie — nic nie jest zaplanowane.';
+      'Nie ma jeszcze migawek instalacji. Utwórz jedną teraz lub użyj zaplanowanego potoku do kopii obszaru roboczego.';
 
   @override
   String get backupSnapshotComplete => 'Kompletna';
@@ -14601,6 +14646,29 @@ class AppLocalizationsPl extends AppLocalizations {
   @override
   String get backupSnapshotIncompleteNote =>
       'Brakuje manifestu albo wymienia pliki, których nie ma, więc ta migawka nie może przywrócić całej instalacji. Pliki obszarów roboczych, które ma, można jednak adoptować po kolei.';
+
+  @override
+  String get backupDeleteSnapshotLabel => 'Usuń migawkę';
+
+  @override
+  String get backupDeleteSnapshotDescription =>
+      'Trwale usuń tę migawkę z serwera. Jeśli chcesz ją zachować, najpierw ją pobierz.';
+
+  @override
+  String get backupDeleteSnapshotAction => 'Usuń migawkę';
+
+  @override
+  String get backupDeleteSnapshotTitle => 'Usunąć tę migawkę?';
+
+  @override
+  String backupDeleteSnapshotBody(String name) {
+    return 'Usunąć $name z serwera? Wszystkie bazy danych w tej migawce zostaną utracone. Nie można tego cofnąć.';
+  }
+
+  @override
+  String backupDeleteSnapshotDone(String name) {
+    return 'Usunięto migawkę $name.';
+  }
 
   @override
   String backupSnapshotWorkspaces(int count) {

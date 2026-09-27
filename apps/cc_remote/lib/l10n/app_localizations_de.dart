@@ -381,6 +381,51 @@ class AppLocalizationsDe extends AppLocalizations {
       'Spaces in diesem Workspace erscheinen hier.';
 
   @override
+  String get newSpaceFolder => 'Neuer Ordner';
+
+  @override
+  String get folderName => 'Ordnername';
+
+  @override
+  String get renameSpaceFolder => 'Ordner umbenennen';
+
+  @override
+  String get deleteSpaceFolder => 'Ordner löschen';
+
+  @override
+  String get moveSpaceToFolder => 'Bereich in Ordner verschieben';
+
+  @override
+  String get removeSpaceFromFolder => 'Bereich aus Ordner entfernen';
+
+  @override
+  String get spaceFolderActions => 'Ordneraktionen';
+
+  @override
+  String get deleteFolderWithSpacesWarning =>
+      'Wenn Bereiche dauerhaft gelöscht werden, werden ihre Nachrichten und Arbeitsverzeichnisse für alle entfernt. Dies kann nicht rückgängig gemacht werden.';
+
+  @override
+  String get deleteSpacesInFolder =>
+      'Bereiche in diesem Ordner dauerhaft löschen';
+
+  @override
+  String get deleteFolderAndSpaces => 'Ordner und Bereiche löschen';
+
+  @override
+  String get keepSpacesInFolder =>
+      'Andernfalls bleiben die Bereiche ohne Ordner.';
+
+  @override
+  String get create => 'Erstellen';
+
+  @override
+  String get otherSpaces => 'Weitere Bereiche';
+
+  @override
+  String get folderUpdateFailed => 'Ordner konnten nicht aktualisiert werden';
+
+  @override
   String get thread => 'Thread';
 
   @override

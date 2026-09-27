@@ -102,7 +102,15 @@ Because one workspace is one file, handing a workspace around is a file operatio
 - `server.backupNow` snapshots the whole install into a timestamped directory that mirrors the live data dir — `manifest.json`, `global.db` and one `<workspaceId>/workspace.db` per workspace — so restoring is copying it back.
 - `server.listBackups` reads that directory back, newest first, with the size and workspace list of each snapshot. A snapshot whose manifest is missing or names files that are not there is still reported, flagged incomplete — hiding it is how an operator comes to believe they have a backup they do not.
 
-All four are on **Settings → Server → Backup & restore**: "Back up now" takes an install snapshot, the list underneath says which snapshots exist and whether each one is whole, and every workspace carries its own export, import and delete. Restoring one workspace out of a snapshot _is_ `workspace.import`, pointed at that snapshot's `<workspaceId>/workspace.db`, so the two cannot drift into different treatments of the same file. Restoring a whole install is still a copy-back of the snapshot directory with the server stopped — the layout mirrors the live data directory precisely so that nothing else is needed for it.
+The backup operations live under **Settings → Server → Backup & restore**:
+**Back up now** takes an install snapshot, the list shows which snapshots are
+complete and lets the install owner delete one after confirmation, and each
+workspace offers export and import. The built-in **Workspace backup** pipeline
+takes only that workspace's database on a weekly schedule and deletes its own
+backups older than the configured retention age. Restoring a workspace from an
+install snapshot is `workspace.import` pointed at the snapshot's
+`<workspaceId>/workspace.db`; restoring a whole install remains a stopped-server
+copy-back of the snapshot directory.
 
 What none of them carry is the rest of the workspace directory. A workspace accumulates more than a database — pasted images, skill and agent files, chat credentials, worktrees — and export and import move the **file**, so everything beside it stays where it is. That is deliberate for credentials and disposable for worktrees; for the rest it is a limit to know about rather than a feature. The [backup reference](/manual/reference/backup/#what-a-backup-does-not-contain) has the full table.
 

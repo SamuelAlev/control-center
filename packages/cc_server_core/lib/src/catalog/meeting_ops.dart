@@ -4,9 +4,15 @@ import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/features/meetings/domain/entities/meeting_segment.dart';
 import 'package:cc_domain/features/meetings/domain/repositories/meeting_repository.dart';
 import 'package:cc_host/cc_host.dart';
-import 'package:cc_infra/cc_infra.dart' show DictationService, MeetingAudioRequest, MeetingRecordingService, loadMeetingAudioClip;
+import 'package:cc_infra/cc_infra.dart'
+    show
+        DictationService,
+        MeetingAudioRequest,
+        MeetingRecordingService,
+        loadMeetingAudioClip;
 
 import 'package:cc_server_core/src/catalog/catalog_wire.dart';
+import 'package:cc_server_core/src/demo/demo_meeting_service.dart';
 
 /// Builds the `meeting.*` + `dictation.*` repo-ops that the catalog spreads.
 ///
@@ -16,15 +22,14 @@ import 'package:cc_server_core/src/catalog/catalog_wire.dart';
 List<RepoOp> buildMeetingOps({
   required MeetingRepository meetingRepository,
   MeetingRecordingService? meetingRecording,
+  DemoMeetingService? demoMeeting,
   DictationService? dictationService,
 }) => [
   RepoOp(
     name: 'meeting.getByWorkspace',
     kind: RepoOpKind.read,
     handler: (ctx) async {
-      final meetings = await meetingRepository.getByWorkspace(
-        ctx.workspaceId!,
-      );
+      final meetings = await meetingRepository.getByWorkspace(ctx.workspaceId!);
       return {'meetings': meetings.map(meetingToWire).toList()};
     },
   ),
@@ -296,6 +301,58 @@ List<RepoOp> buildMeetingOps({
       return {'ok': true};
     },
   ),
+  if (demoMeeting != null) ...[
+    RepoOp(
+      name: 'meeting.demoStart',
+      kind: RepoOpKind.mutate,
+      handler: (ctx) async {
+        final id = await demoMeeting.start(
+          workspaceId: ctx.workspaceId!,
+          userId: ctx.userId,
+        );
+        return {'meeting_id': id};
+      },
+    ),
+    RepoOp(
+      name: 'meeting.demoPause',
+      kind: RepoOpKind.mutate,
+      requiredArgs: ['meeting_id'],
+      handler: (ctx) async {
+        await demoMeeting.pause(
+          workspaceId: ctx.workspaceId!,
+          userId: ctx.userId,
+          meetingId: ctx.args['meeting_id'] as String,
+        );
+        return {'ok': true};
+      },
+    ),
+    RepoOp(
+      name: 'meeting.demoResume',
+      kind: RepoOpKind.mutate,
+      requiredArgs: ['meeting_id'],
+      handler: (ctx) async {
+        await demoMeeting.resume(
+          workspaceId: ctx.workspaceId!,
+          userId: ctx.userId,
+          meetingId: ctx.args['meeting_id'] as String,
+        );
+        return {'ok': true};
+      },
+    ),
+    RepoOp(
+      name: 'meeting.demoStop',
+      kind: RepoOpKind.mutate,
+      requiredArgs: ['meeting_id'],
+      handler: (ctx) async {
+        await demoMeeting.stop(
+          workspaceId: ctx.workspaceId!,
+          userId: ctx.userId,
+          meetingId: ctx.args['meeting_id'] as String,
+        );
+        return {'ok': true};
+      },
+    ),
+  ],
   if (meetingRecording != null) ...[
     RepoOp(
       name: 'meeting.startRecording',

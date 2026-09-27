@@ -234,5 +234,19 @@
   "yesterday": "Kemarin",
   "durationMinutes": "{count}m",
   "durationHours": "{count}h",
-  "durationHoursMinutes": "{hours}h {minutes}m"
+  "durationHoursMinutes": "{hours}h {minutes}m",
+  "newSpaceFolder": "Folder baru",
+  "folderName": "Nama folder",
+  "renameSpaceFolder": "Ubah nama folder",
+  "deleteSpaceFolder": "Hapus folder",
+  "moveSpaceToFolder": "Pindahkan ke folder",
+  "removeSpaceFromFolder": "Keluarkan dari folder",
+  "spaceFolderActions": "Tindakan folder",
+  "deleteFolderWithSpacesWarning": "Menghapus ruang secara permanen akan menghapus pesan dan direktori kerja ruang tersebut untuk semua orang. Tindakan ini tidak dapat dibatalkan.",
+  "deleteSpacesInFolder": "Hapus permanen ruang dalam folder ini",
+  "deleteFolderAndSpaces": "Hapus folder dan ruang",
+  "keepSpacesInFolder": "Jika tidak, ruang akan tetap berada di luar folder.",
+  "create": "Buat",
+  "otherSpaces": "Ruang lainnya",
+  "folderUpdateFailed": "Tidak dapat memperbarui folder"
 }

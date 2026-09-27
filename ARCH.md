@@ -82,6 +82,14 @@ The server owns external APIs and background services. Dio adapters in `cc_infra
 
 Snapshots are `backups/<ts>/{manifest.json,global.db,<workspaceId>/workspace.db}`, written using `VACUUM INTO`. `server.listBackups` includes incomplete snapshots and marks them incomplete. `workspace.export/import` operate on a single workspace file; restoring one from a snapshot uses the same import. Whole-install restore is a stopped-server copy-back, not another RPC operation.
 
+The install owner can remove a listed snapshot (including incomplete ones) by
+its timestamp name via `server.deleteBackup`; the server refuses paths and
+symlinked directories. Built-in **Workspace backup** pipelines instead write
+`backups/workspace-backups/<workspaceId>/<ts>/workspace.db` for the current
+workspace only. An enabled weekly schedule runs once on recovery after missed
+cron slots, then prunes only that workspace's backups older than 30 days by
+default; it never prunes install snapshots or other workspaces.
+
 RPC paths name files on the server. Remote byte transfer uses signed HTTP:
 
 | Route | Authorization and lifecycle |
@@ -167,6 +175,12 @@ Clipboard policy is per-user and per-direction: paste into rig defaults on, copy
 
 Setup requires a forge connected for the signed-in user and a workspace. Missing credentials lead to `/signed-out` only if that user's `users.onboarding_finished_at` says setup finished; otherwise onboarding. Never infer this from workspace existence or device preferences: invited users and shared devices invalidate that inference. Hold splash while the value is unknown. `users.markOnboardingFinished` is self-targeting, idempotent and monotonic; mark on completion and when observing a complete setup. Snapshot the step list once: invited members skip workspace creation but still do personal setup.
 
+Space sidebar folders are personal navigation organization, not workspace space entities or shared policy. `space_folder_providers.dart` reads `prefs.watchOwn` and writes a JSON folder list under `space_folders.<workspaceId>` with `prefs.set`; expanded and rail-mode sidebars share it. Workspace-specific keys prevent mixing a user's arrangements, while the workspace's visible-space stream remains the authority for which rows can be shown. Space-row and header archive actions remove the archived space from personal folder membership, so restore leaves it unfiled. Deleting a nonempty folder defaults to removing only its folder record; an explicit confirmation checkbox instead deletes its existing workspace spaces through the messaging service before removing the folder record. Folder deletion and space deletion have different scopes: the former is personal, the latter is workspace-wide.
+
+`SpaceFoldersList` handles workspace-scoped drag payloads: folder rows accept visible spaces, space rows open the existing folder-name dialog when another space lands on them, and a filed space dropped in free sidebar space becomes unfiled. During a filed-space drag, both desktop sidebars show a bordered "Remove from folder" target between folders and unfiled spaces; its accent border confirms an eligible hover, and dropping moves only a visible space in the same workspace. Drops outside the sidebar do nothing. `SpaceFolderActions.create(spaceIds:)` moves both spaces out of previous folders and into the new one in a single personal-preference write; direct folder and unfile drops use `SpaceFolderActions.move`. The menu remains a non-drag alternative. Folder overflow uses the space row's hover-revealed trailing control; its caret appears only when visible members exist.
+
+The phone PWA reads the same `space_folders.<workspaceId>` preference over `prefs.watchOwn` and writes through `prefs.set`, so folders follow the user between clients without adding shared workspace entities. Its Chat tab groups only active spaces from the selected workspace and offers touch-sized create, rename, move, unfile and delete controls instead of drag-only interactions. Permanent deletion verifies listed space ownership in that workspace; removing the folder alone leaves its spaces intact.
+
 ### Rendering assets
 
 - [cc_ui](packages/cc_ui/README.md) and [gallery](apps/cc_gallery/README.md) own components; [DESIGN.md](DESIGN.md) owns visual rules. Do not create another kit.
@@ -175,6 +189,14 @@ Setup requires a forge connected for the signed-in user and a workspace. Missing
 - Markdown uses `appMarkdownStyle`, `markdown_registries.dart`, `markdown_builders.dart` and `buildSharedCodeBlock` under `lib/shared/widgets/markdown/`. `GitHubMarkdownBody` serves forge content; `StyledMarkdownBody` tickets/meetings. Native mermaid ignores author styling in favor of `appMermaidStyle`; malformed/unsupported and unclosed streaming fences remain code. No WebView/JS diagram dependency.
 - Syntax highlighting uses shiki_flutter via `lib/shared/syntax/`: shared `syntax_languages.dart`, native registry, curated web registry and deferred grammar packs (`tool/gen_grammar_packs.py`). Theme edits update `syntax_palette.dart` and bump `kCcThemeRevision`. The Flutter-free `package:shiki_flutter/engine.dart` feeds the generated diff worker. Its unmatched-token sentinel maps to inherited color; do not duplicate the magic value elsewhere.
 - Global error boundaries are `PlatformDispatcher.instance.onError` and `ErrorWidget.builder`.
+
+### Client read snapshots
+
+Desktop and web attach a bounded `RpcSnapshotCache` to `ResilientRpcClient` after the server handshake and an uncached `identity.me` read. The namespace includes the verified server fingerprint and authenticated user; each entry includes the query/read operation and complete arguments, including workspace, repo, entity and range. Eligible subscriptions replay their snapshot before attaching to the live stream. UI-only one-shot reads opt into `watchCall`; ordinary `call`/`callResult`, mutations, credentials, presence and live control remain uncached.
+
+Snapshots survive navigation and restart: desktop uses owner-private atomic files under `<appSupport>/client_rpc_snapshots`, web uses dedicated IndexedDB storage, with a 16 MiB per-identity working set. Fresh results, including empty results, replace stale data. Transport loss retains readable snapshots; reconnect revalidates. Storage corruption or quota failures do not block live reads. Forget/disconnect clears the server's snapshots, and authenticated membership refresh or explicit authorization rejection invalidates affected data. The old workspace-only calendar preference snapshots are removed at startup.
+
+This is a read cache, not an offline server or a source of mutation authority. A cold launch still requires a reachable server for authentication and workspace admission; an admitted session can continue viewing previously loaded data during an outage. Messaging keeps its snapshot refresh attached while seeding the delta mirror, resolves existing conversations from the cached list, and caches finalized transcript reads separately from live turn events.
 
 ### Media cache
 

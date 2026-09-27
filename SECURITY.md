@@ -23,6 +23,8 @@ Regression coverage: `cc_persistence/test/workspace_isolation_ratchet_test.dart`
 
 Provider tokens live on the server, never in client storage or RPC responses. The client keychain (`flutter_secure_storage`) holds only its device credential. Existing client provider tokens migrate once through `credential_migration.dart`, then are deleted locally. `shared_preferences` is for non-sensitive, per-user synced preferences.
 
+Client read snapshots contain previously authorized presentation data, not credentials or authorization decisions. They are isolated by verified server identity and authenticated user, with workspace/query arguments in each entry. Desktop files are owner-private; web snapshots are origin-local IndexedDB data. Fresh membership reads prune revoked workspace data, explicit authorization failures evict affected snapshots, and forgetting/disconnecting a server removes its persisted snapshots. Cached data never bypasses the cold-start authentication gate or authorizes a write.
+
 Server credential lanes under `packages/cc_server_core/lib/src/identity/`:
 
 | Lane | Storage and authority |

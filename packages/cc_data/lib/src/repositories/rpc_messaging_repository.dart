@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:cc_data/cc_data.dart' show RpcMessagingPort;
@@ -148,42 +149,46 @@ class RpcMessagingRepository
       .watchSpaces(workspaceId: workspaceId)
       .map((dtos) => dtos.map(spaceFromDto).toList());
 
-  /// Seeds [store]'s `spaces` table from the FIRST emission of the legacy
-  /// snapshot watch (`.first` subscribes then auto-cancels once it resolves),
-  /// then follows the store's own delta-fed rows — sorted to match the
-  /// server's `messaging.watchSpaces` ordering (newest-`updatedAt`-first;
-  /// see `MessagingDao.watchSpacesByWorkspace`). `messaging.watchSpaces`
-  /// already returns every space in [workspaceId], so a full-replace seed is
-  /// correct (unlike `space_participants`, which is scoped per space — see
-  /// `_watchAdoptedParticipants`).
+  /// Keeps snapshot revalidation attached while following optimistic row
+  /// updates. Taking only `.first` would seed the delta mirror from disk and
+  /// cancel the authoritative refresh before it could replace stale rows.
   Stream<List<Space>> _watchAdoptedSpaces(
     SyncedStore store,
     String workspaceId,
-  ) async* {
-    // Seed ONCE per (store, workspace) — see `SyncedStore.isSeeded`.
-    if (!store.isSeeded('spaces')) {
-      final seedDtos = await _remote
-          .watchSpaces(workspaceId: workspaceId)
-          .first;
-      store.seed(
-        'spaces',
-        seedDtos.map((d) => d.toJson()).toList(),
-        (row) => row['id'] as String,
-      );
-    }
-    // Per-subscription entity memo — an unchanged row comes back as the SAME
-    // Map instance, so its Space is reused rather than re-decoded.
+  ) {
+    // Reuse entities for unchanged rows from the delta mirror.
     final cache = RowEntityCache<Space>();
-    yield* store
-        .watchRows('spaces')
-        .map(
-          (rows) =>
-              cache
-                  .map(rows, (r) => spaceFromDto(SpaceDto.fromJson(r)))
-                  .toList(growable: false)
-                ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt)),
-        );
+    return _watchRevalidatedRows(
+      store,
+      'spaces',
+      _remote
+          .watchSpaces(workspaceId: workspaceId)
+          .map((rows) => rows.map((row) => row.toJson()).toList()),
+    ).map(
+      (rows) =>
+          cache
+              .map(rows, (r) => spaceFromDto(SpaceDto.fromJson(r)))
+              .toList(growable: false)
+            ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt)),
+    );
   }
+
+  /// The full message, including finalized transcript segments, replayed from
+  /// the client snapshot cache while the server read revalidates.
+  Stream<Message?> watchMessageById(String workspaceId, String messageId) =>
+      _client
+          .watchCall('messaging.getMessageById', {
+            'workspace_id': workspaceId,
+            'message_id': messageId,
+          })
+          .map((data) {
+            final row = data['message'];
+            return row is Map
+                ? _messageFromDto(
+                    MessageDto.fromJson(row.cast<String, dynamic>()),
+                  )
+                : null;
+          });
 
   @override
   Stream<List<Message>> watchMessages(
@@ -263,15 +268,14 @@ class RpcMessagingRepository
     String workspaceId,
     String spaceId,
     String conversationId,
-  ) =>
-      _remote
-          .watchConversationTokens(workspaceId, spaceId, conversationId)
-          .map(
-            (data) => ConversationTokenTotals(
-              tokens: (data['tokens'] as num?)?.toInt() ?? 0,
-              chars: (data['chars'] as num?)?.toInt() ?? 0,
-            ),
-          );
+  ) => _remote
+      .watchConversationTokens(workspaceId, spaceId, conversationId)
+      .map(
+        (data) => ConversationTokenTotals(
+          tokens: (data['tokens'] as num?)?.toInt() ?? 0,
+          chars: (data['chars'] as num?)?.toInt() ?? 0,
+        ),
+      );
 
   @override
   Stream<List<SpaceParticipant>> watchParticipants(
@@ -310,34 +314,75 @@ class RpcMessagingRepository
     SyncedStore store,
     String workspaceId,
     String spaceId,
-  ) async* {
-    final seedDtos = await _remote
-        .watchParticipants(workspaceId, spaceId)
-        .first;
-    final existing = await store.watchRows('space_participants').first;
-    final merged = [
-      ...existing.where((r) => r['space_id'] != spaceId),
-      ...seedDtos.map((d) => d.toJson()),
-    ];
-    store.seed('space_participants', merged, (row) => row['id'] as String);
-    // The participants table is shared by every space, so this pipeline
-    // filters it down per emission; the memo means the surviving rows are not
-    // re-decoded as well.
+  ) {
     final cache = RowEntityCache<SpaceParticipant>();
-    yield* store
-        .watchRows('space_participants')
-        .map(
-          (rows) =>
-              cache
-                  .map(
-                    rows
-                        .where((r) => r['space_id'] == spaceId)
-                        .toList(growable: false),
-                    (r) => _participantFromDto(SpaceParticipantDto.fromJson(r)),
-                  )
-                  .toList(growable: false)
-                ..sort((a, b) => a.joinedAt.compareTo(b.joinedAt)),
-        );
+    return _watchRevalidatedRows(
+      store,
+      'space_participants',
+      _remote
+          .watchParticipants(workspaceId, spaceId)
+          .map((rows) => rows.map((row) => row.toJson()).toList()),
+      preserve: (row) => row['space_id'] != spaceId,
+    ).map(
+      (rows) =>
+          cache
+              .map(
+                rows
+                    .where((r) => r['space_id'] == spaceId)
+                    .toList(growable: false),
+                (r) => _participantFromDto(SpaceParticipantDto.fromJson(r)),
+              )
+              .toList(growable: false)
+            ..sort((a, b) => a.joinedAt.compareTo(b.joinedAt)),
+    );
+  }
+
+  Stream<List<Map<String, dynamic>>> _watchRevalidatedRows(
+    SyncedStore store,
+    String table,
+    Stream<List<Map<String, dynamic>>> snapshots, {
+    bool Function(Map<String, dynamic>)? preserve,
+  }) {
+    late final StreamController<List<Map<String, dynamic>>> controller;
+    StreamSubscription<void>? snapshotSub;
+    StreamSubscription<List<Map<String, dynamic>>>? rowSub;
+    var cancelled = false;
+    controller = StreamController<List<Map<String, dynamic>>>(
+      onListen: () {
+        snapshotSub = snapshots
+            .asyncMap<void>((rows) async {
+              final keep = preserve;
+              final existing = keep == null
+                  ? const <Map<String, dynamic>>[]
+                  : await store.watchRows(table).first;
+              if (cancelled) {
+                return;
+              }
+              store.seed(table, [
+                if (keep != null) ...existing.where(keep),
+                ...rows,
+              ], (row) => row['id'] as String);
+              rowSub ??= store
+                  .watchRows(table)
+                  .listen(controller.add, onError: controller.addError);
+            })
+            .listen(
+              (_) {},
+              onError: (Object error, StackTrace stack) {
+                cancelled = true;
+                unawaited(rowSub?.cancel());
+                controller.addError(error, stack);
+                unawaited(controller.close());
+              },
+            );
+      },
+      onCancel: () async {
+        cancelled = true;
+        await snapshotSub?.cancel();
+        await rowSub?.cancel();
+      },
+    );
+    return controller.stream;
   }
 
   /// Typed live turn relay: decodes `seed`/`updates` frames, skipping unknown

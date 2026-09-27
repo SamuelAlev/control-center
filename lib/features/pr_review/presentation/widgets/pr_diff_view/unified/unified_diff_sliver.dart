@@ -479,6 +479,7 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor
   }
 
   Set<int> _lastTokenSet = const {};
+  int _lastTokenRequestRevision = -1;
 
   /// Sticky-header state, recomputed each layout.
   int _stickyFile = -1;
@@ -518,6 +519,7 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor
       value.repaint.addListener(markNeedsPaint);
     }
     _store = value;
+    _lastTokenRequestRevision = -1;
     markNeedsLayout();
   }
 
@@ -836,8 +838,10 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor
         tokenSet.add(i);
       }
     }
-    if (!setEquals(tokenSet, _lastTokenSet)) {
+    if (!setEquals(tokenSet, _lastTokenSet) ||
+        _lastTokenRequestRevision != _store.tokenRequestRevision) {
       _lastTokenSet = tokenSet;
+      _lastTokenRequestRevision = _store.tokenRequestRevision;
       _store.requestTokens(tokenSet);
     }
 

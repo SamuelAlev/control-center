@@ -90,12 +90,16 @@ class PipelineCronScheduler {
   }
 
   CronEvaluation _evaluateCron(PipelineTrigger trigger, DateTime now) {
-    final existing = trigger.nextRunAt?.toUtc();
-    if (existing == null) {
-      // First evaluation — schedule the next slot, don't fire retroactively.
-      return CronEvaluation.idle(nextRunAt: _nextRunAt(trigger, now));
-    }
-    if (existing.isAfter(now)) {
+    // An uninitialised trigger still has a creation time. Derive its first
+    // scheduled slot from that time rather than from this tick, or a server
+    // stopped before its first fire silently loses the missed run.
+    final existing =
+        trigger.nextRunAt?.toUtc() ??
+        _nextRunAt(
+          trigger,
+          trigger.lastFiredAt?.toUtc() ?? trigger.createdAt.toUtc(),
+        );
+    if (existing == null || existing.isAfter(now)) {
       return CronEvaluation.idle(nextRunAt: existing);
     }
     // Due. If a whole slot elapsed since `existing` (the slot immediately after

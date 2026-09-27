@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:cc_data/cc_data.dart' show RpcPrReviewRepository;
 import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/core/domain/entities/workspace.dart';
@@ -5,6 +6,7 @@ import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_domain/features/pr_review/domain/providers/forge_provider.dart';
 import 'package:cc_domain/features/pr_review/domain/repositories/pr_review_repository.dart';
+import 'package:cc_domain/features/pr_review/domain/sources/pr_diff_source.dart';
 import 'package:cc_rpc/cc_rpc.dart' show InProcessRpcChannel, RemoteRpcClient;
 import 'package:control_center/core/constants/app_constants.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
@@ -210,6 +212,46 @@ void main() {
     test('is a StreamProvider.family', () {
       expect(prFilesProvider, isNotNull);
     });
+
+    test('fresh empty file snapshot removes a cached nonempty diff', () async {
+      const pr = (workspaceId: 'w', repoFullName: 'o/r', number: 3);
+      final updates = StreamController<PrFilesLoad>();
+      addTearDown(updates.close);
+      final container = ProviderContainer(
+        overrides: [
+          prFilesLoadProvider(pr).overrideWith((ref) => updates.stream),
+        ],
+      );
+      addTearDown(container.dispose);
+      final listener = container.listen(prFilesProvider(pr), (_, _) {});
+      addTearDown(listener.close);
+
+      updates.add(
+        PrFilesLoad(
+          files: [
+            PrFile(
+              filename: 'changed.dart',
+              status: PrFileStatus.modified,
+              additions: 1,
+              deletions: 0,
+              patch: '@@ -1 +1 @@',
+            ),
+          ],
+          isComplete: true,
+        ),
+      );
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+      expect(
+        container.read(prFilesProvider(pr)).value?.single.filename,
+        'changed.dart',
+      );
+
+      updates.add(const PrFilesLoad(files: [], isComplete: true));
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+      expect(container.read(prFilesProvider(pr)).value, isEmpty);
+    });
   });
 
   group('prFileIndexProvider', () {
@@ -233,10 +275,10 @@ void main() {
       expect(preferPatchedFiles(patched, index), patched);
     });
 
-    test('falls back to the index while patches are empty or missing', () {
+    test('only a missing patch snapshot falls back to the index', () {
       final index = [file('a.dart'), file('b.dart')];
       expect(preferPatchedFiles(null, index), index);
-      expect(preferPatchedFiles(const [], index), index);
+      expect(preferPatchedFiles(const [], index), isEmpty);
       expect(preferPatchedFiles(null, null), isEmpty);
     });
   });

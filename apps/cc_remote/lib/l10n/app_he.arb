@@ -452,5 +452,19 @@
       "hours": { "type": "int" },
       "minutes": { "type": "int" }
     }
-  }
+  },
+  "newSpaceFolder": "תיקייה חדשה",
+  "folderName": "שם התיקייה",
+  "renameSpaceFolder": "שינוי שם התיקייה",
+  "deleteSpaceFolder": "מחיקת התיקייה",
+  "moveSpaceToFolder": "העברה לתיקייה",
+  "removeSpaceFromFolder": "הסרה מהתיקייה",
+  "spaceFolderActions": "פעולות התיקייה",
+  "deleteFolderWithSpacesWarning": "מחיקה לצמיתות של מרחבים מסירה את ההודעות ועצי העבודה שלהם עבור כולם. אי אפשר לבטל פעולה זו.",
+  "deleteSpacesInFolder": "מחיקת המרחבים שבתיקייה הזו לצמיתות",
+  "deleteFolderAndSpaces": "מחיקת התיקייה והמרחבים",
+  "keepSpacesInFolder": "אחרת, המרחבים יישארו מחוץ לתיקיות.",
+  "create": "יצירה",
+  "otherSpaces": "מרחבים אחרים",
+  "folderUpdateFailed": "לא ניתן לעדכן את התיקיות"
 }

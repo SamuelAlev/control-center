@@ -19,6 +19,8 @@ import 'package:cc_server_core/src/demo/demo_provider.dart';
 import 'package:cc_server_core/src/demo/demo_repo_stats.dart';
 import 'package:cc_server_core/src/demo/demo_script.dart';
 import 'package:cc_server_core/src/demo/demo_seeder.dart';
+import 'package:cc_server_core/src/demo/demo_story_replay.dart';
+import 'package:cc_server_core/src/demo/demo_subscription_usage.dart';
 import 'package:cc_server_core/src/demo/demo_visitor_service.dart';
 import 'package:cc_server_core/src/demo/fixtures/demo_fixtures.g.dart';
 import 'package:cc_server_core/src/demo/scripted_agent_loop.dart';
@@ -49,6 +51,8 @@ Future<DemoWiring> buildDemoWiring(DemoRuntimeContext context) async {
   ];
   log('demo: loaded ${scripts.length} run scripts');
 
+  final messaging = DaoMessagingRepository(context.workspaceDbs);
+  final runLogs = DaoAgentRunLogRepository(context.workspaceDbs);
   final seeder = DemoSeeder(
     globalDb: context.globalDb,
     workspaceDbs: context.workspaceDbs,
@@ -58,14 +62,14 @@ Future<DemoWiring> buildDemoWiring(DemoRuntimeContext context) async {
     workspaceRepository: context.workspaceRepository,
     agentRepository: DaoAgentRepository(context.workspaceDbs),
     repoRepository: DaoRepoRepository(context.workspaceDbs),
-    messagingRepository: DaoMessagingRepository(context.workspaceDbs),
+    messagingRepository: messaging,
     ticketRepository: DaoTicketRepository(
       context.workspaceDbs,
       context.globalDb.workspaceRouteDao,
     ),
     projectRepository: DaoProjectRepository(context.workspaceDbs),
     todoRepository: DaoTodoRepository(context.workspaceDbs),
-    runLogRepository: DaoAgentRunLogRepository(context.workspaceDbs),
+    runLogRepository: runLogs,
     pipelineRunRepository: PipelineRunRepositoryImpl(
       context.workspaceDbs,
       context.globalDb.workspaceRouteDao,
@@ -106,11 +110,19 @@ Future<DemoWiring> buildDemoWiring(DemoRuntimeContext context) async {
     relayRoom: context.relayRoom,
     publicUrl: context.publicUrl,
     signalingUrl: context.signalingUrl,
+    onVisitorReap: context.onVisitorReap,
     log: log,
   );
 
   return _DemoWiring(
-    scripts: scripts,
+    agentLoop: ScriptedAgentLoop(
+      scripts: scripts,
+      onPeerStep: DemoStoryReplay(
+        messaging: messaging,
+        conversations: DaoConversationRepository(context.workspaceDbs),
+        runLogs: runLogs,
+      ).playPeer,
+    ),
     visitors: visitors,
     repoStats: DemoRepoStats(onLog: log),
     poller: DemoOpenPrPoller(
@@ -130,13 +142,13 @@ Future<DemoWiring> buildDemoWiring(DemoRuntimeContext context) async {
 
 class _DemoWiring implements DemoWiring {
   _DemoWiring({
-    required List<DemoRunScript> scripts,
+    required this.agentLoop,
     required this._visitors,
     required this.repoStats,
     required this.poller,
     required this._mergedHistory,
     required this._forgeRegistry,
-  }) : agentLoop = ScriptedAgentLoop(scripts: scripts);
+  });
 
   final DemoVisitorService _visitors;
   final DemoMergedHistory _mergedHistory;
@@ -161,6 +173,10 @@ class _DemoWiring implements DemoWiring {
   @override
   final HarnessProviderFactory harnessProviderFactory =
       const DemoHarnessProviderFactory();
+
+  @override
+  Future<List<Map<String, dynamic>>> fetchSubscriptionUsage() async =>
+      demoSubscriptionUsage();
 
   /// Only the built-in harness. Any other `cliName` resolves to null and the
   /// run fails with "No execution backend" — a demo host has no CLIs, and

@@ -234,5 +234,19 @@
   "yesterday": "昨天",
   "durationMinutes": "{count} 分",
   "durationHours": "{count} 時",
-  "durationHoursMinutes": "{hours} 時 {minutes} 分"
+  "durationHoursMinutes": "{hours} 時 {minutes} 分",
+  "newSpaceFolder": "新增資料夾",
+  "folderName": "資料夾名稱",
+  "renameSpaceFolder": "重新命名資料夾",
+  "deleteSpaceFolder": "刪除資料夾",
+  "moveSpaceToFolder": "移至資料夾",
+  "removeSpaceFromFolder": "從資料夾移除",
+  "spaceFolderActions": "資料夾操作",
+  "deleteFolderWithSpacesWarning": "永久刪除空間會為所有人移除其中的訊息和工作樹。此操作無法復原。",
+  "deleteSpacesInFolder": "永久刪除此資料夾中的空間",
+  "deleteFolderAndSpaces": "刪除資料夾和空間",
+  "keepSpacesInFolder": "否則，空間將不屬於任何資料夾。",
+  "create": "建立",
+  "otherSpaces": "其他空間",
+  "folderUpdateFailed": "無法更新資料夾"
 }

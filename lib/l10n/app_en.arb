@@ -1017,6 +1017,14 @@
   "nodeConfigDispatchMode": "Dispatch mode",
   "nodeConfigOutputSchema": "Output schema (JSON)",
   "nodeConfigOutputSchemaHelp": "JSON Schema the step output must satisfy",
+  "nodeConfigBackupRetentionDays": "Delete backups older than (days)",
+  "@nodeConfigBackupRetentionDays": {
+    "description": "Retention age in days for a workspace backup pruning node"
+  },
+  "nodeConfigBackupRetentionDaysHelp": "Only backups from this workspace are deleted. Enter a positive number of days.",
+  "@nodeConfigBackupRetentionDaysHelp": {
+    "description": "Safety and validation hint under a backup retention node"
+  },
   "diffLineDisplay": "Long lines in diffs",
   "@diffLineDisplay": {
     "description": "Settings label for the diff long-line overflow mode"
@@ -8085,6 +8093,33 @@
   "newSpace": "New space",
   "spaceName": "Space name",
   "spaceReposHint": "Repos to include",
+  "newSpaceFolder": "New folder",
+  "folderName": "Folder name",
+  "renameSpaceFolder": "Rename folder",
+  "deleteSpaceFolder": "Delete folder",
+  "moveSpaceToFolder": "Move to folder",
+  "removeSpaceFromFolder": "Remove from folder",
+  "spaceFolderActions": "Folder actions",
+  "deleteFolderWithSpacesWarning": "Deleting spaces permanently removes their messages and worktrees for everyone. This cannot be undone.",
+  "@deleteFolderWithSpacesWarning": {
+    "description": "Danger warning when choosing to permanently delete the spaces inside a folder"
+  },
+  "deleteSpacesInFolder": "Permanently delete the spaces in this folder",
+  "@deleteSpacesInFolder": {
+    "description": "Checkbox to permanently delete all spaces in a folder when deleting the folder"
+  },
+  "deleteFolderAndSpaces": "Delete folder and spaces",
+  "@deleteFolderAndSpaces": {
+    "description": "Confirmation action for deleting a folder and its spaces permanently"
+  },
+  "keepSpacesInFolder": "Otherwise, spaces will remain unfiled.",
+  "@keepSpacesInFolder": {
+    "description": "Explains that spaces remain unfiled if the delete-spaces checkbox is left unchecked"
+  },
+  "noSpaceFoldersYet": "No folders yet",
+  "@noSpaceFoldersYet": {
+    "description": "Empty state in the space folder picker when no folders exist"
+  },
   "ideSourceControl": "Source control",
   "stagedChanges": "Staged changes",
   "changes": "Changes",
@@ -13056,7 +13091,7 @@
       }
     }
   },
-  "backupNoSnapshots": "No snapshots yet. One is taken only when you ask for it — nothing is scheduled.",
+  "backupNoSnapshots": "No install snapshots yet. Take one now, or use a workspace backup pipeline for scheduled copies.",
   "@backupNoSnapshots": {
     "description": "Empty state of the snapshot list"
   },
@@ -13071,6 +13106,40 @@
   "backupSnapshotIncompleteNote": "The manifest is missing or names files that are not there, so this snapshot cannot restore the whole install. The workspace files it does have can still be adopted one by one.",
   "@backupSnapshotIncompleteNote": {
     "description": "What an incomplete snapshot can and cannot restore"
+  },
+  "backupDeleteSnapshotLabel": "Delete snapshot",
+  "@backupDeleteSnapshotLabel": {
+    "description": "Heading of the destructive action inside an expanded install snapshot"
+  },
+  "backupDeleteSnapshotDescription": "Permanently remove this snapshot from the server. Download it first if you need to keep a copy.",
+  "@backupDeleteSnapshotDescription": {
+    "description": "Danger callout explaining permanent snapshot deletion"
+  },
+  "backupDeleteSnapshotAction": "Delete snapshot",
+  "@backupDeleteSnapshotAction": {
+    "description": "Button confirming deletion of a server snapshot"
+  },
+  "backupDeleteSnapshotTitle": "Delete this snapshot?",
+  "@backupDeleteSnapshotTitle": {
+    "description": "Title of the snapshot deletion confirmation"
+  },
+  "backupDeleteSnapshotBody": "Delete {name} from the server? All databases in this snapshot will be lost. This cannot be undone.",
+  "@backupDeleteSnapshotBody": {
+    "description": "Confirmation message for deleting a whole-install snapshot",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "backupDeleteSnapshotDone": "Deleted snapshot {name}.",
+  "@backupDeleteSnapshotDone": {
+    "description": "Success toast for deleting a server snapshot",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "backupSnapshotWorkspaces": "{count, plural, =0{No workspaces} =1{1 workspace} other{{count} workspaces}}",
   "@backupSnapshotWorkspaces": {

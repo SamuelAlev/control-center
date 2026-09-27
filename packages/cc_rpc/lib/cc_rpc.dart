@@ -21,6 +21,7 @@ export 'src/channel/remote_rpc_channel_port.dart';
 export 'src/channel/ws_client_channel.dart';
 export 'src/client/remote_channel_auth.dart';
 export 'src/client/remote_rpc_client.dart';
+export 'src/client/rpc_snapshot_cache.dart';
 export 'src/client/server_build.dart';
 export 'src/crypto/relay_frame_crypto.dart';
 export 'src/crypto/remote_control_crypto.dart';

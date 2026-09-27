@@ -135,6 +135,18 @@ class BackupActions {
     return data['path'] as String? ?? '';
   }
 
+  /// Deletes one listed whole-install snapshot by immutable name, not path.
+  Future<void> deleteBackup(String name) async {
+    try {
+      await _ref.read(rpcClientProvider).call('server.deleteBackup', {
+        'name': name,
+      });
+    } finally {
+      // A partial filesystem removal may fail after changing the listing.
+      _ref.invalidate(backupSnapshotsProvider);
+    }
+  }
+
   /// Exports [workspaceId] as a single file. Returns the file's path.
   ///
   /// Requires admin on that workspace, which is why the id travels explicitly

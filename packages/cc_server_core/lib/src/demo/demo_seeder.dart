@@ -24,6 +24,7 @@ import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_domain/core/domain/value_objects/principal.dart';
 import 'package:cc_domain/core/domain/value_objects/repo_isolation_backend.dart';
 import 'package:cc_domain/core/domain/value_objects/run_cost.dart';
+import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
 import 'package:cc_domain/features/calendar/domain/entities/calendar_event.dart';
 import 'package:cc_domain/features/governance/domain/entities/work_product.dart';
@@ -71,6 +72,8 @@ import 'package:cc_persistence/database/global/global_database.dart';
 import 'package:cc_persistence/database/workspace/workspace_database.dart';
 import 'package:cc_persistence/database/workspace_database_manager.dart';
 import 'package:cc_persistence/repositories/dao_calendar_repository.dart';
+import 'package:cc_persistence/repositories/dao_conversation_repository.dart';
+import 'package:cc_persistence/repositories/dao_identity_repositories.dart';
 import 'package:cc_persistence/repositories/dao_meeting_repository.dart';
 import 'package:cc_persistence/repositories/dao_memory_policy_repository.dart';
 import 'package:cc_server_core/src/demo/demo_pr_cache.dart';
@@ -171,10 +174,11 @@ class DemoSeeder {
   /// workspace that looks like any other.
   final Future<void> Function(String workspaceId)? _baseSeed;
 
-  /// Registers a PENDING approval in the host's live confirmation registry,
-  /// which is what the inbox's "agent is waiting on you" lane reads. Null on
-  /// hosts without the registry.
-  final void Function(ConfirmationRequest request)? _registerConfirmation;
+  /// Registers an inert approval on visitor claim. The decision only
+  /// transitions the fictional run; it never dispatches the command.
+  /// Null on hosts without the confirmation registry.
+  final Future<bool> Function(ConfirmationRequest request)?
+  _registerConfirmation;
 
   /// Kicks a newsfeed refresh for one user at CLAIM time, so a visitor sees
   /// real articles within seconds instead of waiting for the 30-minute sweep.
@@ -231,7 +235,7 @@ class DemoSeeder {
     await _seedArtifacts(workspaceId, agents);
     await _seedActivity(workspaceId, agents);
     await _seedNotifications(workspaceId);
-    await _seedInboxAttention(workspaceId, spaces);
+    await _seedInboxAttention(workspaceId);
     await _seedAiReview(workspaceId, spaces);
     _log('seeded workspace $workspaceId');
   }
@@ -437,7 +441,7 @@ class DemoSeeder {
         >[
           (
             name: 'eval-review',
-            agentIds: [agents[0].id],
+            agentIds: [agents[0].id, agents[1].id],
             messages: [
               (
                 person: maya,
@@ -594,6 +598,7 @@ class DemoSeeder {
         ];
 
     final created = <({String id, String name})>[];
+    final conversations = DaoConversationRepository(_dbs);
     for (final seed in seeds) {
       final space = await _messaging.createSpace(
         workspaceId,
@@ -620,8 +625,9 @@ class DemoSeeder {
         );
       }
 
+      String? firstMessageId;
       for (final message in seed.messages) {
-        await _messaging.sendMessage(
+        final messageId = await _messaging.sendMessage(
           workspaceId: workspaceId,
           spaceId: space.id,
           content: message.text,
@@ -629,6 +635,117 @@ class DemoSeeder {
           // removed, and messaging throws without one.
           senderId: message.agentId ?? message.person!.id,
           senderType: message.agentId != null ? 'agent' : 'user',
+        );
+        firstMessageId ??= messageId;
+      }
+
+      // A space is a container for several conversations, not a single chat.
+      // Keep the standing conversation first (the PR and todo surfaces use it)
+      final standing = await conversations.ensure(
+        workspaceId: workspaceId,
+        spaceId: space.id,
+      );
+      final standingTitle = switch (seed.name) {
+        'eval-review' => 'PR #412 · Budget review',
+        'eval-progress' => 'HX-118 · Grader progress',
+        'eval-reports' => 'Scheduled eval exports',
+        _ => 'Release cut',
+      };
+      await conversations.rename(
+        workspaceId: workspaceId,
+        conversationId: standing.id,
+        title: standingTitle,
+      );
+      if (seed.name == 'eval-review') {
+        final followUp = await conversations.create(
+          workspaceId: workspaceId,
+          spaceId: space.id,
+          title: 'Release gate · Shared run groups',
+          createdByPrincipalId: maya.id,
+        );
+        await _messaging.sendMessage(
+          workspaceId: workspaceId,
+          spaceId: space.id,
+          conversationId: followUp.id,
+          senderId: maya.id,
+          senderType: 'user',
+          content:
+              'Before Thursday: does the shared run-group fix cover '
+              'parallel retries, or only a single eval?',
+        );
+        await _messaging.sendMessage(
+          workspaceId: workspaceId,
+          spaceId: space.id,
+          conversationId: followUp.id,
+          senderId: agents[0].id,
+          senderType: 'agent',
+          content:
+              'Parallel retries are covered. I checked the ledger '
+              'against two simultaneous grader runs; #412 still needs '
+              'Diego’s test for the cancellation path.',
+        );
+        if (firstMessageId != null) {
+          final thread = await conversations.create(
+            workspaceId: workspaceId,
+            spaceId: space.id,
+            title: 'Diego’s release timing',
+            anchorMessageId: firstMessageId,
+            createdByPrincipalId: diego.id,
+          );
+          await _messaging.sendMessage(
+            workspaceId: workspaceId,
+            spaceId: space.id,
+            conversationId: thread.id,
+            senderId: diego.id,
+            senderType: 'user',
+            content:
+                'I can have the cancellation test in by Wednesday. '
+                'Leave the gate on until CI goes green.',
+          );
+        }
+        final walkthrough = await conversations.create(
+          workspaceId: workspaceId,
+          spaceId: space.id,
+          title: 'HX-124 · Shared run-group walkthrough',
+          createdByPrincipalId: maya.id,
+        );
+        await _messaging.sendMessage(
+          workspaceId: workspaceId,
+          spaceId: space.id,
+          conversationId: walkthrough.id,
+          senderId: maya.id,
+          senderType: 'user',
+          content:
+              'Ravi, coordinate the HX-124 shared run-group budget fix '
+              'with Juno. For a live fictional replay, send '
+              '“@Ravi shared run-group walkthrough” in this conversation.',
+        );
+      } else if (seed.name == 'eval-progress') {
+        final followUp = await conversations.create(
+          workspaceId: workspaceId,
+          spaceId: space.id,
+          title: 'Retriever #88 · Hybrid recall',
+          createdByPrincipalId: priya.id,
+        );
+        await _messaging.sendMessage(
+          workspaceId: workspaceId,
+          spaceId: space.id,
+          conversationId: followUp.id,
+          senderId: priya.id,
+          senderType: 'user',
+          content:
+              'The hybrid retrieval pass is ready for #88. Are the '
+              'long-tail queries still dropping after reranking?',
+        );
+        await _messaging.sendMessage(
+          workspaceId: workspaceId,
+          spaceId: space.id,
+          conversationId: followUp.id,
+          senderId: agents[1].id,
+          senderType: 'agent',
+          content:
+              'The 95th-percentile set is back above baseline. Two '
+              'timeout cases remain; I linked their traces in the PR.',
         );
       }
       created.add((id: space.id, name: seed.name));
@@ -755,6 +872,82 @@ class DemoSeeder {
         ),
       );
     }
+    if (_registerConfirmation == null) {
+      return;
+    }
+    final reviewSpace = spaces
+        .where((s) => s.name == kDemoAgentSpaceName)
+        .single;
+    final conversations = await DaoConversationRepository(
+      _dbs,
+    ).listForSpace(workspaceId: workspaceId, spaceId: reviewSpace.id);
+    final releaseGate = conversations
+        .where((c) => c.title == 'Release gate · Shared run groups')
+        .single;
+    final approvalRunId = '$workspaceId:demo-run-push-approval';
+    final requestedAt = _now().subtract(const Duration(minutes: 17));
+    const approvalText =
+        'The #412 shared run-group change is ready for review. '
+        'I requested approval for `git push origin feature/eval-budget-ledger` '
+        'from the evalkit snapshot; execution is blocked and no push has run. '
+        'You can approve or deny the demo request in the inbox.';
+    final approvalSegments = encodeTranscript([
+      TextSegment(
+        text: 'Checking the release gate on #412 before asking for a push.',
+        startedAt: requestedAt,
+      ),
+      ToolSegment(
+        toolName: 'request_confirmation',
+        toolCallId: 'demo-push-approval',
+        inputs: const {
+          'command': 'git push origin feature/eval-budget-ledger',
+          'working_directory': '/workspace/helix/evalkit',
+        },
+        outputs: 'Approval required. Command not executed.',
+        status: ToolSegmentStatus.ok,
+        startedAt: requestedAt.add(const Duration(seconds: 2)),
+        durationMs: 25,
+      ),
+      TextSegment(
+        text: approvalText,
+        startedAt: requestedAt.add(const Duration(seconds: 3)),
+      ),
+    ]);
+    await _messaging.sendMessage(
+      workspaceId: workspaceId,
+      spaceId: reviewSpace.id,
+      conversationId: releaseGate.id,
+      senderId: agents[0].id,
+      senderType: 'agent',
+      messageType: 'agent_turn',
+      id: approvalRunId,
+      content: approvalText,
+      metadata: {
+        'agentName': agents[0].name,
+        'streamComplete': true,
+        'outcome': 'completed',
+        'segments': approvalSegments,
+        'transcriptChars': approvalText.length,
+      },
+    );
+    // A blocked, process-free demo run remains visible in the active run lane.
+    // The live confirmation registry is restored on visitor claim.
+    await _runLogs.upsert(
+      AgentRunLog(
+        id: approvalRunId,
+        agentId: agents[0].id,
+        workspaceId: workspaceId,
+        spaceId: reviewSpace.id,
+        conversationId: releaseGate.id,
+        ticketId: '$workspaceId:HX-124',
+        startedAt: requestedAt,
+        status: RunStatus.running,
+        liveness: RunLiveness.blocked,
+        summary: 'Waiting for approval to push #412; no command executed',
+        adapter: 'cc-harness',
+        modelId: 'anthropic/claude-sonnet-4-5',
+      ),
+    );
   }
 
   /// Prunes the product's built-in pipeline templates down to the demo's two.
@@ -1038,6 +1231,116 @@ class DemoSeeder {
             status: TicketStatus.backlog,
             priority: TicketPriority.none,
             agentId: null,
+            daysAgo: 1,
+          ),
+          (
+            key: 'HX-139',
+            title: 'Separate grader queue time from generation time',
+            body:
+                'Record the queue interval before the grader starts so the '
+                'HX-118 pending state can explain slow completions.',
+            status: TicketStatus.inProgress,
+            priority: TicketPriority.medium,
+            agentId: agents[1].id,
+            daysAgo: 8,
+          ),
+          (
+            key: 'HX-141',
+            title: 'Restore long-tail query examples in retriever #88',
+            body:
+                'Keep the low-recall examples next to their reranker traces; '
+                'the hybrid pass should not hide the two timeout cases.',
+            status: TicketStatus.inReview,
+            priority: TicketPriority.high,
+            agentId: agents[1].id,
+            daysAgo: 7,
+          ),
+          (
+            key: 'HX-143',
+            title: 'Pin the nightly eval snapshot before budget comparisons',
+            body:
+                'Compare a stable input set across nightly sweeps before '
+                'flagging a change in model-family token spend.',
+            status: TicketStatus.open,
+            priority: TicketPriority.medium,
+            agentId: agents[0].id,
+            daysAgo: 6,
+          ),
+          (
+            key: 'HX-145',
+            title: 'Show failed export deliveries in the research log',
+            body:
+                'HX-129 needs a visible retryable failure record instead of '
+                'silently dropping an email to the research team.',
+            status: TicketStatus.backlog,
+            priority: TicketPriority.high,
+            agentId: agents[2].id,
+            daysAgo: 5,
+          ),
+          (
+            key: 'HX-147',
+            title: 'Compare run-card estimates against final grader spend',
+            body:
+                'Keep the estimated-versus-final delta on the run card so '
+                'HX-124 warnings can be checked after a sweep.',
+            status: TicketStatus.open,
+            priority: TicketPriority.medium,
+            agentId: null,
+            daysAgo: 4,
+          ),
+          (
+            key: 'HX-149',
+            title: 'Deduplicate retry traces in weekly research exports',
+            body:
+                'A retried run should have one score row with its final '
+                'grader result, not one row per attempt.',
+            status: TicketStatus.inProgress,
+            priority: TicketPriority.high,
+            agentId: agents[2].id,
+            daysAgo: 4,
+          ),
+          (
+            key: 'HX-152',
+            title: 'Label cancelled grader passes in the run timeline',
+            body:
+                'Distinguish a user cancellation during grading from a '
+                'failed model generation in HX-118 reports.',
+            status: TicketStatus.inReview,
+            priority: TicketPriority.medium,
+            agentId: agents[1].id,
+            daysAgo: 3,
+          ),
+          (
+            key: 'HX-154',
+            title: 'Keep Haiku sweep alert thresholds per model family',
+            body:
+                'Avoid borrowing the Sonnet budget cap for short Haiku '
+                'sweeps when computing HX-124 warnings.',
+            status: TicketStatus.done,
+            priority: TicketPriority.medium,
+            agentId: agents[0].id,
+            daysAgo: 3,
+          ),
+          (
+            key: 'HX-157',
+            title: 'Document export schedule timezone on delivery receipts',
+            body:
+                'Show which timezone produced a scheduled HX-129 export '
+                'beside its delivery timestamp.',
+            status: TicketStatus.backlog,
+            priority: TicketPriority.low,
+            agentId: null,
+            daysAgo: 2,
+          ),
+          (
+            key: 'HX-160',
+            title: 'Archive superseded eval baseline fixtures',
+            body:
+                'Keep the current baseline and provenance, but remove stale '
+                'fixture revisions from the weekly comparison set.',
+            status: TicketStatus.done,
+            priority: TicketPriority.low,
+            agentId: agents[2].id,
             daysAgo: 1,
           ),
         ];
@@ -2020,42 +2323,11 @@ class DemoSeeder {
     }
   }
 
-  /// The inbox's attention strip: one agent BLOCKED on an approval (the live
-  /// confirmation registry the phone and inbox both read) and one ticket-sync
-  /// failure log row.
-  ///
-  /// The confirmation is registered with NO timeout so it stays pending until
-  /// a visitor approves or denies it — `confirmation.respond` is allowed in
-  /// the demo profile, and resolving it is exactly the interaction the inbox
-  /// lane exists to showcase. It is in-memory by design (it is a LIVE lane),
-  /// so a server restart simply drops it; the next pooled workspace brings a
-  /// fresh one.
-  Future<void> _seedInboxAttention(
-    String workspaceId,
-    List<({String id, String name})> spaces,
-  ) async {
-    final reviewSpace = spaces
-        .where((s) => s.name == kDemoAgentSpaceName)
-        .firstOrNull;
-    final register = _registerConfirmation;
-    if (register != null && reviewSpace != null) {
-      register(
-        ConfirmationRequest(
-          spaceId: reviewSpace.id,
-          workspaceId: workspaceId,
-          title: 'Juno wants to pull the GSM8K eval split from Hugging Face',
-          detail:
-              'The sweep reads the public GSM8K dataset for the nightly '
-              'grader on HX-124. It makes about 40 paginated requests to '
-              'the Hub — approve to let it run once.',
-          severity: ConfirmationSeverity.warning,
-          command:
-              'bin/eval_pull --dataset gsm8k --split test '
-              '--revision 2026.04',
-        ),
-      );
-    }
-
+  /// A seeded ticket-sync failure, shown in the inbox attention strip.
+  /// Pending approvals are ephemeral and are registered when the visitor
+  /// claims the warm workspace, not when that workspace enters the pool:
+  /// the registry is empty again after a server restart.
+  Future<void> _seedInboxAttention(String workspaceId) async {
     await _syncLog.append(
       TicketSyncLogEntry(
         id: 'demo-synclog-0',
@@ -2221,6 +2493,97 @@ class DemoSeeder {
   /// dropping a visitor's workspace file cannot reach it — the reaper deletes
   /// these rows explicitly (and the `users` FK cascades as a second net).
   Future<void> seedUser(String userId, String workspaceId) async {
+    // Folders are personal sidebar organization, not workspace state. The
+    // warm pool has no visitor user yet, so create these ONLY after claim and
+    // resolve the IDs from that visitor's own workspace.
+    final visibleSpaces = await _messaging
+        .watchSpacesByWorkspace(workspaceId)
+        .first;
+    final idsByName = {for (final space in visibleSpaces) space.name: space.id};
+    // This approval never awaits a command. Registering at claim time also
+    // restores the scene for a warm workspace retained across server restarts.
+    final register = _registerConfirmation;
+    if (register != null) {
+      final decision = register(
+        ConfirmationRequest(
+          spaceId: idsByName[kDemoAgentSpaceName]!,
+          workspaceId: workspaceId,
+          agentId: 'demo-agent-reviewer',
+          title: 'Ravi wants to push the #412 budget fix',
+          detail:
+              'Ravi’s blocked run $workspaceId:demo-run-push-approval '
+              'in Release gate · Shared run groups requested a push. '
+              'Working directory: /workspace/helix/evalkit. '
+              'Approve or deny this fictional request; neither decision '
+              'executes git or resumes an agent.',
+          severity: ConfirmationSeverity.warning,
+          command: 'git push origin feature/eval-budget-ledger',
+        ),
+      );
+      unawaited(
+        decision
+            .then((approved) async {
+              // The reaper may have dropped an unclaimed/expired workspace while
+              // an in-memory request was pending. Never reopen its database.
+              if (await _workspaces.getById(workspaceId) == null) {
+                return;
+              }
+              final id = '$workspaceId:demo-run-push-approval';
+              final run = await _runLogs.getById(workspaceId, id);
+              if (run == null || run.status != RunStatus.running) {
+                return;
+              }
+              final conversations = await DaoConversationRepository(_dbs)
+                  .listForSpace(
+                    workspaceId: workspaceId,
+                    spaceId: idsByName[kDemoAgentSpaceName]!,
+                  );
+              final releaseGate = conversations
+                  .where((c) => c.title == 'Release gate · Shared run groups')
+                  .single;
+              await _messaging.sendMessage(
+                workspaceId: workspaceId,
+                spaceId: idsByName[kDemoAgentSpaceName]!,
+                conversationId: releaseGate.id,
+                senderId: 'demo-agent-reviewer',
+                senderType: 'agent',
+                content: approved
+                    ? 'Approval recorded for #412. This was a demo decision: '
+                          'no git push was executed.'
+                    : 'Push denied for #412. No git push was executed.',
+              );
+              await _runLogs.upsert(
+                run.copyWith(
+                  status: RunStatus.completed,
+                  completedAt: _now(),
+                  liveness: RunLiveness.completed,
+                  summary: approved
+                      ? 'Approval recorded for #412; git push was not executed'
+                      : 'Push approval denied; git push was not executed',
+                ),
+              );
+            })
+            .catchError((Object error) {
+              _log('demo confirmation resolution failed: $error');
+            }),
+      );
+    }
+    final folders = [
+      {
+        'id': 'demo-evaluation',
+        'name': 'Evaluation',
+        'spaceIds': [idsByName['eval-review']!, idsByName['eval-progress']!],
+      },
+      {
+        'id': 'demo-planning',
+        'name': 'Planning',
+        'spaceIds': [idsByName['eval-reports']!],
+      },
+    ];
+    await DaoUserPreferencesRepository(
+      _globalDb.userPreferenceDao,
+    ).set(userId, 'space_folders.$workspaceId', jsonEncode(folders));
+
     // The product's OWN default feeds, verbatim — no demo-specific list.
     // A fictional in-house feed used to sit at the top carrying two hardcoded
     // articles, so the surface would render without egress. It cost a

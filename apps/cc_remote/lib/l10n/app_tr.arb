@@ -234,5 +234,19 @@
   "yesterday": "Dün",
   "durationMinutes": "{count}dk",
   "durationHours": "{count}sa",
-  "durationHoursMinutes": "{hours}sa {minutes}dk"
+  "durationHoursMinutes": "{hours}sa {minutes}dk",
+  "newSpaceFolder": "Yeni klasör",
+  "folderName": "Klasör adı",
+  "renameSpaceFolder": "Klasörü yeniden adlandır",
+  "deleteSpaceFolder": "Klasörü sil",
+  "moveSpaceToFolder": "Klasöre taşı",
+  "removeSpaceFromFolder": "Klasörden çıkar",
+  "spaceFolderActions": "Klasör işlemleri",
+  "deleteFolderWithSpacesWarning": "Alanları kalıcı olarak silmek, mesajlarını ve çalışma dizinlerini herkes için kaldırır. Bu işlem geri alınamaz.",
+  "deleteSpacesInFolder": "Bu klasördeki alanları kalıcı olarak sil",
+  "deleteFolderAndSpaces": "Klasörü ve alanları sil",
+  "keepSpacesInFolder": "Aksi takdirde alanlar klasör dışında kalır.",
+  "create": "Oluştur",
+  "otherSpaces": "Diğer alanlar",
+  "folderUpdateFailed": "Klasörler güncellenemedi"
 }

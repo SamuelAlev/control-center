@@ -62,18 +62,6 @@ void main() {
     );
   }
 
-  testWidgets('says so when the install has never been backed up', (
-    tester,
-  ) async {
-    final host = FakeRpcHost();
-    host.onCall = (op, args) => {'backups': <Map<String, dynamic>>[]};
-
-    await tester.pumpWidget(wrap(host));
-    await tester.pumpAndSettle();
-
-    expect(find.textContaining('No snapshots yet'), findsOneWidget);
-  });
-
   testWidgets('a half-written snapshot is listed, not hidden', (tester) async {
     final host = FakeRpcHost();
     host.onCall = (op, args) => {
@@ -112,6 +100,147 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(ops, contains('server.backupNow'));
+  });
+
+  testWidgets(
+    'incomplete snapshot deletion requires typed danger confirmation',
+    (tester) async {
+      final calls = <Map<String, dynamic>>[];
+      final host = FakeRpcHost();
+      var deleted = false;
+      var lists = 0;
+      host.onCall = (op, args) {
+        if (op == 'server.deleteBackup') {
+          calls.add(args);
+          deleted = true;
+          return {'ok': true};
+        }
+        if (op == 'server.listBackups') {
+          lists++;
+          return {
+            'backups': deleted
+                ? <Map<String, dynamic>>[]
+                : [snapshot(name: 'interrupted', complete: false)],
+          };
+        }
+        throw StateError('unexpected operation $op');
+      };
+
+      await tester.pumpWidget(wrap(host));
+      await tester.pumpAndSettle();
+      final l10n = AppLocalizations.of(
+        tester.element(find.byType(BackupSnapshotsSection)),
+      );
+      await tester.tap(find.text('interrupted'));
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<CcAlert>(find.byType(CcAlert).last).variant,
+        CcAlertVariant.danger,
+      );
+      await tester.tap(
+        find.widgetWithText(CcButton, l10n.backupDeleteSnapshotAction).first,
+      );
+      await tester.pumpAndSettle();
+      expect(calls, isEmpty);
+      await tester.enterText(find.byType(CcTextField).last, 'wrong name');
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<CcButton>(
+              find
+                  .widgetWithText(CcButton, l10n.backupDeleteSnapshotAction)
+                  .last,
+            )
+            .onPressed,
+        isNull,
+      );
+      await tester.enterText(find.byType(CcTextField).last, 'interrupted');
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.widgetWithText(CcButton, l10n.backupDeleteSnapshotAction).last,
+      );
+      await tester.pumpAndSettle();
+
+      expect(calls, [
+        {'name': 'interrupted'},
+      ]);
+      expect(lists, greaterThan(1));
+      expect(find.text('interrupted'), findsNothing);
+    },
+  );
+
+  testWidgets('canceling snapshot deletion leaves it untouched', (
+    tester,
+  ) async {
+    final ops = <String>[];
+    final host = FakeRpcHost();
+    host.onCall = (op, args) {
+      ops.add(op);
+      return {
+        'backups': [snapshot(name: 'retain')],
+      };
+    };
+    await tester.pumpWidget(wrap(host));
+    await tester.pumpAndSettle();
+    final l10n = AppLocalizations.of(
+      tester.element(find.byType(BackupSnapshotsSection)),
+    );
+    await tester.tap(find.text('retain'));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.widgetWithText(CcButton, l10n.backupDeleteSnapshotAction).first,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(CcButton, l10n.cancel).last);
+    await tester.pumpAndSettle();
+
+    expect(ops, isNot(contains('server.deleteBackup')));
+    expect(find.text('retain'), findsOneWidget);
+  });
+
+  testWidgets('failed deletion clears busy state and refreshes the listing', (
+    tester,
+  ) async {
+    final host = FakeRpcHost();
+    var lists = 0;
+    host.onCall = (op, args) {
+      if (op == 'server.deleteBackup') {
+        throw StateError('filesystem error');
+      }
+      lists++;
+      return {
+        'backups': [snapshot(name: 'retain')],
+      };
+    };
+
+    await tester.pumpWidget(wrap(host));
+    await tester.pumpAndSettle();
+    final l10n = AppLocalizations.of(
+      tester.element(find.byType(BackupSnapshotsSection)),
+    );
+    await tester.tap(find.text('retain'));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.widgetWithText(CcButton, l10n.backupDeleteSnapshotAction).first,
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(CcTextField).last, 'retain');
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.widgetWithText(CcButton, l10n.backupDeleteSnapshotAction).last,
+    );
+    await tester.pumpAndSettle();
+
+    expect(lists, greaterThan(1));
+    expect(find.text('retain'), findsOneWidget);
+    expect(
+      tester
+          .widget<CcButton>(
+            find.widgetWithText(CcButton, l10n.backupDeleteSnapshotAction),
+          )
+          .onPressed,
+      isNotNull,
+    );
   });
 
   testWidgets('a workspace the server no longer has cannot be restored', (

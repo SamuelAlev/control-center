@@ -170,6 +170,29 @@ void main() {
       expect(indexCode.isBuiltIn, isTrue);
     });
 
+    test('seeds weekly backup even without specialist agents', () async {
+      final templates = _RecordingTemplateRepo();
+      final triggers = _RecordingTriggerRepo();
+      final seeder = WorkspaceSeeder(
+        agentRepository: _RecordingAgentRepo(),
+        filesystem: _NoopFs(),
+        templateRepository: templates,
+        triggerRepository: triggers,
+      );
+
+      await seeder.seedBuiltInPipelineTemplates(
+        workspaceId: 'ws',
+        specialists: const [],
+      );
+      expect(templates.byId['ws|workspace_backup']?.isEnabled, isTrue);
+      final schedule = triggers.inserted.singleWhere(
+        (t) => t.templateId == 'workspace_backup',
+      );
+      expect(schedule.enabled, isTrue);
+      expect(schedule.catchUpPolicy, CronCatchUpPolicy.catchUpLatestOnly);
+      expect(schedule.cronExpression, '0 3 * * 0');
+    });
+
     test('skips agent-bearing templates when specialists incomplete', () async {
       final repo = _RecordingTemplateRepo();
       final triggers = _RecordingTriggerRepo();

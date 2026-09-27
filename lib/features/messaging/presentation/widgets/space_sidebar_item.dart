@@ -3,10 +3,13 @@ import 'dart:async';
 import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/features/messaging/domain/entities/space.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/features/messaging/presentation/widgets/space_folder_picker_dialog.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_row.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_row_adornments.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
+import 'package:control_center/features/messaging/providers/space_folder_providers.dart';
 import 'package:control_center/features/repos/providers/repo_providers.dart';
+import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_scope.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/router/routes.dart';
@@ -133,6 +136,7 @@ class SpaceSidebarItem extends ConsumerWidget implements CcFluidHoverTarget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
+    final workspaceId = ref.watch(activeWorkspaceIdProvider);
 
     final status = ref.watch(spaceStatusProvider(space.id));
     // Muted agent rows never read the unread provider — their notifications are
@@ -185,6 +189,19 @@ class SpaceSidebarItem extends ConsumerWidget implements CcFluidHoverTarget {
           onSelected: () =>
               unawaited(showEditSpaceReposDialog(context, ref, space)),
         ),
+        if (workspaceId != null && !muted)
+          CcMenuItem(
+            label: l10n.moveSpaceToFolder,
+            icon: AppIcons.folder,
+            onSelected: () => unawaited(
+              showMoveSpaceToFolderDialog(
+                context,
+                ref,
+                workspaceId: workspaceId,
+                spaceId: space.id,
+              ),
+            ),
+          ),
         CcMenuItem(
           label: l10n.archiveSpace,
           icon: AppIcons.archive,
@@ -210,36 +227,33 @@ class SpaceSidebarItem extends ConsumerWidget implements CcFluidHoverTarget {
         .updateSpaceName(ref.requireWorkspaceId(), space.id, name);
   }
 
-  /// Archives the space — a reversible soft hide, so no confirmation: the
-  /// space leaves the sidebar (and, when it is the open route space, the URL
-  /// drops back to the space list) and the archive trigger beside the `+`
-  /// button brings it back. Messages, participants and worktrees all survive.
+  /// Archives the space and removes its personal folder membership. Messages,
+  /// participants and worktrees survive; restoring leaves it unfiled.
   Future<void> _archive(BuildContext context, WidgetRef ref) async {
-    final service = ref.read(messagingServiceProvider);
-    await service.archiveSpace(ref.requireWorkspaceId(), space.id);
+    final workspaceId = ref.requireWorkspaceId();
+    final router = GoRouter.of(context);
+    await archiveSpaceAndUnlink(ref, workspaceId, space.id);
 
-    if (context.mounted) {
-      // If the archived space is the one open in the URL, drop back to the
-      // space list (the URL is the source of truth for selection).
-      final workspaceId = context.currentWorkspaceId;
-      final routeSpaceId = selectedSpaceIdFromLocation(
-        GoRouterState.of(context).uri.path,
-        workspaceId,
-      );
-      if (routeSpaceId == space.id && workspaceId != null) {
-        GoRouter.of(context).go(spacesRoute(workspaceId));
-      }
+    // Archiving may unmount this row before the preference write finishes.
+    // Read the live URL from the captured router rather than this context.
+    if (selectedSpaceIdFromLocation(
+          router.routeInformationProvider.value.uri.path,
+          workspaceId,
+        ) ==
+        space.id) {
+      router.go(spacesRoute(workspaceId));
     }
   }
 }
 
-/// Opens a small single-field rename dialog with [initialValue] prefilled and
-/// returns the trimmed new name — null when cancelled, emptied or unchanged,
-/// so callers can skip the round-trip in every no-op case.
+/// Opens a single-field name dialog, prefilled with [initialValue].
+/// Returns null for cancellation, an empty name or an unchanged name.
 Future<String?> showRenameDialog(
   BuildContext context, {
   required String title,
   required String initialValue,
+  String? hintText,
+  String? confirmLabel,
 }) async {
   final l10n = AppLocalizations.of(context);
   final controller = TextEditingController(text: initialValue);
@@ -251,6 +265,7 @@ Future<String?> showRenameDialog(
         width: 320,
         child: CcTextField(
           controller: controller,
+          hintText: hintText,
           autofocus: true,
           onSubmitted: (v) => Navigator.pop(ctx, v.trim()),
         ),
@@ -263,7 +278,7 @@ Future<String?> showRenameDialog(
         ),
         CcButton(
           onPressed: () => Navigator.pop(ctx, controller.text.trim()),
-          child: Text(l10n.save),
+          child: Text(confirmLabel ?? l10n.save),
         ),
       ],
     ),

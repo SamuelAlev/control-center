@@ -368,13 +368,13 @@ REMOTE_MEMBERS = {
     'arrowDown', 'arrowLeft', 'arrowRight', 'bookmark', 'bookmarkCheck', 'bot',
     'calendar', 'calendarDays', 'check', 'chevronDown', 'chevronRight',
     'chevronsDown', 'circleCheck', 'circleDot', 'circleSlash', 'circleX',
-    'clock', 'cloudOff', 'externalLink', 'eye', 'file', 'fileText',
+    'clock', 'cloudOff', 'externalLink', 'eye', 'file', 'fileText', 'folder',
     'gitBranch', 'gitCommit', 'gitMerge', 'gitPullRequest',
     'gitPullRequestDraft', 'globe', 'hash', 'image', 'imageOff', 'inbox',
     'languages', 'layers', 'listFilter', 'loader', 'logOut',
     'mapPin', 'messageCircle', 'messageSquare', 'minus', 'monitor', 'moon',
-    'newspaper', 'palette', 'plus', 'refreshCw', 'scanLine', 'send',
-    'settings', 'sparkles', 'sun', 'thumbsUp', 'ticket', 'triangleAlert',
+    'moreHorizontal', 'newspaper', 'palette', 'plus', 'refreshCw', 'scanLine',
+    'send', 'settings', 'sparkles', 'sun', 'thumbsUp', 'ticket', 'triangleAlert',
     'user', 'userCheck', 'users', 'video', 'wifiOff', 'x',
 }
 

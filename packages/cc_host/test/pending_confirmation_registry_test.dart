@@ -89,12 +89,31 @@ void main() {
       expect(registry.snapshot, isEmpty);
     });
 
+    test(
+      'a late subscriber sees pending requests before live resolution',
+      () async {
+        final registry = PendingConfirmationRegistry();
+        addTearDown(registry.dispose);
+        final request = registry.register(_req());
+        final first = registry.pending.take(2).toList();
+        final second = registry.pending.take(2).toList();
+
+        registry.respond(request.id, approved: true);
+        for (final snapshots in [await first, await second]) {
+          expect(snapshots.first.map((p) => p.id), [request.id]);
+          expect(snapshots.last, isEmpty);
+        }
+        expect(await registry.pending.first, isEmpty);
+        expect(await request.approved, isTrue);
+      },
+    );
+
     test('the pending stream emits a full snapshot on each change', () async {
       final registry = PendingConfirmationRegistry();
       addTearDown(registry.dispose);
       final snapshots = <List<PendingConfirmation>>[];
       final sub = registry.pending.listen(snapshots.add);
-      // Skip the (possible) initial listener-broadcast; collect after register.
+      // The initial snapshot and subsequent changes are both delivered.
       final reg = registry.register(_req());
       registry.respond(reg.id, approved: true);
       // Allow broadcast stream delivery.

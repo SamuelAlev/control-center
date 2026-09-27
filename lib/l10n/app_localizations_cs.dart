@@ -1815,6 +1815,13 @@ class AppLocalizationsCs extends AppLocalizations {
       'JSON Schema, které musí výstup kroku splnit';
 
   @override
+  String get nodeConfigBackupRetentionDays => 'Smazat zálohy starší než (dny)';
+
+  @override
+  String get nodeConfigBackupRetentionDaysHelp =>
+      'Mažou se pouze zálohy tohoto pracovního prostoru. Zadejte kladný počet dní.';
+
+  @override
   String get diffLineDisplay => 'Dlouhé řádky v diffech';
 
   @override
@@ -9175,6 +9182,43 @@ class AppLocalizationsCs extends AppLocalizations {
   String get spaceReposHint => 'Repozitáře k zahrnutí';
 
   @override
+  String get newSpaceFolder => 'Nová složka';
+
+  @override
+  String get folderName => 'Název složky';
+
+  @override
+  String get renameSpaceFolder => 'Přejmenovat složku';
+
+  @override
+  String get deleteSpaceFolder => 'Smazat složku';
+
+  @override
+  String get moveSpaceToFolder => 'Přesunout prostor do složky';
+
+  @override
+  String get removeSpaceFromFolder => 'Odebrat prostor ze složky';
+
+  @override
+  String get spaceFolderActions => 'Akce složky';
+
+  @override
+  String get deleteFolderWithSpacesWarning =>
+      'Trvalým smazáním prostorů se všem odstraní jejich zprávy a pracovní stromy. Tuto akci nelze vrátit zpět.';
+
+  @override
+  String get deleteSpacesInFolder => 'Trvale smazat prostory v této složce';
+
+  @override
+  String get deleteFolderAndSpaces => 'Smazat složku a prostory';
+
+  @override
+  String get keepSpacesInFolder => 'Jinak prostory zůstanou nezařazené.';
+
+  @override
+  String get noSpaceFoldersYet => 'Zatím žádné složky';
+
+  @override
   String get ideSourceControl => 'Správa zdrojového kódu';
 
   @override
@@ -14545,7 +14589,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get backupNoSnapshots =>
-      'Zatím žádné snímky. Jeden se pořídí, jen když o něj požádáte — nic se neplánuje.';
+      'Zatím žádné snímky instalace. Pořiďte jeden teď nebo použijte plánovaný pipeline pro zálohy pracovního prostoru.';
 
   @override
   String get backupSnapshotComplete => 'Úplný';
@@ -14556,6 +14600,29 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get backupSnapshotIncompleteNote =>
       'Manifest chybí nebo jmenuje soubory, které tam nejsou, takže tento snímek nemůže obnovit celou instalaci. Soubory pracovních prostorů, které má, lze pořád převzít jeden po druhém.';
+
+  @override
+  String get backupDeleteSnapshotLabel => 'Smazat snímek';
+
+  @override
+  String get backupDeleteSnapshotDescription =>
+      'Trvale odebrat tento snímek ze serveru. Pokud si jej chcete ponechat, nejprve jej stáhněte.';
+
+  @override
+  String get backupDeleteSnapshotAction => 'Smazat snímek';
+
+  @override
+  String get backupDeleteSnapshotTitle => 'Smazat tento snímek?';
+
+  @override
+  String backupDeleteSnapshotBody(String name) {
+    return 'Smazat $name ze serveru? Všechny databáze v tomto snímku se ztratí. Akci nelze vrátit zpět.';
+  }
+
+  @override
+  String backupDeleteSnapshotDone(String name) {
+    return 'Snímek $name byl smazán.';
+  }
 
   @override
   String backupSnapshotWorkspaces(int count) {

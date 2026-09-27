@@ -15,6 +15,7 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/app_timestamp.dart';
+import 'package:control_center/shared/widgets/inline_load_error.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -46,13 +47,21 @@ class _PipelineRunDetailScreenState
     final l10n = AppLocalizations.of(context);
     final tokens = context.designSystem ?? DesignSystemTokens.light();
     final runAsync = ref.watch(pipelineRunProvider(widget.runId));
+    if (runAsync.hasError) {
+      return InlineLoadError(runAsync.error!);
+    }
     final run = runAsync.value;
     final templatesAsync = run == null
         ? const AsyncValue<List<PipelineDefinition>>.loading()
         : ref.watch(pipelineTemplatesProvider(run.workspaceId));
-    final stepRuns =
-        ref.watch(pipelineStepRunsForRunProvider(widget.runId)).value ??
-        const <PipelineStepRun>[];
+    if (templatesAsync.hasError) {
+      return InlineLoadError(templatesAsync.error!);
+    }
+    final stepsAsync = ref.watch(pipelineStepRunsForRunProvider(widget.runId));
+    if (stepsAsync.hasError) {
+      return InlineLoadError(stepsAsync.error!);
+    }
+    final stepRuns = stepsAsync.value ?? const <PipelineStepRun>[];
     ref.watch(pipelineClockProvider); // tick for live duration display
 
     final templates = templatesAsync.value;

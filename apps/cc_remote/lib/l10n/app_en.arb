@@ -465,6 +465,62 @@
   "@spacesEmptyDescription": {
     "description": "Messaging empty-state description."
   },
+  "newSpaceFolder": "New folder",
+  "@newSpaceFolder": {
+    "description": "Action to create a folder for organizing spaces in the current workspace."
+  },
+  "folderName": "Folder name",
+  "@folderName": {
+    "description": "Label for the name field when creating or renaming a space folder."
+  },
+  "renameSpaceFolder": "Rename folder",
+  "@renameSpaceFolder": {
+    "description": "Action to rename a folder containing spaces."
+  },
+  "deleteSpaceFolder": "Delete folder",
+  "@deleteSpaceFolder": {
+    "description": "Action to delete a folder; its spaces remain unless the user explicitly chooses permanent deletion."
+  },
+  "moveSpaceToFolder": "Move to folder",
+  "@moveSpaceToFolder": {
+    "description": "Action to put a space inside a selected folder."
+  },
+  "removeSpaceFromFolder": "Remove from folder",
+  "@removeSpaceFromFolder": {
+    "description": "Action to leave a space unfiled without deleting the space."
+  },
+  "spaceFolderActions": "Folder actions",
+  "@spaceFolderActions": {
+    "description": "Accessible label for the menu of actions on a space folder."
+  },
+  "deleteFolderWithSpacesWarning": "Deleting spaces permanently removes their messages and worktrees for everyone. This cannot be undone.",
+  "@deleteFolderWithSpacesWarning": {
+    "description": "Irreversible-deletion warning in the folder delete confirmation: choosing to permanently delete the contained spaces also removes their messages and worktrees for all users."
+  },
+  "deleteSpacesInFolder": "Permanently delete the spaces in this folder",
+  "@deleteSpacesInFolder": {
+    "description": "Opt-in checkbox when deleting a folder: also permanently delete every space inside it."
+  },
+  "deleteFolderAndSpaces": "Delete folder and spaces",
+  "@deleteFolderAndSpaces": {
+    "description": "Confirmation button when permanently deleting both a folder and its spaces."
+  },
+  "keepSpacesInFolder": "Otherwise, spaces will remain unfiled.",
+  "@keepSpacesInFolder": {
+    "description": "Explains that spaces remain available without a folder if the permanent-delete option is not selected."
+  },
+  "create": "Create",
+  "@create": {
+    "description": "Button to create a space folder after entering its name."
+  },
+  "otherSpaces": "Other spaces",
+  "@otherSpaces": {
+    "description": "Heading for spaces in the workspace that are not assigned to any folder."
+  },
+  "folderUpdateFailed": "Couldn't update folders",
+  "@folderUpdateFailed": {
+    "description": "Error notice when creating, renaming, moving, or deleting a space folder fails to save."
+  },
   "thread": "Thread",
   "@thread": {
     "description": "Conversation screen header title."

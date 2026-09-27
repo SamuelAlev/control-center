@@ -3,7 +3,6 @@ import 'package:cc_domain/features/messaging/domain/value_objects/space_provisio
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/conversation_pane.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
-import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/composer/composer.dart'
     show composerHorizontalMargin;
 import 'package:flutter/widgets.dart';
@@ -33,19 +32,33 @@ void main() {
     final stop = tester.getRect(find.byType(CcIconButton));
     expect(stop.left, closeTo(banner.left + composerHorizontalMargin, 0.5));
   });
+
+  testWidgets('demo provisioning offers no stop action', (tester) async {
+    await _pumpBanner(tester, isDemo: true);
+    expect(find.byType(CcIconButton), findsNothing);
+  });
+
+  testWidgets('demo failure offers no worktree retry action', (tester) async {
+    await _pumpBanner(
+      tester,
+      isDemo: true,
+      status: SpaceProvisioningStatus.failed,
+    );
+    expect(find.byType(CcButton), findsNothing);
+  });
 }
 
 Future<void> _pumpBanner(
   WidgetTester tester, {
   TextDirection textDirection = TextDirection.ltr,
+  bool isDemo = false,
+  SpaceProvisioningStatus status = SpaceProvisioningStatus.provisioning,
 }) async {
   await tester.pumpWidget(
     testWrap(
       ProviderScope(
         overrides: [
-          spaceProvisioningStatusProvider.overrideWith(
-            (ref, _) => SpaceProvisioningStatus.provisioning,
-          ),
+          spaceProvisioningStatusProvider.overrideWith((ref, _) => status),
           spaceProvisioningStepProvider.overrideWith(
             (ref, _) => const SpaceProvisioningStep(
               kind: SpaceProvisioningStepKind.prCheckout,
@@ -59,8 +72,8 @@ Future<void> _pumpBanner(
         ),
       ),
       textDirection: textDirection,
+      isDemo: isDemo,
     ),
   );
   await tester.pump();
-  expect(find.byIcon(AppIcons.circleStop), findsOneWidget);
 }

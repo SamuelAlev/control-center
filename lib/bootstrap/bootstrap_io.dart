@@ -30,6 +30,7 @@ import 'package:control_center/core/server/server_connection_config.dart';
 import 'package:control_center/core/server/server_entry_factory.dart';
 import 'package:control_center/core/server/sso_pair_link.dart';
 import 'package:control_center/core/storage/app_support_path_provider.dart';
+import 'package:control_center/core/storage/legacy_snapshot_cleanup.dart';
 import 'package:control_center/core/storage/native_key_value_backend.dart';
 import 'package:control_center/core/storage/observable_key_value_backend.dart';
 import 'package:control_center/core/theme/design_system_tokens.dart';
@@ -252,6 +253,7 @@ Future<void> _prepareDesktop() async {
   };
 
   final prefs = AppPreferences(desktopPrefsBackend);
+  await removeLegacyCalendarSnapshots(prefs);
   final secureStore = SecureStore.keychain();
 
   // Multi-window chrome: nativeapi observes and controls the windows that

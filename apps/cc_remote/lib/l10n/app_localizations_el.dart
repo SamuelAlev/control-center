@@ -380,6 +380,51 @@ class AppLocalizationsEl extends AppLocalizations {
       'Οι χώροι σε αυτόν τον χώρο εργασίας εμφανίζονται εδώ.';
 
   @override
+  String get newSpaceFolder => 'Νέος φάκελος';
+
+  @override
+  String get folderName => 'Όνομα φακέλου';
+
+  @override
+  String get renameSpaceFolder => 'Μετονομασία φακέλου';
+
+  @override
+  String get deleteSpaceFolder => 'Διαγραφή φακέλου';
+
+  @override
+  String get moveSpaceToFolder => 'Μετακίνηση χώρου σε φάκελο';
+
+  @override
+  String get removeSpaceFromFolder => 'Αφαίρεση χώρου από φάκελο';
+
+  @override
+  String get spaceFolderActions => 'Ενέργειες φακέλου';
+
+  @override
+  String get deleteFolderWithSpacesWarning =>
+      'Η οριστική διαγραφή των χώρων αφαιρεί τα μηνύματα και τους καταλόγους εργασίας τους για όλους. Δεν είναι δυνατή η αναίρεση.';
+
+  @override
+  String get deleteSpacesInFolder =>
+      'Οριστική διαγραφή των χώρων σε αυτόν τον φάκελο';
+
+  @override
+  String get deleteFolderAndSpaces => 'Διαγραφή φακέλου και χώρων';
+
+  @override
+  String get keepSpacesInFolder =>
+      'Διαφορετικά, οι χώροι θα παραμείνουν εκτός φακέλου.';
+
+  @override
+  String get create => 'Δημιουργία';
+
+  @override
+  String get otherSpaces => 'Άλλοι χώροι';
+
+  @override
+  String get folderUpdateFailed => 'Δεν ήταν δυνατή η ενημέρωση των φακέλων';
+
+  @override
   String get thread => 'Νήμα';
 
   @override

@@ -31,6 +31,7 @@ import 'package:control_center/core/server/server_pairing.dart';
 import 'package:control_center/core/server/sso_login.dart';
 import 'package:control_center/core/server/sso_pair_link.dart'
     show httpOriginFor;
+import 'package:control_center/core/storage/legacy_snapshot_cleanup.dart';
 import 'package:control_center/core/storage/observable_key_value_backend.dart';
 import 'package:control_center/core/storage/web_local_storage_backend.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
@@ -264,6 +265,7 @@ class _WebRootState extends State<_WebRoot> {
   /// wins; otherwise a saved paired server resumes. Reconnects after drops are
   /// the [ResilientRpcClient]'s job — the gate only handles first connects.
   Future<void> _boot() async {
+    await removeLegacyCalendarSnapshots(AppPreferences(_webBackend));
     final urlHints = _readUrlHints();
     _stripCredentialFragment();
     final active = _store.readActive();
@@ -376,6 +378,7 @@ class _WebRootState extends State<_WebRoot> {
           store: _store,
           entry: entry,
           psk: psk,
+          persistSnapshots: false,
         );
       }
       await _adopt(connection);
@@ -446,6 +449,24 @@ class _WebRootState extends State<_WebRoot> {
           status.error ??
               StateError('The server presented a changed identity.'),
         );
+      } else if (status.authenticationRejected) {
+        // This device no longer has a valid pairing. Leave the protected UI,
+        // then forget its stored key and every server/user snapshot.
+        _failToGate(
+          status.error ?? StateError('The server rejected this device.'),
+        );
+        unawaited(() async {
+          try {
+            await _statusSub?.cancel();
+            _statusSub = null;
+            await connection.dispose();
+            await _store.removeEntry(connection.entry.serverId);
+          } on Object catch (error) {
+            debugPrint('Could not remove revoked pairing: $error');
+          } finally {
+            _clearProxyOriginCookie();
+          }
+        }());
       }
     });
 
@@ -518,11 +539,9 @@ class _WebRootState extends State<_WebRoot> {
       color: t.bgPrimary,
       child: switch (_phase) {
         _Phase.connected => _ConnectedApp(
-          // Rebuild the whole app (fresh ProviderScope) when the connected
-          // server or active workspace changes, so the overrides re-resolve.
-          key: ValueKey(
-            'app-${_connection!.entry.serverId}-${_activeWorkspaceId ?? '-'}',
-          ),
+          // A new authenticated connection needs fresh providers even when
+          // another account connects to the same server and workspace.
+          key: ValueKey((_connection, _activeWorkspaceId)),
           connection: _connection!,
           activeWorkspaceId: _activeWorkspaceId,
           onDisconnect: _disconnect,

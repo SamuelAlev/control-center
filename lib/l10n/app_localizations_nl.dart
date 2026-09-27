@@ -1799,6 +1799,14 @@ class AppLocalizationsNl extends AppLocalizations {
       'JSON-schema waaraan de stapuitvoer moet voldoen';
 
   @override
+  String get nodeConfigBackupRetentionDays =>
+      'Back-ups ouder dan (dagen) verwijderen';
+
+  @override
+  String get nodeConfigBackupRetentionDaysHelp =>
+      'Alleen back-ups van deze werkruimte worden verwijderd. Voer een positief aantal dagen in.';
+
+  @override
   String get diffLineDisplay => 'Lange regels in diffs';
 
   @override
@@ -9110,6 +9118,44 @@ class AppLocalizationsNl extends AppLocalizations {
   String get spaceReposHint => 'Repo\'s om op te nemen';
 
   @override
+  String get newSpaceFolder => 'Nieuwe map';
+
+  @override
+  String get folderName => 'Mapnaam';
+
+  @override
+  String get renameSpaceFolder => 'Map hernoemen';
+
+  @override
+  String get deleteSpaceFolder => 'Map verwijderen';
+
+  @override
+  String get moveSpaceToFolder => 'Naar map verplaatsen';
+
+  @override
+  String get removeSpaceFromFolder => 'Uit map verwijderen';
+
+  @override
+  String get spaceFolderActions => 'Mapacties';
+
+  @override
+  String get deleteFolderWithSpacesWarning =>
+      'Als je ruimtes definitief verwijdert, verdwijnen hun berichten en werkmappen voor iedereen. Dit kan niet ongedaan worden gemaakt.';
+
+  @override
+  String get deleteSpacesInFolder =>
+      'Ruimtes in deze map definitief verwijderen';
+
+  @override
+  String get deleteFolderAndSpaces => 'Map en ruimtes verwijderen';
+
+  @override
+  String get keepSpacesInFolder => 'Anders blijven de ruimtes buiten een map.';
+
+  @override
+  String get noSpaceFoldersYet => 'Nog geen mappen';
+
+  @override
   String get ideSourceControl => 'Broncodebeheer';
 
   @override
@@ -14429,7 +14475,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get backupNoSnapshots =>
-      'Nog geen momentopnamen. Er wordt er alleen een gemaakt als je erom vraagt — er staat niets ingepland.';
+      'Nog geen momentopnamen van de installatie. Maak er nu een of gebruik een geplande pipeline voor werkruimteback-ups.';
 
   @override
   String get backupSnapshotComplete => 'Volledig';
@@ -14440,6 +14486,29 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get backupSnapshotIncompleteNote =>
       'Het manifest ontbreekt of noemt bestanden die er niet zijn, dus deze momentopname kan de hele installatie niet herstellen. De werkruimtebestanden die er wel zijn, kun je nog steeds één voor één overnemen.';
+
+  @override
+  String get backupDeleteSnapshotLabel => 'Momentopname verwijderen';
+
+  @override
+  String get backupDeleteSnapshotDescription =>
+      'Verwijder deze momentopname definitief van de server. Download haar eerst als je haar wilt bewaren.';
+
+  @override
+  String get backupDeleteSnapshotAction => 'Momentopname verwijderen';
+
+  @override
+  String get backupDeleteSnapshotTitle => 'Deze momentopname verwijderen?';
+
+  @override
+  String backupDeleteSnapshotBody(String name) {
+    return '$name van de server verwijderen? Alle databases in deze momentopname gaan verloren. Dit kan niet ongedaan worden gemaakt.';
+  }
+
+  @override
+  String backupDeleteSnapshotDone(String name) {
+    return 'Momentopname $name verwijderd.';
+  }
 
   @override
   String backupSnapshotWorkspaces(int count) {

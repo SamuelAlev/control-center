@@ -192,66 +192,77 @@ class _MeetingDetailScreenState extends ConsumerState<MeetingDetailScreen> {
     final key = (workspaceId: workspaceId, meetingId: widget.meetingId);
     final meetingAsync = ref.watch(meetingDetailProvider(key));
     final segmentsAsync = ref.watch(meetingSegmentsProvider(key));
-    final segments = segmentsAsync.asData?.value ?? const <MeetingSegment>[];
-    final actionItems =
-        ref.watch(meetingActionItemsProvider(key)).asData?.value ??
-        const <MeetingActionItem>[];
-    final decisions =
-        ref.watch(meetingDecisionsProvider(key)).asData?.value ??
-        const <MeetingDecision>[];
+    final actionsAsync = ref.watch(meetingActionItemsProvider(key));
+    final decisionsAsync = ref.watch(meetingDecisionsProvider(key));
+    for (final source in [
+      meetingAsync,
+      segmentsAsync,
+      actionsAsync,
+      decisionsAsync,
+    ]) {
+      if (source.hasError) {
+        return PageWrapper(child: InlineLoadError(source.error!));
+      }
+    }
+    final segments = segmentsAsync.value ?? const <MeetingSegment>[];
+    final actionItems = actionsAsync.value ?? const <MeetingActionItem>[];
+    final decisions = decisionsAsync.value ?? const <MeetingDecision>[];
 
-    return meetingAsync.when(
-      loading: () => const PageWrapper(child: Center(child: CcSpinner())),
-      error: (e, _) => PageWrapper(child: InlineLoadError(e)),
-      data: (meeting) {
-        if (meeting == null) {
-          return PageWrapper(
-            child: CcEmptyState(
-              icon: AppIcons.audioLines,
-              iconSize: 32,
-              message: l10n.meetingsEmpty,
-            ),
-          );
-        }
-        if (!_notesInitialized) {
-          _notesController.text = meeting.userNotes;
-          _notesInitialized = true;
-        }
-        // The title, the back link and the three meeting-level actions live in
-        // the standard page header now, so a meeting detail is framed exactly
-        // like a pull request or a pipeline run instead of carrying its own
-        // 38px headline and a floating cluster of buttons.
-        return PageWrapper(
-          overline: _BackLine(l10n: l10n),
-          titleWidget: _DetailTitle(
-            meeting: meeting,
-            onEditTitle: () => _editTitle(meeting),
-          ),
-          actions: [
-            _LinkEventButton(meeting: meeting),
-            _HeaderAction(
-              icon: AppIcons.refreshCw,
-              label: l10n.meetingReRunSummary,
-              onPressed: () => _reRun(meeting, segments),
-            ),
-            _HeaderAction(
-              icon: AppIcons.download,
-              label: l10n.meetingExport,
-              onPressed: () =>
-                  _export(meeting, segments, actionItems, decisions),
-            ),
-          ],
-          child: _buildBody(
-            context,
-            l10n,
-            meeting,
-            segments,
-            actionItems,
-            decisions,
-          ),
+    return (meetingAsync.hasValue
+            ? AsyncValue<Meeting?>.data(meetingAsync.requireValue)
+            : meetingAsync)
+        .when(
+          loading: () => const PageWrapper(child: Center(child: CcSpinner())),
+          error: (e, _) => PageWrapper(child: InlineLoadError(e)),
+          data: (meeting) {
+            if (meeting == null) {
+              return PageWrapper(
+                child: CcEmptyState(
+                  icon: AppIcons.audioLines,
+                  iconSize: 32,
+                  message: l10n.meetingsEmpty,
+                ),
+              );
+            }
+            if (!_notesInitialized) {
+              _notesController.text = meeting.userNotes;
+              _notesInitialized = true;
+            }
+            // The title, the back link and the three meeting-level actions live in
+            // the standard page header now, so a meeting detail is framed exactly
+            // like a pull request or a pipeline run instead of carrying its own
+            // 38px headline and a floating cluster of buttons.
+            return PageWrapper(
+              overline: _BackLine(l10n: l10n),
+              titleWidget: _DetailTitle(
+                meeting: meeting,
+                onEditTitle: () => _editTitle(meeting),
+              ),
+              actions: [
+                _LinkEventButton(meeting: meeting),
+                _HeaderAction(
+                  icon: AppIcons.refreshCw,
+                  label: l10n.meetingReRunSummary,
+                  onPressed: () => _reRun(meeting, segments),
+                ),
+                _HeaderAction(
+                  icon: AppIcons.download,
+                  label: l10n.meetingExport,
+                  onPressed: () =>
+                      _export(meeting, segments, actionItems, decisions),
+                ),
+              ],
+              child: _buildBody(
+                context,
+                l10n,
+                meeting,
+                segments,
+                actionItems,
+                decisions,
+              ),
+            );
+          },
         );
-      },
-    );
   }
 
   Widget _buildBody(

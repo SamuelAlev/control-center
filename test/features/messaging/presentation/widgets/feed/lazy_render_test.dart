@@ -112,7 +112,7 @@ Future<Set<String>> _openFeed(
         for (var i = 0; i < _windowSize; i++)
           messageTranscriptProvider(
             'm$i',
-          ).overrideWith((ref) async => const []),
+          ).overrideWith((ref) => Stream.value(const [])),
       ],
       child: MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,

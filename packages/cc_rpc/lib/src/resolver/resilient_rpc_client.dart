@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_rpc/src/channel/remote_rpc_channel_port.dart';
 import 'package:cc_rpc/src/client/remote_rpc_client.dart';
+import 'package:cc_rpc/src/client/rpc_snapshot_cache.dart';
 import 'package:cc_rpc/src/client/server_build.dart';
 import 'package:cc_rpc/src/resolver/connection_supervisor.dart';
 
@@ -13,12 +15,13 @@ import 'package:cc_rpc/src/resolver/connection_supervisor.dart';
 class ResilientRpcClient implements RemoteRpcClient {
   /// Wraps [supervisor]; call [ServerConnectionSupervisor.start] first (the
   /// boot flow owns first-connect errors), then construct this.
-  ResilientRpcClient(this.supervisor, {Duration? callWait})
+  ResilientRpcClient(this.supervisor, {Duration? callWait, this._snapshotCache})
     : _callWait = callWait ?? const Duration(seconds: 15) {
     _inner = supervisor.client;
     _applyWorkspace(_inner);
     _wireInner(_inner);
     _clientsSub = supervisor.clients.listen((client) {
+      _terminalError = null;
       _inner = client;
       _applyWorkspace(client);
       _wireInner(client);
@@ -38,12 +41,33 @@ class ResilientRpcClient implements RemoteRpcClient {
           open ? RemoteChannelState.open : RemoteChannelState.closed,
         );
       }
-      if ((status.phase == ServerConnectionPhase.closed ||
-              status.phase == ServerConnectionPhase.identityMismatch) &&
-          !_closed) {
-        _failWaiters(
-          StateError('server connection ended: ${status.phase.name}'),
+      if (_closed) {
+        return;
+      }
+      if (status.authenticationRejected) {
+        final denial = RemoteRpcException(
+          RpcErrorCodes.unauthorized,
+          'Server rejected authentication',
         );
+        _terminalError = denial;
+        _inner = null;
+        _snapshotCache?.clear();
+        if (_snapshotCache case final cache?) {
+          unawaited(cache.flush());
+        }
+        _failWaiters(denial);
+      } else if (status.phase == ServerConnectionPhase.closed ||
+          status.phase == ServerConnectionPhase.identityMismatch) {
+        _terminalError = RemoteRpcClientClosedException(
+          'Server connection ended: ${status.phase.name}',
+        );
+        if (status.phase == ServerConnectionPhase.identityMismatch) {
+          _snapshotCache?.clear();
+          if (_snapshotCache case final cache?) {
+            unawaited(cache.flush());
+          }
+        }
+        _failWaiters(_terminalError!);
       }
     });
   }
@@ -52,11 +76,21 @@ class ResilientRpcClient implements RemoteRpcClient {
   final ServerConnectionSupervisor supervisor;
 
   final Duration _callWait;
+  RpcSnapshotCache? _snapshotCache;
+
+  /// Switches the cache only after an authenticated identity has been verified
+  /// and its scoped store has hydrated. Existing listeners retain their cache
+  /// scope, so no in-flight response can leak into another account's store.
+  void setSnapshotCache(RpcSnapshotCache? cache) {
+    _snapshotCache = cache;
+  }
+
   RemoteRpcClient? _inner;
   String? _activeWorkspaceId;
   bool _closed = false;
   bool _lastOpen = true;
 
+  Object? _terminalError;
   StreamSubscription<RemoteRpcClient>? _clientsSub;
   StreamSubscription<ServerConnectionStatus>? _statusSub;
   StreamSubscription<JsonRpcNotification>? _notificationsSub;
@@ -92,6 +126,10 @@ class ResilientRpcClient implements RemoteRpcClient {
   }
 
   Future<RemoteRpcClient> _live() async {
+    final terminal = _terminalError;
+    if (terminal != null) {
+      throw terminal;
+    }
     final inner = _inner;
     if (inner != null && inner.isOpen) {
       return inner;
@@ -211,46 +249,97 @@ class ResilientRpcClient implements RemoteRpcClient {
     String query,
     Map<String, dynamic> args,
   ) {
+    final effectiveArgs = _frozenArgs(args);
+    final cache = _safeSubscriptions.contains(query) ? _snapshotCache : null;
+    final key = _snapshotKey('sub', query, effectiveArgs);
     late final StreamController<Map<String, dynamic>> controller;
     StreamSubscription<Map<String, dynamic>>? innerSub;
+    Completer<RemoteRpcClient>? pending;
+    Completer<void>? attachedDone;
     var cancelled = false;
 
+    Future<RemoteRpcClient> live() async {
+      final terminal = _terminalError;
+      if (terminal != null) {
+        throw terminal;
+      }
+      final current = _inner;
+      if (current != null && current.isOpen) {
+        return current;
+      }
+      if (_closed || cancelled) {
+        throw const RemoteRpcClientClosedException();
+      }
+      final waiter = Completer<RemoteRpcClient>();
+      pending = waiter;
+      _clientWaiters.add(waiter);
+      try {
+        return await waiter.future;
+      } finally {
+        _clientWaiters.remove(waiter);
+        if (identical(pending, waiter)) {
+          pending = null;
+        }
+      }
+    }
+
     Future<void> attach() async {
+      final terminal = _terminalError;
+      if (terminal != null) {
+        controller.addError(terminal);
+        await controller.close();
+        return;
+      }
+      final stale = cache?.read(key);
+      if (stale != null && !cancelled) {
+        controller.add(stale);
+      }
       while (!cancelled && !_closed) {
         final RemoteRpcClient client;
         try {
-          client = await _live();
+          client = await live();
         } catch (e, s) {
-          if (!cancelled && !controller.isClosed) {
-            // Still reconnecting past the wait budget: keep the stream open
-            // and try again — a resilient subscription outlives outages.
-            if (e is RemoteRpcClientClosedException && !_closed) {
-              continue;
-            }
-            controller.addError(e, s);
-            await controller.close();
+          if (cancelled || controller.isClosed) {
+            return;
           }
+          controller.addError(e, s);
+          await controller.close();
+          return;
+        }
+        if (cancelled) {
           return;
         }
         final done = Completer<void>();
-        // Set when the SERVER actively failed this subscription (a
-        // `sub/subscribe` error response or a `sub/error` push), as opposed to
-        // the session merely ending under it.
+        attachedDone = done;
         var failed = false;
+        var denied = false;
         innerSub = client
-            .subscribe(query, args)
+            .subscribe(query, effectiveArgs)
             .listen(
-              controller.add,
+              (snapshot) {
+                if (cancelled ||
+                    controller.isClosed ||
+                    _terminalError != null) {
+                  return;
+                }
+                cache?.write(key, snapshot);
+                controller.add(snapshot);
+              },
               onError: (Object error, StackTrace stack) {
-                if (error is RemoteRpcClientClosedException) {
-                  // Session died mid-flight; resubscribe on the next one.
+                denied = _isAuthoritativeDenial(error);
+                if (denied) {
+                  _evictDeniedSnapshot(cache, key, effectiveArgs, error);
+                } else if (error is RemoteRpcClientClosedException ||
+                    error is TimeoutException ||
+                    !client.isOpen) {
+                  // Transport loss does not replace a cached render with an error.
                   if (!done.isCompleted) {
                     done.complete();
                   }
                   return;
                 }
                 failed = true;
-                if (!controller.isClosed) {
+                if (!cancelled && !controller.isClosed) {
                   controller.addError(error, stack);
                 }
               },
@@ -261,39 +350,40 @@ class ResilientRpcClient implements RemoteRpcClient {
               },
             );
         await done.future;
-        unawaited(innerSub?.cancel());
+        attachedDone = null;
+        await innerSub?.cancel();
         innerSub = null;
         if (cancelled || _closed) {
           return;
         }
-        // A server-side rejection on a session that is STILL LIVE is not
-        // something reconnecting fixes: re-issuing the same `sub/subscribe`
-        // re-triggers it as fast as the round trip allows. That is the
-        // resubscribe storm (a client holding a terminal session id its server
-        // no longer knows after a restart flooded the host log at round-trip
-        // speed). Surface the error once — the consumer's retry policy owns
-        // what happens next (`appProviderRetry` never retries an unrecoverable
-        // code) — and end the stream. Failures observed while the transport is
-        // already down are session deaths, not rejections, so those still
-        // re-attach below.
-        if (failed && (_inner?.isOpen ?? false)) {
-          if (!controller.isClosed) {
-            await controller.close();
-          }
+        // An active server's refusal is final, not a reason to spin retrying.
+        if (failed && (denied || client.isOpen)) {
+          await controller.close();
           return;
         }
-        // The inner subscription ended because its session closed. Wait for
-        // a fresh client (no timeout — outages can be long) and re-register.
-        if (_inner == null || !_inner!.isOpen) {
-          final waiter = Completer<RemoteRpcClient>();
-          _clientWaiters.add(waiter);
+        if (!client.isOpen && !identical(_inner, client)) {
+          continue;
+        }
+        if (!client.isOpen) {
           try {
+            final waiter = Completer<RemoteRpcClient>();
+            pending = waiter;
+            _clientWaiters.add(waiter);
             await waiter.future;
-          } catch (_) {
-            if (!controller.isClosed) {
+          } catch (error, stack) {
+            if (!cancelled && !controller.isClosed) {
+              if (!_closed) {
+                controller.addError(error, stack);
+              }
               await controller.close();
             }
             return;
+          } finally {
+            final waiter = pending;
+            if (waiter != null) {
+              _clientWaiters.remove(waiter);
+            }
+            pending = null;
           }
         }
       }
@@ -303,10 +393,185 @@ class ResilientRpcClient implements RemoteRpcClient {
       onListen: () => unawaited(attach()),
       onCancel: () async {
         cancelled = true;
+        final done = attachedDone;
+        if (done != null && !done.isCompleted) {
+          done.complete();
+        }
+        final waiter = pending;
+        if (waiter != null) {
+          _clientWaiters.remove(waiter);
+          if (!waiter.isCompleted) {
+            waiter.completeError(const RemoteRpcClientClosedException());
+          }
+        }
         await innerSub?.cancel();
       },
     );
     return controller.stream;
+  }
+
+  /// Explicit cached read stream, never used for mutations or ordinary calls.
+  /// A listener receives the stale value first and a fresh response on every
+  /// live session, including sessions established after a prolonged outage.
+  @override
+  Stream<Map<String, dynamic>> watchCall(String op, Map<String, dynamic> args) {
+    if (!offlineSafeReadOps.contains(op)) {
+      throw ArgumentError.value(op, 'op', 'Not an offline-safe read operation');
+    }
+    final effectiveArgs = _frozenArgs(args);
+    final cache = _snapshotCache;
+    final key = _snapshotKey('call', op, effectiveArgs);
+    late final StreamController<Map<String, dynamic>> controller;
+    Completer<RemoteRpcClient>? pending;
+    var cancelled = false;
+
+    Future<void> attach() async {
+      final terminal = _terminalError;
+      if (terminal != null) {
+        controller.addError(terminal);
+        await controller.close();
+        return;
+      }
+      final stale = cache?.read(key);
+      if (stale != null && !cancelled) {
+        controller.add(stale);
+      }
+      RemoteRpcClient? last;
+      while (!cancelled && !_closed) {
+        if (_terminalError != null) {
+          controller.addError(_terminalError!);
+          await controller.close();
+          return;
+        }
+        try {
+          final current = _inner;
+          if (current == null || !current.isOpen || identical(current, last)) {
+            final waiter = Completer<RemoteRpcClient>();
+            pending = waiter;
+            _clientWaiters.add(waiter);
+            try {
+              last = await waiter.future;
+            } finally {
+              _clientWaiters.remove(waiter);
+              if (identical(pending, waiter)) {
+                pending = null;
+              }
+            }
+          } else {
+            last = current;
+          }
+          if (cancelled || _closed) {
+            return;
+          }
+          if (_terminalError != null) {
+            controller.addError(_terminalError!);
+            await controller.close();
+            return;
+          }
+          final fresh = await last.call(op, effectiveArgs);
+          if (cancelled || _closed) {
+            return;
+          }
+          if (_terminalError != null) {
+            controller.addError(_terminalError!);
+            await controller.close();
+            return;
+          }
+          cache?.write(key, fresh);
+          controller.add(fresh);
+        } catch (error, stack) {
+          if (cancelled || controller.isClosed) {
+            return;
+          }
+          if (_terminalError != null) {
+            controller.addError(_terminalError!);
+            await controller.close();
+            return;
+          }
+          final denied = _isAuthoritativeDenial(error);
+          if (denied) {
+            _evictDeniedSnapshot(cache, key, effectiveArgs, error);
+          }
+          if (!denied &&
+              (error is RemoteRpcClientClosedException ||
+                  error is TimeoutException ||
+                  (last != null && !last.isOpen))) {
+            continue;
+          }
+          controller.addError(error, stack);
+          await controller.close();
+          return;
+        }
+      }
+    }
+
+    controller = StreamController<Map<String, dynamic>>(
+      onListen: () => unawaited(attach()),
+      onCancel: () {
+        cancelled = true;
+        final waiter = pending;
+        if (waiter != null) {
+          _clientWaiters.remove(waiter);
+          if (!waiter.isCompleted) {
+            waiter.completeError(const RemoteRpcClientClosedException());
+          }
+        }
+      },
+    );
+    return controller.stream;
+  }
+
+  Map<String, dynamic> _frozenArgs(Map<String, dynamic> args) =>
+      args.containsKey('workspace_id')
+      ? Map<String, dynamic>.of(args)
+      : {'workspace_id': _activeWorkspaceId, ...args};
+
+  static String _snapshotKey(
+    String kind,
+    String name,
+    Map<String, dynamic> args,
+  ) => jsonEncode([kind, name, _canonical(args)]);
+
+  static Object? _canonical(Object? value) {
+    if (value is Map) {
+      final keys = value.keys.cast<String>().toList()..sort();
+      return {for (final key in keys) key: _canonical(value[key])};
+    }
+    if (value is List) {
+      return value.map(_canonical).toList();
+    }
+    return value;
+  }
+
+  static bool _isAuthoritativeDenial(Object error) =>
+      error is RemoteRpcException &&
+      (error.code == RpcErrorCodes.unauthorized ||
+          error.code == RpcErrorCodes.workspaceMismatch ||
+          error.code == RpcErrorCodes.notFound ||
+          error.code == RpcErrorCodes.noWorkspaceBound);
+
+  static void _evictDeniedSnapshot(
+    RpcSnapshotCache? cache,
+    String key,
+    Map<String, dynamic> args,
+    Object error,
+  ) {
+    if (cache == null) {
+      return;
+    }
+    final code = (error as RemoteRpcException).code;
+    if (code == RpcErrorCodes.unauthorized ||
+        code == RpcErrorCodes.workspaceMismatch ||
+        code == RpcErrorCodes.noWorkspaceBound) {
+      final workspace = args['workspace_id'];
+      if (workspace is String) {
+        cache.evictWorkspace(workspace);
+      } else {
+        cache.clear();
+      }
+    } else {
+      cache.remove(key); // A missing entity does not revoke its workspace.
+    }
   }
 
   @override
@@ -321,6 +586,63 @@ class ResilientRpcClient implements RemoteRpcClient {
     await _notificationsSub?.cancel();
     await _notifications.close();
     await _connectionState.close();
+    await _snapshotCache?.flush();
     await supervisor.close();
   }
 }
+
+// Explicit render-only snapshots. Live control, credentials, presence,
+// permissions and mutation-shaped operations must never enter persistence.
+const _safeSubscriptions = <String>{
+  'workspace.watchAll',
+  'workspace.watchReposForWorkspace',
+  'agents.watchForWorkspace',
+  'agents.watchAll',
+  'pr.watchOpenForWorkspace',
+  'pr.watchNeedsMyReviewCount',
+  'pr.watchRepoAccessForWorkspace',
+  'pr_review.watchPullRequest',
+  'pr_review.watchDiff',
+  'pr_review.watchFiles',
+  'pr_review.watchFileContent',
+  'pr_review.watchCommits',
+  'pr_review.watchCommitFiles',
+  'pr_review.watchReviews',
+  'pr_review.watchReviewComments',
+  'pr_review.watchIssueComments',
+  'pr_review.watchTimelineEvents',
+  'pr_review.watchCheckRuns',
+  'pr_review.watchCommitStatuses',
+  'pr_review.watchReviewers',
+  'calendar.watchAccounts',
+  'calendar.watchSources',
+  'calendar.watchEventsInRange',
+  'calendar.watchEventById',
+  'meeting.watchByWorkspace',
+  'meeting.watchSegments',
+  'meeting.watchSpeakers',
+  'meeting.watchActionItems',
+  'meeting.watchDecisions',
+  'meeting.watchActionItemStats',
+  'meeting.watchDecisionCounts',
+  'pipeline_run.watchRun',
+  'pipeline_run.watchAll',
+  'pipeline_run.watchForWorkspace',
+  'pipeline_run.watchStepRunsForPipeline',
+  'pipeline_template.watchForWorkspace',
+  'pipeline_trigger.watchForWorkspace',
+  'messaging.watchSpaces',
+  'messaging.watchMessages',
+  'messaging.watchSpaceMessages',
+  'messaging.watchMessagesWindow',
+  'messaging.watchParticipants',
+  'messaging.watchSpaceActivity',
+  'messaging.watchConversationTokens',
+  'messaging.watchUserPromptHistory',
+  'conversation.watchForSpace',
+  'conversation.watchThreadSummaries',
+  'agent_run_log.watchByAgent',
+  'agent_run_log.watchByConversation',
+  'agent_run_log.watchBySpace',
+  'agent_run_log.watchRecent',
+};

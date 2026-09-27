@@ -5,6 +5,8 @@ import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_domain/features/pr_review/domain/repositories/pr_review_repository.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
+import 'package:control_center/di/providers.dart';
+import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/pr_review/presentation/screens/pull_request_list_screen.dart';
 import 'package:control_center/features/pr_review/providers/pr_filter_providers.dart';
 import 'package:control_center/features/pr_review/providers/pr_list_providers.dart';
@@ -107,9 +109,28 @@ class _SeededPrsByRepoNotifier extends PrsByRepoNotifier {
   );
 }
 
+class _ReviewedOnlyFilter extends PrListFiltersNotifier {
+  @override
+  PrListFilters build() => const PrListFilters(reviewedByMe: true);
+}
+
+class _ReviewedKeys extends ReviewedByMePrKeysNotifier {
+  @override
+  String? get scopeKey => 'user-1|ws1|author';
+
+  @override
+  Future<Set<String>> build() async => {'acme/alpha#1'};
+
+  void replace(Set<String> keys) => state = AsyncData(keys);
+}
+
 Widget _host(List<Override> overrides) {
   return ProviderScope(
-    overrides: overrides,
+    overrides: [
+      currentUserIdProvider.overrideWithValue('user-1'),
+      viewerGitHubTeamsProvider.overrideWith((ref) async => const {}),
+      ...overrides,
+    ],
     child: MaterialApp(
       localizationsDelegates: [
         ...AppLocalizations.localizationsDelegates,
@@ -153,6 +174,9 @@ void main() {
       _host([
         appPreferencesProvider.overrideWithValue(prefs),
         activeWorkspaceIdProvider.overrideWith(_TestWorkspaceIdNotifier.new),
+        reposForWorkspaceProvider(
+          'ws1',
+        ).overrideWith((ref) => Stream.value(const [])),
         prsByRepoProvider.overrideWith(_UnauthedPrsByRepoNotifier.new),
         currentUserLoginProvider.overrideWith((ref) => ''),
         prReviewRepositoryProvider.overrideWith(
@@ -248,6 +272,8 @@ void main() {
         overrides: [
           appPreferencesProvider.overrideWithValue(prefs),
           activeWorkspaceIdProvider.overrideWith(_TestWorkspaceIdNotifier.new),
+          currentUserIdProvider.overrideWithValue('user-1'),
+          viewerGitHubTeamsProvider.overrideWith((ref) async => const {}),
           reposForWorkspaceProvider('ws1').overrideWith(
             (ref) => Stream.value([
               _repo('rA', 'acme', 'alpha'),
@@ -263,9 +289,11 @@ void main() {
         child: MaterialApp.router(
           localizationsDelegates: [
             ...AppLocalizations.localizationsDelegates,
-            GlobalMaterialLocalizations.delegate, // ignore: deprecated_member_use
+            GlobalMaterialLocalizations
+                .delegate, // ignore: deprecated_member_use
             GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate, // ignore: deprecated_member_use
+            GlobalCupertinoLocalizations
+                .delegate, // ignore: deprecated_member_use
           ],
           supportedLocales: AppLocalizations.supportedLocales,
           locale: const Locale('en'),
@@ -301,6 +329,8 @@ void main() {
         overrides: [
           appPreferencesProvider.overrideWithValue(prefs),
           activeWorkspaceIdProvider.overrideWith(_TestWorkspaceIdNotifier.new),
+          currentUserIdProvider.overrideWithValue('user-1'),
+          viewerGitHubTeamsProvider.overrideWith((ref) async => const {}),
           reposForWorkspaceProvider('ws1').overrideWith(
             (ref) => Stream.value([
               _repo('rA', 'acme', 'alpha'),
@@ -316,9 +346,11 @@ void main() {
         child: MaterialApp.router(
           localizationsDelegates: [
             ...AppLocalizations.localizationsDelegates,
-            GlobalMaterialLocalizations.delegate, // ignore: deprecated_member_use
+            GlobalMaterialLocalizations
+                .delegate, // ignore: deprecated_member_use
             GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate, // ignore: deprecated_member_use
+            GlobalCupertinoLocalizations
+                .delegate, // ignore: deprecated_member_use
           ],
           supportedLocales: AppLocalizations.supportedLocales,
           locale: const Locale('en'),
@@ -335,4 +367,39 @@ void main() {
     expect(find.text('Beta change'), findsOneWidget);
     expect(router.state.uri.queryParameters['repo'], 'acme/beta');
   });
+  testWidgets(
+    'reviewed filter shows cached keys then applies fresh empty keys',
+    (tester) async {
+      sizeView(tester);
+      final reviewedKeys = _ReviewedKeys();
+      await tester.pumpWidget(
+        _host([
+          appPreferencesProvider.overrideWithValue(prefs),
+          activeWorkspaceIdProvider.overrideWith(_TestWorkspaceIdNotifier.new),
+          currentUserLoginProvider.overrideWith((ref) => 'author'),
+          reposForWorkspaceProvider('ws1').overrideWith(
+            (ref) => Stream.value([
+              _repo('rA', 'acme', 'alpha'),
+              _repo('rB', 'acme', 'beta'),
+            ]),
+          ),
+          prsByRepoProvider.overrideWith(_SeededPrsByRepoNotifier.new),
+          prListFiltersProvider.overrideWith(_ReviewedOnlyFilter.new),
+          reviewedByMePrKeysProvider.overrideWith(() => reviewedKeys),
+          prReviewRepositoryProvider.overrideWith(
+            (ref) => const EmptyPrReviewRepository(),
+          ),
+        ]),
+      );
+      await tester.pump();
+      await tester.pump();
+      expect(find.text('Alpha change'), findsOneWidget);
+
+      reviewedKeys.replace(const {});
+      await tester.pump();
+      expect(find.text('Alpha change'), findsNothing);
+      await tester.pumpWidget(Container());
+      await tester.pump(const Duration(milliseconds: 100));
+    },
+  );
 }

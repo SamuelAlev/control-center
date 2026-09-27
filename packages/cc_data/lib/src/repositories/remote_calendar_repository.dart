@@ -5,58 +5,61 @@ import 'package:cc_rpc/cc_rpc.dart';
 /// database.
 ///
 /// Backs the web build and the desktop in REMOTE mode.
-/// The calendar surface is workspace-scoped and the workspace rides in the request args
-/// (the host is stateless — it binds no "current workspace").
-/// Omitting it leaves `RemoteRpcClient` to inject its ambient active workspace, which is
-/// what the desktop wants — the calendar always follows the active route.
+/// All render subscriptions carry an explicit workspace id so a provider
+/// reload cannot serve a snapshot from the previously selected workspace.
 class RemoteCalendarRepository {
   /// Creates a [RemoteCalendarRepository] over [_client].
   RemoteCalendarRepository(this._client);
 
   final RemoteRpcClient _client;
 
-  /// Live connected accounts in [workspaceId] (or the ambient workspace).
-  Stream<List<CalendarAccountDto>> watchAccounts({String? workspaceId}) =>
-      _client
-          .subscribe('calendar.watchAccounts', {'workspace_id': ?workspaceId})
-          .map(_accounts);
+  /// Live connected accounts in [workspaceId].
+  Stream<List<CalendarAccountDto>> watchAccounts({
+    required String workspaceId,
+  }) => _client
+      .subscribe('calendar.watchAccounts', {'workspace_id': workspaceId})
+      .map(_accounts);
 
-  /// Live calendar sources for one account in the bound workspace (the
-  /// account's calendar list — primary first). `accountId` is the connected
-  /// account id whose calendar list to stream.
-  Stream<List<CalendarSourceDto>> watchSources(String accountId) => _client
-      .subscribe('calendar.watchSources', {'account_id': accountId})
+  /// Live calendar sources for one account in the requested workspace.
+  Stream<List<CalendarSourceDto>> watchSources(
+    String accountId, {
+    required String workspaceId,
+  }) => _client
+      .subscribe('calendar.watchSources', {
+        'account_id': accountId,
+        'workspace_id': workspaceId,
+      })
       .map(_sources);
 
-  /// Connected accounts in the bound workspace.
-  Future<List<CalendarAccountDto>> getAccounts() async {
-    final data = await _client.call('calendar.getAccounts', const {});
+  /// Connected accounts in [workspaceId].
+  Future<List<CalendarAccountDto>> getAccounts(String workspaceId) async {
+    final data = await _client.call('calendar.getAccounts', {
+      'workspace_id': workspaceId,
+    });
     return _accounts(data);
   }
 
-  /// Live events overlapping `[from, to)` in [workspaceId] (or the ambient
-  /// workspace).
+  /// Live events overlapping `[from, to)` in [workspaceId].
   Stream<List<CalendarEventDto>> watchEventsInRange(
     DateTime from,
     DateTime to, {
-    String? workspaceId,
+    required String workspaceId,
   }) => _client
       .subscribe('calendar.watchEventsInRange', {
         'from': from.toIso8601String(),
         'to': to.toIso8601String(),
-        'workspace_id': ?workspaceId,
+        'workspace_id': workspaceId,
       })
       .map(_events);
 
-  /// Live single event by id in [workspaceId] (or the ambient workspace);
-  /// null when absent.
+  /// Live single event by id in [workspaceId]; null when absent.
   Stream<CalendarEventDto?> watchEventById(
     String eventId, {
-    String? workspaceId,
+    required String workspaceId,
   }) => _client
       .subscribe('calendar.watchEventById', {
         'event_id': eventId,
-        'workspace_id': ?workspaceId,
+        'workspace_id': workspaceId,
       })
       .map(_event);
 

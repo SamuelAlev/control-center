@@ -7,6 +7,8 @@ Phone web PWA that renders server-owned state over JSON-RPC. It runs no database
 fvm flutter build web --release --wasm
 ```
 
+Run `fvm flutter test --concurrency=2` for the VM suite (including filesystem boundary checks). The folder interaction suites require a browser: `fvm flutter test --platform chrome test/space_folders_test.dart test/space_folders_widget_test.dart --concurrency=2`. The filesystem checks in `material_free_test.dart` cannot run on Chrome.
+
 Deploy `build/web` to Cloudflare Pages using `wrangler.jsonc` (SPA fallback). HTTPS is required for service workers and IndexedDB. The server-side pairing panel encodes the deployed PWA URL into its QR link. This app imports only web-safe `cc_ui`, `cc_domain`, `cc_rpc` and `cc_data`, never the root `control_center` app, `dart:io` or native plugins. It uses `WidgetsApp.router`, `CcTheme` and go_router, not Material widgets; `lib/app_icons.dart` avoids the large icon class that overflows web DDC.
 
 ## Pairing and session

@@ -1811,6 +1811,14 @@ class AppLocalizationsDe extends AppLocalizations {
       'JSON-Schema, das die Schrittausgabe erfüllen muss';
 
   @override
+  String get nodeConfigBackupRetentionDays =>
+      'Sicherungen löschen, die älter sind als (Tage)';
+
+  @override
+  String get nodeConfigBackupRetentionDaysHelp =>
+      'Nur Sicherungen dieses Arbeitsbereichs werden gelöscht. Gib eine positive Anzahl an Tagen ein.';
+
+  @override
   String get diffLineDisplay => 'Lange Zeilen in Diffs';
 
   @override
@@ -9141,6 +9149,45 @@ class AppLocalizationsDe extends AppLocalizations {
   String get spaceReposHint => 'Einzubeziehende Repos';
 
   @override
+  String get newSpaceFolder => 'Neuer Ordner';
+
+  @override
+  String get folderName => 'Ordnername';
+
+  @override
+  String get renameSpaceFolder => 'Ordner umbenennen';
+
+  @override
+  String get deleteSpaceFolder => 'Ordner löschen';
+
+  @override
+  String get moveSpaceToFolder => 'Bereich in Ordner verschieben';
+
+  @override
+  String get removeSpaceFromFolder => 'Bereich aus Ordner entfernen';
+
+  @override
+  String get spaceFolderActions => 'Ordneraktionen';
+
+  @override
+  String get deleteFolderWithSpacesWarning =>
+      'Wenn Bereiche dauerhaft gelöscht werden, werden ihre Nachrichten und Arbeitsverzeichnisse für alle entfernt. Dies kann nicht rückgängig gemacht werden.';
+
+  @override
+  String get deleteSpacesInFolder =>
+      'Bereiche in diesem Ordner dauerhaft löschen';
+
+  @override
+  String get deleteFolderAndSpaces => 'Ordner und Bereiche löschen';
+
+  @override
+  String get keepSpacesInFolder =>
+      'Andernfalls bleiben die Bereiche ohne Ordner.';
+
+  @override
+  String get noSpaceFoldersYet => 'Noch keine Ordner';
+
+  @override
   String get ideSourceControl => 'Quellcodeverwaltung';
 
   @override
@@ -14472,7 +14519,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get backupNoSnapshots =>
-      'Noch keine Momentaufnahmen. Sie entstehen nur auf Anfrage – es ist nichts geplant.';
+      'Noch keine Installationsschnappschüsse. Erstelle jetzt einen oder nutze eine geplante Pipeline für Arbeitsbereichssicherungen.';
 
   @override
   String get backupSnapshotComplete => 'Vollständig';
@@ -14483,6 +14530,29 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get backupSnapshotIncompleteNote =>
       'Das Manifest fehlt oder nennt Dateien, die nicht da sind, deshalb kann diese Momentaufnahme nicht die ganze Installation wiederherstellen. Die vorhandenen Arbeitsbereichsdateien lassen sich weiterhin einzeln übernehmen.';
+
+  @override
+  String get backupDeleteSnapshotLabel => 'Momentaufnahme löschen';
+
+  @override
+  String get backupDeleteSnapshotDescription =>
+      'Diese Momentaufnahme dauerhaft vom Server entfernen. Lade sie zuerst herunter, wenn du sie behalten möchtest.';
+
+  @override
+  String get backupDeleteSnapshotAction => 'Momentaufnahme löschen';
+
+  @override
+  String get backupDeleteSnapshotTitle => 'Diese Momentaufnahme löschen?';
+
+  @override
+  String backupDeleteSnapshotBody(String name) {
+    return '$name vom Server löschen? Alle Datenbanken in dieser Momentaufnahme gehen verloren. Das lässt sich nicht rückgängig machen.';
+  }
+
+  @override
+  String backupDeleteSnapshotDone(String name) {
+    return 'Momentaufnahme $name gelöscht.';
+  }
 
   @override
   String backupSnapshotWorkspaces(int count) {

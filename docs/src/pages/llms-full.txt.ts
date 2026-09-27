@@ -9,7 +9,7 @@ import type { APIRoute } from 'astro';
 import { getCollection } from 'astro:content';
 import { releases } from '../data/changelog';
 import { faqs } from '../data/faq';
-import { columns, tools, compareSummary, compareReviewed, priceNote } from '../data/compare';
+import { columns, tools, compareSummary, compareReviewed, reviewScopeNote, priceNote } from '../data/compare';
 import { OVERVIEW } from '../data/site';
 
 export const prerender = true;
@@ -48,7 +48,9 @@ export const GET: APIRoute = async ({ site }) => {
     '',
     compareSummary,
     '',
-    `Legend: ✓ yes, ≈ partial, — not offered. Checked against each product's public site, ${compareReviewed}.`,
+    `Legend: ✓ yes, ≈ partial, — not offered. Last updated: ${compareReviewed}. Checked against each product's public site.`,
+    '',
+    reviewScopeNote,
     '',
     priceNote,
     '',

@@ -234,5 +234,19 @@
   "yesterday": "Вчора",
   "durationMinutes": "{count}хв",
   "durationHours": "{count}год",
-  "durationHoursMinutes": "{hours}год {minutes}хв"
+  "durationHoursMinutes": "{hours}год {minutes}хв",
+  "newSpaceFolder": "Нова папка",
+  "folderName": "Назва папки",
+  "renameSpaceFolder": "Перейменувати папку",
+  "deleteSpaceFolder": "Видалити папку",
+  "moveSpaceToFolder": "Перемістити до папки",
+  "removeSpaceFromFolder": "Прибрати з папки",
+  "spaceFolderActions": "Дії з папкою",
+  "deleteFolderWithSpacesWarning": "Остаточне видалення просторів вилучає їхні повідомлення та робочі дерева для всіх. Цю дію неможливо скасувати.",
+  "deleteSpacesInFolder": "Остаточно видалити простори в цій папці",
+  "deleteFolderAndSpaces": "Видалити папку й простори",
+  "keepSpacesInFolder": "Інакше простори залишаться поза папками.",
+  "create": "Створити",
+  "otherSpaces": "Інші простори",
+  "folderUpdateFailed": "Не вдалося оновити папки"
 }

@@ -1791,6 +1791,14 @@ class AppLocalizationsId extends AppLocalizations {
       'JSON Schema yang harus dipenuhi output langkah';
 
   @override
+  String get nodeConfigBackupRetentionDays =>
+      'Hapus cadangan yang lebih lama dari (hari)';
+
+  @override
+  String get nodeConfigBackupRetentionDaysHelp =>
+      'Hanya cadangan ruang kerja ini yang dihapus. Masukkan jumlah hari positif.';
+
+  @override
   String get diffLineDisplay => 'Baris panjang di diff';
 
   @override
@@ -9086,6 +9094,44 @@ class AppLocalizationsId extends AppLocalizations {
   String get spaceReposHint => 'Repo yang disertakan';
 
   @override
+  String get newSpaceFolder => 'Folder baru';
+
+  @override
+  String get folderName => 'Nama folder';
+
+  @override
+  String get renameSpaceFolder => 'Ubah nama folder';
+
+  @override
+  String get deleteSpaceFolder => 'Hapus folder';
+
+  @override
+  String get moveSpaceToFolder => 'Pindahkan ke folder';
+
+  @override
+  String get removeSpaceFromFolder => 'Keluarkan dari folder';
+
+  @override
+  String get spaceFolderActions => 'Tindakan folder';
+
+  @override
+  String get deleteFolderWithSpacesWarning =>
+      'Menghapus ruang secara permanen akan menghapus pesan dan direktori kerja ruang tersebut untuk semua orang. Tindakan ini tidak dapat dibatalkan.';
+
+  @override
+  String get deleteSpacesInFolder => 'Hapus permanen ruang dalam folder ini';
+
+  @override
+  String get deleteFolderAndSpaces => 'Hapus folder dan ruang';
+
+  @override
+  String get keepSpacesInFolder =>
+      'Jika tidak, ruang akan tetap berada di luar folder.';
+
+  @override
+  String get noSpaceFoldersYet => 'Belum ada folder';
+
+  @override
   String get ideSourceControl => 'Kontrol sumber';
 
   @override
@@ -14395,7 +14441,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get backupNoSnapshots =>
-      'Belum ada snapshot. Snapshot hanya diambil saat Anda memintanya — tidak ada yang dijadwalkan.';
+      'Belum ada snapshot instalasi. Buat sekarang atau gunakan pipeline terjadwal untuk cadangan ruang kerja.';
 
   @override
   String get backupSnapshotComplete => 'Lengkap';
@@ -14406,6 +14452,29 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get backupSnapshotIncompleteNote =>
       'Manifest hilang atau merujuk file yang tidak ada, jadi snapshot ini tidak bisa memulihkan seluruh instalasi. File ruang kerja yang ada masih bisa diadopsi satu per satu.';
+
+  @override
+  String get backupDeleteSnapshotLabel => 'Hapus snapshot';
+
+  @override
+  String get backupDeleteSnapshotDescription =>
+      'Hapus snapshot ini secara permanen dari server. Unduh lebih dahulu jika ingin menyimpan salinannya.';
+
+  @override
+  String get backupDeleteSnapshotAction => 'Hapus snapshot';
+
+  @override
+  String get backupDeleteSnapshotTitle => 'Hapus snapshot ini?';
+
+  @override
+  String backupDeleteSnapshotBody(String name) {
+    return 'Hapus $name dari server? Semua database dalam snapshot ini akan hilang. Tindakan ini tidak dapat dibatalkan.';
+  }
+
+  @override
+  String backupDeleteSnapshotDone(String name) {
+    return 'Snapshot $name dihapus.';
+  }
 
   @override
   String backupSnapshotWorkspaces(int count) {

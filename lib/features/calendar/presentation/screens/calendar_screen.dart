@@ -1,7 +1,7 @@
 import 'package:cc_domain/features/calendar/domain/entities/calendar_event.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/features/calendar/presentation/calendar_view_mode.dart';
-import 'package:control_center/features/calendar/presentation/providers/calendar_event_cache.dart';
 import 'package:control_center/features/calendar/presentation/providers/calendar_ui_providers.dart';
 import 'package:control_center/features/calendar/presentation/providers/record_and_link_provider.dart';
 import 'package:control_center/features/calendar/presentation/utils/calendar_format.dart';
@@ -16,6 +16,7 @@ import 'package:control_center/features/workspaces/providers/workspace_providers
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/widgets/inline_load_error.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -55,13 +56,11 @@ class CalendarScreen extends ConsumerWidget {
     // workspace's state, which the workspace-isolation invariant forbids even
     // momentarily. Stripped, a mid-switch reload reads as plain loading.
     final accountsAsync = ref.watch(googleAccountsProvider).unwrapPrevious();
+    if (accountsAsync.hasError) {
+      return InlineLoadError(accountsAsync.error!);
+    }
     if (!accountsAsync.hasValue) {
-      // No value yet: either the first load is still in flight (show a quiet
-      // loader, not the CTA) or the stream errored (fall back to the CTA, which
-      // lets the user retry — mirrors the pre-fix terminal behaviour).
-      return accountsAsync.hasError
-          ? const _ConnectState()
-          : const _LoadingState();
+      return const _LoadingState();
     }
     if (accountsAsync.requireValue.isEmpty) {
       return const _ConnectState();
@@ -76,18 +75,12 @@ class CalendarScreen extends ConsumerWidget {
     final eventsAsync = ref.watch(
       eventsInRangeProvider((workspaceId: workspaceId, range: range)),
     );
-    // Stale-while-revalidate: until the RPC stream emits (and during any
-    // refresh gap), render the last-known events for this range from the
-    // cache. `.value` keeps the previous list through same-instance
-    // reloads (reconnects, recomputes); the cache covers new range keys
-    // (navigation, cold start). Without both, the all-day header pops open
-    // late and shoves the calendar body down.
-    final allEvents =
-        eventsAsync.value ??
-        ref
-            .read(calendarEventCacheProvider)
-            .overlapping(workspaceId, range.start, range.end) ??
-        const <CalendarEvent>[];
+    if (eventsAsync.hasError) {
+      return InlineLoadError(eventsAsync.error!);
+    }
+    // The RPC subscription replays the last authenticated snapshot before
+    // refreshing; a first-ever range has no rows until its first emission.
+    final allEvents = eventsAsync.value ?? const <CalendarEvent>[];
     final hidden = ref.watch(hiddenCalendarsProvider);
     final events = hidden.isEmpty
         ? allEvents
@@ -153,6 +146,12 @@ class CalendarScreen extends ConsumerWidget {
   ) async {
     final l10n = AppLocalizations.of(context);
     final ws = context.currentWorkspaceId!;
+    // Calendar-to-meeting linking is deliberately closed on public demo
+    // workspaces. Only the Meetings page starts the safe scripted session.
+    if (ref.read(isDemoServerProvider)) {
+      CcToastScope.of(context).show(l10n.demoUnavailableTitle);
+      return;
+    }
     final result = await ref
         .read(calendarRecordAndLinkProvider)
         .startRecordingForEvent(event);

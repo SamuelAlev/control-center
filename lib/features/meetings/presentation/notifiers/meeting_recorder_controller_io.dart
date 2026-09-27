@@ -12,7 +12,9 @@ import 'package:cc_domain/features/meetings/domain/services/mic_echo_canceller.d
 import 'package:cc_natives/cc_natives.dart' show AecEngine, AecProcessor;
 import 'package:control_center/core/infrastructure/audio/audio_input_settings.dart';
 import 'package:control_center/core/infrastructure/power/background_activity_guard.dart';
+import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/core/utils/app_log.dart';
+import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/meetings/presentation/notifiers/meeting_recorder_state.dart';
 import 'package:control_center/features/meetings/providers/meeting_capture_bindings_io.dart';
@@ -108,6 +110,8 @@ class MeetingRecorderController extends Notifier<MeetingRecorderState> {
 
   String? _workspaceId;
   String? _meetingId;
+  bool _demoRecording = false;
+  bool _demoPausePending = false;
 
   @override
   MeetingRecorderState build() {
@@ -135,6 +139,23 @@ class MeetingRecorderController extends Notifier<MeetingRecorderState> {
     final workspaceId = ref.read(activeWorkspaceIdProvider);
     if (workspaceId == null) {
       state = MeetingRecorderState.failed('No active workspace.');
+      return;
+    }
+    if (ref.read(isDemoServerProvider)) {
+      try {
+        final result = await ref
+            .read(rpcClientProvider)
+            .call('meeting.demoStart', const <String, dynamic>{});
+        final meetingId = result['meeting_id'] as String;
+        _meetingId = meetingId;
+        _workspaceId = workspaceId;
+        _demoRecording = true;
+        state = MeetingRecorderState.recording(meetingId, DateTime.now());
+      } catch (e) {
+        state = MeetingRecorderState.failed(
+          'Could not start simulated meeting: $e',
+        );
+      }
       return;
     }
     final control = ref.read(meetingRecordingControlProvider);
@@ -303,6 +324,21 @@ class MeetingRecorderController extends Notifier<MeetingRecorderState> {
       return;
     }
     final meetingId = _meetingId;
+    if (_demoRecording) {
+      final id = _meetingId!;
+      try {
+        await ref.read(rpcClientProvider).call('meeting.demoStop', {
+          'meeting_id': id,
+        });
+        _demoRecording = false;
+        _meetingId = null;
+        _workspaceId = null;
+        state = MeetingRecorderState.idle;
+      } catch (e) {
+        AppLog.w('MeetingRecorder', 'demoStop failed: $e');
+      }
+      return;
+    }
     await _teardownCaptures();
     // Let any in-flight ingests land before the host drains the transcript.
     await _micChain.catchError((Object _) {});
@@ -332,6 +368,34 @@ class MeetingRecorderController extends Notifier<MeetingRecorderState> {
     if (!state.isRecording) {
       return;
     }
+    if (_demoRecording) {
+      if (_demoPausePending) {
+        return;
+      }
+      _demoPausePending = true;
+      final paused = !state.paused;
+      final id = _meetingId!;
+      unawaited(() async {
+        try {
+          await ref.read(rpcClientProvider).call(
+            paused ? 'meeting.demoPause' : 'meeting.demoResume',
+            {'meeting_id': id},
+          );
+          if (_demoRecording && _meetingId == id) {
+            _updatePauseState();
+          }
+        } catch (e) {
+          AppLog.w('MeetingRecorder', 'demo pause/resume failed: $e');
+        } finally {
+          _demoPausePending = false;
+        }
+      }());
+      return;
+    }
+    _updatePauseState();
+  }
+
+  void _updatePauseState() {
     if (state.paused) {
       final since = state.pausedSince;
       final extra = since != null

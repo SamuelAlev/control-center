@@ -380,6 +380,49 @@ class AppLocalizationsUk extends AppLocalizations {
       'Тут з’являться простори цього робочого простору.';
 
   @override
+  String get newSpaceFolder => 'Нова папка';
+
+  @override
+  String get folderName => 'Назва папки';
+
+  @override
+  String get renameSpaceFolder => 'Перейменувати папку';
+
+  @override
+  String get deleteSpaceFolder => 'Видалити папку';
+
+  @override
+  String get moveSpaceToFolder => 'Перемістити до папки';
+
+  @override
+  String get removeSpaceFromFolder => 'Прибрати з папки';
+
+  @override
+  String get spaceFolderActions => 'Дії з папкою';
+
+  @override
+  String get deleteFolderWithSpacesWarning =>
+      'Остаточне видалення просторів вилучає їхні повідомлення та робочі дерева для всіх. Цю дію неможливо скасувати.';
+
+  @override
+  String get deleteSpacesInFolder => 'Остаточно видалити простори в цій папці';
+
+  @override
+  String get deleteFolderAndSpaces => 'Видалити папку й простори';
+
+  @override
+  String get keepSpacesInFolder => 'Інакше простори залишаться поза папками.';
+
+  @override
+  String get create => 'Створити';
+
+  @override
+  String get otherSpaces => 'Інші простори';
+
+  @override
+  String get folderUpdateFailed => 'Не вдалося оновити папки';
+
+  @override
   String get thread => 'Тред';
 
   @override

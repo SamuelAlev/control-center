@@ -388,5 +388,31 @@ NodeTypeLibrary defaultNodeTypeLibrary() {
         extras: {'idempotent': false},
       ),
     ),
+    NodeType(
+      id: 'backup.workspace',
+      displayName: 'Back up workspace',
+      description: 'Creates a consistent backup of the current workspace.',
+      defaultKind: StepKind.listen,
+      defaultBodyKey: BuiltInBodyKeys.backupWorkspace,
+      defaultConfig: PipelineNodeConfig(
+        label: 'Back up workspace',
+        outputKey: 'backup_path',
+        extras: {'idempotent': false},
+      ),
+    ),
+    NodeType(
+      id: 'backup.deleteOlderThan',
+      displayName: 'Delete backups older than',
+      description:
+          'Deletes only backups of this workspace older than the configured '
+          'number of days. Connect after a successful backup.',
+      defaultKind: StepKind.listen,
+      defaultBodyKey: BuiltInBodyKeys.deleteOldBackups,
+      defaultConfig: PipelineNodeConfig(
+        label: 'Delete backups older than',
+        outputKey: 'deleted_backups',
+        extras: {'retentionDays': 30, 'idempotent': false},
+      ),
+    ),
   ]);
 }

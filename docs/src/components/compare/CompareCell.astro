@@ -33,12 +33,12 @@ const tone = value === 'yes' ? 'text-accent-strong' : value === 'partial' ? 'tex
 
 {
   note ? (
-    <span class="cell-tip" tabindex="0" data-tip={note}>
+    <span class="cell-tip relative" tabindex="0" data-tip={note}>
       <span class:list={['font-mono text-[14px]', tone]} aria-hidden="true">{glyph[value]}</span>
       <span class="sr-only">{label}</span>
     </span>
   ) : (
-    <span>
+    <span class="relative inline-block">
       <span class:list={['font-mono text-[14px]', tone]} aria-hidden="true">{glyph[value]}</span>
       <span class="sr-only">{label}</span>
     </span>

@@ -1818,6 +1818,14 @@ class AppLocalizationsAr extends AppLocalizations {
       'مخطط JSON الذي يجب أن يطابقه إخراج الخطوة';
 
   @override
+  String get nodeConfigBackupRetentionDays =>
+      'حذف النسخ الاحتياطية الأقدم من (أيام)';
+
+  @override
+  String get nodeConfigBackupRetentionDaysHelp =>
+      'تُحذف نسخ مساحة العمل هذه فقط. أدخل عددًا موجبًا من الأيام.';
+
+  @override
   String get diffLineDisplay => 'الأسطر الطويلة في الفروق';
 
   @override
@@ -9185,6 +9193,44 @@ class AppLocalizationsAr extends AppLocalizations {
   String get spaceReposHint => 'المستودعات المراد تضمينها';
 
   @override
+  String get newSpaceFolder => 'مجلد جديد';
+
+  @override
+  String get folderName => 'اسم المجلد';
+
+  @override
+  String get renameSpaceFolder => 'إعادة تسمية المجلد';
+
+  @override
+  String get deleteSpaceFolder => 'حذف المجلد';
+
+  @override
+  String get moveSpaceToFolder => 'نقل المساحة إلى مجلد';
+
+  @override
+  String get removeSpaceFromFolder => 'إزالة المساحة من المجلد';
+
+  @override
+  String get spaceFolderActions => 'إجراءات المجلد';
+
+  @override
+  String get deleteFolderWithSpacesWarning =>
+      'يؤدي حذف المساحات نهائيًا إلى إزالة رسائلها ومجلدات العمل الخاصة بها للجميع. لا يمكن التراجع عن هذا الإجراء.';
+
+  @override
+  String get deleteSpacesInFolder =>
+      'حذف المساحات الموجودة في هذا المجلد نهائيًا';
+
+  @override
+  String get deleteFolderAndSpaces => 'حذف المجلد والمساحات';
+
+  @override
+  String get keepSpacesInFolder => 'وإلا فستبقى المساحات خارج أي مجلد.';
+
+  @override
+  String get noSpaceFoldersYet => 'لا توجد مجلدات بعد';
+
+  @override
   String get ideSourceControl => 'إدارة المصادر';
 
   @override
@@ -14597,7 +14643,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get backupNoSnapshots =>
-      'لا لقطات بعد. لا تُلتقط إلا عندما تطلبها — لا شيء مجدول.';
+      'لا توجد لقطات للتثبيت بعد. أنشئ واحدة الآن، أو استخدم مسارًا مجدولًا لنسخ مساحة العمل.';
 
   @override
   String get backupSnapshotComplete => 'مكتملة';
@@ -14608,6 +14654,29 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get backupSnapshotIncompleteNote =>
       'ملف البيان مفقود أو يسمّي ملفات غير موجودة، لذا لا يمكن لهذه اللقطة استعادة التثبيت بأكمله. ملفات مساحات العمل الموجودة فيها لا يزال بالإمكان اعتمادها واحدًا تلو الآخر.';
+
+  @override
+  String get backupDeleteSnapshotLabel => 'حذف اللقطة';
+
+  @override
+  String get backupDeleteSnapshotDescription =>
+      'احذف هذه اللقطة نهائيًا من الخادم. نزّل نسخة أولًا إن أردت الاحتفاظ بها.';
+
+  @override
+  String get backupDeleteSnapshotAction => 'حذف اللقطة';
+
+  @override
+  String get backupDeleteSnapshotTitle => 'هل تريد حذف هذه اللقطة؟';
+
+  @override
+  String backupDeleteSnapshotBody(String name) {
+    return 'هل تريد حذف ⁨$name⁩ من الخادم؟ ستُفقد جميع قواعد البيانات فيها ولا يمكن التراجع عن ذلك.';
+  }
+
+  @override
+  String backupDeleteSnapshotDone(String name) {
+    return 'حُذفت اللقطة ⁨$name⁩.';
+  }
 
   @override
   String backupSnapshotWorkspaces(int count) {

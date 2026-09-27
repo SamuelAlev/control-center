@@ -3252,6 +3252,18 @@ abstract class AppLocalizations {
   /// **'JSON Schema the step output must satisfy'**
   String get nodeConfigOutputSchemaHelp;
 
+  /// Retention age in days for a workspace backup pruning node
+  ///
+  /// In en, this message translates to:
+  /// **'Delete backups older than (days)'**
+  String get nodeConfigBackupRetentionDays;
+
+  /// Safety and validation hint under a backup retention node
+  ///
+  /// In en, this message translates to:
+  /// **'Only backups from this workspace are deleted. Enter a positive number of days.'**
+  String get nodeConfigBackupRetentionDaysHelp;
+
   /// Settings label for the diff long-line overflow mode
   ///
   /// In en, this message translates to:
@@ -15617,6 +15629,78 @@ abstract class AppLocalizations {
   /// **'Repos to include'**
   String get spaceReposHint;
 
+  /// No description provided for @newSpaceFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'New folder'**
+  String get newSpaceFolder;
+
+  /// No description provided for @folderName.
+  ///
+  /// In en, this message translates to:
+  /// **'Folder name'**
+  String get folderName;
+
+  /// No description provided for @renameSpaceFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename folder'**
+  String get renameSpaceFolder;
+
+  /// No description provided for @deleteSpaceFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete folder'**
+  String get deleteSpaceFolder;
+
+  /// No description provided for @moveSpaceToFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Move to folder'**
+  String get moveSpaceToFolder;
+
+  /// No description provided for @removeSpaceFromFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from folder'**
+  String get removeSpaceFromFolder;
+
+  /// No description provided for @spaceFolderActions.
+  ///
+  /// In en, this message translates to:
+  /// **'Folder actions'**
+  String get spaceFolderActions;
+
+  /// Danger warning when choosing to permanently delete the spaces inside a folder
+  ///
+  /// In en, this message translates to:
+  /// **'Deleting spaces permanently removes their messages and worktrees for everyone. This cannot be undone.'**
+  String get deleteFolderWithSpacesWarning;
+
+  /// Checkbox to permanently delete all spaces in a folder when deleting the folder
+  ///
+  /// In en, this message translates to:
+  /// **'Permanently delete the spaces in this folder'**
+  String get deleteSpacesInFolder;
+
+  /// Confirmation action for deleting a folder and its spaces permanently
+  ///
+  /// In en, this message translates to:
+  /// **'Delete folder and spaces'**
+  String get deleteFolderAndSpaces;
+
+  /// Explains that spaces remain unfiled if the delete-spaces checkbox is left unchecked
+  ///
+  /// In en, this message translates to:
+  /// **'Otherwise, spaces will remain unfiled.'**
+  String get keepSpacesInFolder;
+
+  /// Empty state in the space folder picker when no folders exist
+  ///
+  /// In en, this message translates to:
+  /// **'No folders yet'**
+  String get noSpaceFoldersYet;
+
   /// No description provided for @ideSourceControl.
   ///
   /// In en, this message translates to:
@@ -24445,7 +24529,7 @@ abstract class AppLocalizations {
   /// Empty state of the snapshot list
   ///
   /// In en, this message translates to:
-  /// **'No snapshots yet. One is taken only when you ask for it — nothing is scheduled.'**
+  /// **'No install snapshots yet. Take one now, or use a workspace backup pipeline for scheduled copies.'**
   String get backupNoSnapshots;
 
   /// Status of a snapshot whose manifest and files are all present
@@ -24465,6 +24549,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The manifest is missing or names files that are not there, so this snapshot cannot restore the whole install. The workspace files it does have can still be adopted one by one.'**
   String get backupSnapshotIncompleteNote;
+
+  /// Heading of the destructive action inside an expanded install snapshot
+  ///
+  /// In en, this message translates to:
+  /// **'Delete snapshot'**
+  String get backupDeleteSnapshotLabel;
+
+  /// Danger callout explaining permanent snapshot deletion
+  ///
+  /// In en, this message translates to:
+  /// **'Permanently remove this snapshot from the server. Download it first if you need to keep a copy.'**
+  String get backupDeleteSnapshotDescription;
+
+  /// Button confirming deletion of a server snapshot
+  ///
+  /// In en, this message translates to:
+  /// **'Delete snapshot'**
+  String get backupDeleteSnapshotAction;
+
+  /// Title of the snapshot deletion confirmation
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this snapshot?'**
+  String get backupDeleteSnapshotTitle;
+
+  /// Confirmation message for deleting a whole-install snapshot
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {name} from the server? All databases in this snapshot will be lost. This cannot be undone.'**
+  String backupDeleteSnapshotBody(String name);
+
+  /// Success toast for deleting a server snapshot
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted snapshot {name}.'**
+  String backupDeleteSnapshotDone(String name);
 
   /// How many workspaces a snapshot captured
   ///

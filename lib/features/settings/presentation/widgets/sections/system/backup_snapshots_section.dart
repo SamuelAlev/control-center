@@ -13,14 +13,8 @@ import 'package:control_center/shared/widgets/section_card.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Settings → Server → Backup & restore: the whole-install snapshots.
-///
-/// `server.backupNow` has existed for as long as the database has been split,
-/// and until now nothing in the app called it — the only trace a backup left
-/// was an activity-log line after the fact. So this card does two things that
-/// have to go together: it takes a snapshot, and it says which ones exist.
-/// A button that writes a folder the operator cannot then find is not a backup
-/// feature, it is a way to fill a disk.
+/// Settings → Server → Backup & restore: take, inspect, download and delete
+/// whole-install snapshots. Deletion is install-owner gated by the server.
 class BackupSnapshotsSection extends ConsumerStatefulWidget {
   /// Creates a [BackupSnapshotsSection].
   const BackupSnapshotsSection({super.key});
@@ -36,6 +30,7 @@ class _BackupSnapshotsSectionState
   final Set<String> _expanded = {};
   String? _restoring;
   String? _downloading;
+  String? _deleting;
   ({int transferred, int? total})? _downloadProgress;
 
   Future<void> _backupNow() async {
@@ -46,9 +41,10 @@ class _BackupSnapshotsSectionState
       if (!mounted) {
         return;
       }
-      CcToastScope.maybeOf(
-        context,
-      )?.show(l10n.backupSnapshotWritten(path), variant: CcToastVariant.success);
+      CcToastScope.maybeOf(context)?.show(
+        l10n.backupSnapshotWritten(path),
+        variant: CcToastVariant.success,
+      );
     } on Object catch (e) {
       if (!mounted) {
         return;
@@ -114,6 +110,45 @@ class _BackupSnapshotsSectionState
     }
   }
 
+  Future<void> _deleteSnapshot(BackupSnapshotView snapshot) async {
+    final l10n = AppLocalizations.of(context);
+    final confirmed = await showCcConfirmDialog(
+      context: context,
+      title: l10n.backupDeleteSnapshotTitle,
+      message: l10n.backupDeleteSnapshotBody(snapshot.name),
+      confirmLabel: l10n.backupDeleteSnapshotAction,
+      cancelLabel: l10n.cancel,
+      danger: true,
+      typeToConfirm: snapshot.name,
+    );
+    if (!confirmed || !mounted) {
+      return;
+    }
+    setState(() => _deleting = snapshot.name);
+    try {
+      await ref.read(backupActionsProvider).deleteBackup(snapshot.name);
+      if (!mounted) {
+        return;
+      }
+      _expanded.remove(snapshot.path);
+      CcToastScope.maybeOf(context)?.show(
+        l10n.backupDeleteSnapshotDone(snapshot.name),
+        variant: CcToastVariant.success,
+      );
+    } on Object catch (e) {
+      if (!mounted) {
+        return;
+      }
+      CcToastScope.maybeOf(
+        context,
+      )?.show(l10n.failedWithError('$e'), variant: CcToastVariant.danger);
+    } finally {
+      if (mounted) {
+        setState(() => _deleting = null);
+      }
+    }
+  }
+
   /// Downloads a whole snapshot as one archive.
   ///
   /// The server zips it on the way out: a snapshot is a directory and a
@@ -167,7 +202,8 @@ class _BackupSnapshotsSectionState
     final snapshots = ref.watch(backupSnapshotsProvider);
     final canTransfer = ref.watch(backupTransferAvailableProvider);
     final workspaces = {
-      for (final w in ref.watch(workspacesProvider).value ?? const <Workspace>[])
+      for (final w
+          in ref.watch(workspacesProvider).value ?? const <Workspace>[])
         w.id: w.name,
     };
 
@@ -209,11 +245,13 @@ class _BackupSnapshotsSectionState
                     expanded: _expanded.contains(snapshot.path),
                     restoringKey: _restoring,
                     downloading: _downloading == snapshot.path,
+                    deleting: _deleting == snapshot.name,
                     progress: _downloading == snapshot.path
                         ? _downloadProgress
                         : null,
                     canTransfer: canTransfer,
                     onDownload: _downloadSnapshot,
+                    onDelete: _deleteSnapshot,
                     onExpandedChanged: (open) => setState(() {
                       if (open) {
                         _expanded.add(snapshot.path);
@@ -243,12 +281,14 @@ class _SnapshotRow extends StatelessWidget {
     required this.workspaceNames,
     required this.expanded,
     required this.restoringKey,
+    required this.deleting,
     required this.downloading,
     required this.progress,
     required this.canTransfer,
     required this.onExpandedChanged,
     required this.onRestore,
     required this.onDownload,
+    required this.onDelete,
   });
 
   final BackupSnapshotView snapshot;
@@ -256,11 +296,13 @@ class _SnapshotRow extends StatelessWidget {
   final bool expanded;
   final String? restoringKey;
   final bool downloading;
+  final bool deleting;
   final ({int transferred, int? total})? progress;
   final bool canTransfer;
   final ValueChanged<bool> onExpandedChanged;
   final Future<void> Function(BackupSnapshotWorkspaceView, String) onRestore;
   final Future<void> Function(BackupSnapshotView) onDownload;
+  final Future<void> Function(BackupSnapshotView) onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -298,7 +340,9 @@ class _SnapshotRow extends StatelessWidget {
           if (!snapshot.complete) ...[
             Text(
               l10n.backupSnapshotIncompleteNote,
-              style: CcTypography.caption.copyWith(color: tokens.textWarningPrimary),
+              style: CcTypography.caption.copyWith(
+                color: tokens.textWarningPrimary,
+              ),
             ),
             const SizedBox(height: AppSpacing.md),
           ],
@@ -340,6 +384,29 @@ class _SnapshotRow extends StatelessWidget {
               busy: restoringKey == '${entry.workspaceId}:${entry.path}',
               onRestore: onRestore,
             ),
+          const SizedBox(height: AppSpacing.lg),
+          CcAlert(
+            variant: CcAlertVariant.danger,
+            title: l10n.backupDeleteSnapshotLabel,
+            description: Text(
+              l10n.backupDeleteSnapshotDescription,
+              style: CcTypography.bodySm.copyWith(
+                color: tokens.textErrorPrimary,
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: CcButton(
+              size: CcButtonSize.sm,
+              variant: CcButtonVariant.destructive,
+              icon: AppIcons.trash2,
+              loading: deleting,
+              onPressed: deleting ? null : () => onDelete(snapshot),
+              child: Text(l10n.backupDeleteSnapshotAction),
+            ),
+          ),
         ],
       ),
     );
@@ -381,9 +448,7 @@ class _SnapshotWorkspaceRow extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  known
-                      ? humanBytes(entry.bytes)
-                      : l10n.backupWorkspaceUnknown,
+                  known ? humanBytes(entry.bytes) : l10n.backupWorkspaceUnknown,
                   style: CcTypography.caption.copyWith(
                     color: tokens.textTertiary,
                   ),

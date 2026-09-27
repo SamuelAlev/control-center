@@ -381,6 +381,50 @@ class AppLocalizationsId extends AppLocalizations {
       'Ruang di ruang kerja ini muncul di sini.';
 
   @override
+  String get newSpaceFolder => 'Folder baru';
+
+  @override
+  String get folderName => 'Nama folder';
+
+  @override
+  String get renameSpaceFolder => 'Ubah nama folder';
+
+  @override
+  String get deleteSpaceFolder => 'Hapus folder';
+
+  @override
+  String get moveSpaceToFolder => 'Pindahkan ke folder';
+
+  @override
+  String get removeSpaceFromFolder => 'Keluarkan dari folder';
+
+  @override
+  String get spaceFolderActions => 'Tindakan folder';
+
+  @override
+  String get deleteFolderWithSpacesWarning =>
+      'Menghapus ruang secara permanen akan menghapus pesan dan direktori kerja ruang tersebut untuk semua orang. Tindakan ini tidak dapat dibatalkan.';
+
+  @override
+  String get deleteSpacesInFolder => 'Hapus permanen ruang dalam folder ini';
+
+  @override
+  String get deleteFolderAndSpaces => 'Hapus folder dan ruang';
+
+  @override
+  String get keepSpacesInFolder =>
+      'Jika tidak, ruang akan tetap berada di luar folder.';
+
+  @override
+  String get create => 'Buat';
+
+  @override
+  String get otherSpaces => 'Ruang lainnya';
+
+  @override
+  String get folderUpdateFailed => 'Tidak dapat memperbarui folder';
+
+  @override
   String get thread => 'Utas';
 
   @override

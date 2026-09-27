@@ -62,6 +62,7 @@ void main() {
       ...seeds,
       skillAnalysisTemplate(workspaceId),
       indexCodeTemplate(workspaceId),
+      workspaceBackupTemplate(workspaceId),
     ];
 
     test('returns one seed per known template', () {
@@ -81,17 +82,12 @@ void main() {
       });
     });
 
-    test('index_code is the only capped built-in, and it is capped at 1', () {
-      // Indexing is the one built-in that is CPU-bound end to end, so N repos
-      // must go through it back to back rather than fight over the cores and
-      // the workspace's single DB writer. Every other built-in is unlimited on
-      // purpose: a cap silently queues work, which is the wrong default for a
-      // review or a digest.
+    test('indexing and backup cap their concurrent workspace work', () {
       final capped = {
         for (final def in allSeeds)
           if (def.maxParallelRuns != null) def.templateId: def.maxParallelRuns,
       };
-      expect(capped, {'index_code': 1});
+      expect(capped, {'index_code': 1, 'workspace_backup': 1});
     });
 
     test('every seed is built-in, belongs to the workspace and has a name', () {
@@ -398,7 +394,12 @@ void main() {
       // Declared manual-run inputs.
       expect(
         t2p.inputs.map((i) => i.key),
-        containsAll(['repo_full_name', 'ticket_id', 'ticket_title', 'ticket_body']),
+        containsAll([
+          'repo_full_name',
+          'ticket_id',
+          'ticket_title',
+          'ticket_body',
+        ]),
       );
     });
 
@@ -611,7 +612,9 @@ void main() {
           (s) =>
               (s.config.script ?? '').contains('{{repo_local_path}}') ||
               (s.config.prompt ?? '').contains('{{repo_local_path}}') ||
-              s.config.extras['predicate'].toString().contains('repo_local_path'),
+              s.config.extras['predicate'].toString().contains(
+                'repo_local_path',
+              ),
         );
         if (readers.isEmpty) {
           continue;
@@ -710,6 +713,25 @@ void main() {
       });
     });
 
+    test('backup must complete before this workspace is pruned', () {
+      final backup = workspaceBackupTemplate(workspaceId);
+      final snapshot = backup.step('backup')!;
+      final prune = backup.step('delete_old_backups')!;
+      expect(snapshot.bodyKey, BuiltInBodyKeys.backupWorkspace);
+      expect(snapshot.triggers.single.sourceStepIds, ['trigger']);
+      expect(prune.bodyKey, BuiltInBodyKeys.deleteOldBackups);
+      expect(prune.config.extras['retentionDays'], 30);
+      expect(prune.triggers.single.sourceStepIds, ['backup']);
+      expect(prune.config.continueOnFail, isFalse);
+      expect(
+        backup
+            .step('delete_old_backups_terminal')!
+            .triggers
+            .single
+            .sourceStepIds,
+        ['delete_old_backups'],
+      );
+    });
   });
 
   group('builtInTriggerSeeds', () {
@@ -754,6 +776,13 @@ void main() {
       final schedule = cleanup.firstWhere((t) => t.eventType == 'schedule');
       expect(schedule.enabled, isTrue);
       expect(schedule.cronExpression, 'every:86400');
+    });
+
+    test('workspace backup schedule is enabled weekly', () {
+      final schedule = triggerSeeds['workspace_backup']!.single;
+      expect(schedule.eventType, 'schedule');
+      expect(schedule.enabled, isTrue);
+      expect(schedule.cronExpression, '0 3 * * 0');
     });
 
     test('ticket_to_pr ships manual + TicketAssigned', () {

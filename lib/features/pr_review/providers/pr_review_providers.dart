@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cc_data/cc_data.dart';
+import 'package:cc_domain/cc_domain.dart' show RpcErrorCodes;
 import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/core/domain/entities/review_space_association.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/check_run.dart';
@@ -21,8 +22,10 @@ import 'package:cc_domain/features/pr_review/domain/entities/workflow_graph.dart
 import 'package:cc_domain/features/pr_review/domain/providers/forge_provider.dart';
 import 'package:cc_domain/features/pr_review/domain/repositories/pr_review_repository.dart';
 import 'package:cc_domain/features/pr_review/domain/sources/pr_diff_source.dart';
+import 'package:cc_rpc/cc_rpc.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/di/providers.dart';
+import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/pr_review/providers/pr_list_providers.dart';
 import 'package:control_center/features/repos/providers/repo_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
@@ -68,8 +71,11 @@ final prRepoRowProvider = Provider.autoDispose.family<Repo?, PrRef>((ref, pr) {
   }
   final owner = pr.repoFullName.substring(0, slash).toLowerCase();
   final name = pr.repoFullName.substring(slash + 1).toLowerCase();
-  final repos =
-      ref.watch(reposForWorkspaceProvider(pr.workspaceId)).value ?? const [];
+  final repoSnapshot = ref.watch(reposForWorkspaceProvider(pr.workspaceId));
+  if (repoSnapshot.hasError) {
+    return null;
+  }
+  final repos = repoSnapshot.value ?? const <Repo>[];
   for (final r in repos) {
     if (r.remoteOwner.toLowerCase() == owner &&
         r.remoteName.toLowerCase() == name) {
@@ -181,7 +187,13 @@ final prDetailSeedProvider = Provider.autoDispose.family<PullRequest?, PrRef>((
   ref,
   pr,
 ) {
-  final snapshot = ref.watch(lastGoodOpenPrsProvider)[pr.workspaceId];
+  final userId = ref.watch(currentUserIdProvider);
+  if (userId == null) {
+    return null;
+  }
+  final snapshot = ref.watch(
+    lastGoodOpenPrsProvider,
+  )['$userId|${pr.workspaceId}'];
   if (snapshot == null) {
     return null;
   }
@@ -217,23 +229,23 @@ PullRequest? findSeedPullRequest(
 
 /// The PR to render right now: the fetched detail when there is one, otherwise
 /// the list-row seed. Null only when neither exists yet.
-final prDetailOrSeedProvider = Provider.autoDispose.family<PullRequest?, PrRef>((
-  ref,
-  pr,
-) {
-  final detail = ref.watch(prDetailProvider(pr));
-  // Gated on `hasValue`, not on the value being non-null: a resolved-but-absent
-  // PR (a 404, or one deleted since the list snapshot) is a real answer, and
-  // falling back to the seed for it would keep showing a page for something the
-  // forge says is gone.
-  if (detail.hasValue) {
-    return detail.value;
-  }
-  if (detail.hasError) {
-    return null;
-  }
-  return ref.watch(prDetailSeedProvider(pr));
-});
+final prDetailOrSeedProvider = Provider.autoDispose.family<PullRequest?, PrRef>(
+  (ref, pr) {
+    if (ref.watch(prRepoRowProvider(pr)) == null) {
+      return null;
+    }
+    final detail = ref.watch(prDetailProvider(pr));
+    // Only loading may use the list seed. An authoritative rejection must
+    // discard both Riverpod's retained previous value and any old list seed.
+    if (detail.hasError) {
+      return null;
+    }
+    if (detail.hasValue) {
+      return detail.value;
+    }
+    return ref.watch(prDetailSeedProvider(pr));
+  },
+);
 
 /// True while the page is showing SEEDED chrome and the real detail — the only
 /// source of `body`/`body_html` — has not arrived.
@@ -344,13 +356,16 @@ final prFilesProvider = StreamProvider.autoDispose.family<List<PrFile>, PrRef>((
   ref.onDispose(controller.close);
 
   ref.listen<AsyncValue<PrFilesLoad>>(prFilesLoadProvider(pr), (_, next) {
-    final files = next.value?.files;
-    if (files != null && files.isNotEmpty && !controller.isClosed) {
-      controller.add(List<PrFile>.unmodifiable(files));
+    if (next.hasError) {
+      if (!controller.isClosed) {
+        controller.addError(next.error!, next.stackTrace);
+      }
+      return;
     }
-    final error = next.error;
-    if (error != null && !controller.isClosed) {
-      controller.addError(error, next.stackTrace);
+    final load = next.value;
+    if (load != null && load.isComplete && !controller.isClosed) {
+      // A fresh empty snapshot must replace a formerly nonempty diff too.
+      controller.add(List<PrFile>.unmodifiable(load.files));
     }
   });
 
@@ -373,14 +388,9 @@ final prFileIndexProvider = StreamProvider.autoDispose
 
 /// Patched files when they have arrived, otherwise the patch-free index.
 ///
-/// Diff chrome (tree, counts, headers) can paint from the index the
-/// moment Overview loaded it; the sliver swaps in real patches when
-/// [prFilesProvider] emits.
 List<PrFile> preferPatchedFiles(List<PrFile>? patched, List<PrFile>? index) {
-  if (patched != null && patched.isNotEmpty) {
-    return patched;
-  }
-  return index ?? const [];
+  // Null is still loading; an emitted empty patch snapshot is authoritative.
+  return patched ?? index ?? const [];
 }
 
 /// Pr file content key: the PR the file belongs to (its repo binds the
@@ -605,16 +615,42 @@ final prJobRunDetailProvider = StreamProvider.autoDispose
       const interval = Duration(seconds: 4);
       const maxLogWaitPolls = 15; // ~1 min of post-completion log waiting
       var logWaitPolls = 0;
+      var hasData = false;
+      if (repository is RpcPrReviewRepository) {
+        // The Actions accordion can paint persisted steps/logs before its
+        // first live request. The next poll always revalidates this result,
+        // even if the cached job appeared terminal.
+        yield await repository.watchJobRunDetail(key.jobId).first;
+        hasData = true;
+        await Future<void>.delayed(interval);
+      }
       while (true) {
-        final detail = await repository.getJobRunDetail(key.jobId);
+        final JobRunDetail? detail;
+        try {
+          detail = await repository.getJobRunDetail(key.jobId);
+        } on Exception catch (error) {
+          // A retained read remains visible across a disconnected poll. Auth
+          // and missing-resource denials are authoritative: never keep the
+          // previous job detail after the server rejects access.
+          if (!hasData ||
+              error is RemoteRpcException &&
+                  (error.code == RpcErrorCodes.unauthorized ||
+                      error.code == RpcErrorCodes.workspaceMismatch ||
+                      error.code == RpcErrorCodes.notFound ||
+                      error.code == RpcErrorCodes.noWorkspaceBound)) {
+            rethrow;
+          }
+          await Future<void>.delayed(interval);
+          continue;
+        }
         yield detail;
+        hasData = true;
         if (detail == null) {
           return;
         }
-        if (detail.isComplete) {
-          if (detail.logs != null || ++logWaitPolls >= maxLogWaitPolls) {
-            return;
-          }
+        if (detail.isComplete &&
+            (detail.logs != null || ++logWaitPolls >= maxLogWaitPolls)) {
+          return;
         }
         await Future<void>.delayed(interval);
       }
@@ -722,9 +758,12 @@ final repoScopedPrReviewRepositoryProvider = Provider.autoDispose
       // workspace" log storm). While the repo list is still loading this
       // returns the empty repository; the watch below rebuilds it once the
       // list lands.
-      final linked =
-          ref.watch(reposForWorkspaceProvider(key.workspaceId)).value ??
-          const [];
+      final repoSnapshot = ref.watch(
+        reposForWorkspaceProvider(key.workspaceId),
+      );
+      final linked = repoSnapshot.hasError
+          ? const <Repo>[]
+          : (repoSnapshot.value ?? const <Repo>[]);
       final isLinked = linked.any(
         (r) =>
             r.remoteOwner.toLowerCase() == owner.toLowerCase() &&
