@@ -42,6 +42,8 @@ class _FakeChannel implements RemoteRpcChannelPort {
     scheduleMicrotask(() => _incoming.add(response));
   }
 
+  void deliver(Map<String, dynamic> frame) => _incoming.add(frame);
+
   @override
   Future<void> close() async {
     await _incoming.close();
@@ -70,6 +72,12 @@ class _FakeChannel implements RemoteRpcChannelPort {
     'id': id,
     'error': {'code': RpcErrorCodes.notFound, 'message': 'no such thing'},
   };
+}
+
+Future<void> _settle() async {
+  for (var i = 0; i < 8; i++) {
+    await Future<void>.delayed(Duration.zero);
+  }
 }
 
 void main() {
@@ -128,5 +136,106 @@ void main() {
     );
     expect(channel.repoCalls, hasLength(1));
     await client.close();
+  });
+
+  group('watchCall request ownership', () {
+    const op = 'messaging.getMessageById';
+    const args = {'message_id': 'm1'};
+
+    test('abandoning a pending response cancels its request and ignores the '
+        'obsolete reply; revisiting starts a new read', () async {
+      final channel = _FakeChannel();
+      final client = RemoteRpcClient(channel)..start();
+      addTearDown(client.close);
+      final abandoned = <Map<String, dynamic>>[];
+      final old = client.watchCall(op, args).listen(abandoned.add);
+      await _settle();
+      final first = channel.repoCalls.single['id'];
+
+      await old.cancel();
+      await _settle();
+      expect(channel.sent.last, {
+        'jsonrpc': '2.0',
+        'method': RpcMethods.cancelRequest,
+        'params': {'id': first},
+      });
+      channel.deliver({
+        'jsonrpc': '2.0',
+        'id': first,
+        'result': {
+          'op': op,
+          'data': {'value': 'obsolete'},
+        },
+      });
+      await _settle();
+
+      final fresh = <Map<String, dynamic>>[];
+      final next = client.watchCall(op, args).listen(fresh.add);
+      await _settle();
+      expect(channel.repoCalls, hasLength(2));
+      channel.deliver({
+        'jsonrpc': '2.0',
+        'id': channel.repoCalls.last['id'],
+        'result': {
+          'op': op,
+          'data': {'value': 'fresh'},
+        },
+      });
+      await _settle();
+      expect(abandoned, isEmpty);
+      expect(fresh, [
+        {'value': 'fresh'},
+      ]);
+      await next.cancel();
+    });
+
+    test('cancelled rate-limit backoff never retries', () async {
+      final channel = _FakeChannel()
+        ..onRepoCall = (seq, id) => _FakeChannel.refusal(id);
+      final client = RemoteRpcClient(channel)..start();
+      addTearDown(client.close);
+      final sub = client.watchCall(op, args).listen((_) {});
+      await _settle();
+      expect(channel.repoCalls, hasLength(1));
+      await sub.cancel();
+      await Future<void>.delayed(const Duration(milliseconds: 350));
+      expect(channel.repoCalls, hasLength(1));
+      expect(
+        channel.sent.where((f) => f['method'] == RpcMethods.cancelRequest),
+        isEmpty,
+      );
+    });
+
+    test(
+      'one departing watcher does not cancel the remaining live read',
+      () async {
+        final channel = _FakeChannel();
+        final client = RemoteRpcClient(channel)..start();
+        addTearDown(client.close);
+        final values = <Map<String, dynamic>>[];
+        final leaving = client.watchCall(op, args).listen((_) {});
+        final staying = client.watchCall(op, args).listen(values.add);
+        await _settle();
+        expect(channel.repoCalls, hasLength(1));
+        await leaving.cancel();
+        expect(
+          channel.sent.where((f) => f['method'] == RpcMethods.cancelRequest),
+          isEmpty,
+        );
+        channel.deliver({
+          'jsonrpc': '2.0',
+          'id': channel.repoCalls.single['id'],
+          'result': {
+            'op': op,
+            'data': {'value': 'current'},
+          },
+        });
+        await _settle();
+        expect(values, [
+          {'value': 'current'},
+        ]);
+        await staying.cancel();
+      },
+    );
   });
 }

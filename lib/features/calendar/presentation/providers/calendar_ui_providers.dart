@@ -72,8 +72,8 @@ CalendarRangeRef calendarRangeFor({
 /// Streams the events overlapping a range for a workspace (earliest first).
 /// The RPC subscription replays its authenticated, workspace-scoped snapshot
 /// before refreshing in the background.
-final eventsInRangeProvider =
-    StreamProvider.family<List<CalendarEvent>, CalendarRangeRef>((ref, args) {
+final eventsInRangeProvider = StreamProvider.autoDispose
+    .family<List<CalendarEvent>, CalendarRangeRef>((ref, args) {
       return ref
           .watch(calendarRepositoryProvider)
           .watchEventsInRange(
@@ -92,8 +92,8 @@ typedef CalendarEventRef = ({String workspaceId, String eventId});
 /// Streams a single event by id, with no time window, so the detail panel
 /// resolves any event — including a past one outside the synced range, or one
 /// reached by deep link / notification.
-final calendarEventByIdProvider =
-    StreamProvider.family<CalendarEvent?, CalendarEventRef>((ref, args) {
+final calendarEventByIdProvider = StreamProvider.autoDispose
+    .family<CalendarEvent?, CalendarEventRef>((ref, args) {
       return ref
           .watch(calendarRepositoryProvider)
           .watchEventById(args.workspaceId, args.eventId);
@@ -250,8 +250,8 @@ typedef CalendarAccountListRef = ({String accountId, String accountEmail});
 /// OAuth tokens and the Google API client, so this NEVER calls the provider
 /// directly (a thin client holds no token and would get a 401). Reactive, so
 /// the sidebar updates when the next sync sweep persists a refreshed list.
-final calendarListProvider =
-    StreamProvider.family<List<CalendarSourceView>, CalendarAccountListRef>((
+final calendarListProvider = StreamProvider.autoDispose
+    .family<List<CalendarSourceView>, CalendarAccountListRef>((
       ref,
       account,
     ) {

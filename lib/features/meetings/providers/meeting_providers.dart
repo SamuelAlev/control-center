@@ -10,7 +10,7 @@ import 'package:flutter/foundation.dart' show immutable;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Streams all meetings for a workspace, newest first.
-final meetingsProvider = StreamProvider.family<List<Meeting>, String>((
+final meetingsProvider = StreamProvider.autoDispose.family<List<Meeting>, String>((
   ref,
   workspaceId,
 ) {
@@ -22,7 +22,7 @@ typedef MeetingRef = ({String workspaceId, String meetingId});
 
 /// Streams a single meeting reactively (derived from the workspace stream,
 /// since the repository exposes a reactive list but a one-shot get-by-id).
-final meetingDetailProvider = StreamProvider.family<Meeting?, MeetingRef>((
+final meetingDetailProvider = StreamProvider.autoDispose.family<Meeting?, MeetingRef>((
   ref,
   args,
 ) {
@@ -40,8 +40,8 @@ final meetingDetailProvider = StreamProvider.family<Meeting?, MeetingRef>((
 });
 
 /// Streams transcript segments for a meeting, oldest first.
-final meetingSegmentsProvider =
-    StreamProvider.family<List<MeetingSegment>, MeetingRef>((ref, args) {
+final meetingSegmentsProvider = StreamProvider.autoDispose
+    .family<List<MeetingSegment>, MeetingRef>((ref, args) {
       return ref
           .watch(meetingRepositoryProvider)
           .watchSegments(args.workspaceId, args.meetingId);
@@ -49,8 +49,8 @@ final meetingSegmentsProvider =
 
 /// Streams a meeting's diarized speakers (DB-backed). Populated by the
 /// `meeting.diarize` pipeline step; empty until/unless diarization has run.
-final meetingSpeakersProvider =
-    StreamProvider.family<List<MeetingSpeakerLabel>, MeetingRef>((ref, args) {
+final meetingSpeakersProvider = StreamProvider.autoDispose
+    .family<List<MeetingSpeakerLabel>, MeetingRef>((ref, args) {
       return ref
           .watch(meetingRepositoryProvider)
           .watchSpeakers(args.workspaceId, args.meetingId);
@@ -58,7 +58,7 @@ final meetingSpeakersProvider =
 
 /// Streams a workspace's saved voice profiles, ordered by name. Powers the
 /// settings management surface and the rename dialog's voiceprint suggestions.
-final voiceProfilesProvider = StreamProvider.family<List<VoiceProfile>, String>(
+final voiceProfilesProvider = StreamProvider.autoDispose.family<List<VoiceProfile>, String>(
   (ref, workspaceId) {
     return ref
         .watch(voiceProfileRepositoryProvider)
@@ -67,16 +67,16 @@ final voiceProfilesProvider = StreamProvider.family<List<VoiceProfile>, String>(
 );
 
 /// Streams a meeting's action items (DB-backed, in the agent's order).
-final meetingActionItemsProvider =
-    StreamProvider.family<List<MeetingActionItem>, MeetingRef>((ref, args) {
+final meetingActionItemsProvider = StreamProvider.autoDispose
+    .family<List<MeetingActionItem>, MeetingRef>((ref, args) {
       return ref
           .watch(meetingRepositoryProvider)
           .watchActionItems(args.workspaceId, args.meetingId);
     });
 
 /// Streams a meeting's decisions (DB-backed, in the agent's order).
-final meetingDecisionsProvider =
-    StreamProvider.family<List<MeetingDecision>, MeetingRef>((ref, args) {
+final meetingDecisionsProvider = StreamProvider.autoDispose
+    .family<List<MeetingDecision>, MeetingRef>((ref, args) {
       return ref
           .watch(meetingRepositoryProvider)
           .watchDecisions(args.workspaceId, args.meetingId);
@@ -138,8 +138,8 @@ final meetingAudioClipProvider =
 
 /// Streams per-meeting action-item counts (total + done) for a workspace,
 /// keyed by meeting id. Powers the list signal pills + the stats strip.
-final meetingActionItemStatsProvider =
-    StreamProvider.family<Map<String, MeetingActionItemStats>, String>((
+final meetingActionItemStatsProvider = StreamProvider.autoDispose
+    .family<Map<String, MeetingActionItemStats>, String>((
       ref,
       workspaceId,
     ) {
@@ -149,8 +149,8 @@ final meetingActionItemStatsProvider =
     });
 
 /// Streams per-meeting decision counts for a workspace, keyed by meeting id.
-final meetingDecisionCountsProvider =
-    StreamProvider.family<Map<String, int>, String>((ref, workspaceId) {
+final meetingDecisionCountsProvider = StreamProvider.autoDispose
+    .family<Map<String, int>, String>((ref, workspaceId) {
       return ref
           .watch(meetingRepositoryProvider)
           .watchDecisionCounts(workspaceId);

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/check_run.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/commit_status.dart';
@@ -20,6 +22,48 @@ import 'package:cc_domain/features/pr_review/domain/repositories/pr_review_repos
 import 'package:cc_domain/features/pr_review/domain/value_objects/image_diff_resolution.dart';
 import 'package:cc_domain/features/pr_review/domain/value_objects/pending_review_comment.dart';
 import 'package:cc_rpc/cc_rpc.dart';
+
+/// Defers heavy patch decoding until the next event loop turn without leaving
+/// cancellation queued behind that decode. The index-only variants map inline.
+Stream<T> _mapAfterPaint<T>(
+  Stream<Map<String, dynamic>> source,
+  T Function(Map<String, dynamic>) decode, {
+  required bool defer,
+}) {
+  if (!defer) {
+    return source.map(decode);
+  }
+  late final StreamController<T> controller;
+  StreamSubscription<Map<String, dynamic>>? subscription;
+  Timer? pending;
+  controller = StreamController<T>(
+    onListen: () {
+      subscription = source.listen(
+        (data) {
+          subscription!.pause();
+          pending = Timer(Duration.zero, () {
+            pending = null;
+            if (!controller.isClosed) {
+              try {
+                controller.add(decode(data));
+              } catch (error, stack) {
+                controller.addError(error, stack);
+              }
+            }
+            subscription?.resume();
+          });
+        },
+        onError: controller.addError,
+        onDone: controller.close,
+      );
+    },
+    onCancel: () async {
+      pending?.cancel();
+      await subscription?.cancel();
+    },
+  );
+  return controller.stream;
+}
 
 /// A [PrReviewRepository] backed by the RPC client — the thin-client data path.
 ///
@@ -303,23 +347,17 @@ class RpcPrReviewRepository implements PrReviewRepository {
 
   @override
   Stream<List<PrFile>> watchFiles(int prNumber, {bool includePatches = true}) =>
-      _client
-          .subscribe(
-            'pr_review.watchFiles',
-            _coords({
-              'pr_number': prNumber,
-              if (!includePatches) 'include_patches': false,
-            }),
-          )
-          .asyncMap((data) async {
-            // Full-patch snapshots are the 13k-line payload. Yield so the
-            // Diff tab's chrome can paint before we walk every hunk. The
-            // index (includePatches: false) is small enough to map inline.
-            if (includePatches) {
-              await Future<void>.delayed(Duration.zero);
-            }
-            return _filesFromData(data);
-          });
+      _mapAfterPaint(
+        _client.subscribe(
+          'pr_review.watchFiles',
+          _coords({
+            'pr_number': prNumber,
+            if (!includePatches) 'include_patches': false,
+          }),
+        ),
+        _filesFromData,
+        defer: includePatches,
+      );
 
   @override
   Stream<String> watchFileContent(String path, String ref) => _client
@@ -388,27 +426,22 @@ class RpcPrReviewRepository implements PrReviewRepository {
   Stream<List<PrCodeReviewComment>> watchReviewComments(
     int prNumber, {
     bool includeHunks = true,
-  }) => _client
-      .subscribe(
-        'pr_review.watchReviewComments',
-        _coords({
-          'pr_number': prNumber,
-          if (!includeHunks) 'include_hunks': false,
-        }),
-      )
-      .asyncMap((data) async {
-        if (includeHunks) {
-          await Future<void>.delayed(Duration.zero);
-        }
-        return ((data['comments'] as List?) ?? const [])
-            .whereType<Map>()
-            .map(
-              (c) => _reviewCommentFromDto(
-                PrCodeReviewCommentDto.fromJson(c.cast<String, dynamic>()),
-              ),
-            )
-            .toList();
-      });
+  }) => _mapAfterPaint(
+    _client.subscribe(
+      'pr_review.watchReviewComments',
+      _coords({
+        'pr_number': prNumber,
+        if (!includeHunks) 'include_hunks': false,
+      }),
+    ),
+    (data) => ((data['comments'] as List?) ?? const [])
+        .whereType<Map>()
+        .map((c) => _reviewCommentFromDto(
+          PrCodeReviewCommentDto.fromJson(c.cast<String, dynamic>()),
+        ))
+        .toList(),
+    defer: includeHunks,
+  );
 
   @override
   Stream<List<IssueComment>> watchIssueComments(int prNumber) => _client

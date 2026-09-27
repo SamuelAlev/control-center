@@ -19,6 +19,264 @@ import 'package:test/test.dart';
 /// deny + rate-limit, the "not available" branches, the malformed-frame /
 /// handler-exception paths and `_send` failures.
 void main() {
+  group('navigation cancellation', () {
+    test(
+      'cancelled reads retain budget and cannot cancel another session',
+      () async {
+        final gates = [Completer<void>(), Completer<void>()];
+        final channels = [_FakeChannel(), _FakeChannel()];
+        for (var i = 0; i < channels.length; i++) {
+          final gate = gates[i];
+          final session = RemoteRpcSession(
+            deviceId: 'device-$i',
+            userId: 'user-$i',
+            space: channels[i],
+            dispatcher: _RecordingDispatcher(),
+            workspaceResolver: (_) async => const [],
+            capability: SessionCapability.fullClient,
+            maxConcurrentRequests: 1,
+            repoOps: RepoOpDispatcher(
+              registry: RepoOpRegistry([
+                RepoOp(
+                  name: 'thing.get',
+                  kind: RepoOpKind.read,
+                  workspaceScoped: false,
+                  handler: (_) async {
+                    await gate.future;
+                    return {'value': 'fresh'};
+                  },
+                ),
+              ]),
+              mapException: (_) => null,
+            ),
+          );
+          addTearDown(session.stop);
+          await session.start();
+          channels[i].inject({
+            'jsonrpc': '2.0',
+            'id': 1,
+            'method': RpcMethods.repoCall,
+            'params': {'op': 'thing.get', 'args': <String, dynamic>{}},
+          });
+        }
+        await pumpEventQueue(times: 5);
+        channels.first.inject({
+          'jsonrpc': '2.0',
+          'method': RpcMethods.cancelRequest,
+          'params': {'id': 1},
+        });
+        channels.first.inject({
+          'jsonrpc': '2.0',
+          'id': 2,
+          'method': RpcMethods.listWorkspaces,
+        });
+        await pumpEventQueue(times: 5);
+        expect(
+          (channels.first.sent.single['error'] as Map)['code'],
+          RpcErrorCodes.rateLimited,
+        );
+        for (final gate in gates) {
+          gate.complete();
+        }
+        await pumpEventQueue(times: 5);
+        expect(channels.first.sent.map((frame) => frame['id']), [2]);
+        expect(channels.last.sent.single['id'], 1);
+        expect((channels.last.sent.single['result'] as Map)['data'], {
+          'value': 'fresh',
+        });
+        channels.first.inject({
+          'jsonrpc': '2.0',
+          'id': 3,
+          'method': RpcMethods.listWorkspaces,
+        });
+        await pumpEventQueue(times: 5);
+        expect(channels.first.sent.last['result'], {
+          'workspaces': [],
+          'count': 0,
+        });
+      },
+    );
+
+    test('subscription teardown still reaches a saturated session', () async {
+      final gate = Completer<void>();
+      var stopped = false;
+      final rows = StreamController<Map<String, dynamic>>(
+        onCancel: () => stopped = true,
+      );
+      addTearDown(rows.close);
+      final channel = _FakeChannel();
+      final session = RemoteRpcSession(
+        deviceId: 'desktop',
+        userId: 'user-1',
+        space: channel,
+        dispatcher: _RecordingDispatcher(onHandle: (_) => gate.future),
+        workspaceResolver: (_) async => const [],
+        capability: SessionCapability.fullClient,
+        maxConcurrentRequests: 1,
+        watchQueries: WatchQueryRegistry([
+          WatchQuery(
+            name: 'rows.watch',
+            workspaceScoped: false,
+            handler: (_) => rows.stream,
+          ),
+        ]),
+      );
+      addTearDown(session.stop);
+      await session.start();
+      channel.inject({
+        'jsonrpc': '2.0',
+        'id': 1,
+        'method': RpcMethods.subscribe,
+        'params': {'query': 'rows.watch'},
+      });
+      await pumpEventQueue(times: 5);
+      final subId = (channel.sent.single['result'] as Map)['subscriptionId'];
+      channel.inject({'jsonrpc': '2.0', 'id': 2, 'method': 'blocked'});
+      await pumpEventQueue(times: 5);
+      channel.inject({
+        'jsonrpc': '2.0',
+        'id': 3,
+        'method': RpcMethods.unsubscribe,
+        'params': {'subscriptionId': subId},
+      });
+      await pumpEventQueue(times: 5);
+      gate.complete();
+      expect(stopped, isTrue);
+      expect(channel.sent.last['result'], {'ok': true});
+      await pumpEventQueue(times: 5);
+    });
+
+    test(
+      'cancels a subscription after ack and before its authorization settles',
+      () async {
+        final gate = Completer<bool>();
+        var starts = 0;
+        var stops = 0;
+        final rows = StreamController<Map<String, dynamic>>(
+          onListen: () => starts++,
+          onCancel: () => stops++,
+        );
+        addTearDown(rows.close);
+        final channel = _FakeChannel();
+        final session = RemoteRpcSession(
+          deviceId: 'desktop',
+          userId: 'user-1',
+          space: channel,
+          dispatcher: _RecordingDispatcher(),
+          workspaceResolver: (_) async => const [],
+          capability: SessionCapability.fullClient,
+          workspaceExists: (_) => gate.future,
+          watchQueries: WatchQueryRegistry([
+            WatchQuery(name: 'rows.watch', handler: (_) => rows.stream),
+          ]),
+        );
+        addTearDown(session.stop);
+        await session.start();
+        void subscribe(int id) => channel.inject({
+          'jsonrpc': '2.0',
+          'id': id,
+          'method': RpcMethods.subscribe,
+          'params': {
+            'query': 'rows.watch',
+            'args': {'workspace_id': 'ws-1'},
+          },
+        });
+        void cancel(int id) => channel.inject({
+          'jsonrpc': '2.0',
+          'method': RpcMethods.cancelRequest,
+          'params': {'id': id},
+        });
+        subscribe(1);
+        await pumpEventQueue(times: 5);
+        expect(
+          (channel.sent.single['result'] as Map)['subscriptionId'],
+          isA<String>(),
+        );
+        cancel(1);
+        cancel(2); // Unknown IDs must not cancel a later request.
+        await pumpEventQueue(times: 5);
+        gate.complete(true);
+        await pumpEventQueue(times: 5);
+        expect(starts, 0);
+        subscribe(2);
+        await pumpEventQueue(times: 5);
+        expect(starts, 1);
+        cancel(2);
+        await pumpEventQueue(times: 5);
+        expect(stops, 1);
+        rows.add({'value': 'too late'});
+        await pumpEventQueue(times: 5);
+        expect(
+          channel.sent.where(
+            (frame) => frame['method'] == RpcMethods.subSnapshot,
+          ),
+          isEmpty,
+        );
+      },
+    );
+
+    for (final kind in [RepoOpKind.read, RepoOpKind.mutate]) {
+      test(
+        'cancellation during admission skips reads, not ${kind.name} writes',
+        () async {
+          final gate = Completer<bool>();
+          var executed = false;
+          final channel = _FakeChannel();
+          final session = RemoteRpcSession(
+            deviceId: 'desktop',
+            userId: 'user-1',
+            space: channel,
+            dispatcher: _RecordingDispatcher(),
+            workspaceResolver: (_) async => const [],
+            capability: SessionCapability.fullClient,
+            repoOps: RepoOpDispatcher(
+              registry: RepoOpRegistry([
+                RepoOp(
+                  name: 'thing.work',
+                  kind: kind,
+                  handler: (_) async {
+                    executed = true;
+                    return {'value': 'completed'};
+                  },
+                ),
+              ]),
+              workspaceExists: (_) => gate.future,
+              mapException: (_) => null,
+            ),
+          );
+          addTearDown(session.stop);
+          await session.start();
+          channel.inject({
+            'jsonrpc': '2.0',
+            'id': 1,
+            'method': RpcMethods.repoCall,
+            'params': {
+              'op': 'thing.work',
+              'args': {'workspace_id': 'ws-1'},
+            },
+          });
+          await pumpEventQueue(times: 5);
+          channel.inject({
+            'jsonrpc': '2.0',
+            'method': RpcMethods.cancelRequest,
+            'params': {'id': 1},
+          });
+          await pumpEventQueue(times: 5);
+          gate.complete(true);
+          await pumpEventQueue(times: 5);
+          expect(executed, kind == RepoOpKind.mutate);
+          if (kind == RepoOpKind.read) {
+            expect(channel.sent, isEmpty);
+          } else {
+            expect((channel.sent.single['result'] as Map)['data'], {
+              'value': 'completed',
+            });
+          }
+        },
+      );
+    }
+  });
+
   group('RemoteRpcSession frame handling', () {
     late _FakeChannel space;
     late _RecordingDispatcher dispatcher;

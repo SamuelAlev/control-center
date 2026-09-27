@@ -190,6 +190,7 @@ class RemoteRpcSession {
 
   StreamSubscription<Map<String, dynamic>>? _sub;
   SubscriptionManager? _subscriptions;
+  final Map<Object, _ReadCancellation> _cancellableReads = {};
 
   /// Lazily-built subscription manager (only when [watchQueries] is wired).
   SubscriptionManager? get _subs {
@@ -231,11 +232,23 @@ class RemoteRpcSession {
       return;
     }
 
+    // Teardown must reach a saturated session. It only addresses work already
+    // admitted on this connection, and never frees a running handler's slot.
+    if (request.method == RpcMethods.cancelRequest && request.id == null) {
+      final id = request.params['id'];
+      if (id is int || id is String) {
+        _cancellableReads[id]?.cancelled = true;
+        _subscriptions?.cancelRequest(id as Object);
+      }
+      return;
+    }
+
     // Bound in-flight work and the overall request rate BEFORE dispatching.
     // Notifications (no id) are exempt from the concurrency cap's response
     // path but still consume budget.
     final description = _describeRequest(request);
-    if (_inFlight >= maxConcurrentRequests) {
+    if (_inFlight >= maxConcurrentRequests &&
+        request.method != RpcMethods.unsubscribe) {
       CcHostLog.warning(
         'Session $deviceId: $_inFlight requests already in flight — '
         'refusing $description${_inFlightSummary()}',
@@ -271,6 +284,18 @@ class RemoteRpcSession {
     _inFlight++;
     final slot = ++_slotSeq;
     _inFlightSlots[slot] = (description, DateTime.now());
+    final requestId = request.id;
+    final opName = request.params['op'];
+    final cancellation =
+        requestId != null &&
+            request.method == RpcMethods.repoCall &&
+            opName is String &&
+            repoOps?.registry.lookup(opName)?.kind == RepoOpKind.read
+        ? _ReadCancellation()
+        : null;
+    if (cancellation != null) {
+      _cancellableReads[requestId as Object] = cancellation;
+    }
     Map<String, dynamic> response;
     try {
       final deadline = _deadlineFor(request);
@@ -300,10 +325,14 @@ class RemoteRpcSession {
     } finally {
       _inFlightSlots.remove(slot);
       _inFlight--;
+      if (cancellation != null &&
+          identical(_cancellableReads[requestId], cancellation)) {
+        _cancellableReads.remove(requestId);
+      }
     }
 
     // Only requests (those carrying an id) get a response; notifications don't.
-    if (request.id != null) {
+    if (request.id != null && cancellation?.cancelled != true) {
       await _send(response);
     }
   }
@@ -623,6 +652,7 @@ class RemoteRpcSession {
     if (ops == null) {
       return _error(request.id, -32601, 'repo/call not available');
     }
+    final cancellation = _cancellableReads[request.id];
     return ops.call(
       id: request.id,
       params: request.params,
@@ -630,6 +660,7 @@ class RemoteRpcSession {
       userId: userId,
       sessionCapability: capability,
       remoteAddress: remoteAddress,
+      isCancelled: cancellation == null ? null : () => cancellation.cancelled,
     );
   }
 
@@ -709,7 +740,12 @@ class RemoteRpcSession {
     await _sub?.cancel();
     _sub = null;
     _inFlightSlots.clear();
+    _cancellableReads.clear();
     await _subscriptions?.dispose();
     await space.close();
   }
+}
+
+class _ReadCancellation {
+  bool cancelled = false;
 }

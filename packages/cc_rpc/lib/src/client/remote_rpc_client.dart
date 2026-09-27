@@ -65,10 +65,26 @@ class RemoteRpcClient {
   final Map<String, Map<String, dynamic>> _earlySnapshots = {};
   final Map<String, RemoteRpcException> _earlyErrors = {};
 
+  /// Request ids of `sub/subscribe` setups abandoned before their ack arrived.
+  /// A late ack names a subscription the client will never register, and a
+  /// snapshot can even outrun the ack — both must be recognised and dropped
+  /// instead of buffering here forever. Monotonic request ids make the newest
+  /// entries the only ones whose response can still be in flight (anything
+  /// older than the request timeout is dead server-side), so trimming the
+  /// oldest entry is lossless in practice.
+  final Map<int, String?> _cancelledSubscribes = {};
+
+  /// Subscription ids given up on: a cancelled setup whose late ack named it,
+  /// or an unsubscribed id whose trailing snapshot may still be in flight.
+  /// Server ids are monotonic per session and never reused, so a bounded
+  /// recent set is sufficient.
+  final Set<String> _deadSubscriptions = {};
+
   /// Live shared subscriptions, keyed by `(query, effective-args)`. Lets
   /// several callers of [subscribe] with identical coordinates share ONE
   /// server subscription (ref-counted) instead of each opening its own. See
   /// [subscribe].
+  final Map<String, _SharedSubscription> _sharedReads = {};
   final Map<String, _SharedSubscription> _shared = {};
   final StreamController<JsonRpcNotification> _notifications =
       StreamController<JsonRpcNotification>.broadcast();
@@ -197,16 +213,100 @@ class RemoteRpcClient {
     return (res['data'] as Map?)?.cast<String, dynamic>() ?? {};
   }
 
-  /// A one-shot live read as a stream. The resilient facade can opt selected
-  /// read operations into cached stale-while-revalidate behavior; direct
-  /// sessions simply issue the ordinary call when listened to.
+  /// A one-shot read owned by its listeners, not by ordinary call coalescing.
   Stream<Map<String, dynamic>> watchCall(String op, Map<String, dynamic> args) {
     if (!offlineSafeReadOps.contains(op)) {
       throw ArgumentError.value(op, 'op', 'Not an offline-safe read operation');
     }
     return () async* {
-      yield await call(op, args);
+      final effectiveArgs = _withWorkspace(args);
+      final key = _callKey(op, null, effectiveArgs);
+      final shared = _sharedReads.putIfAbsent(key, () {
+        late final _SharedSubscription entry;
+        entry = _SharedSubscription(
+          _watchCallRaw(op, effectiveArgs),
+          onEmpty: () {
+            if (identical(_sharedReads[key], entry)) {
+              _sharedReads.remove(key);
+            }
+          },
+        );
+        return entry;
+      });
+      yield* shared.attach();
     }();
+  }
+
+  Stream<Map<String, dynamic>> _watchCallRaw(
+    String op,
+    Map<String, dynamic> effectiveArgs,
+  ) {
+    late final StreamController<Map<String, dynamic>> controller;
+    _CancelableRequest? request;
+    Timer? retryTimer;
+    Completer<void>? retryWaiter;
+    var cancelled = false;
+
+    Future<void> run() async {
+      final params = {'op': op, 'args': effectiveArgs};
+      try {
+        for (var attempt = 0; !cancelled; attempt++) {
+          request = _requestCancelable(RpcMethods.repoCall, params);
+          final response = await request!.future;
+          request = null;
+          if (cancelled) {
+            return;
+          }
+          final error = response['error'];
+          if (error is Map &&
+              error['code'] == RpcErrorCodes.rateLimited &&
+              attempt < _retryAttempts - 1) {
+            final target = _retryBaseDelay * (1 << attempt);
+            final delay = Duration(
+              microseconds:
+                  (target.inMicroseconds * (0.5 + _jitter.nextDouble() * 0.5))
+                      .round(),
+            );
+            final waiter = Completer<void>();
+            retryWaiter = waiter;
+            retryTimer = Timer(delay, waiter.complete);
+            await waiter.future;
+            retryTimer = null;
+            retryWaiter = null;
+            continue;
+          }
+          _throwIfError(response);
+          if (cancelled) {
+            return;
+          }
+          final result = (response['result'] as Map).cast<String, dynamic>();
+          controller.add(
+            (result['data'] as Map?)?.cast<String, dynamic>() ?? {},
+          );
+          await controller.close();
+          return;
+        }
+      } catch (error, stack) {
+        if (!cancelled && !controller.isClosed) {
+          controller.addError(error, stack);
+          await controller.close();
+        }
+      }
+    }
+
+    controller = StreamController<Map<String, dynamic>>(
+      onListen: () => unawaited(run()),
+      onCancel: () {
+        cancelled = true;
+        request?.cancel();
+        retryTimer?.cancel();
+        final waiter = retryWaiter;
+        if (waiter != null && !waiter.isCompleted) {
+          waiter.complete();
+        }
+      },
+    );
+    return controller.stream;
   }
 
   /// As [call], but returns the whole `result` envelope — `{op, data,
@@ -378,30 +478,36 @@ class RemoteRpcClient {
 
   /// Opens a reactive subscription. Each emission is a full snapshot map. The
   /// `sub/unsubscribe` is sent automatically when the returned stream is
-  /// cancelled. On reconnect the caller re-subscribes (the first emission is the
-  /// reconciliation).
+  /// cancelled; the last listener of a shared entry cancels the underlying
+  /// request/subscription, which is what navigation-driven teardown rides.
   ///
   /// Deduplicates identical live subscriptions: several callers with the same
-  /// `(query, effective-args)` share ONE server subscription, ref-counted and
-  /// each server subscription runs its own (potentially GitHub-hitting) SWR
-  /// revalidation — so undeduped churn multiplies upstream API load. Riverpod
-  /// already collapses watchers of one family-keyed provider, but *distinct*
-  /// providers (or autoDispose churn during navigation) can still request the
-  /// same coordinates concurrently; this catches those. Late joiners are
+  /// `(query, effective-args)` share ONE server subscription, ref-counted so
+  /// one consumer leaving never cancels another's read. Late joiners are
   /// replayed the last snapshot so their stream still gets an immediate first
-  /// emission. Best-effort: if the args can't be canonicalised the same way for
-  /// two callers, they simply don't share — never wrong, just less deduped.
+  /// emission.
+  ///
+  /// Returned SYNCHRONOUSLY (no async* wrapper): the subscribe request must
+  /// leave on the listener's first microtask chain. An extra generator hop
+  /// delays `sub/subscribe` past a caller's event boundary, and a server
+  /// that pushes its first snapshot on subscribe then races that dispatch —
+  /// the seed frame lands for an id the host never issued and is dropped.
   Stream<Map<String, dynamic>> subscribe(
     String query,
     Map<String, dynamic> args,
   ) {
     final effectiveArgs = _withWorkspace(args);
     final key = _subKey(query, effectiveArgs);
-    final shared = _shared.putIfAbsent(
+    late final _SharedSubscription shared;
+    shared = _shared.putIfAbsent(
       key,
       () => _SharedSubscription(
         _subscribeRaw(query, effectiveArgs),
-        onEmpty: () => _shared.remove(key),
+        onEmpty: () {
+          if (identical(_shared[key], shared)) {
+            _shared.remove(key);
+          }
+        },
       ),
     );
     return shared.attach();
@@ -424,21 +530,23 @@ class RemoteRpcClient {
   ) {
     late final StreamController<Map<String, dynamic>> controller;
     String? subId;
-    // Set the instant the listener cancels. The `sub/subscribe` round-trip is
-    // async, so a cancel can land WHILE it is in flight — before `subId` exists.
-    // `onCancel` then can't unsubscribe (it has no id yet), so the [onListen]
-    // continuation reads this flag and tears the subscription down once the id
-    // arrives. Without it, that continuation would register a dead controller
-    // the client never unsubscribes — leaking one server-side subscription per
-    // mount→subscribe→dispose churn until the per-session cap trips (-33011).
+    _CancelableRequest? request;
+    // A response already accepted before cancellation is unsubscribed below;
+    // a late response is cleaned up by the server's request-id cancellation.
     var cancelled = false;
     controller = StreamController<Map<String, dynamic>>(
       onListen: () async {
         try {
-          final res = await _request(RpcMethods.subscribe, {
+          final req = _requestCancelable(RpcMethods.subscribe, {
             'query': query,
             'args': _withWorkspace(args),
           });
+          request = req;
+          final res = await req.future;
+          request = null;
+          if (cancelled && res.containsKey('error')) {
+            return;
+          }
           if (res.containsKey('error')) {
             // The server created NO subscription on an error — nothing to
             // unsubscribe. This branch MUST return before the id block below so a
@@ -459,11 +567,11 @@ class RemoteRpcClient {
             return;
           }
           if (cancelled) {
-            // Cancelled mid-round-trip: `onCancel` already ran with `subId == null`
-            // and skipped the unsubscribe. Tear the now-known server subscription
-            // down and do NOT register the (already-dead) controller. This is the
-            // one place that closes the leak.
+            // The ack was accepted just before cancellation; its newly known
+            // subscription still needs an ordinary unsubscribe, and a trailing
+            // snapshot for it must be ignored rather than buffered.
             _dropEarly(id);
+            _markDeadSubscription(id);
             unawaited(_unsubscribe(id));
             return;
           }
@@ -471,11 +579,7 @@ class RemoteRpcClient {
           _subs[id] = controller;
           _replayEarly(id, controller);
         } catch (e, s) {
-          // A failed `sub/subscribe` (timeout, closed channel, send error) must
-          // surface as a stream error, otherwise the controller stays open with
-          // no data and no error — and its StreamProvider hangs in loading
-          // forever instead of showing an error/retry state.
-          if (!controller.isClosed) {
+          if (!cancelled && !controller.isClosed) {
             controller.addError(e, s);
             await controller.close();
           }
@@ -483,16 +587,22 @@ class RemoteRpcClient {
       },
       onCancel: () async {
         cancelled = true;
+        final req = request;
+        if (req != null) {
+          req.cancel();
+          _cancelledSubscribes[req.id] = null;
+          _trimCancelledSubscribes();
+        }
         final id = subId;
         if (id == null) {
-          // The round-trip is still in flight; the [onListen] continuation will
-          // observe `cancelled` and unsubscribe once it learns the id. The
-          // `subId == null` vs `!= null` split keeps the two paths mutually
-          // exclusive, so a subscription is unsubscribed exactly once.
+          // The round-trip is still in flight; a late ack is handled in
+          // [_onFrame] via [_cancelledSubscribes] (the server also tears the
+          // subscription down from the cancellation notification).
           return;
         }
         _subs.remove(id);
         _dropEarly(id);
+        _markDeadSubscription(id);
         await _unsubscribe(id);
       },
     );
@@ -569,10 +679,100 @@ class RemoteRpcClient {
     );
   }
 
+  _CancelableRequest _requestCancelable(
+    String method,
+    Map<String, dynamic> params,
+  ) {
+    final id = ++_nextId;
+    final completer = Completer<Map<String, dynamic>>();
+    _pending[id] = completer;
+    final sent = Future<void>.sync(
+      () => _channel.send({
+        'jsonrpc': '2.0',
+        'id': id,
+        'method': method,
+        'params': params,
+      }),
+    );
+    // Attach to the response before awaiting send: a listener may cancel
+    // while an asynchronous transport is still flushing the outgoing frame.
+    final future =
+        Future.wait<Object?>([
+              sent.then<Object?>((_) => null),
+              completer.future,
+            ], eagerError: true)
+            .then((values) => values[1] as Map<String, dynamic>)
+            .timeout(
+              _timeout,
+              onTimeout: () {
+                _pending.remove(id);
+                throw TimeoutException('RPC $method timed out', _timeout);
+              },
+            );
+    unawaited(
+      sent.then<void>(
+        (_) {},
+        onError: (Object _) {
+          _pending.remove(id);
+        },
+      ),
+    );
+    return _CancelableRequest(id, future, () {
+      if (!identical(_pending[id], completer)) {
+        return;
+      }
+      _pending.remove(id);
+      completer.completeError(const RemoteRpcClientClosedException());
+      // A channel can buffer send asynchronously: keep the cancel behind the
+      // original frame so request-id cleanup cannot overtake setup.
+      unawaited(
+        sent
+            .then((_) async {
+              if (!_closing && _channel.isOpen) {
+                await _channel.send({
+                  'jsonrpc': '2.0',
+                  'method': RpcMethods.cancelRequest,
+                  'params': {'id': id},
+                });
+              }
+            })
+            .catchError((Object _) {}),
+      );
+    });
+  }
+
+  /// Bounds [_deadSubscriptions]; see there for why trimming is safe.
+  void _markDeadSubscription(String id) {
+    _deadSubscriptions.add(id);
+    while (_deadSubscriptions.length > 128) {
+      _deadSubscriptions.remove(_deadSubscriptions.first);
+    }
+  }
+
+  void _trimCancelledSubscribes() {
+    while (_cancelledSubscribes.length > 32) {
+      _cancelledSubscribes.remove(_cancelledSubscribes.keys.first);
+    }
+  }
+
   void _onFrame(Map<String, dynamic> frame) {
     final id = frame['id'];
     if (id is int && _pending.containsKey(id)) {
       _pending.remove(id)!.complete(frame);
+      return;
+    }
+    if (id is int && _cancelledSubscribes.containsKey(id)) {
+      // A late ack for an abandoned setup: the server already tore the
+      // subscription down (or will, from the cancellation notification).
+      // Record the id only so trailing frames for it are ignored, then stop
+      // tracking the request.
+      final result = frame['result'];
+      final subId = result is Map ? result['subscriptionId'] : null;
+      if (subId is String) {
+        _dropEarly(subId);
+        _markDeadSubscription(subId);
+      }
+      _cancelledSubscribes.remove(id);
       return;
     }
     final method = frame['method'];
@@ -592,6 +792,8 @@ class RemoteRpcClient {
         // as one this function forgot to close.
         if (_subs.containsKey(subId)) {
           _subs[subId]!.add(data);
+        } else if (_deadSubscriptions.contains(subId)) {
+          return; // Abandoned setup / unsubscribed id: never buffer dead data.
         } else {
           _earlySnapshots[subId] = data;
         }
@@ -613,6 +815,8 @@ class RemoteRpcClient {
           // any host-side subscription error as an infinite spinner.
           controller.addError(exception);
           unawaited(controller.close());
+        } else if (_deadSubscriptions.contains(subId)) {
+          return;
         } else {
           _earlyErrors[subId] = exception;
         }
@@ -658,12 +862,25 @@ class RemoteRpcClient {
     for (final s in subs) {
       await s.close();
     }
+    _cancelledSubscribes.clear();
+    _deadSubscriptions.clear();
     // The shared subscriptions wrap those `_subs` streams; closing the sources
     // drives each shared layer's onDone → it closes its listeners and removes
     // itself from [_shared]. Clear defensively in case any had not yet started.
     _shared.clear();
+    _sharedReads.clear();
     await _notifications.close();
   }
+}
+
+class _CancelableRequest {
+  _CancelableRequest(this.id, this.future, this.cancel);
+
+  /// The JSON-RPC request id this request travels under.
+  final int id;
+
+  final Future<Map<String, dynamic>> future;
+  final void Function() cancel;
 }
 
 /// Operations explicitly reviewed for render-only snapshot persistence.

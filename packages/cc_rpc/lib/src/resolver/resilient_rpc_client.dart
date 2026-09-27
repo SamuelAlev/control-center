@@ -423,6 +423,8 @@ class ResilientRpcClient implements RemoteRpcClient {
     final key = _snapshotKey('call', op, effectiveArgs);
     late final StreamController<Map<String, dynamic>> controller;
     Completer<RemoteRpcClient>? pending;
+    StreamSubscription<Map<String, dynamic>>? innerSub;
+    Completer<void>? attachedDone;
     var cancelled = false;
 
     Future<void> attach() async {
@@ -468,17 +470,48 @@ class ResilientRpcClient implements RemoteRpcClient {
             await controller.close();
             return;
           }
-          final fresh = await last.call(op, effectiveArgs);
+          final done = Completer<void>();
+          attachedDone = done;
+          Object? readError;
+          StackTrace? readStack;
+          innerSub = last
+              .watchCall(op, effectiveArgs)
+              .listen(
+                (fresh) {
+                  if (cancelled || _closed || _terminalError != null) {
+                    return;
+                  }
+                  cache?.write(key, fresh);
+                  controller.add(fresh);
+                },
+                onError: (Object error, StackTrace stack) {
+                  readError = error;
+                  readStack = stack;
+                  if (!done.isCompleted) {
+                    done.complete();
+                  }
+                },
+                onDone: () {
+                  if (!done.isCompleted) {
+                    done.complete();
+                  }
+                },
+              );
+          await done.future;
+          attachedDone = null;
+          await innerSub?.cancel();
+          innerSub = null;
           if (cancelled || _closed) {
             return;
+          }
+          if (readError != null) {
+            Error.throwWithStackTrace(readError!, readStack!);
           }
           if (_terminalError != null) {
             controller.addError(_terminalError!);
             await controller.close();
             return;
           }
-          cache?.write(key, fresh);
-          controller.add(fresh);
         } catch (error, stack) {
           if (cancelled || controller.isClosed) {
             return;
@@ -507,8 +540,12 @@ class ResilientRpcClient implements RemoteRpcClient {
 
     controller = StreamController<Map<String, dynamic>>(
       onListen: () => unawaited(attach()),
-      onCancel: () {
+      onCancel: () async {
         cancelled = true;
+        final done = attachedDone;
+        if (done != null && !done.isCompleted) {
+          done.complete();
+        }
         final waiter = pending;
         if (waiter != null) {
           _clientWaiters.remove(waiter);
@@ -516,6 +553,7 @@ class ResilientRpcClient implements RemoteRpcClient {
             waiter.completeError(const RemoteRpcClientClosedException());
           }
         }
+        await innerSub?.cancel();
       },
     );
     return controller.stream;

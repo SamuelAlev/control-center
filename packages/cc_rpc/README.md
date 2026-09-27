@@ -22,6 +22,10 @@ client tier — desktop, web PWA and the `cc_remote` phone.
   server/user identity. Full request arguments isolate workspace/entity/range
   variants; outages retain data, authoritative denials invalidate it. Ordinary
   RPC calls and mutations are never answered from snapshots.
+  Revalidation is listener-owned: the last listener leaving cancels pending
+  requests, retry timers and reconnect waiters, without removing cached data.
+  Identical active `watchCall` reads share work; one listener cannot cancel
+  another's read. Cancellation sends `$/cancelRequest` with the original id.
 
 ## Invariants
 

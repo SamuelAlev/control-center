@@ -16,7 +16,6 @@ import 'package:control_center/features/agents/providers/conversation_run_tree_p
 import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
-import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -25,6 +24,7 @@ import 'package:flutter_test/flutter_test.dart';
 /// other method is unreachable from the watch path under test.
 class _RecordingConversationRepository implements ConversationRepository {
   final List<({String workspaceId, String spaceId})> watched = [];
+  int cancellations = 0;
 
   @override
   Stream<List<Conversation>> watchForSpace({
@@ -34,16 +34,24 @@ class _RecordingConversationRepository implements ConversationRepository {
     watched.add((workspaceId: workspaceId, spaceId: spaceId));
     // Deliberately non-empty, so "the guard closed the stream down" is
     // distinguishable from "the provider never re-ran".
-    return Stream.value([
-      Conversation(
-        id: 'conv-of-$spaceId',
-        workspaceId: workspaceId,
-        spaceId: spaceId,
-        title: spaceId,
-        createdAt: DateTime(2024),
-        updatedAt: DateTime(2024),
-      ),
-    ]);
+    // Ownership transfers to the provider's subscription: its cancel drives
+    // this controller's onCancel, which is what the test counts.
+    // ignore: close_sinks
+    late final StreamController<List<Conversation>> controller;
+    controller = StreamController<List<Conversation>>(
+      onListen: () => controller.add([
+        Conversation(
+          id: 'conv-of-$spaceId',
+          workspaceId: workspaceId,
+          spaceId: spaceId,
+          title: spaceId,
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+        ),
+      ]),
+      onCancel: () => cancellations++,
+    );
+    return controller.stream;
   }
 
   @override
@@ -431,7 +439,7 @@ void main() {
     );
   });
 
-  group('space chat data holds past its last listener', () {
+  group('space chat data listener ownership', () {
     const ws = 'ws-1';
 
     ProviderContainer containerWith(
@@ -536,53 +544,62 @@ void main() {
       },
     );
 
-    void visit(ProviderContainer container) {
-      container.listen(spaceConversationsProvider('ch-a'), (_, _) {}).close();
-    }
+    test('leaving releases only the last conversation-list listener', () async {
+      final repo = _RecordingConversationRepository();
+      final container = containerWith(repo);
+      final first = container.listen(
+        spaceConversationsProvider('ch-a'),
+        (_, _) {},
+      );
+      final second = container.listen(
+        spaceConversationsProvider('ch-a'),
+        (_, _) {},
+      );
+      await container.read(spaceConversationsProvider('ch-a').future);
+      expect(repo.watched, hasLength(1));
 
-    test('leaving and coming back within the hold opens no new watch', () {
-      fakeAsync((async) {
-        final repo = _RecordingConversationRepository();
-        final container = containerWith(repo);
+      first.close();
+      await container.pump();
+      expect(
+        repo.cancellations,
+        0,
+        reason: 'the second viewer is still mounted',
+      );
+      second.close();
+      await container.pump();
+      expect(repo.cancellations, 1);
 
-        visit(container);
-        async.flushMicrotasks();
-        async.elapse(const Duration(minutes: 1));
-        visit(container);
-        async.flushMicrotasks();
-        expect(repo.watched, hasLength(1));
-
-        // Past the hold the list is let go, and the next visit re-watches.
-        async.elapse(const Duration(minutes: 3));
-        visit(container);
-        async.flushMicrotasks();
-        expect(repo.watched, hasLength(2));
-      });
+      final revisit = container.listen(
+        spaceConversationsProvider('ch-a'),
+        (_, _) {},
+      );
+      await container.read(spaceConversationsProvider('ch-a').future);
+      expect(repo.watched, hasLength(2), reason: 'revisit revalidates');
+      revisit.close();
     });
 
-    test('a failed standing-conversation resolve is not held', () {
-      fakeAsync((async) {
-        final repo = _EnsureCountingRepository(fail: true);
-        final container = containerWith(repo);
-
-        void open() {
-          container
-              .listen(standingConversationIdProvider('ch-a'), (_, _) {})
-              .close();
-          // A real reopen is frames later, not the same microtask.
-          async.elapse(const Duration(seconds: 1));
-        }
-
-        open();
-        open();
-        expect(repo.ensures, 2, reason: 'a failure retries on the next open');
-
-        repo.fail = false;
-        open();
-        open();
-        expect(repo.ensures, 3, reason: 'a success is held');
-      });
-    });
+    test(
+      'closing an unresolved standing id cancels its conversation watch',
+      () async {
+        var cancellations = 0;
+        final rows = StreamController<List<Conversation>>(
+          onCancel: () => cancellations++,
+        );
+        addTearDown(rows.close);
+        final container = containerWith(
+          _RecordingConversationRepository(),
+          conversations: rows.stream,
+        );
+        final listener = container.listen(
+          standingConversationIdProvider('ch-a'),
+          (_, _) {},
+        );
+        await container.pump();
+        listener.close();
+        await container.pump();
+        expect(cancellations, 1);
+      },
+    );
   });
 
   group('spaceBusyConversationIdsProvider', () {
@@ -1101,41 +1118,4 @@ class _MutableActiveWorkspaceId extends ActiveWorkspaceIdNotifier {
   String? build() => 'ws-1';
 
   void switchTo(String id) => state = id;
-}
-
-/// Counts `ensure` calls; fails them while [fail] is set.
-class _EnsureCountingRepository implements ConversationRepository {
-  _EnsureCountingRepository({required this.fail});
-
-  bool fail;
-  int ensures = 0;
-
-  @override
-  Stream<List<Conversation>> watchForSpace({
-    required String workspaceId,
-    required String spaceId,
-  }) => Stream.value(const []);
-
-  @override
-  Future<Conversation> ensure({
-    required String workspaceId,
-    required String spaceId,
-  }) async {
-    ensures++;
-    if (fail) {
-      throw StateError('ensure refused');
-    }
-    return Conversation(
-      id: 'standing-$spaceId',
-      workspaceId: workspaceId,
-      spaceId: spaceId,
-      title: spaceId,
-      createdAt: DateTime(2024),
-      updatedAt: DateTime(2024),
-    );
-  }
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) =>
-      throw UnimplementedError('${invocation.memberName} is not under test');
 }

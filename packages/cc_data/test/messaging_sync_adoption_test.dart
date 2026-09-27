@@ -31,6 +31,7 @@ class _AdoptionHost {
 
   final Map<String, String> _subIdByQuery = {};
   int _nextSubId = 0;
+  int unsubscribed = 0;
 
   void _onFrame(Map<String, dynamic> frame) {
     final id = frame['id'];
@@ -57,6 +58,7 @@ class _AdoptionHost {
           // 'sync.watch' pushes nothing automatically.
         }
       case RpcMethods.unsubscribe:
+        unsubscribed++;
         _reply(id, {'ok': true});
       case RpcMethods.repoCall:
         final op = params['op'] as String;
@@ -169,6 +171,49 @@ void main() {
         'retained',
       );
     });
+
+    test(
+      'the last consumer cancels the shared legacy watch; the mirror survives',
+      () async {
+        host.legacySpacesSnapshot = {
+          'spaces': [_spaceWire('c1', name: 'Cached')],
+        };
+        final engine = ClientSyncEngine(
+          client: client,
+          storeEnabled: (_) => true,
+        );
+        addTearDown(engine.dispose);
+        final repo = RpcMessagingRepository(client, sync: engine);
+        final first = repo.watchSpacesByWorkspace('ws1').listen((_) {});
+        final active = <List<Space>>[];
+        final second = repo.watchSpacesByWorkspace('ws1').listen(active.add);
+        addTearDown(first.cancel);
+        addTearDown(second.cancel);
+        await _settle();
+        expect(active.last.single.name, 'Cached');
+
+        await first.cancel();
+        await _settle();
+        expect(
+          host.unsubscribed,
+          0,
+          reason: 'one consumer leaving must not cancel the shared watch',
+        );
+        host.pushSpaces({
+          'spaces': [_spaceWire('c1', name: 'Revalidated')],
+        });
+        await _settle();
+        expect(active.last.single.name, 'Revalidated');
+
+        await second.cancel();
+        await _settle();
+        expect(
+          host.unsubscribed,
+          1,
+          reason: 'the last consumer cancels the shared legacy watch',
+        );
+      },
+    );
 
     test(
       'watchSpacesByWorkspace seeds from the legacy watch then follows deltas',

@@ -30,6 +30,9 @@ abstract final class RpcErrorCodes {
   /// Terminal — a retry re-runs the op, so callers treat it like any failure.
   static const handlerTimeout = -32009;
 
+  /// A read was abandoned before its handler started (`$/cancelRequest`).
+  static const requestCancelled = -32800;
+
   /// Entity not found (`NotFoundException`).
   static const notFound = -33001;
 
@@ -91,6 +94,9 @@ abstract final class RpcMethods {
 
   /// `sub/unsubscribe` — close a subscription.
   static const unsubscribe = 'sub/unsubscribe';
+
+  /// Notification abandoning a read or subscription setup by its request `id`.
+  static const cancelRequest = r'$/cancelRequest';
 
   /// `sub/snapshot` — full snapshot for a subscription (initial + per-change).
   static const subSnapshot = 'sub/snapshot';

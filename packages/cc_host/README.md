@@ -29,6 +29,12 @@ transport. Pure Dart — no Flutter.
   `cc_server_core/test/remote_tool_metadata_test.dart` keeps its read/write sets
   aligned with the registered tools.
 - Fail closed: an unauthenticated/over-limit request is denied, never served.
+- `$/cancelRequest` is same-session read/subscription teardown and bypasses
+  admission limits. It skips read handlers still awaiting authorization and
+  removes subscriptions even if their acknowledgement raced navigation.
+  Already-running Dart handlers cannot be forcibly interrupted: their replies
+  are discarded and they retain their concurrency slot until completion or
+  the existing deadline. Mutations are never cancelled by navigation.
 
 ## Extending
 

@@ -73,8 +73,7 @@ Future<void> _flush() async {
 void main() {
   group('RemoteRpcClient.subscribe lifecycle', () {
     test(
-      'unsubscribes a subscription cancelled while the subscribe round-trip is '
-      'still in flight (no server-side leak)',
+      'cancels pending subscribe setup by request id and ignores a late ack',
       () async {
         final channel = _FakeChannel();
         final client = RemoteRpcClient(channel)
@@ -90,29 +89,100 @@ void main() {
         final subscribeId = channel.lastRequestId(RpcMethods.subscribe);
         expect(subscribeId, isNotNull, reason: 'subscribe request was sent');
 
-        // Cancel mid-round-trip: onCancel runs before the id exists.
+        // The setup has not returned an id. The cancellation notification is
+        // ordered after its request, allowing the server to clean up even if
+        // the response was already en route.
         await sub.cancel();
-        expect(
-          channel.unsubscribes,
-          isEmpty,
-          reason: 'nothing to unsubscribe yet — the id is unknown',
-        );
+        await _flush();
+        final cancels = channel.sent
+            .where((f) => f['method'] == RpcMethods.cancelRequest)
+            .toList();
+        expect(cancels, hasLength(1));
+        expect(cancels.single, {
+          'jsonrpc': '2.0',
+          'method': RpcMethods.cancelRequest,
+          'params': {'id': subscribeId},
+        });
+        expect(channel.unsubscribes, isEmpty);
 
-        // The server now answers; the onListen continuation learns the id.
         channel.deliver({
           'jsonrpc': '2.0',
           'id': subscribeId,
           'result': {'subscriptionId': 's1', 'rev': 0},
         });
         await _flush();
+        expect(channel.unsubscribes, isEmpty);
 
-        // REGRESSION: the granted subscription must be torn down, not leaked.
-        expect(channel.unsubscribes, hasLength(1));
-        expect(
-          (channel.unsubscribes.single['params'] as Map)['subscriptionId'],
-          's1',
-        );
+        await client.close();
+      },
+    );
 
+    test(
+      'trailing snapshot and error for a cancelled setup never surface later',
+      () async {
+        final channel = _FakeChannel();
+        final client = RemoteRpcClient(channel)
+          ..activeWorkspaceId = 'ws1'
+          ..start();
+
+        // Abandon the setup before its ack; the server's cancellation may
+        // still race an ack, a first snapshot and even a stream error.
+        final sub = client
+            .subscribe('tickets.watchForWorkspace', const {})
+            .listen((_) {});
+        await _flush();
+        final subscribeId = channel.lastRequestId(RpcMethods.subscribe);
+        await sub.cancel();
+        await _flush();
+        channel.deliver({
+          'jsonrpc': '2.0',
+          'id': subscribeId,
+          'result': {'subscriptionId': 's1', 'rev': 0},
+        });
+        channel.deliver({
+          'jsonrpc': '2.0',
+          'method': RpcMethods.subSnapshot,
+          'params': {
+            'subscriptionId': 's1',
+            'data': {'stale': true},
+          },
+        });
+        channel.deliver({
+          'jsonrpc': '2.0',
+          'method': RpcMethods.subError,
+          'params': {'subscriptionId': 's1', 'code': -33001},
+        });
+        await _flush();
+
+        // A fresh subscription for the same coordinates must start clean:
+        // only its own snapshot arrives, never the abandoned id's data.
+        final snapshots = <Map<String, dynamic>>[];
+        final errors = <Object>[];
+        final fresh = client
+            .subscribe('tickets.watchForWorkspace', const {})
+            .listen(snapshots.add, onError: errors.add);
+        await _flush();
+        final freshId = channel.lastRequestId(RpcMethods.subscribe);
+        expect(freshId, isNot(subscribeId));
+        channel.deliver({
+          'jsonrpc': '2.0',
+          'id': freshId,
+          'result': {'subscriptionId': 's2', 'rev': 0},
+        });
+        channel.deliver({
+          'jsonrpc': '2.0',
+          'method': RpcMethods.subSnapshot,
+          'params': {
+            'subscriptionId': 's2',
+            'data': {'fresh': true},
+          },
+        });
+        await _flush();
+        expect(snapshots, [
+          {'fresh': true},
+        ]);
+        expect(errors, isEmpty);
+        await fresh.cancel();
         await client.close();
       },
     );

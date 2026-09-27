@@ -15,11 +15,9 @@ const Duration _kDwell = Duration(milliseconds: 60);
 ///
 /// Opening a space the client has not held recently pays a chain of
 /// round-trips: the editor layout, the standing conversation, then its feed.
-/// Hover usually leads the click by a few hundred milliseconds, which is
-/// most of that chain. Each warmed provider holds itself briefly after its
-/// last listener (see `_holdAfterLastListener` in messaging_providers), so
-/// the listen here is opened and closed at once and the click finds the
-/// data in memory.
+/// Hover usually leads the click by a few hundred milliseconds. Keep these
+/// listeners only while the pointer is here: the screen takes over when opened,
+/// and a pointer leaving must not keep a revalidation running.
 class SpaceHoverPrefetch extends ConsumerStatefulWidget {
   /// Creates a [SpaceHoverPrefetch].
   const SpaceHoverPrefetch({
@@ -46,11 +44,20 @@ class SpaceHoverPrefetch extends ConsumerStatefulWidget {
 class _SpaceHoverPrefetchState extends ConsumerState<SpaceHoverPrefetch> {
   Timer? _dwell;
   ProviderSubscription<AsyncValue<String>>? _standing;
+  final List<ProviderSubscription<Object?>> _warmed = [];
+
+  @override
+  void didUpdateWidget(SpaceHoverPrefetch oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.spaceId != widget.spaceId ||
+        oldWidget.workspaceId != widget.workspaceId) {
+      _onExit();
+    }
+  }
 
   @override
   void dispose() {
-    _dwell?.cancel();
-    _standing?.close();
+    _onExit();
     super.dispose();
   }
 
@@ -61,12 +68,16 @@ class _SpaceHoverPrefetchState extends ConsumerState<SpaceHoverPrefetch> {
 
   void _onExit() {
     _dwell?.cancel();
+    _standing?.close();
+    _standing = null;
+    for (final subscription in _warmed) {
+      subscription.close();
+    }
+    _warmed.clear();
   }
 
-  /// Drops a listen opened only to start the provider; its own hold keeps it
-  /// for the click.
   void _touch(ProviderSubscription<Object?> subscription) {
-    subscription.close();
+    _warmed.add(subscription);
   }
 
   void _warm() {
@@ -100,7 +111,7 @@ class _SpaceHoverPrefetchState extends ConsumerState<SpaceHoverPrefetch> {
       _standing?.close();
       _standing = null;
       final id = value.value;
-      if (id != null && mounted) {
+      if (id != null && mounted && _warmed.isNotEmpty) {
         _touch(
           ref.listenManual(
             spaceFeedWindowedProvider((spaceId: spaceId, conversationId: id)),

@@ -166,7 +166,7 @@ class SubscriptionManager {
     final needsAuthority = query.serverAuthority != ServerAuthority.none;
     if (needsAuthority ||
         (targetWorkspace != null && (gate != null || roleResolver != null))) {
-      _subs[subId] = _Subscription.pending(targetWorkspace ?? '');
+      _subs[subId] = _Subscription.pending(targetWorkspace ?? '', id);
       unawaited(() async {
         // Server-authority gate for unscoped install-wide streams — fail
         // closed when no resolver is wired, exactly like the repo-op gate.
@@ -192,6 +192,7 @@ class SubscriptionManager {
           }
           final error = _attach(
             subId: subId,
+            requestId: id,
             queryName: queryName,
             query: query,
             ctx: ctx,
@@ -245,6 +246,7 @@ class SubscriptionManager {
         }
         final error = _attach(
           subId: subId,
+          requestId: id,
           queryName: queryName,
           query: query,
           ctx: ctx,
@@ -264,6 +266,7 @@ class SubscriptionManager {
 
     final error = _attach(
       subId: subId,
+      requestId: id,
       queryName: queryName,
       query: query,
       ctx: ctx,
@@ -280,6 +283,7 @@ class SubscriptionManager {
   /// rejects synchronously (before returning a stream); null on success.
   ({int code, String message})? _attach({
     required String subId,
+    required Object? requestId,
     required String queryName,
     required WatchQuery query,
     required WatchQueryContext ctx,
@@ -339,7 +343,7 @@ class SubscriptionManager {
         message: 'Subscription failed',
       );
     }
-    _subs[subId] = _Subscription(streamSub, workspaceId);
+    _subs[subId] = _Subscription(streamSub, workspaceId, requestId);
     return null;
   }
 
@@ -377,6 +381,19 @@ class SubscriptionManager {
       'id': id,
       'result': {'ok': true},
     };
+  }
+
+  /// Cancels only this session's watch opened by the original request id.
+  /// Works while authorization is pending and after the subscribe ack raced
+  /// the client's navigation away. No tombstones survive the subscription.
+  void cancelRequest(Object requestId) {
+    final ids = [
+      for (final entry in _subs.entries)
+        if (entry.value.requestId == requestId) entry.key,
+    ];
+    for (final id in ids) {
+      _cancel(id);
+    }
   }
 
   /// Tears down every live subscription, pushing a `sub/error{kind}` for each so
@@ -506,12 +523,12 @@ class SubscriptionManager {
 }
 
 class _Subscription {
-  _Subscription(this._sub, this.workspaceId);
+  _Subscription(this._sub, this.workspaceId, this.requestId);
 
   /// A subscription whose handler has not attached yet (the workspace
   /// existence/membership gates are still resolving); cancellation is a no-op
   /// until the real stream replaces this entry.
-  _Subscription.pending(this.workspaceId) : _sub = null;
+  _Subscription.pending(this.workspaceId, this.requestId) : _sub = null;
 
   // ignore: cancel_subscriptions
   final StreamSubscription<Map<String, dynamic>>? _sub;
@@ -520,6 +537,8 @@ class _Subscription {
   /// recorded so [SubscriptionManager.dropWorkspace] can tear down exactly the
   /// subscriptions a revoked membership must kill.
   final String? workspaceId;
+
+  final Object? requestId;
 
   void cancel() => unawaited(_sub?.cancel());
 }

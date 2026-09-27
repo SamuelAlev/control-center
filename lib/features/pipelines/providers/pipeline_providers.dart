@@ -73,16 +73,16 @@ final pipelineEngineProvider = Provider<PipelineEnginePort>(
 );
 
 /// Watches every persisted template in `workspaceId`, built-ins first.
-final pipelineTemplatesProvider =
-    StreamProvider.family<List<PipelineDefinition>, String>((ref, workspaceId) {
+final pipelineTemplatesProvider = StreamProvider.autoDispose
+    .family<List<PipelineDefinition>, String>((ref, workspaceId) {
       return ref
           .watch(pipelineTemplateRepositoryProvider)
           .watchForWorkspace(workspaceId);
     });
 
 /// Watches all pipeline runs for a specific workspace.
-final workspacePipelineRunsProvider =
-    StreamProvider.family<List<PipelineRun>, String>((ref, workspaceId) {
+final workspacePipelineRunsProvider = StreamProvider.autoDispose
+    .family<List<PipelineRun>, String>((ref, workspaceId) {
       return ref
           .watch(pipelineRunRepositoryProvider)
           .watchForWorkspace(workspaceId);
@@ -100,7 +100,7 @@ const _badgeSettleDelay = Duration(milliseconds: 700);
 /// pipeline mutation (progress ticks, step transitions) and feeding those no-op repeats
 /// into the timer would keep resetting it, so a long, chatty run would never surface a
 /// badge at all.
-final runningPipelineCountProvider = StreamProvider.family<int, String>((
+final runningPipelineCountProvider = StreamProvider.autoDispose.family<int, String>((
   ref,
   workspaceId,
 ) {
@@ -175,8 +175,8 @@ Stream<T> _settled<T>(Stream<T> source, Duration delay) {
 
 /// Watches step runs for a single pipeline run. Used by the canvas overlay
 /// and the step timeline.
-final pipelineStepRunsForRunProvider =
-    StreamProvider.family<List<PipelineStepRun>, String>((ref, runId) {
+final pipelineStepRunsForRunProvider = StreamProvider.autoDispose
+    .family<List<PipelineStepRun>, String>((ref, runId) {
       return ref
           .watch(pipelineRunRepositoryProvider)
           .watchStepRunsForPipeline(runId);
@@ -218,12 +218,12 @@ final pipelineRunAgentLogsProvider =
     });
 
 /// Clock that ticks every second so duration displays stay live for active runs.
-final pipelineClockProvider = StreamProvider<int>((ref) {
+final pipelineClockProvider = StreamProvider.autoDispose<int>((ref) {
   return Stream.periodic(const Duration(seconds: 1), (i) => i + 1);
 });
 
 /// Watches a single pipeline run by ID, emitting on every status change.
-final pipelineRunProvider = StreamProvider.family<PipelineRun?, String>((
+final pipelineRunProvider = StreamProvider.autoDispose.family<PipelineRun?, String>((
   ref,
   runId,
 ) {
@@ -231,8 +231,8 @@ final pipelineRunProvider = StreamProvider.family<PipelineRun?, String>((
 });
 
 /// Watches pipeline triggers for a specific workspace.
-final pipelineTriggersForWorkspaceProvider =
-    StreamProvider.family<List<PipelineTrigger>, String>((ref, workspaceId) {
+final pipelineTriggersForWorkspaceProvider = StreamProvider.autoDispose
+    .family<List<PipelineTrigger>, String>((ref, workspaceId) {
       return ref
           .watch(pipelineTriggerRepositoryProvider)
           .watchForWorkspace(workspaceId);

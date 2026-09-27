@@ -38,7 +38,7 @@ const double _tileHeight = 72;
 const double _afterDyNudge = 88;
 
 /// Streams the agents in the active workspace for the editor's agent picker.
-final _workspaceAgentsProvider = StreamProvider.family<List<Agent>, String>((
+final _workspaceAgentsProvider = StreamProvider.autoDispose.family<List<Agent>, String>((
   ref,
   workspaceId,
 ) {

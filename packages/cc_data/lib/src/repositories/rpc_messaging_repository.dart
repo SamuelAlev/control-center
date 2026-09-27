@@ -344,42 +344,45 @@ class RpcMessagingRepository
     bool Function(Map<String, dynamic>)? preserve,
   }) {
     late final StreamController<List<Map<String, dynamic>>> controller;
-    StreamSubscription<void>? snapshotSub;
+    StreamSubscription<List<Map<String, dynamic>>>? snapshotSub;
     StreamSubscription<List<Map<String, dynamic>>>? rowSub;
     var cancelled = false;
     controller = StreamController<List<Map<String, dynamic>>>(
       onListen: () {
-        snapshotSub = snapshots
-            .asyncMap<void>((rows) async {
-              final keep = preserve;
-              final existing = keep == null
-                  ? const <Map<String, dynamic>>[]
-                  : await store.watchRows(table).first;
-              if (cancelled) {
-                return;
-              }
-              store.seed(table, [
-                if (keep != null) ...existing.where(keep),
-                ...rows,
-              ], (row) => row['id'] as String);
-              rowSub ??= store
-                  .watchRows(table)
-                  .listen(controller.add, onError: controller.addError);
-            })
-            .listen(
-              (_) {},
-              onError: (Object error, StackTrace stack) {
-                cancelled = true;
-                unawaited(rowSub?.cancel());
-                controller.addError(error, stack);
-                unawaited(controller.close());
-              },
-            );
+        snapshotSub = snapshots.listen(
+          (rows) {
+            if (cancelled) {
+              return;
+            }
+            final keep = preserve;
+            final existing = keep == null
+                ? const <Map<String, dynamic>>[]
+                : store.snapshotRows(table);
+            store.seed(table, [
+              if (keep != null) ...existing.where(keep),
+              ...rows,
+            ], (row) => row['id'] as String);
+            rowSub ??= store
+                .watchRows(table)
+                .listen(controller.add, onError: controller.addError);
+          },
+          onError: (Object error, StackTrace stack) {
+            if (cancelled) {
+              return;
+            }
+            cancelled = true;
+            unawaited(rowSub?.cancel());
+            controller.addError(error, stack);
+            unawaited(controller.close());
+          },
+        );
       },
       onCancel: () async {
         cancelled = true;
-        await snapshotSub?.cancel();
-        await rowSub?.cancel();
+        final snapshotCancel = snapshotSub?.cancel();
+        final rowCancel = rowSub?.cancel();
+        await snapshotCancel;
+        await rowCancel;
       },
     );
     return controller.stream;

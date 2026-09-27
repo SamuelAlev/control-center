@@ -45,6 +45,7 @@ void main() {
     String fingerprint = 'fp-AAAA',
     Map<String, dynamic> Function(String op)? answer,
     int? callErrorCode,
+    bool Function()? withholdCall,
   }) {
     final (server, client) = makeClient();
     final sentIds = <String, List<Object>>{};
@@ -81,6 +82,10 @@ void main() {
       if (method == RpcMethods.repoCall) {
         final params = (frame['params'] as Map?)?.cast<String, dynamic>() ?? {};
         final op = params['op'] as String? ?? '';
+        if ((withholdCall?.call() ?? false) &&
+            op == 'messaging.getMessageById') {
+          return;
+        }
         if (callErrorCode != null) {
           await server.send({
             'jsonrpc': '2.0',
@@ -844,6 +849,143 @@ void main() {
     );
 
     test(
+      'cancelled revalidation keeps the stale snapshot and a revisit '
+      'issues a new request instead of accepting an obsolete reply',
+      () async {
+        var withhold = false;
+        var revision = 0;
+        final c = scriptedConnection(
+          answer: (op) => op == 'messaging.getMessageById'
+              ? {'revision': ++revision}
+              : const {},
+          withholdCall: () => withhold,
+        );
+        final frames = <Map<String, dynamic>>[];
+        final frameSub = c.server.incoming.listen(frames.add);
+        addTearDown(frameSub.cancel);
+        final sup = ServerConnectionSupervisor(
+          descriptor: descriptor(),
+          deviceId: 'dev-1',
+          psk: psk,
+          resolver: resolver([c.connection]),
+        );
+        addTearDown(
+          () =>
+              sup.close().timeout(const Duration(seconds: 1), onTimeout: () {}),
+        );
+        await sup.start();
+        final resilient = ResilientRpcClient(
+          sup,
+          snapshotCache: RpcSnapshotCache(),
+        )..activeWorkspaceId = 'ws-1';
+        addTearDown(resilient.close);
+        const op = 'messaging.getMessageById';
+        const args = {'message_id': 'm'};
+
+        final seed = resilient.watchCall(op, args).listen((_) {});
+        await Future<void>.delayed(const Duration(milliseconds: 30));
+        await seed.cancel();
+        withhold = true;
+        final before = <Map<String, dynamic>>[];
+        final abandoned = resilient.watchCall(op, args).listen(before.add);
+        await Future<void>.delayed(const Duration(milliseconds: 30));
+        expect(before, [
+          {'revision': 1},
+        ]);
+        final obsoleteId = c.subIdFor(RpcMethods.repoCall);
+        await abandoned.cancel();
+        expect(
+          frames.where(
+            (f) =>
+                f['method'] == RpcMethods.cancelRequest &&
+                (f['params'] as Map)['id'] == obsoleteId,
+          ),
+          hasLength(1),
+        );
+        await c.server.send({
+          'jsonrpc': '2.0',
+          'id': obsoleteId,
+          'result': {
+            'op': op,
+            'data': {'revision': 999},
+          },
+        });
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+        withhold = false;
+        final after = <Map<String, dynamic>>[];
+        final revisited = resilient.watchCall(op, args).listen(after.add);
+        await Future<void>.delayed(const Duration(milliseconds: 30));
+        expect(after, [
+          {'revision': 1},
+          {'revision': 2},
+        ]);
+        expect(before, [
+          {'revision': 1},
+        ]);
+        await revisited.cancel();
+      },
+    );
+
+    test(
+      'leaving offline watchCall does not revalidate after reconnect',
+      () async {
+        final first = scriptedConnection(answer: (_) => {'revision': 1});
+        final second = scriptedConnection(answer: (_) => {'revision': 2});
+        final secondReads = <Map<String, dynamic>>[];
+        final observed = second.server.incoming.listen((frame) {
+          if (frame['method'] == RpcMethods.repoCall &&
+              (frame['params'] as Map)['op'] == 'messaging.getMessageById') {
+            secondReads.add(frame);
+          }
+        });
+        addTearDown(observed.cancel);
+        final reconnect = Completer<void>();
+        final sup = ServerConnectionSupervisor(
+          descriptor: descriptor(),
+          deviceId: 'dev-1',
+          psk: psk,
+          resolver: _ScriptedResolver(
+            [first.connection, second.connection],
+            beforeConnect: (attempt) => attempt == 2 ? reconnect.future : null,
+          ),
+        );
+        addTearDown(
+          () =>
+              sup.close().timeout(const Duration(seconds: 1), onTimeout: () {}),
+        );
+        await sup.start();
+        final resilient = ResilientRpcClient(
+          sup,
+          snapshotCache: RpcSnapshotCache(),
+        )..activeWorkspaceId = 'ws-1';
+        addTearDown(resilient.close);
+        const op = 'messaging.getMessageById';
+        const args = {'message_id': 'm'};
+        final seeded = resilient.watchCall(op, args).listen((_) {});
+        await Future<void>.delayed(const Duration(milliseconds: 30));
+        await seeded.cancel();
+
+        await first.server.close();
+        await first.sub.cancel();
+        final values = <Map<String, dynamic>>[];
+        final offline = resilient.watchCall(op, args).listen(values.add);
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+        expect(values, [
+          {'revision': 1},
+        ]);
+        await offline.cancel();
+        reconnect.complete();
+        await Future<void>.delayed(const Duration(milliseconds: 200));
+        expect(secondReads, isEmpty);
+        final revisited = resilient.watchCall(op, args).listen(values.add);
+        await Future<void>.delayed(const Duration(milliseconds: 30));
+        expect(values.last, {'revision': 2});
+        expect(secondReads, hasLength(1));
+        await revisited.cancel();
+      },
+    );
+
+    test(
       'watchCall authoritative not-found clears previously cached read',
       () async {
         final first = scriptedConnection(answer: (_) => {'message': 'old'});
@@ -960,11 +1102,17 @@ void main() {
 /// A scripted [ReachabilityResolver]: [connect] pops the next prepared
 /// [ResolvedConnection] in order.
 class _ScriptedResolver extends ReachabilityResolver {
-  _ScriptedResolver(this._connections, {this.failureOnEmpty});
+  _ScriptedResolver(
+    this._connections, {
+    this.failureOnEmpty,
+    this.beforeConnect,
+  });
+
+  final Future<void>? Function(int attempt)? beforeConnect;
+  int _attempts = 0;
 
   final List<ResolvedConnection> _connections;
   final Object? failureOnEmpty;
-
   @override
   Future<ResolvedConnection> connect(
     ConnectionDescriptor descriptor, {
@@ -975,6 +1123,7 @@ class _ScriptedResolver extends ReachabilityResolver {
     if (_connections.isEmpty) {
       throw failureOnEmpty ?? StateError('scripted resolver is dry');
     }
+    await beforeConnect?.call(++_attempts);
     return _connections.removeAt(0);
   }
 }

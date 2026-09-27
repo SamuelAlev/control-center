@@ -204,6 +204,8 @@ class RepoOpDispatcher {
   /// the server's view of the client IP for the calling session (the IP
   /// literal; null when the transport exposes none) and flows into the audit
   /// record only — never into handler args.
+  /// [isCancelled] skips an abandoned read after admission gates finish;
+  /// mutations are never interrupted by client navigation.
   Future<Map<String, dynamic>> call({
     required dynamic id,
     required Map<String, dynamic> params,
@@ -211,6 +213,7 @@ class RepoOpDispatcher {
     required String userId,
     required SessionCapability sessionCapability,
     String? remoteAddress,
+    bool Function()? isCancelled,
   }) async {
     final opName = params['op'];
     if (opName is! String || opName.isEmpty) {
@@ -339,8 +342,8 @@ class RepoOpDispatcher {
     // resolver instead of a sweep of hundreds of call sites.
     WorkspaceRole? role;
     RoleDefinition? roleDefinition;
-    if (op.workspaceScoped && (resolveRole != null ||
-        resolveRoleDefinition != null)) {
+    if (op.workspaceScoped &&
+        (resolveRole != null || resolveRoleDefinition != null)) {
       final definitionResolver = resolveRoleDefinition;
       if (definitionResolver != null) {
         roleDefinition = await definitionResolver(workspaceId!, userId);
@@ -604,6 +607,10 @@ class RepoOpDispatcher {
           'Operation requires approval: $opName',
         );
       }
+    }
+
+    if (op.kind == RepoOpKind.read && isCancelled?.call() == true) {
+      return _error(id, RpcErrorCodes.requestCancelled, 'Request cancelled');
     }
 
     try {

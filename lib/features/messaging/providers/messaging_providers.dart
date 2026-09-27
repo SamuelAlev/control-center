@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
 import 'package:cc_domain/core/domain/entities/message.dart';
 import 'package:cc_domain/core/domain/services/active_stream_registry.dart';
@@ -690,9 +688,6 @@ final spaceFeedWindowedProvider = StreamProvider.autoDispose
       ref,
       ref2,
     ) {
-      // Held so switching back to a space renders its messages on the first
-      // frame instead of a spinner and a round-trip.
-      _holdAfterLastListener(ref, _spaceConversationsTtl);
       final limit = ref.watch(spaceFeedWindowProvider(ref2.conversationId));
       return ref
           .watch(messagingRepositoryProvider)
@@ -714,7 +709,6 @@ final spaceFeedWindowedProvider = StreamProvider.autoDispose
 
 final spaceParticipantsProvider = StreamProvider.autoDispose
     .family<List<SpaceParticipant>, String>((ref, spaceId) {
-      _holdAfterLastListener(ref, _spaceConversationsTtl);
       return ref
           .watch(messagingRepositoryProvider)
           .watchParticipants(ref.requireWorkspaceId(), spaceId);
@@ -823,38 +817,10 @@ final spaceConversationsProvider = StreamProvider.autoDispose
       if (workspaceId == null) {
         return Stream.value(const <Conversation>[]);
       }
-      _holdAfterLastListener(ref, _spaceConversationsTtl);
       return ref
           .watch(conversationRepositoryProvider)
           .watchForSpace(workspaceId: workspaceId, spaceId: spaceId);
     });
-
-/// How long a space's chat data outlives its last listener: the conversation
-/// list, the standing conversation id, the feed window and participants.
-///
-/// Only the OPEN space subscribes, so leaving one used to drop all of it.
-/// Coming back then drew an empty sidebar card and a chat spinner, and paid
-/// a chain of round-trips (standing id, then the feed) before any message
-/// showed. Held, a revisit renders from memory on the first frame, and the
-/// sidebar's hover prefetch warms a first visit the same way.
-const _spaceConversationsTtl = Duration(minutes: 2);
-
-/// Keeps [ref] alive for [ttl] after its last listener goes, and for as long
-/// as one is attached. Unlike a hold from creation, a space open for an hour
-/// is still warm when the operator steps away and back.
-/// Returns a release that lets the provider go right away.
-void Function() _holdAfterLastListener(Ref ref, Duration ttl) {
-  final link = ref.keepAlive();
-  Timer? release;
-  ref
-    ..onCancel(() {
-      release?.cancel();
-      release = Timer(ttl, link.close);
-    })
-    ..onResume(() => release?.cancel())
-    ..onDispose(() => release?.cancel());
-  return link.close;
-}
 
 /// The space's STANDING conversation id — its oldest active conversation,
 /// minted server-side (titled after the space) when the space has none yet.
@@ -870,53 +836,51 @@ final standingConversationIdProvider = FutureProvider.autoDispose
       if (workspaceId == null) {
         throw StateError('No active workspace to resolve a conversation in');
       }
-      // Keep the resolved id warm, but let the conversation list revalidate it.
-      final release = _holdAfterLastListener(ref, _spaceConversationsTtl);
+      // A resolved id is re-derived from the persisted conversation snapshot
+      // on revisit; keeping this provider alive would also keep its pending
+      // conversation-list revalidation attached after navigation.
       final repository = ref.watch(conversationRepositoryProvider);
       final spaces = ref.watch(workspaceSpacesProvider(workspaceId).future);
       final conversations = ref.watch(spaceConversationsProvider(spaceId));
-      final Conversation conversation;
-      try {
-        // Resolving an existing chat is a read. The cached conversation list
-        // must be enough to open it without waiting for an ensure mutation.
-        final ownedSpaces = await spaces;
-        if (!ref.mounted) {
-          throw StateError('Conversation resolution was disposed');
-        }
-        if (!ownedSpaces.any(
-          (space) => space.id == spaceId && space.workspaceId == workspaceId,
-        )) {
-          throw StateError('Space does not belong to the active workspace');
-        }
-        if (conversations.hasError) {
-          Error.throwWithStackTrace(
-            conversations.error!,
-            conversations.stackTrace!,
-          );
-        }
-        final List<Conversation> rows = conversations.hasValue
-            ? conversations.requireValue
-            : await ref.watch(spaceConversationsProvider(spaceId).future);
-        Conversation? standing;
-        for (final candidate in rows) {
-          if (candidate.workspaceId != workspaceId ||
-              candidate.spaceId != spaceId ||
-              candidate.isArchived ||
-              candidate.isThread) {
-            continue;
-          }
-          if (standing == null ||
-              candidate.createdAt.isBefore(standing.createdAt)) {
-            standing = candidate;
-          }
-        }
-        conversation =
-            standing ??
-            await repository.ensure(workspaceId: workspaceId, spaceId: spaceId);
-      } catch (_) {
-        release();
-        rethrow;
+      // Resolving an existing chat is a read. The cached conversation list
+      // must be enough to open it without waiting for an ensure mutation.
+      final ownedSpaces = await spaces;
+      if (!ref.mounted) {
+        throw StateError('Conversation resolution was disposed');
       }
+      if (!ownedSpaces.any(
+        (space) => space.id == spaceId && space.workspaceId == workspaceId,
+      )) {
+        throw StateError('Space does not belong to the active workspace');
+      }
+      if (conversations.hasError) {
+        Error.throwWithStackTrace(
+          conversations.error!,
+          conversations.stackTrace!,
+        );
+      }
+      final List<Conversation> rows = conversations.hasValue
+          ? conversations.requireValue
+          : await ref.watch(spaceConversationsProvider(spaceId).future);
+      if (!ref.mounted) {
+        throw StateError('Conversation resolution was disposed');
+      }
+      Conversation? standing;
+      for (final candidate in rows) {
+        if (candidate.workspaceId != workspaceId ||
+            candidate.spaceId != spaceId ||
+            candidate.isArchived ||
+            candidate.isThread) {
+          continue;
+        }
+        if (standing == null ||
+            candidate.createdAt.isBefore(standing.createdAt)) {
+          standing = candidate;
+        }
+      }
+      final conversation =
+          standing ??
+          await repository.ensure(workspaceId: workspaceId, spaceId: spaceId);
       return conversation.id;
     });
 
@@ -934,7 +898,6 @@ final spaceThreadSummariesProvider = StreamProvider.autoDispose
       if (workspaceId == null) {
         return Stream.value(const <String, ThreadSummary>{});
       }
-      _holdAfterLastListener(ref, _spaceConversationsTtl);
       return ref
           .watch(conversationRepositoryProvider)
           .watchThreadSummaries(workspaceId: workspaceId, spaceId: spaceId)

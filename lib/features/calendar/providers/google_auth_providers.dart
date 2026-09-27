@@ -21,7 +21,7 @@ String googleAccountId(
 ///
 /// The server already filters by caller; this also drops another member's
 /// rows if an older host streams the whole workspace pool.
-final googleAccountsProvider = StreamProvider<List<CalendarAccount>>((ref) {
+final googleAccountsProvider = StreamProvider.autoDispose<List<CalendarAccount>>((ref) {
   final workspaceId = ref.watch(activeWorkspaceIdProvider);
   if (workspaceId == null) {
     return Stream.value(const <CalendarAccount>[]);

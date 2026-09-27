@@ -409,13 +409,9 @@ bool isImmutableGitRef(String gitRef) =>
 
 final _hexOnly = RegExp(r'^[0-9a-f]+$');
 
-/// Holds this provider's value for [_immutableReadTtl] after its last listener.
-///
-/// The alternative is what `autoDispose` does by default: drop it, and re-pull
-/// the whole file the moment the reader tabs back. Bounded by TIME rather than
-/// by bytes, deliberately — the values are per-file and a reader who visits
-/// hundreds of files in two minutes has bigger costs than this; the point is
-/// that a tab switch is free, not that the client keeps a repository.
+/// Retains an immutable response briefly after it arrives. Never hold the
+/// provider while its first RPC/subscription is still pending: the last viewer
+/// leaving must release that in-flight work.
 void _holdBriefly(Ref ref) {
   final link = ref.keepAlive();
   final timer = Timer(_immutableReadTtl, link.close);
@@ -441,8 +437,10 @@ final prFileContentProvider = StreamProvider.autoDispose
       if (!isImmutableGitRef(key.ref)) {
         return stream;
       }
-      _holdBriefly(ref);
-      return stream.take(1);
+      return stream.take(1).map((content) {
+        _holdBriefly(ref);
+        return content;
+      });
     });
 
 /// Stream of commits in a PR.
@@ -468,8 +466,10 @@ final prCommitFilesProvider = StreamProvider.autoDispose
       if (!isImmutableGitRef(key.sha)) {
         return stream;
       }
-      _holdBriefly(ref);
-      return stream.take(1);
+      return stream.take(1).map((files) {
+        _holdBriefly(ref);
+        return files;
+      });
     });
 
 /// Stream of review submissions for a PR.
@@ -607,54 +607,121 @@ typedef PrJobRunKey = ({PrRef pr, int jobId});
 /// with logs attached. Auto-disposed: polling runs only while a job's steps
 /// accordion is on screen.
 final prJobRunDetailProvider = StreamProvider.autoDispose
-    .family<JobRunDetail?, PrJobRunKey>((ref, key) async* {
+    .family<JobRunDetail?, PrJobRunKey>((ref, key) {
       final repository = ref.watch(prRepositoryProvider(key.pr));
       if (repository == null) {
+        return const Stream<JobRunDetail?>.empty();
+      }
+      return _watchJobDetail(repository, key.jobId);
+    });
+
+Stream<JobRunDetail?> _watchJobDetail(PrReviewRepository repository, int jobId) {
+  const interval = Duration(seconds: 4);
+  const maxLogWaitPolls = 15; // ~1 min of post-completion log waiting
+  late final StreamController<JobRunDetail?> controller;
+  StreamSubscription<JobRunDetail?>? snapshot;
+  Timer? nextPoll;
+  var stopped = false;
+  var hasData = false;
+  var logWaitPolls = 0;
+
+  bool authoritativeError(Object error) =>
+      error is RemoteRpcException &&
+      (error.code == RpcErrorCodes.unauthorized ||
+          error.code == RpcErrorCodes.workspaceMismatch ||
+          error.code == RpcErrorCodes.notFound ||
+          error.code == RpcErrorCodes.noWorkspaceBound);
+
+  void schedule(void Function() action) {
+    if (!stopped) {
+      nextPoll ??= Timer(interval, () {
+        nextPoll = null;
+        action();
+      });
+    }
+  }
+
+  Future<void> poll() async {
+    await snapshot?.cancel();
+    snapshot = null;
+    if (stopped) {
+      return;
+    }
+    try {
+      final detail = await repository.getJobRunDetail(jobId);
+      if (stopped) {
         return;
       }
-      const interval = Duration(seconds: 4);
-      const maxLogWaitPolls = 15; // ~1 min of post-completion log waiting
-      var logWaitPolls = 0;
-      var hasData = false;
+      controller.add(detail);
+      hasData = true;
+      if (detail == null ||
+          detail.isComplete &&
+              (detail.logs != null || ++logWaitPolls >= maxLogWaitPolls)) {
+        unawaited(controller.close());
+      } else {
+        schedule(() => unawaited(poll()));
+      }
+    } on Exception catch (error, stack) {
+      if (stopped) {
+        return;
+      }
+      // Transient outages retain a previously painted snapshot; access
+      // denials and missing resources invalidate it immediately.
+      if (!hasData || authoritativeError(error)) {
+        stopped = true;
+        controller.addError(error, stack);
+        unawaited(controller.close());
+      } else {
+        schedule(() => unawaited(poll()));
+      }
+    }
+  }
+
+  controller = StreamController<JobRunDetail?>(
+    onListen: () {
       if (repository is RpcPrReviewRepository) {
-        // The Actions accordion can paint persisted steps/logs before its
-        // first live request. The next poll always revalidates this result,
-        // even if the cached job appeared terminal.
-        yield await repository.watchJobRunDetail(key.jobId).first;
-        hasData = true;
-        await Future<void>.delayed(interval);
+        // The first frame can paint persisted steps/logs before polling.
+        // Hold the revalidation only while this accordion has a listener.
+        snapshot = repository.watchJobRunDetail(jobId).listen(
+          (detail) {
+            if (!stopped) {
+              controller.add(detail);
+              hasData = true;
+              schedule(() => unawaited(poll()));
+            }
+          },
+          onError: (Object error, StackTrace stack) {
+            if (stopped) {
+              return;
+            }
+            if (!hasData || authoritativeError(error)) {
+              stopped = true;
+              controller.addError(error, stack);
+              unawaited(controller.close());
+            } else {
+              schedule(() => unawaited(poll()));
+            }
+          },
+          onDone: () {
+            if (!stopped && !hasData) {
+              stopped = true;
+              controller.addError(StateError('Job detail stream ended empty'));
+              unawaited(controller.close());
+            }
+          },
+        );
+      } else {
+        unawaited(poll());
       }
-      while (true) {
-        final JobRunDetail? detail;
-        try {
-          detail = await repository.getJobRunDetail(key.jobId);
-        } on Exception catch (error) {
-          // A retained read remains visible across a disconnected poll. Auth
-          // and missing-resource denials are authoritative: never keep the
-          // previous job detail after the server rejects access.
-          if (!hasData ||
-              error is RemoteRpcException &&
-                  (error.code == RpcErrorCodes.unauthorized ||
-                      error.code == RpcErrorCodes.workspaceMismatch ||
-                      error.code == RpcErrorCodes.notFound ||
-                      error.code == RpcErrorCodes.noWorkspaceBound)) {
-            rethrow;
-          }
-          await Future<void>.delayed(interval);
-          continue;
-        }
-        yield detail;
-        hasData = true;
-        if (detail == null) {
-          return;
-        }
-        if (detail.isComplete &&
-            (detail.logs != null || ++logWaitPolls >= maxLogWaitPolls)) {
-          return;
-        }
-        await Future<void>.delayed(interval);
-      }
-    });
+    },
+    onCancel: () async {
+      stopped = true;
+      nextPoll?.cancel();
+      await snapshot?.cancel();
+    },
+  );
+  return controller.stream;
+}
 
 /// Key for [prWorkflowGraphProvider]: the PR whose repo binds the repository,
 /// plus the workflow run id.

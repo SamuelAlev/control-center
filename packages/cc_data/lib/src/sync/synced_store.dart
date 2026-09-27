@@ -289,6 +289,13 @@ class SyncedStore {
     }
   }
 
+  /// Current mirrored rows, including optimistic overlays, without opening a
+  /// subscription. Used when merging a scoped revalidation into a shared table.
+  List<Map<String, dynamic>> snapshotRows(String tbl) {
+    assert(_mirrors(tbl), 'snapshotRows("$tbl") requires a mirrored table');
+    return _snapshot(tbl);
+  }
+
   /// The live rows of [tbl], with optimistic overlays applied. The first
   /// emission is the current state.
   Stream<List<Map<String, dynamic>>> watchRows(String tbl) {
@@ -444,10 +451,7 @@ Set<String>? mirroredTablesFor(String store) => switch (store) {
 /// (PRD 16 §6 staged adoption: the OFF position is today's snapshot mode).
 class ClientSyncEngine {
   /// Creates the engine. [_storeEnabled] is the per-store kill-switch.
-  ClientSyncEngine({
-    required this._client,
-    required this._storeEnabled,
-  });
+  ClientSyncEngine({required this._client, required this._storeEnabled});
 
   final RemoteRpcClient _client;
   final bool Function(String store) _storeEnabled;
