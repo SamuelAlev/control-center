@@ -1,4 +1,5 @@
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
+import 'package:cc_domain/core/domain/ports/database_backup_port.dart';
 import 'package:cc_domain/core/domain/ports/workspace_filesystem_port.dart';
 import 'package:cc_domain/features/code_graph/domain/ports/code_graph_tree_port.dart';
 import 'package:cc_domain/features/code_graph/domain/repositories/code_graph_repository.dart';
@@ -14,6 +15,7 @@ import 'package:cc_infra/cc_infra.dart'
 import 'package:cc_persistence/cc_persistence.dart'
     show DaoAgentRepository, DaoUserRepository, DaoWorkspaceRepository;
 import 'package:cc_server_core/src/agents/agent_create_rpc.dart';
+import 'package:cc_server_core/src/backup/backup_rpc.dart';
 import 'package:cc_server_core/src/catalog/pr_merge_conflict_ops.dart';
 import 'package:cc_server_core/src/chat/chat_connector.dart';
 import 'package:cc_server_core/src/chat/chat_rpc_ops.dart';
@@ -65,6 +67,7 @@ ExtraOpsResult buildServerExtraOps({
   CodeGraphTreePort? codeGraphTree,
   WorkspaceGitHubAppSettings? workspaceGitHubApps,
   PrMergeConflictService? prMergeConflicts,
+  required DatabaseBackupPort? databaseBackup,
 }) {
   final ops = <RepoOp>[
     ...fleetOps,
@@ -99,6 +102,7 @@ ExtraOpsResult buildServerExtraOps({
       tree: codeGraphTree,
     ),
     ...buildPrMergeConflictOps(prMergeConflicts),
+    ...buildBackupOps(databaseBackup: databaseBackup),
   ];
 
   final watches = <WatchQuery>[

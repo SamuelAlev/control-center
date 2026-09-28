@@ -1,3 +1,4 @@
+@Timeout(Duration(minutes: 2))
 import 'dart:convert';
 import 'dart:io';
 
@@ -20,6 +21,11 @@ import '../helpers/test_database.dart';
 /// It drives [DemoVisitorService] directly against a real on-disk data
 /// directory with a controllable clock, because the TTL floor (5 minutes) is
 /// deliberately longer than any test should wait.
+///
+/// Every redeem seeds a real workspace database (SQLite + FTS + vector_init)
+/// over a drift isolate; on a loaded Windows CI runner that has taken well
+/// over the 30s default and timed out mid-seed, so each test gets a 2-minute
+/// budget like [awaitPool]'s fill deadline below.
 void main() {
   late Directory tmp;
   late SeedDatabases dbs;

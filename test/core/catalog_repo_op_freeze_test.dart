@@ -8,13 +8,15 @@ import 'package:test/test.dart';
 /// does not grow. Lower the freeze when a pack is extracted.
 void main() {
   test('remote_rpc_catalog.dart does not gain RepoOp literals', () {
-    const freeze = 500;
+    const freeze = 496;
     final root = _repoRoot();
     final file = File(
       '$root/packages/cc_server_core/lib/src/remote_rpc_catalog.dart',
     );
     expect(file.existsSync(), isTrue);
-    final count = RegExp(r'RepoOp\(').allMatches(file.readAsStringSync()).length;
+    final count = RegExp(
+      r'RepoOp\(',
+    ).allMatches(file.readAsStringSync()).length;
     expect(
       count,
       lessThanOrEqualTo(freeze),

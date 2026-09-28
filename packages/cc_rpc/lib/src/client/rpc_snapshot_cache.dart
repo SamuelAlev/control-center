@@ -19,8 +19,14 @@ class RpcSnapshotCache {
     this._store,
     this.maxEntries = 256,
     this.maxBytes = 15 * 1024 * 1024,
-  }) : assert(maxEntries > 0),
-       assert(maxBytes > 0);
+  }) {
+    if (maxEntries <= 0) {
+      throw ArgumentError.value(maxEntries, 'maxEntries', 'must be positive');
+    }
+    if (maxBytes <= 0) {
+      throw ArgumentError.value(maxBytes, 'maxBytes', 'must be positive');
+    }
+  }
 
   final RpcSnapshotStore? _store;
 

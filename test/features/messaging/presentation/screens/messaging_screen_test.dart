@@ -8,6 +8,7 @@ import 'package:control_center/core/constants/app_constants.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/agents/providers/agent_providers.dart';
+import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/editor_layout_snapshot.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/messaging_tab_kinds.dart';
 import 'package:control_center/features/messaging/presentation/ide/messaging_ide_layout.dart';
@@ -49,6 +50,22 @@ RemoteRpcClient _noOpRpcClient() {
 Widget _wrap(Widget child) => Scaffold(
   body: CcTheme(data: CcThemeData.light(), child: child),
 );
+
+/// Keeps [ownServerPrefsProvider] widget-watched for tests that archive a
+/// space. In the app the sidebar's folder prefs always watch it, so the
+/// stream is live and its snapshot arrives; with only provider-side listens
+/// Riverpod leaves the stream idle and the folder unlink would await forever.
+class _PrefsLive extends ConsumerWidget {
+  const _PrefsLive({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(ownServerPrefsProvider);
+    return child;
+  }
+}
 
 /// Seeds a [cacheStore] with the persisted layout of a space that has a
 /// terminal tab open — what the server cache holds once a user opened one
@@ -611,6 +628,13 @@ void main() {
           spaceReadRepositoryProvider.overrideWith(
             (ref) => _FakeSpaceReadRepository(),
           ),
+          // Archiving unlinks the space's personal folder, whose write first
+          // awaits a prefs snapshot. The real app always has one by now (the
+          // sidebar's folders watch the same stream); this fake host never
+          // pushes one, so seed an empty snapshot here.
+          ownServerPrefsProvider.overrideWith(
+            (ref) => Stream.value(const <String, String>{}),
+          ),
           spaceMessagesProvider(
             'ch-2',
           ).overrideWith((ref) => Stream.value(const [])),
@@ -621,10 +645,12 @@ void main() {
             'ch-2',
           ).overrideWith((ref) async => 'ch-2'),
         ],
-        child: MaterialApp.router(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          routerConfig: router,
+        child: _PrefsLive(
+          child: MaterialApp.router(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            routerConfig: router,
+          ),
         ),
       ),
     );

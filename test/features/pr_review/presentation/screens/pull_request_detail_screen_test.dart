@@ -1,11 +1,13 @@
 import 'dart:async';
 
+import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/core/domain/entities/workspace.dart';
 import 'package:cc_domain/core/domain/repositories/cache_repository.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_commit.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_user.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:control_center/core/theme/font_settings.dart';
 import 'package:control_center/di/providers.dart';
@@ -26,6 +28,8 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+
+import '../../../../helpers/fake_rpc_client.dart';
 
 Widget _wrap(Widget child) {
   return ProviderScope(
@@ -372,14 +376,35 @@ void main() {
           ProviderScope(
             overrides: [
               ...baseOverrides(),
+              // The screen resolves the forge registry and side providers
+              // (repo permission, profile lookups) through the RPC client; a
+              // client that never answers would leave request-timeout timers
+              // pending. An always-empty host answers them; every stream the
+              // assertions touch is overridden below.
+              rpcClientProvider.overrideWithValue(
+                (FakeRpcHost()..onCall = (op, args) => const {}).client(),
+              ),
               prDetailProvider(
                 _prRefOf(42),
               ).overrideWith((ref) => Stream.value(_samplePr())),
               githubUserProvider.overrideWith((ref) async => null),
               forgeConnectionsProvider.overrideWith((ref) async => []),
               rigCapabilitiesProvider.overrideWith((ref) async => []),
+              // The screen resolves its detail only for a repo linked to the
+              // workspace (`prRepoRowProvider` fail-closed gate), so an empty
+              // stream would render "not found". Link owner/repo.
               reposForWorkspaceProvider.overrideWith(
-                (ref, workspaceId) => const Stream.empty(),
+                (ref, workspaceId) => Stream.value([
+                  Repo(
+                    id: 'repo-1',
+                    name: 'repo',
+                    path: '/tmp/repo',
+                    remoteOwner: 'owner',
+                    remoteName: 'repo',
+                    createdAt: DateTime.utc(2026),
+                    updatedAt: DateTime.utc(2026),
+                  ),
+                ]),
               ),
               prCommitsProvider(
                 _prRefOf(42),
@@ -395,7 +420,6 @@ void main() {
         );
         await tester.pump();
         await tester.pump();
-
         expect(find.text('Something went wrong'), findsNothing);
         expect(find.text('Activity'), findsOneWidget);
         final commitLink = find.textContaining('abcdef1');

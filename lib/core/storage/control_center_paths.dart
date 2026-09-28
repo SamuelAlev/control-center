@@ -48,3 +48,11 @@ List<String> aecFfiDylibCandidatePaths() => _paths.aecFfiDylibCandidatePaths();
 
 /// Path to the MCP client config file at the app data root.
 Future<File> mcpConfigFile() => _paths.mcpConfigFile();
+
+/// Restricts a persisted file/directory to its owner (0600/0700 on POSIX).
+///
+/// Forwarded from the cc_infra leaf this file already imports so client
+/// storage code can protect private bytes without importing cc_infra itself
+/// (the app's cc_infra import count is a frozen ratchet).
+Future<void> protectOwnerOnly(String path, {required bool directory}) =>
+    restrictToOwner(path, directory: directory);

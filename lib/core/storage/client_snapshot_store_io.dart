@@ -94,16 +94,6 @@ class FileRpcSnapshotStore implements RpcSnapshotStore {
 
   // The cache can contain private workspace data. Never write bytes before
   // making the new file owner-readable only (rather than trusting the umask).
-  Future<void> _private(String path, {required bool directory}) async {
-    if (Platform.isWindows) {
-      return; // App-support ACLs govern Windows.
-    }
-    final result = await Process.run('chmod', [
-      directory ? '700' : '600',
-      path,
-    ]);
-    if (result.exitCode != 0) {
-      throw FileSystemException('Cannot protect snapshot cache', path);
-    }
-  }
+  Future<void> _private(String path, {required bool directory}) =>
+      protectOwnerOnly(path, directory: directory);
 }

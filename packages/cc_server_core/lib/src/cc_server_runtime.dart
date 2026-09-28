@@ -5256,6 +5256,7 @@ Future<CcServer> runCcServer({
       isolatedRepoRepository: isolatedRepoRepository,
     ),
     prMergeConflicts: prSpace.mergeConflicts,
+    databaseBackup: databaseBackupService,
   );
 
   final catalog = buildRemoteRpcCatalog(
@@ -5351,9 +5352,6 @@ Future<CcServer> runCcServer({
     conversationRepository: conversationRepository,
     watchConversationsForSpace: (workspaceId, spaceId) => conversationRepository
         .watchForSpace(workspaceId: workspaceId, spaceId: spaceId),
-    // See [databaseBackupService] above. fullClient-only ops; absent entirely
-    // on a demo, where the service itself is null.
-    databaseBackup: databaseBackupService,
     workspaceRepository: workspaceRepository,
     newsfeedRepository: newsfeedRepository,
     agentRepository: agentRepository,
