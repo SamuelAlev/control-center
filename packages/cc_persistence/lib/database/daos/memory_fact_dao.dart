@@ -114,9 +114,13 @@ class MemoryFactDao extends DatabaseAccessor<WorkspaceDatabase>
 
   /// Vector KNN search using sqlite_vector.
   ///
-  /// `vector_full_scan` has no per-workspace partition, so the scan spans all
-  /// embeddings and the `mf.workspace_id = ?` filter below is the isolation
+  /// The scan has no per-workspace partition, so it spans every embedding in
+  /// the file and the `mf.workspace_id = ?` filter below is the isolation
   /// boundary (unlike FTS, which is also scoped at the index level).
+  /// `vector_full_scan_stream` has no top-k cut, so the filters run BEFORE the
+  /// ranking — with `vector_full_scan`'s up-front k, superseded facts nearer
+  /// the query crowded live ones out of the result. CROSS JOIN pins the scan
+  /// as the outer loop; as the inner one it would re-run per candidate row.
   Future<List<MemoryFactsTableData>> searchVector(
     String workspaceId,
     Float32List queryEmbedding, {
@@ -125,16 +129,15 @@ class MemoryFactDao extends DatabaseAccessor<WorkspaceDatabase>
     final vectorJson =
         '[${queryEmbedding.map((v) => v.toStringAsFixed(6)).join(', ')}]';
     return customSelect(
-      'SELECT mf.* FROM memory_facts mf '
-      "JOIN vector_full_scan('memory_facts', 'embedding', vector_as_f32(?), ?) AS v "
-      'ON mf.rowid = v.rowid '
+      'SELECT mf.* FROM '
+      "vector_full_scan_stream('memory_facts', 'embedding', vector_as_f32(?)) AS v "
+      'CROSS JOIN memory_facts mf ON mf.rowid = v.rowid '
       'WHERE mf.workspace_id = ? '
       'AND mf.superseded_by IS NULL '
       'ORDER BY v.distance '
       'LIMIT ?',
       variables: [
         Variable<String>(vectorJson),
-        Variable<int>(limit),
         Variable<String>(workspaceId),
         Variable<int>(limit),
       ],

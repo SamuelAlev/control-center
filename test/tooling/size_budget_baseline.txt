@@ -10,6 +10,8 @@
 # Raised 2026-09-22 to current line counts after the files grew past the previous floor.
 # Raised 2026-09-28 to current line counts after cancel-request support and
 # the diverse-changes batch grew files past the previous floor.
+# Updated 2026-09-29 to current line counts after type-to-confirm copy, the
+# backup delete callout, and sending a diff suggestion to the agent.
 lib/features/agents/presentation/screens/agent_registry_screen.dart  609
 lib/features/agents/presentation/widgets/agent_form_dialog.dart  780
 lib/features/agents/presentation/widgets/agent_logs_tab.dart  483
@@ -115,15 +117,15 @@ lib/features/pr_review/presentation/widgets/pr_diff_view/unified/file_header.dar
 lib/features/pr_review/presentation/widgets/pr_diff_view/unified/image_diff_body.dart  1059
 lib/features/pr_review/presentation/widgets/pr_diff_view/unified/outdated_comments.dart  522
 lib/features/pr_review/presentation/widgets/pr_diff_view/unified/pr_diff_document.dart  954
-lib/features/pr_review/presentation/widgets/pr_diff_view/unified/suggestion_composer.dart  319
+lib/features/pr_review/presentation/widgets/pr_diff_view/unified/suggestion_composer.dart  332
 lib/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_diff_sliver.dart  1109
 lib/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_diff_sliver_input.dart  562
 lib/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_diff_sliver_painting.dart  424
-lib/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_diff_view.dart  3521
+lib/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_diff_view.dart  3565
 lib/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_row_painter.dart  929
 lib/features/pr_review/presentation/widgets/pr_filter/pr_filter_bar.dart  406
 lib/features/pr_review/presentation/widgets/pr_filter/pr_filter_menu.dart  1280
-lib/features/pr_review/presentation/widgets/pr_inline_comments/comment_composer_widget.dart  364
+lib/features/pr_review/presentation/widgets/pr_inline_comments/comment_composer_widget.dart  357
 lib/features/pr_review/presentation/widgets/pr_inline_comments/comment_thread_widget.dart  1025
 lib/features/pr_review/presentation/widgets/pr_inline_comments/inline_reply_form.dart  450
 lib/features/pr_review/presentation/widgets/pr_inline_comments/suggestion_renderer.dart  308
@@ -161,8 +163,8 @@ lib/features/settings/presentation/widgets/sections/integrations/server_sharing_
 lib/features/settings/presentation/widgets/sections/skills/skill_scan_widgets.dart  390
 lib/features/settings/presentation/widgets/sections/skills/skill_sources_panel.dart  1131
 lib/features/settings/presentation/widgets/sections/system/audio_input_row.dart  329
-lib/features/settings/presentation/widgets/sections/system/backup_snapshots_section.dart  471
-lib/features/settings/presentation/widgets/sections/system/workspace_data_row.dart  384
+lib/features/settings/presentation/widgets/sections/system/backup_snapshots_section.dart  481
+lib/features/settings/presentation/widgets/sections/system/workspace_data_row.dart  402
 lib/features/settings/presentation/widgets/sections/workspace/activity_formatting.dart  397
 lib/features/settings/presentation/widgets/sections/workspace/meeting_templates_section.dart  334
 lib/features/settings/presentation/widgets/sections/workspace/members_roster_section.dart  522

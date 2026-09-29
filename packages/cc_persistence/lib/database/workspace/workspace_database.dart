@@ -802,7 +802,7 @@ class WorkspaceDatabase extends _$WorkspaceDatabase {
       // in-memory context — it is NOT persisted in the database file. It must
       // therefore run on EVERY open, not just onCreate: an existing database
       // reopened after a restart otherwise has no context and every
-      // vector_full_scan KNN query fails with "unable to retrieve context"
+      // vector KNN query fails with "unable to retrieve context"
       // (semantic/hybrid search silently degraded to keyword-only for the
       // whole session). beforeOpen runs after onCreate/onUpgrade, so the
       // tables always exist by now.

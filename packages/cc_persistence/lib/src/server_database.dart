@@ -100,7 +100,7 @@ String globalDatabasePath(String dataDir) =>
 
 /// Registers the vector-search extension as a process-global SQLite
 /// auto-extension so every connection opened afterwards has
-/// `vector_init`/`vector_full_scan`.
+/// `vector_init`/`vector_full_scan_stream`.
 ///
 /// Best-effort and idempotent: a missing or broken native asset must not block
 /// the database.

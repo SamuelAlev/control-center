@@ -11,7 +11,7 @@ resolution: workspace
 dependencies:
   drift: ^2.34.3
   sqlite3: ^3.5.1
-  # Vector-search SQLite extension (vector_init / vector_full_scan) for the
+  # Vector-search SQLite extension (vector_init / vector_full_scan_stream) for the
   # memory-facts + code-graph embedding queries. Ships prebuilt native libraries
   # for every desktop platform as a `DynamicLoadingBundled` code asset, which
   # `dart build cli` bundles beside the server binary the same way it bundles

@@ -845,10 +845,15 @@ class CodeGraphDao extends DatabaseAccessor<WorkspaceDatabase>
 
   /// Vector KNN search using sqlite_vector.
   ///
-  /// `vector_full_scan` has no per-workspace partition, so the scan spans all
-  /// embeddings and the `cs.workspace_id = ?` / `cs.repo_id = ?` filters below
+  /// The scan has no per-workspace partition, so it spans every embedding in
+  /// the file and the `cs.workspace_id = ?` / `cs.repo_id = ?` filters below
   /// are the isolation boundary (unlike FTS, which is also scoped at the index
-  /// level).
+  /// level). `vector_full_scan_stream` yields every row with its distance and
+  /// no top-k cut, so those filters run BEFORE the ranking: `vector_full_scan`
+  /// takes k up front, ranks across every repo and checkout in the file, and a
+  /// repo whose symbols sit outside that global top-k came back empty. CROSS
+  /// JOIN pins the scan as the outer loop; as the inner one it would re-run
+  /// per candidate row.
   Future<List<CodeSymbolsTableData>> searchVector(
     String workspaceId,
     String repoId,
@@ -859,9 +864,9 @@ class CodeGraphDao extends DatabaseAccessor<WorkspaceDatabase>
     final vectorJson =
         '[${queryEmbedding.map((v) => v.toStringAsFixed(6)).join(', ')}]';
     return customSelect(
-          'SELECT cs.* FROM code_symbols cs '
-          "JOIN vector_full_scan('code_symbols', 'embedding', vector_as_f32(?), ?) AS v "
-          'ON cs.rowid = v.rowid '
+          'SELECT cs.* FROM '
+          "vector_full_scan_stream('code_symbols', 'embedding', vector_as_f32(?)) AS v "
+          'CROSS JOIN code_symbols cs ON cs.rowid = v.rowid '
           'WHERE cs.workspace_id = ? '
           'AND cs.repo_id = ? '
           'AND ${checkoutId == null ? 'cs.checkout_id IS NULL' : '(cs.checkout_id IS NULL OR cs.checkout_id = ?)'} '
@@ -869,7 +874,6 @@ class CodeGraphDao extends DatabaseAccessor<WorkspaceDatabase>
           'LIMIT ?',
           variables: [
             Variable<String>(vectorJson),
-            Variable<int>(limit),
             Variable<String>(workspaceId),
             Variable<String>(repoId),
             if (checkoutId != null) Variable<String>(checkoutId),

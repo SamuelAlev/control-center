@@ -114,6 +114,8 @@ import 'package:cc_gallery/use_cases/cc_tooltip_use_cases.dart'
     as _cc_gallery_use_cases_cc_tooltip_use_cases;
 import 'package:cc_gallery/use_cases/cc_truncated_text_use_cases.dart'
     as _cc_gallery_use_cases_cc_truncated_text_use_cases;
+import 'package:cc_gallery/use_cases/cc_type_to_confirm_use_cases.dart'
+    as _cc_gallery_use_cases_cc_type_to_confirm_use_cases;
 import 'package:cc_gallery/use_cases/docs_use_cases.dart'
     as _cc_gallery_use_cases_docs_use_cases;
 import 'package:cc_gallery/use_cases/foundation_colors_use_cases.dart'
@@ -1332,6 +1334,26 @@ final directories = <_widgetbook.WidgetbookNode>[
                 name: 'Right-click a field',
                 builder: _cc_gallery_use_cases_cc_text_context_menu_use_cases
                     .ccTextContextMenuUseCase,
+              ),
+            ],
+          ),
+          _widgetbook.WidgetbookComponent(
+            name: 'CcTypeToConfirmPrompt',
+            useCases: [
+              _widgetbook.WidgetbookUseCase(
+                name: 'Default',
+                builder: _cc_gallery_use_cases_cc_type_to_confirm_use_cases
+                    .ccTypeToConfirmDefaultUseCase,
+              ),
+              _widgetbook.WidgetbookUseCase(
+                name: 'Playground',
+                builder: _cc_gallery_use_cases_cc_type_to_confirm_use_cases
+                    .ccTypeToConfirmPlaygroundUseCase,
+              ),
+              _widgetbook.WidgetbookUseCase(
+                name: 'Value mid-sentence',
+                builder: _cc_gallery_use_cases_cc_type_to_confirm_use_cases
+                    .ccTypeToConfirmMidSentenceUseCase,
               ),
             ],
           ),
