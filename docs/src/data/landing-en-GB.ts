@@ -45,9 +45,11 @@ export const enGb: LandingCopy = {
     next: "Next product view",
     play: "Play tour",
     pause: "Pause tour",
+    videoPlay: "Play preview",
+    videoPause: "Pause preview",
     expand: "Expand preview",
-    close: "Close preview",
     preview: "Product preview",
+    close: "Close preview",
     note: "A closer look at your developer day.",
     imageLanguage: "Image or video placeholder",
     stops: [
@@ -57,7 +59,7 @@ export const enGb: LandingCopy = {
         title: "Start with what needs you.",
         description:
           "Review requests, approvals and blockers. Your next action, without the tab hunt.",
-        alt: "Control Center inbox grouping pull requests by review status and showing a sync blocker.",
+        alt: "Control Center inbox grouping pull requests by review status and showing a pending approval.",
       },
       {
         kind: "agents",

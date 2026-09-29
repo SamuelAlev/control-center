@@ -1,26 +1,301 @@
 ---
+import type { ProductCapture } from '../../data/captures';
+
 interface Props {
   kind: string;
   description: string;
   label: string;
   format?: 'desktop' | 'phone';
   compact?: boolean;
+  capture?: ProductCapture;
+  playLabel?: string;
+  pauseLabel?: string;
+  closeLabel?: string;
+  autoplay?: boolean;
+  /** Hero slides other than the visible one omit the media URL until the carousel asks for it. */
+  deferSrc?: boolean;
+  /** Inline loops in the hero. Thumbnails in the feature grid play a WebP on hover and the mp4 in a dialog. */
+  playback?: 'inline' | 'thumb';
 }
-const { kind, description, label, format = 'desktop', compact = false } = Astro.props;
+const {
+  kind,
+  description,
+  label,
+  format = 'desktop',
+  compact = false,
+  capture,
+  playLabel,
+  pauseLabel,
+  closeLabel,
+  autoplay = false,
+  deferSrc = false,
+  playback = 'inline',
+} = Astro.props;
+const thumb = Boolean(capture && playback === 'thumb' && playLabel && closeLabel && capture.motion);
+const inline = Boolean(capture && !thumb && playLabel && pauseLabel);
 ---
-<div class:list={['product-media', { 'media-compact': compact }]} data-media-slot={kind} data-media-format={format}>
-  <div class="media-registration" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
-  <div class="media-description">
-    <span class="media-symbol" aria-hidden="true"><i></i></span>
-    <p class="media-label">{label}</p>
-    <p class="media-brief">{description}</p>
-    <span class="media-dimensions">{format === 'phone' ? '390 × 844' : '1440 × 900'}</span>
-  </div>
+<div class:list={['product-media', { 'media-compact': compact, 'is-frame': inline, 'is-thumb': thumb }]} data-media-slot={kind} data-media-format={format}>
+  {inline && capture && playLabel && pauseLabel ? (
+    <cc-product-capture data-play={playLabel} data-pause={pauseLabel}>
+      <video
+        class="capture-video"
+        muted
+        loop
+        playsinline
+        webkit-playsinline="true"
+        x-webkit-airplay="deny"
+        disablepictureinpicture
+        disableremoteplayback
+        autoplay={autoplay}
+        poster={capture.poster}
+        width={capture.width}
+        height={capture.height}
+        preload="none"
+        data-src={capture.src}
+        aria-label={description}
+      >
+        {!deferSrc && <source src={capture.src} type="video/mp4" />}
+      </video>
+      <script is:inline>
+        if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          const root = document.currentScript && document.currentScript.parentElement;
+          const video = root && root.querySelector('video');
+          if (video) { video.autoplay = false; video.pause(); }
+        }
+      </script>
+    </cc-product-capture>
+  ) : thumb && capture && playLabel && closeLabel ? (
+    <cc-capture-thumb data-motion={capture.motion} data-src={capture.src}>
+      <button type="button" class="capture-thumb" aria-haspopup="dialog" aria-label={description}>
+        <img class="capture-still" src={capture.poster} alt="" width="1600" height="1036" decoding="async" />
+        <video class="capture-motion" muted loop playsinline preload="none" hidden aria-hidden="true"></video>
+      </button>
+      <dialog class="capture-dialog" aria-label={description}>
+        <div class="capture-dialog-bar">
+          <p>{description}</p>
+          <button type="button" data-close>{closeLabel}<span aria-hidden="true">×</span></button>
+        </div>
+        <video class="capture-player" controls playsinline preload="none" poster={capture.poster} width={capture.width} height={capture.height} aria-label={description}></video>
+      </dialog>
+    </cc-capture-thumb>
+  ) : (
+    <>
+      <div class="media-registration" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+      <div class="media-description">
+        <span class="media-symbol" aria-hidden="true"><i></i></span>
+        <p class="media-label">{label}</p>
+        <p class="media-brief">{description}</p>
+        <span class="media-dimensions">{format === 'phone' ? '390 × 844' : '1440 × 900'}</span>
+      </div>
+    </>
+  )}
 </div>
+<script>
+  class ProductCapture extends HTMLElement {
+    private userPaused = false;
+    private intersecting = false;
+    private abort: AbortController | null = null;
+    private view: IntersectionObserver | null = null;
+    private panel: MutationObserver | null = null;
+
+    connectedCallback() {
+      if (this.abort) { this.sync(); return; }
+      const video = this.querySelector('video');
+      const button = this.querySelector<HTMLButtonElement>('[data-capture-toggle]');
+      if (!video) return;
+      this.abort = new AbortController();
+      const { signal } = this.abort;
+      // iOS only autoplays inline when the element is muted and playsinline.
+      // No controls, and no request for the native player.
+      video.muted = true;
+      video.defaultMuted = true;
+      video.playsInline = true;
+      video.controls = false;
+      video.disablePictureInPicture = true;
+      video.setAttribute('playsinline', '');
+      video.setAttribute('webkit-playsinline', 'true');
+      const webkit = video as HTMLVideoElement & { webkitExitFullscreen?: () => void };
+      const leaveNativePlayer = () => {
+        webkit.webkitExitFullscreen?.();
+        if (document.fullscreenElement === video) void document.exitFullscreen?.();
+      };
+      video.addEventListener('webkitbeginfullscreen', leaveNativePlayer, { signal });
+      video.addEventListener('play', () => { video.muted = true; video.playsInline = true; this.paint(); }, { signal });
+      button?.addEventListener('click', () => {
+        if (video.paused) {
+          this.userPaused = false;
+          video.muted = true;
+          video.playsInline = true;
+          void video.play().catch(error => this.holdIfBlocked(error));
+        } else {
+          this.userPaused = true;
+          video.pause();
+        }
+      }, { signal });
+      const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+      const hostDialog = this.closest('dialog');
+      if (reduced.matches) {
+        this.userPaused = true;
+        video.pause();
+      } else if (hostDialog && !hostDialog.open) {
+        video.autoplay = false;
+        video.pause();
+      }
+      video.addEventListener('pause', () => this.paint(), { signal });
+      reduced.addEventListener('change', () => {
+        if (reduced.matches) this.userPaused = true;
+        this.sync();
+      }, { signal });
+      document.addEventListener('visibilitychange', () => this.sync(), { signal });
+      document.addEventListener('toggle', event => {
+        if (event.target instanceof HTMLDialogElement) this.sync();
+      }, { signal, capture: true });
+      document.addEventListener('close', event => {
+        if (event.target instanceof HTMLDialogElement) this.sync();
+      }, { signal, capture: true });
+      const tourPanel = this.closest('[data-tour-panel]');
+      if (tourPanel) {
+        this.panel = new MutationObserver(() => this.sync());
+        this.panel.observe(tourPanel, { attributes: true, attributeFilter: ['hidden'] });
+      }
+      if ('IntersectionObserver' in window) {
+        this.view = new IntersectionObserver(([entry]) => {
+          this.intersecting = entry.isIntersecting;
+          this.sync();
+        }, { rootMargin: '160px 0px', threshold: 0.25 });
+        this.view.observe(this);
+      } else {
+        this.intersecting = true;
+        this.sync();
+      }
+    }
+
+    disconnectedCallback() {
+      this.abort?.abort();
+      this.abort = null;
+      this.view?.disconnect();
+      this.view = null;
+      this.panel?.disconnect();
+      this.panel = null;
+      this.querySelector('video')?.pause();
+    }
+
+    private holdIfBlocked(error: unknown) {
+      if (error instanceof DOMException && (error.name === 'AbortError' || error.name === 'NotSupportedError')) return;
+      this.userPaused = true;
+      this.paint();
+    }
+
+    private sourced(video: HTMLVideoElement) {
+      return Boolean(video.currentSrc || video.querySelector('source')?.getAttribute('src'));
+    }
+
+    private shouldPlay() {
+      if (this.userPaused || document.hidden) return false;
+      const dialog = this.closest('dialog');
+      if (dialog && !dialog.open) return false;
+      const open = document.querySelector('dialog[open]');
+      if (open && !open.contains(this)) return false;
+      if (this.closest('[hidden]')) return false;
+      return this.intersecting;
+    }
+
+    private sync() {
+      const video = this.querySelector('video');
+      if (!video) return;
+      if (this.shouldPlay() && this.sourced(video)) {
+        video.muted = true;
+        video.playsInline = true;
+        void video.play().catch(error => this.holdIfBlocked(error));
+      } else {
+        video.pause();
+      }
+      this.paint();
+    }
+
+    private paint() {
+      const video = this.querySelector('video');
+      const label = this.querySelector('[data-capture-label]');
+      if (!video || !label) return;
+      const playing = !video.paused && !video.ended;
+      label.textContent = playing ? this.dataset.pause ?? '' : this.dataset.play ?? '';
+    }
+  }
+  if (!customElements.get('cc-product-capture')) customElements.define('cc-product-capture', ProductCapture);
+
+  class CaptureThumb extends HTMLElement {
+    private abort: AbortController | null = null;
+    private hovering = false;
+
+    connectedCallback() {
+      if (this.abort) return;
+      const button = this.querySelector<HTMLButtonElement>('.capture-thumb');
+      const dialog = this.querySelector<HTMLDialogElement>('dialog');
+      const player = this.querySelector<HTMLVideoElement>('.capture-player');
+      const still = this.querySelector<HTMLImageElement>('.capture-still');
+      const motion = this.querySelector<HTMLVideoElement>('.capture-motion');
+      const close = this.querySelector<HTMLButtonElement>('[data-close]');
+      if (!button || !dialog || !player || !still || !motion || !close) return;
+      this.abort = new AbortController();
+      const { signal } = this.abort;
+      const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+      const hide = () => {
+        this.hovering = false;
+        motion.pause();
+        motion.hidden = true;
+        still.hidden = false;
+      };
+      const show = () => {
+        this.hovering = true;
+        if (reduced.matches || dialog.open || !this.dataset.motion) return;
+        if (!motion.getAttribute('src')) motion.src = this.dataset.motion;
+        motion.muted = true;
+        motion.playsInline = true;
+        motion.hidden = false;
+        still.hidden = true;
+        void motion.play().catch(() => {});
+      };
+      button.addEventListener('pointerenter', event => {
+        if (event.pointerType === 'touch') return;
+        show();
+      }, { signal });
+      button.addEventListener('pointerleave', hide, { signal });
+      button.addEventListener('focus', show, { signal });
+      button.addEventListener('blur', hide, { signal });
+      reduced.addEventListener('change', () => { if (reduced.matches) hide(); }, { signal });
+      button.addEventListener('click', () => {
+        hide();
+        if (!player.getAttribute('src') && this.dataset.src) player.src = this.dataset.src;
+        dialog.showModal();
+        player.playsInline = true;
+        void player.play().catch(() => {});
+        close.focus();
+      }, { signal });
+      close.addEventListener('click', () => dialog.close(), { signal });
+      dialog.addEventListener('click', event => {
+        if (event.target !== dialog) return;
+        const rect = dialog.getBoundingClientRect();
+        if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) dialog.close();
+      }, { signal });
+      dialog.addEventListener('close', () => {
+        player.pause();
+        button.focus();
+      }, { signal });
+    }
+
+    disconnectedCallback() {
+      this.abort?.abort();
+      this.abort = null;
+      this.querySelector<HTMLVideoElement>('.capture-motion')?.pause();
+      this.querySelector<HTMLVideoElement>('.capture-player')?.pause();
+    }
+  }
+  if (!customElements.get('cc-capture-thumb')) customElements.define('cc-capture-thumb', CaptureThumb);
+</script>
 <style>
   .product-media { position: relative; display: grid; place-items: center; inline-size: 100%; aspect-ratio: 8 / 5; overflow: hidden; padding: var(--spacing-8); background: var(--color-rail); color: var(--color-fg); isolation: isolate; }
   .product-media::before { content: ''; position: absolute; inset: 0; z-index: -1; background-image: linear-gradient(var(--color-border-soft) 1px, transparent 1px), linear-gradient(90deg, var(--color-border-soft) 1px, transparent 1px); background-size: 48px 48px; mask-image: radial-gradient(ellipse, transparent 15%, black 95%); }
-  .product-media[data-media-format='phone'] { aspect-ratio: 390 / 844; }
+  .product-media[data-media-format='phone'] { aspect-ratio: auto; block-size: 100%; }
   .media-description { display: grid; justify-items: center; gap: var(--spacing-3); text-align: center; max-inline-size: 44ch; }
   .media-symbol { display: grid; place-items: center; inline-size: 48px; block-size: 40px; border: 1px solid var(--color-line-strong); margin-block-end: var(--spacing-2); }
   .media-symbol i { inline-size: 0; block-size: 0; border-block: 6px solid transparent; border-inline-start: 9px solid var(--color-idle); margin-inline-start: 2px; }
@@ -36,5 +311,31 @@ const { kind, description, label, format = 'desktop', compact = false } = Astro.
   .media-compact .media-symbol { display: none; }
   .media-compact .media-description { gap: var(--spacing-2); }
   .media-compact .media-brief { font-size: 13px; max-inline-size: 40ch; }
-  @media(max-width: 600px) { .product-media { padding: 32px 24px; min-block-size: 260px; } .media-brief { font-size: 13px; } .media-symbol { inline-size: 36px; block-size: 30px; margin: 0; } .media-compact { min-block-size: 220px; } }
+  /* Hero frame matches the 2880×1864 recordings (about 1.54). */
+  .product-media.is-frame { display: block; padding: 0; min-block-size: 0; max-block-size: none; aspect-ratio: 2880 / 1864; background: #171614; }
+  .product-media.is-frame::before { display: none; }
+  /* Grid cells stay 8/5. The recording covers the cell and crops. */
+  .product-media.is-thumb { display: block; padding: 0; min-block-size: 0; max-block-size: none; aspect-ratio: 8 / 5; background: #171614; }
+  .product-media.is-thumb::before { display: none; }
+  cc-product-capture, cc-capture-thumb { position: absolute; inset: 0; display: block; }
+  /* RTL carve-out: recorded product UI, including code and paths. */
+  .capture-video, .capture-player { display: block; inline-size: 100%; block-size: 100%; object-fit: cover; background: #171614; direction: ltr; }
+  .capture-video { pointer-events: none; }
+  .capture-video::-webkit-media-controls,
+  .capture-video::-webkit-media-controls-start-playback-button,
+  .capture-video::-webkit-media-controls-overlay-play-button { display: none !important; -webkit-appearance: none; opacity: 0; pointer-events: none; }
+  .capture-thumb { position: absolute; inset: 0; display: block; padding: 0; border: 0; background: #171614; color: inherit; cursor: pointer; }
+  .capture-thumb:focus-visible { outline: 2px solid var(--color-accent); outline-offset: -3px; }
+  .capture-still, .capture-motion { position: absolute; inset: 0; inline-size: 100%; block-size: 100%; object-fit: cover; background: #171614; direction: ltr; }
+  .capture-motion { pointer-events: none; }
+  .capture-toggle { position: absolute; z-index: 1; inset-block-end: 12px; inset-inline-end: 12px; min-block-size: 44px; padding-inline: 12px; border: 1px solid rgb(255 255 255 / 28%); background: rgb(23 22 20 / 88%); color: #f7f4ee; font: 600 12px/1 var(--font-sans); cursor: pointer; }
+  .capture-thumb .capture-toggle { display: grid; place-items: center; pointer-events: none; }
+  .capture-toggle:hover, .capture-thumb:hover .capture-toggle { background: #1f1f1f; }
+  .capture-dialog { margin: auto; padding: 0; inline-size: min(1100px, calc(100vw - 32px)); max-block-size: 92dvh; overflow: auto; border: 1px solid var(--color-border); background: var(--color-panel); color: var(--color-fg); }
+  .capture-dialog::backdrop { background: rgb(23 22 20 / .76); }
+  .capture-dialog-bar { display: flex; align-items: center; justify-content: space-between; gap: var(--spacing-4); padding-inline: var(--spacing-6); border-block-end: 1px solid var(--color-border); }
+  .capture-dialog-bar p { margin: 0; min-inline-size: 0; font-size: 13px; line-height: 1.4; }
+  .capture-dialog-bar button { display: flex; align-items: center; gap: var(--spacing-4); flex: none; min-block-size: 56px; padding-inline: var(--spacing-2); border: 0; background: transparent; color: var(--color-fg); cursor: pointer; font-size: 13px; }
+  .capture-dialog .capture-player { inline-size: 100%; block-size: auto; aspect-ratio: 2880 / 1864; object-fit: contain; }
+  @media(max-width: 600px) { .product-media { padding: 32px 24px; min-block-size: 260px; } .media-brief { font-size: 13px; } .media-symbol { inline-size: 36px; block-size: 30px; margin: 0; } .media-compact { min-block-size: 220px; } .product-media.is-frame, .product-media.is-thumb { padding: 0; min-block-size: 0; } .capture-dialog-bar { padding-inline: var(--spacing-4); } .capture-dialog-bar p { font-size: 12px; } }
 </style>

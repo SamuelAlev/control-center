@@ -307,6 +307,54 @@ void main() {
       expect(find.text('editor:pipeline_2'), findsOneWidget);
     });
 
+    testWidgets('demo can create a template', (tester) async {
+      final repo = _FakeTemplateRepo();
+      final triggers = _FakeTriggerRepo();
+      final router = GoRouter(
+        initialLocation: '/workspaces/$_workspaceId/settings/pipelines',
+        routes: [
+          GoRoute(
+            path: '/workspaces/:workspaceId/settings/pipelines',
+            builder: (_, _) => const PipelineTemplatesSettingsScreen(),
+          ),
+          GoRoute(
+            path: '/workspaces/:workspaceId/settings/pipelines/:templateId',
+            builder: (_, state) =>
+                Text('editor:${state.pathParameters['templateId']}'),
+          ),
+        ],
+      );
+      addTearDown(router.dispose);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            activeWorkspaceIdProvider.overrideWith(
+              () => _FixedWorkspaceIdNotifier(_workspaceId),
+            ),
+            pipelineTemplatesProvider(
+              _workspaceId,
+            ).overrideWith((ref) => Stream.value(const [])),
+            pipelineTriggersForWorkspaceProvider(
+              _workspaceId,
+            ).overrideWith((ref) => const Stream.empty()),
+            pipelineTemplateRepositoryProvider.overrideWithValue(repo),
+            pipelineTriggerRepositoryProvider.overrideWithValue(triggers),
+            isDemoServerProvider.overrideWith((ref) => true),
+          ],
+          child: _routedShell(router),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Pipelines cannot run here'), findsNothing);
+      await tester.tap(find.text('New template'));
+      await tester.pumpAndSettle();
+
+      expect(repo.upserted, hasLength(1));
+      expect(find.text('editor:pipeline_1'), findsOneWidget);
+    });
+
     testWidgets('renders empty state when no templates exist', (tester) async {
       await tester.pumpWidget(
         _wrap(templates: const [], workspaceId: _workspaceId),

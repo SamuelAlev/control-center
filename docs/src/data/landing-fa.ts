@@ -45,9 +45,11 @@ export const fa: LandingCopy = {
     next: "نمای بعدی محصول",
     play: "پخش گردش",
     pause: "مکث گردش",
+    videoPlay: "پخش پیش‌نمایش",
+    videoPause: "مکث پیش‌نمایش",
     expand: "بزرگ‌کردن پیش‌نمایش",
-    close: "بستن پیش‌نمایش",
     preview: "پیش‌نمایش محصول",
+    close: "بستن پیش‌نمایش",
     note: "نگاهی نزدیک‌تر به روز توسعه‌دهنده.",
     imageLanguage: "جای تصویر یا ویدیو",
     stops: [

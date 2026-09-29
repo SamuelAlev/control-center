@@ -162,6 +162,7 @@ import 'package:cc_server_core/src/dao_pr_lifecycle_repository.dart';
 import 'package:cc_server_core/src/demo/demo_hooks.dart';
 import 'package:cc_server_core/src/demo/demo_limits.dart';
 import 'package:cc_server_core/src/demo/demo_meeting_service.dart';
+import 'package:cc_server_core/src/demo/demo_review_service.dart';
 import 'package:cc_server_core/src/demo/demo_world.dart'
     show kDemoPipelineTemplateIds;
 import 'package:cc_server_core/src/dotenv.dart';
@@ -1770,6 +1771,7 @@ Future<CcServer> runCcServer({
   // the same shape as `networkRuntimeHolder`.
   WorkspaceSeeder? demoBaseSeeder;
   DemoMeetingService? demoMeeting;
+  DemoReviewService? demoReview;
   final demo = demoBuilder == null
       ? null
       : await demoBuilder(
@@ -1792,6 +1794,7 @@ Future<CcServer> runCcServer({
             relayRoom: () => serverIdentity.relayRoom,
             onVisitorReap: (workspaceId) async {
               await demoMeeting?.retireWorkspace(workspaceId);
+              await demoReview?.retireWorkspace(workspaceId);
             },
             // The product's own seeder, so a demo workspace starts as a
             // NORMAL workspace (CEO, specialists, the built-in pipeline
@@ -1825,7 +1828,7 @@ Future<CcServer> runCcServer({
   if (demo != null) {
     _announce(
       'cc_server: DEMO MODE — ${demo.profile.runtimeType} lockdown, '
-      'no provider credentials, no execution surface',
+      'fictional provider accounts, no execution surface',
     );
   }
 
@@ -1956,8 +1959,10 @@ Future<CcServer> runCcServer({
   // the harness dispatch and the `providers.*` RPC ops so a key saved over RPC
   // is immediately usable by a dispatched agent.
   final harnessCreds =
-      // The demo satisfies the auth gate with a `method: none` credential, so a
-      // scripted run reaches the loop with no key anywhere on the box.
+      // The demo's connected providers carry obviously-fake keys so Settings
+      // and the model picker have accounts to show. Any other provider id
+      // answers `method: none` with no secret, and the inert provider throws
+      // if a run ever tries to spend one.
       demo?.credentials ??
       harnessCredentialStore ??
       CompositeProviderCredentialStore([
@@ -2423,14 +2428,21 @@ Future<CcServer> runCcServer({
       return (usedFraction: worst, resetsAt: resetsAt);
     },
   );
-  unawaited(
-    claudeAccountStore.bootstrapFromKeychain().catchError((Object e) {
-      // Never fatal: a host with no keychain item simply starts with no
-      // accounts, and the operator signs one in from Settings.
-      _emitLog(false, 'cc_server: Claude Code account bootstrap skipped ($e)');
-      return null;
-    }),
-  );
+  // A demo must not import the operator's keychain login into the public
+  // server. Its Claude Code roster is fictional and wired below.
+  if (demo == null) {
+    unawaited(
+      claudeAccountStore.bootstrapFromKeychain().catchError((Object e) {
+        // Never fatal: a host with no keychain item simply starts with no
+        // accounts, and the operator signs one in from Settings.
+        _emitLog(
+          false,
+          'cc_server: Claude Code account bootstrap skipped ($e)',
+        );
+        return null;
+      }),
+    );
+  }
   final agentDispatchService = AgentDispatchService(
     agentDispatch: agentDispatch,
     dispatchUseCase: DispatchAgentUseCase(
@@ -5259,12 +5271,27 @@ Future<CcServer> runCcServer({
     databaseBackup: databaseBackupService,
   );
 
+  demoReview = demo == null
+      ? null
+      : DemoReviewService(
+          runs: pipelineRunRepository,
+          templates: pipelineTemplateRepository,
+          messaging: messagingRepository,
+          workProducts: workProductRepo,
+          reviewSpaces: reviewSpaceRepository,
+          axes: reviewAxisResultRepository,
+          databases: workspaceDbs,
+        );
+
   final catalog = buildRemoteRpcCatalog(
     manualPairingEnabled: ssoSettings.isPairingEnabled,
     // The demo's one outbound marketing read: the project's own star count,
     // cached server-side inside the wiring. Null on a production server, which
     // is what keeps `demo.repoStars` structurally absent there.
     demoRepoStars: demo?.repoStats.current,
+    // demo: the editor can save a template. A `pipeline.bashScript` step is
+    // refused in the handler — that body is a shell on this host.
+    rejectBashNodes: demo != null,
     // The same file the signed `/workspace/logo` route serves, handed back
     // over the RPC channel for clients that have no HTTP route here at all —
     // which is every client whose only path is the broker relay. The op is
@@ -5392,6 +5419,11 @@ Future<CcServer> runCcServer({
     // is immediately usable by a dispatched agent.
     harnessCredentialStore: harnessCreds,
     harnessOAuthBroker: harnessOAuthBroker,
+    // The demo factory answers model catalogs from static data and throws on
+    // completion. The default factory would dial each provider's /models
+    // endpoint with the fictional keys.
+    harnessProviderFactory:
+        demo?.harnessProviderFactory ?? const HarnessProviderFactory(),
     harnessModelOverrides: harnessModelOverrides,
     reviewSpaceRepository: reviewSpaceRepository,
     isolatedRepoRepository: isolatedRepoRepository,
@@ -5512,6 +5544,7 @@ Future<CcServer> runCcServer({
     // demo: no audio capture.
     meetingRecording: demo != null ? null : meetingRecording,
     demoMeeting: demoMeeting,
+    demoReview: demoReview,
     // Composer voice dictation over RPC (same null-when-no-ASR-model contract →
     // the `dictation.*` ops + `dictation.watchPartials` stay absent).
     // demo: no dictation.
@@ -5584,9 +5617,9 @@ Future<CcServer> runCcServer({
     // cc_infra, so it probes the agent-runner CLIs installed on ITS machine for
     // a connected client's Settings → Adapters + auth status. `github_cli.probe`
     // redacts the resolved token (never shipped to a client).
-    adapterDetection: const AdapterDetectionRepository(
-      AdapterDetectionService(),
-    ),
+    adapterDetection:
+        demo?.adapterDetection ??
+        const AdapterDetectionRepository(AdapterDetectionService()),
     acpModels: AcpModelRepositoryImpl(AcpModelsService()),
     // demo: no OAuth round trips.
     providerOAuth: demo != null ? null : providerOAuth,
@@ -5949,9 +5982,10 @@ Future<CcServer> runCcServer({
     // The Claude Code logins this host manages, and the per-account quota the
     // composer picker shows so "which account should this run use?" can be
     // answered on remaining headroom rather than from memory.
-    claudeAccounts: claudeAccountStore,
-    fetchClaudeAccountUsage: (configDir) async =>
-        (await claudeUsageCache.get(configDir)).toJson(),
+    claudeAccounts: demo?.claudeAccounts ?? claudeAccountStore,
+    fetchClaudeAccountUsage: demo == null
+        ? (configDir) async => (await claudeUsageCache.get(configDir)).toJson()
+        : demo.fetchClaudeAccountUsage,
     // Klipy GIF picker (server-side app key). Null when unconfigured → empty.
     gifSearch: klipy == null
         ? null
@@ -6085,9 +6119,9 @@ Future<CcServer> runCcServer({
     // Pipelines + orchestration run headless on a real host: the engine
     // drives the relocated dispatch stack, so `pipeline.*` +
     // `orchestration.approve/cancel` are LIVE.
-    // demo: the engine is never exposed. A visitor who can upsert a
-    // `bash.script` node and start it — by hand, via an event trigger, or
-    // through plan/orchestration approve — is executing code on this host.
+    // demo: the engine is never exposed, so a saved template cannot be
+    // started — by hand, via an event trigger, or through plan/orchestration
+    // approve. Template upsert stays (bash steps are refused separately).
     // `orchestration.cancel` stays as a stop valve.
     pipelineEngine: demo != null ? null : pipeline.engine,
     approveOrchestration: demo != null
@@ -7226,9 +7260,9 @@ Future<CcServer> runCcServer({
     (event) => unawaited(
       workspaceSeeder.seed(
         event.workspaceId,
-        // demo: the same two-template whitelist everywhere templates are
-        // written — this listener is unawaited, so an unfiltered seed here
-        // re-added the eleven the seeder's prune had just removed.
+        // demo: the same curated whitelist everywhere templates are written —
+        // this listener is unawaited, so an unfiltered seed here re-added the
+        // catalogue the seeder's prune had just removed.
         onlyTemplateIds: demo == null ? null : kDemoPipelineTemplateIds,
       ),
     ),
@@ -7244,8 +7278,9 @@ Future<CcServer> runCcServer({
     try {
       final all = await workspaceRepository.watchAll().first;
       for (final ws in all) {
-        // demo: the same two-template whitelist the seeder prunes to — an
-        // unfiltered reconcile would re-add the other eleven on every boot.
+        // demo: the same curated whitelist the seeder prunes to — an
+        // unfiltered reconcile would re-add the rest of the catalogue on
+        // every boot.
         await workspaceSeeder.reseedTemplates(
           ws.id,
           onlyTemplateIds: demo == null ? null : kDemoPipelineTemplateIds,

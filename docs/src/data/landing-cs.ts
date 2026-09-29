@@ -46,9 +46,11 @@ export const cs: LandingCopy = {
     next: "Další pohled na produkt",
     play: "Spustit prohlídku",
     pause: "Pozastavit prohlídku",
+    videoPlay: "Přehrát náhled",
+    videoPause: "Pozastavit náhled",
     expand: "Zvětšit náhled",
-    close: "Zavřít náhled",
     preview: "Náhled produktu",
+    close: "Zavřít náhled",
     note: "Bližší pohled na tvůj vývojářský den.",
     imageLanguage: "Zástupný symbol obrázku nebo videa",
     stops: [

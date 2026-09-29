@@ -9,6 +9,7 @@
  */
 
 import rss from "@astrojs/rss";
+import { cdn } from "../data/cdn.ts";
 
 /** The subset of a changelog release the feed serializes. */
 export interface ChangelogFeedRelease {
@@ -32,10 +33,9 @@ const FEED_DESCRIPTION =
 
 /**
  * Builds the RSS 2.0 response for the changelog. The channel advertises a
- * logo (`<channel><image>`, the brand mark at /feed-icon.png) because
- * readers render it as the feed avatar; the RSS 2.0 spec requires an
- * ABSOLUTE url, so it is resolved against the site origin rather than
- * reusing the root-relative asset path.
+ * logo (`<channel><image>`, the brand mark on files.usectrl.dev) because
+ * readers render it as the feed avatar. The RSS 2.0 spec requires an
+ * absolute url.
  */
 export function buildChangelogFeed({
   origin,
@@ -56,7 +56,7 @@ export function buildChangelogFeed({
     })),
     customData: `
   <image>
-    <url>${origin}/feed-icon.png</url>
+    <url>${cdn.feedIcon}</url>
     <title>${FEED_TITLE}</title>
     <link>${origin}</link>
   </image>`,

@@ -45,9 +45,11 @@ export const sv: LandingCopy = {
     next: "Nästa produktvy",
     play: "Spela rundturen",
     pause: "Pausa rundturen",
-    expand: "Förstora förhandsvisningen",
-    close: "Stäng förhandsvisningen",
+    videoPlay: "Spela förhandsvisningen",
+    videoPause: "Pausa förhandsvisningen",
+    expand: "Expandera förhandsvisningen",
     preview: "Produktförhandsvisning",
+    close: "Stäng förhandsvisningen",
     note: "En närmare titt på din utvecklardag.",
     imageLanguage: "Platshållare för bild eller video",
     stops: [

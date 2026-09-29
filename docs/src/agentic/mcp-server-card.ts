@@ -47,6 +47,7 @@
  * Pure module: no Astro and no Cloudflare imports, so the endpoint and the unit
  * tests share one implementation.
  */
+import { cdn } from '../data/cdn.ts';
 import { REPO_URL, SITE_NAME } from '../data/site.ts';
 import { CAPABILITIES, PROTOCOL_VERSION, TOOLS } from './mcp.ts';
 
@@ -210,7 +211,7 @@ export function buildServerCard({ origin }: ServerCardInputs): ServerCard {
     title: `${SITE_NAME} docs`,
     websiteUrl: at('/developers'),
     repository: { url: REPO_URL, source: 'github', subfolder: 'docs' },
-    icons: [{ src: at('/favicon.svg'), mimeType: 'image/svg+xml', sizes: ['any'] }],
+    icons: [{ src: cdn.favicon, mimeType: 'image/svg+xml', sizes: ['any'] }],
     remotes: MCP_ENDPOINT_PATHS.map(
       (path): ServerCardRemote => ({
         type: 'streamable-http',

@@ -123,6 +123,10 @@ class SkillBundleService implements SkillBundlePort {
   static const String _lockFileName = 'skills-lock.json';
 
   @override
+  Future<String?> readSkillFile(String workspaceId, String slug) =>
+      _fs.readSkillFile(workspaceId, slug);
+
+  @override
   Future<String?> computeSkillHash(String workspaceId, String slug) async {
     final dirPath = await _fs.skillDir(workspaceId, slug);
     final dir = Directory(dirPath);

@@ -121,10 +121,11 @@ void main() {
     'worktree.listBranches',
     'worktree.checkout',
     'worktree.searchContent',
-    // Skills management, behind the skills page's demo notice.
+    // Skill writes, scans and GitHub installs. `skills.installedList` is
+    // admitted so the editor can show the seeded files. Save, delete, scan
+    // and the sources tab stay closed (disabled controls, or the demo notice).
     'skills.analyze',
     'skills.checkUpdates',
-    'skills.installedList',
     'skills.repoSkills',
     'skills.saveLocal',
     'skills.scanInstalled',
@@ -243,6 +244,63 @@ void main() {
     addTearDown(client.close);
     final handshake = await client.initialize();
     expect(handshake, isNotNull);
+
+    // The agent form and Detected runners read these. A denied probe used to
+    // answer opUnknown, which the client renders as "no runners" — including
+    // the built-in harness, which has no CLI to find.
+    final harness = await client.call('adapter.detectOne', {
+      'adapter': {
+        'id': 'cc-harness',
+        'name': 'Control Center',
+        'cli_name': 'cc-harness',
+      },
+    });
+    expect(harness['status'], 'found');
+    final claudeRunner = await client.call('adapter.detectOne', {
+      'adapter': {
+        'id': 'claude-code',
+        'name': 'Claude Code',
+        'cli_name': 'claude',
+      },
+    });
+    expect(claudeRunner['status'], 'found');
+    expect(claudeRunner['path'], isNull);
+
+    final accounts = await client.call('claude_accounts.list', const {});
+    final accountList = accounts['accounts'] as List;
+    expect(accountList.length, greaterThan(1));
+    expect(accountList.every((a) => (a as Map)['logged_in'] == true), isTrue);
+
+    final providers = await client.call('providers.list', const {});
+    final byId = {
+      for (final raw in providers['providers'] as List) (raw as Map)['id']: raw,
+    };
+    for (final id in ['anthropic', 'zai-coding', 'kimi-code']) {
+      final provider = byId[id] as Map;
+      expect(provider['has_credential'], isTrue, reason: id);
+      expect((provider['credentials'] as List).length, greaterThan(1));
+    }
+    expect((byId['openai'] as Map)['enabled_via'], 'disabled');
+    expect(jsonEncode(providers), isNot(contains('not-a-real')));
+    expect(jsonEncode(accounts), isNot(contains('not-a-real')));
+
+    final models = await client.call('providers.listModels', const {});
+    final modelIds = {
+      for (final raw in models['models'] as List) (raw as Map)['id'],
+    };
+    expect(
+      modelIds,
+      containsAll([
+        'anthropic/claude-sonnet-4-5',
+        'zai-coding/glm-5.3',
+        'kimi-code/kimi-for-coding',
+      ]),
+    );
+    expect(modelIds.where((id) => '$id'.startsWith('openai/')), isEmpty);
+    final claudeModels = await client.call('acp.listModels', {
+      'adapter_id': 'claude-code',
+    });
+    expect(claudeModels['models'] as List, isNotEmpty);
 
     final available = server.rpc.repoOps == null
         ? <String>{}

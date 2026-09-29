@@ -45,9 +45,11 @@ export const ko: LandingCopy = {
     next: "다음 제품 화면",
     play: "둘러보기 재생",
     pause: "둘러보기 일시정지",
+    videoPlay: "미리보기 재생",
+    videoPause: "미리보기 일시정지",
     expand: "미리보기 확대",
-    close: "미리보기 닫기",
     preview: "제품 미리보기",
+    close: "미리보기 닫기",
     note: "개발하는 하루를 조금 더 가까이.",
     imageLanguage: "이미지 또는 동영상 자리",
     stops: [

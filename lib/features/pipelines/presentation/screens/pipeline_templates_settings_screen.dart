@@ -5,14 +5,12 @@ import 'package:cc_domain/features/pipelines/domain/entities/step_kind.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/step_trigger.dart';
 import 'package:cc_domain/features/pipelines/domain/services/pipeline_start.dart';
 import 'package:cc_ui/cc_ui.dart';
-import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/features/pipelines/presentation/widgets/trigger_labels.dart';
 import 'package:control_center/features/pipelines/providers/pipeline_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:control_center/shared/widgets/demo_unavailable.dart';
 import 'package:control_center/shared/widgets/page_wrapper.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -43,32 +41,22 @@ class PipelineTemplatesSettingsScreen extends ConsumerWidget {
     }
 
     final templatesAsync = ref.watch(pipelineTemplatesProvider(workspaceId));
-    final isDemo = ref.watch(isDemoServerProvider);
 
     return PageWrapper(
       title: l10n.pipelineTemplatesTitle,
       subtitle: l10n.pipelineTemplatesSubtitle,
       actions: [
-        if (!isDemo)
-          CcButton(
-            onPressed: () => _createTemplate(context, ref, workspaceId),
-            icon: AppIcons.plus,
-            size: CcButtonSize.sm,
-            variant: CcButtonVariant.primary,
-            child: Text(l10n.pipelineTemplatesNew),
-          ),
+        CcButton(
+          onPressed: () => _createTemplate(context, ref, workspaceId),
+          icon: AppIcons.plus,
+          size: CcButtonSize.sm,
+          variant: CcButtonVariant.primary,
+          child: Text(l10n.pipelineTemplatesNew),
+        ),
       ],
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (isDemo)
-            const Padding(
-              padding: EdgeInsets.fromLTRB(24, 8, 24, 0),
-              child: DemoUnavailable(
-                capability: DemoCapability.pipelines,
-                compact: true,
-              ),
-            ),
           Expanded(
             child:
                 (!templatesAsync.hasError && templatesAsync.hasValue
@@ -114,9 +102,6 @@ class PipelineTemplatesSettingsScreen extends ConsumerWidget {
     WidgetRef ref,
     String workspaceId,
   ) async {
-    if (ref.read(isDemoServerProvider)) {
-      return;
-    }
     final l10n = AppLocalizations.of(context);
     final loaded = ref
         .read(pipelineTemplatesProvider(workspaceId))
@@ -255,22 +240,29 @@ class _TemplateTile extends ConsumerWidget {
           ),
           CcSwitch(
             value: template.isEnabled,
-            onChanged: ref.watch(isDemoServerProvider)
-                ? null
-                : (value) async {
-                    final repo = ref.read(pipelineTemplateRepositoryProvider);
-                    final full = await repo.getById(
-                      template.workspaceId,
-                      template.templateId,
-                    );
-                    if (full == null) {
-                      return;
-                    }
-                    // copyWith, not a hand-rebuilt definition: flipping one
-                    // flag must not drop the template's declared inputs or
-                    // its concurrency cap.
-                    await repo.upsert(full.copyWith(isEnabled: value));
-                  },
+            onChanged: (value) async {
+              final repo = ref.read(pipelineTemplateRepositoryProvider);
+              final full = await repo.getById(
+                template.workspaceId,
+                template.templateId,
+              );
+              if (full == null) {
+                return;
+              }
+              try {
+                // copyWith, not a hand-rebuilt definition: flipping one
+                // flag must not drop the template's declared inputs or
+                // its concurrency cap.
+                await repo.upsert(full.copyWith(isEnabled: value));
+              } on Object catch (e) {
+                if (context.mounted) {
+                  CcToastScope.of(context).show(
+                    l10n.errorWithDetail('$e'),
+                    variant: CcToastVariant.danger,
+                  );
+                }
+              }
+            },
           ),
           const SizedBox(width: 8),
           CcIconButton(

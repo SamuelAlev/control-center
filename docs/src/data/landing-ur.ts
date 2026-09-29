@@ -45,9 +45,11 @@ export const ur: LandingCopy = {
     next: "پروڈکٹ کا اگلا منظر",
     play: "دورہ چلائیں",
     pause: "دورہ روکیں",
-    expand: "پیش منظر بڑا کریں",
+    videoPlay: "پیش منظر چلائیں",
+    videoPause: "پیش منظر روکیں",
+    expand: "پیش منظر پھیلائیں",
+    preview: "مصنوع کا پیش منظر",
     close: "پیش منظر بند کریں",
-    preview: "پروڈکٹ کا پیش منظر",
     note: "آپ کے ڈویلپر دن پر قریبی نظر۔",
     imageLanguage: "تصویر یا ویڈیو کے لیے جگہ",
     stops: [

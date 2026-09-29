@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:cc_domain/features/observability/domain/goal_budget.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
+import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/features/observability/providers/observability_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -37,6 +38,12 @@ class WorkspaceGoalController extends Notifier<Goal?> {
         .watch(appPreferencesProvider)
         .getString(_goalKey(workspaceId));
     if (raw == null || raw.isEmpty) {
+      if (ref.watch(isDemoServerProvider)) {
+        return _demoGoal(workspaceId);
+      }
+      return null;
+    }
+    if (raw == _clearedGoal) {
       return null;
     }
     try {
@@ -102,8 +109,33 @@ class WorkspaceGoalController extends Notifier<Goal?> {
       return;
     }
     state = null;
-    await ref.read(appPreferencesProvider).remove(_goalKey(workspaceId));
+    final prefs = ref.read(appPreferencesProvider);
+    if (ref.read(isDemoServerProvider)) {
+      // A cleared demo goal must stay cleared. Removing the key would make
+      // the next build paint the seeded objective again.
+      await prefs.setString(_goalKey(workspaceId), _clearedGoal);
+      return;
+    }
+    await prefs.remove(_goalKey(workspaceId));
   }
+}
+
+const String _clearedGoal = '{"cleared":true}';
+
+/// The objective a demo workspace opens with, matching the seeded #412 todo.
+Goal _demoGoal(String workspaceId) {
+  final created = DateTime.now().subtract(const Duration(days: 6));
+  return Goal(
+    id: '$workspaceId-demo-goal',
+    workspaceId: workspaceId,
+    objective: 'Land #412 before the cut',
+    status: GoalStatus.active,
+    tokenBudget: 1600000,
+    tokensUsed: 0,
+    timeUsedSeconds: 0,
+    createdAt: created,
+    updatedAt: created,
+  );
 }
 
 /// The persisted goal definition for the active workspace (or null).

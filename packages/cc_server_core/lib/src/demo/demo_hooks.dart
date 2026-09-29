@@ -8,9 +8,11 @@ import 'package:cc_domain/features/dispatch/domain/ports/agent_backend.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_domain/features/pr_review/domain/providers/forge_provider.dart';
 import 'package:cc_domain/features/pr_review/domain/services/pr_change_signals.dart';
+import 'package:cc_domain/features/settings/domain/repositories/adapter_repository.dart';
 import 'package:cc_harness/loop.dart';
 import 'package:cc_harness/provider.dart';
 import 'package:cc_harness_runtime/cc_harness_runtime.dart';
+import 'package:cc_infra/cc_infra.dart' show ClaudeAccountStore;
 import 'package:cc_persistence/database/global/global_database.dart';
 import 'package:cc_persistence/database/workspace_database_manager.dart';
 import 'package:cc_server_core/src/demo/demo_limits.dart';
@@ -141,7 +143,9 @@ abstract interface class DemoWiring {
   /// The op-level lockdown applied to the built catalog.
   DemoProfile get profile;
 
-  /// A credential store that satisfies the harness auth gate with no secret.
+  /// Fictional provider accounts for the settings UI, plus a secret-less
+  /// credential for any other provider id so a scripted run still clears the
+  /// harness auth gate.
   ProviderCredentialStore get credentials;
 
   /// The scripted loop that replaces the real agent loop, so no tool executes
@@ -157,6 +161,16 @@ abstract interface class DemoWiring {
 
   /// Fictional quota snapshots for the usage pill; never reads a credential.
   Future<List<Map<String, dynamic>>> fetchSubscriptionUsage();
+
+  /// Reports the built-in harness and Claude Code as installed. Never probes
+  /// PATH and never spawns a binary — a demo host has no runner CLIs.
+  AdapterRepository get adapterDetection;
+
+  /// Fictional Claude Code logins. Never reads a config dir, keychain, or CLI.
+  ClaudeAccountStore get claudeAccounts;
+
+  /// Fictional per-account quota for [configDir]. Never dials a usage endpoint.
+  Future<Map<String, dynamic>?> fetchClaudeAccountUsage(String configDir);
 
   /// The cache-backed, structurally offline PR review surface for [userId].
   ForgeProviderRegistry forgeRegistryFor(String? userId);

@@ -1,0 +1,8 @@
+# Published on https://files.usectrl.dev. The site links those URLs, so the
+# worker upload skips the copies under public/.
+media/
+fonts/
+alpine/
+favicon.*.svg
+feed-icon.*.png
+og.*.png

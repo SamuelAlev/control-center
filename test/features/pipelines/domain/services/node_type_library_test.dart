@@ -182,6 +182,17 @@ void main() {
       },
     );
 
+    test('withoutBashNodes drops every shell body', () {
+      final lib = withoutBashNodes(defaultNodeTypeLibrary());
+      expect(lib.byId('bash.script'), isNull);
+      expect(lib.byId('bash.clonePr'), isNull);
+      expect(lib.byId('prompt.custom'), isNotNull);
+      expect(
+        lib.types.every((t) => !pipelineBodyRunsShell(t.defaultBodyKey)),
+        isTrue,
+      );
+    });
+
     test('bash.clonePr has correct defaults', () {
       final lib = defaultNodeTypeLibrary();
       final clone = lib.byId('bash.clonePr')!;

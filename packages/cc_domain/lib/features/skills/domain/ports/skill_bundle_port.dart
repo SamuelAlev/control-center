@@ -206,4 +206,11 @@ abstract interface class SkillBundlePort {
   /// provenance (managed / unmanaged / drifted) plus the freshest cached scan
   /// verdict for each skill's CURRENT on-disk hash. Read-only; never scans.
   Future<List<InstalledSkillStatus>> listInstalledStatus(String workspaceId);
+
+  /// Raw `SKILL.md` for [slug], or null when that file is absent.
+  ///
+  /// The settings editor parses the name and description from this text. It
+  /// reads bytes this port already hashes, so a host that leaves the broader
+  /// `fs.*` surface unwired (a demo) can still show the skills it seeded.
+  Future<String?> readSkillFile(String workspaceId, String slug);
 }

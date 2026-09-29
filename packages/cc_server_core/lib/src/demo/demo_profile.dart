@@ -101,12 +101,12 @@ class DemoProfile {
     'chat.',
     // Evals: `runSuite` executes agents against golden recordings, and the
     // rest edit suites. The evals WATCHES are separately reviewed, so the
-    // screen still renders (empty) rather than erroring.
+    // Quality tab can read the suites the seeder already wrote.
     'evals.',
-    // The fleet lease protocol. This is the sharpest one the widened ratchet
-    // caught: `fleet.registerWorker` and `fleet.submitJob` let a caller enrol
-    // a worker and push jobs, and workers/jobs live in the GLOBAL database —
-    // shared by every visitor. Nothing about that belongs on a public demo.
+    // The fleet lease protocol. `fleet.registerWorker` and `fleet.submitJob`
+    // let a caller enrol a worker and push jobs. Mutations stay closed.
+    // The three fleet WATCHES are reviewed separately: they only read the
+    // fictional workers and this visitor's own jobs.
     'fleet.',
     'forge.',
     // Weather: `refreshNow` fetches a public API. The dashboard widget reads
@@ -150,9 +150,12 @@ class DemoProfile {
   /// The newsfeed lane: a demo fetches REAL feeds server-side and a visitor
   /// reads them, marks articles read/saved and clears the list — the feed
   /// MANAGEMENT verbs stay denied. The providers lane answers a model list
-  /// from static data; credential-touching verbs remain refused. The
-  /// subscriptions lane admits only `subscriptions.usage`, which the demo
-  /// answers from explicitly fictional quotas without reading credentials.
+  /// from static data; credential-touching verbs remain refused. Runner
+  /// detection and `claude_accounts.list` are the same kind of exception:
+  /// static answers, with every verb that would spawn a CLI or write a login
+  /// still refused. The subscriptions lane admits only `subscriptions.usage`,
+  /// which the demo answers from explicitly fictional quotas without reading
+  /// credentials.
   static const Set<String> defaultPrefixExceptions = {
     'newsfeed.listArticles',
     'newsfeed.getArticle',
@@ -162,6 +165,18 @@ class DemoProfile {
     'providers.list',
     'providers.listModels',
     'subscriptions.usage',
+    // Runner detection. The real probe spawns `--version` and reads PATH.
+    // The demo answers from a static pair (the built-in harness and Claude
+    // Code) so Settings and the agent form can offer them. The rest of
+    // `adapter.` stays denied: launch configuration is host process state.
+    'adapter.detectOne',
+    'adapter.detectAll',
+    // Claude Code's model vocabulary is a curated list, not a CLI probe.
+    'acp.listModels',
+    // Fictional Claude Code logins. Create, rename, remove, setDefault and
+    // loginCommand stay under the prefix: loginCommand hands back a
+    // `claude auth login` argv, and the rest write host directories.
+    'claude_accounts.list',
     // Cached models.dev document (install-wide reference data). The fetch
     // itself is host-side and gated off on the demo (`allowNetwork: false`);
     // this exception is the READ of whatever is already on disk. Refresh and
@@ -201,6 +216,13 @@ class DemoProfile {
     'isolated_repo.forUnitRepo',
     'isolated_repo.forSpace',
     'isolated_repo.forTicket',
+    // Seeded skill files. `skills.installedList` returns the markdown through
+    // the bundle service (the `fs.*` port stays unwired, so a read through it
+    // used to come back empty). `fs.listSkillSlugs` feeds the agent picker.
+    // Install, scan and save stay denied: a save writes outside the worktree,
+    // and an install fetches code onto the public host.
+    'skills.installedList',
+    'fs.listSkillSlugs',
   };
 
   /// Reads that reach the network. Refused so a demo container is provably
@@ -338,6 +360,7 @@ class DemoProfile {
     'review_studio.approveVisual',
     'review_studio.setContractDecision',
     // review_hub.start starts the pr_review pipeline (processSpawn). Denied.
+    // review_hub.demoStart is the scripted stand-in and is allowed below.
     // Plans, orchestrations, pipelines, playbooks.
     'plan.updateStatus',
     'plan.estimate',
@@ -348,11 +371,13 @@ class DemoProfile {
     'orchestration.saveRevision',
     'playbook.save',
     'playbook.delete',
-    // Pipeline run-row mutations are database-only history for the seeded
-    // showcase. Start/retry/kill, template upsert and trigger writes are
-    // refused below: a visitor who can author a `bash.script` node and run
-    // it — or attach a TicketAssigned trigger — is executing code on the
-    // public host.
+    // Pipeline rows live in the visitor's own workspace database. Runs stay
+    // history: start/retry/kill are refused below, and the engine, dispatcher,
+    // scheduler and webhook handler are unwired, so a saved graph never
+    // starts. Template and trigger writes are the editor. `pipeline.bashScript`
+    // is refused inside upsert (`rejectBashNodes`) — that body is `bash -c`
+    // on this host. These three still declare processSpawn for a real host;
+    // [executionClassExempt] is why the class net does not also refuse them.
     'pipeline_run.insertRun',
     'pipeline_run.updateRun',
     'pipeline_run.updateRunState',
@@ -363,7 +388,10 @@ class DemoProfile {
     'pipeline_run.deleteStepRun',
     'pipeline_run.incrementCost',
     'pipeline_template.deleteById',
+    'pipeline_template.upsert',
     'pipeline_trigger.deleteById',
+    'pipeline_trigger.insert',
+    'pipeline_trigger.update',
     'workProduct.restoreRevision',
     // Meetings. The demo seeds finished meetings with transcripts, speakers,
     // decisions and action items; these are the edits a visitor can make to
@@ -375,6 +403,10 @@ class DemoProfile {
     'meeting.demoPause',
     'meeting.demoResume',
     'meeting.demoStop',
+    // Scripted Ask AI. Writes a pipeline run and review messages in the
+    // visitor's own workspace. Does not spawn a reviewer process;
+    // `review_hub.start` stays denied below.
+    'review_hub.demoStart',
     'meeting.updateTitle',
     'meeting.updateNotes',
     'meeting.addActionItem',
@@ -476,21 +508,17 @@ class DemoProfile {
     'stack.publish',
     // Process control on the host.
     'agents.killProcesses',
-    // Pipeline execution. A visitor can otherwise upsert a template whose
-    // body is `bash.script`, start it by hand, or attach an event/cron/
-    // webhook trigger that fires `engine.start` in-process — which is
-    // `Process.start('bash', …)` on this host. Playbook run and plan/
-    // orchestration approve are the same engine reached by another door.
-    // `review_hub.start` fans the `pr_review` pipeline. The bash body is
-    // registered but refused on a demo (see `enableBashScript`); this list
-    // is the name-level belt so a wiring mistake cannot re-admit the ops.
+    // Pipeline execution. Authoring is allowed above; starting is not. The
+    // engine port is null, so these ops are also absent — the names are the
+    // belt if that port is wired by mistake. `markFired` records a fire, it
+    // does not author a graph. Playbook run and plan/orchestration approve
+    // are the same engine through another door. `review_hub.start` fans the
+    // `pr_review` pipeline. The bash body stays registered but never
+    // `Process.start` (see `enableBashScript`), and upsert refuses the body.
     'pipeline.start',
     'pipeline.cancel',
     'pipeline.retry',
     'pipeline.killStep',
-    'pipeline_template.upsert',
-    'pipeline_trigger.insert',
-    'pipeline_trigger.update',
     'pipeline_trigger.markFired',
     'playbook.run',
     'orchestration.approve',
@@ -592,13 +620,6 @@ class DemoProfile {
   /// per-subscriber to the caller's workspaces.
   /// Watch queries deliberately refused.
   static const Set<String> defaultDeniedWatchQueries = {
-    // The fleet lease lane. `workers`, `jobs` and `placement_log` live in the
-    // GLOBAL database, shared by every visitor — one visitor watching another
-    // deployment's workers is a cross-tenant read, and the demo runs no fleet
-    // at all.
-    'fleet.watchWorkers',
-    'fleet.watchJobs',
-    'fleet.watchPlacements',
     // Chat transports are never connected on a demo, so this streams a link
     // set that cannot exist.
     'chat.watchUserLinks',
@@ -614,6 +635,12 @@ class DemoProfile {
     'evals.watchRunsForSuite',
     'evals.watchGoldens',
     'evals.watchRecordings',
+    // Read-only fleet panel. Mutations stay under the denied `fleet.` prefix.
+    // Workers are the shared fictional rows (plus the host's own local
+    // worker); jobs and placements are filtered to the caller's workspace.
+    'fleet.watchWorkers',
+    'fleet.watchJobs',
+    'fleet.watchPlacements',
     // Local, generated server-side from workspace state.
     'soundscape.watchScene',
     // The dashboard's weather widget. Fetching is disabled in demo mode, so
@@ -763,6 +790,20 @@ class DemoProfile {
     'workspace_settings.watchForWorkspace',
   };
 
+  /// Catalog ops that declare [ActionClass.processSpawn] because a real host
+  /// can later execute what they save.
+  ///
+  /// A demo admits them anyway. The engine, trigger dispatcher, scheduler and
+  /// inbound webhook handler are unwired, and `pipeline_template.upsert`
+  /// refuses `pipeline.bashScript` when the catalog is built with
+  /// `rejectBashNodes`. Only [ActionClass.processSpawn] is ignored; any other
+  /// forbidden class still refuses the op.
+  static const Set<String> executionClassExempt = {
+    'pipeline_template.upsert',
+    'pipeline_trigger.insert',
+    'pipeline_trigger.update',
+  };
+
   /// Whether [op] may be reached by a demo visitor.
   bool admits(RepoOp op) {
     if (deniedMutations.contains(op.name)) {
@@ -772,7 +813,10 @@ class DemoProfile {
         deniedPrefixes.any(op.name.startsWith)) {
       return false;
     }
-    if (op.actionClasses.any(forbiddenClasses.contains)) {
+    final classes = executionClassExempt.contains(op.name)
+        ? op.actionClasses.where((c) => c != ActionClass.processSpawn)
+        : op.actionClasses;
+    if (classes.any(forbiddenClasses.contains)) {
       return false;
     }
     if (op.kind == RepoOpKind.read) {

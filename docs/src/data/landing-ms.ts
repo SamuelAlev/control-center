@@ -45,9 +45,11 @@ export const ms: LandingCopy = {
     next: "Paparan produk seterusnya",
     play: "Mainkan lawatan",
     pause: "Jeda lawatan",
-    expand: "Besarkan pratonton",
-    close: "Tutup pratonton",
+    videoPlay: "Mainkan pratonton",
+    videoPause: "Jeda pratonton",
+    expand: "Kembangkan pratonton",
     preview: "Pratonton produk",
+    close: "Tutup pratonton",
     note: "Pandangan lebih dekat pada hari pembangun anda.",
     imageLanguage: "Ruang untuk imej atau video",
     stops: [

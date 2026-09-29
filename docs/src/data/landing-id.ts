@@ -45,9 +45,11 @@ export const id: LandingCopy = {
     next: "Tampilan produk berikutnya",
     play: "Putar tur",
     pause: "Jeda tur",
+    videoPlay: "Putar pratinjau",
+    videoPause: "Jeda pratinjau",
     expand: "Perbesar pratinjau",
-    close: "Tutup pratinjau",
     preview: "Pratinjau produk",
+    close: "Tutup pratinjau",
     note: "Pandangan lebih dekat pada hari pengembangmu.",
     imageLanguage: "Tempat gambar atau video",
     stops: [

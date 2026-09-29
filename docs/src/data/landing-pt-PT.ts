@@ -46,9 +46,11 @@ export const ptPt: LandingCopy = {
     next: "Vista seguinte do produto",
     play: "Reproduzir a visita",
     pause: "Pausar a visita",
-    expand: "Ampliar a pré-visualização",
-    close: "Fechar a pré-visualização",
+    videoPlay: "Reproduzir a pré-visualização",
+    videoPause: "Pausar a pré-visualização",
+    expand: "Expandir a pré-visualização",
     preview: "Pré-visualização do produto",
+    close: "Fechar a pré-visualização",
     note: "Um olhar mais próximo sobre o teu dia de desenvolvimento.",
     imageLanguage: "Espaço reservado para imagem ou vídeo",
     stops: [

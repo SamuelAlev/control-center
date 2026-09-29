@@ -45,9 +45,11 @@ export const hu: LandingCopy = {
     next: "Következő terméknézet",
     play: "Bemutató lejátszása",
     pause: "Bemutató szüneteltetése",
+    videoPlay: "Előnézet lejátszása",
+    videoPause: "Előnézet szüneteltetése",
     expand: "Előnézet nagyítása",
-    close: "Előnézet bezárása",
     preview: "Termékelőnézet",
+    close: "Előnézet bezárása",
     note: "Közelebbi pillantás a fejlesztői napodra.",
     imageLanguage: "Kép vagy videó helye",
     stops: [

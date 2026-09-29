@@ -8,7 +8,7 @@
 // Re-run after changing the headline/palette/scene:  node scripts/gen-og.mjs
 // (sceneColorLight is kept for reference / a future light variant.)
 import sharpFn from "sharp";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 
 const W = 1200;
 const H = 630;
@@ -153,16 +153,16 @@ for (let py = 0; py < H; py++) {
 }
 
 /* ── Foreground: veil + brand lockup + headline (transparent overlay) ─── */
-// The brand lockup uses the real app logo (public/favicon.svg) — the orange
-// gradient tile with the white agent figure — instead of a placeholder grid.
+// The brand lockup uses the real app logo (public/favicon.<hash>.svg) — the
+// orange gradient tile with the white agent figure — instead of a placeholder grid.
 const LOGO = 64; // displayed size in px
 const LOGO_X = 72;
 const LOGO_Y = 68;
 const LOGO_R = 12; // corner radius (matches BrandMark's rounded tile)
-const faviconRaw = readFileSync(
-  new URL("../public/favicon.svg", import.meta.url),
-  "utf8",
-);
+const publicDir = new URL("../public/", import.meta.url);
+const faviconName = readdirSync(publicDir).find((name) => /^favicon(?:\.[0-9a-f]+)?\.svg$/.test(name));
+if (!faviconName) throw new Error("missing public/favicon.svg");
+const faviconRaw = readFileSync(new URL(faviconName, publicDir), "utf8");
 const faviconInner = faviconRaw
   .replace(/^[\s\S]*?<svg[^>]*>/, "") // drop the outer <svg ...> open tag
   .replace(/<\/svg>\s*$/, ""); // drop the outer </svg> close tag

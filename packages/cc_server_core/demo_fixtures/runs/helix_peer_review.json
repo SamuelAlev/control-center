@@ -17,12 +17,12 @@
         {
           "tool": "read",
           "args": {"path": "evalkit/budget.py"},
-          "result": "Fictional evalkit snapshot (fixture replay):\nclass EvalBudget:\n    def remaining(self, family, run_group_id):\n        return self._cap(family) - self._ledger.spent(family)\n\nThe run_group_id parameter is unused, so a retry's spend can leak between concurrent evals."
+          "result": "Fictional evalkit snapshot (fixture replay):\nclass EvalBudget:\n    def remaining(self, family, run_group_id):\n        return self._cap(family) + self._ledger.spent(family)\n\nThe return adds spend to the cap, and run_group_id is unused."
         },
         {
           "tool": "edit",
           "args": {"path": "evalkit/budget.py", "change": "scope ledger spent reads to family and run_group_id in the fictional replay snapshot"},
-          "result": "Fixture-only staged diff (no filesystem write):\n-        return self._cap(family) - self._ledger.spent(family)\n+        return self._cap(family) - self._ledger.spent(family, run_group_id)"
+          "result": "Fixture-only staged diff (no filesystem write):\n-        return self._cap(family) + self._ledger.spent(family)\n+        return self._cap(family) - self._ledger.spent(family, run_group_id)"
         },
         {
           "tool": "bash",
@@ -30,7 +30,7 @@
           "result": "Fixture replay, not an executed process:\n3 passed — separate group, shared group with parallel retries, cancellation before grading."
         }
       ],
-      "text": "Ravi, the fictional replay exposed the missing run-group key. I staged a one-line *demo-only* diff and checked the three fixture test outcomes, including parallel retries and cancellation. Nothing was written or executed on the server. The remaining concern is whether the run card and exports both use this ledger read."
+      "text": "Ravi, the fictional replay shows `remaining` adding spend to the cap, and `run_group_id` unused. I staged a one-line *demo-only* diff that subtracts and keys by the group. Nothing was written or executed on the server."
     },
     {
       "kind": "tool",

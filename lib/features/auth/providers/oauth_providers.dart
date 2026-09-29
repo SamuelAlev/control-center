@@ -134,11 +134,9 @@ Future<SignInStarted> startProviderSignIn(
   if (data['mode'] == 'device') {
     final code = data['user_code'] as String? ?? '';
     final uri = data['verification_uri'] as String? ?? '';
-    // Open the page for them, but the dialog stays up either way: on a headless
-    // host or a locked-down browser they can still type the URL themselves.
-    if (uri.isNotEmpty) {
-      openExternalUrl(uri);
-    }
+    // The dialog opens the page once the code is on screen. Opening it here,
+    // before that route exists, steals focus first — the click that brings
+    // the window back then lands on the scrim and dismisses the code.
     return SignInDeviceCode(
       userCode: code,
       verificationUri: uri,

@@ -46,9 +46,11 @@ export const de: LandingCopy = {
     next: "Nächste Produktansicht",
     play: "Rundgang starten",
     pause: "Rundgang pausieren",
+    videoPlay: "Vorschau abspielen",
+    videoPause: "Vorschau pausieren",
     expand: "Vorschau vergrößern",
-    close: "Vorschau schließen",
     preview: "Produktvorschau",
+    close: "Vorschau schließen",
     note: "Ein genauerer Blick auf deinen Entwickleralltag.",
     imageLanguage: "Platzhalter für Bild oder Video",
     stops: [

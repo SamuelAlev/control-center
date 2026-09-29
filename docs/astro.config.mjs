@@ -14,6 +14,7 @@ import {
 } from "./src/data/third-party.build.mjs";
 import { readFileSync, readdirSync } from "node:fs";
 
+import { cdn } from "./src/data/cdn.ts";
 import { siteLocales, siteRtl } from "./src/data/locales.ts";
 
 function thirdPartyManifest() {
@@ -34,7 +35,7 @@ function thirdPartyManifest() {
 
 
 const site = "https://usectrl.dev";
-const socialImage = new URL("/og.png", site).href;
+const socialImage = cdn.ogImage;
 
 const localeDirectory = new URL("./src/content/i18n/", import.meta.url);
 const uiLocales = Object.fromEntries(
@@ -82,6 +83,7 @@ export default defineConfig({
           { label: name, lang: id === "en-US" ? "en" : id, dir: siteRtl.has(id) ? "rtl" : "ltr" },
         ]),
       ),
+      favicon: cdn.favicon,
       customCss: ["./src/styles/starlight.css"],
       components: {
         Header: "./src/components/starlight/Header.astro",
@@ -103,7 +105,7 @@ export default defineConfig({
           tag: "link",
           attrs: {
             rel: "preload",
-            href: "/fonts/Manrope-Variable.woff2",
+            href: cdn.fonts.manrope,
             as: "font",
             type: "font/woff2",
             crossorigin: true,
@@ -113,7 +115,7 @@ export default defineConfig({
           tag: "link",
           attrs: {
             rel: "preload",
-            href: "/fonts/FiraCode-VF.woff2",
+            href: cdn.fonts.firaCode,
             as: "font",
             type: "font/woff2",
             crossorigin: true,

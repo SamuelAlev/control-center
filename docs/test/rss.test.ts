@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import { describe, it } from 'node:test';
 import { buildChangelogFeed, type ChangelogFeedRelease } from '../src/agentic/changelog-feed.ts';
+import { cdn } from '../src/data/cdn.ts';
 
 const RELEASES: ChangelogFeedRelease[] = [
   {
@@ -39,17 +40,17 @@ describe('changelog rss feed', () => {
 
   it('advertises a logo as the channel image', () => {
     // RSS 2.0 <channel><image> — readers render it as the feed avatar. The
-    // spec requires an ABSOLUTE url, so the asset path is resolved against
-    // the site origin rather than emitted root-relative.
+    // spec requires an absolute url. The mark is the content-hashed file on
+    // the files CDN.
+    const icon = cdn.feedIcon.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     assert.match(
       XML,
-      /<image>\s*<url>https:\/\/usectrl\.dev\/feed-icon\.png<\/url>\s*<title>[^<]+<\/title>\s*<link>https:\/\/usectrl\.dev<\/link>\s*<\/image>/,
+      new RegExp(`<image>\\s*<url>${icon}</url>\\s*<title>[^<]+</title>\\s*<link>https://usectrl\\.dev</link>\\s*</image>`),
     );
   });
 
   it('points the logo url at an asset that ships', () => {
-    const [, assetPath] = XML.match(/<image>\s*<url>https:\/\/usectrl\.dev(\/[^<]+)<\/url>/) ?? [];
-    assert.ok(assetPath, 'image url not found in feed');
+    const assetPath = new URL(cdn.feedIcon).pathname;
     assert.ok(existsSync(new URL(`../public${assetPath}`, import.meta.url)), `${assetPath} missing from public/`);
   });
 });

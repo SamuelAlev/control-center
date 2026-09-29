@@ -9,6 +9,7 @@ import 'package:cc_domain/features/skills/domain/scanner/skill_scan_types.dart';
 import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcClient;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
+import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/di/providers.dart'
     show workspaceFilesystemPortProvider;
 import 'package:control_center/features/agents/providers/agent_providers.dart';
@@ -762,6 +763,80 @@ void main() {
       expect(find.text('code-review'), findsWidgets);
       // Delete button appears for existing skills
       expect(find.text('Delete'), findsOneWidget);
+    });
+
+    testWidgets('demo lists skills and keeps edits off disk', (tester) async {
+      setView(tester);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            ...baseOverrides(),
+            isDemoServerProvider.overrideWithValue(true),
+            skillListProvider.overrideWith(
+              (ref, workspaceId) async => testSkills,
+            ),
+            activeWorkspaceIdProvider.overrideWith(
+              () => _TestActiveWorkspaceNotifier('ws-1'),
+            ),
+            workspaceAgentsProvider.overrideWith(
+              (ref, workspaceId) => Stream.value(const <Agent>[]),
+            ),
+          ],
+          child: CcTheme(
+            data: CcThemeData.light(),
+            child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: CcToastScope(child: Scaffold(body: SkillsSettings())),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      expect(find.text('code-review'), findsOneWidget);
+      expect(find.text('Not available in the demo'), findsNothing);
+      expect(
+        tester
+            .widget<CcButton>(find.widgetWithText(CcButton, 'New skill'))
+            .onPressed,
+        isNull,
+      );
+
+      await tester.tap(find.text('code-review'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      await tester.enterText(find.byType(EditableText).last, 'A local edit');
+      await tester.pump();
+
+      expect(find.text('Unsaved changes'), findsOneWidget);
+      expect(
+        tester
+            .widget<CcButton>(find.widgetWithText(CcButton, 'Save'))
+            .onPressed,
+        isNull,
+      );
+      expect(
+        tester
+            .widget<CcButton>(find.widgetWithText(CcButton, 'Delete'))
+            .onPressed,
+        isNull,
+      );
+      expect(securityControl.lastAllowQuarantineOverride, isNull);
+
+      await tester.tap(find.text('Sources'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      expect(find.text('Not available in the demo'), findsOneWidget);
+      expect(
+        find.text(
+          'Installing a skill downloads and scans code. The demo fetches nothing.',
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('filter skills by name', (tester) async {

@@ -17,5 +17,5 @@ export const OVERVIEW = `Control Center is a developer operations hub for one pe
 - Your boundaries: per-conversation propose only, act with approval or act freely profiles operate within permission policies and budgets. Soft budgets warn; hard budgets pause an agent. An approval prompt without a connected approver is denied.
 - Soundscape: generative focus, relax, sleep and rise moods shaped by time and server-fetched weather. The same conditions produce the same piece.
 - Solo first: collaboration chrome stays hidden with one human. Members, roles and ephemeral presence layer on when needed.
-- Product media: described image and video placeholders reserve space for product captures. The separate public demo uses invented data and scripted agents with a locked-down mutating surface.
+- Product media: the landing inbox is a silent looping capture of pull requests grouped by review status. Other slots are described placeholders. The separate public demo uses invented data and scripted agents with a locked-down mutating surface.
 - Source: https://github.com/SamuelAlev/control-center`;

@@ -47,9 +47,11 @@ export const fr: LandingCopy = {
     next: "Vue suivante du produit",
     play: "Lancer la visite",
     pause: "Mettre la visite en pause",
+    videoPlay: "Lire l’aperçu",
+    videoPause: "Mettre l’aperçu en pause",
     expand: "Agrandir l’aperçu",
-    close: "Fermer l’aperçu",
     preview: "Aperçu du produit",
+    close: "Fermer l’aperçu",
     note: "Votre journée de développement, de plus près.",
     imageLanguage: "Emplacement réservé à une image ou une vidéo",
     stops: [

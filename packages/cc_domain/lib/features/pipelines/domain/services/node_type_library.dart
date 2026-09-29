@@ -416,3 +416,20 @@ NodeTypeLibrary defaultNodeTypeLibrary() {
     ),
   ]);
 }
+
+/// Whether [bodyKey] is the agentless shell body (`bash -c`).
+///
+/// A public demo refuses these steps: saving one is a process on that host.
+bool pipelineBodyRunsShell(String bodyKey) =>
+    bodyKey == BuiltInBodyKeys.bashScript;
+
+/// [library] with shell nodes removed ([pipelineBodyRunsShell]).
+///
+/// Drops both the generic script and the preset clone step; they share one
+/// body key.
+NodeTypeLibrary withoutBashNodes(NodeTypeLibrary library) {
+  return NodeTypeLibrary([
+    for (final type in library.types)
+      if (!pipelineBodyRunsShell(type.defaultBodyKey)) type,
+  ]);
+}

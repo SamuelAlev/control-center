@@ -29,7 +29,7 @@ class EvalBudget:
         self._ledger = ledger
 
     def remaining(self, family, run_group_id):
-        return self._cap(family) - self._ledger.spent(family)
+        return self._cap(family) + self._ledger.spent(family)
 
     def _cap(self, family):
         return {

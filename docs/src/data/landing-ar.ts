@@ -44,9 +44,11 @@ export const ar: LandingCopy = {
     next: "عرض المنتج التالي",
     play: "تشغيل الجولة",
     pause: "إيقاف الجولة مؤقتًا",
+    videoPlay: "تشغيل المعاينة",
+    videoPause: "إيقاف المعاينة مؤقتًا",
     expand: "توسيع المعاينة",
-    close: "إغلاق المعاينة",
     preview: "معاينة المنتج",
+    close: "إغلاق المعاينة",
     note: "نظرة أقرب إلى يوم المطوّر.",
     imageLanguage: "موضع لصورة أو فيديو",
     stops: [

@@ -106,7 +106,7 @@ import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_run_re
 import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_template_repository.dart';
 import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_trigger_repository.dart';
 import 'package:cc_domain/features/pipelines/domain/templates/builtin_template_seeds.dart'
-    show SkillAnalysisTemplate;
+    show BuiltInBodyKeys, SkillAnalysisTemplate;
 import 'package:cc_domain/features/plan_studio/domain/entities/plan_document.dart';
 import 'package:cc_domain/features/plan_studio/domain/entities/playbook.dart';
 import 'package:cc_domain/features/plan_studio/domain/repositories/plan_studio_repositories.dart';
@@ -174,6 +174,7 @@ import 'package:cc_persistence/database/daos/paired_device_dao.dart'
 import 'package:cc_rpc/cc_rpc.dart' show RemoteControlCrypto;
 import 'package:cc_server_core/src/catalog/agent_goal_run_ops.dart';
 import 'package:cc_server_core/src/catalog/catalog_wire.dart';
+import 'package:cc_server_core/src/catalog/demo_review_ops.dart';
 import 'package:cc_server_core/src/catalog/meeting_ops.dart';
 import 'package:cc_server_core/src/catalog/model_control_ops.dart';
 import 'package:cc_server_core/src/catalog/pr_review_ops.dart';
@@ -187,6 +188,7 @@ import 'package:cc_server_core/src/collab/takeover_service.dart';
 import 'package:cc_server_core/src/connection/network_runtime.dart';
 import 'package:cc_server_core/src/connection/server_descriptor_service.dart';
 import 'package:cc_server_core/src/demo/demo_meeting_service.dart';
+import 'package:cc_server_core/src/demo/demo_review_service.dart';
 import 'package:cc_server_core/src/google_calendar_server.dart';
 import 'package:cc_server_core/src/harness_model_override_cache.dart';
 import 'package:cc_server_core/src/identity/approval_escalation_sweeper.dart';
@@ -205,6 +207,7 @@ import 'package:cc_server_core/src/rig_rpc_ops.dart';
 import 'package:cc_server_core/src/rig_wire.dart';
 import 'package:cc_server_core/src/run_log_reader.dart';
 import 'package:cc_server_core/src/skill_analysis_service.dart';
+import 'package:cc_server_core/src/skills/installed_skills_list.dart';
 import 'package:cc_server_core/src/sync/sync_feed_service.dart';
 import 'package:cc_server_core/src/usage/harness_usage_accounts.dart';
 import 'package:drift/drift.dart' show Value;
@@ -397,6 +400,10 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   // Only the public demo runtime supplies this. No real audio or model is
   // involved, and production catalogs do not contain its control operations.
   DemoMeetingService? demoMeeting,
+  // Scripted Ask AI review. Null on a production host, which keeps
+  // `review_hub.demoStart` out of the catalog. The real `review_hub.start`
+  // stays unwired on a demo because it spawns reviewer processes.
+  DemoReviewService? demoReview,
   // Voice dictation over RPC (PRD 25 §2): reuses the host's windowed
   // transcriber to stream finalized text back to the composer. Optional —
   // declared only when a voice model is installed (same gate as meeting.*).
@@ -1146,6 +1153,11 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   // the op is structurally absent, exactly like every other null-port family.
   // Null leaves the op absent.
   Future<int?> Function()? demoRepoStars,
+  // Public demo: template saves are a database write, but a
+  // `pipeline.bashScript` step is `bash -c` on this host. Production leaves
+  // this false so shell nodes author as usual. The op stays classified as
+  // processSpawn either way — that is the production worst case.
+  bool rejectBashNodes = false,
 }) {
   /// The PR-lifecycle store for the paths that only touch the local draft rows
   /// (list / read / create / update / delete). Those are identical whoever
@@ -6109,6 +6121,26 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         ),
       ].map(fullClientOnly),
 
+    // A demo nulls [workspaceFilesystem], so the block above (and
+    // `fs.writeString` with it) is absent. The agent skill picker still
+    // lists slugs. Skill text rides `skills.installedList`, which reads
+    // through the bundle service rather than this port.
+    if (fs == null && skillBundles != null)
+      fullClientOnly(
+        RepoOp(
+          name: 'fs.listSkillSlugs',
+          kind: RepoOpKind.read,
+          handler: (ctx) async {
+            final statuses = await skillBundles.listInstalledStatus(
+              ctx.workspaceId!,
+            );
+            return {
+              'slugs': [for (final s in statuses) s.slug],
+            };
+          },
+        ),
+      ),
+
     RepoOp(
       name: 'messaging.listSpaces',
       kind: RepoOpKind.read,
@@ -8897,41 +8929,8 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       RepoOp(
         name: 'skills.installedList',
         kind: RepoOpKind.read,
-        handler: (ctx) async {
-          final statuses = await skillBundles.listInstalledStatus(
-            ctx.workspaceId!,
-          );
-          final fsPort = fs;
-          return {
-            'skills': [
-              for (final s in statuses)
-                {
-                  'slug': s.slug,
-                  'lock_state': s.lockState.wire,
-                  'origin': s.origin?.wire,
-                  'source': s.source,
-                  'trust_tier': s.trustTier?.wire,
-                  'computed_hash': s.computedHash,
-                  // Raw SKILL.md so the client parses name/description locally
-                  // (null when no filesystem port is wired).
-                  'content': fsPort == null
-                      ? null
-                      : await fsPort.readSkillFile(ctx.workspaceId!, s.slug),
-                  'scan': s.scan == null
-                      ? null
-                      : {
-                          'verdict': s.scan!.verdict.wire,
-                          'llm_reviewed': s.scan!.llmReviewed,
-                          'rules_version': s.scan!.rulesVersion,
-                          'rules_stale': s.rulesStale,
-                          'findings': [
-                            for (final f in s.scan!.findings) f.toJson(),
-                          ],
-                        },
-                },
-            ],
-          };
-        },
+        handler: (ctx) =>
+            installedSkillsListPayload(skillBundles, ctx.workspaceId!),
       ),
     if (skillScanner != null && fs != null)
       RepoOp(
@@ -10298,6 +10297,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       demoMeeting: demoMeeting,
       dictationService: dictationService,
     ),
+    ...buildDemoReviewOps(demoReview),
     // READ surface only. Every read sources `ctx.workspaceId!` (the bound
     // session, never a client arg) as the leading `workspaceId` — the impl
     // scopes every query by it, so a foreign-workspace row simply yields
@@ -12701,6 +12701,8 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       kind: RepoOpKind.mutate,
       // Authoring a `bash.script` node schedules a process spawn by proxy —
       // the same claim `repos.setScripts` makes about a lifecycle script.
+      // A demo still exposes the op ([rejectBashNodes] refuses the body);
+      // start, triggers firing, and the engine stay unwired there.
       actionClasses: const {ActionClass.processSpawn},
       requiredArgs: ['template'],
       handler: (ctx) async {
@@ -12712,6 +12714,14 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         if (definition.workspaceId != ctx.workspaceId) {
           throw const WorkspaceMismatchException(
             'Pipeline template belongs to a different workspace',
+          );
+        }
+        if (rejectBashNodes &&
+            definition.steps.any(
+              (step) => step.bodyKey == BuiltInBodyKeys.bashScript,
+            )) {
+          throw const ValidationException(
+            'Bash steps are not available in the demo',
           );
         }
         await pipelineTemplateRepository.upsert(definition);

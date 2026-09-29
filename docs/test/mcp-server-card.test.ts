@@ -12,6 +12,7 @@ import {
   type ServerCardMeta,
 } from '../src/agentic/mcp-server-card.ts';
 import { CAPABILITIES, PROTOCOL_VERSION, TOOLS, createMcpHandler } from '../src/agentic/mcp.ts';
+import { cdn } from '../src/data/cdn.ts';
 
 const ORIGIN = 'https://usectrl.dev';
 const card = buildServerCard({ origin: ORIGIN });
@@ -107,10 +108,11 @@ describe('server card — transport', () => {
   });
 
   it('makes every published URL absolute on this origin', () => {
-    const urls = [card.websiteUrl, card.endpoint, ...(card.icons ?? []).map((i) => i.src), ...(card.remotes ?? []).map((r) => r.url)];
+    const urls = [card.websiteUrl, card.endpoint, ...(card.remotes ?? []).map((r) => r.url)];
     for (const url of urls) {
       assert.ok(url?.startsWith(`${ORIGIN}/`), `not absolute on the origin: ${url}`);
     }
+    assert.deepEqual((card.icons ?? []).map((icon) => icon.src), [cdn.favicon]);
   });
 
   it('derives its namespace from whatever origin it is built for', () => {

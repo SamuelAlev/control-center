@@ -44,9 +44,11 @@ export const zhHk: LandingCopy = {
     next: "下一個產品畫面",
     play: "播放導覽",
     pause: "暫停導覽",
-    expand: "放大預覽",
-    close: "關閉預覽",
+    videoPlay: "播放預覽",
+    videoPause: "暫停預覽",
+    expand: "展開預覽",
     preview: "產品預覽",
+    close: "關閉預覽",
     note: "將開發者嘅一天睇近少少。",
     imageLanguage: "影像或影片佔位",
     stops: [

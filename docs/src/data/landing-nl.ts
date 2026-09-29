@@ -45,9 +45,11 @@ export const nl: LandingCopy = {
     next: "Volgende productweergave",
     play: "Rondleiding afspelen",
     pause: "Rondleiding pauzeren",
+    videoPlay: "Voorbeeld afspelen",
+    videoPause: "Voorbeeld pauzeren",
     expand: "Voorbeeld vergroten",
-    close: "Voorbeeld sluiten",
     preview: "Productvoorbeeld",
+    close: "Voorbeeld sluiten",
     note: "Een nadere blik op je ontwikkelaarsdag.",
     imageLanguage: "Plaatshouder voor beeld of video",
     stops: [

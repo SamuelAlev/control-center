@@ -46,9 +46,11 @@ export const vi: LandingCopy = {
     next: "Khung sản phẩm sau",
     play: "Phát vòng xem",
     pause: "Tạm dừng vòng xem",
-    expand: "Phóng to bản xem trước",
-    close: "Đóng bản xem trước",
+    videoPlay: "Phát bản xem trước",
+    videoPause: "Tạm dừng bản xem trước",
+    expand: "Mở rộng bản xem trước",
     preview: "Bản xem trước sản phẩm",
+    close: "Đóng bản xem trước",
     note: "Nhìn gần hơn vào một ngày lập trình.",
     imageLanguage: "Chỗ dành cho ảnh hoặc video",
     stops: [

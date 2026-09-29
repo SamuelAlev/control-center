@@ -178,12 +178,17 @@ const List<DemoPerson> kDemoCast = [
 /// cleans up guest users discovered behind an unowned workspace.
 bool isDemoCastMember(String userId) => kDemoCast.any((p) => p.id == userId);
 
-/// The only pipeline templates a demo workspace keeps.
+/// The pipeline templates a demo workspace keeps.
 ///
-/// The product's own seeder installs thirteen built-ins; a demo shows two so
-/// the Pipelines screen reads like a curated example rather than a catalogue.
-/// `pr_review` pairs with the flagship PR review narrative and `ticket_to_pr`
-/// pairs with the triage script — between them they exercise a multi-step
-/// definition and an event trigger. The boot-time template reconciler is
-/// pointed at this same set in demo mode, so it cannot re-add the rest.
-const Set<String> kDemoPipelineTemplateIds = {'pr_review', 'ticket_to_pr'};
+/// The product's own seeder installs the built-in catalogue. A demo keeps
+/// `pr_review` and `ticket_to_pr` — the tour pair — plus `release_checks`,
+/// the shell-and-file-gate graph the demo seeder upserts itself. That third
+/// id is not a built-in, so the reconciler will not install it; listing it
+/// here only stops the prune from deleting it. The boot-time template
+/// reconciler is pointed at this same set in demo mode, so it cannot re-add
+/// the rest of the catalogue.
+const Set<String> kDemoPipelineTemplateIds = {
+  'pr_review',
+  'ticket_to_pr',
+  'release_checks',
+};

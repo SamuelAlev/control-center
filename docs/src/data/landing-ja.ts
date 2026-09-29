@@ -45,9 +45,11 @@ export const ja: LandingCopy = {
     next: "次の製品画面",
     play: "ツアーを再生",
     pause: "ツアーを一時停止",
+    videoPlay: "プレビューを再生",
+    videoPause: "プレビューを一時停止",
     expand: "プレビューを拡大",
-    close: "プレビューを閉じる",
     preview: "製品プレビュー",
+    close: "プレビューを閉じる",
     note: "開発者の一日を、もう少し近くから。",
     imageLanguage: "画像または動画のプレースホルダー",
     stops: [

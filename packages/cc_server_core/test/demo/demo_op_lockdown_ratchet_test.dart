@@ -164,6 +164,31 @@ void main() {
     expect(contradictory..sort(), isEmpty);
   });
 
+  test('runner detection and fictional Claude accounts are reads only', () {
+    RepoOp op(String name, RepoOpKind kind) => RepoOp(
+      name: name,
+      kind: kind,
+      handler: (_) async => const <String, dynamic>{},
+    );
+    expect(profile.admits(op('adapter.detectOne', RepoOpKind.read)), isTrue);
+    expect(profile.admits(op('adapter.detectAll', RepoOpKind.read)), isTrue);
+    expect(profile.admits(op('acp.listModels', RepoOpKind.read)), isTrue);
+    expect(profile.admits(op('claude_accounts.list', RepoOpKind.read)), isTrue);
+    expect(
+      profile.admits(op('claude_accounts.loginCommand', RepoOpKind.read)),
+      isFalse,
+      reason: 'loginCommand returns a claude auth argv',
+    );
+    expect(
+      profile.admits(op('claude_accounts.create', RepoOpKind.mutate)),
+      isFalse,
+    );
+    expect(
+      profile.admits(op('providers.saveApiKey', RepoOpKind.mutate)),
+      isFalse,
+    );
+  });
+
   test('only fictional usage read escapes the subscriptions prefix', () {
     RepoOp op(String name, RepoOpKind kind) => RepoOp(
       name: name,
@@ -209,16 +234,14 @@ void main() {
       'workspace.import',
       'repos.add',
       'skills.install',
-      // Pipeline host-exec: upsert a bash node, start it by hand, or attach
-      // an event trigger. Plan/orchestration approve and review hub are
-      // the same engine through another door.
+      // Pipeline host-exec: start a run by hand. Template upsert and trigger
+      // rows are admitted (bash steps are refused in the handler). Plan/
+      // orchestration approve and review hub are the same engine through
+      // another door.
       'pipeline.start',
       'pipeline.cancel',
       'pipeline.retry',
       'pipeline.killStep',
-      'pipeline_template.upsert',
-      'pipeline_trigger.insert',
-      'pipeline_trigger.update',
       'pipeline_trigger.markFired',
       'playbook.run',
       'orchestration.approve',
@@ -245,6 +268,43 @@ void main() {
         reason: '$name must be unreachable in the demo',
       );
     }
+  });
+
+  test('template authoring is admitted; only processSpawn is exempt', () {
+    RepoOp op(String name, {Set<ActionClass> classes = const {}}) => RepoOp(
+      name: name,
+      kind: RepoOpKind.mutate,
+      actionClasses: classes,
+      handler: (_) async => const <String, dynamic>{},
+    );
+    expect(DemoProfile.executionClassExempt, {
+      'pipeline_template.upsert',
+      'pipeline_trigger.insert',
+      'pipeline_trigger.update',
+    });
+    for (final name in DemoProfile.executionClassExempt) {
+      expect(
+        profile.admits(op(name, classes: const {ActionClass.processSpawn})),
+        isTrue,
+        reason: '$name is how the editor saves a graph',
+      );
+      expect(
+        profile.admits(
+          op(
+            name,
+            classes: const {ActionClass.processSpawn, ActionClass.gitPush},
+          ),
+        ),
+        isFalse,
+        reason: '$name must not smuggle another forbidden class',
+      );
+    }
+    expect(
+      profile.admits(
+        op('pipeline.start', classes: const {ActionClass.processSpawn}),
+      ),
+      isFalse,
+    );
   });
 
   test('a forbidden ActionClass is refused even if the name is allowed', () {
@@ -295,7 +355,16 @@ void main() {
         if (classes.any(
           (c) => DemoProfile.forbiddenClasses.any((f) => f.name == c),
         )) {
-          leaking.add('$name declares $classes');
+          // Authoring ops keep processSpawn for a real host. The demo admits
+          // them only because execution is unwired and bash bodies are
+          // refused; any other forbidden class is still a leak.
+          final shellAuthoring =
+              classes.length == 1 &&
+              classes.contains('processSpawn') &&
+              DemoProfile.executionClassExempt.contains(name);
+          if (!shellAuthoring) {
+            leaking.add('$name declares $classes');
+          }
         }
       }
     }

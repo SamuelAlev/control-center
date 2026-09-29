@@ -1,36 +1,39 @@
 ---
 import ProductMedia from './ProductMedia.astro';
+import { captureFor } from '../../data/captures';
 import type { LandingCopy } from '../../data/landing';
 interface Props { copy: LandingCopy }
 const { copy: t } = Astro.props;
 const { stops } = t.tour;
+const glyphs: Record<string, string> = {
+  desk: '<svg class="tour-glyph" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="2.4" y="2.4" width="4.8" height="4.8"/><rect x="8.8" y="2.4" width="4.8" height="4.8"/><rect x="2.4" y="8.8" width="4.8" height="4.8"/><rect x="8.8" y="8.8" width="4.8" height="4.8"/></svg>',
+  agents: '<svg class="tour-glyph" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="4.4" y="4.4" width="7.2" height="7.2"/><path d="M6.6 1.6v2.8M9.4 1.6v2.8M6.6 11.6v2.8M9.4 11.6v2.8M1.6 6.6h2.8M1.6 9.4h2.8M11.6 6.6h2.8M11.6 9.4h2.8"/></svg>',
+  review: '<svg class="tour-glyph" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="4.2" cy="4" r="1.7"/><circle cx="4.2" cy="12" r="1.7"/><circle cx="11.8" cy="12" r="1.7"/><path d="M4.2 5.7v4.6M11.8 10.3V6.6a2 2 0 0 0-2-2H7.4"/><path d="M9.2 2.6 7.3 4.6l1.9 2"/></svg>',
+  tickets: '<svg class="tour-glyph" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3.2 4.2h9.6v2.1a1.5 1.5 0 0 0 0 3v2.5H3.2V9.3a1.5 1.5 0 0 0 0-3z"/><path d="M8 4.2v7.6"/></svg>',
+  meetings: '<svg class="tour-glyph" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="1.8" y="3.2" width="12.4" height="11"/><path d="M1.8 6.6h12.4M5.2 1.6v3.2M10.8 1.6v3.2"/></svg>',
+  pipelines: '<svg class="tour-glyph" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="3.4" cy="8" r="1.7"/><circle cx="8" cy="3.6" r="1.7"/><circle cx="12.6" cy="11.4" r="1.7"/><path d="M4.8 7.1 6.6 4.8M9.3 4.6l2 5.2"/></svg>',
+};
 ---
 <cc-product-tour class="product-tour" aria-label={t.tour.label} data-play={t.tour.play} data-pause={t.tour.pause}>
   <div class="tour-tab-controls" hidden>
-    <div class="tour-tabs" role="tablist" aria-label={t.tour.label}>
-      {stops.map((stop, i) => <button type="button" role="tab" id={`tour-tab-${stop.kind}`} aria-controls={`tour-panel-${stop.kind}`} aria-selected={i === 0 ? 'true' : 'false'} tabindex={i === 0 ? 0 : -1} data-tour-tab><span>{stop.label}</span><span class="tour-progress" aria-hidden="true"></span></button>)}
+    <div class="tour-tabs">
+      <div class="tour-tablist" role="tablist" aria-label={t.tour.label}>
+        {stops.map((stop, i) => <button type="button" role="tab" id={`tour-tab-${stop.kind}`} aria-controls={`tour-panel-${stop.kind}`} aria-selected={i === 0 ? 'true' : 'false'} tabindex={i === 0 ? 0 : -1} data-tour-tab><span class="tour-glyph" set:html={glyphs[stop.kind]} /><span class="tour-tab-label" data-label={stop.label}>{stop.label}</span><span class="tour-progress" aria-hidden="true"><i></i></span></button>)}
+      </div>
+      <button type="button" class="tour-play" data-play-button aria-pressed="true" aria-label={t.tour.pause}>
+        <svg class="tour-icon-pause" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor"><rect x="3.5" y="2.5" width="3" height="11"/><rect x="9.5" y="2.5" width="3" height="11"/></svg>
+        <svg class="tour-icon-play" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor" hidden><path d="M4 2.4 13.5 8 4 13.6Z"/></svg>
+      </button>
     </div>
   </div>
   <div class="tour-window">
-    <div class="tour-window-bar"><span class="tour-window-mark" aria-hidden="true">⌘</span><span>Control Center</span><span class="tour-window-caption">{t.tour.preview}</span><button class="tour-expand" type="button" data-expand hidden>{t.tour.expand}<span aria-hidden="true">↗</span></button></div>
     <div class="tour-stage">
       {stops.map((stop, i) => <section class="tour-panel" role="tabpanel" id={`tour-panel-${stop.kind}`} aria-labelledby={`tour-tab-${stop.kind}`} tabindex="0" data-tour-panel hidden={i !== 0}>
-        <ProductMedia kind={`hero-${stop.kind}`} description={stop.alt} label={t.tour.imageLanguage} />
+        <ProductMedia kind={`hero-${stop.kind}`} description={stop.alt} label={t.tour.imageLanguage} capture={captureFor(stop.kind)} playback="inline" deferSrc={i !== 0} playLabel={t.tour.videoPlay} pauseLabel={t.tour.videoPause} autoplay={i === 0} />
         <div class="tour-copy"><h2>{stop.title}</h2><p>{stop.description}</p></div>
       </section>)}
     </div>
-    <div class="tour-bottom"><p>{t.tour.note}<span class="sr-only"> {t.tour.imageLanguage}</span></p><div class="tour-controls" hidden>
-      <button type="button" data-prev aria-label={t.tour.previous}>←</button>
-      <span class="tour-count" aria-hidden="true">01 / 06</span>
-      <button type="button" data-next aria-label={t.tour.next}>→</button>
-      <button type="button" class="tour-play" data-play-button aria-pressed="false">{t.tour.play}</button>
-    </div></div>
   </div>
-  <dialog class="tour-dialog" aria-label={t.tour.preview}>
-    <div class="tour-dialog-header"><strong data-dialog-title>{stops[0].title}</strong><button type="button" data-close>{t.tour.close}<span aria-hidden="true">×</span></button></div>
-    <div data-dialog-media><ProductMedia kind="expanded-preview" description={stops[0].alt} label={t.tour.imageLanguage} /></div>
-    <p>{t.tour.note} {t.tour.imageLanguage}</p>
-  </dialog>
 </cc-product-tour>
 <noscript><style>@layer base { html[data-landing] .tour-panel[hidden]{display:block!important} }.tour-panel{border-bottom:1px solid var(--color-border)}</style></noscript>
 <script>
@@ -39,30 +42,112 @@ const { stops } = t.tour;
       const tabs = Array.from(this.querySelectorAll<HTMLButtonElement>('[data-tour-tab]'));
       const panels = Array.from(this.querySelectorAll<HTMLElement>('[data-tour-panel]'));
       const play = this.querySelector<HTMLButtonElement>('[data-play-button]')!;
-      const dialog = this.querySelector<HTMLDialogElement>('dialog')!;
       const reduced = matchMedia('(prefers-reduced-motion: reduce)');
       let index = 0;
-      let playing = false;
+      let playing = !reduced.matches;
       let visible = false;
       let timer: ReturnType<typeof setTimeout> | undefined;
       const stopTimer = () => { clearTimeout(timer); timer = undefined; this.removeAttribute('data-timing'); };
+      const dwell = () => {
+        const video = panels[index]?.querySelector('video');
+        const tab = tabs[index];
+        if (!video || !tab || !Number.isFinite(video.duration) || video.duration <= 0) return null;
+        const elapsed = Math.min(Math.max(video.currentTime, 0), video.duration);
+        tab.style.setProperty('--dwell', `${video.duration}s`);
+        tab.style.setProperty('--elapsed', `${elapsed}s`);
+        return Math.max(200, (video.duration - elapsed) * 1000);
+      };
       const sync = () => {
         stopTimer();
-        play.textContent = playing ? this.dataset.pause! : this.dataset.play!;
         play.setAttribute('aria-pressed', String(playing));
-        if (!playing || !visible || document.hidden || dialog.open || this.matches(':hover') || (this.matches(':focus-within') && document.activeElement !== play)) return;
+        play.setAttribute('aria-label', playing ? this.dataset.pause! : this.dataset.play!);
+        play.querySelector('.tour-icon-play')!.toggleAttribute('hidden', playing);
+        play.querySelector('.tour-icon-pause')!.toggleAttribute('hidden', !playing);
+        if (!playing || !visible || document.hidden || this.matches(':hover') || (this.matches(':focus-within') && document.activeElement !== play)) return;
+        const video = panels[index]?.querySelector('video');
+        const ms = dwell();
+        if (ms == null) {
+          if (video && !video.dataset.dwellWait) {
+            video.dataset.dwellWait = '';
+            video.addEventListener('loadedmetadata', () => { delete video.dataset.dwellWait; sync(); }, { once: true });
+          }
+          return;
+        }
         this.setAttribute('data-timing', '');
-        timer = setTimeout(() => select(index + 1), 8000);
+        timer = setTimeout(() => select(index + 1), ms);
+      };
+      const arm = (video: HTMLVideoElement) => {
+        const pending = video.dataset.src;
+        if (!pending) return;
+        video.preload = 'auto';
+        if (video.querySelector('source')) return;
+        const source = document.createElement('source');
+        source.type = 'video/mp4';
+        source.src = pending;
+        video.append(source);
+        video.load();
+      };
+      // Hidden panels are display:none, so a <video> there often never buffers.
+      // Keep one off-screen element for the following clip only.
+      const warmer = () => {
+        const existing = this.querySelector<HTMLVideoElement>('video[data-tour-preload]');
+        if (existing) return existing;
+        const node = document.createElement('video');
+        node.dataset.tourPreload = '';
+        node.muted = true;
+        node.defaultMuted = true;
+        node.playsInline = true;
+        node.preload = 'auto';
+        node.tabIndex = -1;
+        node.setAttribute('aria-hidden', 'true');
+        node.setAttribute('playsinline', '');
+        node.style.cssText = 'position:absolute;width:1px;height:1px;opacity:0;pointer-events:none';
+        this.append(node);
+        return node;
+      };
+      let warmToken = 0;
+      const armTour = () => {
+        const token = ++warmToken;
+        const upcoming = (index + 1) % panels.length;
+        let currentVideo: HTMLVideoElement | null = null;
+        panels.forEach((panel, i) => {
+          const video = panel.querySelector<HTMLVideoElement>('video');
+          if (!video) return;
+          if (i === index) { currentVideo = video; arm(video); return; }
+          video.preload = 'none';
+          if (!video.paused || video.currentTime > 0) return;
+          const source = video.querySelector('source');
+          if (!source) return;
+          source.remove();
+          video.load();
+        });
+        const nextSrc = panels[upcoming]?.querySelector<HTMLVideoElement>('video')?.dataset.src;
+        if (!nextSrc) return;
+        const preload = warmer();
+        const handoff = () => {
+          if (token !== warmToken || preload.dataset.src === nextSrc) return;
+          preload.dataset.src = nextSrc;
+          preload.src = nextSrc;
+        };
+        const currentSrc = currentVideo?.dataset.src;
+        if (preload.dataset.src && preload.dataset.src === currentSrc && currentVideo && currentVideo.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) {
+          currentVideo.addEventListener('loadeddata', handoff, { once: true });
+          return;
+        }
+        handoff();
       };
       const select = (next: number, manual = false, focus = false) => {
         index = (next + tabs.length) % tabs.length;
+        armTour();
         if (manual) playing = false;
         tabs.forEach((tab, i) => { tab.setAttribute('aria-selected', String(i === index)); tab.tabIndex = i === index ? 0 : -1; });
         panels.forEach((panel, i) => { panel.hidden = i !== index; });
-        this.querySelector('.tour-count')!.textContent = `${String(index + 1).padStart(2, '0')} / ${String(tabs.length).padStart(2, '0')}`;
+        if (!manual) {
+          const video = panels[index]?.querySelector('video');
+          if (video && video.currentTime > 0.05) video.currentTime = 0;
+        }
         if (focus) tabs[index].focus({ preventScroll: true });
-        // Scroll only the segment rail, never the page containing it.
-        const rail = this.querySelector<HTMLElement>('.tour-tabs')!;
+        const rail = this.querySelector<HTMLElement>('.tour-tablist')!;
         if (rail.scrollWidth > rail.clientWidth) rail.scrollTo({ left: tabs[index].offsetLeft - rail.offsetLeft - (rail.clientWidth - tabs[index].offsetWidth) / 2, behavior: reduced.matches ? 'instant' : 'smooth' });
         sync();
       };
@@ -73,29 +158,21 @@ const { stops } = t.tour;
           if (next !== null) { event.preventDefault(); select(next, true, true); }
         });
       });
-      this.querySelector('[data-prev]')!.addEventListener('click', () => select(index - 1, true));
-      this.querySelector('[data-next]')!.addEventListener('click', () => select(index + 1, true));
       play.addEventListener('click', () => { playing = !playing; sync(); });
       this.addEventListener('pointerenter', sync);
       this.addEventListener('pointerleave', sync);
-      this.addEventListener('focusin', () => { playing = false; sync(); });
+      this.addEventListener('focusin', event => {
+        if (event.target === play) return;
+        playing = false;
+        sync();
+      });
       this.addEventListener('focusout', () => queueMicrotask(sync));
       document.addEventListener('visibilitychange', sync);
       reduced.addEventListener('change', () => { playing = false; sync(); });
       const observer = new IntersectionObserver(entries => { visible = entries[0].isIntersecting; sync(); });
       observer.observe(this);
-      const expand = this.querySelector<HTMLButtonElement>('[data-expand]')!;
-      expand.addEventListener('click', () => {
-        const source = panels[index].querySelector('[data-media-slot]')!;
-        dialog.querySelector('[data-dialog-media]')!.replaceChildren(source.cloneNode(true));
-        dialog.querySelector('[data-dialog-title]')!.textContent = panels[index].querySelector('h2')!.textContent;
-        playing = false; dialog.showModal(); sync();
-        dialog.querySelector<HTMLButtonElement>('[data-close]')!.focus();
-      });
-      dialog.querySelector('[data-close]')!.addEventListener('click', () => dialog.close());
-      dialog.addEventListener('click', event => { if (event.target === dialog) { const r = dialog.getBoundingClientRect(); if (event.clientX < r.left || event.clientX > r.right || event.clientY < r.top || event.clientY > r.bottom) dialog.close(); } });
-      dialog.addEventListener('close', () => { expand.focus(); sync(); });
-      this.querySelectorAll<HTMLElement>('.tour-tab-controls, .tour-controls, [data-expand]').forEach(el => { el.hidden = false; });
+      this.querySelectorAll<HTMLElement>('.tour-tab-controls').forEach(el => { el.hidden = false; });
+      armTour();
       sync();
       window.addEventListener('pagehide', () => { stopTimer(); observer.disconnect(); });
       window.addEventListener('pageshow', event => { if (event.persisted) observer.observe(this); });

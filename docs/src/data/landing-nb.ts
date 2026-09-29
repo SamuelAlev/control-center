@@ -45,9 +45,11 @@ export const nb: LandingCopy = {
     next: "Neste produktvisning",
     play: "Spill av omvisningen",
     pause: "Sett omvisningen på pause",
+    videoPlay: "Spill av forhåndsvisningen",
+    videoPause: "Sett forhåndsvisningen på pause",
     expand: "Utvid forhåndsvisningen",
-    close: "Lukk forhåndsvisningen",
     preview: "Produktforhåndsvisning",
+    close: "Lukk forhåndsvisningen",
     note: "Et nærmere blikk på utviklerdagen din.",
     imageLanguage: "Plassholder for bilde eller video",
     stops: [

@@ -8,8 +8,9 @@
     "binding": "ASSETS",
     // Page routes run through the worker first so it can negotiate the
     // markdown twin (`Accept: text/markdown`) and stamp `Vary: Accept`.
-    // Binary assets (/_astro, /fonts, images, feeds, machine files) keep the
-    // free direct-asset path and never invoke the worker.
+    // Hashed bundles under /_astro, feeds and machine files keep the free
+    // direct-asset path and never invoke the worker. Fonts, media and
+    // images are on files.usectrl.dev.
     "run_worker_first": [
       "/",
       "/index.html",

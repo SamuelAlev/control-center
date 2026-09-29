@@ -4,7 +4,7 @@
   "steps": [
     {
       "kind": "thinking",
-      "text": "The PR reworks eval token budgets per model family, and three surfaces render remaining tokens. If one eval's retry can shift the calculation, every surface lies at once. Let me read the diff before saying anything."
+      "text": "The PR reworks eval token budgets per model family. The old remaining-tokens line subtracted from a flat pool. I want to see whether that sign survived the move into the ledger."
     },
     {
       "kind": "say",
@@ -14,11 +14,11 @@
       "kind": "tool",
       "tool": "read",
       "args": { "path": "evalkit/budget.py" },
-      "result": "class EvalBudget:\n    \"\"\"All spend math goes through the ledger so the run card, the\n    grader and the tests share one definition of remaining tokens.\"\"\"\n\n    def __init__(self, ledger):\n        self._ledger = ledger\n\n    def remaining(self, family, run_group_id):\n        return self._cap(family) - self._ledger.spent(family)\n\n    def _cap(self, family):\n        return {\n            \"sonnet\": 200_000,\n            \"haiku\": 80_000,\n            \"opus\": 400_000,\n        }[family]"
+      "result": "class EvalBudget:\n    \"\"\"All spend math goes through the ledger so the run card, the\n    grader and the tests share one definition of remaining tokens.\"\"\"\n\n    def __init__(self, ledger):\n        self._ledger = ledger\n\n    def remaining(self, family, run_group_id):\n        return self._cap(family) + self._ledger.spent(family)\n\n    def _cap(self, family):\n        return {\n            \"sonnet\": 200_000,\n            \"haiku\": 80_000,\n            \"opus\": 400_000,\n        }[family]"
     },
     {
       "kind": "say",
-      "text": "The arithmetic itself is clean — one cap table, one ledger, remaining tokens derived instead of a shared org pool. What I want to check is whether two evals can race it: `remaining` resolves from the family alone, with no run-group id in the key.\n\n"
+      "text": "The cap table is fine. The return is not: `remaining` adds `spent` to the cap. The line it replaces subtracted from a flat pool. A Haiku eval that has spent 90k now reports 170k left, and the new test only checks `>= 0`.\n\n"
     },
     {
       "kind": "tool",
@@ -28,7 +28,7 @@
     },
     {
       "kind": "say",
-      "text": "Three independent callers, and `extensions.py` recomputes after a retry is recorded. Two evals can share one run-group id — a nightly sweep and an ad-hoc grade kicked off the same hour — so one eval's retry burns the other run's remaining tokens everywhere they render. That is the \"budget moved on its own\" report from last month.\n\n"
+      "text": "Three callers, and every one of them will show a balance that grows as the eval spends. `run_group_id` is also unused, so two evals in one group still share a family total. That is the follow-up. The sign is the block.\n\n"
     },
     {
       "kind": "usage",
@@ -40,7 +40,7 @@
     },
     {
       "kind": "say",
-      "text": "I left one blocking comment on `budget.py:9` asking for the run-group id in the ledger key, and approved the rest. Remaining-tokens reads through the ledger and needs no migration — that part is correct.\n\n**Summary:** 1 blocking comment, 3 nits, no test coverage for the shared run-group case."
+      "text": "I left a blocking comment on `budget.py` — `remaining` adds spend instead of subtracting it — and a note that the new test does not catch it.\n\n**Summary:** 1 blocking comment. The sign error ships green."
     },
     {
       "kind": "usage",

@@ -6,7 +6,6 @@ import 'package:cc_domain/features/pipelines/domain/entities/step_kind.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/step_trigger.dart';
 import 'package:cc_domain/features/pipelines/domain/services/pipeline_start.dart';
 import 'package:cc_ui/cc_ui.dart';
-import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/pipelines/presentation/widgets/node_config_editor.dart';
 import 'package:control_center/features/pipelines/presentation/widgets/node_library_sidebar.dart';
@@ -21,7 +20,6 @@ import 'package:control_center/features/workspaces/providers/workspace_providers
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:control_center/shared/widgets/demo_unavailable.dart';
 import 'package:control_center/shared/widgets/page_wrapper.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
@@ -38,12 +36,10 @@ const double _tileHeight = 72;
 const double _afterDyNudge = 88;
 
 /// Streams the agents in the active workspace for the editor's agent picker.
-final _workspaceAgentsProvider = StreamProvider.autoDispose.family<List<Agent>, String>((
-  ref,
-  workspaceId,
-) {
-  return ref.watch(agentRepositoryProvider).watchByWorkspace(workspaceId);
-});
+final _workspaceAgentsProvider = StreamProvider.autoDispose
+    .family<List<Agent>, String>((ref, workspaceId) {
+      return ref.watch(agentRepositoryProvider).watchByWorkspace(workspaceId);
+    });
 
 /// Drag-and-drop editor for a single pipeline template.
 ///
@@ -691,12 +687,6 @@ class _PipelineTemplateEditorScreenState
 
   @override
   Widget build(BuildContext context) {
-    if (ref.watch(isDemoServerProvider)) {
-      return PageWrapper(
-        title: widget.templateId,
-        child: const DemoUnavailable(capability: DemoCapability.pipelines),
-      );
-    }
     final l10n = AppLocalizations.of(context);
     final draft = _draft;
     final library = ref.watch(nodeTypeLibraryProvider);

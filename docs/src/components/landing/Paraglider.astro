@@ -1,12 +1,13 @@
 ---
 import type { LandingCopy } from '../../data/landing';
+import { cdn } from '../../data/cdn';
 interface Props { copy: LandingCopy; variant: 'hero' | 'install' }
 const { copy: t, variant } = Astro.props;
-const asset = variant === 'hero' ? 'hero-pilot' : 'install-pilot';
+const asset = cdn.alpine[variant];
 ---
-<div class:list={['paraglider', `paraglider--${variant}`]} data-paraglider data-model={`/alpine/${asset}.glb`} data-controls={t.pilot.controls}>
+<div class:list={['paraglider', `paraglider--${variant}`]} data-paraglider data-model={asset.model} data-controls={t.pilot.controls}>
   <picture>
-    <source media="(width > 900px)" srcset={`/alpine/${asset}.webp`} />
+    <source media="(width > 900px)" srcset={asset.poster} />
     <img class="paraglider-poster" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E" alt="" width={variant === 'install' ? 1800 : 1200} height={variant === 'install' ? 1575 : 1050} loading="lazy" decoding="async" />
   </picture>
   <div class="paraglider-stage" hidden></div>

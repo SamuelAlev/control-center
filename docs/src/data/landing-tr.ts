@@ -45,9 +45,11 @@ export const tr: LandingCopy = {
     next: "Sonraki ürün görünümü",
     play: "Turu oynat",
     pause: "Turu duraklat",
-    expand: "Önizlemeyi büyüt",
-    close: "Önizlemeyi kapat",
+    videoPlay: "Önizlemeyi oynat",
+    videoPause: "Önizlemeyi duraklat",
+    expand: "Önizlemeyi genişlet",
     preview: "Ürün önizlemesi",
+    close: "Önizlemeyi kapat",
     note: "Geliştirici gününe daha yakından bakış.",
     imageLanguage: "Görüntü veya video yer tutucusu",
     stops: [

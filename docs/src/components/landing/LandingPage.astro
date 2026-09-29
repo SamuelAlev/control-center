@@ -8,13 +8,19 @@ import Faq from './Faq.astro';
 import Download from './Download.astro';
 import { landingCopy } from '../../data/landing';
 import type { SiteLocale } from '../../data/locales';
-import linear from '../../assets/linear-icon.svg';
-import gitlab from '../../assets/gitlab-icon.svg';
-import claude from '../../assets/claude-icon.svg';
-import mcp from '../../assets/model-context-protocol-icon.svg';
+import linearIcon from '../../assets/linear-icon.svg?raw';
+import gitlabIcon from '../../assets/gitlab-icon.svg?raw';
+import claudeIcon from '../../assets/claude-icon.svg?raw';
+import mcpIcon from '../../assets/model-context-protocol-icon.svg?raw';
 interface Props { locale?: SiteLocale }
 const { locale = 'en-US' } = Astro.props;
 const t = landingCopy[locale];
+
+/** Inline a brand mark. The XML prolog is not valid inside HTML. */
+function mark(source: string, monochrome = false): string {
+  const attrs = `aria-hidden="true"${monochrome ? ' class="integration-monochrome"' : ''}`;
+  return source.replace(/^\uFEFF?<\?xml[\s\S]*?\?>\s*/, '').replace('<svg', `<svg ${attrs}`);
+}
 ---
 <MarketingLayout title={t.meta.title} description={t.meta.description} ogImageAlt={t.meta.imageAlt} softwareApplication landingLocale={locale}>
   <main id="top" class="landing-page" tabindex="-1">
@@ -24,10 +30,10 @@ const t = landingCopy[locale];
         <div class="integrations-copy"><h2 id="integrations-title">{t.integrations.title}</h2><p>{t.integrations.note}</p></div>
         <div class="integration-list">
           <span><svg width="22" height="22" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38v-1.34c-2.23.48-2.7-1.07-2.7-1.07-.36-.93-.89-1.18-.89-1.18-.73-.5.05-.49.05-.49.81.06 1.23.83 1.23.83.72 1.23 1.88.87 2.34.67.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.83-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 4 0c1.53-1.03 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.52.56.83 1.28.83 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48v2.19c0 .21.15.46.55.38A8 8 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>GitHub</span>
-          <span><img class="integration-monochrome" src={linear.src} alt="" width="22" height="22" />Linear</span>
-          <span><img src={gitlab.src} alt="" width="22" height="22" />GitLab</span>
-          <span><img src={claude.src} alt="" width="22" height="22" />Claude</span>
-          <span><img class="integration-monochrome" src={mcp.src} alt="" width="22" height="22" />MCP</span>
+          <span><Fragment set:html={mark(linearIcon, true)} />Linear</span>
+          <span><Fragment set:html={mark(gitlabIcon)} />GitLab</span>
+          <span><Fragment set:html={mark(claudeIcon)} />Claude</span>
+          <span><Fragment set:html={mark(mcpIcon, true)} />MCP</span>
         </div>
       </div>
     </section>

@@ -531,10 +531,10 @@ void main() {
 
       // ── The mocked surfaces a demo exists to showcase ──
 
-      // Exactly two pipeline templates (the curated pair), not the product's
-      // thirteen — and the boot reconcile must not re-add the rest. The
-      // templates are written by the unawaited `WorkspaceCreated` listener,
-      // so the first read polls briefly for it to land.
+      // The curated pipeline templates, not the product's full catalogue —
+      // and the boot reconcile must not re-add the rest. The built-ins are
+      // written by the unawaited `WorkspaceCreated` listener and the shell
+      // template by the awaited seeder, so the first read polls briefly.
       List<Map<String, dynamic>> templateList = const [];
       for (var attempt = 0; attempt < 40; attempt++) {
         final templates = await client.call(
@@ -543,27 +543,99 @@ void main() {
         );
         templateList = ((templates['templates'] as List?) ?? const [])
             .cast<Map<String, dynamic>>();
-        if (templateList.isNotEmpty) {
+        final ids = templateList
+            .map((t) => t['template_id'] ?? t['id'])
+            .toSet();
+        if (ids.contains('release_checks')) {
           break;
         }
         await Future<void>.delayed(const Duration(milliseconds: 250));
       }
       expect(
-        templateList,
-        hasLength(2),
-        reason: 'the demo keeps exactly the two curated pipeline templates',
+        templateList.map((t) => t['template_id'] ?? t['id']).toSet(),
+        {'pr_review', 'ticket_to_pr', 'release_checks'},
+        reason: 'the demo keeps the tour pair plus the shell-and-gate template',
       );
-      expect(templateList.map((t) => t['template_id'] ?? t['id']).toSet(), {
-        'pr_review',
-        'ticket_to_pr',
+
+      // Authoring is a database write. A shell step is not: release_checks
+      // is seeded with bash nodes, and saving that graph back must fail
+      // before it can replace the fixture.
+      final release = templateList.singleWhere(
+        (t) => t['template_id'] == 'release_checks',
+      );
+      final withBash = Map<String, dynamic>.from(release);
+      withBash['is_built_in'] = false;
+      await expectLater(
+        client.call('pipeline_template.upsert', {'template': withBash}),
+        throwsA(
+          isA<RemoteRpcException>()
+              .having((e) => e.code, 'code', RpcErrorCodes.validation)
+              .having((e) => e.message, 'message', contains('Bash')),
+        ),
+      );
+      final authored = await client.call('pipeline_template.upsert', {
+        'template': {
+          'template_id': 'visitor_draft',
+          'workspace_id': workspaceId,
+          'name': 'Visitor draft',
+          'steps': [
+            {
+              'id': 'start',
+              'kind': 'trigger',
+              'bodyKey': 'pipeline.trigger',
+              'config': <String, dynamic>{},
+            },
+            {
+              'id': 'ask',
+              'kind': 'listen',
+              'bodyKey': 'conversation.promptAgent',
+              'triggers': [
+                {
+                  'sourceStepIds': ['start'],
+                },
+              ],
+              'config': <String, dynamic>{},
+            },
+            {
+              'id': 'end',
+              'kind': 'terminal',
+              'bodyKey': '_terminal',
+              'triggers': [
+                {
+                  'sourceStepIds': ['ask'],
+                },
+              ],
+              'config': <String, dynamic>{},
+            },
+          ],
+          'inputs': <Map<String, dynamic>>[],
+          'is_built_in': false,
+          'is_enabled': true,
+          'version': 1,
+        },
       });
+      expect(authored['ok'], isTrue);
+      final saved = await client.call('pipeline_template.getById', {
+        'template_id': 'visitor_draft',
+      });
+      expect((saved['template'] as Map)['name'], 'Visitor draft');
+      final inserted = await client.call('pipeline_trigger.insert', {
+        'trigger': {
+          'id': 'visitor-manual',
+          'event_type': 'manual',
+          'template_id': 'visitor_draft',
+          'workspace_id': workspaceId,
+          'enabled': true,
+        },
+      });
+      expect(inserted['ok'], isTrue);
 
       // Finished (and failed) pipeline runs with real step rows.
       // Pipeline run ids are GLOBALLY routed through `workspace_routes`, so
       // the demo scopes them per workspace — a fixed id shared by every pooled
       // workspace pointed the route at whichever wrote it first.
       final runs = await client.call('pipeline_run.getRun', {
-        'id': '$workspaceId:demo-pipeline-run-0',
+        'id': '$workspaceId:demo-pipeline-run-2',
       });
       expect(runs['run'], isNotNull, reason: 'a seeded pipeline run exists');
 
@@ -584,11 +656,87 @@ void main() {
       );
 
       // The mock model list: the picker must not read as broken on a demo.
+      // A few models from the providers the demo pretends are signed in —
+      // Claude, GLM and Kimi — and nothing from a provider with no account.
       final models = await client.call('providers.listModels', const {});
+      final modelIds = {
+        for (final raw in (models['models'] as List?) ?? const [])
+          (raw as Map)['id'],
+      };
       expect(
-        (models['models'] as List?) ?? const [],
-        isNotEmpty,
+        modelIds,
+        containsAll([
+          'anthropic/claude-sonnet-4-5',
+          'zai-coding/glm-5.3',
+          'kimi-code/kimi-for-coding',
+        ]),
         reason: 'the demo answers the model list from static data',
+      );
+      expect(modelIds.where((id) => '$id'.startsWith('openai/')), isEmpty);
+
+      final providers = await client.call('providers.list', const {});
+      final byId = {
+        for (final raw in providers['providers'] as List)
+          (raw as Map)['id']: raw,
+      };
+      for (final id in ['anthropic', 'zai-coding', 'kimi-code']) {
+        final provider = byId[id] as Map;
+        expect(provider['has_credential'], isTrue, reason: id);
+        expect(
+          (provider['credentials'] as List).length,
+          greaterThan(1),
+          reason: '$id has more than one fictional account',
+        );
+      }
+      expect((byId['openai'] as Map)['enabled_via'], 'disabled');
+      expect(
+        jsonEncode(providers),
+        isNot(contains('not-a-real')),
+        reason: 'a fake key must not cross the wire, even masked poorly',
+      );
+
+      final harness = await client.call('adapter.detectOne', {
+        'adapter': {
+          'id': 'cc-harness',
+          'name': 'Control Center',
+          'cli_name': 'cc-harness',
+        },
+      });
+      expect(
+        harness['status'],
+        'found',
+        reason: 'the built-in runner is the server',
+      );
+      final claudeRunner = await client.call('adapter.detectOne', {
+        'adapter': {
+          'id': 'claude-code',
+          'name': 'Claude Code',
+          'cli_name': 'claude',
+        },
+      });
+      expect(claudeRunner['status'], 'found');
+      final claudeModels = await client.call('acp.listModels', {
+        'adapter_id': 'claude-code',
+      });
+      expect(claudeModels['models'] as List, isNotEmpty);
+
+      final claudeAccounts = await client.call(
+        'claude_accounts.list',
+        const {},
+      );
+      final accountList = claudeAccounts['accounts'] as List;
+      expect(accountList.length, greaterThan(1));
+      expect(accountList.every((a) => (a as Map)['logged_in'] == true), isTrue);
+      await expectLater(
+        client.call('claude_accounts.create', const {}),
+        throwsA(
+          isA<RemoteRpcException>().having(
+            (error) => error.code,
+            'code',
+            RpcErrorCodes.opUnknown,
+          ),
+        ),
+        reason: 'a visitor cannot mint a Claude Code login',
       );
 
       // Same RPC and wire codec as the title-bar usage pill. Every provider
@@ -686,19 +834,14 @@ void main() {
         'workspace.import',
         'mcp.callTool',
         // Pipeline host-exec. `pipeline.start` is absent because the engine
-        // port is null; template upsert / trigger writes are refused by
-        // name even though those ops are always built. A visitor who can
-        // author a `bash.script` node and start it — by hand or via an
-        // event trigger — is executing code on this host.
+        // port is null. Template upsert and trigger rows are admitted;
+        // a bash step is a validation error, not a way to `Process.start`.
         'pipeline.start',
         'pipeline.cancel',
         'pipeline.retry',
         'pipeline.killStep',
         'messaging.retrySpaceProvisioning',
         'messaging.cancelSpaceProvisioning',
-        'pipeline_template.upsert',
-        'pipeline_trigger.insert',
-        'pipeline_trigger.update',
         'pipeline_trigger.markFired',
         'playbook.run',
         'orchestration.approve',

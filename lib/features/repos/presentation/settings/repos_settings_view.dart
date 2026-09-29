@@ -17,6 +17,7 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/github_user_avatar.dart';
 import 'package:control_center/shared/widgets/page_wrapper.dart';
+import 'package:control_center/shared/widgets/workspace_avatar.dart';
 import 'package:control_center/shared/widgets/repo_access_banner.dart';
 import 'package:control_center/shared/widgets/section_card.dart';
 import 'package:flutter/material.dart';
@@ -260,6 +261,8 @@ class _RepoRow extends ConsumerWidget {
         ref.watch(repoAccessForWorkspaceProvider(workspaceId)).value ??
         const [];
     final noAccess = inaccessible.any((r) => r.repoId == repo.id);
+    final demo = ref.watch(isDemoServerProvider);
+    final workspace = demo ? ref.watch(activeWorkspaceDisplayProvider) : null;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
@@ -279,10 +282,20 @@ class _RepoRow extends ConsumerWidget {
             ),
             const SizedBox(width: 10),
           ],
+          // The demo org is named `helix`, which is also a real GitHub account.
+          // `github.com/helix.png` is that person's photo, so the demo shows
+          // the workspace mark (the Helix logo) instead of fetching it.
+          if (demo && repo.hasForgeRemote)
+            WorkspaceAvatar(
+              name: workspace?.name ?? repo.remoteOwner,
+              workspaceId: workspace?.workspaceId ?? workspaceId,
+              hasLogo: workspace?.hasLogo ?? false,
+              size: 32,
+            )
           // `github.com/<owner>.png` is a GitHub-only convention; the other
           // forges have no equivalent guessable owner avatar, so they fall back
           // to initials rather than requesting a URL that 404s.
-          if (repo.hasForgeRemote)
+          else if (repo.hasForgeRemote)
             GitHubUserAvatar(
               login: repo.remoteOwner,
               avatarUrl: repo.forge == ForgeHost.github

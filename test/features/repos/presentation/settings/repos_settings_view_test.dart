@@ -1,11 +1,14 @@
 import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
+import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/features/repos/presentation/settings/repos_settings_view.dart';
 import 'package:control_center/features/repos/providers/repo_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/widgets/github_user_avatar.dart';
+import 'package:control_center/shared/widgets/workspace_avatar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -312,6 +315,55 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
 
     expect(find.text('gh-repo'), findsOneWidget);
+    expect(find.byType(GitHubUserAvatar), findsOneWidget);
+    expect(find.byType(WorkspaceAvatar), findsNothing);
+  });
+
+  testWidgets('demo repos show the workspace logo, not a GitHub owner photo', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 600);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    final repo = Repo(
+      id: 'repo-helix',
+      name: 'helix/evalkit',
+      path: '/tmp/demo2/evalkit',
+      remoteOwner: 'helix',
+      remoteName: 'evalkit',
+      createdAt: DateTime(2024),
+      updatedAt: DateTime(2024),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          isDemoServerProvider.overrideWithValue(true),
+          activeWorkspaceDisplayProvider.overrideWithValue((
+            name: 'Helix',
+            workspaceId: 'ws-test',
+            hasLogo: true,
+          )),
+          activeWorkspaceIdProvider.overrideWith(
+            () => _TestActiveWorkspaceNotifier('ws-test'),
+          ),
+          reposForWorkspaceProvider(
+            'ws-test',
+          ).overrideWith((ref) => Stream.value([repo])),
+          appPreferencesProvider.overrideWithValue(prefs),
+        ],
+        child: _wrap(const ReposSettingsView()),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    expect(find.byType(WorkspaceAvatar), findsOneWidget);
+    expect(find.byType(GitHubUserAvatar), findsNothing);
   });
 
   testWidgets('renders repo with branch and path', (tester) async {

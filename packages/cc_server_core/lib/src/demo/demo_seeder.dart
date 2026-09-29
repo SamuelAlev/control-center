@@ -43,11 +43,13 @@ import 'package:cc_domain/features/orchestration/domain/entities/orchestration_s
 import 'package:cc_domain/features/orchestration/domain/repositories/orchestration_repository.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_definition.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_run.dart';
-import 'package:cc_domain/features/pipelines/domain/entities/pipeline_run_status.dart';
+import 'package:cc_domain/features/pipelines/domain/entities/pipeline_step_definition.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_step_run.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_step_status.dart';
+import 'package:cc_domain/features/pipelines/domain/entities/step_kind.dart';
 import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_run_repository.dart';
 import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_template_repository.dart';
+import 'package:cc_domain/features/pipelines/domain/templates/builtin_template_seeds.dart';
 import 'package:cc_domain/features/plan_studio/domain/entities/plan_document.dart';
 import 'package:cc_domain/features/plan_studio/domain/repositories/plan_studio_repositories.dart';
 import 'package:cc_domain/features/plan_studio/domain/value_objects/plan_graph.dart';
@@ -63,9 +65,6 @@ import 'package:cc_domain/features/ticketing/domain/entities/ticket_priority.dar
 import 'package:cc_domain/features/ticketing/domain/entities/ticket_status.dart';
 import 'package:cc_domain/features/ticketing/domain/repositories/project_repository.dart';
 import 'package:cc_domain/features/ticketing/domain/repositories/ticket_repository.dart';
-import 'package:cc_domain/features/ticketing/domain/sync/sync_direction.dart';
-import 'package:cc_domain/features/ticketing/domain/sync/ticket_sync_log_entry.dart';
-import 'package:cc_domain/features/ticketing/domain/sync/ticket_sync_repositories.dart';
 import 'package:cc_domain/features/todos/domain/repositories/todo_repository.dart';
 import 'package:cc_domain/features/todos/domain/value_objects/todo_status.dart';
 import 'package:cc_persistence/database/global/global_database.dart';
@@ -73,11 +72,16 @@ import 'package:cc_persistence/database/workspace/workspace_database.dart';
 import 'package:cc_persistence/database/workspace_database_manager.dart';
 import 'package:cc_persistence/repositories/dao_calendar_repository.dart';
 import 'package:cc_persistence/repositories/dao_conversation_repository.dart';
+import 'package:cc_persistence/repositories/dao_evals_repository.dart';
+import 'package:cc_persistence/repositories/dao_fleet_repository.dart';
 import 'package:cc_persistence/repositories/dao_identity_repositories.dart';
 import 'package:cc_persistence/repositories/dao_meeting_repository.dart';
 import 'package:cc_persistence/repositories/dao_memory_policy_repository.dart';
+import 'package:cc_server_core/src/demo/demo_observability.dart';
+import 'package:cc_server_core/src/demo/demo_pipeline_fixtures.dart';
 import 'package:cc_server_core/src/demo/demo_pr_cache.dart';
 import 'package:cc_server_core/src/demo/demo_repo_files.dart';
+import 'package:cc_server_core/src/demo/demo_skills.dart';
 import 'package:cc_server_core/src/demo/demo_world.dart';
 import 'package:cc_server_core/src/demo/fixtures/demo_fixtures.g.dart';
 import 'package:drift/drift.dart' as drift;
@@ -103,7 +107,6 @@ class DemoSeeder {
     required AgentRunLogRepository runLogRepository,
     required PipelineRunRepository pipelineRunRepository,
     required PipelineTemplateRepository pipelineTemplateRepository,
-    required TicketSyncLogRepository syncLogRepository,
     required WorkProductRepository workProductRepository,
     required ReviewCohortRepository reviewCohortRepository,
     required ReviewSpaceRepository reviewSpaceRepository,
@@ -130,7 +133,6 @@ class DemoSeeder {
        _runLogs = runLogRepository,
        _pipelineRuns = pipelineRunRepository,
        _pipelineTemplates = pipelineTemplateRepository,
-       _syncLog = syncLogRepository,
        _workProducts = workProductRepository,
        _reviewCohorts = reviewCohortRepository,
        _reviewSpaces = reviewSpaceRepository,
@@ -159,7 +161,6 @@ class DemoSeeder {
   final AgentRunLogRepository _runLogs;
   final PipelineRunRepository _pipelineRuns;
   final PipelineTemplateRepository _pipelineTemplates;
-  final TicketSyncLogRepository _syncLog;
   final WorkProductRepository _workProducts;
   final ReviewCohortRepository _reviewCohorts;
   final ReviewSpaceRepository _reviewSpaces;
@@ -214,6 +215,7 @@ class DemoSeeder {
   Future<void> seedWorkspace(String workspaceId) async {
     await ensureCast();
     await _baseSeed?.call(workspaceId);
+    await seedDemoSkills(dataDir: _dataDir, workspaceId: workspaceId);
     await _prunePipelineTemplates(workspaceId);
     await _seedMembers(workspaceId);
     await _seedRepos(workspaceId);
@@ -224,6 +226,8 @@ class DemoSeeder {
     await _seedIsolatedRepos(workspaceId, spaces);
     await _seedWorkspaceLogo(workspaceId);
     await _seedRuns(workspaceId, agents, spaces);
+    await _seedEvals(workspaceId);
+    await _seedFleet(workspaceId);
     await _seedPipelineRuns(workspaceId, spaces);
     await _seedTodos(workspaceId, spaces);
     await _seedTickets(workspaceId, agents);
@@ -235,7 +239,6 @@ class DemoSeeder {
     await _seedArtifacts(workspaceId, agents);
     await _seedActivity(workspaceId, agents);
     await _seedNotifications(workspaceId);
-    await _seedInboxAttention(workspaceId);
     await _seedAiReview(workspaceId, spaces);
     _log('seeded workspace $workspaceId');
   }
@@ -780,95 +783,37 @@ class DemoSeeder {
     }
   }
 
-  /// Finished runs, so the dashboard, cost and observability surfaces have
-  /// history rather than a zero state.
+  /// A year of finished runs plus one live triage, so usage, insights, the
+  /// benchmark and the live roster have history instead of a zero state.
   Future<void> _seedRuns(
     String workspaceId,
     List<Agent> agents,
     List<({String id, String name})> spaces,
   ) async {
-    final runs =
-        <
-          ({
-            Agent agent,
-            int hoursAgo,
-            int seconds,
-            RunCost cost,
-            String summary,
-          })
-        >[
-          (
-            agent: agents[0],
-            hoursAgo: 6,
-            seconds: 74,
-            cost: const RunCost(
-              inputTokens: 14820,
-              outputTokens: 386,
-              cachedReadTokens: 9600,
-              cachedWriteTokens: 1280,
-              thoughtTokens: 210,
-              estimatedCostCents: 6,
-            ),
-            summary: 'Reviewed #412: 1 blocking comment, 3 nits',
-          ),
-          (
-            agent: agents[1],
-            hoursAgo: 25,
-            seconds: 131,
-            cost: const RunCost(
-              inputTokens: 12600,
-              outputTokens: 358,
-              cachedReadTokens: 8400,
-              cachedWriteTokens: 1020,
-              thoughtTokens: 140,
-              estimatedCostCents: 5,
-            ),
-            summary: 'Triaged HX-118 to a progress-reporting bug',
-          ),
-          (
-            agent: agents[2],
-            hoursAgo: 48,
-            seconds: 96,
-            cost: const RunCost(
-              inputTokens: 9880,
-              outputTokens: 420,
-              cachedReadTokens: 6100,
-              cachedWriteTokens: 1100,
-              thoughtTokens: 180,
-              estimatedCostCents: 4,
-            ),
-            summary: 'Broke eval-score exports into four plan nodes',
-          ),
-          (
-            agent: agents[0],
-            hoursAgo: 73,
-            seconds: 42,
-            cost: const RunCost(
-              inputTokens: 5200,
-              outputTokens: 140,
-              cachedReadTokens: 3900,
-              estimatedCostCents: 2,
-            ),
-            summary: 'Reviewed features #49: approved',
-          ),
-        ];
-
-    for (var i = 0; i < runs.length; i++) {
-      final run = runs[i];
-      final startedAt = _now().subtract(Duration(hours: run.hoursAgo));
+    if (agents.isEmpty) {
+      return;
+    }
+    final specs = buildDemoObservabilityRuns(_now());
+    for (var i = 0; i < specs.length; i++) {
+      final spec = specs[i];
+      final agent = agents[spec.agentIndex % agents.length];
       await _runLogs.upsert(
         AgentRunLog(
-          id: 'demo-run-$i',
-          agentId: run.agent.id,
+          id: spec.id,
+          agentId: agent.id,
           workspaceId: workspaceId,
           spaceId: spaces.isEmpty ? null : spaces[i % spaces.length].id,
-          startedAt: startedAt,
-          completedAt: startedAt.add(Duration(seconds: run.seconds)),
-          status: RunStatus.completed,
-          summary: run.summary,
+          startedAt: spec.startedAt,
+          completedAt: spec.completedAt,
+          status: spec.status,
+          liveness: spec.liveness,
+          errorFamily: spec.errorFamily,
+          errorCode: spec.errorCode,
+          summary: spec.summary,
           adapter: 'cc-harness',
-          modelId: 'anthropic/claude-sonnet-4-5',
-          cost: run.cost,
+          modelId: spec.modelId,
+          cost: spec.cost,
+          role: spec.role,
         ),
       );
     }
@@ -945,17 +890,62 @@ class DemoSeeder {
         liveness: RunLiveness.blocked,
         summary: 'Waiting for approval to push #412; no command executed',
         adapter: 'cc-harness',
-        modelId: 'anthropic/claude-sonnet-4-5',
+        modelId: kDemoModelOpus,
+        cost: const RunCost(
+          inputTokens: 6400,
+          outputTokens: 180,
+          cachedReadTokens: 2100,
+          cachedWriteTokens: 480,
+          thoughtTokens: 90,
+          estimatedCostCents: 14,
+        ),
       ),
     );
   }
 
-  /// Prunes the product's built-in pipeline templates down to the demo's two.
+  /// Finished eval batches, so the Quality tab is not an empty suite list.
+  Future<void> _seedEvals(String workspaceId) async {
+    final evals = DaoEvalsRepository(_dbs);
+    for (final seed in buildDemoEvalSeeds(workspaceId, _now())) {
+      await evals.upsertSuite(seed.suite);
+      for (final run in seed.runs) {
+        await evals.upsertRun(run);
+      }
+    }
+  }
+
+  /// Fictional workers (global, shared) and this workspace's jobs.
   ///
-  /// The base seeder installs thirteen; a demo shows two so the Pipelines
-  /// screen reads like a curated example rather than a catalogue. The boot
-  /// reconcile is pointed at the SAME whitelist in demo mode (see
-  /// `runCcServer`), so it cannot quietly re-add the rest.
+  /// Worker rows are refreshed on every seed so a heartbeat stays recent.
+  /// Job ids are prefixed with the workspace id: the jobs table is global
+  /// and keyed only by id, so a fixed id would overwrite another visitor.
+  Future<void> _seedFleet(String workspaceId) async {
+    final fleet = DaoFleetRepository(_globalDb.fleetDao);
+    final now = _now();
+    for (final worker in buildDemoFleetWorkers(now)) {
+      await fleet.upsertWorker(worker);
+    }
+    for (final seed in buildDemoFleetJobs(workspaceId, now)) {
+      await fleet.upsertJob(seed.job);
+      final existing = await fleet.placementsForJob(workspaceId, seed.job.id);
+      if (existing.isEmpty) {
+        await fleet.logPlacement(
+          workspaceId: workspaceId,
+          jobId: seed.job.id,
+          decision: seed.placement,
+          now: seed.job.createdAt,
+        );
+      }
+    }
+  }
+
+  /// Prunes the product's built-in pipeline templates down to the demo's set.
+  ///
+  /// The base seeder installs the full catalogue; a demo keeps the tour pair
+  /// plus the shell-and-gate template. The boot reconcile is pointed at the
+  /// SAME whitelist in demo mode (see `runCcServer`), so it cannot quietly
+  /// re-add the rest. `release_checks` is not a built-in — it is upserted
+  /// with the runs, after this prune.
   Future<void> _prunePipelineTemplates(String workspaceId) async {
     final templates = await _pipelineTemplates.forWorkspace(workspaceId);
     for (final template in templates) {
@@ -970,57 +960,26 @@ class DemoSeeder {
   ///
   /// Steps are fabricated against the template's REAL step ids (read back
   /// after pruning), so a run page resolves every step to its definition.
+  /// The failure sits on a visible work node — the canvas hides the terminal
+  /// sentinel, and a failure recorded only there paints every node green.
   Future<void> _seedPipelineRuns(
     String workspaceId,
     List<({String id, String name})> spaces,
   ) async {
     final spaceId = spaces.isEmpty ? null : spaces.first.id;
+    await _pipelineTemplates.upsert(demoReleaseChecksTemplate(workspaceId));
     final byId = <String, PipelineDefinition>{};
     for (final template in await _pipelineTemplates.forWorkspace(workspaceId)) {
       byId[template.templateId] = template;
     }
 
-    final specs =
-        <
-          ({
-            String runId,
-            String templateId,
-            int hoursAgo,
-            PipelineRunStatus status,
-            int costCents,
-            int tokens,
-            String? error,
-          })
-        >[
-          (
-            runId: 'demo-pipeline-run-0',
-            templateId: 'pr_review',
-            hoursAgo: 6,
-            status: PipelineRunStatus.completed,
-            costCents: 6,
-            tokens: 15200,
-            error: null,
-          ),
-          (
-            runId: 'demo-pipeline-run-1',
-            templateId: 'ticket_to_pr',
-            hoursAgo: 49,
-            status: PipelineRunStatus.failed,
-            costCents: 2,
-            tokens: 4100,
-            error:
-                'Step `open_pr` failed: no linked forge credential on this host '
-                '(demo) — the ticket branch was left on the workspace.',
-          ),
-        ];
-
-    for (final spec in specs) {
+    for (final spec in demoPipelineRuns()) {
       final template = byId[spec.templateId];
       if (template == null) {
         continue;
       }
-      final startedAt = _now().subtract(Duration(hours: spec.hoursAgo));
-      final finishedAt = startedAt.add(const Duration(minutes: 3));
+      final startedAt = _now().subtract(spec.startedAgo);
+      final finishedAt = _runFinishedAt(startedAt, spec.steps);
       await _pipelineRuns.insertRun(
         PipelineRun(
           // Globally routed by id, exactly like a ticket — see the note on
@@ -1030,52 +989,73 @@ class DemoSeeder {
           templateId: spec.templateId,
           workspaceId: workspaceId,
           status: spec.status,
-          triggerEventType: spec.templateId == 'pr_review'
-              ? 'PullRequestPublished'
-              : null,
+          triggerEventType: spec.triggerEventType,
+          triggerPayload: spec.triggerPayload,
+          state: spec.state,
           startedAt: startedAt,
-          finishedAt: finishedAt,
-          activeMs: const Duration(minutes: 3).inMilliseconds,
+          finishedAt: spec.status.isTerminal ? finishedAt : null,
+          activeMs: finishedAt.difference(startedAt).inMilliseconds,
           errorMessage: spec.error,
           totalCostCents: spec.costCents,
           totalTokens: spec.tokens,
         ),
       );
-      final steps = template.steps;
-      for (var i = 0; i < steps.length; i++) {
-        final step = steps[i];
-        final stepStarted = startedAt.add(Duration(seconds: 20 * i));
-        final failedHere =
-            spec.status == PipelineRunStatus.failed && i == steps.length - 1;
+      for (var i = 0; i < spec.steps.length; i++) {
+        final step = spec.steps[i];
+        final definition = template.step(step.stepId);
+        final stepStarted = startedAt.add(Duration(seconds: step.startSec));
+        final ran = step.status != PipelineStepStatus.skipped;
         await _pipelineRuns.insertStepRun(
           PipelineStepRun(
             id: '$workspaceId:${spec.runId}-step-$i',
             pipelineRunId: '$workspaceId:${spec.runId}',
-            stepId: step.id,
-            status: failedHere
-                ? PipelineStepStatus.failed
-                : PipelineStepStatus.completed,
-            inputJson: jsonEncode({
-              'source': spec.templateId == 'pr_review' ? '#412' : 'HX-129',
-            }),
-            outputJson: failedHere
-                ? null
-                : jsonEncode({
-                    'note': spec.templateId == 'pr_review'
-                        ? 'review posted, 1 blocking comment'
-                        : 'branch created, PR step skipped on demo host',
-                  }),
-            spaceId: spaceId,
-            errorMessage: failedHere ? spec.error : null,
-            attemptCount: 1,
+            stepId: step.stepId,
+            status: step.status,
+            inputJson: step.input == null ? null : jsonEncode(step.input),
+            outputJson: step.output == null ? null : jsonEncode(step.output),
+            spaceId: _stepOpensConversation(definition) ? spaceId : null,
+            errorMessage: step.error,
+            attemptCount: ran ? 1 : 0,
             startedAt: stepStarted,
-            finishedAt: failedHere
-                ? null
-                : stepStarted.add(const Duration(seconds: 18)),
+            finishedAt: stepStarted.add(Duration(seconds: step.durationSec)),
           ),
         );
       }
     }
+  }
+
+  /// When the run stopped: the latest step that actually executed. Skipped
+  /// rows share the failure instant and must not stretch the active time.
+  DateTime _runFinishedAt(
+    DateTime startedAt,
+    List<DemoPipelineStepFixture> steps,
+  ) {
+    var finishedAt = startedAt;
+    for (final step in steps) {
+      if (step.status == PipelineStepStatus.skipped) {
+        continue;
+      }
+      final end = startedAt.add(
+        Duration(seconds: step.startSec + step.durationSec),
+      );
+      if (end.isAfter(finishedAt)) {
+        finishedAt = end;
+      }
+    }
+    return finishedAt;
+  }
+
+  /// Agent and review steps link to the seeded room. Shell, router and
+  /// trigger nodes do not — a "view conversation" button on a bash step
+  /// would open a room that step never wrote to.
+  bool _stepOpensConversation(PipelineStepDefinition? step) {
+    if (step == null || step.kind == StepKind.terminal) {
+      return false;
+    }
+    return step.bodyKey == BuiltInBodyKeys.promptAgent ||
+        step.bodyKey == BuiltInBodyKeys.createSpace ||
+        step.bodyKey == BuiltInBodyKeys.prReviewComment ||
+        step.bodyKey == BuiltInBodyKeys.prReviewFinalize;
   }
 
   /// A todo list mid-flight, which is what the accordion is for.
@@ -2323,28 +2303,6 @@ class DemoSeeder {
     }
   }
 
-  /// A seeded ticket-sync failure, shown in the inbox attention strip.
-  /// Pending approvals are ephemeral and are registered when the visitor
-  /// claims the warm workspace, not when that workspace enters the pool:
-  /// the registry is empty again after a server restart.
-  Future<void> _seedInboxAttention(String workspaceId) async {
-    await _syncLog.append(
-      TicketSyncLogEntry(
-        id: 'demo-synclog-0',
-        workspaceId: workspaceId,
-        ticketId: '$workspaceId:HX-124',
-        vendor: 'linear',
-        direction: SyncDirection.push,
-        outcome: SyncOutcome.failed,
-        message:
-            'Push failed: Linear issue was closed on the vendor side '
-            '(HX-124 mirrors as EVAL-418). Reopen there or relink before the '
-            'next sync.',
-        createdAt: _now().subtract(const Duration(hours: 20)),
-      ),
-    );
-  }
-
   // ── Pull requests ────────────────────────────────────────────────────────
 
   /// Writes the authored PR world into the `caches` table.
@@ -2620,9 +2578,8 @@ class DemoSeeder {
   /// demo reads as "the feature does nothing" rather than "no review has been
   /// run". The verdicts are deliberately NOT all green: an axis panel where
   /// everything passes shows none of the triage the surface exists for, so
-  /// `testGap` warns (the PR is where the reviewer thread already argues about
-  /// a missing shared run-group case) and `correctness` carries the one finding
-  /// that #412's blocking comment is about.
+  /// `testGap` warns (the new test asserts `>= 0` and would pass either sign)
+  /// and `correctness` carries the sign error on `remaining`.
   Future<void> _seedAiReview(
     String workspaceId,
     List<({String id, String name})> spaces,
@@ -2659,10 +2616,9 @@ class DemoSeeder {
         summaryMarkdown:
             'Adds per-family caps to `EvalBudget` and renders remaining '
             'tokens on the run card.\n\n'
-            'Spend is derived from the family alone, which means it moves '
-            'whenever a sibling eval in the same run-group records a retry — '
-            'worth confirming that is intended for a **shared sweep** and not '
-            'only for a single job.',
+            '`remaining` adds spend to the cap, so the balance grows as the '
+            'eval spends. `run_group_id` is also unused, so two evals in one '
+            'group still share a family total.',
         filePaths: const ['evalkit/budget.py'],
       ),
       ReviewCohort(
@@ -2688,7 +2644,8 @@ class DemoSeeder {
         findings: 1,
         gated: true,
         confidence: 0.86,
-        note: 'Budget moves when a sibling eval in the same run-group retries',
+        note:
+            'remaining() adds spend to the cap, so the balance grows as the eval spends',
       ),
       (
         axis: ReviewAxis.testGap,

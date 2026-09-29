@@ -67,40 +67,41 @@ html[data-landing] [hidden] { display: none !important; }
 .signal-field i:nth-child(7) { inset: auto -32px 128px auto; }
 .signal-field i:nth-child(8) { inset: auto -96px 192px auto; background: var(--color-sunshine-300); }
 .product-tour { position: relative; display: block; max-inline-size: 1072px; margin-inline: auto; }
-.tour-tab-controls { display: flex; justify-content: center; margin-block-end: var(--spacing-6); }
-.tour-tabs { position: relative; display: flex; padding: var(--spacing-1); border: 1px solid var(--color-border); background: var(--color-surface); max-inline-size: 100%; overflow-x: auto; scrollbar-width: thin; }
-.tour-tabs button { position: relative; flex: 1 0 auto; min-block-size: 44px; padding: var(--spacing-3) var(--spacing-6); background: transparent; border: 0; color: var(--color-muted); font: 600 13px/1.4 var(--font-sans); white-space: nowrap; cursor: pointer; }
+.tour-tab-controls { display: flex; justify-content: center; margin-block-end: clamp(14px, 1.8vw, 22px); }
+.tour-tabs { display: flex; align-items: stretch; max-inline-size: 100%; border: 1px solid var(--color-border); background: var(--color-panel); }
+.tour-tablist { display: flex; position: relative; min-inline-size: 0; overflow-x: auto; scrollbar-width: none; }
+.tour-tablist::-webkit-scrollbar { display: none; }
+.tour-tabs button { position: relative; display: inline-flex; flex: 0 0 auto; align-items: center; gap: 8px; min-block-size: 0; padding: 11px 16px 12px; border: 0; border-inline-start: 1px solid var(--color-border); background: transparent; color: var(--color-muted); font: 400 13.5px/1 var(--font-sans); white-space: nowrap; cursor: pointer; transition: color var(--motion-fast) var(--ease-standard), background var(--motion-fast) var(--ease-standard); }
+.tour-tablist button:first-child { border-inline-start: 0; }
 .tour-tabs button:hover { background: var(--color-hover); color: var(--color-fg); }
-.tour-tabs button[aria-selected='true'] { background: var(--color-fg); color: var(--color-bg); }
+.tour-tabs button[aria-selected='true'] { background: color-mix(in oklab, var(--color-accent), transparent 93%); color: var(--color-fg); }
 html[data-landing] .tour-tabs button:focus-visible { outline-offset: -3px; box-shadow: none; }
-.tour-progress { position: absolute; inset: auto 0 0; block-size: 2px; background: var(--color-signal); transform: scaleX(0); transform-origin: left; }
-html[dir='rtl'] .tour-progress { transform-origin: right; }
-[data-timing] [aria-selected='true'] .tour-progress { animation: tour-progress 8s linear forwards; }
-@keyframes tour-progress { to { transform: scaleX(1); } }
+.tour-glyph { display: inline-flex; flex: none; inline-size: 15px; block-size: 15px; color: var(--color-idle); transition: color var(--motion-fast) var(--ease-standard); }
+.tour-glyph svg, .tour-tabs button > svg.tour-glyph { inline-size: 15px; block-size: 15px; }
+.tour-tabs button:hover .tour-glyph, .tour-tabs button[aria-selected='true'] .tour-glyph { color: var(--color-accent); }
+.tour-tab-label { display: inline-grid; justify-items: center; }
+.tour-tab-label::after { content: attr(data-label); grid-row: 2; block-size: 0; overflow: hidden; visibility: hidden; font-weight: 600; pointer-events: none; }
+.tour-tabs button[aria-selected='true'] .tour-tab-label { font-weight: 600; }
+.tour-progress { position: absolute; inset: auto 0 0; block-size: 2px; overflow: hidden; }
+.tour-progress i { display: block; block-size: 100%; background: var(--color-accent); transform: scaleX(0); transform-origin: left center; }
+html[dir='rtl'] .tour-progress i { transform-origin: right center; }
+.tour-tabs button[aria-selected='true'] .tour-progress i { transform: scaleX(1); }
+[data-timing] .tour-tabs button[aria-selected='true'] .tour-progress i { animation: tour-progress var(--dwell, 8s) linear forwards; animation-delay: calc(var(--elapsed, 0s) * -1); }
+@keyframes tour-progress { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.tour-tabs .tour-play { display: grid; place-items: center; flex: none; inline-size: 42px; padding: 0; color: var(--color-idle); }
+.tour-tabs .tour-play svg { inline-size: 11px; block-size: 11px; }
+.tour-tabs .tour-play:hover { background: var(--color-hover); color: var(--color-fg); }
+@media (pointer: coarse) {
+  .tour-tabs button { min-block-size: 44px; }
+  .tour-tabs .tour-play { inline-size: 48px; }
+}
 .tour-window { background: var(--color-panel); border: 1px solid var(--color-line-strong); box-shadow: -8px 16px 39px rgba(127,99,21,.07), -28px 56px 64px rgba(127,99,21,.04); }
-.tour-window-bar { display: flex; align-items: center; gap: var(--spacing-3); padding-inline: var(--spacing-4); min-block-size: 44px; border-block-end: 1px solid var(--color-border); font-size: 12px; }
-.tour-window-mark { color: var(--color-idle); font-size: 17px; }
-.tour-window-caption { margin-inline: auto; color: var(--color-idle); font-size: 11px; }
-.tour-expand { display: flex; align-items: center; gap: var(--spacing-3); min-block-size: 44px; border: 0; padding-inline: var(--spacing-2); color: var(--color-muted); background: transparent; font-size: 11px; cursor: pointer; }
-.tour-expand:hover { color: var(--color-accent-strong); }
 .tour-panel { outline-offset: -3px !important; }
 .tour-panel .product-media { max-block-size: 510px; }
+.tour-panel .product-media.is-frame { inline-size: 100%; max-block-size: none; min-block-size: 0; }
 .tour-copy { display: grid; grid-template-columns: .9fr 1.1fr; gap: var(--spacing-8); align-items: center; padding: var(--spacing-6) var(--spacing-8); min-block-size: 108px; border-block-start: 1px solid var(--color-border); }
 .tour-copy h2 { font-size: 23px; line-height: 1.3; }
 .tour-copy p { color: var(--color-muted); font-size: 14px; line-height: 1.6; }
-.tour-bottom { display: flex; align-items: center; justify-content: space-between; gap: var(--spacing-4); padding-inline: var(--spacing-8); border-block-start: 1px solid var(--color-border); min-block-size: 49px; }
-.tour-bottom > p { color: var(--color-idle); font-size: 11px; }
-.tour-controls { display: flex; align-items: center; }
-.tour-controls button { display: grid; place-items: center; min-inline-size: 44px; min-block-size: 44px; border: 0; background: transparent; color: var(--color-fg); cursor: pointer; font-size: 17px; }
-.tour-controls button:hover { background: var(--color-surface); }
-.tour-count { min-inline-size: 62px; color: var(--color-muted); text-align: center; font: 11px var(--font-mono); }
-.tour-controls .tour-play { font: 12px var(--font-sans); padding-inline: var(--spacing-3); margin-inline-start: var(--spacing-2); border-inline-start: 1px solid var(--color-border); }
-.tour-dialog { margin: auto; padding: 0; background: var(--color-panel); color: var(--color-fg); border: 1px solid var(--color-border); inline-size: min(1200px, calc(100vw - 32px)); max-block-size: 92dvh; overflow: auto; }
-.tour-dialog::backdrop { background: rgb(23 22 20 / .76); }
-.tour-dialog-header { display: flex; align-items: center; justify-content: space-between; gap: var(--spacing-4); padding-inline: var(--spacing-6); border-block-end: 1px solid var(--color-border); }
-.tour-dialog-header strong { font-size: 15px; font-weight: 600; }
-.tour-dialog-header button { display: flex; align-items: center; gap: var(--spacing-4); min-block-size: 56px; padding-inline: var(--spacing-2); border: 0; background: transparent; color: var(--color-fg); cursor: pointer; font-size: 13px; }
-.tour-dialog > p { padding: var(--spacing-4) var(--spacing-6); color: var(--color-muted); font-size: 12px; }
 /* Integrations describe compatibility, not an invented customer wall. */
 .landing-integrations { padding-block: var(--spacing-12); border-block-start: 1px solid var(--color-border); }
 .integrations-inner { display: grid; grid-template-columns: 1fr 2fr; gap: var(--spacing-12); align-items: center; }
@@ -156,8 +157,9 @@ html[dir='rtl'] .workflow-track i { transform-origin: right; }
 .surface-desktop { border: 1px solid var(--color-line-strong); box-shadow: var(--shadow-soft); }
 .surface-label { display: flex; justify-content: space-between; align-items: center; gap: var(--spacing-2); min-block-size: 36px; background: var(--color-panel); padding: var(--spacing-2) var(--spacing-3); font-size: 11px; border-block-end: 1px solid var(--color-border); }
 .surface-desktop .product-media { min-block-size: 310px; }
-.surface-phone { position: absolute; inset-block-end: 0; inset-inline-end: 0; inline-size: 160px; border: 4px solid var(--color-fg); background: var(--color-bg); box-shadow: var(--shadow-soft); }
-.surface-phone .product-media { padding: var(--spacing-4); min-block-size: 260px; }
+.surface-desktop .product-media.is-frame { min-block-size: 0; max-block-size: none; padding: 0; }
+.surface-phone { position: absolute; inset-block-end: 0; inset-inline-end: 0; display: flex; flex-direction: column; inline-size: 196px; aspect-ratio: 9 / 16; overflow: hidden; border: 1px solid var(--color-line-strong); background: var(--color-bg); box-shadow: var(--shadow-soft); }
+.surface-phone .product-media { flex: 1; min-block-size: 0; padding: 12px 10px; }
 .surface-phone .media-brief { font-size: 11px; }
 .surface-phone .media-label { font-size: 10px; }
 .surface-phone .media-dimensions { font-size: 9px; }
@@ -240,7 +242,7 @@ html[dir='rtl'] .workflow-track i { transform-origin: right; }
   .boundaries-layout, .surfaces-layout { gap: var(--spacing-12); }
   .feature-copy { padding: var(--spacing-6); }
   .feature-media { padding: var(--spacing-6) var(--spacing-6) 0; }
-  .tour-tabs button { padding-inline: var(--spacing-4); }
+  .tour-tabs button { padding: 11px 12px 12px; }
   .faq-grid { grid-template-columns: 1fr 1fr; }
 }
 @media(max-width: 900px) {
@@ -263,7 +265,7 @@ html[dir='rtl'] .workflow-track i { transform-origin: right; }
   .approval-preview .product-media { max-block-size: 380px; }
   .surfaces-layout .section-intro { order: -1; }
   .surfaces-visual { max-inline-size: 640px; inline-size: 100%; margin-inline: auto; }
-  .surface-phone { inline-size: 180px; }
+  .surface-phone { inline-size: 176px; }
   .hero-copy { display: block; text-align: center; }
   .hero-message { container-type: inline-size; padding-block-start: 0; }
   .hero-copy h1 { font-size: clamp(32px, 9cqi, 68px); }
@@ -283,19 +285,10 @@ html[dir='rtl'] .workflow-track i { transform-origin: right; }
   .hero-showcase { margin-block-start: var(--spacing-8); }
   .signal-field { display: none; }
   .tour-tab-controls { justify-content: flex-start; margin-block-end: var(--spacing-4); }
-  .tour-tabs { inline-size: 100%; }
-  .tour-tabs button { font-size: 12px; padding-inline: var(--spacing-4); }
-  .tour-window-bar { gap: var(--spacing-2); padding-inline: var(--spacing-3); }
-  .tour-window-caption { display: none; }
-  .tour-expand { margin-inline-start: auto; }
+  .tour-tabs button { padding: 11px 12px 12px; font-size: 12.5px; }
   .tour-copy { grid-template-columns: 1fr; gap: var(--spacing-2); padding: var(--spacing-6); min-block-size: 164px; align-content: center; }
   .tour-copy h2 { font-size: 21px; }
   .tour-copy p { font-size: 13px; }
-  .tour-bottom { flex-wrap: wrap; padding: var(--spacing-2) var(--spacing-3); gap: 0; }
-  .tour-bottom > p { padding-inline: var(--spacing-2); inline-size: 100%; font-size: 10px; }
-  .tour-controls { margin-inline-start: auto; }
-  .tour-dialog-header { padding-inline: var(--spacing-4); }
-  .tour-dialog-header strong { font-size: 13px; }
   .hero-platforms { gap: var(--spacing-2); flex-direction: column; text-align: center; padding-block: var(--spacing-6) var(--spacing-8); font-size: 11px; }
   .landing-integrations { padding-block: var(--spacing-8); }
   .integrations-copy p { display: none; }
@@ -320,8 +313,8 @@ html[dir='rtl'] .workflow-track i { transform-origin: right; }
   .workflow-media .product-media { min-block-size: 230px; }
   .surfaces-visual { padding-inline-end: 40px; padding-block-start: 0; padding-block-end: 88px; }
   .surface-desktop .product-media { min-block-size: 300px; padding: var(--spacing-6); }
-  .surface-phone { inline-size: 140px; }
-  .surface-phone .product-media { min-block-size: 250px; }
+  .surface-desktop .product-media.is-frame { min-block-size: 0; padding: 0; }
+  .surface-phone { inline-size: 148px; }
   .surface-phone .media-brief { font-size: 10px; }
   .faq-grid { grid-template-columns: 1fr; gap: var(--spacing-8); }
   .faq-grid h3 { font-size: 18px; }

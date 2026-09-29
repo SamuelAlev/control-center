@@ -16,6 +16,7 @@ import StructuredData from '../shared/StructuredData.astro';
 import WebMcpScript from '../shared/WebMcpScript.astro';
 import AcquisitionScript from '../shared/AcquisitionScript.astro';
 import SiteLocaleScript from '../shared/SiteLocaleScript.astro';
+import { cdn } from '../../data/cdn';
 import { landingPath, localeFromPath, manualPath } from '../../data/locales';
 
 const { starlightRoute } = Astro.locals;
@@ -51,7 +52,7 @@ const schema = [
       '@type': 'Organization',
       name: 'Control Center',
       url: siteHref,
-      logo: new URL('/favicon.svg', Astro.site).href,
+      logo: cdn.favicon,
     },
   },
   {

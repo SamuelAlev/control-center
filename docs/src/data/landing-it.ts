@@ -45,9 +45,11 @@ export const it: LandingCopy = {
     next: "Vista successiva del prodotto",
     play: "Avvia il tour",
     pause: "Metti in pausa il tour",
+    videoPlay: "Riproduci l’anteprima",
+    videoPause: "Metti in pausa l’anteprima",
     expand: "Espandi l’anteprima",
-    close: "Chiudi l’anteprima",
     preview: "Anteprima del prodotto",
+    close: "Chiudi l’anteprima",
     note: "Uno sguardo più da vicino alla tua giornata da sviluppatore.",
     imageLanguage: "Segnaposto per immagine o video",
     stops: [

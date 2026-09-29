@@ -9,12 +9,13 @@ import '../styles/landing.css';
 import LandingNav from '../components/landing/LandingNav.astro';
 import LandingFooter from '../components/landing/LandingFooter.astro';
 import { landingCopy } from '../data/landing';
+import { cdn } from '../data/cdn';
 import { siteLanguageDefaults, siteLocales, siteRtl, type SiteLocale } from '../data/locales';
 
 interface Props {
   title: string;
   description?: string;
-  /** Path to the social-share image, resolved against the site origin. */
+  /** Social image. An absolute URL, or a site path resolved against Astro.site. */
   ogImage?: string;
   /** Alt text for the social-share image. */
   ogImageAlt?: string;
@@ -29,7 +30,7 @@ const {
   title,
   description =
     'Control Center is the deck for your whole developer operation: dispatch and review AI coding agents, capture meetings and keep tickets, pipelines and your calendar in one app. Desktop on macOS, Windows, and Linux, plus web and phone.',
-  ogImage = '/og.png',
+  ogImage = cdn.ogImage,
   ogImageAlt = 'Control Center: the developer operations deck.',
   softwareApplication = false,
   breadcrumbName,
@@ -59,7 +60,7 @@ const schemas: Record<string, unknown>[] = [
     // is the durable identifier.
     alternateName: ['ctrl', 'usectrl', 'usectrl.dev'],
     url: siteHref,
-    logo: new URL('/favicon.svg', Astro.site).href,
+    logo: cdn.favicon,
     sameAs: [REPO_URL],
     contactPoint: {
       '@type': 'ContactPoint',
@@ -125,7 +126,7 @@ if (breadcrumbName) {
     {siteLanguageDefaults.has(language.id) && <link rel="alternate" hreflang={language.id.split('-')[0]} href={new URL(language.path, Astro.site).href} />}
   </>)}
   {isLanding && <link rel="alternate" hreflang="x-default" href={siteHref} />}
-  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href={cdn.favicon} type="image/svg+xml" />
   <link rel="sitemap" href="/sitemap-index.xml" />
   <link
     rel="alternate"
@@ -169,9 +170,8 @@ if (breadcrumbName) {
   <AcquisitionScript />
   {isLanding && <SiteLocaleScript />}
 
-  {/* Preload the self-hosted fonts to avoid a flash of fallback text. */}
-  <link rel="preload" href="/fonts/Manrope-Variable.woff2" as="font" type="font/woff2" crossorigin />
-  <link rel="preload" href="/fonts/FiraCode-VF.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href={cdn.fonts.manrope} as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href={cdn.fonts.firaCode} as="font" type="font/woff2" crossorigin />
 
   {/* Resolve the theme before first paint to avoid a flash and flag that JS is
       live so reveal animations can hide-then-reveal. Without this class the

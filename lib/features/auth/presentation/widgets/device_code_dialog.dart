@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/auth/providers/oauth_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
@@ -15,6 +17,10 @@ import 'package:flutter/widgets.dart';
 ///
 /// Dismissing it does NOT cancel the sign-in: the server keeps polling until
 /// the code expires, so finishing in the browser afterwards still connects.
+///
+/// The scrim does not dismiss. The browser is opened as this appears, and the
+/// click that brings the window back would otherwise hit the barrier and throw
+/// the code away before it can be read.
 Future<void> showDeviceCodeDialog(
   BuildContext context, {
   required String providerName,
@@ -22,10 +28,17 @@ Future<void> showDeviceCodeDialog(
   required Future<bool> Function() connected,
 }) => showCcDialog<void>(
   context: context,
-  builder: (dialogContext) => _DeviceCodeDialog(
-    providerName: providerName,
-    prompt: prompt,
-    connected: connected,
+  barrierDismissible: false,
+  builder: (dialogContext) => CallbackShortcuts(
+    bindings: {
+      const SingleActivator(LogicalKeyboardKey.escape): () =>
+          Navigator.of(dialogContext).maybePop(),
+    },
+    child: _DeviceCodeDialog(
+      providerName: providerName,
+      prompt: prompt,
+      connected: connected,
+    ),
   ),
 );
 
@@ -46,6 +59,8 @@ class _DeviceCodeDialog extends StatefulWidget {
 
 class _DeviceCodeDialogState extends State<_DeviceCodeDialog> {
   bool _done = false;
+  bool _checking = false;
+  Timer? _poll;
 
   @override
   void initState() {
@@ -53,17 +68,60 @@ class _DeviceCodeDialogState extends State<_DeviceCodeDialog> {
     // The code lands on the clipboard the moment the dialog opens: every
     // person who sees this screen is about to paste it.
     Clipboard.setData(ClipboardData(text: widget.prompt.userCode));
+    // After the code has painted. Opening the browser first hides this route
+    // under another app, and coming back dismisses a barrier-dismissible
+    // dialog on the same click.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      final uri = widget.prompt.verificationUri;
+      if (uri.isNotEmpty) {
+        openExternalUrl(uri);
+      }
+    });
     _watch();
   }
 
+  @override
+  void dispose() {
+    _poll?.cancel();
+    super.dispose();
+  }
+
   Future<void> _watch() async {
-    final ok = await awaitSignIn(widget.connected);
-    if (!mounted) {
+    // "Sign in again" is already connected. The first poll would match that
+    // existing row and close this before the new code can be read. Stay up;
+    // the server still stores the new credential when the browser flow ends.
+    final alreadyConnected = await widget.connected();
+    if (!mounted || alreadyConnected) {
       return;
     }
-    setState(() => _done = ok);
-    if (ok) {
+    final deadline = DateTime.now().add(kSignInTimeout);
+    _poll = Timer.periodic(const Duration(seconds: 2), (_) {
+      if (DateTime.now().isAfter(deadline)) {
+        _poll?.cancel();
+        return;
+      }
+      unawaited(_check());
+    });
+  }
+
+  Future<void> _check() async {
+    if (_checking || !mounted) {
+      return;
+    }
+    _checking = true;
+    try {
+      final ok = await widget.connected();
+      if (!mounted || !ok) {
+        return;
+      }
+      _poll?.cancel();
+      setState(() => _done = true);
       Navigator.of(context).maybePop();
+    } finally {
+      _checking = false;
     }
   }
 

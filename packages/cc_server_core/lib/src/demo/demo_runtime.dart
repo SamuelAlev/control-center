@@ -5,6 +5,7 @@ import 'package:cc_domain/features/dispatch/domain/ports/agent_backend.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_user.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_domain/features/pr_review/domain/providers/forge_provider.dart';
+import 'package:cc_domain/features/settings/domain/repositories/adapter_repository.dart';
 import 'package:cc_harness/loop.dart';
 import 'package:cc_harness/provider.dart';
 import 'package:cc_harness_runtime/cc_harness_runtime.dart';
@@ -17,6 +18,7 @@ import 'package:cc_server_core/src/demo/demo_open_pr_poller.dart';
 import 'package:cc_server_core/src/demo/demo_profile.dart';
 import 'package:cc_server_core/src/demo/demo_provider.dart';
 import 'package:cc_server_core/src/demo/demo_repo_stats.dart';
+import 'package:cc_server_core/src/demo/demo_runners.dart';
 import 'package:cc_server_core/src/demo/demo_script.dart';
 import 'package:cc_server_core/src/demo/demo_seeder.dart';
 import 'package:cc_server_core/src/demo/demo_story_replay.dart';
@@ -77,7 +79,6 @@ Future<DemoWiring> buildDemoWiring(DemoRuntimeContext context) async {
     pipelineTemplateRepository: PipelineTemplateRepositoryImpl(
       context.workspaceDbs,
     ),
-    syncLogRepository: DaoTicketSyncLogRepository(context.workspaceDbs),
     workProductRepository: DaoWorkProductRepository(context.workspaceDbs),
     reviewCohortRepository: DaoReviewCohortRepository(context.workspaceDbs),
     reviewSpaceRepository: DaoReviewSpaceRepository(context.workspaceDbs),
@@ -177,6 +178,16 @@ class _DemoWiring implements DemoWiring {
   @override
   Future<List<Map<String, dynamic>>> fetchSubscriptionUsage() async =>
       demoSubscriptionUsage();
+
+  @override
+  final AdapterRepository adapterDetection = const DemoAdapterRepository();
+
+  @override
+  final ClaudeAccountStore claudeAccounts = DemoClaudeAccountStore();
+
+  @override
+  Future<Map<String, dynamic>?> fetchClaudeAccountUsage(String configDir) =>
+      demoClaudeAccountUsage(configDir);
 
   /// Only the built-in harness. Any other `cliName` resolves to null and the
   /// run fails with "No execution backend" — a demo host has no CLIs, and

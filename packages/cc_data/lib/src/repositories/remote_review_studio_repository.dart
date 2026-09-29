@@ -172,6 +172,18 @@ class RemoteReviewStudioRepository {
     if (level != null) 'level': level.wireName,
   });
 
+  /// Starts the scripted demo review. Same reply shape as [startReview].
+  /// Only a public demo host registers this op.
+  Future<Map<String, dynamic>> startDemoReview({
+    required String owner,
+    required String repo,
+    required int prNumber,
+    ReviewLevel? level,
+  }) => _client.call('review_hub.demoStart', {
+    ..._prArgs(owner, repo, prNumber),
+    if (level != null) 'level': level.wireName,
+  });
+
   /// The files PR #[prNumber] conflicts on against its base, computed on the
   /// server (GitHub reports only that a branch conflicts). Raw payload:
   /// `{files, base_ref, head_ref}`.

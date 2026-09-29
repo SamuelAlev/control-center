@@ -45,9 +45,11 @@ export const ro: LandingCopy = {
     next: "Vizualizarea următoare a produsului",
     play: "Redă turul",
     pause: "Întrerupe turul",
-    expand: "Mărește previzualizarea",
+    videoPlay: "Redă previzualizarea",
+    videoPause: "Întrerupe previzualizarea",
+    expand: "Extinde previzualizarea",
+    preview: "Previzualizare produs",
     close: "Închide previzualizarea",
-    preview: "Previzualizarea produsului",
     note: "O privire mai apropiată asupra zilei tale de dezvoltare.",
     imageLanguage: "Substituent pentru imagine sau video",
     stops: [

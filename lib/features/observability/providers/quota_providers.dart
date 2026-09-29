@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:cc_domain/features/observability/domain/quota.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
+import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/features/observability/providers/observability_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -19,12 +20,40 @@ final quotaCalculatorProvider = Provider<QuotaCalculator>(
 
 const _quotaLimitsKey = 'observability_quota_limits_v1';
 
+/// Ceilings a demo workspace shows before the visitor configures any.
+///
+/// `all` matches every run. The numbers sit above a typical demo week so the
+/// bars read as in use, not exhausted.
+const List<QuotaLimit> _demoQuotaLimits = [
+  QuotaLimit(
+    provider: 'all',
+    window: QuotaWindow.fiveHour,
+    unit: QuotaUnit.tokens,
+    limit: 800000,
+  ),
+  QuotaLimit(
+    provider: 'all',
+    window: QuotaWindow.daily,
+    unit: QuotaUnit.requests,
+    limit: 40,
+  ),
+  QuotaLimit(
+    provider: 'all',
+    window: QuotaWindow.weekly,
+    unit: QuotaUnit.costCents,
+    limit: 2500,
+  ),
+];
+
 /// User-configured provider quota limits, persisted across launches.
 class QuotaLimitsNotifier extends Notifier<List<QuotaLimit>> {
   @override
   List<QuotaLimit> build() {
     final raw = ref.watch(appPreferencesProvider).getString(_quotaLimitsKey);
     if (raw == null || raw.isEmpty) {
+      if (ref.watch(isDemoServerProvider)) {
+        return _demoQuotaLimits;
+      }
       return const [];
     }
     try {

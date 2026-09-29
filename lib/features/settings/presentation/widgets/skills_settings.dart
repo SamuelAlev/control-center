@@ -195,12 +195,9 @@ class SkillsSettings extends ConsumerWidget {
     return PageWrapper(
       title: l10n.skills,
       subtitle: l10n.workspaceScopedSkills,
-      // Installing a skill fetches and scans code, and `skills.*` is absent
-      // from a demo server's registry. Keep the page chrome so the feature is
-      // still discoverable, and say why the body is empty.
-      child: ref.watch(isDemoServerProvider)
-          ? const DemoUnavailable(capability: DemoCapability.skills)
-          : workspaceId == null
+      // Seeded skills are readable. Writes stay closed: save, delete, scan
+      // and the sources tab (a GitHub fetch) do not run on a demo.
+      child: workspaceId == null
           ? Center(
               child: Text(
                 'No workspace selected',
@@ -342,6 +339,9 @@ class _SkillsBodyState extends ConsumerState<_SkillsBody> {
   }
 
   Future<void> _save() async {
+    if (ref.read(isDemoServerProvider)) {
+      return;
+    }
     final l10n = AppLocalizations.of(context);
     final name = _nameCtl.text.trim();
     if (name.isEmpty) {
@@ -431,7 +431,7 @@ class _SkillsBodyState extends ConsumerState<_SkillsBody> {
 
   Future<void> _delete() async {
     final l10n = AppLocalizations.of(context);
-    if (_selectedSkill == null) {
+    if (_selectedSkill == null || ref.read(isDemoServerProvider)) {
       return;
     }
     final confirmed = await showCcDialog<bool>(
@@ -462,9 +462,7 @@ class _SkillsBodyState extends ConsumerState<_SkillsBody> {
       // (the raw fs delete left a dangling pin). Falls back to the plain fs
       // path on a host that predates the op.
       try {
-        await ref
-            .read(skillSourceControlProvider)
-            .uninstall(_selectedSkill!);
+        await ref.read(skillSourceControlProvider).uninstall(_selectedSkill!);
       } on RemoteRpcException catch (e) {
         if (e.code != RpcErrorCodes.opUnknown) {
           rethrow;
@@ -490,7 +488,7 @@ class _SkillsBodyState extends ConsumerState<_SkillsBody> {
   /// skill is detached from its agents); the report names them.
   Future<void> _scanSkill() async {
     final skill = _selectedSkill;
-    if (skill == null || _scanning) {
+    if (skill == null || _scanning || ref.read(isDemoServerProvider)) {
       return;
     }
     final l10n = AppLocalizations.of(context);
@@ -521,7 +519,7 @@ class _SkillsBodyState extends ConsumerState<_SkillsBody> {
   /// template is enabled); falls back to the per-slug scan loop on servers
   /// predating the op. One skill's failure never aborts the pass.
   Future<void> _scanAll() async {
-    if (_scanning) {
+    if (_scanning || ref.read(isDemoServerProvider)) {
       return;
     }
     final skills =
@@ -623,6 +621,8 @@ class _SkillsBodyState extends ConsumerState<_SkillsBody> {
         Expanded(
           child: _tab == _SkillsTab.installed
               ? _buildInstalled(context)
+              : ref.watch(isDemoServerProvider)
+              ? const DemoUnavailable(capability: DemoCapability.skills)
               : SkillSourcesPanel(workspaceId: widget.workspaceId),
         ),
       ],
@@ -632,6 +632,7 @@ class _SkillsBodyState extends ConsumerState<_SkillsBody> {
   Widget _buildInstalled(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final skillsAsync = ref.watch(skillListProvider(widget.workspaceId));
+    final readOnly = ref.watch(isDemoServerProvider);
 
     return skillsAsync.when(
       loading: () => const Center(child: CcSpinner()),
@@ -661,18 +662,30 @@ class _SkillsBodyState extends ConsumerState<_SkillsBody> {
                   icon: AppIcons.scanSearch,
                   variant: CcButtonVariant.secondary,
                   size: CcButtonSize.sm,
-                  tooltip: l10n.skillScanAll,
+                  tooltip: readOnly ? l10n.demoReadOnlySave : l10n.skillScanAll,
                   semanticLabel: l10n.skillScanAll,
-                  onPressed: skills.isEmpty || _scanning ? null : _scanAll,
+                  onPressed: skills.isEmpty || _scanning || readOnly
+                      ? null
+                      : _scanAll,
                   loading: _scanning,
                 ),
                 const SizedBox(width: 8),
-                CcButton(
-                  size: CcButtonSize.sm,
-                  onPressed: _startNew,
-                  icon: AppIcons.plus,
-                  child: Text(l10n.newSkill),
-                ),
+                readOnly
+                    ? CcTooltip(
+                        message: l10n.demoReadOnlySave,
+                        child: CcButton(
+                          size: CcButtonSize.sm,
+                          onPressed: null,
+                          icon: AppIcons.plus,
+                          child: Text(l10n.newSkill),
+                        ),
+                      )
+                    : CcButton(
+                        size: CcButtonSize.sm,
+                        onPressed: _startNew,
+                        icon: AppIcons.plus,
+                        child: Text(l10n.newSkill),
+                      ),
               ],
             ),
             child: Column(
@@ -718,7 +731,6 @@ class _SkillsBodyState extends ConsumerState<_SkillsBody> {
     );
   }
 }
-
 
 class _SkillRailContent extends StatelessWidget {
   const _SkillRailContent({
@@ -840,7 +852,9 @@ class _SkillsListTile extends StatelessWidget {
                       skill.name,
                       style: TextStyle(
                         fontSize: 13,
-                        fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                        fontWeight: selected
+                            ? FontWeight.w600
+                            : FontWeight.w500,
                         color: tokens?.textPrimary,
                       ),
                       overflow: TextOverflow.ellipsis,
@@ -912,7 +926,6 @@ class _SkillEmptyContent extends StatelessWidget {
   }
 }
 
-
 class _SkillEditorContent extends ConsumerWidget {
   const _SkillEditorContent({
     required this.isNew,
@@ -948,6 +961,7 @@ class _SkillEditorContent extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final tokens = context.designSystem;
+    final readOnly = ref.watch(isDemoServerProvider);
     final workspaceId = ref.watch(activeWorkspaceIdProvider);
     final agents = workspaceId != null
         ? ref.watch(workspaceAgentsProvider(workspaceId)).value ?? const []
@@ -976,26 +990,46 @@ class _SkillEditorContent extends ConsumerWidget {
                 CcButton(
                   variant: CcButtonVariant.secondary,
                   size: CcButtonSize.sm,
-                  onPressed: scanning ? null : onScan,
+                  onPressed: scanning || readOnly ? null : onScan,
                   loading: scanning,
                   icon: AppIcons.scanSearch,
                   child: Text(l10n.skillScanAction),
                 ),
                 const SizedBox(width: 8),
-                CcButton(
-                  variant: CcButtonVariant.destructive,
-                  size: CcButtonSize.sm,
-                  onPressed: onDelete,
-                  icon: AppIcons.trash2,
-                  child: Text(l10n.delete),
-                ),
+                readOnly
+                    ? CcTooltip(
+                        message: l10n.demoReadOnlySave,
+                        child: CcButton(
+                          variant: CcButtonVariant.destructive,
+                          size: CcButtonSize.sm,
+                          onPressed: null,
+                          icon: AppIcons.trash2,
+                          child: Text(l10n.delete),
+                        ),
+                      )
+                    : CcButton(
+                        variant: CcButtonVariant.destructive,
+                        size: CcButtonSize.sm,
+                        onPressed: onDelete,
+                        icon: AppIcons.trash2,
+                        child: Text(l10n.delete),
+                      ),
                 const SizedBox(width: 8),
               ],
-              CcButton(
-                size: CcButtonSize.sm,
-                onPressed: (saving || !dirty) ? null : onSave,
-                child: Text(saving ? l10n.savingEllipsis : l10n.save),
-              ),
+              readOnly
+                  ? CcTooltip(
+                      message: l10n.demoReadOnlySave,
+                      child: CcButton(
+                        size: CcButtonSize.sm,
+                        onPressed: null,
+                        child: Text(l10n.save),
+                      ),
+                    )
+                  : CcButton(
+                      size: CcButtonSize.sm,
+                      onPressed: (saving || !dirty) ? null : onSave,
+                      child: Text(saving ? l10n.savingEllipsis : l10n.save),
+                    ),
             ],
           ),
           const SizedBox(height: AppSpacing.lg),

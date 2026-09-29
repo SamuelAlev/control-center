@@ -8,6 +8,7 @@ import 'package:cc_domain/features/pipelines/domain/entities/step_trigger.dart';
 import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_template_repository.dart';
 import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_trigger_repository.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/pipelines/presentation/screens/pipeline_template_editor_screen.dart';
 import 'package:control_center/features/pipelines/presentation/widgets/node_config_editor.dart';
@@ -274,6 +275,26 @@ void main() {
           matching: find.byType(CcSwitch),
         ),
         findsOneWidget,
+      );
+    });
+
+    test('demo node library omits shell nodes', () {
+      final demo = ProviderContainer(
+        overrides: [isDemoServerProvider.overrideWith((ref) => true)],
+      );
+      addTearDown(demo.dispose);
+      final library = demo.read(nodeTypeLibraryProvider);
+      expect(library.byId('bash.script'), isNull);
+      expect(library.byId('bash.clonePr'), isNull);
+      expect(library.byId('prompt.custom'), isNotNull);
+
+      final installed = ProviderContainer(
+        overrides: [isDemoServerProvider.overrideWith((ref) => false)],
+      );
+      addTearDown(installed.dispose);
+      expect(
+        installed.read(nodeTypeLibraryProvider).byId('bash.script'),
+        isNotNull,
       );
     });
 

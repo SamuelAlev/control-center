@@ -1,5 +1,6 @@
 ---
 import ProductMedia from './ProductMedia.astro';
+import { workflowCaptureFor } from '../../data/captures';
 import type { LandingCopy } from '../../data/landing';
 interface Props { copy: LandingCopy }
 const { copy: t } = Astro.props;
@@ -11,7 +12,7 @@ const { copy: t } = Astro.props;
       {t.workflow.steps.map((step, i) => <li data-enter>
         <div class="workflow-track" aria-hidden="true"><span>{String(i + 1).padStart(2, '0')}</span><i></i></div>
         <h3>{step.title}</h3><p>{step.text}</p>
-        <div class="workflow-media"><ProductMedia kind={`workflow-${step.kind}`} description={t.tour.stops.find(stop => stop.kind === step.kind)!.alt} label={t.tour.imageLanguage} compact /></div>
+        <div class="workflow-media"><ProductMedia kind={`workflow-${step.kind}`} description={t.tour.stops.find(stop => stop.kind === step.kind)!.alt} label={t.tour.imageLanguage} capture={workflowCaptureFor(step.kind)} playback="thumb" playLabel={t.tour.videoPlay} closeLabel={t.tour.close} compact /></div>
         <span class="workflow-label">{step.label}</span>
       </li>)}
     </ol>

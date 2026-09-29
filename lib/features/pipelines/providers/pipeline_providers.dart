@@ -14,6 +14,7 @@ import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_trigge
 import 'package:cc_domain/features/pipelines/domain/services/node_type_library.dart';
 import 'package:collection/collection.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
+import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/pipelines/pipeline_bindings.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -55,9 +56,14 @@ final pipelineTriggerRepositoryProvider = Provider<PipelineTriggerRepository>((
 });
 
 /// Provides the [NodeTypeLibrary] used to populate the editor sidebar.
-/// Pure data — web-safe.
+/// Pure data — web-safe. A demo drops shell nodes; the server refuses the
+/// same body on save.
 final nodeTypeLibraryProvider = Provider<NodeTypeLibrary>((ref) {
-  return defaultNodeTypeLibrary();
+  final library = defaultNodeTypeLibrary();
+  if (ref.watch(isDemoServerProvider)) {
+    return withoutBashNodes(library);
+  }
+  return library;
 });
 
 /// Provides the pipeline EXECUTOR, typed as the web-safe [PipelineEnginePort].
@@ -100,23 +106,21 @@ const _badgeSettleDelay = Duration(milliseconds: 700);
 /// pipeline mutation (progress ticks, step transitions) and feeding those no-op repeats
 /// into the timer would keep resetting it, so a long, chatty run would never surface a
 /// badge at all.
-final runningPipelineCountProvider = StreamProvider.autoDispose.family<int, String>((
-  ref,
-  workspaceId,
-) {
-  return _settled(
-    ref
-        .watch(pipelineRunRepositoryProvider)
-        .watchForWorkspace(workspaceId)
-        .map(
-          (runs) => runs
-              .where((run) => run.status == PipelineRunStatus.running)
-              .length,
-        )
-        .distinct(),
-    _badgeSettleDelay,
-  );
-});
+final runningPipelineCountProvider = StreamProvider.autoDispose
+    .family<int, String>((ref, workspaceId) {
+      return _settled(
+        ref
+            .watch(pipelineRunRepositoryProvider)
+            .watchForWorkspace(workspaceId)
+            .map(
+              (runs) => runs
+                  .where((run) => run.status == PipelineRunStatus.running)
+                  .length,
+            )
+            .distinct(),
+        _badgeSettleDelay,
+      );
+    });
 
 /// Trailing-debounces [source]: emits a value only once [delay] has passed with
 /// nothing newer arriving and drops the emission if the settled value matches
@@ -223,12 +227,10 @@ final pipelineClockProvider = StreamProvider.autoDispose<int>((ref) {
 });
 
 /// Watches a single pipeline run by ID, emitting on every status change.
-final pipelineRunProvider = StreamProvider.autoDispose.family<PipelineRun?, String>((
-  ref,
-  runId,
-) {
-  return ref.watch(pipelineRunRepositoryProvider).watchRun(runId);
-});
+final pipelineRunProvider = StreamProvider.autoDispose
+    .family<PipelineRun?, String>((ref, runId) {
+      return ref.watch(pipelineRunRepositoryProvider).watchRun(runId);
+    });
 
 /// Watches pipeline triggers for a specific workspace.
 final pipelineTriggersForWorkspaceProvider = StreamProvider.autoDispose

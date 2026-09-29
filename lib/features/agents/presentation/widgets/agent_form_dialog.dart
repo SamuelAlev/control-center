@@ -5,6 +5,7 @@ import 'package:cc_domain/core/utils/string_utils.dart';
 import 'package:cc_domain/features/agents/domain/constants/builtin_agent_seeds.dart';
 import 'package:cc_domain/features/settings/domain/entities/acp_model.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/agents/presentation/widgets/agent_effort_slider.dart';
 import 'package:control_center/features/agents/presentation/widgets/claude_accounts_notice.dart';
@@ -277,7 +278,6 @@ class _AgentSettingsFormState extends ConsumerState<AgentSettingsForm> {
         ? ''
         : _resolveReportsToName(_reportsToId);
   }
-
 
   Widget _identityGroup(AppLocalizations l10n) {
     final workspaceId = ref.watch(activeWorkspaceIdProvider);
@@ -580,7 +580,6 @@ class _AgentSettingsFormState extends ConsumerState<AgentSettingsForm> {
     );
   }
 
-
   void _setContextSize(int tokens) {
     // Writing the controller fires `_onFieldChanged`, which is what actually
     // commits `_contextSize` — set it there, not twice.
@@ -712,7 +711,10 @@ class _AgentSettingsFormState extends ConsumerState<AgentSettingsForm> {
         capabilities: _useCustomCapabilities ? _capabilities : null,
         removeCapabilities: !_useCustomCapabilities,
       );
-      if (workspaceId != null) {
+      // Skill files and agent markdown live on the host filesystem. A demo
+      // admits neither write. The agent row, including which skills it
+      // lists, still upserts into the visitor's own workspace.
+      if (workspaceId != null && !ref.read(isDemoServerProvider)) {
         final fs = ref.read(workspaceFilesystemPortProvider);
         final newPath = await fs.agentFilePath(workspaceId, newSlug);
         await fs.writeAgentFile(workspaceId, newSlug, _buildAgentMd(updated));

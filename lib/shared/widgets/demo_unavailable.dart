@@ -43,9 +43,8 @@ enum DemoCapability {
   /// Server administration — backup/export, pairing, membership.
   serverAdmin,
 
-  /// Pipeline execution — start, retry, template upsert, event triggers.
-  /// A visitor who can author a bash step and run it is executing code
-  /// on the public host.
+  /// Pipeline execution — start, retry, kill. Template authoring is open;
+  /// a bash step is refused because it is a shell on this host.
   pipelines,
 }
 
@@ -62,7 +61,11 @@ enum DemoCapability {
 /// visitor pays to be told no.
 class DemoUnavailable extends StatelessWidget {
   /// Creates a notice for [capability].
-  const DemoUnavailable({required this.capability, super.key, this.compact = false});
+  const DemoUnavailable({
+    required this.capability,
+    super.key,
+    this.compact = false,
+  });
 
   /// What is missing, and why.
   final DemoCapability capability;

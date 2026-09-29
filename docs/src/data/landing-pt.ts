@@ -46,9 +46,11 @@ export const pt: LandingCopy = {
     next: "Próxima visualização do produto",
     play: "Reproduzir o tour",
     pause: "Pausar o tour",
+    videoPlay: "Reproduzir a prévia",
+    videoPause: "Pausar a prévia",
     expand: "Ampliar a prévia",
-    close: "Fechar a prévia",
     preview: "Prévia do produto",
+    close: "Fechar a prévia",
     note: "Um olhar mais de perto para o seu dia de desenvolvimento.",
     imageLanguage: "Espaço reservado para imagem ou vídeo",
     stops: [

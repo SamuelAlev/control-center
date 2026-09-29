@@ -2,6 +2,7 @@ import 'package:cc_domain/core/domain/entities/review_space_association.dart';
 import 'package:cc_domain/features/governance/domain/entities/work_product.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_domain/features/pr_review/domain/value_objects/review_level.dart';
+import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/artifacts/providers/artifact_providers.dart';
 import 'package:control_center/features/pipelines/providers/pipeline_providers.dart';
@@ -136,14 +137,24 @@ class PrReviewStarter extends Notifier<Set<PrReviewKey>> {
     final key = (repoFullName: pr.repoFullName, prNumber: pr.number);
     state = {...state, key};
     try {
-      final result = await ref
-          .read(reviewStudioRepositoryProvider)
-          .startReview(
-            owner: parts.first,
-            repo: parts.sublist(1).join('/'),
-            prNumber: pr.number,
-            level: level,
-          );
+      final studio = ref.read(reviewStudioRepositoryProvider);
+      final owner = parts.first;
+      final repo = parts.sublist(1).join('/');
+      // The demo host has no reviewer processes. It walks a fixed script and
+      // writes the same run, findings and report this tab already watches.
+      final result = ref.read(isDemoServerProvider)
+          ? await studio.startDemoReview(
+              owner: owner,
+              repo: repo,
+              prNumber: pr.number,
+              level: level,
+            )
+          : await studio.startReview(
+              owner: owner,
+              repo: repo,
+              prNumber: pr.number,
+              level: level,
+            );
       // Refresh the association so the hub flips from the intro CTA to the
       // live review body; progress then streams through the space.
       ref.invalidate(reviewSpaceForPrProvider(pr.externalId));
