@@ -5310,6 +5310,12 @@ abstract class AppLocalizations {
   /// **'{count} cookie rules'**
   String cookieRulesCount(int count);
 
+  /// Instruction above the field of a destructive-action dialog. {value} is shown as a copyable chip holding the exact text to type.
+  ///
+  /// In en, this message translates to:
+  /// **'Type {value} to confirm.'**
+  String typeToConfirmPrompt(String value);
+
   /// No description provided for @copied.
   ///
   /// In en, this message translates to:
@@ -9120,12 +9126,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Success'**
   String get successLabel;
-
-  /// Header label for the suggestion composer
-  ///
-  /// In en, this message translates to:
-  /// **'Suggest a change'**
-  String get suggestAChange;
 
   /// Toolbar button that turns a line comment into a code suggestion
   ///
@@ -23223,6 +23223,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Start a review'**
   String get startAReview;
+
+  /// Diff comment composer destination: hand the comment to the pull request's agent chat instead of the forge
+  ///
+  /// In en, this message translates to:
+  /// **'Agent'**
+  String get commentModeAgent;
+
+  /// Diff comment composer destination: post the comment on its own, right away
+  ///
+  /// In en, this message translates to:
+  /// **'Comment'**
+  String get commentModeComment;
+
+  /// Diff comment composer destination: queue the comment for the batched review
+  ///
+  /// In en, this message translates to:
+  /// **'Review'**
+  String get commentModeReview;
+
+  /// Accessibility label for the segmented control choosing where a diff comment is sent (agent, single comment or review)
+  ///
+  /// In en, this message translates to:
+  /// **'Comment destination'**
+  String get commentDestination;
+
+  /// Placeholder of the diff comment field while the composer sends to the agent
+  ///
+  /// In en, this message translates to:
+  /// **'Send to agent…'**
+  String get commentHintAgent;
+
+  /// Placeholder of the diff comment field while the composer queues comments for the review
+  ///
+  /// In en, this message translates to:
+  /// **'Add to review…'**
+  String get commentHintReview;
 
   /// Warning toast when a comment-only review is submitted with no summary and no queued comments
   ///

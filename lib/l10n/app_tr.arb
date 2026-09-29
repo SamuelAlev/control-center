@@ -1762,6 +1762,7 @@
       }
     }
   },
+  "typeToConfirmPrompt": "Onaylamak için {value} yazın.",
   "copied": "Kopyalandı!",
   "copy": "Kopyala",
   "copyAddress": "Adresi kopyala",
@@ -3093,7 +3094,6 @@
   "strictIdentityCheck": "Katı kimlik denetimi",
   "success": "Başarılı",
   "successLabel": "Başarılı",
-  "suggestAChange": "Değişiklik öner",
   "suggestion": "Öneri",
   "suggestLabel": "Öner",
   "superseded": "Geçersiz kılındı",
@@ -7916,6 +7916,12 @@
   "addSingleComment": "Tek yorum ekle",
   "addToReview": "İncelemeye ekle",
   "startAReview": "İnceleme başlat",
+  "commentModeAgent": "Ajan",
+  "commentModeComment": "Yorum",
+  "commentModeReview": "İnceleme",
+  "commentDestination": "Yorumun hedefi",
+  "commentHintAgent": "Aracıya gönder…",
+  "commentHintReview": "İncelemeye ekle…",
   "reviewNeedsABody": "Önce bir özet yazın veya satır içi bir yorum kuyruğa alın",
   "reviewSubmitted": "İnceleme gönderildi",
   "finishYourReview": "İncelemenizi bitirin",

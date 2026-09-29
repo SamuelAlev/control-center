@@ -3032,6 +3032,11 @@ class AppLocalizationsHu extends AppLocalizations {
   }
 
   @override
+  String typeToConfirmPrompt(String value) {
+    return 'A megerősítéshez írja be ezt: $value.';
+  }
+
+  @override
   String get copied => 'Másolva!';
 
   @override
@@ -5286,9 +5291,6 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get successLabel => 'Siker';
-
-  @override
-  String get suggestAChange => 'Módosítás javaslása';
 
   @override
   String get suggestion => 'Javaslat';
@@ -13677,6 +13679,24 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get startAReview => 'Átnézés indítása';
+
+  @override
+  String get commentModeAgent => 'Ügynök';
+
+  @override
+  String get commentModeComment => 'Megjegyzés';
+
+  @override
+  String get commentModeReview => 'Átnézés';
+
+  @override
+  String get commentDestination => 'A megjegyzés célja';
+
+  @override
+  String get commentHintAgent => 'Küldés az ügynöknek…';
+
+  @override
+  String get commentHintReview => 'Hozzáadás az átnézéshez…';
 
   @override
   String get reviewNeedsABody =>

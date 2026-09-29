@@ -83,7 +83,7 @@ header.header {
   box-shadow: 0 1px 0 var(--cc-border);
 }
 
-/* Sidebar: sentence-case hierarchy, roomy rows, ink-filled current location. */
+/* Sidebar: sentence-case hierarchy, roomy rows, brand-filled current location. */
 .sidebar-pane { border-inline-end-color: var(--cc-border); }
 .sidebar-content { padding-block-start: var(--cc-space-6); gap: var(--cc-space-6); }
 .sidebar-content .top-level > li + li { margin-block-start: var(--cc-space-4); }
@@ -106,15 +106,21 @@ header.header {
   color: var(--cc-muted);
   font-size: .8125rem;
   line-height: 1.5;
-  transition: background-color var(--cc-motion-fast) var(--cc-ease), color var(--cc-motion-fast) var(--cc-ease);
+  transition: background-color var(--cc-motion-fast) var(--cc-ease), color var(--cc-motion-fast) var(--cc-ease), box-shadow var(--cc-motion-fast) var(--cc-ease);
 }
 .sidebar-content a:hover { color: var(--cc-fg); background: var(--cc-hover); }
-.sidebar-content a[aria-current='page'] {
-  color: var(--cc-bg);
-  background: var(--cc-fg);
-  font-weight: 600;
+/* Current page matches the app sidebar: solid brand fill, white label, and a
+   1px accent rim (paint-only, so the row does not grow). The rim disappears
+   into the light fill and reads as a brighter edge in dark. Hover stays on
+   that fill; the brand overlay covers the row wash. */
+.sidebar-content a[aria-current='page'],
+.sidebar-content a[aria-current='page']:hover {
+  color: var(--cc-accent-on);
+  background: var(--cc-nav-current);
+  font-weight: 700;
+  box-shadow: inset 0 0 0 1px var(--cc-accent);
 }
-.sidebar-content a[aria-current='page']:hover { background: var(--cc-accent-fill); color: var(--cc-accent-on); }
+.sidebar-content a[aria-current='page']:focus-visible { outline-color: var(--cc-accent-on); }
 .sidebar-content .caret { color: var(--cc-idle); transition: transform var(--cc-motion-base) var(--cc-ease); }
 .sidebar-content .docs-source-code {
   inline-size: 100%;

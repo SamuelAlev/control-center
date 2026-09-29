@@ -3011,6 +3011,11 @@ class AppLocalizationsFa extends AppLocalizations {
   }
 
   @override
+  String typeToConfirmPrompt(String value) {
+    return 'برای تأیید، $value را تایپ کنید.';
+  }
+
+  @override
   String get copied => 'کپی شد!';
 
   @override
@@ -5243,9 +5248,6 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get successLabel => 'موفقیت';
-
-  @override
-  String get suggestAChange => 'پیشنهاد یک تغییر';
 
   @override
   String get suggestion => 'پیشنهاد';
@@ -13573,6 +13575,24 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get startAReview => 'شروع بازبینی';
+
+  @override
+  String get commentModeAgent => 'عامل';
+
+  @override
+  String get commentModeComment => 'نظر';
+
+  @override
+  String get commentModeReview => 'بازبینی';
+
+  @override
+  String get commentDestination => 'مقصد نظر';
+
+  @override
+  String get commentHintAgent => 'ارسال به عامل…';
+
+  @override
+  String get commentHintReview => 'افزودن به بازبینی…';
 
   @override
   String get reviewNeedsABody =>

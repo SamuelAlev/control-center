@@ -3031,6 +3031,11 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String typeToConfirmPrompt(String value) {
+    return 'Typ $value om te bevestigen.';
+  }
+
+  @override
   String get copied => 'Gekopieerd!';
 
   @override
@@ -5284,9 +5289,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get successLabel => 'Succes';
-
-  @override
-  String get suggestAChange => 'Wijziging voorstellen';
 
   @override
   String get suggestion => 'Suggestie';
@@ -13668,6 +13670,24 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get startAReview => 'Review starten';
+
+  @override
+  String get commentModeAgent => 'Agent';
+
+  @override
+  String get commentModeComment => 'Reactie';
+
+  @override
+  String get commentModeReview => 'Review';
+
+  @override
+  String get commentDestination => 'Bestemming van de reactie';
+
+  @override
+  String get commentHintAgent => 'Naar agent sturen…';
+
+  @override
+  String get commentHintReview => 'Aan review toevoegen…';
 
   @override
   String get reviewNeedsABody =>

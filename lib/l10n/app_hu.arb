@@ -1762,6 +1762,7 @@
       }
     }
   },
+  "typeToConfirmPrompt": "A megerősítéshez írja be ezt: {value}.",
   "copied": "Másolva!",
   "copy": "Másolás",
   "copyAddress": "Cím másolása",
@@ -3093,7 +3094,6 @@
   "strictIdentityCheck": "Szigorú identitásellenőrzés",
   "success": "Siker",
   "successLabel": "Siker",
-  "suggestAChange": "Módosítás javaslása",
   "suggestion": "Javaslat",
   "suggestLabel": "JAVASLAT",
   "superseded": "Felülírva",
@@ -7916,6 +7916,12 @@
   "addSingleComment": "Egyetlen megjegyzés hozzáadása",
   "addToReview": "Hozzáadás az átnézéshez",
   "startAReview": "Átnézés indítása",
+  "commentModeAgent": "Ügynök",
+  "commentModeComment": "Megjegyzés",
+  "commentModeReview": "Átnézés",
+  "commentDestination": "A megjegyzés célja",
+  "commentHintAgent": "Küldés az ügynöknek…",
+  "commentHintReview": "Hozzáadás az átnézéshez…",
   "reviewNeedsABody": "Először írjon összefoglalót, vagy soroljon fel egy sorközi megjegyzést",
   "reviewSubmitted": "Átnézés elküldve",
   "finishYourReview": "Átnézés befejezése",

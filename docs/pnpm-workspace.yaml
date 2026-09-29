@@ -10,6 +10,6 @@ minimumReleaseAgeExclude:
   - '@cloudflare/workerd-linux-64@1.20260921.1'
   - '@cloudflare/workerd-linux-arm64@1.20260921.1'
   - '@cloudflare/workerd-windows-64@1.20260921.1'
-  - miniflare@5.20260921.0-alpha
+  - miniflare@5.20260921.0-alpha || 5.20260926.1-alpha
   - workerd@1.20260921.1
-  - wrangler@4.136.1
+  - wrangler@4.136.1 || 4.143.1

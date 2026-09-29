@@ -3,18 +3,21 @@ import 'dart:async';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/pr_review/presentation/utils/diff_palette.dart';
 import 'package:control_center/features/pr_review/presentation/utils/syntax_highlighter.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/pr_inline_comments/comment_send_row.dart';
+import 'package:control_center/features/pr_review/providers/comment_composer_mode_provider.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/syntax/grammar_registry.dart';
 import 'package:control_center/shared/syntax/syntax_languages.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Inline "suggest a change" composer: the original line(s) are shown read-only
 /// with deletion styling above an editable replacement field with addition
 /// styling, plus an optional comment and post/cancel actions — mirroring the
 /// GitHub/Pierre suggestion flow (original row + editable replacement row).
-class SuggestionComposer extends StatefulWidget {
+class SuggestionComposer extends ConsumerStatefulWidget {
   /// Creates a suggestion composer.
   const SuggestionComposer({
     super.key,
@@ -25,6 +28,7 @@ class SuggestionComposer extends StatefulWidget {
     required this.onCancel,
     this.initialComment = '',
     this.onSubmitBatched,
+    this.onSendToAgent,
     this.reviewInProgress = false,
   });
 
@@ -46,6 +50,12 @@ class SuggestionComposer extends StatefulWidget {
   final void Function(List<String> suggestions, String comment)?
   onSubmitBatched;
 
+  /// Hands the suggestion to the pull request's agent to apply instead of
+  /// posting it. The composer stays open until the future completes; the host
+  /// closes it on success. Null hides the destination.
+  final Future<void> Function(List<String> suggestions, String comment)?
+  onSendToAgent;
+
   /// File whose selected code is being replaced, used to resolve its grammar.
   final String? filePath;
 
@@ -56,10 +66,10 @@ class SuggestionComposer extends StatefulWidget {
   final VoidCallback onCancel;
 
   @override
-  State<SuggestionComposer> createState() => _SuggestionComposerState();
+  ConsumerState<SuggestionComposer> createState() => _SuggestionComposerState();
 }
 
-class _SuggestionComposerState extends State<SuggestionComposer> {
+class _SuggestionComposerState extends ConsumerState<SuggestionComposer> {
   late final List<DiffSyntaxTextEditingController> _codes = [
     DiffSyntaxTextEditingController(
       text: widget.originalCode,
@@ -72,6 +82,7 @@ class _SuggestionComposerState extends State<SuggestionComposer> {
   );
   final Set<String> _warmed = <String>{};
   bool _dark = false;
+  bool _sending = false;
 
   String? get _language {
     final path = widget.filePath;
@@ -142,6 +153,31 @@ class _SuggestionComposerState extends State<SuggestionComposer> {
 
   List<String> get _suggestions => [for (final code in _codes) code.text];
 
+  Future<void> _send(CommentComposerMode mode) async {
+    if (_sending) {
+      return;
+    }
+    switch (mode) {
+      case CommentComposerMode.agent:
+        final toAgent = widget.onSendToAgent;
+        if (toAgent == null) {
+          return;
+        }
+        setState(() => _sending = true);
+        try {
+          await toAgent(_suggestions, _comment.text);
+        } finally {
+          if (mounted) {
+            setState(() => _sending = false);
+          }
+        }
+      case CommentComposerMode.review:
+        widget.onSubmitBatched?.call(_suggestions, _comment.text);
+      case CommentComposerMode.comment:
+        widget.onSubmit(_suggestions, _comment.text);
+    }
+  }
+
   @override
   void dispose() {
     for (final controller in _codes) {
@@ -164,6 +200,14 @@ class _SuggestionComposerState extends State<SuggestionComposer> {
     final palette = DiffPalette.of(context);
     final l10n = AppLocalizations.of(context);
     final codeStyle = widget.baseStyle.copyWith(fontSize: 12, height: 1.5);
+    final modes = commentComposerModes(
+      agent: widget.onSendToAgent != null,
+      review: widget.onSubmitBatched != null,
+    );
+    final mode = resolveCommentComposerMode(
+      ref.watch(commentComposerModeProvider),
+      modes,
+    );
     _dark = context.ccTheme?.isDark ?? false;
     for (final controller in _codes) {
       controller.configure(languageId: _language, dark: _dark);
@@ -264,49 +308,18 @@ class _SuggestionComposerState extends State<SuggestionComposer> {
                       textStyle: CcTypography.body.copyWith(
                         color: context.ds.textTertiary,
                       ),
-                      hintText: l10n.leaveACommentEllipsis,
+                      hintText: commentComposerHint(l10n, mode),
                       chromeless: true,
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Wrap(
-                    alignment: WrapAlignment.end,
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: [
-                      CcButton(
-                        onPressed: widget.onCancel,
-                        variant: CcButtonVariant.secondary,
-                        size: CcButtonSize.sm,
-                        child: Text(l10n.cancel),
-                      ),
-                      CcButton(
-                        onPressed: () =>
-                            widget.onSubmit(_suggestions, _comment.text),
-                        size: CcButtonSize.sm,
-                        variant: widget.onSubmitBatched == null
-                            ? CcButtonVariant.primary
-                            : CcButtonVariant.secondary,
-                        child: Text(
-                          widget.onSubmitBatched == null
-                              ? l10n.suggestAChange
-                              : l10n.addSingleComment,
-                        ),
-                      ),
-                      if (widget.onSubmitBatched != null)
-                        CcButton(
-                          onPressed: () => widget.onSubmitBatched!(
-                            _suggestions,
-                            _comment.text,
-                          ),
-                          size: CcButtonSize.sm,
-                          child: Text(
-                            widget.reviewInProgress
-                                ? l10n.addToReview
-                                : l10n.startAReview,
-                          ),
-                        ),
-                    ],
+                  CommentSendRow(
+                    modes: modes,
+                    mode: mode,
+                    reviewInProgress: widget.reviewInProgress,
+                    sending: _sending,
+                    onSend: _send,
+                    onCancel: widget.onCancel,
                   ),
                 ],
               ),

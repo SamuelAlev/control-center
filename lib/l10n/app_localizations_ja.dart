@@ -2969,6 +2969,11 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String typeToConfirmPrompt(String value) {
+    return '確認のため $value と入力してください。';
+  }
+
+  @override
   String get copied => 'コピーしました！';
 
   @override
@@ -5158,9 +5163,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get successLabel => '成功';
-
-  @override
-  String get suggestAChange => '変更を提案';
 
   @override
   String get suggestion => '提案';
@@ -13335,6 +13337,24 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get startAReview => 'レビューを開始';
+
+  @override
+  String get commentModeAgent => 'エージェント';
+
+  @override
+  String get commentModeComment => 'コメント';
+
+  @override
+  String get commentModeReview => 'レビュー';
+
+  @override
+  String get commentDestination => 'コメントの送信先';
+
+  @override
+  String get commentHintAgent => 'エージェントに送る…';
+
+  @override
+  String get commentHintReview => 'レビューに追加…';
 
   @override
   String get reviewNeedsABody => '先に要約を書くか、インラインコメントを追加してください';

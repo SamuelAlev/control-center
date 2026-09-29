@@ -1762,6 +1762,7 @@
       }
     }
   },
+  "typeToConfirmPrompt": "Ketik {value} untuk mengonfirmasi.",
   "copied": "Disalin!",
   "copy": "Salin",
   "copyAddress": "Salin alamat",
@@ -3093,7 +3094,6 @@
   "strictIdentityCheck": "Pemeriksaan identitas ketat",
   "success": "Berhasil",
   "successLabel": "Berhasil",
-  "suggestAChange": "Usulkan perubahan",
   "suggestion": "Saran",
   "suggestLabel": "USULKAN",
   "superseded": "Digantikan",
@@ -7916,6 +7916,12 @@
   "addSingleComment": "Tambahkan komentar tunggal",
   "addToReview": "Tambahkan ke tinjauan",
   "startAReview": "Mulai tinjauan",
+  "commentModeAgent": "Agen",
+  "commentModeComment": "Komentar",
+  "commentModeReview": "Tinjauan",
+  "commentDestination": "Tujuan komentar",
+  "commentHintAgent": "Kirim ke agen…",
+  "commentHintReview": "Tambahkan ke tinjauan…",
   "reviewNeedsABody": "Tulis ringkasan atau antrekan komentar sebaris dulu",
   "reviewSubmitted": "Tinjauan dikirim",
   "finishYourReview": "Selesaikan tinjauan Anda",

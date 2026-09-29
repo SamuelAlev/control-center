@@ -42,8 +42,11 @@ class AppDatabaseBackupService implements DatabaseBackupPort {
   /// Filename of the manifest inside a snapshot directory.
   static const manifestFileName = 'manifest.json';
 
+  /// Matches what [_timestamp] writes. `toIso8601String` emits microseconds
+  /// (six fractional digits) whenever the sub-millisecond part is non-zero —
+  /// i.e. almost always on a real clock — and milliseconds only otherwise.
   static final _snapshotNamePattern = RegExp(
-    r'^(\d{4}-\d{2}-\d{2})T(\d{2})-(\d{2})-(\d{2})-(\d{3})Z$',
+    r'^(\d{4}-\d{2}-\d{2})T(\d{2})-(\d{2})-(\d{2})-(\d{3}(?:\d{3})?)Z$',
   );
 
   Directory get _workspaceBackups =>
@@ -258,7 +261,7 @@ class AppDatabaseBackupService implements DatabaseBackupPort {
     if (!root.existsSync()) {
       return const [];
     }
-    final snapshots = <BackupSnapshot>[];
+    final snapshots = <(DateTime, BackupSnapshot)>[];
     for (final entity in root.listSync(followLinks: false)) {
       if (entity is! Directory) {
         continue;
@@ -266,17 +269,18 @@ class AppDatabaseBackupService implements DatabaseBackupPort {
       final name = entity.path.split(Platform.pathSeparator).last;
       // Only immutable timestamp-named install snapshots belong in this list.
       // Exports and scoped workspace backups have their own lanes.
-      if (_snapshotDate(name) == null) {
+      final date = _snapshotDate(name);
+      if (date == null) {
         continue;
       }
-      snapshots.add(_readSnapshot(entity, name));
+      snapshots.add((date, _readSnapshot(entity, name)));
     }
-    // The directory name IS the UTC timestamp, fixed-width and zero-padded, so
-    // a reverse lexicographic sort is chronological — and it still orders a
-    // snapshot whose manifest could not be read, which a `createdAt` sort
-    // would strand at one end.
-    snapshots.sort((a, b) => b.name.compareTo(a.name));
-    return snapshots;
+    // Ordered by the timestamp the directory name encodes, not the manifest's
+    // `createdAt`: that still orders a snapshot whose manifest could not be
+    // read. Not a lexicographic name sort — the fractional part is three or
+    // six digits wide, so names are not fixed-width.
+    snapshots.sort((a, b) => b.$1.compareTo(a.$1));
+    return [for (final (_, snapshot) in snapshots) snapshot];
   }
 
   /// Reads one snapshot directory, tolerating every way it can be broken.

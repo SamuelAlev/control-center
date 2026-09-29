@@ -1762,6 +1762,7 @@
       }
     }
   },
+  "typeToConfirmPrompt": "Πληκτρολογήστε {value} για επιβεβαίωση.",
   "copied": "Αντιγράφηκε!",
   "copy": "Αντιγραφή",
   "copyAddress": "Αντιγραφή διεύθυνσης",
@@ -3093,7 +3094,6 @@
   "strictIdentityCheck": "Αυστηρός έλεγχος ταυτότητας",
   "success": "Επιτυχία",
   "successLabel": "Επιτυχία",
-  "suggestAChange": "Πρόταση αλλαγής",
   "suggestion": "Πρόταση",
   "suggestLabel": "ΠΡΟΤΑΣΗ",
   "superseded": "Αντικαταστάθηκε",
@@ -7916,6 +7916,12 @@
   "addSingleComment": "Προσθήκη μεμονωμένου σχολίου",
   "addToReview": "Προσθήκη στην ανασκόπηση",
   "startAReview": "Έναρξη ανασκόπησης",
+  "commentModeAgent": "Πράκτορας",
+  "commentModeComment": "Σχόλιο",
+  "commentModeReview": "Ανασκόπηση",
+  "commentDestination": "Προορισμός σχολίου",
+  "commentHintAgent": "Αποστολή σε πράκτορα…",
+  "commentHintReview": "Προσθήκη στην ανασκόπηση…",
   "reviewNeedsABody": "Γράψτε πρώτα μια περίληψη ή ουρά ενός ενσωματωμένου σχολίου",
   "reviewSubmitted": "Η ανασκόπηση υποβλήθηκε",
   "finishYourReview": "Ολοκληρώστε την ανασκόπησή σας",

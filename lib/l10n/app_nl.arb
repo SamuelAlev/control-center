@@ -1234,6 +1234,7 @@
       }
     }
   },
+  "typeToConfirmPrompt": "Typ {value} om te bevestigen.",
   "copied": "Gekopieerd!",
   "copy": "Kopiëren",
   "copyAddress": "Adres kopiëren",
@@ -2931,10 +2932,6 @@
   },
   "success": "Succes",
   "successLabel": "Succes",
-  "suggestAChange": "Wijziging voorstellen",
-  "@suggestAChange": {
-    "description": "Header label for the suggestion composer"
-  },
   "suggestion": "Suggestie",
   "suggestLabel": "SUGGESTIE",
   "superseded": "Vervangen",
@@ -7291,6 +7288,12 @@
   "addSingleComment": "Losse reactie toevoegen",
   "addToReview": "Aan review toevoegen",
   "startAReview": "Review starten",
+  "commentModeAgent": "Agent",
+  "commentModeComment": "Reactie",
+  "commentModeReview": "Review",
+  "commentDestination": "Bestemming van de reactie",
+  "commentHintAgent": "Naar agent sturen…",
+  "commentHintReview": "Aan review toevoegen…",
   "reviewNeedsABody": "Schrijf eerst een samenvatting of zet een inline reactie in de wachtrij",
   "reviewSubmitted": "Review verstuurd",
   "finishYourReview": "Review afronden",

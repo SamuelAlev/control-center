@@ -1826,6 +1826,7 @@
       }
     }
   },
+  "typeToConfirmPrompt": "พิมพ์ {value} เพื่อยืนยัน",
   "copied": "คัดลอกแล้ว!",
   "copy": "คัดลอก",
   "copyAddress": "คัดลอกที่อยู่",
@@ -3205,7 +3206,6 @@
   "strictIdentityCheck": "ตรวจตัวตนแบบเข้มงวด",
   "success": "สำเร็จ",
   "successLabel": "สำเร็จ",
-  "suggestAChange": "เสนอการเปลี่ยนแปลง",
   "suggestion": "ข้อเสนอแนะ",
   "suggestLabel": "เสนอ",
   "superseded": "ถูกแทนที่",
@@ -8328,6 +8328,12 @@
   "addSingleComment": "เพิ่มความคิดเห็นเดี่ยว",
   "addToReview": "เพิ่มในรีวิว",
   "startAReview": "เริ่มรีวิว",
+  "commentModeAgent": "เอเจนต์",
+  "commentModeComment": "ความคิดเห็น",
+  "commentModeReview": "รีวิว",
+  "commentDestination": "ปลายทางของความคิดเห็น",
+  "commentHintAgent": "ส่งถึงเอเจนต์…",
+  "commentHintReview": "เพิ่มในรีวิว…",
   "reviewNeedsABody": "เขียนสรุปหรือคิวความคิดเห็นในบรรทัดก่อน",
   "reviewSubmitted": "ส่งรีวิวแล้ว",
   "finishYourReview": "จบรีวิวของคุณ",

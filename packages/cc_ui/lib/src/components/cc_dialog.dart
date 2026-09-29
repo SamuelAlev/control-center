@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 import 'package:cc_ui/src/components/cc_button.dart';
 import 'package:cc_ui/src/components/cc_icons.dart';
 import 'package:cc_ui/src/components/cc_text_field.dart';
+import 'package:cc_ui/src/components/cc_type_to_confirm.dart';
 import 'package:cc_ui/src/foundation/cc_elevation.dart';
 import 'package:cc_ui/src/foundation/cc_motion.dart';
 import 'package:cc_ui/src/foundation/cc_tappable.dart';
@@ -189,7 +190,8 @@ class _DialogCloseButton extends StatelessWidget {
 
 /// Confirmation dialog for a consequential action → whether the user confirmed.
 /// Low impact: skip this and use undo. Moderate: [danger] + consequence
-/// [message]. High: also [typeToConfirm] (confirm disabled until exact match).
+/// [message]. High: also [typeToConfirm] (confirm disabled until exact match),
+/// asked for by a [CcTypeToConfirmPrompt] worded by [typeToConfirmLabels].
 /// Cancel is secondary; confirm is destructive when [danger] and must name the
 /// action. Danger dialogs ignore Esc/scrim. Caller localizes every string.
 Future<bool> showCcConfirmDialog({
@@ -200,7 +202,7 @@ Future<bool> showCcConfirmDialog({
   required String cancelLabel,
   bool danger = false,
   String? typeToConfirm,
-  String? typeToConfirmLabel,
+  CcTypeToConfirmLabels typeToConfirmLabels = const CcTypeToConfirmLabels(),
 }) async {
   final confirmed = await showCcDialog<bool>(
     context: context,
@@ -212,7 +214,7 @@ Future<bool> showCcConfirmDialog({
       cancelLabel: cancelLabel,
       danger: danger,
       typeToConfirm: typeToConfirm,
-      typeToConfirmLabel: typeToConfirmLabel,
+      typeToConfirmLabels: typeToConfirmLabels,
     ),
   );
   return confirmed ?? false;
@@ -226,7 +228,7 @@ class _CcConfirmDialog extends StatefulWidget {
     required this.cancelLabel,
     required this.danger,
     required this.typeToConfirm,
-    required this.typeToConfirmLabel,
+    required this.typeToConfirmLabels,
   });
 
   final String title;
@@ -235,7 +237,7 @@ class _CcConfirmDialog extends StatefulWidget {
   final String cancelLabel;
   final bool danger;
   final String? typeToConfirm;
-  final String? typeToConfirmLabel;
+  final CcTypeToConfirmLabels typeToConfirmLabels;
 
   @override
   State<_CcConfirmDialog> createState() => _CcConfirmDialogState();
@@ -257,6 +259,7 @@ class _CcConfirmDialogState extends State<_CcConfirmDialog> {
   @override
   Widget build(BuildContext context) {
     final navigator = Navigator.of(context);
+    final typeToConfirm = widget.typeToConfirm;
     return CcDialog(
       title: widget.title,
       onClose: () => navigator.pop(false),
@@ -265,12 +268,16 @@ class _CcConfirmDialogState extends State<_CcConfirmDialog> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(widget.message),
-          if (widget.typeToConfirm != null) ...[
-            AppSpacing.vGapMd,
+          if (typeToConfirm != null) ...[
+            AppSpacing.vGapLg,
+            CcTypeToConfirmPrompt(
+              value: typeToConfirm,
+              labels: widget.typeToConfirmLabels,
+            ),
+            AppSpacing.vGapSm,
             CcTextField(
               controller: _controller,
-              label: widget.typeToConfirmLabel,
-              hintText: widget.typeToConfirm,
+              hintText: typeToConfirm,
               autofocus: true,
               onChanged: (_) => setState(() {}),
               onSubmitted: (_) {

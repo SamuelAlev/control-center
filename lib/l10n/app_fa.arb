@@ -1762,6 +1762,7 @@
       }
     }
   },
+  "typeToConfirmPrompt": "برای تأیید، {value} را تایپ کنید.",
   "copied": "کپی شد!",
   "copy": "کپی",
   "copyAddress": "کپی نشانی",
@@ -3093,7 +3094,6 @@
   "strictIdentityCheck": "بررسی هویت سخت‌گیرانه",
   "success": "موفقیت",
   "successLabel": "موفقیت",
-  "suggestAChange": "پیشنهاد یک تغییر",
   "suggestion": "پیشنهاد",
   "suggestLabel": "پیشنهاد",
   "superseded": "منسوخ",
@@ -7916,6 +7916,12 @@
   "addSingleComment": "افزودن نظر تکی",
   "addToReview": "افزودن به بازبینی",
   "startAReview": "شروع بازبینی",
+  "commentModeAgent": "عامل",
+  "commentModeComment": "نظر",
+  "commentModeReview": "بازبینی",
+  "commentDestination": "مقصد نظر",
+  "commentHintAgent": "ارسال به عامل…",
+  "commentHintReview": "افزودن به بازبینی…",
   "reviewNeedsABody": "ابتدا خلاصه‌ای بنویسید یا نظر درون‌خطی در صف بگذارید",
   "reviewSubmitted": "بازبینی ارسال شد",
   "finishYourReview": "بازبینی‌تان را تمام کنید",

@@ -1762,6 +1762,7 @@
       }
     }
   },
+  "typeToConfirmPrompt": "Введіть {value} для підтвердження.",
   "copied": "Скопійовано!",
   "copy": "Копіювати",
   "copyAddress": "Копіювати адресу",
@@ -3093,7 +3094,6 @@
   "strictIdentityCheck": "Сувора перевірка ідентичності",
   "success": "Успіх",
   "successLabel": "Успіх",
-  "suggestAChange": "Запропонувати зміну",
   "suggestion": "Пропозиція",
   "suggestLabel": "Пропозиція",
   "superseded": "Замінено",
@@ -7916,6 +7916,12 @@
   "addSingleComment": "Додати окремий коментар",
   "addToReview": "Додати до рев’ю",
   "startAReview": "Почати рев’ю",
+  "commentModeAgent": "Агент",
+  "commentModeComment": "Коментар",
+  "commentModeReview": "Рев’ю",
+  "commentDestination": "Куди надіслати коментар",
+  "commentHintAgent": "Надіслати агенту…",
+  "commentHintReview": "Додати до рев’ю…",
   "reviewNeedsABody": "Спочатку напишіть підсумок або поставте в чергу вбудований коментар",
   "reviewSubmitted": "Рев’ю надіслано",
   "finishYourReview": "Завершити рев’ю",

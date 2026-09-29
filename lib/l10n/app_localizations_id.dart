@@ -3021,6 +3021,11 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
+  String typeToConfirmPrompt(String value) {
+    return 'Ketik $value untuk mengonfirmasi.';
+  }
+
+  @override
   String get copied => 'Disalin!';
 
   @override
@@ -5273,9 +5278,6 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get successLabel => 'Berhasil';
-
-  @override
-  String get suggestAChange => 'Usulkan perubahan';
 
   @override
   String get suggestion => 'Saran';
@@ -13637,6 +13639,24 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get startAReview => 'Mulai tinjauan';
+
+  @override
+  String get commentModeAgent => 'Agen';
+
+  @override
+  String get commentModeComment => 'Komentar';
+
+  @override
+  String get commentModeReview => 'Tinjauan';
+
+  @override
+  String get commentDestination => 'Tujuan komentar';
+
+  @override
+  String get commentHintAgent => 'Kirim ke agen…';
+
+  @override
+  String get commentHintReview => 'Tambahkan ke tinjauan…';
 
   @override
   String get reviewNeedsABody =>

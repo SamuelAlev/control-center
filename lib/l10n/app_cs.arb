@@ -1762,6 +1762,7 @@
       }
     }
   },
+  "typeToConfirmPrompt": "Pro potvrzení zadejte {value}.",
   "copied": "Zkopírováno!",
   "copy": "Kopírovat",
   "copyAddress": "Kopírovat adresu",
@@ -3093,7 +3094,6 @@
   "strictIdentityCheck": "Přísná kontrola identity",
   "success": "Úspěch",
   "successLabel": "Úspěch",
-  "suggestAChange": "Navrhnout změnu",
   "suggestion": "Návrh",
   "suggestLabel": "NAVRHNOUT",
   "superseded": "Nahrazeno",
@@ -7916,6 +7916,12 @@
   "addSingleComment": "Přidat jeden komentář",
   "addToReview": "Přidat ke kontrole",
   "startAReview": "Zahájit kontrolu",
+  "commentModeAgent": "Agent",
+  "commentModeComment": "Komentář",
+  "commentModeReview": "Kontrola",
+  "commentDestination": "Cíl komentáře",
+  "commentHintAgent": "Poslat agentovi…",
+  "commentHintReview": "Přidat ke kontrole…",
   "reviewNeedsABody": "Nejprve napište shrnutí nebo zařaďte inline komentář",
   "reviewSubmitted": "Kontrola odeslána",
   "finishYourReview": "Dokončit kontrolu",

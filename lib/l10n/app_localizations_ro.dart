@@ -3053,6 +3053,11 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String typeToConfirmPrompt(String value) {
+    return 'Tastează $value pentru a confirma.';
+  }
+
+  @override
   String get copied => 'Copiat!';
 
   @override
@@ -5317,9 +5322,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get successLabel => 'Succes';
-
-  @override
-  String get suggestAChange => 'Sugerează o modificare';
 
   @override
   String get suggestion => 'Sugestie';
@@ -13767,6 +13769,24 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get startAReview => 'Pornește o revizuire';
+
+  @override
+  String get commentModeAgent => 'Agent';
+
+  @override
+  String get commentModeComment => 'Comentariu';
+
+  @override
+  String get commentModeReview => 'Revizuire';
+
+  @override
+  String get commentDestination => 'Destinația comentariului';
+
+  @override
+  String get commentHintAgent => 'Trimite agentului…';
+
+  @override
+  String get commentHintReview => 'Adaugă la revizuire…';
 
   @override
   String get reviewNeedsABody =>

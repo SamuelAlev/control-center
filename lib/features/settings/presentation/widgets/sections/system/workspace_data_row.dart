@@ -6,6 +6,7 @@ import 'package:control_center/features/settings/providers/backup_providers.dart
 import 'package:control_center/features/settings/providers/backup_transfer.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/widgets/type_to_confirm_labels.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -102,33 +103,39 @@ class _WorkspaceDataRowState extends ConsumerState<WorkspaceDataRow> {
   }, ({required busy}) => setState(() => _exporting = busy));
 
   /// Downloads this workspace's database to a place the person picks.
-  Future<void> _download() => _run(() async {
-    final result = await ref
-        .read(backupTransferProvider)
-        .downloadWorkspace(
-          workspaceId: widget.workspace.id,
-          suggestedName: '${widget.workspace.id}.db',
-          onProgress: (transferred, total) {
-            if (mounted) {
-              setState(
-                () => _downloadProgress = (transferred: transferred, total: total),
-              );
-            }
-          },
-        );
-    if (mounted) {
-      reportBackupDownload(context, result);
-    }
-  }, ({required busy}) {
-    setState(() {
-      _downloading = busy;
-      // Cleared when the transfer ends, so a finished bar does not sit at 100%
-      // under a button that is ready to be pressed again.
-      if (!busy) {
-        _downloadProgress = null;
+  Future<void> _download() => _run(
+    () async {
+      final result = await ref
+          .read(backupTransferProvider)
+          .downloadWorkspace(
+            workspaceId: widget.workspace.id,
+            suggestedName: '${widget.workspace.id}.db',
+            onProgress: (transferred, total) {
+              if (mounted) {
+                setState(
+                  () => _downloadProgress = (
+                    transferred: transferred,
+                    total: total,
+                  ),
+                );
+              }
+            },
+          );
+      if (mounted) {
+        reportBackupDownload(context, result);
       }
-    });
-  });
+    },
+    ({required busy}) {
+      setState(() {
+        _downloading = busy;
+        // Cleared when the transfer ends, so a finished bar does not sit at 100%
+        // under a button that is ready to be pressed again.
+        if (!busy) {
+          _downloadProgress = null;
+        }
+      });
+    },
+  );
 
   /// Picks a file on THIS device and uploads it for the server to adopt.
   ///
@@ -151,34 +158,40 @@ class _WorkspaceDataRowState extends ConsumerState<WorkspaceDataRow> {
       cancelLabel: l10n.cancel,
       danger: true,
       typeToConfirm: name,
+      typeToConfirmLabels: appTypeToConfirmLabels(context),
     );
     if (!confirmed || !mounted) {
       return;
     }
-    await _run(() async {
-      await ref
-          .read(backupTransferProvider)
-          .restoreFromFile(
-            workspaceId: widget.workspace.id,
-            file: file,
-            onProgress: (transferred, total) {
-              if (mounted) {
-                setState(
-                  () =>
-                      _uploadProgress = (transferred: transferred, total: total),
-                );
-              }
-            },
-          );
-      _toast(l10n.backupImportDone(name), ok: true);
-    }, ({required busy}) {
-      setState(() {
-        _uploading = busy;
-        if (!busy) {
-          _uploadProgress = null;
-        }
-      });
-    });
+    await _run(
+      () async {
+        await ref
+            .read(backupTransferProvider)
+            .restoreFromFile(
+              workspaceId: widget.workspace.id,
+              file: file,
+              onProgress: (transferred, total) {
+                if (mounted) {
+                  setState(
+                    () => _uploadProgress = (
+                      transferred: transferred,
+                      total: total,
+                    ),
+                  );
+                }
+              },
+            );
+        _toast(l10n.backupImportDone(name), ok: true);
+      },
+      ({required busy}) {
+        setState(() {
+          _uploading = busy;
+          if (!busy) {
+            _uploadProgress = null;
+          }
+        });
+      },
+    );
   }
 
   Future<void> _import() async {
@@ -196,6 +209,7 @@ class _WorkspaceDataRowState extends ConsumerState<WorkspaceDataRow> {
       cancelLabel: l10n.cancel,
       danger: true,
       typeToConfirm: name,
+      typeToConfirmLabels: appTypeToConfirmLabels(context),
     );
     if (!confirmed || !mounted) {
       return;
@@ -222,12 +236,14 @@ class _WorkspaceDataRowState extends ConsumerState<WorkspaceDataRow> {
       cancelLabel: l10n.cancel,
       danger: true,
       typeToConfirm: name,
+      typeToConfirmLabels: appTypeToConfirmLabels(context),
     );
     if (!confirmed || !mounted) {
       return;
     }
     await _run(
-      () => ref.read(backupActionsProvider).deleteWorkspace(widget.workspace.id),
+      () =>
+          ref.read(backupActionsProvider).deleteWorkspace(widget.workspace.id),
       ({required busy}) => setState(() => _deleting = busy),
     );
   }
@@ -310,7 +326,9 @@ class _WorkspaceDataRowState extends ConsumerState<WorkspaceDataRow> {
                 variant: CcButtonVariant.secondary,
                 icon: AppIcons.upload,
                 loading: _uploading,
-                onPressed: !canTransfer || _uploading ? null : _uploadAndRestore,
+                onPressed: !canTransfer || _uploading
+                    ? null
+                    : _uploadAndRestore,
                 child: Text(l10n.backupUploadAction),
               ),
             ),

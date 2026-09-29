@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:cc_ui/src/components/cc_dialog.dart';
 import 'package:cc_ui/src/components/cc_icons.dart';
+import 'package:cc_ui/src/components/cc_type_to_confirm.dart';
 import 'package:cc_ui/src/foundation/cc_motion.dart';
 import 'package:cc_ui/src/foundation/cc_tappable.dart';
 import 'package:cc_ui/src/theme/cc_theme.dart';
@@ -337,10 +338,21 @@ void main() {
           cancelLabel: 'Cancel',
           danger: true,
           typeToConfirm: 'acme-prod',
-          typeToConfirmLabel: 'Type the workspace name to confirm',
         ).then((v) => result = v),
       );
       await tester.pumpAndSettle();
+
+      // The value is asked for inline as a copyable chip, and the empty field
+      // shows it again as its placeholder.
+      expect(find.byType(CcTypeToConfirmPrompt), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(CcTypeToConfirmPrompt),
+          matching: find.text('acme-prod'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('acme-prod'), findsNWidgets(2));
 
       // Unarmed: tapping the confirm button does nothing.
       await tester.tap(find.text('Delete workspace').last);

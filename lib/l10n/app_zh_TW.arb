@@ -1762,6 +1762,7 @@
       }
     }
   },
+  "typeToConfirmPrompt": "輸入 {value} 以確認。",
   "copied": "已複製！",
   "copy": "複製",
   "copyAddress": "複製位址",
@@ -3093,7 +3094,6 @@
   "strictIdentityCheck": "嚴格身分檢查",
   "success": "成功",
   "successLabel": "成功",
-  "suggestAChange": "建議變更",
   "suggestion": "建議",
   "suggestLabel": "建議",
   "superseded": "已取代",
@@ -7916,6 +7916,12 @@
   "addSingleComment": "新增單則留言",
   "addToReview": "加入檢閱",
   "startAReview": "開始檢閱",
+  "commentModeAgent": "代理",
+  "commentModeComment": "留言",
+  "commentModeReview": "檢閱",
+  "commentDestination": "留言傳送位置",
+  "commentHintAgent": "傳送給代理…",
+  "commentHintReview": "加入檢閱…",
   "reviewNeedsABody": "請先撰寫摘要或排入行內留言",
   "reviewSubmitted": "檢閱已送出",
   "finishYourReview": "完成你的檢閱",

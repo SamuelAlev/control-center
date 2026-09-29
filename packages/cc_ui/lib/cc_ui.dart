@@ -71,6 +71,7 @@ export 'package:cc_ui/src/components/cc_tile.dart';
 export 'package:cc_ui/src/components/cc_toaster.dart';
 export 'package:cc_ui/src/components/cc_tooltip.dart';
 export 'package:cc_ui/src/components/cc_truncated_text.dart';
+export 'package:cc_ui/src/components/cc_type_to_confirm.dart';
 // Foundation.
 export 'package:cc_ui/src/foundation/cc_browser_text_menu.dart';
 export 'package:cc_ui/src/foundation/cc_component_tokens.dart';

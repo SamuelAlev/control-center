@@ -3025,6 +3025,11 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
+  String typeToConfirmPrompt(String value) {
+    return 'Onaylamak için $value yazın.';
+  }
+
+  @override
   String get copied => 'Kopyalandı!';
 
   @override
@@ -5264,9 +5269,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get successLabel => 'Başarılı';
-
-  @override
-  String get suggestAChange => 'Değişiklik öner';
 
   @override
   String get suggestion => 'Öneri';
@@ -13621,6 +13623,24 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get startAReview => 'İnceleme başlat';
+
+  @override
+  String get commentModeAgent => 'Ajan';
+
+  @override
+  String get commentModeComment => 'Yorum';
+
+  @override
+  String get commentModeReview => 'İnceleme';
+
+  @override
+  String get commentDestination => 'Yorumun hedefi';
+
+  @override
+  String get commentHintAgent => 'Aracıya gönder…';
+
+  @override
+  String get commentHintReview => 'İncelemeye ekle…';
 
   @override
   String get reviewNeedsABody =>

@@ -3013,6 +3013,11 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
+  String typeToConfirmPrompt(String value) {
+    return 'הקלידו $value לאישור.';
+  }
+
+  @override
   String get copied => 'הועתק!';
 
   @override
@@ -5251,9 +5256,6 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get successLabel => 'הצלחה';
-
-  @override
-  String get suggestAChange => 'הצע שינוי';
 
   @override
   String get suggestion => 'הצעה';
@@ -13628,6 +13630,24 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get startAReview => 'התחלת סקירה';
+
+  @override
+  String get commentModeAgent => 'סוכן';
+
+  @override
+  String get commentModeComment => 'תגובה';
+
+  @override
+  String get commentModeReview => 'סקירה';
+
+  @override
+  String get commentDestination => 'יעד התגובה';
+
+  @override
+  String get commentHintAgent => 'שליחה לסוכן…';
+
+  @override
+  String get commentHintReview => 'הוספה לסקירה…';
 
   @override
   String get reviewNeedsABody => 'כתבו תקציר או הכניסו קודם תגובה לתור';

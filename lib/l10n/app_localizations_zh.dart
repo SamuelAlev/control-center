@@ -2933,6 +2933,11 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String typeToConfirmPrompt(String value) {
+    return '输入 $value 以确认。';
+  }
+
+  @override
   String get copied => '已复制！';
 
   @override
@@ -5099,9 +5104,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get successLabel => '成功';
-
-  @override
-  String get suggestAChange => '建议更改';
 
   @override
   String get suggestion => '建议';
@@ -13189,6 +13191,24 @@ class AppLocalizationsZh extends AppLocalizations {
   String get startAReview => '开始审查';
 
   @override
+  String get commentModeAgent => '智能体';
+
+  @override
+  String get commentModeComment => '评论';
+
+  @override
+  String get commentModeReview => '审查';
+
+  @override
+  String get commentDestination => '评论发送位置';
+
+  @override
+  String get commentHintAgent => '发送给代理…';
+
+  @override
+  String get commentHintReview => '添加到审查…';
+
+  @override
   String get reviewNeedsABody => '请先撰写总结或排队一条行内评论';
 
   @override
@@ -17593,6 +17613,11 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   }
 
   @override
+  String typeToConfirmPrompt(String value) {
+    return '輸入 $value 以確認。';
+  }
+
+  @override
   String get copied => '已複製！';
 
   @override
@@ -19758,9 +19783,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get successLabel => '成功';
-
-  @override
-  String get suggestAChange => '建議變更';
 
   @override
   String get suggestion => '建議';
@@ -27849,6 +27871,24 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get startAReview => '開始檢閱';
+
+  @override
+  String get commentModeAgent => '代理';
+
+  @override
+  String get commentModeComment => '留言';
+
+  @override
+  String get commentModeReview => '檢閱';
+
+  @override
+  String get commentDestination => '留言傳送位置';
+
+  @override
+  String get commentHintAgent => '傳送給代理…';
+
+  @override
+  String get commentHintReview => '加入檢閱…';
 
   @override
   String get reviewNeedsABody => '請先撰寫摘要或排入行內留言';

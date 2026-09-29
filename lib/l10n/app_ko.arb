@@ -1762,6 +1762,7 @@
       }
     }
   },
+  "typeToConfirmPrompt": "확인하려면 {value}을(를) 입력하세요.",
   "copied": "복사했습니다!",
   "copy": "복사",
   "copyAddress": "주소 복사",
@@ -3093,7 +3094,6 @@
   "strictIdentityCheck": "엄격한 신원 확인",
   "success": "성공",
   "successLabel": "성공",
-  "suggestAChange": "변경 제안",
   "suggestion": "제안",
   "suggestLabel": "제안",
   "superseded": "대체됨",
@@ -7916,6 +7916,12 @@
   "addSingleComment": "댓글만 추가",
   "addToReview": "리뷰에 추가",
   "startAReview": "리뷰 시작",
+  "commentModeAgent": "에이전트",
+  "commentModeComment": "댓글",
+  "commentModeReview": "리뷰",
+  "commentDestination": "댓글 보낼 곳",
+  "commentHintAgent": "에이전트에게 보내기…",
+  "commentHintReview": "리뷰에 추가…",
   "reviewNeedsABody": "먼저 요약을 작성하거나 인라인 댓글을 대기열에 넣으세요",
   "reviewSubmitted": "리뷰가 제출되었습니다",
   "finishYourReview": "리뷰 완료",

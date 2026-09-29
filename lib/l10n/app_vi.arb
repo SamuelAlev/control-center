@@ -1762,6 +1762,7 @@
       }
     }
   },
+  "typeToConfirmPrompt": "Nhập {value} để xác nhận.",
   "copied": "Đã sao chép!",
   "copy": "Sao chép",
   "copyAddress": "Sao chép địa chỉ",
@@ -3093,7 +3094,6 @@
   "strictIdentityCheck": "Kiểm tra danh tính nghiêm ngặt",
   "success": "Thành công",
   "successLabel": "Thành công",
-  "suggestAChange": "Đề xuất thay đổi",
   "suggestion": "Đề xuất",
   "suggestLabel": "ĐỀ XUẤT",
   "superseded": "Đã thay thế",
@@ -7916,6 +7916,12 @@
   "addSingleComment": "Thêm bình luận đơn",
   "addToReview": "Thêm vào review",
   "startAReview": "Bắt đầu review",
+  "commentModeAgent": "Agent",
+  "commentModeComment": "Bình luận",
+  "commentModeReview": "Review",
+  "commentDestination": "Nơi gửi bình luận",
+  "commentHintAgent": "Gửi cho tác nhân…",
+  "commentHintReview": "Thêm vào review…",
   "reviewNeedsABody": "Viết tóm tắt hoặc xếp hàng một bình luận nội tuyến trước",
   "reviewSubmitted": "Đã gửi review",
   "finishYourReview": "Hoàn tất review",

@@ -3059,6 +3059,11 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String typeToConfirmPrompt(String value) {
+    return 'اكتب $value للتأكيد.';
+  }
+
+  @override
   String get copied => 'تم النسخ!';
 
   @override
@@ -5320,9 +5325,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get successLabel => 'نجاح';
-
-  @override
-  String get suggestAChange => 'اقتراح تغيير';
 
   @override
   String get suggestion => 'اقتراح';
@@ -13824,6 +13826,24 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get startAReview => 'بدء مراجعة';
+
+  @override
+  String get commentModeAgent => 'الوكيل';
+
+  @override
+  String get commentModeComment => 'تعليق';
+
+  @override
+  String get commentModeReview => 'مراجعة';
+
+  @override
+  String get commentDestination => 'وجهة التعليق';
+
+  @override
+  String get commentHintAgent => 'إرسال إلى الوكيل…';
+
+  @override
+  String get commentHintReview => 'إضافة إلى المراجعة…';
 
   @override
   String get reviewNeedsABody =>

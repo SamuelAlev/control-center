@@ -1762,6 +1762,7 @@
       }
     }
   },
+  "typeToConfirmPrompt": "Введите {value} для подтверждения.",
   "copied": "Скопировано!",
   "copy": "Копировать",
   "copyAddress": "Копировать адрес",
@@ -3093,7 +3094,6 @@
   "strictIdentityCheck": "Строгая проверка идентичности",
   "success": "Успех",
   "successLabel": "Успех",
-  "suggestAChange": "Предложить изменение",
   "suggestion": "Предложение",
   "suggestLabel": "ПРЕДЛОЖИТЬ",
   "superseded": "Заменено",
@@ -7916,6 +7916,12 @@
   "addSingleComment": "Добавить один комментарий",
   "addToReview": "Добавить в ревью",
   "startAReview": "Начать ревью",
+  "commentModeAgent": "Агент",
+  "commentModeComment": "Комментарий",
+  "commentModeReview": "Ревью",
+  "commentDestination": "Куда отправить комментарий",
+  "commentHintAgent": "Отправить агенту…",
+  "commentHintReview": "Добавить в ревью…",
   "reviewNeedsABody": "Сначала напишите сводку или поставьте в очередь комментарий в коде",
   "reviewSubmitted": "Ревью отправлено",
   "finishYourReview": "Завершить ревью",

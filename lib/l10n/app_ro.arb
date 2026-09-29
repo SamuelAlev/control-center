@@ -1762,6 +1762,7 @@
       }
     }
   },
+  "typeToConfirmPrompt": "Tastează {value} pentru a confirma.",
   "copied": "Copiat!",
   "copy": "Copiază",
   "copyAddress": "Copiază adresa",
@@ -3093,7 +3094,6 @@
   "strictIdentityCheck": "Verificare strictă a identității",
   "success": "Succes",
   "successLabel": "Succes",
-  "suggestAChange": "Sugerează o modificare",
   "suggestion": "Sugestie",
   "suggestLabel": "SUGEREAZĂ",
   "superseded": "Înlocuit",
@@ -7916,6 +7916,12 @@
   "addSingleComment": "Adaugă un singur comentariu",
   "addToReview": "Adaugă la revizuire",
   "startAReview": "Pornește o revizuire",
+  "commentModeAgent": "Agent",
+  "commentModeComment": "Comentariu",
+  "commentModeReview": "Revizuire",
+  "commentDestination": "Destinația comentariului",
+  "commentHintAgent": "Trimite agentului…",
+  "commentHintReview": "Adaugă la revizuire…",
   "reviewNeedsABody": "Scrie mai întâi un rezumat sau pune în coadă un comentariu inline",
   "reviewSubmitted": "Revizuire trimisă",
   "finishYourReview": "Finalizează revizuirea",

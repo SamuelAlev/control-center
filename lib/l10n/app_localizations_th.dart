@@ -3001,6 +3001,11 @@ class AppLocalizationsTh extends AppLocalizations {
   }
 
   @override
+  String typeToConfirmPrompt(String value) {
+    return 'พิมพ์ $value เพื่อยืนยัน';
+  }
+
+  @override
   String get copied => 'คัดลอกแล้ว!';
 
   @override
@@ -5221,9 +5226,6 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get successLabel => 'สำเร็จ';
-
-  @override
-  String get suggestAChange => 'เสนอการเปลี่ยนแปลง';
 
   @override
   String get suggestion => 'ข้อเสนอแนะ';
@@ -13504,6 +13506,24 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get startAReview => 'เริ่มรีวิว';
+
+  @override
+  String get commentModeAgent => 'เอเจนต์';
+
+  @override
+  String get commentModeComment => 'ความคิดเห็น';
+
+  @override
+  String get commentModeReview => 'รีวิว';
+
+  @override
+  String get commentDestination => 'ปลายทางของความคิดเห็น';
+
+  @override
+  String get commentHintAgent => 'ส่งถึงเอเจนต์…';
+
+  @override
+  String get commentHintReview => 'เพิ่มในรีวิว…';
 
   @override
   String get reviewNeedsABody => 'เขียนสรุปหรือคิวความคิดเห็นในบรรทัดก่อน';

@@ -1762,6 +1762,7 @@
       }
     }
   },
+  "typeToConfirmPrompt": "הקלידו {value} לאישור.",
   "copied": "הועתק!",
   "copy": "העתקה",
   "copyAddress": "העתקת כתובת",
@@ -3093,7 +3094,6 @@
   "strictIdentityCheck": "בדיקת זהות קפדנית",
   "success": "הצלחה",
   "successLabel": "הצלחה",
-  "suggestAChange": "הצע שינוי",
   "suggestion": "הצעה",
   "suggestLabel": "הצעה",
   "superseded": "הוחלפה",
@@ -7916,6 +7916,12 @@
   "addSingleComment": "הוספת תגובה בודדת",
   "addToReview": "הוספה לסקירה",
   "startAReview": "התחלת סקירה",
+  "commentModeAgent": "סוכן",
+  "commentModeComment": "תגובה",
+  "commentModeReview": "סקירה",
+  "commentDestination": "יעד התגובה",
+  "commentHintAgent": "שליחה לסוכן…",
+  "commentHintReview": "הוספה לסקירה…",
   "reviewNeedsABody": "כתבו תקציר או הכניסו קודם תגובה לתור",
   "reviewSubmitted": "הסקירה נשלחה",
   "finishYourReview": "סיום הסקירה",

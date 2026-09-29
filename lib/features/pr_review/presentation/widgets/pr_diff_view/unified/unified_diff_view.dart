@@ -14,6 +14,7 @@ import 'package:control_center/core/theme/font_settings.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/pr_review/presentation/utils/diff_isolate_worker.dart';
 import 'package:control_center/features/pr_review/presentation/utils/server_review_threads.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/comment_action_model.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/diff_keyboard_handler.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/diff_search_controller.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/composer_reveal.dart';
@@ -43,6 +44,7 @@ import 'package:control_center/features/pr_review/presentation/widgets/reaction_
 import 'package:control_center/features/pr_review/presentation/widgets/sticky_header.dart';
 import 'package:control_center/features/pr_review/providers/diff_view_settings_provider.dart';
 import 'package:control_center/features/pr_review/providers/pr_inline_comments_provider.dart';
+import 'package:control_center/features/pr_review/providers/send_comment_to_agent.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/github_user_avatar.dart';
@@ -1542,6 +1544,41 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
       batched: batched,
     );
     _cancelComposer(animate: false);
+  }
+
+  /// Hands the composer's draft to the pull request's agent chat.
+  ///
+  /// The composer closes only once the message is in: on failure it stays
+  /// open with the draft, because a reviewer's written words are never
+  /// dropped on a failed send.
+  Future<void> _sendComposerToAgent(ComposerRequest req, String body) async {
+    final ctl = widget.inlineCommentsController;
+    if (ctl == null || body.trim().isEmpty) {
+      return;
+    }
+    final l10n = AppLocalizations.of(context);
+    final toasts = CcToastScope.of(context);
+    try {
+      await sendCommentToAgent(
+        ref,
+        prRef: ctl.pr,
+        prompt: commentAgentPrompt(
+          body: body,
+          path: _document.files[req.fileIndex].filename,
+          startLine: req.lineNoStart,
+          endLine: req.lineNoEnd,
+        ),
+      );
+    } catch (_) {
+      toasts.show(l10n.commentSendFailed, variant: CcToastVariant.danger);
+      return;
+    }
+    toasts.show(l10n.commentSentToAgent, variant: CcToastVariant.success);
+    // A composer opened elsewhere while this one was sending is not ours to
+    // close.
+    if (mounted && identical(_activeComposer, req)) {
+      _cancelComposer();
+    }
   }
 
   /// Dismisses the open composer.
@@ -3365,6 +3402,11 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
                                   batched: true,
                                 )
                               : null,
+                          onSendToAgent: (suggested, comment) =>
+                              _sendComposerToAgent(
+                                req,
+                                buildSuggestionBody(comment, suggested),
+                              ),
                           onCancel: _cancelComposer,
                         )
                       : PrCommentComposer(
@@ -3378,6 +3420,8 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
                               ? (body) =>
                                     _submitComment(req, body, batched: true)
                               : null,
+                          onSendToAgent: (body) =>
+                              _sendComposerToAgent(req, body),
                           onCancel: _cancelComposer,
                         ),
                 ),

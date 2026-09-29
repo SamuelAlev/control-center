@@ -1,5 +1,9 @@
+import 'dart:async';
+
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_comment_field.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/pr_inline_comments/comment_send_row.dart';
+import 'package:control_center/features/pr_review/providers/comment_composer_mode_provider.dart';
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
@@ -26,9 +30,10 @@ class PrCommentComposer extends ConsumerStatefulWidget {
     required this.onSubmit,
     required this.onCancel,
     this.onSubmitBatched,
+    this.onSendToAgent,
     this.reviewInProgress = false,
     this.onSuggest,
-    this.placeholder = 'Leave a comment…',
+    this.placeholder,
     this.autofocus = true,
     this.initialText,
   });
@@ -39,6 +44,11 @@ class PrCommentComposer extends ConsumerStatefulWidget {
   /// Queues the comment for the next review submission instead of posting it.
   /// Null hides the action (nothing here can batch — e.g. no PR connected).
   final void Function(String body)? onSubmitBatched;
+
+  /// Hands the comment to the pull request's agent instead of the forge.
+  /// The composer stays open, draft intact, until the future completes; the
+  /// host closes it on success. Null hides the destination.
+  final Future<void> Function(String body)? onSendToAgent;
 
   /// Switches this anchored comment to an editable code suggestion, preserving
   /// the comment draft already entered by the reviewer.
@@ -54,8 +64,9 @@ class PrCommentComposer extends ConsumerStatefulWidget {
   /// Called when the user cancels or presses Escape.
   final VoidCallback onCancel;
 
-  /// Hint text shown in the empty composer.
-  final String placeholder;
+  /// Hint text shown in the empty composer. Null names the chosen
+  /// destination ("Send to agent…", "Leave a comment…", "Add to review…").
+  final String? placeholder;
 
   /// Whether the composer should grab focus on open.
   final bool autofocus;
@@ -71,6 +82,7 @@ class _PrCommentComposerState extends ConsumerState<PrCommentComposer> {
   final _focus = FocusNode();
   late final _ctrl = TextEditingController(text: widget.initialText ?? '');
   OverlayEntry? _slashMenu;
+  bool _sending = false;
 
   @override
   void initState() {
@@ -148,18 +160,43 @@ class _PrCommentComposerState extends ConsumerState<PrCommentComposer> {
     _slashMenu = null;
   }
 
-  void _submit({required bool batched}) {
+  List<CommentComposerMode> get _modes => commentComposerModes(
+    agent: widget.onSendToAgent != null,
+    review: widget.onSubmitBatched != null,
+  );
+
+  /// Keyboard submit: sends to whatever the row currently shows.
+  void _submitCurrent() => unawaited(
+    _send(
+      resolveCommentComposerMode(ref.read(commentComposerModeProvider), _modes),
+    ),
+  );
+
+  Future<void> _send(CommentComposerMode mode) async {
     final text = _ctrl.text.trim();
-    if (text.isEmpty) {
+    if (text.isEmpty || _sending) {
       return;
     }
     _closeSlashMenu();
-    final batch = widget.onSubmitBatched;
-    if (batched && batch != null) {
-      batch(text);
-      return;
+    switch (mode) {
+      case CommentComposerMode.agent:
+        final toAgent = widget.onSendToAgent;
+        if (toAgent == null) {
+          return;
+        }
+        setState(() => _sending = true);
+        try {
+          await toAgent(text);
+        } finally {
+          if (mounted) {
+            setState(() => _sending = false);
+          }
+        }
+      case CommentComposerMode.review:
+        widget.onSubmitBatched?.call(text);
+      case CommentComposerMode.comment:
+        widget.onSubmit(text);
     }
-    widget.onSubmit(text);
   }
 
   void _suggest() {
@@ -177,6 +214,11 @@ class _PrCommentComposerState extends ConsumerState<PrCommentComposer> {
     final repo = widget.prRef == null
         ? null
         : ref.watch(prRepoRowProvider(widget.prRef!));
+    final modes = _modes;
+    final mode = resolveCommentComposerMode(
+      ref.watch(commentComposerModeProvider),
+      modes,
+    );
     return Container(
       margin: const EdgeInsets.fromLTRB(12, 8, 12, 12),
       decoration: BoxDecoration(
@@ -199,14 +241,15 @@ class _PrCommentComposerState extends ConsumerState<PrCommentComposer> {
           child: PrCommentField(
             controller: _ctrl,
             focusNode: _focus,
-            hintText: widget.placeholder,
+            hintText:
+                widget.placeholder ??
+                commentComposerHint(AppLocalizations.of(context), mode),
             owner: repo?.remoteOwner ?? '',
             repo: repo?.remoteName ?? '',
             autofocus: widget.autofocus,
             minLines: 2,
             maxLines: 8,
-            onSubmitted: (_) =>
-                _submit(batched: widget.onSubmitBatched != null),
+            onSubmitted: (_) => _submitCurrent(),
             toolbarLeading: [
               if (widget.onSuggest != null)
                 CcButton(
@@ -218,68 +261,18 @@ class _PrCommentComposerState extends ConsumerState<PrCommentComposer> {
             ],
             footer: (context) => Padding(
               padding: const EdgeInsetsDirectional.only(top: 8, end: 6),
-              child: _submitRow(context),
+              child: CommentSendRow(
+                modes: modes,
+                mode: mode,
+                reviewInProgress: widget.reviewInProgress,
+                sending: _sending,
+                onSend: _send,
+                onCancel: widget.onCancel,
+              ),
             ),
           ),
         ),
       ),
-    );
-  }
-
-  Widget _submitRow(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    // Two ways out, because they are different acts: a single comment notifies
-    // the author now, a queued one waits for the verdict so they read the whole
-    // review at once. The batched one is primary — it is what a reviewer
-    // working through a diff almost always means.
-    if (widget.onSubmitBatched == null) {
-      return Align(
-        alignment: AlignmentDirectional.centerEnd,
-        child: _SendButton(onPressed: () => _submit(batched: false)),
-      );
-    }
-    // Wrap, not Row: the labelled actions do not fit a diff panel narrowed
-    // to a side-by-side window, and a Row would clip the primary one.
-    return Wrap(
-      alignment: WrapAlignment.end,
-      spacing: 6,
-      runSpacing: 6,
-      children: [
-        CcButton(
-          onPressed: widget.onCancel,
-          variant: CcButtonVariant.ghost,
-          size: CcButtonSize.sm,
-          child: Text(l10n.cancel),
-        ),
-        CcButton(
-          onPressed: () => _submit(batched: false),
-          variant: CcButtonVariant.secondary,
-          size: CcButtonSize.sm,
-          child: Text(l10n.addSingleComment),
-        ),
-        CcButton(
-          onPressed: () => _submit(batched: true),
-          size: CcButtonSize.sm,
-          child: Text(
-            widget.reviewInProgress ? l10n.addToReview : l10n.startAReview,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _SendButton extends StatelessWidget {
-  const _SendButton({required this.onPressed});
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return CcIconButton(
-      icon: AppIcons.arrowUp,
-      variant: CcButtonVariant.primary,
-      tooltip: AppLocalizations.of(context).send,
-      onPressed: onPressed,
     );
   }
 }

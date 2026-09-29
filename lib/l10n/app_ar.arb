@@ -1762,6 +1762,7 @@
       }
     }
   },
+  "typeToConfirmPrompt": "اكتب {value} للتأكيد.",
   "copied": "تم النسخ!",
   "copy": "نسخ",
   "copyAddress": "نسخ العنوان",
@@ -3093,7 +3094,6 @@
   "strictIdentityCheck": "التحقق الصارم من الهوية",
   "success": "نجاح",
   "successLabel": "نجاح",
-  "suggestAChange": "اقتراح تغيير",
   "suggestion": "اقتراح",
   "suggestLabel": "اقتراح",
   "superseded": "مستبدَل",
@@ -7916,6 +7916,12 @@
   "addSingleComment": "إضافة تعليق واحد",
   "addToReview": "إضافة إلى المراجعة",
   "startAReview": "بدء مراجعة",
+  "commentModeAgent": "الوكيل",
+  "commentModeComment": "تعليق",
+  "commentModeReview": "مراجعة",
+  "commentDestination": "وجهة التعليق",
+  "commentHintAgent": "إرسال إلى الوكيل…",
+  "commentHintReview": "إضافة إلى المراجعة…",
   "reviewNeedsABody": "اكتب ملخصًا أو أضف تعليقًا مضمّنًا إلى قائمة الانتظار أولاً",
   "reviewSubmitted": "تم إرسال المراجعة",
   "finishYourReview": "أنهِ مراجعتك",

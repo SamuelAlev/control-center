@@ -1223,6 +1223,7 @@
       }
     }
   },
+  "typeToConfirmPrompt": "Gib zur Bestätigung {value} ein.",
   "copied": "Kopiert!",
   "copy": "Kopieren",
   "copyAddress": "Adresse kopieren",
@@ -2925,10 +2926,6 @@
   },
   "success": "Erfolg",
   "successLabel": "Erfolg",
-  "suggestAChange": "Änderung vorschlagen",
-  "@suggestAChange": {
-    "description": "Header label for the suggestion composer"
-  },
   "suggestion": "Vorschlag",
   "suggestLabel": "VORSCHLAG",
   "superseded": "Ersetzt",
@@ -7283,6 +7280,12 @@
   "addSingleComment": "Einzelnen Kommentar hinzufügen",
   "addToReview": "Zur Review hinzufügen",
   "startAReview": "Review starten",
+  "commentModeAgent": "Agent",
+  "commentModeComment": "Kommentar",
+  "commentModeReview": "Review",
+  "commentDestination": "Ziel des Kommentars",
+  "commentHintAgent": "An Agent senden…",
+  "commentHintReview": "Zur Review hinzufügen…",
   "reviewNeedsABody": "Schreibe eine Zusammenfassung oder füge zuerst einen Inline-Kommentar hinzu",
   "reviewSubmitted": "Review abgeschickt",
   "finishYourReview": "Review abschließen",

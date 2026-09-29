@@ -1762,6 +1762,7 @@
       }
     }
   },
+  "typeToConfirmPrompt": "输入 {value} 以确认。",
   "copied": "已复制！",
   "copy": "复制",
   "copyAddress": "复制地址",
@@ -3093,7 +3094,6 @@
   "strictIdentityCheck": "严格身份校验",
   "success": "成功",
   "successLabel": "成功",
-  "suggestAChange": "建议更改",
   "suggestion": "建议",
   "suggestLabel": "建议",
   "superseded": "已替代",
@@ -7916,6 +7916,12 @@
   "addSingleComment": "添加单条评论",
   "addToReview": "添加到审查",
   "startAReview": "开始审查",
+  "commentModeAgent": "智能体",
+  "commentModeComment": "评论",
+  "commentModeReview": "审查",
+  "commentDestination": "评论发送位置",
+  "commentHintAgent": "发送给代理…",
+  "commentHintReview": "添加到审查…",
   "reviewNeedsABody": "请先撰写总结或排队一条行内评论",
   "reviewSubmitted": "审查已提交",
   "finishYourReview": "完成你的审查",

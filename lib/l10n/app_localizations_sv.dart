@@ -3029,6 +3029,11 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String typeToConfirmPrompt(String value) {
+    return 'Skriv $value för att bekräfta.';
+  }
+
+  @override
   String get copied => 'Kopierat!';
 
   @override
@@ -5267,9 +5272,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get successLabel => 'Lyckades';
-
-  @override
-  String get suggestAChange => 'Föreslå en ändring';
 
   @override
   String get suggestion => 'Förslag';
@@ -13635,6 +13637,24 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get startAReview => 'Starta en granskning';
+
+  @override
+  String get commentModeAgent => 'Agent';
+
+  @override
+  String get commentModeComment => 'Kommentar';
+
+  @override
+  String get commentModeReview => 'Granskning';
+
+  @override
+  String get commentDestination => 'Mål för kommentaren';
+
+  @override
+  String get commentHintAgent => 'Skicka till agent…';
+
+  @override
+  String get commentHintReview => 'Lägg till i granskning…';
 
   @override
   String get reviewNeedsABody =>

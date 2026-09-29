@@ -3010,6 +3010,11 @@ class AppLocalizationsUr extends AppLocalizations {
   }
 
   @override
+  String typeToConfirmPrompt(String value) {
+    return 'تصدیق کے لیے $value ٹائپ کریں۔';
+  }
+
+  @override
   String get copied => 'کاپی ہو گیا!';
 
   @override
@@ -5243,9 +5248,6 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get successLabel => 'کامیابی';
-
-  @override
-  String get suggestAChange => 'تبدیلی تجویز کریں';
 
   @override
   String get suggestion => 'تجویز';
@@ -13572,6 +13574,24 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get startAReview => 'ریویو شروع کریں';
+
+  @override
+  String get commentModeAgent => 'ایجنٹ';
+
+  @override
+  String get commentModeComment => 'تبصرہ';
+
+  @override
+  String get commentModeReview => 'ریویو';
+
+  @override
+  String get commentDestination => 'تبصرے کی منزل';
+
+  @override
+  String get commentHintAgent => 'ایجنٹ کو بھیجیں…';
+
+  @override
+  String get commentHintReview => 'ریویو میں شامل کریں…';
 
   @override
   String get reviewNeedsABody =>

@@ -1762,6 +1762,7 @@
       }
     }
   },
+  "typeToConfirmPrompt": "Wpisz {value}, aby potwierdzić.",
   "copied": "Skopiowano!",
   "copy": "Kopiuj",
   "copyAddress": "Kopiuj adres",
@@ -3093,7 +3094,6 @@
   "strictIdentityCheck": "Ścisła weryfikacja tożsamości",
   "success": "Sukces",
   "successLabel": "Sukces",
-  "suggestAChange": "Zasugeruj zmianę",
   "suggestion": "Sugestia",
   "suggestLabel": "SUGESTIA",
   "superseded": "Zastąpiono",
@@ -7916,6 +7916,12 @@
   "addSingleComment": "Dodaj pojedynczy komentarz",
   "addToReview": "Dodaj do recenzji",
   "startAReview": "Rozpocznij recenzję",
+  "commentModeAgent": "Agent",
+  "commentModeComment": "Komentarz",
+  "commentModeReview": "Recenzja",
+  "commentDestination": "Miejsce docelowe komentarza",
+  "commentHintAgent": "Wyślij do agenta…",
+  "commentHintReview": "Dodaj do recenzji…",
   "reviewNeedsABody": "Najpierw napisz podsumowanie albo dodaj do kolejki komentarz w linii",
   "reviewSubmitted": "Recenzja wysłana",
   "finishYourReview": "Zakończ recenzję",

@@ -3053,6 +3053,11 @@ class AppLocalizationsEl extends AppLocalizations {
   }
 
   @override
+  String typeToConfirmPrompt(String value) {
+    return 'Πληκτρολογήστε $value για επιβεβαίωση.';
+  }
+
+  @override
   String get copied => 'Αντιγράφηκε!';
 
   @override
@@ -5319,9 +5324,6 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get successLabel => 'Επιτυχία';
-
-  @override
-  String get suggestAChange => 'Πρόταση αλλαγής';
 
   @override
   String get suggestion => 'Πρόταση';
@@ -13748,6 +13750,24 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get startAReview => 'Έναρξη ανασκόπησης';
+
+  @override
+  String get commentModeAgent => 'Πράκτορας';
+
+  @override
+  String get commentModeComment => 'Σχόλιο';
+
+  @override
+  String get commentModeReview => 'Ανασκόπηση';
+
+  @override
+  String get commentDestination => 'Προορισμός σχολίου';
+
+  @override
+  String get commentHintAgent => 'Αποστολή σε πράκτορα…';
+
+  @override
+  String get commentHintReview => 'Προσθήκη στην ανασκόπηση…';
 
   @override
   String get reviewNeedsABody =>

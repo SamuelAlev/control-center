@@ -3050,6 +3050,11 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String typeToConfirmPrompt(String value) {
+    return 'Pro potvrzení zadejte $value.';
+  }
+
+  @override
   String get copied => 'Zkopírováno!';
 
   @override
@@ -5318,9 +5323,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get successLabel => 'Úspěch';
-
-  @override
-  String get suggestAChange => 'Navrhnout změnu';
 
   @override
   String get suggestion => 'Návrh';
@@ -13777,6 +13779,24 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get startAReview => 'Zahájit kontrolu';
+
+  @override
+  String get commentModeAgent => 'Agent';
+
+  @override
+  String get commentModeComment => 'Komentář';
+
+  @override
+  String get commentModeReview => 'Kontrola';
+
+  @override
+  String get commentDestination => 'Cíl komentáře';
+
+  @override
+  String get commentHintAgent => 'Poslat agentovi…';
+
+  @override
+  String get commentHintReview => 'Přidat ke kontrole…';
 
   @override
   String get reviewNeedsABody =>

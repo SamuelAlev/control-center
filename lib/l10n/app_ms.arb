@@ -1762,6 +1762,7 @@
       }
     }
   },
+  "typeToConfirmPrompt": "Taip {value} untuk mengesahkan.",
   "copied": "Disalin!",
   "copy": "Salin",
   "copyAddress": "Salin alamat",
@@ -3093,7 +3094,6 @@
   "strictIdentityCheck": "Semakan identiti ketat",
   "success": "Berjaya",
   "successLabel": "Berjaya",
-  "suggestAChange": "Cadangkan perubahan",
   "suggestion": "Cadangan",
   "suggestLabel": "CADANGKAN",
   "superseded": "Diganti",
@@ -7916,6 +7916,12 @@
   "addSingleComment": "Tambah komen tunggal",
   "addToReview": "Tambah ke semakan",
   "startAReview": "Mula semakan",
+  "commentModeAgent": "Ejen",
+  "commentModeComment": "Komen",
+  "commentModeReview": "Semakan",
+  "commentDestination": "Destinasi komen",
+  "commentHintAgent": "Hantar kepada ejen…",
+  "commentHintReview": "Tambah ke semakan…",
   "reviewNeedsABody": "Tulis ringkasan atau bariskan komen sebaris dahulu",
   "reviewSubmitted": "Semakan diserahkan",
   "finishYourReview": "Selesaikan semakan anda",

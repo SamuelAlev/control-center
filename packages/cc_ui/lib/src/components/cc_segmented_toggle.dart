@@ -410,28 +410,35 @@ class _Segment<T> extends StatelessWidget {
             final pressed = states.contains(WidgetState.pressed);
             final fluidActive = CcFluidHover.isItemActive(context);
 
-            final Color background;
+            // Two layers, never one lerped color. The hover wash is `fg` at a
+            // few percent and the selected fill is an opaque brand color; a
+            // single animated color between them runs through their straight
+            // RGB midpoint, which in dark mode (white-based wash) flashes a
+            // pale grey on both segments at every change. Each layer instead
+            // fades only its own alpha.
+            final Color fill;
+            final Color wash;
             final Color foreground;
             if (disabled) {
               // Keep the chosen segment readable when the control is inert —
               // "which one is on" is still information the user needs.
-              background = selected
-                  ? Color.alphaBlend(t.hoverStrong, t.bgDisabled)
-                  : t.hover.withValues(alpha: 0);
+              fill = Color.alphaBlend(t.hoverStrong, t.bgDisabled);
+              wash = t.hover.withValues(alpha: 0);
               foreground = t.textDisabled;
-            } else if (selected) {
-              background = primary.bg;
-              foreground = primary.fg;
-            } else if (pressed) {
-              background = t.hoverStrong;
-              foreground = t.textSecondary;
-            } else if (hovered) {
-              background = fluidActive ? t.hover.withValues(alpha: 0) : t.hover;
-              foreground = t.textSecondary;
             } else {
-              background = t.hover.withValues(alpha: 0);
-              foreground = t.textTertiary;
+              fill = primary.bg;
+              wash = pressed
+                  ? t.hoverStrong
+                  : hovered && !fluidActive
+                  ? t.hover
+                  : t.hover.withValues(alpha: 0);
+              foreground = selected
+                  ? primary.fg
+                  : hovered || pressed
+                  ? t.textSecondary
+                  : t.textTertiary;
             }
+            final shownFill = selected ? fill : fill.withValues(alpha: 0);
 
             final Widget? label = iconOnly
                 ? null
@@ -450,32 +457,42 @@ class _Segment<T> extends StatelessWidget {
             // on the rest so the track hairline still shows. Top+bottom is
             // 2px, which is what keeps the selected cell from feeling taller
             // than the unselected ones after the fill covers the track.
-            final borderColor = selected
-                ? background
-                : background.withValues(alpha: 0);
-
-            return AnimatedContainer(
+            return TweenAnimationBuilder<Color?>(
+              tween: ColorTween(end: wash),
               duration: duration,
               curve: CcMotion.standard,
-              padding: EdgeInsets.symmetric(horizontal: horizontal),
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: background,
-                borderRadius: AppRadii.brSm,
-                border: Border.all(color: borderColor),
+              builder: (context, washColor, fillLayer) => DecoratedBox(
+                decoration: BoxDecoration(
+                  color: washColor,
+                  borderRadius: AppRadii.brSm,
+                ),
+                child: fillLayer,
               ),
-              child: SelectionContainer.disabled(
-                child: Row(
-                  mainAxisSize: fullWidth ? MainAxisSize.max : MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    if (segment.icon != null) ...[
-                      Icon(segment.icon, size: iconSize, color: foreground),
-                      if (label != null) const SizedBox(width: AppSpacing.xs),
+              child: AnimatedContainer(
+                duration: duration,
+                curve: CcMotion.standard,
+                padding: EdgeInsets.symmetric(horizontal: horizontal),
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: shownFill,
+                  borderRadius: AppRadii.brSm,
+                  border: Border.all(color: shownFill),
+                ),
+                child: SelectionContainer.disabled(
+                  child: Row(
+                    mainAxisSize: fullWidth
+                        ? MainAxisSize.max
+                        : MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (segment.icon != null) ...[
+                        Icon(segment.icon, size: iconSize, color: foreground),
+                        if (label != null) const SizedBox(width: AppSpacing.xs),
+                      ],
+                      if (label != null)
+                        fullWidth ? Flexible(child: label) : label,
                     ],
-                    if (label != null)
-                      fullWidth ? Flexible(child: label) : label,
-                  ],
+                  ),
                 ),
               ),
             );

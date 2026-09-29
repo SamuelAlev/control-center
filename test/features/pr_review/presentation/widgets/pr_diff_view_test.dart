@@ -1166,7 +1166,14 @@ void main() {
           'final int answer = fallbackCall();',
         );
 
-        final submitSuggestion = find.text('Suggest a change');
+        // No PR can take a review here, so the composer offers agent or a
+        // single comment and falls back to the comment.
+        final submitSuggestion = find.descendant(
+          of: suggestion,
+          matching: find.byWidgetPredicate(
+            (w) => w is CcIconButton && w.tooltip == 'Add single comment',
+          ),
+        );
         await tester.ensureVisible(submitSuggestion);
         await tester.pump();
         await tester.tap(submitSuggestion);

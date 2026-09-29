@@ -43,7 +43,9 @@ Widget ccDialogConfirmUseCase(BuildContext context) {
 
 /// The high-impact confirmation ladder rung: `showCcConfirmDialog` with
 /// `typeToConfirm` keeps the destructive action disabled until the user types
-/// the resource name back exactly. Tap the trigger to run the real flow.
+/// the resource name back exactly; the prompt sets the name in a copyable chip
+/// and the field repeats it as its placeholder. Tap the trigger to run the
+/// real flow.
 @widgetbook.UseCase(name: 'Type to confirm', type: CcDialog, path: _path)
 Widget ccDialogTypeToConfirmUseCase(BuildContext context) {
   return Center(
@@ -60,7 +62,6 @@ Widget ccDialogTypeToConfirmUseCase(BuildContext context) {
           cancelLabel: 'Cancel',
           danger: true,
           typeToConfirm: 'acme-prod',
-          typeToConfirmLabel: 'Type the workspace name to confirm',
         ),
         child: const Text('Delete workspace'),
       ),

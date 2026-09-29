@@ -34,6 +34,9 @@
   --cc-accent-strong: #b0370c;
   --cc-accent-fill: #b0370c;
   --cc-accent-on: #ffffff;
+  /* Selected nav row. Same solid as the app sidebar (bgBrandSolid): brand850
+     here, brand800 in dark, always under white. */
+  --cc-nav-current: #b0370c;
   --cc-accent-soft: color-mix(in oklab, var(--cc-accent) 10%, var(--cc-bg));
 
   --cc-success: #17a34a;
@@ -78,6 +81,7 @@
   --cc-border-soft: #262522;
   --cc-accent: #fb6224;
   --cc-accent-strong: #fb6224;
+  --cc-nav-current: #c03e0f;
   --cc-success: #47cd89;
   --cc-success-strong: #75e0a7;
   --cc-warn: #fac515;

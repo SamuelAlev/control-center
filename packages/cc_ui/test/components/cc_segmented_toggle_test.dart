@@ -267,6 +267,65 @@ void main() {
     expect(decoration.border?.top.color, decoration.color);
   });
 
+  // Regression: the fill used to animate as one color from the brand fill to a
+  // transparent hover wash. In dark mode the wash is white-based, so the
+  // straight RGB midpoint flashed pale grey on both segments at every change.
+  testWidgets(
+    'a selection change fades the fill without passing through grey',
+    (tester) async {
+      final dark = CcThemeData.dark();
+      final fillRgb = CcButtonTokens.primary(
+        dark.tokens,
+      ).bg.withValues(alpha: 1);
+      var value = 'recent';
+      await tester.pumpWidget(
+        ccTestApp(
+          Center(
+            child: StatefulBuilder(
+              builder: (context, setState) => CcSegmentedToggle<String>(
+                segments: segments,
+                value: value,
+                onChanged: (v) => setState(() => value = v),
+              ),
+            ),
+          ),
+          theme: dark,
+        ),
+      );
+
+      await tester.tap(find.text('Oldest'));
+      await tester.pump();
+      await tester.pump(CcMotion.moderate ~/ 2);
+
+      for (final label in ['Recent', 'Oldest']) {
+        // The fill is the layer painting both a color and the 1px edge; the
+        // focus ring is border-only.
+        final fills = tester
+            .widgetList<DecoratedBox>(
+              find.descendant(
+                of: find.ancestor(
+                  of: find.text(label),
+                  matching: find.byType(CcTappable),
+                ),
+                matching: find.byType(DecoratedBox),
+              ),
+            )
+            .map((box) => box.decoration)
+            .whereType<BoxDecoration>()
+            .where((d) => d.border != null && d.color != null)
+            .toList();
+        expect(fills, hasLength(1), reason: '$label has one fill layer');
+        final color = fills.single.color!;
+        expect(color.a, inExclusiveRange(0, 1), reason: '$label is mid-fade');
+        expect(
+          color.withValues(alpha: 1),
+          fillRgb,
+          reason: '$label fades only the fill alpha',
+        );
+      }
+    },
+  );
+
   testWidgets('fullWidth gives every segment the same width', (tester) async {
     await tester.pumpWidget(
       ccTestApp(

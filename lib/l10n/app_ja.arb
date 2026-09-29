@@ -1762,6 +1762,7 @@
       }
     }
   },
+  "typeToConfirmPrompt": "確認のため {value} と入力してください。",
   "copied": "コピーしました！",
   "copy": "コピー",
   "copyAddress": "アドレスをコピー",
@@ -3093,7 +3094,6 @@
   "strictIdentityCheck": "厳格なアイデンティティチェック",
   "success": "成功",
   "successLabel": "成功",
-  "suggestAChange": "変更を提案",
   "suggestion": "提案",
   "suggestLabel": "提案",
   "superseded": "置き換え済み",
@@ -7916,6 +7916,12 @@
   "addSingleComment": "単一のコメントを追加",
   "addToReview": "レビューに追加",
   "startAReview": "レビューを開始",
+  "commentModeAgent": "エージェント",
+  "commentModeComment": "コメント",
+  "commentModeReview": "レビュー",
+  "commentDestination": "コメントの送信先",
+  "commentHintAgent": "エージェントに送る…",
+  "commentHintReview": "レビューに追加…",
   "reviewNeedsABody": "先に要約を書くか、インラインコメントを追加してください",
   "reviewSubmitted": "レビューを送信しました",
   "finishYourReview": "レビューを完了",

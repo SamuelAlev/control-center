@@ -1762,6 +1762,7 @@
       }
     }
   },
+  "typeToConfirmPrompt": "Skriv {value} för att bekräfta.",
   "copied": "Kopierat!",
   "copy": "Kopiera",
   "copyAddress": "Kopiera adress",
@@ -3093,7 +3094,6 @@
   "strictIdentityCheck": "Strikt identitetskontroll",
   "success": "Lyckades",
   "successLabel": "Lyckades",
-  "suggestAChange": "Föreslå en ändring",
   "suggestion": "Förslag",
   "suggestLabel": "FÖRESLÅ",
   "superseded": "Ersatt",
@@ -7916,6 +7916,12 @@
   "addSingleComment": "Lägg till en kommentar",
   "addToReview": "Lägg till i granskning",
   "startAReview": "Starta en granskning",
+  "commentModeAgent": "Agent",
+  "commentModeComment": "Kommentar",
+  "commentModeReview": "Granskning",
+  "commentDestination": "Mål för kommentaren",
+  "commentHintAgent": "Skicka till agent…",
+  "commentHintReview": "Lägg till i granskning…",
   "reviewNeedsABody": "Skriv en sammanfattning eller köa en radkommentar först",
   "reviewSubmitted": "Granskning skickad",
   "finishYourReview": "Slutför din granskning",

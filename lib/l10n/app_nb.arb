@@ -1762,6 +1762,7 @@
       }
     }
   },
+  "typeToConfirmPrompt": "Skriv {value} for å bekrefte.",
   "copied": "Kopiert!",
   "copy": "Kopier",
   "copyAddress": "Kopier adresse",
@@ -3093,7 +3094,6 @@
   "strictIdentityCheck": "Streng identitetssjekk",
   "success": "Vellykket",
   "successLabel": "Vellykket",
-  "suggestAChange": "Foreslå en endring",
   "suggestion": "Forslag",
   "suggestLabel": "FORESLÅ",
   "superseded": "Erstattet",
@@ -7916,6 +7916,12 @@
   "addSingleComment": "Legg til enkeltkommentar",
   "addToReview": "Legg til i gjennomgang",
   "startAReview": "Start en gjennomgang",
+  "commentModeAgent": "Agent",
+  "commentModeComment": "Kommentar",
+  "commentModeReview": "Gjennomgang",
+  "commentDestination": "Mål for kommentaren",
+  "commentHintAgent": "Send til agent…",
+  "commentHintReview": "Legg til i gjennomgang…",
   "reviewNeedsABody": "Skriv et sammendrag eller kø en innebygd kommentar først",
   "reviewSubmitted": "Gjennomgang sendt inn",
   "finishYourReview": "Fullfør gjennomgangen din",

@@ -10,6 +10,7 @@ import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/utils/human_bytes.dart';
 import 'package:control_center/shared/widgets/app_timestamp.dart';
 import 'package:control_center/shared/widgets/section_card.dart';
+import 'package:control_center/shared/widgets/type_to_confirm_labels.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -77,6 +78,7 @@ class _BackupSnapshotsSectionState
       cancelLabel: l10n.cancel,
       danger: true,
       typeToConfirm: workspaceName,
+      typeToConfirmLabels: appTypeToConfirmLabels(context),
     );
     if (!confirmed || !mounted) {
       return;
@@ -120,6 +122,7 @@ class _BackupSnapshotsSectionState
       cancelLabel: l10n.cancel,
       danger: true,
       typeToConfirm: snapshot.name,
+      typeToConfirmLabels: appTypeToConfirmLabels(context),
     );
     if (!confirmed || !mounted) {
       return;
@@ -385,27 +388,34 @@ class _SnapshotRow extends StatelessWidget {
               onRestore: onRestore,
             ),
           const SizedBox(height: AppSpacing.lg),
-          CcAlert(
-            variant: CcAlertVariant.danger,
-            title: l10n.backupDeleteSnapshotLabel,
-            description: Text(
-              l10n.backupDeleteSnapshotDescription,
-              style: CcTypography.bodySm.copyWith(
-                color: tokens.textErrorPrimary,
-              ),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Align(
-            alignment: AlignmentDirectional.centerStart,
-            child: CcButton(
-              size: CcButtonSize.sm,
-              variant: CcButtonVariant.destructive,
-              icon: AppIcons.trash2,
-              loading: deleting,
-              onPressed: deleting ? null : () => onDelete(snapshot),
-              child: Text(l10n.backupDeleteSnapshotAction),
-            ),
+          // The delete lives inside the callout that warns about it. It trails
+          // the copy where there is room and drops beneath it where a trailing
+          // button would squeeze the warning into a sliver.
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final inline =
+                  constraints.maxWidth >= kSettingsFieldInlineBreakpoint;
+              final delete = CcButton(
+                size: CcButtonSize.sm,
+                variant: CcButtonVariant.destructive,
+                icon: AppIcons.trash2,
+                loading: deleting,
+                onPressed: deleting ? null : () => onDelete(snapshot),
+                child: Text(l10n.backupDeleteSnapshotAction),
+              );
+              return CcAlert(
+                variant: CcAlertVariant.danger,
+                title: l10n.backupDeleteSnapshotLabel,
+                description: Text(
+                  l10n.backupDeleteSnapshotDescription,
+                  style: CcTypography.bodySm.copyWith(
+                    color: tokens.textErrorPrimary,
+                  ),
+                ),
+                trailing: inline ? delete : null,
+                action: inline ? null : delete,
+              );
+            },
           ),
         ],
       ),

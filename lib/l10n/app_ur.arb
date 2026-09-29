@@ -1762,6 +1762,7 @@
       }
     }
   },
+  "typeToConfirmPrompt": "تصدیق کے لیے {value} ٹائپ کریں۔",
   "copied": "کاپی ہو گیا!",
   "copy": "کاپی",
   "copyAddress": "ایڈریس کاپی کریں",
@@ -3093,7 +3094,6 @@
   "strictIdentityCheck": "سخت شناخت چیک",
   "success": "کامیابی",
   "successLabel": "کامیابی",
-  "suggestAChange": "تبدیلی تجویز کریں",
   "suggestion": "تجویز",
   "suggestLabel": "تجویز",
   "superseded": "منسوخ شدہ",
@@ -7916,6 +7916,12 @@
   "addSingleComment": "اکیلا تبصرہ شامل کریں",
   "addToReview": "ریویو میں شامل کریں",
   "startAReview": "ریویو شروع کریں",
+  "commentModeAgent": "ایجنٹ",
+  "commentModeComment": "تبصرہ",
+  "commentModeReview": "ریویو",
+  "commentDestination": "تبصرے کی منزل",
+  "commentHintAgent": "ایجنٹ کو بھیجیں…",
+  "commentHintReview": "ریویو میں شامل کریں…",
   "reviewNeedsABody": "پہلے خلاصہ لکھیں یا ان لائن تبصرہ قطار میں رکھیں",
   "reviewSubmitted": "ریویو جمع ہو گیا",
   "finishYourReview": "اپنا ریویو مکمل کریں",

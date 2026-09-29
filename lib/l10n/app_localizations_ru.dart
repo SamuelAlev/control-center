@@ -3049,6 +3049,11 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
+  String typeToConfirmPrompt(String value) {
+    return 'Введите $value для подтверждения.';
+  }
+
+  @override
   String get copied => 'Скопировано!';
 
   @override
@@ -5321,9 +5326,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get successLabel => 'Успех';
-
-  @override
-  String get suggestAChange => 'Предложить изменение';
 
   @override
   String get suggestion => 'Предложение';
@@ -13797,6 +13799,24 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get startAReview => 'Начать ревью';
+
+  @override
+  String get commentModeAgent => 'Агент';
+
+  @override
+  String get commentModeComment => 'Комментарий';
+
+  @override
+  String get commentModeReview => 'Ревью';
+
+  @override
+  String get commentDestination => 'Куда отправить комментарий';
+
+  @override
+  String get commentHintAgent => 'Отправить агенту…';
+
+  @override
+  String get commentHintReview => 'Добавить в ревью…';
 
   @override
   String get reviewNeedsABody =>

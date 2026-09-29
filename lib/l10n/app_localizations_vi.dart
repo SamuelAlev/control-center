@@ -3019,6 +3019,11 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
+  String typeToConfirmPrompt(String value) {
+    return 'Nhập $value để xác nhận.';
+  }
+
+  @override
   String get copied => 'Đã sao chép!';
 
   @override
@@ -5258,9 +5263,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get successLabel => 'Thành công';
-
-  @override
-  String get suggestAChange => 'Đề xuất thay đổi';
 
   @override
   String get suggestion => 'Đề xuất';
@@ -13598,6 +13600,24 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get startAReview => 'Bắt đầu review';
+
+  @override
+  String get commentModeAgent => 'Agent';
+
+  @override
+  String get commentModeComment => 'Bình luận';
+
+  @override
+  String get commentModeReview => 'Review';
+
+  @override
+  String get commentDestination => 'Nơi gửi bình luận';
+
+  @override
+  String get commentHintAgent => 'Gửi cho tác nhân…';
+
+  @override
+  String get commentHintReview => 'Thêm vào review…';
 
   @override
   String get reviewNeedsABody =>

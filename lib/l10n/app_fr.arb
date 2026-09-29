@@ -1234,6 +1234,7 @@
       }
     }
   },
+  "typeToConfirmPrompt": "Saisissez {value} pour confirmer.",
   "copied": "Copié !",
   "copy": "Copier",
   "copyAddress": "Copier l'adresse",
@@ -2925,10 +2926,6 @@
   },
   "success": "Succès",
   "successLabel": "Succès",
-  "suggestAChange": "Suggérer une modification",
-  "@suggestAChange": {
-    "description": "Header label for the suggestion composer"
-  },
   "suggestion": "Suggestion",
   "suggestLabel": "SUGGESTION",
   "superseded": "Remplacé",
@@ -7285,6 +7282,12 @@
   "addSingleComment": "Ajouter un seul commentaire",
   "addToReview": "Ajouter à la revue",
   "startAReview": "Démarrer une revue",
+  "commentModeAgent": "Agent",
+  "commentModeComment": "Commentaire",
+  "commentModeReview": "Revue",
+  "commentDestination": "Destination du commentaire",
+  "commentHintAgent": "Envoyer à l'agent...",
+  "commentHintReview": "Ajouter à la revue...",
   "reviewNeedsABody": "Écrivez un résumé ou ajoutez d'abord un commentaire en ligne",
   "reviewSubmitted": "Revue envoyée",
   "finishYourReview": "Terminer votre revue",

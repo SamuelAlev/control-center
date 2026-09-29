@@ -484,6 +484,55 @@ void main() {
     );
   });
 
+  // The fixed clock above has no sub-millisecond part, so every name it
+  // produces ends in three fractional digits. A real clock almost always has
+  // one, and `toIso8601String` then writes six — a name pattern that accepted
+  // only three hid every real snapshot from the listing, the delete op and
+  // retention while this suite stayed green.
+  group('real-clock snapshot names', () {
+    test('are listed newest first across both fractional widths', () async {
+      await seedWorkspace('ws1', agentName: 'Ada');
+      final svc = service();
+      now = DateTime.utc(2026, 9, 29, 20, 49, 19, 30);
+      final older = await svc.backupNow();
+      now = DateTime.utc(2026, 9, 29, 20, 49, 19, 30, 600);
+      final newer = await svc.backupNow();
+
+      expect(older, endsWith('2026-09-29T20-49-19-030Z'));
+      expect(newer, endsWith('2026-09-29T20-49-19-030600Z'));
+      final listed = await svc.listBackups();
+      // Lexicographically `030Z` sorts after `030600Z`; the order must follow
+      // the timestamp instead.
+      expect(listed.map((s) => s.path), [newer, older]);
+      expect(listed.first.complete, isTrue);
+    });
+
+    test('are deletable by name and pruned by retention', () async {
+      await seedWorkspace('ws1', agentName: 'Ada');
+      final svc = service();
+      now = DateTime.utc(2026, 9, 29, 20, 49, 19, 30, 600);
+      final install = await svc.backupNow();
+      final scoped = await svc.backupWorkspace('ws1');
+      now = now.add(const Duration(seconds: 1));
+      final deleted = await svc.backupNow();
+
+      await svc.deleteBackup(deleted.split(Platform.pathSeparator).last);
+      expect(Directory(deleted).existsSync(), isFalse);
+
+      now = now.add(const Duration(days: 8));
+      expect(await svc.deleteBackupsOlderThan(age: const Duration(days: 7)), 1);
+      expect(Directory(install).existsSync(), isFalse);
+      expect(
+        await svc.deleteBackupsOlderThan(
+          age: const Duration(days: 7),
+          workspaceId: 'ws1',
+        ),
+        1,
+      );
+      expect(File(scoped).existsSync(), isFalse);
+    });
+  });
+
   group('exportWorkspace', () {
     test('writes one workspace as one file', () async {
       await seedWorkspace('ws1', agentName: 'Ada');

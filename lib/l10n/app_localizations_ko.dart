@@ -2972,6 +2972,11 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String typeToConfirmPrompt(String value) {
+    return '확인하려면 $value을(를) 입력하세요.';
+  }
+
+  @override
   String get copied => '복사했습니다!';
 
   @override
@@ -5159,9 +5164,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get successLabel => '성공';
-
-  @override
-  String get suggestAChange => '변경 제안';
 
   @override
   String get suggestion => '제안';
@@ -13331,6 +13333,24 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get startAReview => '리뷰 시작';
+
+  @override
+  String get commentModeAgent => '에이전트';
+
+  @override
+  String get commentModeComment => '댓글';
+
+  @override
+  String get commentModeReview => '리뷰';
+
+  @override
+  String get commentDestination => '댓글 보낼 곳';
+
+  @override
+  String get commentHintAgent => '에이전트에게 보내기…';
+
+  @override
+  String get commentHintReview => '리뷰에 추가…';
 
   @override
   String get reviewNeedsABody => '먼저 요약을 작성하거나 인라인 댓글을 대기열에 넣으세요';

@@ -2273,6 +2273,15 @@
       }
     }
   },
+  "typeToConfirmPrompt": "Type {value} to confirm.",
+  "@typeToConfirmPrompt": {
+    "description": "Instruction above the field of a destructive-action dialog. {value} is shown as a copyable chip holding the exact text to type.",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
   "copied": "Copied!",
   "copy": "Copy",
   "copyAddress": "Copy address",
@@ -4706,10 +4715,6 @@
     "description": "Success"
   },
   "successLabel": "Success",
-  "suggestAChange": "Suggest a change",
-  "@suggestAChange": {
-    "description": "Header label for the suggestion composer"
-  },
   "suggestion": "Suggestion",
   "@suggestion": {
     "description": "Toolbar button that turns a line comment into a code suggestion"
@@ -12178,6 +12183,30 @@
   "startAReview": "Start a review",
   "@startAReview": {
     "description": "Composer action that queues the first inline comment, starting a batched review"
+  },
+  "commentModeAgent": "Agent",
+  "@commentModeAgent": {
+    "description": "Diff comment composer destination: hand the comment to the pull request's agent chat instead of the forge"
+  },
+  "commentModeComment": "Comment",
+  "@commentModeComment": {
+    "description": "Diff comment composer destination: post the comment on its own, right away"
+  },
+  "commentModeReview": "Review",
+  "@commentModeReview": {
+    "description": "Diff comment composer destination: queue the comment for the batched review"
+  },
+  "commentDestination": "Comment destination",
+  "@commentDestination": {
+    "description": "Accessibility label for the segmented control choosing where a diff comment is sent (agent, single comment or review)"
+  },
+  "commentHintAgent": "Send to agent…",
+  "@commentHintAgent": {
+    "description": "Placeholder of the diff comment field while the composer sends to the agent"
+  },
+  "commentHintReview": "Add to review…",
+  "@commentHintReview": {
+    "description": "Placeholder of the diff comment field while the composer queues comments for the review"
   },
   "reviewNeedsABody": "Write a summary or queue an inline comment first",
   "@reviewNeedsABody": {
