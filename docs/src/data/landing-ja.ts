@@ -54,20 +54,20 @@ export const ja: LandingCopy = {
     imageLanguage: "画像または動画のプレースホルダー",
     stops: [
       {
-        kind: "desk",
-        label: "一日",
-        title: "自分を必要としていることから。",
-        description:
-          "レビュー依頼、承認、妨げ。次の行動が、タブを探さずに見えます。",
-        alt: "Control Center の受信トレイ。プルリクエストをレビュー状態でまとめ、同期の妨げを表示しています。",
-      },
-      {
         kind: "agents",
         label: "エージェント",
         title: "よい仕事が起きる場所を残す。",
         description:
           "エージェントは隔離された Git worktree で動きます。ツールを追い、仕事を導き、文脈を保ちます。",
         alt: "Control Center のエージェントとの会話。タスクの文脈と活動が見えます。",
+      },
+      {
+        kind: "desk",
+        label: "受信トレイ",
+        title: "自分を必要としていることから。",
+        description:
+          "レビュー依頼、承認、妨げ。次の行動が、タブを探さずに見えます。",
+        alt: "Control Center の受信トレイ。プルリクエストをレビュー状態でまとめ、同期の妨げを表示しています。",
       },
       {
         kind: "review",

@@ -54,20 +54,20 @@ export const id: LandingCopy = {
     imageLanguage: "Tempat gambar atau video",
     stops: [
       {
-        kind: "desk",
-        label: "Harimu",
-        title: "Mulai dari yang membutuhkanmu.",
-        description:
-          "Permintaan tinjauan, persetujuan, dan penghalang. Tindakan berikutnya, tanpa mencari di antara tab.",
-        alt: "Kotak masuk Control Center mengelompokkan pull request menurut status tinjauan dan menampilkan penghalang sinkronisasi.",
-      },
-      {
         kind: "agents",
         label: "Agen",
         title: "Beri ruang agar kerja yang baik terjadi.",
         description:
           "Jalankan agen di worktree Git yang terisolasi. Ikuti alatnya, arahkan pekerjaan, dan simpan konteksnya.",
         alt: "Percakapan dengan agen di Control Center, dengan konteks tugas dan aktivitasnya.",
+      },
+      {
+        kind: "desk",
+        label: "Kotak masuk",
+        title: "Mulai dari yang membutuhkanmu.",
+        description:
+          "Permintaan tinjauan, persetujuan, dan penghalang. Tindakan berikutnya, tanpa mencari di antara tab.",
+        alt: "Kotak masuk Control Center mengelompokkan pull request menurut status tinjauan dan menampilkan penghalang sinkronisasi.",
       },
       {
         kind: "review",

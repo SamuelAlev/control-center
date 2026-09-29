@@ -54,20 +54,20 @@ export const tr: LandingCopy = {
     imageLanguage: "Görüntü veya video yer tutucusu",
     stops: [
       {
-        kind: "desk",
-        label: "Günün",
-        title: "Seni bekleyenle başla.",
-        description:
-          "İnceleme istekleri, onaylar ve tıkanıklıklar. Sonraki adım, sekmeler arasında aramadan.",
-        alt: "Control Center gelen kutusu, pull request’leri inceleme durumuna göre gruplar ve bir eşitleme tıkanıklığı gösterir.",
-      },
-      {
         kind: "agents",
         label: "Ajanlar",
         title: "İyi işe yer aç.",
         description:
           "Ajanları yalıtılmış Git worktree’lerinde çalıştır. Araçlarını izle, işi yönlendir ve bağlamı koru.",
         alt: "Control Center’da görev bağlamı ve etkinlikle bir ajan konuşması.",
+      },
+      {
+        kind: "desk",
+        label: "Gelen kutusu",
+        title: "Seni bekleyenle başla.",
+        description:
+          "İnceleme istekleri, onaylar ve tıkanıklıklar. Sonraki adım, sekmeler arasında aramadan.",
+        alt: "Control Center gelen kutusu, pull request’leri inceleme durumuna göre gruplar ve bir eşitleme tıkanıklığı gösterir.",
       },
       {
         kind: "review",

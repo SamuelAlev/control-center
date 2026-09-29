@@ -54,20 +54,20 @@ export const nl: LandingCopy = {
     imageLanguage: "Plaatshouder voor beeld of video",
     stops: [
       {
-        kind: "desk",
-        label: "Je dag",
-        title: "Begin bij wat jou nodig heeft.",
-        description:
-          "Reviewverzoeken, goedkeuringen en blokkades. De volgende actie, zonder te zoeken tussen tabbladen.",
-        alt: "Postvak in van Control Center dat pull requests groepeert op reviewstatus en een synchronisatieblokkade toont.",
-      },
-      {
         kind: "agents",
         label: "Agenten",
         title: "Geef goed werk de ruimte.",
         description:
           "Draai agents in geïsoleerde Git-worktrees. Volg hun tools, stuur het werk en bewaar de context.",
         alt: "Een agentgesprek in Control Center met de taakcontext en de activiteit.",
+      },
+      {
+        kind: "desk",
+        label: "Postvak in",
+        title: "Begin bij wat jou nodig heeft.",
+        description:
+          "Reviewverzoeken, goedkeuringen en blokkades. De volgende actie, zonder te zoeken tussen tabbladen.",
+        alt: "Postvak in van Control Center dat pull requests groepeert op reviewstatus en een synchronisatieblokkade toont.",
       },
       {
         kind: "review",

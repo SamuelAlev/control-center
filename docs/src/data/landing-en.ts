@@ -54,20 +54,20 @@ export const en = {
     imageLanguage: "Image / video placeholder",
     stops: [
       {
-        kind: "desk",
-        label: "Your day",
-        title: "Start with what needs you.",
-        description:
-          "Review requests, approvals and blockers. Your next action, without the tab hunt.",
-        alt: "Control Center inbox grouping pull requests by review status and showing a pending approval.",
-      },
-      {
         kind: "agents",
         label: "Agents",
         title: "Give good work room to happen.",
         description:
           "Run agents in isolated worktrees. Follow their tools, steer the work and keep the context.",
         alt: "An agent conversation in Control Center with its task context and activity.",
+      },
+      {
+        kind: "desk",
+        label: "Inbox",
+        title: "Start with what needs you.",
+        description:
+          "Review requests, approvals and blockers. Your next action, without the tab hunt.",
+        alt: "Control Center inbox grouping pull requests by review status and showing a pending approval.",
       },
       {
         kind: "review",

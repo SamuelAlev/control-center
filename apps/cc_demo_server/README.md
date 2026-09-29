@@ -31,7 +31,7 @@ The demo's `kDemoViewerLogin` presents Maya Okonkwo for PR/inbox display, not au
 
 ## Landing capture checklist
 
-The media briefs are `docs/src/data/landing-en.ts` and the slots are in `docs/src/components/landing/`. The six hero stops are **Your day**, **Agents**, **Code review**, **Tickets**, **Meetings** and **Pipelines**. The feature grid reuses five of these; the connected workflow reuses tickets, agents and review. There are three additional shots: the action approval, desktop/web paired with a phone, and the expanded hero preview (the currently selected stop).
+The media briefs are `docs/src/data/landing-en.ts` and the slots are in `docs/src/components/landing/`. The six hero stops are **Agents**, **Inbox**, **Code review**, **Tickets**, **Meetings** and **Pipelines**. The feature grid reuses five of these; the connected workflow reuses tickets, agents and review. There are three additional shots: the action approval, desktop/web paired with a phone, and the expanded hero preview (the currently selected stop).
 
 | Shot | Public demo data and safe interaction | Use a real server instead for |
 | --- | --- | --- |

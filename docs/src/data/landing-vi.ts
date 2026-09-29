@@ -55,20 +55,20 @@ export const vi: LandingCopy = {
     imageLanguage: "Chỗ dành cho ảnh hoặc video",
     stops: [
       {
-        kind: "desk",
-        label: "Ngày của bạn",
-        title: "Bắt đầu từ việc đang cần bạn.",
-        description:
-          "Yêu cầu rà soát, phê duyệt và chỗ bị kẹt. Việc kế tiếp nằm sẵn, không phải lục các thẻ.",
-        alt: "Hộp thư Control Center gom pull request theo trạng thái rà soát và hiện một chỗ đồng bộ bị kẹt.",
-      },
-      {
         kind: "agents",
         label: "Agent",
         title: "Để việc tốt có chỗ xảy ra.",
         description:
           "Chạy agent trong worktree Git tách biệt. Theo công cụ của chúng, dẫn việc và giữ ngữ cảnh.",
         alt: "Một cuộc trò chuyện với agent trong Control Center, có ngữ cảnh việc và hoạt động.",
+      },
+      {
+        kind: "desk",
+        label: "Hộp thư",
+        title: "Bắt đầu từ việc đang cần bạn.",
+        description:
+          "Yêu cầu rà soát, phê duyệt và chỗ bị kẹt. Việc kế tiếp nằm sẵn, không phải lục các thẻ.",
+        alt: "Hộp thư Control Center gom pull request theo trạng thái rà soát và hiện một chỗ đồng bộ bị kẹt.",
       },
       {
         kind: "review",

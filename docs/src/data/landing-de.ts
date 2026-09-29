@@ -55,20 +55,20 @@ export const de: LandingCopy = {
     imageLanguage: "Platzhalter für Bild oder Video",
     stops: [
       {
-        kind: "desk",
-        label: "Dein Tag",
-        title: "Sieh zuerst, was dich braucht.",
-        description:
-          "Review-Anfragen, Freigaben und Blockaden. Der nächste Schritt ist klar, ohne Tabs zu durchsuchen.",
-        alt: "Control-Center-Posteingang mit Pull Requests nach Review-Status und einer blockierten Synchronisierung.",
-      },
-      {
         kind: "agents",
         label: "Agenten",
         title: "Gib der Arbeit ihren eigenen Raum.",
         description:
           "Starte Agenten in isolierten Worktrees. Verfolge ihre Werkzeuge, lenke die Arbeit und behalte den Kontext.",
         alt: "Agentengespräch in Control Center mit Aufgabenkontext und Aktivitäten.",
+      },
+      {
+        kind: "desk",
+        label: "Posteingang",
+        title: "Sieh zuerst, was dich braucht.",
+        description:
+          "Review-Anfragen, Freigaben und Blockaden. Der nächste Schritt ist klar, ohne Tabs zu durchsuchen.",
+        alt: "Control-Center-Posteingang mit Pull Requests nach Review-Status und einer blockierten Synchronisierung.",
       },
       {
         kind: "review",

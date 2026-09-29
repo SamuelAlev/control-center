@@ -55,20 +55,20 @@ export const ptPt: LandingCopy = {
     imageLanguage: "Espaço reservado para imagem ou vídeo",
     stops: [
       {
-        kind: "desk",
-        label: "O teu dia",
-        title: "Começa pelo que precisa de ti.",
-        description:
-          "Pedidos de revisão, aprovações e bloqueios. A ação seguinte, sem procurar entre separadores.",
-        alt: "Caixa de entrada do Control Center a agrupar pull requests por estado de revisão e a mostrar um bloqueio de sincronização.",
-      },
-      {
         kind: "agents",
         label: "Agentes",
         title: "Dá espaço para o trabalho correr bem.",
         description:
           "Executa agentes em worktrees Git isoladas. Acompanha as ferramentas, orienta o trabalho e mantém o contexto.",
         alt: "Uma conversa com um agente no Control Center, com o contexto da tarefa e a atividade.",
+      },
+      {
+        kind: "desk",
+        label: "Caixa de entrada",
+        title: "Começa pelo que precisa de ti.",
+        description:
+          "Pedidos de revisão, aprovações e bloqueios. A ação seguinte, sem procurar entre separadores.",
+        alt: "Caixa de entrada do Control Center a agrupar pull requests por estado de revisão e a mostrar um bloqueio de sincronização.",
       },
       {
         kind: "review",

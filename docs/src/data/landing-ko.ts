@@ -54,20 +54,20 @@ export const ko: LandingCopy = {
     imageLanguage: "이미지 또는 동영상 자리",
     stops: [
       {
-        kind: "desk",
-        label: "하루",
-        title: "당신을 필요로 하는 일부터.",
-        description:
-          "리뷰 요청, 승인, 막힌 일. 다음 행동은 탭을 뒤지지 않아도 보입니다.",
-        alt: "Control Center 받은편지함이 풀 리퀘스트를 리뷰 상태별로 모으고 동기화 장애를 보여 줍니다.",
-      },
-      {
         kind: "agents",
         label: "에이전트",
         title: "좋은 일이 일어날 자리를 둡니다.",
         description:
           "에이전트는 격리된 Git worktree에서 돕니다. 도구를 따라가고, 일을 이끌고, 맥락을 남깁니다.",
         alt: "Control Center의 에이전트 대화. 작업 맥락과 활동이 보입니다.",
+      },
+      {
+        kind: "desk",
+        label: "받은편지함",
+        title: "당신을 필요로 하는 일부터.",
+        description:
+          "리뷰 요청, 승인, 막힌 일. 다음 행동은 탭을 뒤지지 않아도 보입니다.",
+        alt: "Control Center 받은편지함이 풀 리퀘스트를 리뷰 상태별로 모으고 동기화 장애를 보여 줍니다.",
       },
       {
         kind: "review",

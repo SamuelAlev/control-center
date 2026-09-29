@@ -54,20 +54,20 @@ export const ms: LandingCopy = {
     imageLanguage: "Ruang untuk imej atau video",
     stops: [
       {
-        kind: "desk",
-        label: "Hari anda",
-        title: "Mulakan dengan yang memerlukan anda.",
-        description:
-          "Permintaan semakan, kelulusan dan halangan. Tindakan seterusnya, tanpa mencari dalam tab.",
-        alt: "Peti masuk Control Center mengumpulkan pull request mengikut status semakan dan memaparkan halangan penyegerakan.",
-      },
-      {
         kind: "agents",
         label: "Ejen",
         title: "Beri ruang supaya kerja yang baik berlaku.",
         description:
           "Jalankan ejen dalam worktree Git yang terasing. Ikuti alat mereka, pandu kerja dan simpan konteks.",
         alt: "Perbualan dengan ejen dalam Control Center, dengan konteks tugas dan aktiviti.",
+      },
+      {
+        kind: "desk",
+        label: "Peti masuk",
+        title: "Mulakan dengan yang memerlukan anda.",
+        description:
+          "Permintaan semakan, kelulusan dan halangan. Tindakan seterusnya, tanpa mencari dalam tab.",
+        alt: "Peti masuk Control Center mengumpulkan pull request mengikut status semakan dan memaparkan halangan penyegerakan.",
       },
       {
         kind: "review",

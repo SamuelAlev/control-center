@@ -54,20 +54,20 @@ export const ro: LandingCopy = {
     imageLanguage: "Substituent pentru imagine sau video",
     stops: [
       {
-        kind: "desk",
-        label: "Ziua ta",
-        title: "Începe cu ce are nevoie de tine.",
-        description:
-          "Cereri de revizuire, aprobări și blocaje. Următoarea acțiune, fără să cauți prin file.",
-        alt: "Inbox-ul Control Center grupează pull request-urile după starea revizuirii și arată un blocaj de sincronizare.",
-      },
-      {
         kind: "agents",
         label: "Agenți",
         title: "Lasă lucrul bun să aibă loc.",
         description:
           "Rulează agenți în worktree-uri Git izolate. Urmărește-le uneltele, condu munca și păstrează contextul.",
         alt: "O conversație cu un agent în Control Center, cu contextul sarcinii și activitatea.",
+      },
+      {
+        kind: "desk",
+        label: "Inbox",
+        title: "Începe cu ce are nevoie de tine.",
+        description:
+          "Cereri de revizuire, aprobări și blocaje. Următoarea acțiune, fără să cauți prin file.",
+        alt: "Inbox-ul Control Center grupează pull request-urile după starea revizuirii și arată un blocaj de sincronizare.",
       },
       {
         kind: "review",

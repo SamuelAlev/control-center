@@ -54,20 +54,20 @@ export const pl: LandingCopy = {
     imageLanguage: "Miejsce na obraz lub wideo",
     stops: [
       {
-        kind: "desk",
-        label: "Twój dzień",
-        title: "Zacznij od tego, co cię potrzebuje.",
-        description:
-          "Prośby o przegląd, zgody i blokady. Następne działanie, bez szukania po kartach.",
-        alt: "Skrzynka Control Center grupująca pull requesty według stanu przeglądu i pokazująca blokadę synchronizacji.",
-      },
-      {
         kind: "agents",
         label: "Agenci",
         title: "Daj dobrej pracy miejsce, żeby się wydarzyła.",
         description:
           "Uruchamiaj agentów w odizolowanych worktree Gita. Śledź ich narzędzia, kieruj pracą i zachowaj kontekst.",
         alt: "Rozmowa z agentem w Control Center, z kontekstem zadania i aktywnością.",
+      },
+      {
+        kind: "desk",
+        label: "Skrzynka",
+        title: "Zacznij od tego, co cię potrzebuje.",
+        description:
+          "Prośby o przegląd, zgody i blokady. Następne działanie, bez szukania po kartach.",
+        alt: "Skrzynka Control Center grupująca pull requesty według stanu przeglądu i pokazująca blokadę synchronizacji.",
       },
       {
         kind: "review",

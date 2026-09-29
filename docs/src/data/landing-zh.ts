@@ -54,19 +54,19 @@ export const zh: LandingCopy = {
     imageLanguage: "图像或视频占位",
     stops: [
       {
-        kind: "desk",
-        label: "你的一天",
-        title: "从需要你的事情开始。",
-        description: "评审请求、批准和阻塞。下一步就在这里，不用在标签页里找。",
-        alt: "Control Center 收件箱按评审状态归组 Pull request，并显示一处同步阻塞。",
-      },
-      {
         kind: "agents",
         label: "智能体",
         title: "给好工作留出发生的地方。",
         description:
           "在隔离的 Git worktree 里运行智能体。跟上它们的工具，引导工作，并保留上下文。",
         alt: "Control Center 里与智能体的对话，能看到任务上下文和活动。",
+      },
+      {
+        kind: "desk",
+        label: "收件箱",
+        title: "从需要你的事情开始。",
+        description: "评审请求、批准和阻塞。下一步就在这里，不用在标签页里找。",
+        alt: "Control Center 收件箱按评审状态归组 Pull request，并显示一处同步阻塞。",
       },
       {
         kind: "review",

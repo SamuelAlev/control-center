@@ -14,7 +14,7 @@ const { copy: t } = Astro.props;
 <section class="landing-surfaces landing-section" id="surfaces" aria-labelledby="surfaces-title">
   <div class="landing-wrap surfaces-layout">
     <div class="surfaces-visual" data-enter>
-      <div class="surface-desktop"><div class="surface-label">{t.surfaces.desktop}<span aria-hidden="true">↗</span></div><ProductMedia kind="desktop-web" label={t.tour.imageLanguage} description={t.tour.stops[0].alt} compact /></div>
+      <div class="surface-desktop"><div class="surface-label">{t.surfaces.desktop}<span aria-hidden="true">↗</span></div><ProductMedia kind="desktop-web" label={t.tour.imageLanguage} description={t.tour.stops.find((stop) => stop.kind === 'desk')!.alt} compact /></div>
       <div class="surface-phone"><div class="surface-label">{t.surfaces.phone}</div><ProductMedia kind="phone" format="phone" label={t.tour.imageLanguage} description={t.media.phone} compact /></div>
     </div>
     <div class="section-intro"><h2 id="surfaces-title">{t.surfaces.title}</h2><p>{t.surfaces.description}</p><div class="surface-options"><span>{t.surfaces.desktop}</span><span>{t.surfaces.web}</span><span>{t.surfaces.phone}</span></div><p class="surface-note">{t.surfaces.note}</p><a href="#install" class="landing-text-link">{t.surfaces.link}<span aria-hidden="true">↓</span></a></div>

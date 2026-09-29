@@ -54,20 +54,20 @@ export const hu: LandingCopy = {
     imageLanguage: "Kép vagy videó helye",
     stops: [
       {
-        kind: "desk",
-        label: "A napod",
-        title: "Kezdd azzal, aminek rád van szüksége.",
-        description:
-          "Ellenőrzési kérések, jóváhagyások és akadályok. A következő lépés, lapok közötti keresgélés nélkül.",
-        alt: "A Control Center beérkezettjei a pull requesteket ellenőrzési állapot szerint csoportosítják, és szinkronizálási akadályt mutatnak.",
-      },
-      {
         kind: "agents",
         label: "Ügynökök",
         title: "Adj teret a jó munkának.",
         description:
           "Futtasd az ügynököket elkülönített Git-worktree-kben. Kövesd az eszközeiket, irányítsd a munkát, és tartsd meg a kontextust.",
         alt: "Ügynökbeszélgetés a Control Centerben a feladat kontextusával és a tevékenységgel.",
+      },
+      {
+        kind: "desk",
+        label: "Beérkezett",
+        title: "Kezdd azzal, aminek rád van szüksége.",
+        description:
+          "Ellenőrzési kérések, jóváhagyások és akadályok. A következő lépés, lapok közötti keresgélés nélkül.",
+        alt: "A Control Center beérkezettjei a pull requesteket ellenőrzési állapot szerint csoportosítják, és szinkronizálási akadályt mutatnak.",
       },
       {
         kind: "review",

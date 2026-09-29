@@ -54,20 +54,20 @@ export const nb: LandingCopy = {
     imageLanguage: "Plassholder for bilde eller video",
     stops: [
       {
-        kind: "desk",
-        label: "Dagen din",
-        title: "Start med det som trenger deg.",
-        description:
-          "Forespørsler om gjennomgang, godkjenninger og blokkeringer. Neste handling, uten å lete i faner.",
-        alt: "Innboksen i Control Center grupperer pull requests etter gjennomgangsstatus og viser en synkblokkering.",
-      },
-      {
         kind: "agents",
         label: "Agenter",
         title: "Gi godt arbeid rom til å skje.",
         description:
           "Kjør agenter i isolerte Git-worktrees. Følg verktøyene deres, styr arbeidet og behold konteksten.",
         alt: "En agentsamtale i Control Center med oppgavens kontekst og aktiviteten.",
+      },
+      {
+        kind: "desk",
+        label: "Innboks",
+        title: "Start med det som trenger deg.",
+        description:
+          "Forespørsler om gjennomgang, godkjenninger og blokkeringer. Neste handling, uten å lete i faner.",
+        alt: "Innboksen i Control Center grupperer pull requests etter gjennomgangsstatus og viser en synkblokkering.",
       },
       {
         kind: "review",

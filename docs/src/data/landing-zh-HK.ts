@@ -53,19 +53,19 @@ export const zhHk: LandingCopy = {
     imageLanguage: "影像或影片佔位",
     stops: [
       {
-        kind: "desk",
-        label: "你嘅一天",
-        title: "由需要你嘅事先開始。",
-        description: "審查請求、核准同阻塞。下一步就喺度，唔使喺分頁入面搵。",
-        alt: "Control Center 收件箱按審查狀態歸組 Pull request，並顯示一處同步阻塞。",
-      },
-      {
         kind: "agents",
         label: "代理",
         title: "畀好嘅工作一個發生嘅地方。",
         description:
           "喺隔離嘅 Git worktree 入面執行代理。跟上佢哋嘅工具，引導工作，並保留脈絡。",
         alt: "Control Center 入面同代理嘅對話，睇到任務脈絡同活動。",
+      },
+      {
+        kind: "desk",
+        label: "收件箱",
+        title: "由需要你嘅事先開始。",
+        description: "審查請求、核准同阻塞。下一步就喺度，唔使喺分頁入面搵。",
+        alt: "Control Center 收件箱按審查狀態歸組 Pull request，並顯示一處同步阻塞。",
       },
       {
         kind: "review",

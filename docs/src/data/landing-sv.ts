@@ -54,20 +54,20 @@ export const sv: LandingCopy = {
     imageLanguage: "Platshållare för bild eller video",
     stops: [
       {
-        kind: "desk",
-        label: "Din dag",
-        title: "Börja med det som behöver dig.",
-        description:
-          "Granskningsförfrågningar, godkännanden och blockeringar. Nästa åtgärd, utan att leta bland flikar.",
-        alt: "Control Centers inkorg grupperar pull requests efter granskningsstatus och visar en synkblockering.",
-      },
-      {
         kind: "agents",
         label: "Agenter",
         title: "Ge bra arbete rum att hända.",
         description:
           "Kör agenter i isolerade Git-worktrees. Följ deras verktyg, styr arbetet och behåll sammanhanget.",
         alt: "Ett agentsamtal i Control Center med uppgiftens sammanhang och aktiviteten.",
+      },
+      {
+        kind: "desk",
+        label: "Inkorg",
+        title: "Börja med det som behöver dig.",
+        description:
+          "Granskningsförfrågningar, godkännanden och blockeringar. Nästa åtgärd, utan att leta bland flikar.",
+        alt: "Control Centers inkorg grupperar pull requests efter granskningsstatus och visar en synkblockering.",
       },
       {
         kind: "review",

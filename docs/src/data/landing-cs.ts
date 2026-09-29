@@ -55,20 +55,20 @@ export const cs: LandingCopy = {
     imageLanguage: "Zástupný symbol obrázku nebo videa",
     stops: [
       {
-        kind: "desk",
-        label: "Tvůj den",
-        title: "Začni tím, co tě potřebuje.",
-        description:
-          "Žádosti o revizi, schválení a blokace. Další krok, bez hledání v kartách.",
-        alt: "Doručená pošta Control Center seskupuje pull requesty podle stavu revize a ukazuje blokaci synchronizace.",
-      },
-      {
         kind: "agents",
         label: "Agenti",
         title: "Dej dobré práci prostor, aby se stala.",
         description:
           "Spouštěj agenty v izolovaných Git worktree. Sleduj jejich nástroje, řiď práci a udrž kontext.",
         alt: "Rozhovor s agentem v Control Center s kontextem úkolu a aktivitou.",
+      },
+      {
+        kind: "desk",
+        label: "Doručená pošta",
+        title: "Začni tím, co tě potřebuje.",
+        description:
+          "Žádosti o revizi, schválení a blokace. Další krok, bez hledání v kartách.",
+        alt: "Doručená pošta Control Center seskupuje pull requesty podle stavu revize a ukazuje blokaci synchronizace.",
       },
       {
         kind: "review",

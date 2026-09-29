@@ -54,20 +54,20 @@ export const it: LandingCopy = {
     imageLanguage: "Segnaposto per immagine o video",
     stops: [
       {
-        kind: "desk",
-        label: "La tua giornata",
-        title: "Parti da ciò che ha bisogno di te.",
-        description:
-          "Richieste di revisione, approvazioni e blocchi. La prossima azione, senza cercare tra le schede.",
-        alt: "Posta in arrivo di Control Center che raggruppa le pull request per stato di revisione e mostra un blocco di sincronizzazione.",
-      },
-      {
         kind: "agents",
         label: "Agenti",
         title: "Dai al lavoro lo spazio per riuscire.",
         description:
           "Esegui gli agenti in worktree Git isolati. Segui i loro strumenti, guida il lavoro e tieni il contesto.",
         alt: "Una conversazione con un agente in Control Center, con il contesto dell’attività e il suo lavoro.",
+      },
+      {
+        kind: "desk",
+        label: "Posta in arrivo",
+        title: "Parti da ciò che ha bisogno di te.",
+        description:
+          "Richieste di revisione, approvazioni e blocchi. La prossima azione, senza cercare tra le schede.",
+        alt: "Posta in arrivo di Control Center che raggruppa le pull request per stato di revisione e mostra un blocco di sincronizzazione.",
       },
       {
         kind: "review",

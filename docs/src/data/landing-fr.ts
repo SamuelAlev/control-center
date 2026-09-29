@@ -56,20 +56,20 @@ export const fr: LandingCopy = {
     imageLanguage: "Emplacement réservé à une image ou une vidéo",
     stops: [
       {
-        kind: "desk",
-        label: "Votre journée",
-        title: "Commencez par ce qui vous attend.",
-        description:
-          "Demandes de revue, validations et blocages. La prochaine action, sans chercher parmi les onglets.",
-        alt: "Boîte de réception de Control Center regroupant les demandes de fusion par état de revue et affichant un blocage de synchronisation.",
-      },
-      {
         kind: "agents",
         label: "Agents",
         title: "Donnez aux agents de quoi travailler.",
         description:
           "Lancez-les dans des arbres de travail isolés. Suivez leurs outils, guidez leur travail et gardez le contexte.",
         alt: "Conversation avec un agent dans Control Center, montrant le contexte de sa tâche et son activité.",
+      },
+      {
+        kind: "desk",
+        label: "Boîte de réception",
+        title: "Commencez par ce qui vous attend.",
+        description:
+          "Demandes de revue, validations et blocages. La prochaine action, sans chercher parmi les onglets.",
+        alt: "Boîte de réception de Control Center regroupant les demandes de fusion par état de revue et affichant un blocage de synchronisation.",
       },
       {
         kind: "review",

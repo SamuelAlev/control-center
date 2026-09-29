@@ -54,20 +54,20 @@ export const esMx: LandingCopy = {
     imageLanguage: "Marcador de posición de imagen o video",
     stops: [
       {
-        kind: "desk",
-        label: "Tu día",
-        title: "Empieza por lo que te necesita.",
-        description:
-          "Solicitudes de revisión, aprobaciones y bloqueos. La siguiente acción, sin buscar entre pestañas.",
-        alt: "Bandeja de entrada de Control Center que agrupa las pull requests por estado de revisión y muestra un bloqueo de sincronización.",
-      },
-      {
         kind: "agents",
         label: "Agentes",
         title: "Deja espacio para que el trabajo salga bien.",
         description:
           "Ejecuta agentes en worktrees de Git aislados. Sigue sus herramientas, orienta el trabajo y conserva el contexto.",
         alt: "Una conversación con un agente en Control Center, con el contexto de la tarea y la actividad.",
+      },
+      {
+        kind: "desk",
+        label: "Bandeja de entrada",
+        title: "Empieza por lo que te necesita.",
+        description:
+          "Solicitudes de revisión, aprobaciones y bloqueos. La siguiente acción, sin buscar entre pestañas.",
+        alt: "Bandeja de entrada de Control Center que agrupa las pull requests por estado de revisión y muestra un bloqueo de sincronización.",
       },
       {
         kind: "review",
