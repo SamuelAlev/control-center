@@ -6,14 +6,7 @@ Control Center coordinates coding agents across workspaces and repositories. It 
 
 ## Install
 
-On Apple Silicon macOS:
-
-```bash
-brew tap control-center/tap
-brew install --cask control-center
-```
-
-The [latest release](https://github.com/SamuelAlev/control-center/releases/latest) also provides a macOS DMG, Windows installer/portable zip, Linux AppImage/tarball and standalone `cc_server` archives. For browser access, open [app.usectrl.dev](https://app.usectrl.dev) and connect to your own server at `ws://localhost:9030` or a remotely reachable `wss://` endpoint; see [headless server setup](https://usectrl.dev/manual/guides/run-headless-server/). The browser cannot host `cc_server` itself.
+Download the [latest release](https://github.com/SamuelAlev/control-center/releases/latest): a macOS DMG, Windows installer/portable zip, Linux AppImage/tarball and standalone `cc_server` archives. For browser access, open [app.usectrl.dev](https://app.usectrl.dev) and connect to your own server at `ws://localhost:9030` or a remotely reachable `wss://` endpoint; see [headless server setup](https://usectrl.dev/manual/guides/run-headless-server/). The browser cannot host `cc_server` itself.
 
 Before using agents, install Git, configure a model-provider API key for the built-in runtime or an available agent CLI, and connect GitHub through the app. Server-side credentials are not stored in browser or phone clients. See the [quick start](https://usectrl.dev/manual/quick-start/) for setup and first dispatch.
 

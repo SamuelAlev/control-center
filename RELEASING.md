@@ -86,7 +86,7 @@ Commit **only** public `dsa_pub.pem` at the repo root (`windows/runner/Runner.rc
 
 ### If the in-app updater says there is no update
 
-Inspect the **published** `releases/latest/download/appcast.xml`, not just the version: macOS stable items must be untagged. A prior tagged feed was filtered by Sparkle; fix only the feed asset on the published release or publish a corrected release. If an item is present but verification fails, check `SUPublicEDKey` against `SPARKLE_ED25519_KEY` and root `dsa_pub.pem` against `SPARKLE_DSA_PRIVATE_KEY`; follow the setup above. Signing/key mismatch fails closed. Homebrew's external `control-center/tap` cask must keep `auto_updates true` so `brew upgrade` does not compete with Sparkle.
+Inspect the **published** `releases/latest/download/appcast.xml`, not just the version: macOS stable items must be untagged. A prior tagged feed was filtered by Sparkle; fix only the feed asset on the published release or publish a corrected release. If an item is present but verification fails, check `SUPublicEDKey` against `SPARKLE_ED25519_KEY` and root `dsa_pub.pem` against `SPARKLE_DSA_PRIVATE_KEY`; follow the setup above. Signing/key mismatch fails closed.
 
 ## Hardening built into the pipeline
 

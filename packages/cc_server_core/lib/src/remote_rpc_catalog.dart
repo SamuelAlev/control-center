@@ -5931,13 +5931,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           },
         ),
         RepoOp(
-          name: 'fs.listSkillSlugs',
-          kind: RepoOpKind.read,
-          handler: (ctx) async => {
-            'slugs': await fs.listSkillSlugs(ctx.workspaceId!),
-          },
-        ),
-        RepoOp(
           name: 'fs.ensureWorkspaceDirs',
           kind: RepoOpKind.mutate,
           actionClasses: const {ActionClass.fileWriteOutsideWorktree},
@@ -6121,17 +6114,23 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         ),
       ].map(fullClientOnly),
 
-    // A demo nulls [workspaceFilesystem], so the block above (and
-    // `fs.writeString` with it) is absent. The agent skill picker still
-    // lists slugs. Skill text rides `skills.installedList`, which reads
-    // through the bundle service rather than this port.
-    if (fs == null && skillBundles != null)
+    // A demo nulls [workspaceFilesystem], so the block above is absent.
+    // The agent picker still needs slugs: the filesystem when it is wired,
+    // otherwise the installed bundles. One op, so the two backends cannot
+    // shadow each other. Skill text rides `skills.installedList`.
+    if (fs != null || skillBundles != null)
       fullClientOnly(
         RepoOp(
           name: 'fs.listSkillSlugs',
           kind: RepoOpKind.read,
           handler: (ctx) async {
-            final statuses = await skillBundles.listInstalledStatus(
+            final filesystem = fs;
+            if (filesystem != null) {
+              return {
+                'slugs': await filesystem.listSkillSlugs(ctx.workspaceId!),
+              };
+            }
+            final statuses = await skillBundles!.listInstalledStatus(
               ctx.workspaceId!,
             );
             return {

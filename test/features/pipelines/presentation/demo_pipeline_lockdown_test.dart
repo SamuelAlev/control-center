@@ -8,6 +8,7 @@ import 'package:control_center/features/pipelines/presentation/screens/pipelines
 import 'package:control_center/features/pipelines/providers/pipeline_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/shared/widgets/demo_unavailable.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -85,7 +86,7 @@ void main() {
     expect(find.widgetWithText(CcButton, 'Run pipeline'), findsNothing);
   });
 
-  testWidgets('demo hides New template and explains why', (tester) async {
+  testWidgets('demo keeps template authoring open', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -104,12 +105,12 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('New template'), findsNothing);
-    expect(find.byType(DemoUnavailable), findsOneWidget);
+    expect(find.text('New template'), findsOneWidget);
+    expect(find.byType(DemoUnavailable), findsNothing);
     expect(find.text('Hello Pipeline'), findsOneWidget);
   });
 
-  testWidgets('demo template editor is DemoUnavailable, not a canvas', (
+  testWidgets('demo template editor is not replaced by a refusal', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -118,9 +119,13 @@ void main() {
         isDemo: true,
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
 
-    expect(find.byType(DemoUnavailable), findsOneWidget);
-    expect(find.textContaining('Pipelines cannot run here'), findsOneWidget);
+    expect(find.byType(DemoUnavailable), findsNothing);
+    expect(find.textContaining('Pipelines cannot run here'), findsNothing);
+
+    // The unloaded editor shows a spinner. Replace the tree so the ticker
+    // does not outlive the test.
+    await tester.pumpWidget(const SizedBox.shrink());
   });
 }
