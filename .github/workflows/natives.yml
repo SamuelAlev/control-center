@@ -63,8 +63,9 @@ jobs:
       # One step: a skipped harden-runner still runs its pre-hook, so a
       # Linux-only block sibling would install this allowlist on macOS and
       # Windows and then no-op the real audit step. block is Linux-only.
-      # Hosts: apt, GitHub release assets, crates/rustup, freedesktop + wrapdb
-      # (aec), PyPI (meson), SourceForge (LAME), Azure blobs (actions/cache).
+      # Hosts: apt (Azure mirror + archive/security fallbacks), GitHub release
+      # assets, crates/rustup, freedesktop + wrapdb (aec), PyPI (meson),
+      # SourceForge (LAME), Azure blobs (actions/cache).
       - name: Harden runner
         uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
@@ -75,6 +76,7 @@ jobs:
             *.dl.sourceforge.net:443
             *.microsoft.com:443
             api.github.com:443
+            archive.ubuntu.com:443
             downloads.sourceforge.net:443
             esm.ubuntu.com:443
             files.pythonhosted.org:443
@@ -84,6 +86,8 @@ jobs:
             objects.githubusercontent.com:443
             pypi.org:443
             release-assets.githubusercontent.com:443
+            security.ubuntu.com:443
+            security.ubuntu.com:80
             static.crates.io:443
             static.rust-lang.org:443
             wrapdb.mesonbuild.com:443
@@ -102,8 +106,8 @@ jobs:
       - name: Install AEC build tools (meson/ninja)
         if: runner.os == 'Linux' && steps.natives-cache.outputs.cache-hit != 'true'
         run: |
-          sudo apt-get update
-          sudo apt-get install -y ninja-build pkg-config
+          sudo apt-get -o Acquire::Retries=3 update
+          sudo apt-get -o Acquire::Retries=3 install -y ninja-build pkg-config
           python3 -m pip install --user meson
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 

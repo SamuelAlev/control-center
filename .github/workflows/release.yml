@@ -260,10 +260,11 @@ jobs:
       ARCH: x86_64
     steps:
       # A missing host fails the release. Do not put comments inside the
-      # folded scalar below. Hosts: apt, GitHub release assets, crates/rustup,
-      # freedesktop + wrapdb (aec), PyPI (meson), SourceForge (LAME;
-      # downloads. redirects to *.dl), Flutter, sigstore, Azure blobs
-      # (actions/cache).
+      # folded scalar below. Hosts: apt (the Azure mirror plus the archive and
+      # security hosts its mirror list falls back to when Azure is down),
+      # GitHub release assets, crates/rustup, freedesktop + wrapdb (aec), PyPI
+      # (meson), SourceForge (LAME; downloads. redirects to *.dl), Flutter,
+      # sigstore, Azure blobs (actions/cache).
       - name: Harden runner
         uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
@@ -274,6 +275,7 @@ jobs:
             *.dl.sourceforge.net:443
             *.microsoft.com:443
             api.github.com:443
+            archive.ubuntu.com:443
             dl.google.com:443
             downloads.sourceforge.net:443
             esm.ubuntu.com:443
@@ -287,6 +289,8 @@ jobs:
             pypi.org:443
             rekor.sigstore.dev:443
             release-assets.githubusercontent.com:443
+            security.ubuntu.com:443
+            security.ubuntu.com:80
             static.crates.io:443
             static.rust-lang.org:443
             storage.googleapis.com:443
@@ -302,7 +306,7 @@ jobs:
 
       - name: Install Linux build dependencies
         run: |
-          sudo apt-get update
+          sudo apt-get -o Acquire::Retries=3 update
           # libayatana-appindicator3-dev: tray CMake fails without it.
           # libpulse-dev and libmpv-dev are optional at build time; without
           # them meeting audio and playback are silently dead.
@@ -311,7 +315,7 @@ jobs:
           # (appimagetool refuses to run without it) and appstream:
           # lint_appdir.sh validates the AppDir with both. zsync: the
           # AppImage's .zsync for AppImageUpdate.
-          sudo apt-get install -y \
+          sudo apt-get -o Acquire::Retries=3 install -y --no-install-recommends \
             clang cmake ninja-build pkg-config \
             libgtk-3-dev liblzma-dev libblkid-dev libfuse2 \
             libmpv-dev \

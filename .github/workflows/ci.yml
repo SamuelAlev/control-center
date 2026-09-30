@@ -123,11 +123,14 @@ jobs:
           egress-policy: block
           allowed-endpoints: >
             *.archive.ubuntu.com:80
+            archive.ubuntu.com:443
             esm.ubuntu.com:443
             github.com:443
             pub.dev:443
             storage.googleapis.com:443
             release-assets.githubusercontent.com:443
+            security.ubuntu.com:443
+            security.ubuntu.com:80
 
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -137,8 +140,8 @@ jobs:
       # Real bwrap + socat; the image ships neither. The apt hosts above are for this.
       - name: Install sandbox tooling (bwrap + socat)
         run: |
-          sudo apt-get update
-          sudo apt-get install -y bubblewrap socat
+          sudo apt-get -o Acquire::Retries=3 update
+          sudo apt-get -o Acquire::Retries=3 install -y bubblewrap socat
 
       - name: Set up Flutter
         uses: $/.github/actions/setup-flutter
@@ -181,11 +184,14 @@ jobs:
           egress-policy: block
           allowed-endpoints: >
             *.archive.ubuntu.com:80
+            archive.ubuntu.com:443
             esm.ubuntu.com:443
             github.com:443
             pub.dev:443
             storage.googleapis.com:443
             release-assets.githubusercontent.com:443
+            security.ubuntu.com:443
+            security.ubuntu.com:80
 
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -196,8 +202,8 @@ jobs:
       # bwrap needs; a failed sysctl shows up as a spawn error, not a skip.
       - name: Install sandbox tooling (bwrap + socat)
         run: |
-          sudo apt-get update
-          sudo apt-get install -y bubblewrap socat
+          sudo apt-get -o Acquire::Retries=3 update
+          sudo apt-get -o Acquire::Retries=3 install -y bubblewrap socat
           sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
 
       - name: Set up Flutter
@@ -308,6 +314,7 @@ jobs:
             *.dl.sourceforge.net:443
             *.microsoft.com:443
             api.github.com:443
+            archive.ubuntu.com:443
             downloads.sourceforge.net:443
             esm.ubuntu.com:443
             files.pythonhosted.org:443
@@ -318,6 +325,8 @@ jobs:
             pub.dev:443
             pypi.org:443
             release-assets.githubusercontent.com:443
+            security.ubuntu.com:443
+            security.ubuntu.com:80
             static.crates.io:443
             static.rust-lang.org:443
             storage.googleapis.com:443
@@ -373,8 +382,8 @@ jobs:
       - name: Install AEC build tools (meson/ninja)
         if: steps.gate.outputs.build == 'true'
         run: |
-          sudo apt-get update
-          sudo apt-get install -y ninja-build pkg-config
+          sudo apt-get -o Acquire::Retries=3 update
+          sudo apt-get -o Acquire::Retries=3 install -y ninja-build pkg-config
           python3 -m pip install --user meson
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
