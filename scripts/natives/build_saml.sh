@@ -32,13 +32,15 @@ BUILT="$CARGO_TARGET_DIR/release/$LIB"
 [ -f "$BUILT" ] || die "cargo build succeeded but $BUILT is missing"
 
 # Sanity: confirm the exported saml ABI is present.
+# `grep`, not `grep -q`: exiting at the match SIGPIPEs `nm` on a large table,
+# which pipefail reports as a missing symbol (see build_aec.sh).
 if [ "$NATIVE_OS" = "Darwin" ]; then
   for sym in _cc_saml_abi_version _cc_saml_last_error _cc_saml_free_string _cc_saml_parse_idp_metadata _cc_saml_build_authn_request _cc_saml_verify_response _cc_saml_sp_metadata; do
-    nm -gU "$BUILT" | grep -q "$sym" || die "built $LIB is missing the ${sym#_} symbol"
+    nm -gU "$BUILT" | grep "$sym" >/dev/null || die "built $LIB is missing the ${sym#_} symbol"
   done
 else
   for sym in cc_saml_abi_version cc_saml_last_error cc_saml_free_string cc_saml_parse_idp_metadata cc_saml_build_authn_request cc_saml_verify_response cc_saml_sp_metadata; do
-    nm -D "$BUILT" | grep -q " $sym" || die "built $LIB is missing the $sym symbol"
+    nm -D "$BUILT" | grep " $sym" >/dev/null || die "built $LIB is missing the $sym symbol"
   done
 fi
 

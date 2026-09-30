@@ -6,6 +6,17 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_kit/media_kit.dart';
 
+/// Whether this process can play media at all.
+///
+/// media_kit plays through libmpv. The macOS and Windows builds bundle it and
+/// the web player needs none, but on Linux it is the SYSTEM library, and a
+/// stock desktop (Ubuntu 22.04 included) does not ship it. There the desktop
+/// bootstrap overrides this to false when `MediaKit.ensureInitialized` cannot
+/// find libmpv, and every playback surface (soundscape, meeting playback, rig
+/// audio, the output-device picker, notification chimes) hides or stays
+/// silent: a `Player()` constructed without libmpv throws.
+final mediaPlaybackAvailableProvider = Provider<bool>((ref) => true);
+
 /// Persisted default for where app sound plays. Notification chimes,
 /// soundscape and meeting playback use it directly; a rig tab snapshots it
 /// when the tab is created and can then choose its own output device from the
@@ -89,11 +100,12 @@ Future<void> applyAppAudioOutput(Player player, String? name) async {
 /// player's (possibly still empty) snapshot on timeout. Desktop-only: the
 /// web player cannot choose an output device (the browser routes audio), so
 /// this yields an empty list on web and the settings section hides itself —
-/// an honest absence rather than a picker that silently does nothing.
+/// an honest absence rather than a picker that silently does nothing. The same
+/// holds on a Linux host without libmpv, where there is no player to ask.
 final audioOutputDevicesProvider = FutureProvider<List<AudioDevice>>((
   ref,
 ) async {
-  if (kIsWeb) {
+  if (kIsWeb || !ref.watch(mediaPlaybackAvailableProvider)) {
     return const <AudioDevice>[];
   }
   final player = Player();

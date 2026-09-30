@@ -113,5 +113,8 @@ done < <(cc_third_party_for "$ROLE")
 
 mkdir -p "$(dirname "$OUT")"
 command mv "$tmp" "$OUT"
+# mktemp made it 0600, and the notice has to be readable by whoever runs the
+# app: an AppImage's files are root-owned once mounted.
+chmod 644 "$OUT"
 trap - EXIT
 log "Wrote $OUT ($(wc -c <"$OUT" | tr -d ' ') bytes, role=$ROLE)"

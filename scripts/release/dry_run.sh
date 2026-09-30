@@ -69,11 +69,8 @@ bash scripts/release/cc_server_package.sh "$VERSION" "$OS"
 # 5. Report against the canonical name table, so a rename shows up here rather
 # than as a missing asset in make_release.sh during a real release.
 log "Artifacts produced (expected names from scripts/lib/artifact_names.sh):"
-case "$OS" in
-  macos)   kinds=(dmg server-macos) ;;
-  linux)   kinds=(appimage linux-tarball server-linux) ;;
-  windows) kinds=(win-setup win-portable server-windows) ;;
-esac
+kinds=()
+while IFS= read -r kind; do kinds+=("$kind"); done < <(release_platform_kinds "$OS")
 missing=0
 for kind in "${kinds[@]}"; do
   name="$(release_asset_name "$kind" "$VERSION")"

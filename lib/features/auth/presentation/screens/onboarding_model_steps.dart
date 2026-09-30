@@ -142,9 +142,10 @@ class OnboardingVoiceStep extends ConsumerWidget {
               ],
               const SizedBox(height: 16),
               const AudioInputRow(),
-              // Output has no picker on web (the browser routes audio), so the
-              // row hides itself there rather than showing an inert select.
-              if (AudioOutputRow.isSupported) ...[
+              // Output has no picker on web (the browser routes audio) or
+              // without libmpv, so the row hides there rather than showing an
+              // inert select.
+              if (AudioOutputRow.isAvailable(ref)) ...[
                 const SizedBox(height: 8),
                 AudioOutputRow(title: l10n.audioOutput),
               ],

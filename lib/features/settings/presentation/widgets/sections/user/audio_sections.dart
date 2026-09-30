@@ -30,19 +30,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// The output row is desktop-only by construction — the web player cannot
 /// choose an output device (the browser routes audio), so it does not render
 /// there at all rather than showing a picker that silently does nothing.
-class AudioDevicesSection extends StatelessWidget {
+class AudioDevicesSection extends ConsumerWidget {
   /// Creates an [AudioDevicesSection].
   const AudioDevicesSection({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     return SectionCard(
       label: l10n.audioDevicesSection,
       child: Column(
         children: [
           const AudioInputRow(),
-          if (AudioOutputRow.isSupported) ...[
+          if (AudioOutputRow.isAvailable(ref)) ...[
             const SizedBox(height: 8),
             const AudioOutputRow(),
           ],

@@ -130,6 +130,42 @@ void main() {
     );
   });
 
+  test('the AppImage runtime is pinned too, and handed to appimagetool', () {
+    // appimagetool 1.9.1 fetches the runtime (the ELF stub every AppImage
+    // starts with) from type2-runtime's `continuous` release on each run
+    // unless it is given --runtime-file, so pinning the tool alone left the
+    // artifact's first megabyte unpinned.
+    final url = values['APPIMAGE_RUNTIME_URL'];
+    expect(url, isNotNull);
+    expect(url, isNot(contains('/continuous/')));
+    final tag = RegExp(r'/releases/download/([^/]+)/').firstMatch(url!);
+    expect(tag, isNotNull, reason: 'APPIMAGE_RUNTIME_URL names no release tag');
+    expect(
+      values['APPIMAGE_RUNTIME_SHA256'],
+      matches(RegExp(r'^[0-9a-f]{64}$')),
+    );
+    final pkg = File(
+      '$root/scripts/release/linux_package.sh',
+    ).readAsStringSync();
+    expect(
+      pkg,
+      contains(
+        r'fetch_pinned "$APPIMAGE_RUNTIME_URL" "$APPIMAGE_RUNTIME_SHA256"',
+      ),
+    );
+    expect(pkg, contains(r'--runtime-file "$RUNTIME"'));
+    // The license table names the version that actually ships.
+    expect(
+      File('$root/scripts/lib/third_party.sh').readAsStringSync(),
+      contains('"AppImage runtime|${tag!.group(1)}|'),
+    );
+    expect(
+      File('$root/renovate.json').readAsStringSync(),
+      contains('APPIMAGE_RUNTIME_URL'),
+      reason: 'the runtime pin has no renovate.json custom manager',
+    );
+  });
+
   test('every ref has a renovate custom manager pointed at the pin file', () {
     // Without this, a retargeted or deleted manager means the pin silently
     // stops updating — the most invisible kind of supply-chain rot.

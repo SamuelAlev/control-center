@@ -154,8 +154,10 @@ fi
 
 # Sanity: confirm our C symbol is exported and (when we linked statically) that
 # there is no runtime dependency on a system libmp3lame — it must be self-contained.
+# `grep`, not `grep -q`: the static libmp3lame exports enough to outgrow the pipe,
+# so `-q` exiting early SIGPIPEs `nm`, which pipefail reports as "missing".
 if [ "$NATIVE_OS" = "Darwin" ]; then
-  if ! nm -gU "$WORK/$LIB" | grep -q "_cc_lame_create"; then
+  if ! nm -gU "$WORK/$LIB" | grep "_cc_lame_create" >/dev/null; then
     die "built $LIB is missing the cc_lame_create symbol"
   fi
   if [ -n "$LAME_STATIC" ] && otool -L "$WORK/$LIB" | grep -qi "libmp3lame"; then
@@ -163,7 +165,7 @@ if [ "$NATIVE_OS" = "Darwin" ]; then
     otool -L "$WORK/$LIB" | grep -i mp3lame >&2 || true
   fi
 else
-  if ! nm -D "$WORK/$LIB" | grep -q " cc_lame_create"; then
+  if ! nm -D "$WORK/$LIB" | grep " cc_lame_create" >/dev/null; then
     die "built $LIB is missing the cc_lame_create symbol"
   fi
   if [ -n "$LAME_STATIC" ] && ldd "$WORK/$LIB" 2>/dev/null | grep -qi "libmp3lame"; then

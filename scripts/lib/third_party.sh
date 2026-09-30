@@ -34,7 +34,7 @@ CC_THIRD_PARTY=(
   "ONNX Runtime|1.28.2|MIT|https://github.com/microsoft/onnxruntime|onnxruntime-MIT.txt|static|desktop,server"
   "flutter_pty (vendored C)|0.4.2|MIT|https://github.com/xtyxtyx/flutter_pty|flutter-pty-MIT.txt|static|desktop,server"
   "code-server|@codeServerVersion|MIT|https://github.com/coder/code-server|code-server-MIT.txt|bundled|server"
-  "AppImage runtime|1.9.1|MIT|https://github.com/AppImage/type2-runtime|appimage-runtime-MIT.txt|bundled|desktop"
+  "AppImage runtime|20251108|MIT|https://github.com/AppImage/type2-runtime|appimage-runtime-MIT.txt|bundled|desktop"
   # Fonts. Vendored into packages/cc_ui/fonts/ and compiled into the Flutter
   # asset bundle, so they ship in the app and never in the server archive. The
   # texts here are copies of the ones beside the .ttf files, which is where a

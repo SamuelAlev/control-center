@@ -1,5 +1,6 @@
 #include "my_application.h"
 
+#include <epoxy/egl.h>
 #include <flutter_linux/flutter_linux.h>
 #ifdef GDK_WINDOWING_X11
 #include <gdk/gdkx.h>
@@ -9,6 +10,72 @@
 
 static FlMethodChannel* app_method_channel = nullptr;
 
+// The engine's OpenGL view renderer mixes two OpenGL APIs on the GTK thread:
+// it presents each view through a GdkGLContext (GLX on X11) and deliberately
+// leaves that current after drawing, and it builds each view's compositor in
+// the engine's own EGL contexts, leaving the render context current too. Only
+// the implicit view releases it (realize_cb in fl_view.cc), and this app never
+// draws into the implicit view: every window it shows is a windowing-API view.
+// glvnd allows one window-system API per thread and EGL one thread per
+// context, so on X11 the second compositor cannot make its context current,
+// the raster thread cannot take the render context back (every window stays
+// empty), and GTK's next GLX call can raise a synthetic BadAccess that aborts
+// the process. Wrapping the renderer's realize and finalize releases GLX before
+// the engine reaches for EGL and EGL once it is done. Upstream Flutter (master
+// as of 2026-09) still has both leaks; drop this when the engine releases them.
+static void (*engine_renderer_realize)(GtkWidget* widget) = nullptr;
+static void (*engine_renderer_finalize)(GObject* object) = nullptr;
+
+static void release_egl_context() {
+  if (eglGetCurrentContext() != EGL_NO_CONTEXT) {
+    eglMakeCurrent(eglGetCurrentDisplay(), EGL_NO_SURFACE, EGL_NO_SURFACE,
+                   EGL_NO_CONTEXT);
+  }
+}
+
+static void renderer_realize(GtkWidget* widget) {
+  gdk_gl_context_clear_current();
+  engine_renderer_realize(widget);
+  release_egl_context();
+}
+
+static void renderer_finalize(GObject* object) {
+  // The raster thread can drop the last reference; GDK and Xlib are only
+  // called from the GTK thread.
+  const gboolean on_gtk_thread =
+      g_main_context_is_owner(g_main_context_default());
+  if (on_gtk_thread) {
+    gdk_gl_context_clear_current();
+  }
+  engine_renderer_finalize(object);
+  if (on_gtk_thread) {
+    release_egl_context();
+  }
+}
+
+// The renderer type is private to the engine and registered with the first
+// FlView, so this runs after fl_view_new() and before any view is realized.
+// Wayland and the software renderer never register it and need no wrapping.
+static void wrap_engine_renderer() {
+  GType type = g_type_from_name("FlViewRendererOpenGL");
+  if (type == 0 || engine_renderer_realize != nullptr) {
+    return;
+  }
+  // Held for the life of the process, so the patched class is never freed.
+  gpointer klass = g_type_class_ref(type);
+  engine_renderer_realize = GTK_WIDGET_CLASS(klass)->realize;
+  GTK_WIDGET_CLASS(klass)->realize = renderer_realize;
+  engine_renderer_finalize = G_OBJECT_CLASS(klass)->finalize;
+  G_OBJECT_CLASS(klass)->finalize = renderer_finalize;
+}
+
+// Shows the implicit view's window once Flutter draws into it. The app renders
+// only into windowing-API windows, so this window stays hidden instead of
+// sitting empty beside them.
+static void first_frame_cb(GtkWidget* window, FlView* view) {
+  gtk_widget_show(window);
+}
+
 static void app_method_channel_response_cb(GObject* object,
                                            GAsyncResult* result,
                                            gpointer user_data) {}
@@ -16,14 +83,35 @@ static void app_method_channel_response_cb(GObject* object,
 struct _MyApplication {
   GtkApplication parent_instance;
   char** dart_entrypoint_arguments;
+  // The implicit view's window, created by the first activate().
+  GtkWindow* window;
 };
 
 G_DEFINE_TYPE(MyApplication, my_application, GTK_TYPE_APPLICATION)
 
 static void my_application_activate(GApplication* application) {
   MyApplication* self = MY_APPLICATION(application);
+
+  // A re-launch or a forwarded deep link activates the running instance again.
+  // Building another FlView here would start a second engine (and run main()
+  // again); raise the windows the app already shows instead.
+  if (self->window != nullptr) {
+    GList* toplevels = gtk_window_list_toplevels();
+    for (GList* l = toplevels; l != nullptr; l = l->next) {
+      GtkWindow* toplevel = GTK_WINDOW(l->data);
+      if (toplevel != self->window &&
+          gtk_widget_get_visible(GTK_WIDGET(toplevel)) &&
+          gtk_window_get_transient_for(toplevel) == nullptr) {
+        gtk_window_present(toplevel);
+      }
+    }
+    g_list_free(toplevels);
+    return;
+  }
+
   GtkWindow* window =
       GTK_WINDOW(gtk_application_window_new(GTK_APPLICATION(application)));
+  self->window = window;
 
   gboolean use_header_bar = TRUE;
 #ifdef GDK_WINDOWING_X11
@@ -46,14 +134,20 @@ static void my_application_activate(GApplication* application) {
   }
 
   gtk_window_set_default_size(window, 1280, 720);
-  gtk_widget_show(GTK_WIDGET(window));
 
   g_autoptr(FlDartProject) project = fl_dart_project_new();
   fl_dart_project_set_dart_entrypoint_arguments(project, self->dart_entrypoint_arguments);
 
   FlView* view = fl_view_new(project);
+  wrap_engine_renderer();
   gtk_widget_show(GTK_WIDGET(view));
   gtk_container_add(GTK_CONTAINER(window), GTK_WIDGET(view));
+
+  // Show the window only when Flutter renders into it, as Flutter's template
+  // does. Realizing the view is what starts the engine.
+  g_signal_connect_swapped(view, "first-frame", G_CALLBACK(first_frame_cb),
+                           window);
+  gtk_widget_realize(GTK_WIDGET(view));
 
   fl_register_plugins(FL_PLUGIN_REGISTRY(view));
 

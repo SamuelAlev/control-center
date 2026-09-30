@@ -12,6 +12,7 @@ import 'package:control_center/app/window_geometry_watcher.dart';
 import 'package:control_center/app/window_visibility_guard.dart';
 import 'package:control_center/bootstrap/server_backend.dart';
 import 'package:control_center/core/deep_link/deep_link_handler.dart';
+import 'package:control_center/core/infrastructure/audio/audio_output_settings.dart';
 import 'package:control_center/core/infrastructure/provider_retry.dart';
 import 'package:control_center/core/keybindings/stuck_keys.dart';
 import 'package:control_center/core/media/disk_cached_network_image.dart';
@@ -77,6 +78,10 @@ final ObservableKeyValueBackend desktopPrefsBackend = ObservableKeyValueBackend(
 /// [_prepareDesktop]'s scope.
 WindowGeometryWatcher? _windowGeometryWatcher;
 
+/// Whether media_kit found libmpv in [_prepareDesktop]; every session's
+/// container reports it as [mediaPlaybackAvailableProvider].
+bool _mediaPlaybackAvailable = true;
+
 /// Desktop bootstrap: full-featured native multi-window app.
 ///
 /// This is the verbatim desktop startup sequence — logging installs,
@@ -117,8 +122,19 @@ Future<void> bootstrapAndRun() async {
 Future<void> _prepareDesktop() async {
   // Load the libmpv-backed player (media_kit) before any Player is created —
   // every playback surface (soundscape, meeting audio, rig listen,
-  // notification sounds) depends on it.
-  MediaKit.ensureInitialized();
+  // notification sounds) depends on it. Linux takes libmpv from the system and
+  // a stock desktop has none, so there the app starts without playback rather
+  // than not at all. macOS and Windows bundle it: a failure there is a broken
+  // build and still stops the boot.
+  try {
+    MediaKit.ensureInitialized();
+  } on Object catch (error) {
+    if (!Platform.isLinux) {
+      rethrow;
+    }
+    _mediaPlaybackAvailable = false;
+    AppLog.w('main', 'media playback disabled, no libmpv: $error');
+  }
 
   // Cap the engine image cache well below Flutter's default (~100MB / 1000
   // images). The desktop shows mostly small avatars and feed thumbnails
@@ -410,6 +426,9 @@ class DesktopBackendSession {
         ),
         serverSwitchHandlerProvider.overrideWithValue(
           DesktopServerSwitcher.instance.switchTo,
+        ),
+        mediaPlaybackAvailableProvider.overrideWithValue(
+          _mediaPlaybackAvailable,
         ),
       ],
     );

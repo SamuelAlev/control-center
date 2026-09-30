@@ -42,6 +42,7 @@ void main() {
       containsAll([
         'Control-Center-$version-arm64.dmg',
         'Control-Center-$version-x86_64.AppImage',
+        'Control-Center-$version-x86_64.AppImage.zsync',
         'Control-Center-$version-linux-x64.tar.gz',
         'Control-Center-$version-x64-setup.exe',
         'Control-Center-$version-windows-x64.zip',
@@ -109,7 +110,11 @@ void main() {
   test('the package scripts name their outputs from the table', () {
     const expected = {
       'scripts/release/macos_package.sh': ['dmg'],
-      'scripts/release/linux_package.sh': ['appimage', 'linux-tarball'],
+      'scripts/release/linux_package.sh': [
+        'appimage',
+        'appimage-zsync',
+        'linux-tarball',
+      ],
       'scripts/release/windows_package.sh': ['win-setup', 'win-portable'],
     };
     for (final MapEntry(key: path, value: kinds) in expected.entries) {

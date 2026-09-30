@@ -9,8 +9,6 @@ description: >
 # Tag runs can restore default-branch caches; a save on a tag is never readable
 # again, so releases only consume what a push to main saved.
 # `v1` is the manual bust (runner toolchain changes the key does not hash).
-# The key does not cover glibc; Linux stays on ubuntu-24.04 and verify_natives.sh
-# checks the ABI floor on hit and miss.
 
 outputs:
   cache-hit:
@@ -22,9 +20,15 @@ outputs:
 runs:
   using: composite
   steps:
+    # A runner machine variable, not in the `env` context, so read it here.
+    - name: Identify the runner image
+      id: image
+      shell: bash
+      run: echo "os=${ImageOS:-unknown}" >> "$GITHUB_OUTPUT"
+
     - name: Restore staged natives
       id: cache
       uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: build/natives
-        key: natives-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/lib/native_pins.env', 'scripts/lib/common.sh', 'scripts/lib/natives.sh', 'scripts/natives/**', 'scripts/release/windows_natives.sh', 'packages/cc_natives/native/**') }}
+        key: natives-v1-${{ runner.os }}-${{ steps.image.outputs.os }}-${{ runner.arch }}-${{ hashFiles('scripts/lib/native_pins.env', 'scripts/lib/common.sh', 'scripts/lib/natives.sh', 'scripts/natives/**', 'scripts/release/windows_natives.sh', 'packages/cc_natives/native/**') }}

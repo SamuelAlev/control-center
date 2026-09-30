@@ -292,7 +292,7 @@ jobs:
   # PR + miss: skip, unless the PR touches native boot paths (then build).
   e2e:
     name: server boot e2e (natives staged)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     timeout-minutes: 45
     permissions:
       contents: read
@@ -310,11 +310,13 @@ jobs:
             api.github.com:443
             downloads.sourceforge.net:443
             esm.ubuntu.com:443
+            files.pythonhosted.org:443
             github.com:443
             gitlab.freedesktop.org:443
             index.crates.io:443
             objects.githubusercontent.com:443
             pub.dev:443
+            pypi.org:443
             release-assets.githubusercontent.com:443
             static.crates.io:443
             static.rust-lang.org:443
@@ -367,11 +369,14 @@ jobs:
             echo "build=true"  >> "$GITHUB_OUTPUT"
           fi
 
+      # webrtc-audio-processing needs meson >= 0.63; 22.04's apt has 0.61.
       - name: Install AEC build tools (meson/ninja)
         if: steps.gate.outputs.build == 'true'
         run: |
           sudo apt-get update
-          sudo apt-get install -y meson ninja-build pkg-config
+          sudo apt-get install -y ninja-build pkg-config
+          python3 -m pip install --user meson
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Build native FFI libraries
         if: steps.gate.outputs.build == 'true'

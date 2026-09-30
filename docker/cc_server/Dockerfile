@@ -37,9 +37,11 @@
 # =============================================================================
 
 # THE BASE IMAGE IS AN ABI CONTRACT, not a taste in distros. The natives are
-# compiled on the release runner (ubuntu-24.04: glibc 2.39, libstdc++ 14) and
-# merely COPIED in here, so this image must provide at least what they link
-# against. Debian 12 did not — it ships glibc 2.36 and libstdc++ 12, while rift
+# compiled on the release runner and merely COPIED in here, so this image must
+# provide at least what they link against. That runner is ubuntu-22.04 now
+# (glibc 2.35, libstdc++ 12: the desktop AppImage's floor, see
+# scripts/lib/linux_desktop.sh). It was ubuntu-24.04 (glibc 2.39, libstdc++
+# 14) when this bit: Debian 12 ships glibc 2.36 and libstdc++ 12, while rift
 # needs GLIBC_2.39 (`pidfd_spawnp`, from Rust std's spawn path), fff/lame/aec
 # need GLIBC_2.38 (`__isoc23_strtol`: glibc >=2.38 headers redirect `strtol`
 # under `_GNU_SOURCE`) and aec needs GLIBCXX_3.4.32. Those three failed

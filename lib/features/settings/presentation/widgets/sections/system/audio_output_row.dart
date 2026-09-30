@@ -5,7 +5,8 @@
 // Desktop-only by construction: the web player cannot choose an output device
 // (the browser routes audio), so [AudioOutputRow.isSupported] is false there and
 // every host hides the row rather than showing a picker that silently does
-// nothing.
+// nothing. A Linux desktop without libmpv has no player to route either, which
+// [AudioOutputRow.isAvailable] adds.
 library;
 
 import 'dart:async';
@@ -33,6 +34,10 @@ class AudioOutputRow extends ConsumerStatefulWidget {
 
   /// Whether this platform can route audio to a chosen device at all.
   static bool get isSupported => !kIsWeb;
+
+  /// Whether this process can: [isSupported], and media playback started.
+  static bool isAvailable(WidgetRef ref) =>
+      isSupported && ref.watch(mediaPlaybackAvailableProvider);
 
   @override
   ConsumerState<AudioOutputRow> createState() => _AudioOutputRowState();
@@ -85,7 +90,7 @@ class _AudioOutputRowState extends ConsumerState<AudioOutputRow> {
 
   @override
   Widget build(BuildContext context) {
-    if (!AudioOutputRow.isSupported) {
+    if (!AudioOutputRow.isAvailable(ref)) {
       return const SizedBox.shrink();
     }
     final l10n = AppLocalizations.of(context);

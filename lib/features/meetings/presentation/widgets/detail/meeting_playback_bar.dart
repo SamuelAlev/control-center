@@ -52,13 +52,13 @@ class MeetingPlaybackBar extends ConsumerWidget {
     }
     // The byte source: the host's `/meeting/audio` URL, built from the live
     // connection. Null when there is no proxy scope (no live connection) — then
-    // there is nothing to play.
+    // there is nothing to play; nor is there without libmpv (stock Linux).
     final url = MediaProxyScope.meetingAudioUrlOf(
       context,
       workspaceId: workspaceId,
       meetingId: meetingId,
     );
-    if (url == null) {
+    if (url == null || !ref.watch(mediaPlaybackAvailableProvider)) {
       return const SizedBox.shrink();
     }
     final clip = ref.watch(

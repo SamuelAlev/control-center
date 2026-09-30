@@ -17,15 +17,25 @@ class NotificationSoundService {
   /// [_outputDeviceName] resolves the app-wide output device at PLAY time — a
   /// long-lived service outlives any one selection, so a value captured at
   /// construction would pin whichever device was chosen at app start.
-  // The field stays PRIVATE so it is not part of the implicit interface
+  ///
+  /// [_playbackAvailable] is false on a Linux host without libmpv, where there
+  /// is no player to create; the service then stays silent instead of failing
+  /// on every notification.
+  // The fields stay PRIVATE so they are not part of the implicit interface
   // outside this library: the notification test doubles `implements` this
   // class, and a public member would force every one of them to grow a
   // resolver they have no use for.
-  NotificationSoundService({this._outputDeviceName});
+  NotificationSoundService({
+    this._outputDeviceName,
+    this._playbackAvailable = true,
+  });
 
   /// Resolves the app-wide output device name (null = system default), or is
   /// itself null where routing does not apply (web, tests).
   final String? Function()? _outputDeviceName;
+
+  /// False where no player can exist (a Linux host without libmpv).
+  final bool _playbackAvailable;
 
   Player? _player;
 
@@ -43,7 +53,9 @@ class NotificationSoundService {
   /// Does nothing if [sound] is [NotificationSound.none].
   /// Silently catches playback errors — notification sounds are non-critical.
   Future<void> play(NotificationSound sound, {double volume = 1.0}) async {
-    if (sound == NotificationSound.none || sound.assetPath == null) {
+    if (!_playbackAvailable ||
+        sound == NotificationSound.none ||
+        sound.assetPath == null) {
       return;
     }
 

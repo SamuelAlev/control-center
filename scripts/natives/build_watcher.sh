@@ -32,13 +32,15 @@ BUILT="$CARGO_TARGET_DIR/release/$LIB"
 [ -f "$BUILT" ] || die "cargo build succeeded but $BUILT is missing"
 
 # Sanity: confirm the exported watcher ABI is present.
+# `grep`, not `grep -q`: exiting at the match SIGPIPEs `nm` on a large table,
+# which pipefail reports as a missing symbol (see build_aec.sh).
 if [ "$NATIVE_OS" = "Darwin" ]; then
   for sym in _cc_watch_abi_version _cc_watch_create _cc_watch_drain _cc_watch_destroy _cc_watch_last_error; do
-    nm -gU "$BUILT" | grep -q "$sym" || die "built $LIB is missing the ${sym#_} symbol"
+    nm -gU "$BUILT" | grep "$sym" >/dev/null || die "built $LIB is missing the ${sym#_} symbol"
   done
 else
   for sym in cc_watch_abi_version cc_watch_create cc_watch_drain cc_watch_destroy cc_watch_last_error; do
-    nm -D "$BUILT" | grep -q " $sym" || die "built $LIB is missing the $sym symbol"
+    nm -D "$BUILT" | grep " $sym" >/dev/null || die "built $LIB is missing the $sym symbol"
   done
 fi
 

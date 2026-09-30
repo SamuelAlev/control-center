@@ -235,5 +235,27 @@ void main() {
         const Locale('zh', 'TW'),
       );
     });
+
+    // Flutter falls back to the FIRST supported locale when nothing matches.
+    // The generated list is A–Z, so that was Arabic: a desktop started under
+    // LANG=C (AppImageHub's test, many containers) or in an unshipped language
+    // came up right-to-left in Arabic. l10n.yaml's preferred-supported-locales
+    // puts English first; both the app and the pre-app setup window rely on it.
+    test('an unmatched or absent system locale falls back to English', () {
+      expect(AppLocalizations.supportedLocales.first, const Locale('en'));
+      expect(
+        resolveAppLocale(const Locale('C'), kSupportedAppLocales),
+        const Locale('en'),
+      );
+      expect(
+        resolveAppLocale(const Locale('sw', 'KE'), kSupportedAppLocales),
+        const Locale('en'),
+      );
+      expect(resolveAppLocale(null, kSupportedAppLocales), const Locale('en'));
+      expect(
+        basicLocaleListResolution(const [], AppLocalizations.supportedLocales),
+        const Locale('en'),
+      );
+    });
   });
 }

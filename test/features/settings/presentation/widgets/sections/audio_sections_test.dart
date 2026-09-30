@@ -29,10 +29,15 @@ class _FixedInputDeviceNotifier extends AudioInputDeviceNotifier {
   String? build() => _id;
 }
 
-Widget _wrap({required List<AudioDevice> devices, String? selected}) {
+Widget _wrap({
+  required List<AudioDevice> devices,
+  String? selected,
+  bool playbackAvailable = true,
+}) {
   return testWrap(
     ProviderScope(
       overrides: [
+        mediaPlaybackAvailableProvider.overrideWithValue(playbackAvailable),
         audioOutputDevicesProvider.overrideWith((ref) async => devices),
         audioOutputDeviceProvider.overrideWith(
           () => _FixedOutputDeviceNotifier(selected),
@@ -108,5 +113,21 @@ void main() {
         expect(find.text('System default'), findsNWidgets(2));
       },
     );
+
+    testWidgets('without libmpv the output row is gone, the input row stays', (
+      tester,
+    ) async {
+      // A stock Linux desktop: no player exists to route, so a picker would
+      // be inert and its Test button would only surface media_kit's error.
+      await tester.pumpWidget(
+        _wrap(devices: _kDevices, selected: null, playbackAvailable: false),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('Output device'), findsNothing);
+      expect(find.text('Test'), findsOneWidget);
+      expect(find.text('System default'), findsOneWidget);
+    });
   });
 }

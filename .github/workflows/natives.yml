@@ -3,6 +3,8 @@ name: Natives
 # Compiles native FFI libs when a native input changes: ci.yml does not build
 # them, and only a push to main can seed a cache a release tag can restore.
 # The key lives in natives-cache. Runners match release.yml (glibc ABI, macos-26).
+# ci.yml's e2e job restores (and on a push miss, saves) the same Linux key, so
+# it runs on this runner too.
 #
 # paths are duplicated because the workflow parser rejects YAML anchors.
 # verify_natives.sh is in the path filter, not the cache key: the gate does
@@ -51,8 +53,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # ubuntu-24.04, not 26.04: same glibc ABI as release.yml's build-linux.
-          - runner: ubuntu-24.04
+          - runner: ubuntu-22.04
             os: linux
           - runner: macos-26
             os: macos
@@ -63,7 +64,7 @@ jobs:
       # Linux-only block sibling would install this allowlist on macOS and
       # Windows and then no-op the real audit step. block is Linux-only.
       # Hosts: apt, GitHub release assets, crates/rustup, freedesktop + wrapdb
-      # (aec), SourceForge (LAME), Azure blobs (actions/cache).
+      # (aec), PyPI (meson), SourceForge (LAME), Azure blobs (actions/cache).
       - name: Harden runner
         uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
@@ -76,10 +77,12 @@ jobs:
             api.github.com:443
             downloads.sourceforge.net:443
             esm.ubuntu.com:443
+            files.pythonhosted.org:443
             github.com:443
             gitlab.freedesktop.org:443
             index.crates.io:443
             objects.githubusercontent.com:443
+            pypi.org:443
             release-assets.githubusercontent.com:443
             static.crates.io:443
             static.rust-lang.org:443
@@ -94,12 +97,15 @@ jobs:
         id: natives-cache
         uses: $/.github/actions/natives-cache
 
-      # Miss only. cargo/curl/tar/a compiler are on the image; meson/ninja are not.
+      # Miss only. cargo/curl/tar/a compiler are on the image; meson/ninja are
+      # not, and webrtc-audio-processing needs meson >= 0.63 (22.04's apt: 0.61).
       - name: Install AEC build tools (meson/ninja)
         if: runner.os == 'Linux' && steps.natives-cache.outputs.cache-hit != 'true'
         run: |
           sudo apt-get update
-          sudo apt-get install -y meson ninja-build pkg-config
+          sudo apt-get install -y ninja-build pkg-config
+          python3 -m pip install --user meson
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Install AEC build tools (meson/ninja)
         if: runner.os == 'macOS' && steps.natives-cache.outputs.cache-hit != 'true'

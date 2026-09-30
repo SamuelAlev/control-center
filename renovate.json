@@ -326,6 +326,19 @@
       "datasourceTemplate": "github-releases"
     },
     {
+      "description": "AppImage runtime release pin (APPIMAGE_RUNTIME_URL)",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/scripts/lib/native_pins\\.env$/"
+      ],
+      "matchStrings": [
+        "APPIMAGE_RUNTIME_URL=https://github\\.com/AppImage/type2-runtime/releases/download/(?<currentValue>[0-9]+)/"
+      ],
+      "depNameTemplate": "AppImage/type2-runtime",
+      "datasourceTemplate": "github-releases",
+      "versioningTemplate": "regex:^(?<major>\\d+)$"
+    },
+    {
       "description": "code-server release pin (codeServerVersion)",
       "customType": "regex",
       "managerFilePatterns": [

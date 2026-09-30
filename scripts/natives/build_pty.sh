@@ -49,13 +49,15 @@ else
 fi
 
 # Sanity: confirm the exported PTY ABI is present.
+# `grep`, not `grep -q`: exiting at the match SIGPIPEs `nm` on a large table,
+# which pipefail reports as a missing symbol (see build_aec.sh).
 if [ "$NATIVE_OS" = "Darwin" ]; then
   for sym in _pty_create _pty_write _pty_resize _pty_getpid; do
-    nm -gU "$WORK/$LIB" | grep -q "$sym" || die "built $LIB is missing the ${sym#_} symbol"
+    nm -gU "$WORK/$LIB" | grep "$sym" >/dev/null || die "built $LIB is missing the ${sym#_} symbol"
   done
 else
   for sym in pty_create pty_write pty_resize pty_getpid; do
-    nm -D "$WORK/$LIB" | grep -q " $sym" || die "built $LIB is missing the $sym symbol"
+    nm -D "$WORK/$LIB" | grep " $sym" >/dev/null || die "built $LIB is missing the $sym symbol"
   done
 fi
 

@@ -148,7 +148,7 @@ List<CcMenuItem> rigTabAudioMenuItems({
       label: state.outputEnabled ? l10n.rigAudioMute : l10n.rigAudioListen,
       icon: state.outputEnabled ? AppIcons.volumeOff : AppIcons.volume2,
       selected: state.outputEnabled,
-      enabled: supportsOutput,
+      enabled: supportsOutput && ref.read(mediaPlaybackAvailableProvider),
       onSelected: () => notifier.setOutputEnabled(!state.outputEnabled),
     ),
     CcMenuItem(
@@ -228,10 +228,13 @@ class RigTabAudioIndicators extends ConsumerWidget {
     ref.watch(audioInputDevicesProvider);
     final notifier = ref.read(rigTabAudioProvider(tabKey).notifier);
     final l10n = AppLocalizations.of(context);
+    // No libmpv (a stock Linux desktop): nothing to listen through.
+    final showsOutput =
+        supportsOutput && ref.watch(mediaPlaybackAvailableProvider);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (supportsOutput)
+        if (showsOutput)
           _TabMediaButton(
             icon: state.outputEnabled ? AppIcons.volume2 : AppIcons.volumeOff,
             color: color,
@@ -240,7 +243,7 @@ class RigTabAudioIndicators extends ConsumerWidget {
                 : l10n.rigAudioListen,
             onPressed: () => notifier.setOutputEnabled(!state.outputEnabled),
           ),
-        if (supportsOutput && supportsMicrophone) const SizedBox(width: 2),
+        if (showsOutput && supportsMicrophone) const SizedBox(width: 2),
         if (supportsMicrophone)
           _TabMediaButton(
             icon: state.microphoneEnabled ? AppIcons.mic : AppIcons.micOff,

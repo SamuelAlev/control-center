@@ -84,7 +84,10 @@ class _SoundscapeAudioHostState extends ConsumerState<SoundscapeAudioHost> {
   /// done synchronously up front, before any `await`, so it never touches an
   /// unmounted element.
   Future<void> _applyState(SoundscapeState s) async {
-    if (_disposed) {
+    // No libmpv (a stock Linux desktop) means no player to create. The title
+    // bar and palette hide the soundscape, so this only stops a state change
+    // from some other path reaching `Player()`.
+    if (_disposed || !ref.read(mediaPlaybackAvailableProvider)) {
       return;
     }
     if (!s.playing) {

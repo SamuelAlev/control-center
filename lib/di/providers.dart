@@ -515,5 +515,6 @@ final notificationSoundServiceProvider = Provider<NotificationSoundService>((
 ) {
   return NotificationSoundService(
     outputDeviceName: () => ref.read(audioOutputDeviceProvider),
+    playbackAvailable: ref.watch(mediaPlaybackAvailableProvider),
   );
 });

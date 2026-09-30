@@ -54,12 +54,12 @@ follow [Run a headless server](/manual/guides/run-headless-server/).
 
 ## Desktop system requirements
 
-| Requirement  | macOS                                                 | Windows     | Linux                                        |
-| ------------ | ----------------------------------------------------- | ----------- | -------------------------------------------- |
-| OS version   | macOS 13+ (Ventura)                                   | Windows 10+ | A modern distro with a graphical environment |
-| Architecture | Apple Silicon (arm64)                                 | x64         | x86_64                                       |
-| Git          | Required                                              | Required    | Required                                     |
-| Disk space   | ~200 MB for the app, plus the server's data directory | ~200 MB     | ~200 MB                                      |
+| Requirement  | macOS                                                 | Windows     | Linux                                                      |
+| ------------ | ----------------------------------------------------- | ----------- | ---------------------------------------------------------- |
+| OS version   | macOS 13+ (Ventura)                                   | Windows 10+ | Ubuntu 22.04+ or another distro with glibc 2.35+ and GTK 3 |
+| Architecture | Apple Silicon (arm64)                                 | x64         | x86_64                                                     |
+| Git          | Required                                              | Required    | Required                                                   |
+| Disk space   | ~200 MB for the app, plus the server's data directory | ~200 MB     | ~200 MB                                                    |
 
 Intel Macs have no prebuilt download. [Build from source](#build-from-source) instead.
 
@@ -87,11 +87,15 @@ Windows uses `git worktree` for space checkouts (no copy-on-write).
 - `Control-Center-<version>-x86_64.AppImage`
 - `Control-Center-<version>-linux-x64.tar.gz`
 
+The AppImage carries update information, so [AppImageUpdate](https://github.com/AppImageCommunity/AppImageUpdate) or appimaged can bring it to the latest release in place, downloading only what changed.
+
+Both are built on Ubuntu 22.04 and run on it or anything newer (Debian 12, Fedora 36 and later): they link glibc 2.35 and the libstdc++ of GCC 12 and take GTK 3 from the system. The few libraries a stock desktop may lack travel inside them, so nothing else needs installing. Sound — meeting playback, the soundscape, rig audio and notification chimes — plays through the system's libmpv (`libmpv1` on Ubuntu 22.04, `libmpv2` on newer Ubuntu and Debian, `mpv-libs` on Fedora); without it the app starts with those controls hidden.
+
 ### Standalone server
 
 Each release also carries the headless server on its own — `cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip` — alongside the `cc-server`, `cc-webapp` and `cc-remote` images on GHCR. See [Run a headless server](/manual/guides/run-headless-server/).
 
-The Linux archive is built on Ubuntu 24.04 and its bundled native libraries link glibc 2.39 and libstdc++ 14, so it needs a host at least that new (Debian 13, Ubuntu 24.04, Fedora 40 or later). On an older distribution run the `cc-server` image instead — a container brings its own userland, so only the kernel has to be yours.
+The Linux archive is built on Ubuntu 22.04 and its bundled native libraries link glibc 2.35 and the libstdc++ of GCC 12, so it needs a host at least that new (Ubuntu 22.04, Debian 12, Fedora 36 or later). On an older distribution run the `cc-server` image instead — a container brings its own userland, so only the kernel has to be yours.
 
 ## Agent backend
 

@@ -283,8 +283,10 @@ assert_exports() { # lib sym...
     *)      table="$(dumpbin //exports "$lib" 2>/dev/null || true)" ;;
   esac
   [ -n "$table" ] || die "assert_exports: could not read the symbol table of $lib"
+  # A here-string, not `printf | grep -q`: grep exiting at the match would
+  # SIGPIPE a large table's printf, which pipefail reports as a missing symbol.
   for sym in "$@"; do
-    printf '%s\n' "$table" | grep -q "$sym" \
+    grep -q "$sym" <<<"$table" \
       || die "$(basename "$lib") does not export '$sym' — the build produced a library the loader cannot use."
   done
 }

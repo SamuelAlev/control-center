@@ -120,11 +120,11 @@ abstract class AppLocalizations {
 
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
+    Locale('en'),
     Locale('ar'),
     Locale('cs'),
     Locale('de'),
     Locale('el'),
-    Locale('en'),
     Locale('en', 'GB'),
     Locale('es'),
     Locale('es', 'MX'),

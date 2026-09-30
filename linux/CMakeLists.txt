@@ -74,6 +74,17 @@ set_target_properties(${BINARY_NAME}
 # them to the application.
 include(flutter/generated_plugins.cmake)
 
+# nativeapi (the cnativeapi FFI plugin) passes G_APPLICATION_DEFAULT_FLAGS, a
+# GLib 2.74 name for GApplication's zero flags. Releases build on Ubuntu 22.04
+# (GLib 2.72), the oldest supported LTS the AppImage must start on, where the
+# older spelling means the same. Only below 2.74: from there it is an
+# enumerator, and a macro of that name would rewrite GLib's own declaration.
+pkg_check_modules(GLIB REQUIRED glib-2.0)
+if(TARGET cnativeapi AND GLIB_VERSION VERSION_LESS "2.74")
+  target_compile_definitions(cnativeapi PRIVATE
+    G_APPLICATION_DEFAULT_FLAGS=G_APPLICATION_FLAGS_NONE)
+endif()
+
 
 # === Installation ===
 # By default, "installing" just makes a relocatable bundle in the build

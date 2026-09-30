@@ -3,3 +3,5 @@ template-arb-file: app_en.arb
 output-localization-file: app_localizations.dart
 output-dir: lib/l10n/
 nullable-getter: false
+# Flutter falls back to the FIRST supported locale when the system's matches none of them (C/POSIX), and the generated list is otherwise A–Z (Arabic).
+preferred-supported-locales: [en]

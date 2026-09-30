@@ -122,4 +122,19 @@ void main() {
       expect(prefs.containsKey(audioOutputDeviceKey), isFalse);
     });
   });
+
+  group('audioOutputDevicesProvider', () {
+    // A Linux desktop without libmpv: `Player()` throws there, and this list
+    // is read by settings, onboarding and every rig tab. It must answer
+    // without constructing one; a test process never initializes media_kit,
+    // so constructing one here would surface as an AsyncError.
+    test('is empty, not an error, without media playback', () async {
+      final container = ProviderContainer(
+        overrides: [mediaPlaybackAvailableProvider.overrideWithValue(false)],
+      );
+      addTearDown(container.dispose);
+
+      expect(await container.read(audioOutputDevicesProvider.future), isEmpty);
+    });
+  });
 }

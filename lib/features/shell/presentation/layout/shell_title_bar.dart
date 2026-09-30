@@ -1,4 +1,5 @@
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/core/infrastructure/audio/audio_output_settings.dart';
 import 'package:control_center/features/demo/presentation/widgets/demo_badge.dart';
 import 'package:control_center/features/focus_mode/presentation/widgets/focus_config_dialog.dart';
 import 'package:control_center/features/focus_mode/providers/focus_mode_providers.dart';
@@ -108,8 +109,11 @@ class ShellTitleBar extends ConsumerWidget {
                 const SizedBox(width: AppSpacing.xs),
                 const NotificationBell(),
                 const SizedBox(width: AppSpacing.xs),
-                const _SoundscapeButton(),
-                const SizedBox(width: AppSpacing.xs),
+                // No libmpv (a stock Linux desktop): nothing could play.
+                if (ref.watch(mediaPlaybackAvailableProvider)) ...[
+                  const _SoundscapeButton(),
+                  const SizedBox(width: AppSpacing.xs),
+                ],
                 if (focusMode.active)
                   _FocusModeChip(
                     minutesRemaining: focusMode.minutesRemaining,

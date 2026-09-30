@@ -100,8 +100,12 @@ fi
 
 # Sanity: confirm our C symbols are exported and there are no system-abseil
 # runtime deps (must be self-contained).
+#
+# `grep`, not `grep -q`: the whole-archive link exports every abseil and WebRTC
+# symbol, ~330 KB of `nm` output. `-q` exits at the match, `nm` then dies of
+# SIGPIPE writing the rest, and under pipefail that reads as "missing".
 if [ "$NATIVE_OS" = "Darwin" ]; then
-  if ! nm -gU "$WORK/$LIB" | grep -q "_aec_create"; then
+  if ! nm -gU "$WORK/$LIB" | grep "_aec_create" >/dev/null; then
     die "built $LIB is missing the aec_create symbol"
   fi
   if otool -L "$WORK/$LIB" | grep -qi "Cellar/abseil\|/abseil"; then
@@ -109,7 +113,7 @@ if [ "$NATIVE_OS" = "Darwin" ]; then
     otool -L "$WORK/$LIB" | grep -i abseil >&2 || true
   fi
 else
-  if ! nm -D "$WORK/$LIB" | grep -q " aec_create"; then
+  if ! nm -D "$WORK/$LIB" | grep " aec_create" >/dev/null; then
     die "built $LIB is missing the aec_create symbol"
   fi
   if ldd "$WORK/$LIB" 2>/dev/null | grep -qi "abseil"; then

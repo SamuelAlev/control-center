@@ -313,6 +313,9 @@ class _RigPanelState extends ConsumerState<RigPanel> {
         : tabAudio.inputDeviceId;
     final audioOn = tabAudio?.outputEnabled ?? _audioOn;
     final microphoneOn = tabAudio?.microphoneEnabled ?? _microphoneOn;
+    // No libmpv (a stock Linux desktop): the guest's audio has nothing to play
+    // through, so there is no toggle and no player.
+    final canPlayAudio = ref.watch(mediaPlaybackAvailableProvider);
 
     void toggleAudio() {
       if (tabAudioNotifier != null) {
@@ -356,7 +359,8 @@ class _RigPanelState extends ConsumerState<RigPanel> {
               rig: rig,
               onStop: widget.onStop,
               audioOn: audioOn,
-              onToggleAudio: rig.surfaceKind == RigSurface.computer
+              onToggleAudio:
+                  canPlayAudio && rig.surfaceKind == RigSurface.computer
                   ? toggleAudio
                   : null,
               microphoneOn: microphoneOn,
@@ -380,7 +384,7 @@ class _RigPanelState extends ConsumerState<RigPanel> {
               onNetworkSecurity: () => unawaited(_showNetworkSecurity()),
               networkRestarting: _restartingUnrestricted,
               audioOn: audioOn,
-              onToggleAudio: toggleAudio,
+              onToggleAudio: canPlayAudio ? toggleAudio : null,
               microphoneOn: microphoneOn,
               onToggleMicrophone:
                   (rig.controller == null || rig.isHumanControlled)
@@ -391,7 +395,7 @@ class _RigPanelState extends ConsumerState<RigPanel> {
                   rig.surfaceKind == RigSurface.ios) &&
               rig.isLive)
             RigDeviceToolbar(workspaceId: widget.workspaceId, rig: rig),
-          if (audioOn && rig.isLive)
+          if (canPlayAudio && audioOn && rig.isLive)
             RigAudioPlayer(
               url: MediaProxyScope.rigAudioUrlOf(
                 context,

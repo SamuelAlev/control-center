@@ -1,4 +1,5 @@
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/core/infrastructure/audio/audio_output_settings.dart';
 import 'package:control_center/core/theme/theme_provider.dart';
 import 'package:control_center/features/focus_mode/presentation/widgets/focus_config_dialog.dart';
 import 'package:control_center/features/focus_mode/providers/focus_mode_providers.dart';
@@ -157,18 +158,20 @@ class _ViewCommandSource implements CommandSource {
           }
         },
       ),
-      CommandItem(
-        id: 'soundscape',
-        label: 'Soundscape',
-        icon: AppIcons.audioLines,
-        category: 'Focus',
-        onExecute: () {
-          final ctx = rootNavigatorKey.currentContext;
-          if (ctx != null) {
-            showSoundscapePanel(ctx);
-          }
-        },
-      ),
+      // No libmpv (a stock Linux desktop): nothing could play.
+      if (ref.read(mediaPlaybackAvailableProvider))
+        CommandItem(
+          id: 'soundscape',
+          label: 'Soundscape',
+          icon: AppIcons.audioLines,
+          category: 'Focus',
+          onExecute: () {
+            final ctx = rootNavigatorKey.currentContext;
+            if (ctx != null) {
+              showSoundscapePanel(ctx);
+            }
+          },
+        ),
       CommandItem(
         id: 'settings',
         label: 'Settings',

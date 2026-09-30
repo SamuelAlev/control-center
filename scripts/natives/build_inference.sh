@@ -97,7 +97,7 @@ for sym in cc_inference_abi_version cc_inference_last_error cc_string_destroy \
            cc_vad_create cc_vad_accept cc_vad_front cc_vad_destroy \
            cc_diar_create cc_diar_process cc_diar_segments_destroy cc_diar_destroy \
            cc_spk_create cc_spk_dim cc_spk_compute cc_spk_destroy; do
-  exported | grep -qx "${prefix}${sym}" || die "built $LIB is missing the $sym symbol"
+  exported | grep -x "${prefix}${sym}" >/dev/null || die "built $LIB is missing the $sym symbol"
 done
 if leaked="$(exported | grep -E "^${prefix}(OrtGetApiBase|SherpaOnnx)" || true)"; [ -n "$leaked" ]; then
   die "built $LIB leaks statically linked symbols (export restriction in build.rs regressed): $(echo "$leaked" | tr '\n' ' ')"

@@ -12,6 +12,7 @@ release_asset_name() { # kind version
     win-setup)       printf 'Control-Center-%s-x64-setup.exe\n' "$v" ;;
     win-portable)    printf 'Control-Center-%s-windows-x64.zip\n' "$v" ;;
     appimage)        printf 'Control-Center-%s-x86_64.AppImage\n' "$v" ;;
+    appimage-zsync)  printf 'Control-Center-%s-x86_64.AppImage.zsync\n' "$v" ;;
     linux-tarball)   printf 'Control-Center-%s-linux-x64.tar.gz\n' "$v" ;;
     server-macos)    printf 'cc_server-%s-macos-arm64.tar.gz\n' "$v" ;;
     server-linux)    printf 'cc_server-%s-linux-x64.tar.gz\n' "$v" ;;
@@ -32,7 +33,7 @@ RELEASE_PLATFORMS="${RELEASE_PLATFORMS:-macos linux windows}"
 release_platform_kinds() { # macos|linux|windows
   case "$1" in
     macos)   printf 'dmg\nserver-macos\n' ;;
-    linux)   printf 'appimage\nlinux-tarball\nserver-linux\n' ;;
+    linux)   printf 'appimage\nappimage-zsync\nlinux-tarball\nserver-linux\n' ;;
     windows) printf 'win-setup\nwin-portable\nserver-windows\n' ;;
     *) printf 'release_platform_kinds: unknown platform %s\n' "$1" >&2; return 1 ;;
   esac
