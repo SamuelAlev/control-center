@@ -18,9 +18,18 @@ import 'dart:io';
 import 'package:auto_updater/auto_updater.dart' as au;
 import 'package:control_center/core/update/desktop_update_config.dart';
 import 'package:control_center/core/utils/app_log.dart';
+import 'package:flutter/foundation.dart' show kReleaseMode;
 
 /// Whether this platform has a native in-app updater backend.
-bool get desktopUpdaterSupported => Platform.isMacOS || Platform.isWindows;
+///
+/// Release builds only, unless a dev escape hatch is set. A debug/profile
+/// bundle carries pubspec's `+1` as CFBundleVersion while releases carry the
+/// CI run number, so Sparkle would always offer the latest release — and
+/// installing it would overwrite the dev bundle. Unsupported degrades to the
+/// releases-page path, which is harmless from a dev build.
+bool get desktopUpdaterSupported =>
+    (Platform.isMacOS || Platform.isWindows) &&
+    (kReleaseMode || _feedOverride != null || _fakeMode != null);
 
 const String _kFeedUrlDefine = String.fromEnvironment('CC_APPCAST_URL');
 const String _kFakeDefine = String.fromEnvironment('CC_FAKE_UPDATE');
