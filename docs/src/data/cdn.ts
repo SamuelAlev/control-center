@@ -30,9 +30,9 @@ export const media = {
     poster: file('/media/inbox-review.f5e789b8.webp'),
   },
   agentConversation: {
-    src: file('/media/agent-conversation.648b56b6.mp4'),
-    poster: file('/media/agent-conversation.7c6d376e.webp'),
-    motion: file('/media/agent-conversation-hover.c4749a82.mp4'),
+    src: file('/media/agent-conversation.745704de.mp4'),
+    poster: file('/media/agent-conversation.7bbdf48c.webp'),
+    motion: file('/media/agent-conversation-hover.d576466e.mp4'),
   },
   prDiff: {
     src: file('/media/pr-diff.e232d637.mp4'),
