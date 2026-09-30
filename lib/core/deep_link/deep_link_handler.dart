@@ -28,6 +28,39 @@ final class PrDeepLink extends DeepLinkTarget {
   final int? commentId;
 }
 
+/// `control-center://pulls/<owner>/<repo>` — a repo's pull request list, which
+/// like [PrDeepLink] names a repo, so the workspace has to be resolved from it.
+final class PullRequestsDeepLink extends DeepLinkTarget {
+  /// Creates a [PullRequestsDeepLink].
+  const PullRequestsDeepLink({required this.owner, required this.repo});
+
+  /// GitHub owner (user or org).
+  final String owner;
+
+  /// GitHub repository name.
+  final String repo;
+}
+
+/// `control-center://inbox` — the active workspace's inbox, unfiltered.
+final class InboxDeepLink extends DeepLinkTarget {
+  /// Creates an [InboxDeepLink].
+  const InboxDeepLink();
+}
+
+/// `control-center://inbox/<owner>/<repo>` — the inbox filtered to one repo,
+/// which like [PrDeepLink] names a repo, so the workspace has to be resolved
+/// from it.
+final class RepoInboxDeepLink extends DeepLinkTarget {
+  /// Creates a [RepoInboxDeepLink].
+  const RepoInboxDeepLink({required this.owner, required this.repo});
+
+  /// GitHub owner (user or org).
+  final String owner;
+
+  /// GitHub repository name.
+  final String repo;
+}
+
 /// `control-center://workspaces/<ws>/spaces/<id>` — a conversation and the
 /// target of the "View in Control Center" link on a chat task card.
 final class SpaceDeepLink extends DeepLinkTarget {
@@ -82,6 +115,23 @@ final class DeepLinkHandler {
     r'^control-center://pr/([^/]+)/([^/]+)/(\d+)/comments/(\d+)$',
   );
 
+  /// `control-center://pulls/<owner>/<repo>` — mirrors GitHub's own
+  /// `/<owner>/<repo>/pulls`, and stays out of the `pr/` grammar so a PR link
+  /// that lost its number is still not a link.
+  static final _pullsPattern = RegExp(
+    r'^control-center://pulls/([^/]+)/([^/]+)$',
+  );
+
+  /// `control-center://inbox` — the whole inbox, the target of the button on
+  /// GitHub's notifications page.
+  static final _inboxPattern = RegExp(r'^control-center://inbox$');
+
+  /// `control-center://inbox/<owner>/<repo>` — the inbox filtered to one repo,
+  /// the target of the button on each repo group of GitHub's notifications.
+  static final _repoInboxPattern = RegExp(
+    r'^control-center://inbox/([^/]+)/([^/]+)$',
+  );
+
   static final _validSegment = RegExp(r'^[a-zA-Z0-9_.\-]+$');
 
   /// Resolves [rawUrl] to the destination it names, or null when it names none.
@@ -93,6 +143,14 @@ final class DeepLinkHandler {
     final pr = _parsePr(rawUrl);
     if (pr != null) {
       return pr;
+    }
+    final pulls = _parsePulls(rawUrl);
+    if (pulls != null) {
+      return pulls;
+    }
+    final inbox = _parseInbox(rawUrl);
+    if (inbox != null) {
+      return inbox;
     }
     // `control-center://workspaces/<ws>/<kind>/<id>`. The authority carries the
     // first segment in a custom-scheme URL, so `workspaces` is the host here.
@@ -146,7 +204,29 @@ final class DeepLinkHandler {
     return PrDeepLink(owner: owner, repo: repo, number: number);
   }
 
+  static PullRequestsDeepLink? _parsePulls(String rawUrl) {
+    final match = _pullsPattern.firstMatch(rawUrl);
+    final owner = match?.group(1) ?? '';
+    final repo = match?.group(2) ?? '';
+    if (!_isSafe(owner) || !_isSafe(repo)) {
+      return null;
+    }
+    return PullRequestsDeepLink(owner: owner, repo: repo);
+  }
+
+  static DeepLinkTarget? _parseInbox(String rawUrl) {
+    if (_inboxPattern.hasMatch(rawUrl)) {
+      return const InboxDeepLink();
+    }
+    final match = _repoInboxPattern.firstMatch(rawUrl);
+    final owner = match?.group(1) ?? '';
+    final repo = match?.group(2) ?? '';
+    if (!_isSafe(owner) || !_isSafe(repo)) {
+      return null;
+    }
+    return RepoInboxDeepLink(owner: owner, repo: repo);
+  }
+
   static bool _isSafe(String segment) =>
       segment.isNotEmpty && _validSegment.hasMatch(segment);
 }
-

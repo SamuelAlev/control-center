@@ -15075,4 +15075,76 @@ class AppLocalizationsHu extends AppLocalizations {
   String failedToStartConflictFix(String error) {
     return 'Az ütközésfeloldást nem sikerült elindítani: $error';
   }
+
+  @override
+  String get settingsLinks => 'Hivatkozások';
+
+  @override
+  String get linksSettingsDescription =>
+      'Válassza ki, hol nyíljanak meg a Control Centeren kívülről érkező hivatkozások, például egy GitHubról megnyitott pull request.';
+
+  @override
+  String get repoLinkRememberedTitle => 'Megjegyzett munkaterületek';
+
+  @override
+  String get repoLinkRememberedHint =>
+      'Ha egy tároló több munkaterülethez is kapcsolódik, a rá mutató hivatkozás megnyitásakor a rendszer megkérdezi, melyik munkaterületet használja. Itt láthatók azok a választások, amelyeket megjegyeztetett.';
+
+  @override
+  String get repoLinkRememberedEmpty => 'Még nincs megjegyzett választás.';
+
+  @override
+  String get repoLinkForget => 'Elfelejtés';
+
+  @override
+  String get repoLinkWorkspaceUnavailable => 'A munkaterület már nem érhető el';
+
+  @override
+  String get repoLinkWorkspaceDialogTitle => 'Munkaterület kiválasztása';
+
+  @override
+  String repoLinkWorkspaceDialogBody(String repo) {
+    return 'A(z) $repo több munkaterülethez is kapcsolódik. Melyikben nyíljon meg ez a hivatkozás?';
+  }
+
+  @override
+  String get repoLinkWorkspaceRemember =>
+      'Választásom megjegyzése ehhez a tárolóhoz';
+
+  @override
+  String get repoLinkWorkspaceOpen => 'Megnyitás';
+
+  @override
+  String get repoLinkUnlinkedTitle => 'Tároló hozzáadása egy munkaterülethez';
+
+  @override
+  String repoLinkUnlinkedBody(String repo) {
+    return 'Egyik munkaterület sem kapcsolja még a(z) $repo tárolót. Adja hozzá valamelyikhez a hivatkozás megnyitásához.';
+  }
+
+  @override
+  String repoLinkUnlinkedAddTo(String workspace) {
+    return 'Hozzáadás ehhez: $workspace';
+  }
+
+  @override
+  String get repoLinkUnlinkedAddToHint =>
+      'Válassza ki a checkoutját a szerveren.';
+
+  @override
+  String get repoLinkUnlinkedCreate => 'Új munkaterület';
+
+  @override
+  String get repoLinkUnlinkedCreateHint =>
+      'Nevezze el, majd válassza ki a checkoutot.';
+
+  @override
+  String repoLinkChooseCheckout(String repo) {
+    return 'Válassza ki a(z) $repo checkoutját a szervert futtató gépen.';
+  }
+
+  @override
+  String repoLinkCheckoutMismatch(String repo) {
+    return 'A hozzáadott tárolók egyike sem a(z) $repo, ezért a hivatkozás nélküle nyílt meg.';
+  }
 }

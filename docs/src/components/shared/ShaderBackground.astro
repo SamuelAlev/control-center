@@ -1,15 +1,16 @@
 ---
 /**
- * Animated cloudscape — the web port of the app's hero background shaders
- * (lib/shared/widgets/shader_background.dart). Light mode renders the
- * morning-mist cloudscape (`hero_background_light.frag`); dark mode renders
- * the ember cloudscape (`hero_background_dark.frag`). Both ports live in
- * the same fragment program and are selected by a `u_dark` uniform driven off
+ * Animated cloudscape over the sky palette of the app's hero background
+ * shaders (lib/shared/widgets/shader_background.dart). Light mode renders the
+ * morning-mist sky (`hero_background_light.frag`); dark mode renders the ember
+ * dusk (`hero_background_dark.frag`). Both scenes live in the same fragment
+ * program and are selected by a `u_dark` uniform driven off
  * `<html data-theme>`, so switching theme swaps the scene live.
  *
- * Renders a slow warped-FBM cloudscape on a WebGL2 canvas. Same uniforms as the
- * Flutter shaders (u_resolution, u_time) and the same scene maths, so the hero
- * breathes in lockstep with the dashboard greeting hero.
+ * Unlike the app's warped-FBM haze, the web hero draws four drifting cumulus
+ * decks — flat bases, billowing crowns, far decks small and hazy — so the
+ * landing pilot reads as flying through them. `horizon` is the fraction of
+ * the canvas height where the nearest deck rests; the others step up from it.
  *
  * `prefers-reduced-motion`: KEEP THE SHAPES at speed 0 — render a single frame
  * at `u_time = 0` and never start the animation loop. (The app's dashboard hero
@@ -18,9 +19,15 @@
  * When WebGL2 is unavailable the canvas falls back to a static CSS gradient
  * in the same palette (per theme), so the section never flashes empty.
  */
+
+interface Props {
+  horizon?: number;
+}
+
+const { horizon = 0.95 } = Astro.props;
 ---
 
-<canvas class="cc-shader" aria-hidden="true"></canvas>
+<canvas class="cc-shader" aria-hidden="true" data-horizon={horizon}></canvas>
 
 <style>
   .cc-shader {
@@ -48,6 +55,8 @@
     uRes: WebGLUniformLocation | null;
     uTime: WebGLUniformLocation | null;
     uDark: WebGLUniformLocation | null;
+    uHorizon: WebGLUniformLocation | null;
+    horizon: number;
     dark: boolean;
     visible: boolean;
     lastDraw: number;
@@ -60,7 +69,9 @@
   in vec2 a_pos;
   void main() { gl_Position = vec4(a_pos, 0.0, 1.0); }`;
 
-  // Ported verbatim from assets/shaders/hero_background_light.frag.
+  // Cumulus decks over the app's sky palette (hero_background_*.frag). The
+  // sky gradient, vignette and grain match the app; the formless warped-FBM
+  // haze is replaced by layered clouds so the landing pilot reads as flying.
   // FlutterFragCoord() (top-left origin) → gl_FragCoord (bottom-left), so uv.y
   // is flipped to keep the warm horizon low on the canvas, matching the app.
   const FRAG = `#version 300 es
@@ -68,6 +79,7 @@
   uniform vec2 u_resolution;
   uniform float u_time;
   uniform float u_dark; // 0.0 = morning mist (light), 1.0 = ember (dark)
+  uniform float u_horizon; // canvas-height fraction where the nearest deck rests
   out vec4 fragColor;
 
   float hash(vec2 p) {
@@ -95,82 +107,116 @@
     }
     return v;
   }
-  float warpedFbm(vec2 p, float t) {
-    vec2 q = vec2(
-      fbm(p + vec2(0.0, 0.0) + t * 0.05),
-      fbm(p + vec2(5.2, 1.3) - t * 0.04)
-    );
-    vec2 r = vec2(
-      fbm(p + 4.0 * q + vec2(1.7, 9.2) + t * 0.03),
-      fbm(p + 4.0 * q + vec2(8.3, 2.8) - t * 0.02)
-    );
-    return fbm(p + 4.0 * r);
+  float noise1(float x) {
+    float i = floor(x);
+    float f = fract(x);
+    return mix(hash(vec2(i, 7.0)), hash(vec2(i + 1.0, 7.0)), f * f * (3.0 - 2.0 * f));
   }
-  // Morning-mist cloudscape — port of hero_background_light.frag.
+  // How much cloud a deck holds at x: 0 in open sky, 1 at the heart of a bank.
+  float mass(float x, float seed) {
+    float n = 0.7 * noise1(x * 0.34 + seed * 31.7) + 0.3 * noise1(x * 1.1 + seed * 11.3);
+    return smoothstep(0.42, 0.76, n);
+  }
+  // Silhouette height of a deck at x: towers at the heart of a bank, thin
+  // lenses at its fringes, nothing in open sky.
+  float crest(float x, float seed) {
+    return mass(x, seed) * (0.18 + 0.52 * noise1(x * 1.3 + seed * 3.7));
+  }
+  // Paints one billow over acc (x = light, y = coverage), back to front.
+  // Billows are a little wider than tall, and each one's lower half dips
+  // into shade so the ones overlapping the body read as separate lobes.
+  void puff(inout vec2 acc, vec2 q, vec2 c, float r, float soft, float warp, float rise, float depth) {
+    vec2 d = (q - c) / max(r, 1e-3);
+    d.x *= 0.86;
+    float a = 1.0 - smoothstep(1.0 - soft, 1.0, length(d) + warp);
+    a *= smoothstep(0.015, 0.04, r);
+    float lobe = smoothstep(-0.9, 0.8, dot(d, vec2(0.33, 0.94)));
+    acc.x = mix(acc.x, rise * mix(1.0 - depth, 1.0, lobe), a);
+    acc.y = max(acc.y, a);
+  }
+  // One cumulus deck. q.x runs along the deck; q.y rises from the flat base.
+  // The body fills up to the crest, then billows of three sizes bulge out of
+  // it, largest first.
+  vec2 deck(vec2 q, float seed, float soft, float t) {
+    vec2 acc = vec2(0.0);
+    // Each bank floats at its own height; within a bank the base stays flat.
+    q.y += (noise1(q.x * 0.12 + seed * 5.1) - 0.5) * 1.2;
+    if (q.y < -0.12 || q.y > 1.1) return acc;
+    float warp = (fbm(q * 3.0 + vec2(seed * 5.3, t * 0.012)) - 0.5) * 0.3
+               + (noise(q * 11.0 + seed) - 0.5) * 0.08;
+    float h = crest(q.x, seed);
+    float rise = smoothstep(-0.05, 0.2 + h, q.y);
+    acc.y = (1.0 - smoothstep(h - 0.03, h + 0.01, q.y + warp * 0.25)) * smoothstep(0.02, 0.05, h);
+    acc.x = mix(0.4, 0.85, rise);
+    for (int o = 0; o < 3; o++) {
+      float cells = 2.0 * exp2(float(o));
+      float salt = seed + float(o) * 3.1;
+      float ci = floor(q.x * cells);
+      for (int k = -1; k <= 1; k++) {
+        float i = ci + float(k);
+        float h1 = hash(vec2(i, salt));
+        float h2 = hash(vec2(salt, i));
+        float cx = (i + 0.5 + (h2 - 0.5) * 0.4) / cells;
+        float hc = crest(cx, seed);
+        float grow = smoothstep(0.06, 0.4, hc);
+        float r = grow * (o == 0 ? 0.20 + 0.16 * h1 : o == 1 ? 0.10 + 0.08 * h1 : 0.05 + 0.04 * h1);
+        float cy = hc - r * (o == 0 ? 0.55 : o == 1 ? 0.45 : 0.35);
+        puff(acc, q, vec2(cx, cy), r, soft, warp, rise, o == 0 ? 0.5 : o == 1 ? 0.35 : 0.2);
+      }
+    }
+    // Flat, slightly frayed base.
+    float fray = (noise(vec2(q.x * 5.0, seed)) - 0.5) * 0.05;
+    acc.y *= smoothstep(-0.05, 0.03, q.y + fray);
+    return acc;
+  }
+  // Four decks, far and small near the top to near and large at u_horizon,
+  // each drifting left a little faster than the one behind it.
+  vec3 cloudscape(vec3 color, vec2 uv, vec3 crown, vec3 belly, vec3 haze, float t) {
+    float unit = sqrt(u_resolution.x * u_resolution.y);
+    vec2 p = uv * u_resolution / unit;
+    for (int l = 0; l < 4; l++) {
+      float f = float(l) / 3.0;
+      float baseY = u_horizon * mix(0.22, 1.0, f) * u_resolution.y / unit;
+      float scale = mix(0.055, 0.19, f);
+      float speed = mix(0.0012, 0.0055, f);
+      vec2 q = vec2((p.x + t * speed) / scale + float(l) * 17.0, (baseY - p.y) / scale);
+      vec2 c = deck(q, float(l) + 1.0, mix(0.30, 0.14, f), t);
+      vec3 cloud = mix(belly, crown, c.x);
+      cloud = mix(cloud, haze, mix(0.4, 0.0, f));
+      color = mix(color, cloud, c.y);
+    }
+    return color;
+  }
+  // Morning-mist sky (hero_background_light.frag) with sand-and-taupe cumulus.
   vec3 sceneColorLight(vec2 uv) {
-    float aspect = u_resolution.x / u_resolution.y;
-    vec2 p = vec2((uv.x - 0.5) * aspect, uv.y - 0.5);
-
-    float t = u_time * 0.20;
-    vec2 q = p * 1.6 + vec2(t * 0.15, -t * 0.05);
-    float n = warpedFbm(q, t);
-
     vec3 canvasWhite  = vec3(0.988, 0.984, 0.976);
     vec3 hazeIvory    = vec3(0.963, 0.941, 0.902);
     vec3 warmSand     = vec3(0.929, 0.882, 0.812);
     vec3 horizonTaupe = vec3(0.855, 0.769, 0.671);
     vec3 emberCore    = vec3(0.980, 0.314, 0.059);
-    vec3 sunlitWisp   = vec3(1.000, 0.976, 0.918);
 
     vec3 base = mix(canvasWhite, hazeIvory, smoothstep(0.05, 0.60, uv.y));
     base = mix(base, warmSand, smoothstep(0.45, 0.92, uv.y));
     base = mix(base, horizonTaupe, smoothstep(0.68, 1.02, uv.y) * 0.75);
     base = mix(base, emberCore, smoothstep(0.90, 1.14, uv.y) * 0.22);
 
-    float cloud = smoothstep(0.35, 0.75, n);
-    float band  = smoothstep(0.15, 0.55, uv.y) * smoothstep(0.95, 0.45, uv.y);
-    float glow  = cloud * band;
-
-    vec3 color = base;
-    color = mix(color, sunlitWisp, glow * 0.50);
-    color = mix(color, sunlitWisp, pow(glow, 3.0) * 0.40);
-
-    float wisp = smoothstep(0.45, 0.15, n) * smoothstep(0.85, 0.05, uv.y);
-    vec3 cloudShade = vec3(0.792, 0.616, 0.537);
-    color = mix(color, cloudShade, wisp * 0.45);
-
-    return color;
+    vec3 crown = vec3(0.945, 0.902, 0.835);
+    vec3 belly = vec3(0.835, 0.755, 0.680);
+    return cloudscape(base, uv, crown, belly, hazeIvory, u_time);
   }
-  // Ember cloudscape — port of dashboard_background_dark.frag.
+  // Ember dusk sky (hero_background_dark.frag): cloud crowns fall into shadow
+  // while the bases catch the glow from below the horizon.
   vec3 sceneColorDark(vec2 uv) {
-    float aspect = u_resolution.x / u_resolution.y;
-    vec2 p = vec2((uv.x - 0.5) * aspect, uv.y - 0.5);
-
-    float t = u_time * 0.20;
-    vec2 q = p * 1.6 + vec2(t * 0.15, -t * 0.05);
-    float n = warpedFbm(q, t);
-
     vec3 nearBlack = vec3(0.090, 0.082, 0.072);
     vec3 warmBrown = vec3(0.200, 0.170, 0.140);
     vec3 dustyRose = vec3(0.55, 0.38, 0.36);
-    vec3 ember     = vec3(0.92, 0.55, 0.32);
-    vec3 hot       = vec3(1.00, 0.78, 0.55);
 
     vec3 base = mix(nearBlack, warmBrown, smoothstep(0.0, 0.55, uv.y));
     base = mix(base, dustyRose, smoothstep(0.35, 0.85, uv.y) * 0.55);
 
-    float cloud = smoothstep(0.35, 0.75, n);
-    float band  = smoothstep(0.15, 0.55, uv.y) * smoothstep(0.95, 0.45, uv.y);
-    float glow  = cloud * band;
-
-    vec3 color = base;
-    color = mix(color, ember, glow * 0.85);
-    color = mix(color, hot, pow(glow, 3.0) * 0.65);
-
-    float wisp = smoothstep(0.45, 0.15, n) * smoothstep(0.55, 0.0, uv.y);
-    color = mix(color, nearBlack * 0.7, wisp * 0.35);
-
-    return color;
+    vec3 crown = vec3(0.235, 0.190, 0.160);
+    vec3 belly = vec3(0.50, 0.30, 0.20);
+    return cloudscape(base, uv, crown, belly, warmBrown, u_time);
   }
   void main() {
     vec2 uv = vec2(gl_FragCoord.x, u_resolution.y - gl_FragCoord.y) / u_resolution.xy;
@@ -227,6 +273,7 @@
     gl.uniform2f(f.uRes, f.canvas.width, f.canvas.height);
     gl.uniform1f(f.uTime, timeSeconds);
     gl.uniform1f(f.uDark, f.dark ? 1 : 0);
+    gl.uniform1f(f.uHorizon, f.horizon);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   }
 
@@ -271,6 +318,8 @@
       uRes: gl.getUniformLocation(program, 'u_resolution'),
       uTime: gl.getUniformLocation(program, 'u_time'),
       uDark: gl.getUniformLocation(program, 'u_dark'),
+      uHorizon: gl.getUniformLocation(program, 'u_horizon'),
+      horizon: Number(canvas.dataset.horizon) || 0.95,
       dark: isDark(),
       visible: false,
       lastDraw: 0,

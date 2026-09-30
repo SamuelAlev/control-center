@@ -15140,6 +15140,77 @@ class AppLocalizationsFr extends AppLocalizations {
   String failedToStartConflictFix(String error) {
     return 'Impossible de lancer la résolution des conflits : $error';
   }
+
+  @override
+  String get settingsLinks => 'Liens';
+
+  @override
+  String get linksSettingsDescription =>
+      'Choisissez où s\'ouvrent les liens provenant de l\'extérieur de Control Center, par exemple une pull request ouverte depuis GitHub.';
+
+  @override
+  String get repoLinkRememberedTitle => 'Espaces de travail mémorisés';
+
+  @override
+  String get repoLinkRememberedHint =>
+      'Lorsqu\'un dépôt est lié à plusieurs espaces de travail, l\'ouverture d\'un lien vers ce dépôt vous demande quel espace de travail utiliser. Les choix que vous avez demandé de mémoriser sont listés ici.';
+
+  @override
+  String get repoLinkRememberedEmpty => 'Aucun choix mémorisé pour l\'instant.';
+
+  @override
+  String get repoLinkForget => 'Oublier';
+
+  @override
+  String get repoLinkWorkspaceUnavailable => 'Espace de travail indisponible';
+
+  @override
+  String get repoLinkWorkspaceDialogTitle => 'Choisir un espace de travail';
+
+  @override
+  String repoLinkWorkspaceDialogBody(String repo) {
+    return '$repo est lié à plusieurs espaces de travail. Dans lequel ouvrir ce lien ?';
+  }
+
+  @override
+  String get repoLinkWorkspaceRemember => 'Mémoriser mon choix pour ce dépôt';
+
+  @override
+  String get repoLinkWorkspaceOpen => 'Ouvrir';
+
+  @override
+  String get repoLinkUnlinkedTitle => 'Ajouter le dépôt à un espace de travail';
+
+  @override
+  String repoLinkUnlinkedBody(String repo) {
+    return 'Aucun espace de travail ne lie encore $repo. Ajoutez-le à l\'un d\'eux pour ouvrir ce lien.';
+  }
+
+  @override
+  String repoLinkUnlinkedAddTo(String workspace) {
+    return 'Ajouter à $workspace';
+  }
+
+  @override
+  String get repoLinkUnlinkedAddToHint =>
+      'Choisissez sa copie locale sur le serveur.';
+
+  @override
+  String get repoLinkUnlinkedCreate => 'Nouvel espace de travail';
+
+  @override
+  String get repoLinkUnlinkedCreateHint =>
+      'Nommez-le, puis choisissez la copie locale.';
+
+  @override
+  String repoLinkChooseCheckout(String repo) {
+    return 'Sélectionnez la copie locale de $repo sur la machine qui exécute le serveur.';
+  }
+
+  @override
+  String repoLinkCheckoutMismatch(String repo) {
+    return 'Aucun des dépôts ajoutés n\'est $repo : le lien s\'est donc ouvert sans lui.';
+  }
 }
 
 /// The translations for French, as used in Canada (`fr_CA`).

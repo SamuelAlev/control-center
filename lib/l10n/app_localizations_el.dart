@@ -15156,4 +15156,78 @@ class AppLocalizationsEl extends AppLocalizations {
   String failedToStartConflictFix(String error) {
     return 'Δεν ήταν δυνατή η έναρξη επίλυσης: $error';
   }
+
+  @override
+  String get settingsLinks => 'Σύνδεσμοι';
+
+  @override
+  String get linksSettingsDescription =>
+      'Επιλέξτε πού ανοίγουν οι σύνδεσμοι από έξω από το Control Center, όπως ένα pull request που ανοίγετε από το GitHub.';
+
+  @override
+  String get repoLinkRememberedTitle => 'Αποθηκευμένοι χώροι εργασίας';
+
+  @override
+  String get repoLinkRememberedHint =>
+      'Όταν ένα αποθετήριο είναι συνδεδεμένο σε περισσότερους από έναν χώρους εργασίας, το άνοιγμα ενός συνδέσμου προς αυτό σας ρωτά ποιον χώρο εργασίας να χρησιμοποιήσετε. Εδώ εμφανίζονται οι επιλογές που ζητήσατε να απομνημονευτούν.';
+
+  @override
+  String get repoLinkRememberedEmpty =>
+      'Δεν υπάρχουν ακόμη αποθηκευμένες επιλογές.';
+
+  @override
+  String get repoLinkForget => 'Διαγραφή';
+
+  @override
+  String get repoLinkWorkspaceUnavailable =>
+      'Ο χώρος εργασίας δεν είναι πλέον διαθέσιμος';
+
+  @override
+  String get repoLinkWorkspaceDialogTitle => 'Επιλέξτε χώρο εργασίας';
+
+  @override
+  String repoLinkWorkspaceDialogBody(String repo) {
+    return 'Το $repo είναι συνδεδεμένο σε περισσότερους από έναν χώρους εργασίας. Σε ποιον να ανοίξει αυτός ο σύνδεσμος;';
+  }
+
+  @override
+  String get repoLinkWorkspaceRemember =>
+      'Απομνημόνευση της επιλογής μου για αυτό το αποθετήριο';
+
+  @override
+  String get repoLinkWorkspaceOpen => 'Άνοιγμα';
+
+  @override
+  String get repoLinkUnlinkedTitle => 'Προσθήκη αποθετηρίου σε χώρο εργασίας';
+
+  @override
+  String repoLinkUnlinkedBody(String repo) {
+    return 'Κανένας χώρος εργασίας δεν συνδέει ακόμη το $repo. Προσθέστε το σε έναν για να ανοίξει αυτός ο σύνδεσμος.';
+  }
+
+  @override
+  String repoLinkUnlinkedAddTo(String workspace) {
+    return 'Προσθήκη στο $workspace';
+  }
+
+  @override
+  String get repoLinkUnlinkedAddToHint =>
+      'Επιλέξτε το checkout του στον διακομιστή.';
+
+  @override
+  String get repoLinkUnlinkedCreate => 'Νέος χώρος εργασίας';
+
+  @override
+  String get repoLinkUnlinkedCreateHint =>
+      'Δώστε του όνομα και έπειτα επιλέξτε το checkout.';
+
+  @override
+  String repoLinkChooseCheckout(String repo) {
+    return 'Επιλέξτε το checkout του $repo στο μηχάνημα που εκτελεί τον διακομιστή.';
+  }
+
+  @override
+  String repoLinkCheckoutMismatch(String repo) {
+    return 'Κανένα από τα αποθετήρια που προστέθηκαν δεν είναι το $repo, οπότε ο σύνδεσμος άνοιξε χωρίς αυτό.';
+  }
 }

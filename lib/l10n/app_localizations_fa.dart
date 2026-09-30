@@ -14957,4 +14957,76 @@ class AppLocalizationsFa extends AppLocalizations {
   String failedToStartConflictFix(String error) {
     return 'شروع حل تعارض ممکن نشد: $error';
   }
+
+  @override
+  String get settingsLinks => 'پیوندها';
+
+  @override
+  String get linksSettingsDescription =>
+      'انتخاب کنید پیوندهایی که از بیرون Control Center می‌آیند کجا باز شوند، مثلاً یک pull request که از GitHub باز می‌کنید.';
+
+  @override
+  String get repoLinkRememberedTitle => 'فضاهای کاری به‌خاطرسپرده‌شده';
+
+  @override
+  String get repoLinkRememberedHint =>
+      'وقتی یک مخزن به بیش از یک فضای کاری پیوند داده شده باشد، با باز کردن پیوندی به آن پرسیده می‌شود از کدام فضای کاری استفاده شود. انتخاب‌هایی که خواسته‌اید به خاطر سپرده شوند اینجا فهرست شده‌اند.';
+
+  @override
+  String get repoLinkRememberedEmpty => 'هنوز انتخابی به خاطر سپرده نشده است.';
+
+  @override
+  String get repoLinkForget => 'فراموش کردن';
+
+  @override
+  String get repoLinkWorkspaceUnavailable => 'فضای کاری دیگر در دسترس نیست';
+
+  @override
+  String get repoLinkWorkspaceDialogTitle => 'انتخاب فضای کاری';
+
+  @override
+  String repoLinkWorkspaceDialogBody(String repo) {
+    return '$repo به بیش از یک فضای کاری پیوند داده شده است. این پیوند در کدام‌یک باز شود؟';
+  }
+
+  @override
+  String get repoLinkWorkspaceRemember =>
+      'انتخابم را برای این مخزن به خاطر بسپار';
+
+  @override
+  String get repoLinkWorkspaceOpen => 'باز کردن';
+
+  @override
+  String get repoLinkUnlinkedTitle => 'افزودن مخزن به یک فضای کاری';
+
+  @override
+  String repoLinkUnlinkedBody(String repo) {
+    return 'هنوز هیچ فضای کاری به $repo پیوند داده نشده است. برای باز کردن این پیوند، آن را به یکی اضافه کنید.';
+  }
+
+  @override
+  String repoLinkUnlinkedAddTo(String workspace) {
+    return 'افزودن به $workspace';
+  }
+
+  @override
+  String get repoLinkUnlinkedAddToHint =>
+      'checkout آن را روی سرور انتخاب کنید.';
+
+  @override
+  String get repoLinkUnlinkedCreate => 'فضای کاری جدید';
+
+  @override
+  String get repoLinkUnlinkedCreateHint =>
+      'نامی برایش بگذارید، سپس checkout را انتخاب کنید.';
+
+  @override
+  String repoLinkChooseCheckout(String repo) {
+    return 'checkout مربوط به $repo را روی ماشینِ در حال اجرای سرور انتخاب کنید.';
+  }
+
+  @override
+  String repoLinkCheckoutMismatch(String repo) {
+    return 'هیچ‌یک از مخزن‌های افزوده‌شده $repo نیست، بنابراین پیوند بدون آن باز شد.';
+  }
 }

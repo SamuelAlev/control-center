@@ -1,7 +1,7 @@
 // Generates the Open Graph / Twitter social card at public/og.png (1200×630).
 // The background is a CPU port of the ember cloudscape fragment shader
-// (assets/shaders/hero_background_dark.frag, mirrored as the dark scene in
-// src/components/shared/ShaderBackground.astro), rendered at the frozen frame
+// (assets/shaders/hero_background_dark.frag; the docs hero draws cumulus decks
+// over the same ember sky instead), rendered at the frozen frame
 // (u_time = 0) — the same single frame the app shows under reduced-motion. The
 // dark scene reads as a brand moment on a social card where the light one washes
 // out. The brand lockup + headline are composited over it via sharp.

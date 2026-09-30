@@ -270,6 +270,13 @@ class PrListFiltersNotifier extends Notifier<PrListFilters> {
   /// computes the next state with `clearCategory` and writes it wholesale).
   void replace(PrListFilters next) => state = next;
 
+  /// Narrows to the single repository [owner]/[name], dropping every other
+  /// filter (a deep link into one repo's inbox shows all of it).
+  void showOnlyRepo(String owner, String name) => state = PrListFilters(
+    repoOwners: {owner.toLowerCase()},
+    repoNames: {name.toLowerCase()},
+  );
+
   /// Clears all filters, restoring the default state.
   void clear() => state = const PrListFilters();
 }

@@ -8,6 +8,7 @@ import 'package:control_center/core/theme/theme_provider.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/meetings/providers/meeting_auto_detect_provider.dart';
 import 'package:control_center/features/pr_review/providers/comment_composer_mode_provider.dart';
+import 'package:control_center/features/repos/providers/repo_link_workspace_choices.dart';
 import 'package:control_center/features/rigs/providers/rig_clipboard_permissions.dart';
 import 'package:control_center/features/settings/providers/editor_preferences_provider.dart';
 import 'package:control_center/features/vscode_theme/providers/vscode_theme_providers.dart';
@@ -67,6 +68,12 @@ List<SyncedPreference> buildSyncedPreferences() => [
   SyncedPreference(
     prCommentComposerModeKey,
     onPulled: (ref) => ref.invalidate(commentComposerModeProvider),
+  ),
+  // Which workspace a repository's links open in, when several link it. The
+  // answer is about how the person works, so it follows them across devices.
+  SyncedPreference(
+    repoLinkWorkspaceChoicesKey,
+    onPulled: (ref) => ref.invalidate(repoLinkWorkspaceChoicesProvider),
   ),
 
   // Clipboard boundary decisions are personal security preferences. The

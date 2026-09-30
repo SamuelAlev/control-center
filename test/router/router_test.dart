@@ -1281,6 +1281,10 @@ void main() {
       );
     });
 
+    test('settingsLinksRoute is scoped to you', () {
+      expect(settingsLinksRoute('w1'), '/workspaces/w1/settings/you/links');
+    });
+
     // Settings paths are namespaced by SCOPE, so the URL states who a change
     // affects rather than only the sidebar grouping doing so.
     test('settingsProfileRoute is scoped to the workspace', () {

@@ -33,6 +33,7 @@ import 'package:control_center/features/settings/presentation/screens/audio_sett
 import 'package:control_center/features/settings/presentation/screens/backup_settings_screen.dart';
 import 'package:control_center/features/settings/presentation/screens/diagnostics_settings_screen.dart';
 import 'package:control_center/features/settings/presentation/screens/keybindings_settings_screen.dart';
+import 'package:control_center/features/settings/presentation/screens/links_settings_screen.dart';
 import 'package:control_center/features/settings/presentation/screens/mcp_servers_settings_screen.dart';
 import 'package:control_center/features/settings/presentation/screens/meetings_settings_screen.dart';
 import 'package:control_center/features/settings/presentation/screens/members_settings_screen.dart';
@@ -469,6 +470,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: settingsNewsfeedRoute(workspaceIdParam),
             pageBuilder: (context, state) =>
                 buildPage(state, _absorb(const NewsfeedSettingsScreen())),
+          ),
+          GoRoute(
+            path: settingsLinksRoute(workspaceIdParam),
+            pageBuilder: (context, state) =>
+                buildPage(state, _absorb(const LinksSettingsScreen())),
           ),
           // Workspace — this workspace's identity, policy and roster.
           GoRoute(

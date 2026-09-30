@@ -15091,6 +15091,80 @@ class AppLocalizationsPt extends AppLocalizations {
   String failedToStartConflictFix(String error) {
     return 'Não foi possível iniciar a resolução de conflitos: $error';
   }
+
+  @override
+  String get settingsLinks => 'Links';
+
+  @override
+  String get linksSettingsDescription =>
+      'Escolha onde abrem os links vindos de fora do Control Center, como um pull request aberto a partir do GitHub.';
+
+  @override
+  String get repoLinkRememberedTitle => 'Espaços de trabalho lembrados';
+
+  @override
+  String get repoLinkRememberedHint =>
+      'Quando um repositório está vinculado a mais de um espaço de trabalho, abrir um link para ele pergunta qual espaço de trabalho usar. As escolhas que você pediu para lembrar aparecem aqui.';
+
+  @override
+  String get repoLinkRememberedEmpty => 'Nenhuma escolha lembrada ainda.';
+
+  @override
+  String get repoLinkForget => 'Esquecer';
+
+  @override
+  String get repoLinkWorkspaceUnavailable =>
+      'O espaço de trabalho não está mais disponível';
+
+  @override
+  String get repoLinkWorkspaceDialogTitle => 'Escolha um espaço de trabalho';
+
+  @override
+  String repoLinkWorkspaceDialogBody(String repo) {
+    return '$repo está vinculado a mais de um espaço de trabalho. Em qual este link deve abrir?';
+  }
+
+  @override
+  String get repoLinkWorkspaceRemember =>
+      'Lembrar minha escolha para este repositório';
+
+  @override
+  String get repoLinkWorkspaceOpen => 'Abrir';
+
+  @override
+  String get repoLinkUnlinkedTitle =>
+      'Adicionar repositório a um espaço de trabalho';
+
+  @override
+  String repoLinkUnlinkedBody(String repo) {
+    return 'Nenhum espaço de trabalho vincula $repo ainda. Adicione-o a um para abrir este link.';
+  }
+
+  @override
+  String repoLinkUnlinkedAddTo(String workspace) {
+    return 'Adicionar a $workspace';
+  }
+
+  @override
+  String get repoLinkUnlinkedAddToHint =>
+      'Escolha o checkout dele no servidor.';
+
+  @override
+  String get repoLinkUnlinkedCreate => 'Novo espaço de trabalho';
+
+  @override
+  String get repoLinkUnlinkedCreateHint =>
+      'Dê um nome e depois escolha o checkout.';
+
+  @override
+  String repoLinkChooseCheckout(String repo) {
+    return 'Selecione o checkout de $repo na máquina que executa o servidor.';
+  }
+
+  @override
+  String repoLinkCheckoutMismatch(String repo) {
+    return 'Nenhum dos repositórios adicionados é $repo, então o link abriu sem ele.';
+  }
 }
 
 /// The translations for Portuguese, as used in Portugal (`pt_PT`).
@@ -16825,4 +16899,23 @@ class AppLocalizationsPtPt extends AppLocalizationsPt {
   @override
   String get noProfilePrsMatchSearchHint =>
       'Experimente outro título ou número de pull request';
+
+  @override
+  String get repoLinkRememberedTitle => 'Espaços de trabalho memorizados';
+
+  @override
+  String get repoLinkRememberedHint =>
+      'Quando um repositório está associado a mais de um espaço de trabalho, abrir um link para ele pergunta que espaço de trabalho usar. As escolhas que pediu para memorizar aparecem aqui.';
+
+  @override
+  String get repoLinkRememberedEmpty => 'Ainda não há escolhas memorizadas.';
+
+  @override
+  String repoLinkWorkspaceDialogBody(String repo) {
+    return '$repo está associado a mais de um espaço de trabalho. Em qual deve abrir este link?';
+  }
+
+  @override
+  String get repoLinkWorkspaceRemember =>
+      'Memorizar a minha escolha para este repositório';
 }

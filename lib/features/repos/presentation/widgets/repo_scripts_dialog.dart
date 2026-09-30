@@ -190,9 +190,11 @@ class _RepoScriptsDialogState extends ConsumerState<_RepoScriptsDialog> {
                     help: l10n.repoScriptsSetupHelp,
                     controller: _setup!,
                     hintText: l10n.repoScriptsSetupPlaceholder,
-                    onTest: isDemo ? null : (_testing == null
-                        ? () => _test(RepoScriptKind.setup)
-                        : null),
+                    onTest: isDemo
+                        ? null
+                        : (_testing == null
+                              ? () => _test(RepoScriptKind.setup)
+                              : null),
                     testing: _testing == RepoScriptKind.setup,
                   ),
                   const SizedBox(height: 16),
@@ -201,9 +203,11 @@ class _RepoScriptsDialogState extends ConsumerState<_RepoScriptsDialog> {
                     help: l10n.repoScriptsArchiveHelp,
                     controller: _archive!,
                     hintText: l10n.repoScriptsArchivePlaceholder,
-                    onTest: isDemo ? null : (_testing == null
-                        ? () => _test(RepoScriptKind.archive)
-                        : null),
+                    onTest: isDemo
+                        ? null
+                        : (_testing == null
+                              ? () => _test(RepoScriptKind.archive)
+                              : null),
                     testing: _testing == RepoScriptKind.archive,
                   ),
                   const SizedBox(height: 20),
@@ -219,27 +223,23 @@ class _RepoScriptsDialogState extends ConsumerState<_RepoScriptsDialog> {
       ),
       actions: [
         CcButton(
-          onPressed:
-              _saving
-                  ? null
-                  : () => Navigator.of(context, rootNavigator: true).pop(),
+          onPressed: _saving
+              ? null
+              : () => Navigator.of(context, rootNavigator: true).pop(),
           variant: CcButtonVariant.ghost,
           child: Text(AppLocalizations.of(context).cancel),
         ),
         CcTooltip(
-          message: isDemo
-              ? AppLocalizations.of(context).demoReadOnlySave
-              : '',
+          message: isDemo ? AppLocalizations.of(context).demoReadOnlySave : '',
           child: CcButton(
             onPressed: (!isDemo && !_saving) ? _save : null,
-            child:
-                _saving
-                    ? const SizedBox(
-                      width: 14,
-                      height: 14,
-                      child: CcSpinner(size: 14),
-                    )
-                    : Text(AppLocalizations.of(context).save),
+            child: _saving
+                ? const SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CcSpinner(size: 14),
+                  )
+                : Text(AppLocalizations.of(context).save),
           ),
         ),
       ],
@@ -456,13 +456,13 @@ class _RunRowState extends State<_RunRow> {
               const SizedBox(width: 8),
               CcBadge(
                 label: switch (run.status) {
-                  RepoScriptRunStatus.running => l10n
-                      .repoScriptsRunStatusRunning,
-                  RepoScriptRunStatus.succeeded => l10n
-                      .repoScriptsRunStatusSucceeded,
+                  RepoScriptRunStatus.running =>
+                    l10n.repoScriptsRunStatusRunning,
+                  RepoScriptRunStatus.succeeded =>
+                    l10n.repoScriptsRunStatusSucceeded,
                   RepoScriptRunStatus.failed => l10n.repoScriptsRunStatusFailed,
-                  RepoScriptRunStatus.timedOut => l10n
-                      .repoScriptsRunStatusTimedOut,
+                  RepoScriptRunStatus.timedOut =>
+                    l10n.repoScriptsRunStatusTimedOut,
                 },
                 variant: switch (run.status) {
                   RepoScriptRunStatus.succeeded => CcBadgeVariant.success,
@@ -477,9 +477,7 @@ class _RunRowState extends State<_RunRow> {
                   '${DateFormat.Hm().format(run.startedAt)} · ${_formatDuration(duration)}'
                   '${run.exitCode != null ? ' · ${l10n.repoScriptsExitCode(run.exitCode!)}' : ''}'
                   '${run.spaceId != null ? ' · ${run.spaceId}' : ''}',
-                  style: CcTypography.caption.copyWith(
-                    color: ds?.textTertiary,
-                  ),
+                  style: CcTypography.caption.copyWith(color: ds?.textTertiary),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -487,8 +485,7 @@ class _RunRowState extends State<_RunRow> {
                 CcButton(
                   variant: CcButtonVariant.ghost,
                   size: CcButtonSize.sm,
-                  onPressed:
-                      () => setState(() => _expanded = !_expanded),
+                  onPressed: () => setState(() => _expanded = !_expanded),
                   child: Icon(
                     _expanded ? AppIcons.chevronUp : AppIcons.chevronDown,
                     size: 14,
@@ -505,7 +502,9 @@ class _RunRowState extends State<_RunRow> {
               decoration: BoxDecoration(
                 color: ds?.bgSecondary,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: ds?.borderSecondary ?? const Color(0x22000000)),
+                border: Border.all(
+                  color: ds?.borderSecondary ?? const Color(0x22000000),
+                ),
               ),
               child: SelectionArea(
                 child: Text(

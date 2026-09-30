@@ -15066,4 +15066,75 @@ class AppLocalizationsNl extends AppLocalizations {
   String failedToStartConflictFix(String error) {
     return 'Kan het oplossen van conflicten niet starten: $error';
   }
+
+  @override
+  String get settingsLinks => 'Links';
+
+  @override
+  String get linksSettingsDescription =>
+      'Kies waar links van buiten Control Center worden geopend, zoals een pull request die je vanuit GitHub opent.';
+
+  @override
+  String get repoLinkRememberedTitle => 'Onthouden werkruimtes';
+
+  @override
+  String get repoLinkRememberedHint =>
+      'Als een repository aan meer dan één werkruimte is gekoppeld, wordt bij het openen van een link ernaar gevraagd welke werkruimte je wilt gebruiken. Hier staan de keuzes die je hebt laten onthouden.';
+
+  @override
+  String get repoLinkRememberedEmpty => 'Nog geen onthouden keuzes.';
+
+  @override
+  String get repoLinkForget => 'Vergeten';
+
+  @override
+  String get repoLinkWorkspaceUnavailable => 'Werkruimte niet meer beschikbaar';
+
+  @override
+  String get repoLinkWorkspaceDialogTitle => 'Kies een werkruimte';
+
+  @override
+  String repoLinkWorkspaceDialogBody(String repo) {
+    return '$repo is aan meer dan één werkruimte gekoppeld. In welke moet deze link worden geopend?';
+  }
+
+  @override
+  String get repoLinkWorkspaceRemember =>
+      'Mijn keuze voor deze repository onthouden';
+
+  @override
+  String get repoLinkWorkspaceOpen => 'Openen';
+
+  @override
+  String get repoLinkUnlinkedTitle => 'Repository aan een werkruimte toevoegen';
+
+  @override
+  String repoLinkUnlinkedBody(String repo) {
+    return 'Nog geen enkele werkruimte koppelt $repo. Voeg het aan een werkruimte toe om deze link te openen.';
+  }
+
+  @override
+  String repoLinkUnlinkedAddTo(String workspace) {
+    return 'Toevoegen aan $workspace';
+  }
+
+  @override
+  String get repoLinkUnlinkedAddToHint => 'Kies de checkout op de server.';
+
+  @override
+  String get repoLinkUnlinkedCreate => 'Nieuwe werkruimte';
+
+  @override
+  String get repoLinkUnlinkedCreateHint =>
+      'Geef een naam en kies daarna de checkout.';
+
+  @override
+  String repoLinkChooseCheckout(String repo) {
+    return 'Selecteer de checkout van $repo op de machine die de server draait.';
+  }
+
+  @override
+  String repoLinkCheckoutMismatch(String repo) {
+    return 'Geen van de toegevoegde repository\'s is $repo, dus de link is zonder geopend.';
+  }
 }

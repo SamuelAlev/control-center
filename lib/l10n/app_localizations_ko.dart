@@ -14688,4 +14688,73 @@ class AppLocalizationsKo extends AppLocalizations {
   String failedToStartConflictFix(String error) {
     return '충돌 해결을 시작할 수 없습니다: $error';
   }
+
+  @override
+  String get settingsLinks => '링크';
+
+  @override
+  String get linksSettingsDescription =>
+      'Control Center 외부에서 열린 링크(예: GitHub에서 연 풀 리퀘스트)를 어디에서 열지 선택합니다.';
+
+  @override
+  String get repoLinkRememberedTitle => '기억된 워크스페이스';
+
+  @override
+  String get repoLinkRememberedHint =>
+      '리포지토리가 둘 이상의 워크스페이스에 연결되어 있으면, 해당 리포지토리로 가는 링크를 열 때 사용할 워크스페이스를 묻습니다. 기억하도록 한 선택이 여기에 표시됩니다.';
+
+  @override
+  String get repoLinkRememberedEmpty => '아직 기억된 선택이 없습니다.';
+
+  @override
+  String get repoLinkForget => '잊기';
+
+  @override
+  String get repoLinkWorkspaceUnavailable => '워크스페이스를 더 이상 사용할 수 없음';
+
+  @override
+  String get repoLinkWorkspaceDialogTitle => '워크스페이스 선택';
+
+  @override
+  String repoLinkWorkspaceDialogBody(String repo) {
+    return '$repo이(가) 둘 이상의 워크스페이스에 연결되어 있습니다. 이 링크를 어느 워크스페이스에서 열까요?';
+  }
+
+  @override
+  String get repoLinkWorkspaceRemember => '이 리포지토리에 대한 선택 기억하기';
+
+  @override
+  String get repoLinkWorkspaceOpen => '열기';
+
+  @override
+  String get repoLinkUnlinkedTitle => '리포지토리를 워크스페이스에 추가';
+
+  @override
+  String repoLinkUnlinkedBody(String repo) {
+    return '아직 $repo에 연결된 워크스페이스가 없습니다. 이 링크를 열려면 워크스페이스에 추가하세요.';
+  }
+
+  @override
+  String repoLinkUnlinkedAddTo(String workspace) {
+    return '$workspace에 추가';
+  }
+
+  @override
+  String get repoLinkUnlinkedAddToHint => '서버에서 체크아웃을 선택합니다.';
+
+  @override
+  String get repoLinkUnlinkedCreate => '새 워크스페이스';
+
+  @override
+  String get repoLinkUnlinkedCreateHint => '이름을 지정한 다음 체크아웃을 선택합니다.';
+
+  @override
+  String repoLinkChooseCheckout(String repo) {
+    return '서버가 실행 중인 머신에서 $repo의 체크아웃을 선택하세요.';
+  }
+
+  @override
+  String repoLinkCheckoutMismatch(String repo) {
+    return '추가된 리포지토리 중 $repo이(가) 없어 리포지토리 없이 링크를 열었습니다.';
+  }
 }

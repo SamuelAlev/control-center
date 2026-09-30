@@ -15178,4 +15178,77 @@ class AppLocalizationsCs extends AppLocalizations {
   String failedToStartConflictFix(String error) {
     return 'Řešení konfliktů se nepodařilo spustit: $error';
   }
+
+  @override
+  String get settingsLinks => 'Odkazy';
+
+  @override
+  String get linksSettingsDescription =>
+      'Zvolte, kde se otevírají odkazy zvenčí Control Center, například pull request otevřený z GitHubu.';
+
+  @override
+  String get repoLinkRememberedTitle => 'Zapamatované pracovní prostory';
+
+  @override
+  String get repoLinkRememberedHint =>
+      'Když je repozitář propojen s více pracovními prostory, při otevření odkazu na něj se zobrazí dotaz, který pracovní prostor použít. Zde jsou uvedeny volby, které jste si nechali zapamatovat.';
+
+  @override
+  String get repoLinkRememberedEmpty =>
+      'Zatím nejsou zapamatovány žádné volby.';
+
+  @override
+  String get repoLinkForget => 'Zapomenout';
+
+  @override
+  String get repoLinkWorkspaceUnavailable =>
+      'Pracovní prostor už není k dispozici';
+
+  @override
+  String get repoLinkWorkspaceDialogTitle => 'Zvolte pracovní prostor';
+
+  @override
+  String repoLinkWorkspaceDialogBody(String repo) {
+    return '$repo je propojen s více pracovními prostory. Ve kterém se má tento odkaz otevřít?';
+  }
+
+  @override
+  String get repoLinkWorkspaceRemember =>
+      'Zapamatovat si moji volbu pro tento repozitář';
+
+  @override
+  String get repoLinkWorkspaceOpen => 'Otevřít';
+
+  @override
+  String get repoLinkUnlinkedTitle => 'Přidat repozitář do pracovního prostoru';
+
+  @override
+  String repoLinkUnlinkedBody(String repo) {
+    return '$repo zatím není propojen s žádným pracovním prostorem. Přidejte ho do některého, aby se tento odkaz otevřel.';
+  }
+
+  @override
+  String repoLinkUnlinkedAddTo(String workspace) {
+    return 'Přidat do $workspace';
+  }
+
+  @override
+  String get repoLinkUnlinkedAddToHint => 'Vyberte jeho checkout na serveru.';
+
+  @override
+  String get repoLinkUnlinkedCreate => 'Nový pracovní prostor';
+
+  @override
+  String get repoLinkUnlinkedCreateHint =>
+      'Pojmenujte ho a pak vyberte checkout.';
+
+  @override
+  String repoLinkChooseCheckout(String repo) {
+    return 'Vyberte checkout repozitáře $repo na stroji se serverem.';
+  }
+
+  @override
+  String repoLinkCheckoutMismatch(String repo) {
+    return 'Žádný z přidaných repozitářů není $repo, proto se odkaz otevřel bez něj.';
+  }
 }

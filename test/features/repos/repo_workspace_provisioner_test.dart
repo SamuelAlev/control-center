@@ -717,10 +717,7 @@ void main() {
           'space/abcd1234',
           'space/abcd1234/ui',
         ]);
-        expect(
-          await stacks.forRepo('w-1', 'ch-12345678', 'r-1'),
-          isEmpty,
-        );
+        expect(await stacks.forRepo('w-1', 'ch-12345678', 'r-1'), isEmpty);
       } finally {
         if (tempDir.existsSync()) {
           tempDir.deleteSync(recursive: true);

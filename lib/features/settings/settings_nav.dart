@@ -144,6 +144,12 @@ const List<SettingsNavGroup> kSettingsNav = [
         label: _newsfeedLabel,
         route: settingsNewsfeedRoute,
       ),
+      SettingsNavItem(
+        id: 'you.links',
+        icon: AppIcons.link,
+        label: _linksLabel,
+        route: settingsLinksRoute,
+      ),
     ],
   ),
   SettingsNavGroup(
@@ -303,6 +309,7 @@ String _keybindingsLabel(AppLocalizations l) => l.keybindings;
 String _audioSettingsLabel(AppLocalizations l) => l.settingsAudio;
 String _devicesLabel(AppLocalizations l) => l.settingsYourDevices;
 String _newsfeedLabel(AppLocalizations l) => l.newsfeedLabel;
+String _linksLabel(AppLocalizations l) => l.settingsLinks;
 
 String _generalLabel(AppLocalizations l) => l.settingsWorkspaceGeneral;
 String _meetingsLabel(AppLocalizations l) => l.navMeetings;

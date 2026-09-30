@@ -15014,4 +15014,75 @@ class AppLocalizationsTr extends AppLocalizations {
   String failedToStartConflictFix(String error) {
     return 'Çakışma çözümü başlatılamadı: $error';
   }
+
+  @override
+  String get settingsLinks => 'Bağlantılar';
+
+  @override
+  String get linksSettingsDescription =>
+      'Control Center dışından gelen bağlantıların nerede açılacağını seçin; örneğin GitHub\'dan açılan bir pull request.';
+
+  @override
+  String get repoLinkRememberedTitle => 'Hatırlanan çalışma alanları';
+
+  @override
+  String get repoLinkRememberedHint =>
+      'Bir depo birden fazla çalışma alanına bağlıysa, ona giden bir bağlantıyı açtığınızda hangi çalışma alanının kullanılacağı sorulur. Hatırlanmasını istediğiniz seçimler burada listelenir.';
+
+  @override
+  String get repoLinkRememberedEmpty => 'Henüz hatırlanan bir seçim yok.';
+
+  @override
+  String get repoLinkForget => 'Unut';
+
+  @override
+  String get repoLinkWorkspaceUnavailable =>
+      'Çalışma alanı artık kullanılamıyor';
+
+  @override
+  String get repoLinkWorkspaceDialogTitle => 'Bir çalışma alanı seçin';
+
+  @override
+  String repoLinkWorkspaceDialogBody(String repo) {
+    return '$repo birden fazla çalışma alanına bağlı. Bu bağlantı hangisinde açılsın?';
+  }
+
+  @override
+  String get repoLinkWorkspaceRemember => 'Bu depo için seçimimi hatırla';
+
+  @override
+  String get repoLinkWorkspaceOpen => 'Aç';
+
+  @override
+  String get repoLinkUnlinkedTitle => 'Depoyu bir çalışma alanına ekle';
+
+  @override
+  String repoLinkUnlinkedBody(String repo) {
+    return 'Henüz hiçbir çalışma alanı $repo deposuna bağlı değil. Bu bağlantıyı açmak için birine ekleyin.';
+  }
+
+  @override
+  String repoLinkUnlinkedAddTo(String workspace) {
+    return '$workspace çalışma alanına ekle';
+  }
+
+  @override
+  String get repoLinkUnlinkedAddToHint => 'Sunucudaki checkout\'unu seçin.';
+
+  @override
+  String get repoLinkUnlinkedCreate => 'Yeni çalışma alanı';
+
+  @override
+  String get repoLinkUnlinkedCreateHint =>
+      'Ad verin, ardından checkout\'u seçin.';
+
+  @override
+  String repoLinkChooseCheckout(String repo) {
+    return 'Sunucunun çalıştığı makinede $repo checkout\'unu seçin.';
+  }
+
+  @override
+  String repoLinkCheckoutMismatch(String repo) {
+    return 'Eklenen depoların hiçbiri $repo değil, bu nedenle bağlantı onsuz açıldı.';
+  }
 }

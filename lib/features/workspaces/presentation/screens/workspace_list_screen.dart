@@ -1359,10 +1359,13 @@ class _PanelHeader extends StatelessWidget {
   }
 }
 
-/// Shows the add-workspace dialog.
+/// Shows the add-workspace dialog, its name field starting at [initialName].
 ///
 /// Returns the new workspace id when one is created, or null when cancelled.
-Future<String?> showAddWorkspaceDialog(BuildContext context) {
+Future<String?> showAddWorkspaceDialog(
+  BuildContext context, {
+  String? initialName,
+}) {
   final l10n = AppLocalizations.of(context);
   return showCcDialog<String?>(
     context: context,
@@ -1371,6 +1374,7 @@ Future<String?> showAddWorkspaceDialog(BuildContext context) {
       content: SizedBox(
         width: 420,
         child: AddWorkspaceForm(
+          initialName: initialName,
           onCreated: (id) => Navigator.pop(dialogContext, id),
           onCancel: () => Navigator.pop(dialogContext),
         ),

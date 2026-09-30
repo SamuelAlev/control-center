@@ -15112,4 +15112,78 @@ class AppLocalizationsDe extends AppLocalizations {
   String failedToStartConflictFix(String error) {
     return 'Die Konfliktlösung konnte nicht gestartet werden: $error';
   }
+
+  @override
+  String get settingsLinks => 'Links';
+
+  @override
+  String get linksSettingsDescription =>
+      'Lege fest, wo Links von außerhalb von Control Center geöffnet werden, zum Beispiel ein Pull Request, den du von GitHub aus öffnest.';
+
+  @override
+  String get repoLinkRememberedTitle => 'Gemerkte Arbeitsbereiche';
+
+  @override
+  String get repoLinkRememberedHint =>
+      'Ist ein Repository in mehreren Arbeitsbereichen verknüpft, wirst du beim Öffnen eines Links darauf gefragt, welcher Arbeitsbereich verwendet werden soll. Hier stehen die Auswahlen, die du dir merken lassen hast.';
+
+  @override
+  String get repoLinkRememberedEmpty => 'Noch keine gemerkten Auswahlen.';
+
+  @override
+  String get repoLinkForget => 'Vergessen';
+
+  @override
+  String get repoLinkWorkspaceUnavailable =>
+      'Arbeitsbereich nicht mehr verfügbar';
+
+  @override
+  String get repoLinkWorkspaceDialogTitle => 'Arbeitsbereich auswählen';
+
+  @override
+  String repoLinkWorkspaceDialogBody(String repo) {
+    return '$repo ist in mehreren Arbeitsbereichen verknüpft. In welchem soll dieser Link geöffnet werden?';
+  }
+
+  @override
+  String get repoLinkWorkspaceRemember =>
+      'Auswahl für dieses Repository merken';
+
+  @override
+  String get repoLinkWorkspaceOpen => 'Öffnen';
+
+  @override
+  String get repoLinkUnlinkedTitle =>
+      'Repository zu einem Arbeitsbereich hinzufügen';
+
+  @override
+  String repoLinkUnlinkedBody(String repo) {
+    return '$repo ist noch in keinem Arbeitsbereich verknüpft. Füge es einem hinzu, um diesen Link zu öffnen.';
+  }
+
+  @override
+  String repoLinkUnlinkedAddTo(String workspace) {
+    return 'Zu $workspace hinzufügen';
+  }
+
+  @override
+  String get repoLinkUnlinkedAddToHint =>
+      'Wähle seinen Checkout auf dem Server.';
+
+  @override
+  String get repoLinkUnlinkedCreate => 'Neuer Arbeitsbereich';
+
+  @override
+  String get repoLinkUnlinkedCreateHint =>
+      'Gib ihm einen Namen und wähle dann den Checkout.';
+
+  @override
+  String repoLinkChooseCheckout(String repo) {
+    return 'Wähle den Checkout von $repo auf dem Rechner, der den Server ausführt.';
+  }
+
+  @override
+  String repoLinkCheckoutMismatch(String repo) {
+    return 'Keines der hinzugefügten Repositorys ist $repo, daher wurde der Link ohne es geöffnet.';
+  }
 }

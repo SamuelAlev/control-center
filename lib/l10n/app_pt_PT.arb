@@ -1020,5 +1020,10 @@
   "profileTeamMembers": "Membros: {count}",
   "noPrsByTeamInWorkspace": "Não existem pull requests de {team} neste espaço de trabalho",
   "profilePrStateFilterLabel": "Filtrar pull requests por estado",
-  "noProfilePrsMatchSearchHint": "Experimente outro título ou número de pull request"
+  "noProfilePrsMatchSearchHint": "Experimente outro título ou número de pull request",
+  "repoLinkRememberedTitle": "Espaços de trabalho memorizados",
+  "repoLinkRememberedHint": "Quando um repositório está associado a mais de um espaço de trabalho, abrir um link para ele pergunta que espaço de trabalho usar. As escolhas que pediu para memorizar aparecem aqui.",
+  "repoLinkRememberedEmpty": "Ainda não há escolhas memorizadas.",
+  "repoLinkWorkspaceDialogBody": "{repo} está associado a mais de um espaço de trabalho. Em qual deve abrir este link?",
+  "repoLinkWorkspaceRemember": "Memorizar a minha escolha para este repositório"
 }

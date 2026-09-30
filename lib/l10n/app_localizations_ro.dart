@@ -15175,4 +15175,77 @@ class AppLocalizationsRo extends AppLocalizations {
   String failedToStartConflictFix(String error) {
     return 'Rezolvarea conflictelor nu a putut porni: $error';
   }
+
+  @override
+  String get settingsLinks => 'Linkuri';
+
+  @override
+  String get linksSettingsDescription =>
+      'Alege unde se deschid linkurile venite din afara Control Center, de exemplu un pull request deschis din GitHub.';
+
+  @override
+  String get repoLinkRememberedTitle => 'Spații de lucru memorate';
+
+  @override
+  String get repoLinkRememberedHint =>
+      'Când un depozit este asociat cu mai multe spații de lucru, deschiderea unui link către el te întreabă ce spațiu de lucru să folosești. Aici sunt listate alegerile pe care ai cerut să fie memorate.';
+
+  @override
+  String get repoLinkRememberedEmpty => 'Nicio alegere memorată încă.';
+
+  @override
+  String get repoLinkForget => 'Uită';
+
+  @override
+  String get repoLinkWorkspaceUnavailable =>
+      'Spațiul de lucru nu mai este disponibil';
+
+  @override
+  String get repoLinkWorkspaceDialogTitle => 'Alege un spațiu de lucru';
+
+  @override
+  String repoLinkWorkspaceDialogBody(String repo) {
+    return '$repo este asociat cu mai multe spații de lucru. În care să se deschidă acest link?';
+  }
+
+  @override
+  String get repoLinkWorkspaceRemember =>
+      'Memorează alegerea mea pentru acest depozit';
+
+  @override
+  String get repoLinkWorkspaceOpen => 'Deschide';
+
+  @override
+  String get repoLinkUnlinkedTitle =>
+      'Adaugă depozitul într-un spațiu de lucru';
+
+  @override
+  String repoLinkUnlinkedBody(String repo) {
+    return 'Niciun spațiu de lucru nu este asociat încă cu $repo. Adaugă-l într-unul pentru a deschide acest link.';
+  }
+
+  @override
+  String repoLinkUnlinkedAddTo(String workspace) {
+    return 'Adaugă în $workspace';
+  }
+
+  @override
+  String get repoLinkUnlinkedAddToHint => 'Alege checkout-ul său de pe server.';
+
+  @override
+  String get repoLinkUnlinkedCreate => 'Spațiu de lucru nou';
+
+  @override
+  String get repoLinkUnlinkedCreateHint =>
+      'Denumește-l, apoi alege checkout-ul.';
+
+  @override
+  String repoLinkChooseCheckout(String repo) {
+    return 'Selectează checkout-ul pentru $repo de pe mașina care rulează serverul.';
+  }
+
+  @override
+  String repoLinkCheckoutMismatch(String repo) {
+    return 'Niciunul dintre depozitele adăugate nu este $repo, așa că linkul s-a deschis fără el.';
+  }
 }

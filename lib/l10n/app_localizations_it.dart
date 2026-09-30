@@ -15111,4 +15111,77 @@ class AppLocalizationsIt extends AppLocalizations {
   String failedToStartConflictFix(String error) {
     return 'Impossibile avviare la risoluzione dei conflitti: $error';
   }
+
+  @override
+  String get settingsLinks => 'Link';
+
+  @override
+  String get linksSettingsDescription =>
+      'Scegli dove si aprono i link provenienti dall\'esterno di Control Center, come una pull request aperta da GitHub.';
+
+  @override
+  String get repoLinkRememberedTitle => 'Spazi di lavoro memorizzati';
+
+  @override
+  String get repoLinkRememberedHint =>
+      'Quando un repository è collegato a più spazi di lavoro, aprendo un link a esso ti viene chiesto quale spazio di lavoro usare. Qui trovi le scelte che hai chiesto di memorizzare.';
+
+  @override
+  String get repoLinkRememberedEmpty => 'Nessuna scelta memorizzata.';
+
+  @override
+  String get repoLinkForget => 'Dimentica';
+
+  @override
+  String get repoLinkWorkspaceUnavailable =>
+      'Spazio di lavoro non più disponibile';
+
+  @override
+  String get repoLinkWorkspaceDialogTitle => 'Scegli uno spazio di lavoro';
+
+  @override
+  String repoLinkWorkspaceDialogBody(String repo) {
+    return '$repo è collegato a più spazi di lavoro. In quale deve aprirsi questo link?';
+  }
+
+  @override
+  String get repoLinkWorkspaceRemember =>
+      'Ricorda la mia scelta per questo repository';
+
+  @override
+  String get repoLinkWorkspaceOpen => 'Apri';
+
+  @override
+  String get repoLinkUnlinkedTitle =>
+      'Aggiungi il repository a uno spazio di lavoro';
+
+  @override
+  String repoLinkUnlinkedBody(String repo) {
+    return 'Nessuno spazio di lavoro collega ancora $repo. Aggiungilo a uno per aprire questo link.';
+  }
+
+  @override
+  String repoLinkUnlinkedAddTo(String workspace) {
+    return 'Aggiungi a $workspace';
+  }
+
+  @override
+  String get repoLinkUnlinkedAddToHint => 'Scegli il suo checkout sul server.';
+
+  @override
+  String get repoLinkUnlinkedCreate => 'Nuovo spazio di lavoro';
+
+  @override
+  String get repoLinkUnlinkedCreateHint =>
+      'Dagli un nome, poi scegli il checkout.';
+
+  @override
+  String repoLinkChooseCheckout(String repo) {
+    return 'Seleziona il checkout di $repo sulla macchina che esegue il server.';
+  }
+
+  @override
+  String repoLinkCheckoutMismatch(String repo) {
+    return 'Nessuno dei repository aggiunti è $repo, quindi il link si è aperto senza.';
+  }
 }

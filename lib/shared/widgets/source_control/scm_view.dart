@@ -18,6 +18,9 @@ import 'package:flutter/widgets.dart';
 /// renders it disabled (dimmed).
 typedef ScmAction = ({IconData icon, String tooltip, VoidCallback? onPressed});
 
+/// Side of an [ScmIconAction]'s square hit box.
+const double _kScmActionExtent = 22;
+
 /// The (letter, color) status glyph for a changed file — the single source of
 /// truth both source-control surfaces share.
 (String, Color) scmStatusGlyph(PrFileStatus status, DesignSystemTokens t) {
@@ -358,53 +361,61 @@ class _ScmFileRowState extends State<ScmFileRow> {
               AppSpacing.xs,
               4,
             ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        basename,
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 1,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: widget.selected
-                              ? FontWeight.w600
-                              : CcTypography.regularWeight,
-                          color: t.textSecondary,
-                        ),
-                      ),
-                      if (dirname.isNotEmpty)
+            // A single-line row is shorter than the hover actions, so floor it
+            // at their extent; revealing them then never changes its height.
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: _kScmActionExtent),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
                         Text(
-                          dirname,
+                          basename,
                           overflow: TextOverflow.ellipsis,
                           maxLines: 1,
-                          style: TextStyle(fontSize: 10, color: t.textTertiary),
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: widget.selected
+                                ? FontWeight.w600
+                                : CcTypography.regularWeight,
+                            color: t.textSecondary,
+                          ),
                         ),
-                    ],
-                  ),
-                ),
-                // Actions on hover; the status letter always trails on the right
-                // (VS Code layout).
-                if (_hovered)
-                  for (final a in widget.actions) ScmIconAction(action: a),
-                const SizedBox(width: 4),
-                SizedBox(
-                  width: 14,
-                  child: Text(
-                    letter,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: color,
+                        if (dirname.isNotEmpty)
+                          Text(
+                            dirname,
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: t.textTertiary,
+                            ),
+                          ),
+                      ],
                     ),
                   ),
-                ),
-              ],
+                  // Actions on hover; the status letter always trails on the
+                  // right (VS Code layout).
+                  if (_hovered)
+                    for (final a in widget.actions) ScmIconAction(action: a),
+                  const SizedBox(width: 4),
+                  SizedBox(
+                    width: 14,
+                    child: Text(
+                      letter,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: color,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -517,8 +528,8 @@ class ScmIconAction extends StatelessWidget {
         semanticLabel: action.tooltip,
         borderRadius: BorderRadius.circular(4),
         builder: (context, states) => Container(
-          width: 22,
-          height: 22,
+          width: _kScmActionExtent,
+          height: _kScmActionExtent,
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: states.contains(WidgetState.hovered)

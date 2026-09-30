@@ -253,6 +253,11 @@ String settingsRemoteControlRoute(String workspaceId) =>
 String settingsNewsfeedRoute(String workspaceId) =>
     '/workspaces/$workspaceId/settings/you/newsfeed';
 
+/// Settings → You → Links (the workspace a repository's external links open
+/// in, when several workspaces link it).
+String settingsLinksRoute(String workspaceId) =>
+    '/workspaces/$workspaceId/settings/you/links';
+
 /// Settings → Workspace → General (name, logo, secret globs, review
 /// concurrency, branch naming, sync health, chat bridges, danger zone).
 String settingsWorkspaceGeneralRoute(String workspaceId) =>

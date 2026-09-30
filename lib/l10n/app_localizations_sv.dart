@@ -15027,4 +15027,76 @@ class AppLocalizationsSv extends AppLocalizations {
   String failedToStartConflictFix(String error) {
     return 'Det gick inte att starta konfliktlösningen: $error';
   }
+
+  @override
+  String get settingsLinks => 'Länkar';
+
+  @override
+  String get linksSettingsDescription =>
+      'Välj var länkar utifrån Control Center öppnas, till exempel en pull request som öppnas från GitHub.';
+
+  @override
+  String get repoLinkRememberedTitle => 'Sparade arbetsytor';
+
+  @override
+  String get repoLinkRememberedHint =>
+      'När ett arkiv är länkat till fler än en arbetsyta får du frågan vilken arbetsyta som ska användas när du öppnar en länk till det. Här listas de val du har bett att få ihågkomna.';
+
+  @override
+  String get repoLinkRememberedEmpty => 'Inga sparade val ännu.';
+
+  @override
+  String get repoLinkForget => 'Glöm';
+
+  @override
+  String get repoLinkWorkspaceUnavailable =>
+      'Arbetsytan är inte längre tillgänglig';
+
+  @override
+  String get repoLinkWorkspaceDialogTitle => 'Välj en arbetsyta';
+
+  @override
+  String repoLinkWorkspaceDialogBody(String repo) {
+    return '$repo är länkat till fler än en arbetsyta. I vilken ska länken öppnas?';
+  }
+
+  @override
+  String get repoLinkWorkspaceRemember =>
+      'Kom ihåg mitt val för det här arkivet';
+
+  @override
+  String get repoLinkWorkspaceOpen => 'Öppna';
+
+  @override
+  String get repoLinkUnlinkedTitle => 'Lägg till arkivet i en arbetsyta';
+
+  @override
+  String repoLinkUnlinkedBody(String repo) {
+    return 'Ingen arbetsyta länkar $repo än. Lägg till det i en för att öppna länken.';
+  }
+
+  @override
+  String repoLinkUnlinkedAddTo(String workspace) {
+    return 'Lägg till i $workspace';
+  }
+
+  @override
+  String get repoLinkUnlinkedAddToHint => 'Välj dess checkout på servern.';
+
+  @override
+  String get repoLinkUnlinkedCreate => 'Ny arbetsyta';
+
+  @override
+  String get repoLinkUnlinkedCreateHint =>
+      'Namnge den och välj sedan checkouten.';
+
+  @override
+  String repoLinkChooseCheckout(String repo) {
+    return 'Välj checkouten av $repo på maskinen som kör servern.';
+  }
+
+  @override
+  String repoLinkCheckoutMismatch(String repo) {
+    return 'Inget av de tillagda arkiven är $repo, så länken öppnades utan det.';
+  }
 }

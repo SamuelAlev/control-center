@@ -14693,4 +14693,73 @@ class AppLocalizationsJa extends AppLocalizations {
   String failedToStartConflictFix(String error) {
     return 'コンフリクトの解決を開始できませんでした: $error';
   }
+
+  @override
+  String get settingsLinks => 'リンク';
+
+  @override
+  String get linksSettingsDescription =>
+      'Control Center の外部から開いたリンク（GitHub から開いたプルリクエストなど）をどこで開くかを選択します。';
+
+  @override
+  String get repoLinkRememberedTitle => '記憶したワークスペース';
+
+  @override
+  String get repoLinkRememberedHint =>
+      'リポジトリが複数のワークスペースにリンクされている場合、そのリポジトリへのリンクを開くと、どのワークスペースを使うか確認されます。記憶するよう指定した選択がここに表示されます。';
+
+  @override
+  String get repoLinkRememberedEmpty => '記憶した選択はまだありません。';
+
+  @override
+  String get repoLinkForget => '解除';
+
+  @override
+  String get repoLinkWorkspaceUnavailable => 'ワークスペースは利用できなくなりました';
+
+  @override
+  String get repoLinkWorkspaceDialogTitle => 'ワークスペースを選択';
+
+  @override
+  String repoLinkWorkspaceDialogBody(String repo) {
+    return '$repo は複数のワークスペースにリンクされています。このリンクをどのワークスペースで開きますか？';
+  }
+
+  @override
+  String get repoLinkWorkspaceRemember => 'このリポジトリの選択を記憶する';
+
+  @override
+  String get repoLinkWorkspaceOpen => '開く';
+
+  @override
+  String get repoLinkUnlinkedTitle => 'リポジトリをワークスペースに追加';
+
+  @override
+  String repoLinkUnlinkedBody(String repo) {
+    return '$repo はまだどのワークスペースにもリンクされていません。このリンクを開くには、いずれかのワークスペースに追加してください。';
+  }
+
+  @override
+  String repoLinkUnlinkedAddTo(String workspace) {
+    return '$workspace に追加';
+  }
+
+  @override
+  String get repoLinkUnlinkedAddToHint => 'サーバー上のチェックアウトを選択します。';
+
+  @override
+  String get repoLinkUnlinkedCreate => '新しいワークスペース';
+
+  @override
+  String get repoLinkUnlinkedCreateHint => '名前を付けてから、チェックアウトを選択します。';
+
+  @override
+  String repoLinkChooseCheckout(String repo) {
+    return 'サーバーが稼働しているマシン上の $repo のチェックアウトを選択してください。';
+  }
+
+  @override
+  String repoLinkCheckoutMismatch(String repo) {
+    return '追加したリポジトリに $repo が含まれていないため、リンクはリポジトリなしで開きました。';
+  }
 }

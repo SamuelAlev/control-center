@@ -14973,6 +14973,76 @@ class AppLocalizationsEn extends AppLocalizations {
   String failedToStartConflictFix(String error) {
     return 'Couldn\'t start the conflict fix: $error';
   }
+
+  @override
+  String get settingsLinks => 'Links';
+
+  @override
+  String get linksSettingsDescription =>
+      'Choose where links from outside Control Center open, such as a pull request opened from GitHub.';
+
+  @override
+  String get repoLinkRememberedTitle => 'Remembered workspaces';
+
+  @override
+  String get repoLinkRememberedHint =>
+      'When a repository is linked in more than one workspace, opening a link to it asks which workspace to use. The choices you asked to remember are listed here.';
+
+  @override
+  String get repoLinkRememberedEmpty => 'No remembered choices yet.';
+
+  @override
+  String get repoLinkForget => 'Forget';
+
+  @override
+  String get repoLinkWorkspaceUnavailable => 'Workspace no longer available';
+
+  @override
+  String get repoLinkWorkspaceDialogTitle => 'Choose a workspace';
+
+  @override
+  String repoLinkWorkspaceDialogBody(String repo) {
+    return '$repo is linked in more than one workspace. Which one should this link open in?';
+  }
+
+  @override
+  String get repoLinkWorkspaceRemember =>
+      'Remember my choice for this repository';
+
+  @override
+  String get repoLinkWorkspaceOpen => 'Open';
+
+  @override
+  String get repoLinkUnlinkedTitle => 'Add repository to a workspace';
+
+  @override
+  String repoLinkUnlinkedBody(String repo) {
+    return 'No workspace links $repo yet. Add it to one to open this link.';
+  }
+
+  @override
+  String repoLinkUnlinkedAddTo(String workspace) {
+    return 'Add to $workspace';
+  }
+
+  @override
+  String get repoLinkUnlinkedAddToHint => 'Pick its checkout on the server.';
+
+  @override
+  String get repoLinkUnlinkedCreate => 'New workspace';
+
+  @override
+  String get repoLinkUnlinkedCreateHint => 'Name it, then pick the checkout.';
+
+  @override
+  String repoLinkChooseCheckout(String repo) {
+    return 'Select the checkout of $repo on the machine running the server.';
+  }
+
+  @override
+  String repoLinkCheckoutMismatch(String repo) {
+    return 'None of the added repositories is $repo, so the link opened without it.';
+  }
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

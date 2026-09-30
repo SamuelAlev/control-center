@@ -25461,6 +25461,120 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t start the conflict fix: {error}'**
   String failedToStartConflictFix(String error);
+
+  /// Settings → You → Links, and the dialog asking which workspace a repository link opens in
+  ///
+  /// In en, this message translates to:
+  /// **'Links'**
+  String get settingsLinks;
+
+  /// Settings → You → Links, and the dialog asking which workspace a repository link opens in
+  ///
+  /// In en, this message translates to:
+  /// **'Choose where links from outside Control Center open, such as a pull request opened from GitHub.'**
+  String get linksSettingsDescription;
+
+  /// Settings → You → Links, and the dialog asking which workspace a repository link opens in
+  ///
+  /// In en, this message translates to:
+  /// **'Remembered workspaces'**
+  String get repoLinkRememberedTitle;
+
+  /// Settings → You → Links, and the dialog asking which workspace a repository link opens in
+  ///
+  /// In en, this message translates to:
+  /// **'When a repository is linked in more than one workspace, opening a link to it asks which workspace to use. The choices you asked to remember are listed here.'**
+  String get repoLinkRememberedHint;
+
+  /// Settings → You → Links, and the dialog asking which workspace a repository link opens in
+  ///
+  /// In en, this message translates to:
+  /// **'No remembered choices yet.'**
+  String get repoLinkRememberedEmpty;
+
+  /// Settings → You → Links, and the dialog asking which workspace a repository link opens in
+  ///
+  /// In en, this message translates to:
+  /// **'Forget'**
+  String get repoLinkForget;
+
+  /// Settings → You → Links, and the dialog asking which workspace a repository link opens in
+  ///
+  /// In en, this message translates to:
+  /// **'Workspace no longer available'**
+  String get repoLinkWorkspaceUnavailable;
+
+  /// Settings → You → Links, and the dialog asking which workspace a repository link opens in
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a workspace'**
+  String get repoLinkWorkspaceDialogTitle;
+
+  /// Settings → You → Links, and the dialog asking which workspace a repository link opens in
+  ///
+  /// In en, this message translates to:
+  /// **'{repo} is linked in more than one workspace. Which one should this link open in?'**
+  String repoLinkWorkspaceDialogBody(String repo);
+
+  /// Settings → You → Links, and the dialog asking which workspace a repository link opens in
+  ///
+  /// In en, this message translates to:
+  /// **'Remember my choice for this repository'**
+  String get repoLinkWorkspaceRemember;
+
+  /// Settings → You → Links, and the dialog asking which workspace a repository link opens in
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get repoLinkWorkspaceOpen;
+
+  /// The dialog shown when a link names a repository no workspace links, and the add-repository step it leads to
+  ///
+  /// In en, this message translates to:
+  /// **'Add repository to a workspace'**
+  String get repoLinkUnlinkedTitle;
+
+  /// The dialog shown when a link names a repository no workspace links, and the add-repository step it leads to
+  ///
+  /// In en, this message translates to:
+  /// **'No workspace links {repo} yet. Add it to one to open this link.'**
+  String repoLinkUnlinkedBody(String repo);
+
+  /// The dialog shown when a link names a repository no workspace links, and the add-repository step it leads to
+  ///
+  /// In en, this message translates to:
+  /// **'Add to {workspace}'**
+  String repoLinkUnlinkedAddTo(String workspace);
+
+  /// The dialog shown when a link names a repository no workspace links, and the add-repository step it leads to
+  ///
+  /// In en, this message translates to:
+  /// **'Pick its checkout on the server.'**
+  String get repoLinkUnlinkedAddToHint;
+
+  /// The dialog shown when a link names a repository no workspace links, and the add-repository step it leads to
+  ///
+  /// In en, this message translates to:
+  /// **'New workspace'**
+  String get repoLinkUnlinkedCreate;
+
+  /// The dialog shown when a link names a repository no workspace links, and the add-repository step it leads to
+  ///
+  /// In en, this message translates to:
+  /// **'Name it, then pick the checkout.'**
+  String get repoLinkUnlinkedCreateHint;
+
+  /// The dialog shown when a link names a repository no workspace links, and the add-repository step it leads to
+  ///
+  /// In en, this message translates to:
+  /// **'Select the checkout of {repo} on the machine running the server.'**
+  String repoLinkChooseCheckout(String repo);
+
+  /// The dialog shown when a link names a repository no workspace links, and the add-repository step it leads to
+  ///
+  /// In en, this message translates to:
+  /// **'None of the added repositories is {repo}, so the link opened without it.'**
+  String repoLinkCheckoutMismatch(String repo);
 }
 
 class _AppLocalizationsDelegate

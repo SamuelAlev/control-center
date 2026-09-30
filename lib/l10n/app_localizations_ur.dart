@@ -14958,4 +14958,75 @@ class AppLocalizationsUr extends AppLocalizations {
   String failedToStartConflictFix(String error) {
     return 'تنازعات کا حل شروع نہیں ہو سکا: $error';
   }
+
+  @override
+  String get settingsLinks => 'لنکس';
+
+  @override
+  String get linksSettingsDescription =>
+      'منتخب کریں کہ Control Center کے باہر سے آنے والے لنکس کہاں کھلیں، جیسے GitHub سے کھولی گئی pull request۔';
+
+  @override
+  String get repoLinkRememberedTitle => 'یاد رکھی گئی ورک اسپیسز';
+
+  @override
+  String get repoLinkRememberedHint =>
+      'جب کوئی ریپوزٹری ایک سے زیادہ ورک اسپیسز سے منسلک ہو تو اس کا لنک کھولنے پر پوچھا جاتا ہے کہ کون سی ورک اسپیس استعمال کی جائے۔ جن انتخابات کو یاد رکھنے کا آپ نے کہا تھا وہ یہاں درج ہیں۔';
+
+  @override
+  String get repoLinkRememberedEmpty =>
+      'ابھی تک کوئی انتخاب یاد نہیں رکھا گیا۔';
+
+  @override
+  String get repoLinkForget => 'بھول جائیں';
+
+  @override
+  String get repoLinkWorkspaceUnavailable => 'ورک اسپیس اب دستیاب نہیں ہے';
+
+  @override
+  String get repoLinkWorkspaceDialogTitle => 'ورک اسپیس منتخب کریں';
+
+  @override
+  String repoLinkWorkspaceDialogBody(String repo) {
+    return '$repo ایک سے زیادہ ورک اسپیسز سے منسلک ہے۔ یہ لنک کس میں کھولا جائے؟';
+  }
+
+  @override
+  String get repoLinkWorkspaceRemember =>
+      'اس ریپوزٹری کے لیے میرا انتخاب یاد رکھیں';
+
+  @override
+  String get repoLinkWorkspaceOpen => 'کھولیں';
+
+  @override
+  String get repoLinkUnlinkedTitle => 'ریپوزٹری کو ورک اسپیس میں شامل کریں';
+
+  @override
+  String repoLinkUnlinkedBody(String repo) {
+    return 'ابھی کوئی ورک اسپیس $repo سے منسلک نہیں۔ یہ لنک کھولنے کے لیے اسے کسی ایک میں شامل کریں۔';
+  }
+
+  @override
+  String repoLinkUnlinkedAddTo(String workspace) {
+    return '$workspace میں شامل کریں';
+  }
+
+  @override
+  String get repoLinkUnlinkedAddToHint => 'سرور پر اس کا چیک آؤٹ منتخب کریں۔';
+
+  @override
+  String get repoLinkUnlinkedCreate => 'نئی ورک اسپیس';
+
+  @override
+  String get repoLinkUnlinkedCreateHint => 'نام دیں، پھر چیک آؤٹ منتخب کریں۔';
+
+  @override
+  String repoLinkChooseCheckout(String repo) {
+    return 'سرور چلانے والی مشین پر $repo کا چیک آؤٹ منتخب کریں۔';
+  }
+
+  @override
+  String repoLinkCheckoutMismatch(String repo) {
+    return 'شامل کی گئی ریپوزٹریز میں سے کوئی بھی $repo نہیں، اس لیے لنک اس کے بغیر کھلا۔';
+  }
 }

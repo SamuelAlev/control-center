@@ -14878,4 +14878,75 @@ class AppLocalizationsTh extends AppLocalizations {
   String failedToStartConflictFix(String error) {
     return 'ไม่สามารถเริ่มการแก้ไขข้อขัดแย้งได้: $error';
   }
+
+  @override
+  String get settingsLinks => 'ลิงก์';
+
+  @override
+  String get linksSettingsDescription =>
+      'เลือกว่าลิงก์จากภายนอก Control Center จะเปิดที่ใด เช่น pull request ที่เปิดจาก GitHub';
+
+  @override
+  String get repoLinkRememberedTitle => 'เวิร์กสเปซที่จดจำไว้';
+
+  @override
+  String get repoLinkRememberedHint =>
+      'เมื่อรีโพสิทอรีเชื่อมโยงกับเวิร์กสเปซมากกว่าหนึ่งแห่ง การเปิดลิงก์ไปยังรีโพสิทอรีนั้นจะถามว่าจะใช้เวิร์กสเปซใด ตัวเลือกที่คุณขอให้จดจำไว้จะแสดงอยู่ที่นี่';
+
+  @override
+  String get repoLinkRememberedEmpty => 'ยังไม่มีตัวเลือกที่จดจำไว้';
+
+  @override
+  String get repoLinkForget => 'ลืม';
+
+  @override
+  String get repoLinkWorkspaceUnavailable => 'เวิร์กสเปซนี้ไม่พร้อมใช้งานแล้ว';
+
+  @override
+  String get repoLinkWorkspaceDialogTitle => 'เลือกเวิร์กสเปซ';
+
+  @override
+  String repoLinkWorkspaceDialogBody(String repo) {
+    return '$repo เชื่อมโยงกับเวิร์กสเปซมากกว่าหนึ่งแห่ง ต้องการเปิดลิงก์นี้ในเวิร์กสเปซใด';
+  }
+
+  @override
+  String get repoLinkWorkspaceRemember =>
+      'จดจำตัวเลือกของฉันสำหรับรีโพสิทอรีนี้';
+
+  @override
+  String get repoLinkWorkspaceOpen => 'เปิด';
+
+  @override
+  String get repoLinkUnlinkedTitle => 'เพิ่มรีโพสิทอรีลงในเวิร์กสเปซ';
+
+  @override
+  String repoLinkUnlinkedBody(String repo) {
+    return 'ยังไม่มีเวิร์กสเปซใดเชื่อมโยงกับ $repo เพิ่มลงในเวิร์กสเปซหนึ่งเพื่อเปิดลิงก์นี้';
+  }
+
+  @override
+  String repoLinkUnlinkedAddTo(String workspace) {
+    return 'เพิ่มลงใน $workspace';
+  }
+
+  @override
+  String get repoLinkUnlinkedAddToHint =>
+      'เลือกเช็กเอาต์ของรีโพสิทอรีนี้บนเซิร์ฟเวอร์';
+
+  @override
+  String get repoLinkUnlinkedCreate => 'เวิร์กสเปซใหม่';
+
+  @override
+  String get repoLinkUnlinkedCreateHint => 'ตั้งชื่อ แล้วเลือกเช็กเอาต์';
+
+  @override
+  String repoLinkChooseCheckout(String repo) {
+    return 'เลือกเช็กเอาต์ของ $repo บนเครื่องที่รันเซิร์ฟเวอร์';
+  }
+
+  @override
+  String repoLinkCheckoutMismatch(String repo) {
+    return 'ไม่มีรีโพสิทอรีที่เพิ่มรายการใดเป็น $repo จึงเปิดลิงก์โดยไม่มีรีโพสิทอรีนี้';
+  }
 }

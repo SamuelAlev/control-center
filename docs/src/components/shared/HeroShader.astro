@@ -11,7 +11,8 @@
  * `band` (default) fades in beneath a bounded page header and holds the warm
  * horizon at its bottom edge. `landing` extends above its hero into the
  * transparent sticky navigation, then fades before the following section;
- * the host must allow that top overflow.
+ * the host must allow that top overflow. Its nearest cloud deck rests just
+ * below the pilot, above the product showcase that covers the lower canvas.
  */
 import ShaderBackground from './ShaderBackground.astro';
 
@@ -23,7 +24,7 @@ const { variant = 'band' } = Astro.props;
 ---
 
 <div class="cc-hero-veil" data-variant={variant} aria-hidden="true">
-  <ShaderBackground />
+  <ShaderBackground horizon={variant === 'landing' ? 0.42 : 0.95} />
 </div>
 
 <style>

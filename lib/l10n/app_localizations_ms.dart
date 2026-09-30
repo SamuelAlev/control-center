@@ -15034,4 +15034,75 @@ class AppLocalizationsMs extends AppLocalizations {
   String failedToStartConflictFix(String error) {
     return 'Tidak dapat memulakan pembetulan konflik: $error';
   }
+
+  @override
+  String get settingsLinks => 'Pautan';
+
+  @override
+  String get linksSettingsDescription =>
+      'Pilih tempat pautan dari luar Control Center dibuka, contohnya pull request yang dibuka dari GitHub.';
+
+  @override
+  String get repoLinkRememberedTitle => 'Ruang kerja yang diingati';
+
+  @override
+  String get repoLinkRememberedHint =>
+      'Apabila repositori dipautkan kepada lebih daripada satu ruang kerja, membuka pautan kepadanya akan bertanya ruang kerja mana yang hendak digunakan. Pilihan yang anda minta untuk diingati disenaraikan di sini.';
+
+  @override
+  String get repoLinkRememberedEmpty => 'Belum ada pilihan yang diingati.';
+
+  @override
+  String get repoLinkForget => 'Lupakan';
+
+  @override
+  String get repoLinkWorkspaceUnavailable => 'Ruang kerja tidak lagi tersedia';
+
+  @override
+  String get repoLinkWorkspaceDialogTitle => 'Pilih ruang kerja';
+
+  @override
+  String repoLinkWorkspaceDialogBody(String repo) {
+    return '$repo dipautkan kepada lebih daripada satu ruang kerja. Dalam ruang kerja mana pautan ini patut dibuka?';
+  }
+
+  @override
+  String get repoLinkWorkspaceRemember =>
+      'Ingat pilihan saya untuk repositori ini';
+
+  @override
+  String get repoLinkWorkspaceOpen => 'Buka';
+
+  @override
+  String get repoLinkUnlinkedTitle => 'Tambah repositori pada ruang kerja';
+
+  @override
+  String repoLinkUnlinkedBody(String repo) {
+    return 'Belum ada ruang kerja yang memautkan $repo. Tambahkannya pada salah satu untuk membuka pautan ini.';
+  }
+
+  @override
+  String repoLinkUnlinkedAddTo(String workspace) {
+    return 'Tambah pada $workspace';
+  }
+
+  @override
+  String get repoLinkUnlinkedAddToHint => 'Pilih checkout-nya pada pelayan.';
+
+  @override
+  String get repoLinkUnlinkedCreate => 'Ruang kerja baharu';
+
+  @override
+  String get repoLinkUnlinkedCreateHint =>
+      'Namakannya, kemudian pilih checkout.';
+
+  @override
+  String repoLinkChooseCheckout(String repo) {
+    return 'Pilih checkout $repo pada mesin yang menjalankan pelayan.';
+  }
+
+  @override
+  String repoLinkCheckoutMismatch(String repo) {
+    return 'Tiada repositori yang ditambah ialah $repo, jadi pautan dibuka tanpanya.';
+  }
 }

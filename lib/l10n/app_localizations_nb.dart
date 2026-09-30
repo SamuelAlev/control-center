@@ -15021,4 +15021,75 @@ class AppLocalizationsNb extends AppLocalizations {
   String failedToStartConflictFix(String error) {
     return 'Kunne ikke starte konfliktløsningen: $error';
   }
+
+  @override
+  String get settingsLinks => 'Lenker';
+
+  @override
+  String get linksSettingsDescription =>
+      'Velg hvor lenker fra utsiden av Control Center åpnes, for eksempel en pull request åpnet fra GitHub.';
+
+  @override
+  String get repoLinkRememberedTitle => 'Lagrede arbeidsområder';
+
+  @override
+  String get repoLinkRememberedHint =>
+      'Når et arkiv er koblet til mer enn ett arbeidsområde, blir du spurt om hvilket arbeidsområde som skal brukes når du åpner en lenke til det. Valgene du ba om å huske, vises her.';
+
+  @override
+  String get repoLinkRememberedEmpty => 'Ingen lagrede valg ennå.';
+
+  @override
+  String get repoLinkForget => 'Glem';
+
+  @override
+  String get repoLinkWorkspaceUnavailable =>
+      'Arbeidsområdet er ikke lenger tilgjengelig';
+
+  @override
+  String get repoLinkWorkspaceDialogTitle => 'Velg et arbeidsområde';
+
+  @override
+  String repoLinkWorkspaceDialogBody(String repo) {
+    return '$repo er koblet til mer enn ett arbeidsområde. Hvilket skal denne lenken åpnes i?';
+  }
+
+  @override
+  String get repoLinkWorkspaceRemember => 'Husk valget mitt for dette arkivet';
+
+  @override
+  String get repoLinkWorkspaceOpen => 'Åpne';
+
+  @override
+  String get repoLinkUnlinkedTitle => 'Legg til arkivet i et arbeidsområde';
+
+  @override
+  String repoLinkUnlinkedBody(String repo) {
+    return 'Ingen arbeidsområder kobler til $repo ennå. Legg det til i ett for å åpne denne lenken.';
+  }
+
+  @override
+  String repoLinkUnlinkedAddTo(String workspace) {
+    return 'Legg til i $workspace';
+  }
+
+  @override
+  String get repoLinkUnlinkedAddToHint => 'Velg utsjekkingen på serveren.';
+
+  @override
+  String get repoLinkUnlinkedCreate => 'Nytt arbeidsområde';
+
+  @override
+  String get repoLinkUnlinkedCreateHint =>
+      'Gi det et navn, og velg deretter utsjekkingen.';
+
+  @override
+  String repoLinkChooseCheckout(String repo) {
+    return 'Velg utsjekkingen av $repo på maskinen som kjører serveren.';
+  }
+
+  @override
+  String repoLinkCheckoutMismatch(String repo) {
+    return 'Ingen av arkivene som ble lagt til, er $repo, så lenken ble åpnet uten det.';
+  }
 }

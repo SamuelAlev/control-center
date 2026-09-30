@@ -15206,4 +15206,77 @@ class AppLocalizationsRu extends AppLocalizations {
   String failedToStartConflictFix(String error) {
     return 'Не удалось запустить исправление конфликтов: $error';
   }
+
+  @override
+  String get settingsLinks => 'Ссылки';
+
+  @override
+  String get linksSettingsDescription =>
+      'Выберите, где открываются ссылки извне Control Center, например pull request, открытый из GitHub.';
+
+  @override
+  String get repoLinkRememberedTitle => 'Запомненные рабочие пространства';
+
+  @override
+  String get repoLinkRememberedHint =>
+      'Если репозиторий привязан к нескольким рабочим пространствам, при открытии ссылки на него появится вопрос, какое рабочее пространство использовать. Здесь перечислены выборы, которые вы попросили запомнить.';
+
+  @override
+  String get repoLinkRememberedEmpty => 'Запомненных вариантов пока нет.';
+
+  @override
+  String get repoLinkForget => 'Забыть';
+
+  @override
+  String get repoLinkWorkspaceUnavailable =>
+      'Рабочее пространство больше недоступно';
+
+  @override
+  String get repoLinkWorkspaceDialogTitle => 'Выберите рабочее пространство';
+
+  @override
+  String repoLinkWorkspaceDialogBody(String repo) {
+    return '$repo привязан к нескольким рабочим пространствам. В каком открыть эту ссылку?';
+  }
+
+  @override
+  String get repoLinkWorkspaceRemember =>
+      'Запомнить мой выбор для этого репозитория';
+
+  @override
+  String get repoLinkWorkspaceOpen => 'Открыть';
+
+  @override
+  String get repoLinkUnlinkedTitle =>
+      'Добавить репозиторий в рабочее пространство';
+
+  @override
+  String repoLinkUnlinkedBody(String repo) {
+    return '$repo пока не привязан ни к одному рабочему пространству. Добавьте его в одно из них, чтобы открыть эту ссылку.';
+  }
+
+  @override
+  String repoLinkUnlinkedAddTo(String workspace) {
+    return 'Добавить в $workspace';
+  }
+
+  @override
+  String get repoLinkUnlinkedAddToHint => 'Выберите его checkout на сервере.';
+
+  @override
+  String get repoLinkUnlinkedCreate => 'Новое рабочее пространство';
+
+  @override
+  String get repoLinkUnlinkedCreateHint =>
+      'Задайте название, затем выберите checkout.';
+
+  @override
+  String repoLinkChooseCheckout(String repo) {
+    return 'Выберите checkout $repo на машине, где запущен сервер.';
+  }
+
+  @override
+  String repoLinkCheckoutMismatch(String repo) {
+    return 'Среди добавленных репозиториев нет $repo, поэтому ссылка открылась без него.';
+  }
 }

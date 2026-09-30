@@ -842,6 +842,21 @@ void main() {
       expect(location, contains(settingsNewsfeedRoute('ws-1')));
     });
 
+    testWidgets('links settings route navigates correctly', (tester) async {
+      final router = buildRouter();
+      addTearDown(router.dispose);
+
+      await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+      await tester.pump();
+
+      router.go(settingsLinksRoute('ws-1'));
+      await tester.pump();
+
+      final location = router.routerDelegate.currentConfiguration.uri
+          .toString();
+      expect(location, contains(settingsLinksRoute('ws-1')));
+    });
+
     testWidgets('newsfeed article route navigates correctly', (tester) async {
       final router = buildRouter();
       addTearDown(router.dispose);

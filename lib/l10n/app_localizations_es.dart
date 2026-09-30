@@ -15109,6 +15109,80 @@ class AppLocalizationsEs extends AppLocalizations {
   String failedToStartConflictFix(String error) {
     return 'No se pudo iniciar la resolución de conflictos: $error';
   }
+
+  @override
+  String get settingsLinks => 'Enlaces';
+
+  @override
+  String get linksSettingsDescription =>
+      'Elige dónde se abren los enlaces que llegan desde fuera de Control Center, como una pull request abierta desde GitHub.';
+
+  @override
+  String get repoLinkRememberedTitle => 'Espacios de trabajo recordados';
+
+  @override
+  String get repoLinkRememberedHint =>
+      'Cuando un repositorio está vinculado a más de un espacio de trabajo, al abrir un enlace a él se te pregunta qué espacio de trabajo usar. Aquí aparecen las elecciones que pediste recordar.';
+
+  @override
+  String get repoLinkRememberedEmpty => 'Todavía no hay elecciones recordadas.';
+
+  @override
+  String get repoLinkForget => 'Olvidar';
+
+  @override
+  String get repoLinkWorkspaceUnavailable =>
+      'El espacio de trabajo ya no está disponible';
+
+  @override
+  String get repoLinkWorkspaceDialogTitle => 'Elige un espacio de trabajo';
+
+  @override
+  String repoLinkWorkspaceDialogBody(String repo) {
+    return '$repo está vinculado a más de un espacio de trabajo. ¿En cuál debe abrirse este enlace?';
+  }
+
+  @override
+  String get repoLinkWorkspaceRemember =>
+      'Recordar mi elección para este repositorio';
+
+  @override
+  String get repoLinkWorkspaceOpen => 'Abrir';
+
+  @override
+  String get repoLinkUnlinkedTitle =>
+      'Añadir repositorio a un espacio de trabajo';
+
+  @override
+  String repoLinkUnlinkedBody(String repo) {
+    return 'Ningún espacio de trabajo vincula $repo todavía. Añádelo a uno para abrir este enlace.';
+  }
+
+  @override
+  String repoLinkUnlinkedAddTo(String workspace) {
+    return 'Añadir a $workspace';
+  }
+
+  @override
+  String get repoLinkUnlinkedAddToHint =>
+      'Elige su copia local en el servidor.';
+
+  @override
+  String get repoLinkUnlinkedCreate => 'Nuevo espacio de trabajo';
+
+  @override
+  String get repoLinkUnlinkedCreateHint =>
+      'Ponle nombre y luego elige la copia local.';
+
+  @override
+  String repoLinkChooseCheckout(String repo) {
+    return 'Selecciona la copia local de $repo en la máquina que ejecuta el servidor.';
+  }
+
+  @override
+  String repoLinkCheckoutMismatch(String repo) {
+    return 'Ninguno de los repositorios añadidos es $repo, así que el enlace se abrió sin él.';
+  }
 }
 
 /// The translations for Spanish Castilian, as used in Mexico (`es_MX`).

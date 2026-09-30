@@ -88,6 +88,7 @@ void main() {
         'workspace.meetings',
         'workspace.repositories',
         'you.devices',
+        'you.links',
         'you.newsfeed',
         'server.rigs',
         'server.sandbox',

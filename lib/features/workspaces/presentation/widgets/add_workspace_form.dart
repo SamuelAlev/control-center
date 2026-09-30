@@ -20,6 +20,7 @@ class AddWorkspaceForm extends ConsumerStatefulWidget {
     this.onCancel,
     this.submitLabel = 'Add workspace',
     this.layout,
+    this.initialName,
   });
 
   /// Called after the workspace row is inserted, with the new workspace id.
@@ -37,12 +38,15 @@ class AddWorkspaceForm extends ConsumerStatefulWidget {
   /// where they sit is the caller's to decide.
   final Widget Function(Widget fields, Widget actions)? layout;
 
+  /// The name the field starts with (a suggestion the user can change).
+  final String? initialName;
+
   @override
   ConsumerState<AddWorkspaceForm> createState() => _AddWorkspaceFormState();
 }
 
 class _AddWorkspaceFormState extends ConsumerState<AddWorkspaceForm> {
-  final _nameController = TextEditingController();
+  late final _nameController = TextEditingController(text: widget.initialName);
   String? _logoPath;
   String? _error;
   Uint8List? _logoBytes;

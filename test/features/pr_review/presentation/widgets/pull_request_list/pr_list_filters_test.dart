@@ -2,6 +2,7 @@ import 'package:cc_domain/features/pr_review/domain/entities/pr_user.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_filter/pr_filter_facets.dart';
 import 'package:control_center/features/pr_review/providers/pr_filter_providers.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 PullRequest _pr({
@@ -262,6 +263,33 @@ void main() {
       expect(filters.count, 6);
       expect(filters.isActive, isTrue);
       expect(const PrListFilters().isActive, isFalse);
+    });
+
+    test('showOnlyRepo narrows to one repo and drops other filters', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final notifier = container.read(prListFiltersProvider.notifier)
+        ..toggleAuthor('alice')
+        ..toggleRepoName('other');
+
+      notifier.showOnlyRepo('Acme', 'Web-App');
+
+      final filters = container.read(prListFiltersProvider);
+      expect(filters.repoOwners, {'acme'});
+      expect(filters.repoNames, {'web-app'});
+      expect(filters.count, 2);
+      expect(
+        applyFilters(
+          [
+            _pr(number: 1, repoFullName: 'Acme/Web-App'),
+            _pr(number: 2, repoFullName: 'acme/other'),
+            _pr(number: 3, repoFullName: 'elsewhere/web-app'),
+          ],
+          filters: filters,
+          currentLogin: '',
+        ).map((pr) => pr.number),
+        [1],
+      );
     });
   });
 

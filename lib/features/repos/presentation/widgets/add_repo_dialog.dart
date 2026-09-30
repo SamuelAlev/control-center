@@ -65,6 +65,7 @@ class AddRepoDialog extends StatefulWidget {
     required this.workspaceId,
     required this.onDone,
     this.onCancel,
+    this.intro,
   });
 
   /// Browses the server's filesystem over RPC (captured from a provider).
@@ -83,6 +84,10 @@ class AddRepoDialog extends StatefulWidget {
 
   /// Optional cancel handler — when null, no cancel button is rendered.
   final VoidCallback? onCancel;
+
+  /// The line above the browser, when the caller knows what to look for;
+  /// defaults to the generic instructions.
+  final String? intro;
 
   @override
   State<AddRepoDialog> createState() => _AddRepoDialogState();
@@ -179,7 +184,7 @@ class _AddRepoDialogState extends State<AddRepoDialog> {
       children: [
         const SizedBox(height: 8),
         Text(
-          l10n.addRepoBrowseIntro,
+          widget.intro ?? l10n.addRepoBrowseIntro,
           style: TextStyle(color: tokens?.textTertiary, height: 1.4),
         ),
         const SizedBox(height: 12),
@@ -504,10 +509,24 @@ Future<RepoAddOutcome?> addRepos(
   BuildContext context,
   WidgetRef ref,
   String workspaceId,
-) {
+) => showAddRepoDialog(
+  context,
+  browser: ref.read(directoryBrowserProvider),
+  register: ref.read(addRepoFromServerPathProvider),
+  workspaceId: workspaceId,
+);
+
+/// [addRepos] for a caller holding the dependencies rather than a [WidgetRef]
+/// (a deep link resolved outside the widget tree), with an optional [intro]
+/// replacing the generic instructions.
+Future<RepoAddOutcome?> showAddRepoDialog(
+  BuildContext context, {
+  required DirectoryBrowserPort browser,
+  required Future<String> Function(String workspaceId, String path) register,
+  required String workspaceId,
+  String? intro,
+}) {
   final l10n = AppLocalizations.of(context);
-  final browser = ref.read(directoryBrowserProvider);
-  final register = ref.read(addRepoFromServerPathProvider);
   return showCcDialog<RepoAddOutcome?>(
     context: context,
     builder: (dialogContext) => CcDialog(
@@ -518,6 +537,7 @@ Future<RepoAddOutcome?> addRepos(
           browser: browser,
           register: register,
           workspaceId: workspaceId,
+          intro: intro,
           onDone: (outcome) => Navigator.pop(dialogContext, outcome),
           onCancel: () => Navigator.pop(dialogContext),
         ),

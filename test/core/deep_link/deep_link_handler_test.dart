@@ -118,6 +118,71 @@ void main() {
     });
   });
 
+  group('pull request lists', () {
+    test('a pulls link names the repo', () {
+      final target = DeepLinkHandler.resolve(
+        'control-center://pulls/acme/widgets',
+      );
+
+      expect(target, isA<PullRequestsDeepLink>());
+      final pulls = target! as PullRequestsDeepLink;
+      expect(pulls.owner, 'acme');
+      expect(pulls.repo, 'widgets');
+    });
+
+    test('an unknown arity, id, query or fragment is not a link', () {
+      for (final url in [
+        'control-center://pulls/acme',
+        'control-center://pulls/acme/widgets/42',
+        'control-center://pulls/acme/widgets/',
+        'control-center://pulls//widgets',
+        'control-center://pulls/acme/wid gets',
+        'control-center://pulls/acme/widgets?q=is:open',
+        'control-center://pulls/acme/widgets#top',
+      ]) {
+        expect(DeepLinkHandler.resolve(url), isNull, reason: url);
+      }
+    });
+  });
+
+  group('inbox', () {
+    test('a bare inbox link names the whole inbox', () {
+      expect(
+        DeepLinkHandler.resolve('control-center://inbox'),
+        isA<InboxDeepLink>(),
+      );
+    });
+
+    test('a repo inbox link names the repo', () {
+      final target = DeepLinkHandler.resolve(
+        'control-center://inbox/acme/widgets',
+      );
+
+      expect(target, isA<RepoInboxDeepLink>());
+      final inbox = target! as RepoInboxDeepLink;
+      expect(inbox.owner, 'acme');
+      expect(inbox.repo, 'widgets');
+    });
+
+    test('an unknown arity, id, query or fragment is not a link', () {
+      for (final url in [
+        'control-center://inbox/',
+        'control-center://inbox/acme',
+        'control-center://inbox/acme/',
+        'control-center://inbox/acme/widgets/',
+        'control-center://inbox/acme/widgets/42',
+        'control-center://inbox//widgets',
+        'control-center://inbox/acme/wid gets',
+        'control-center://inbox?repo=acme/widgets',
+        'control-center://inbox#top',
+        'control-center://inbox/acme/widgets?q=is:open',
+        'control-center://inbox/acme/widgets#top',
+      ]) {
+        expect(DeepLinkHandler.resolve(url), isNull, reason: url);
+      }
+    });
+  });
+
   group('anything else', () {
     test('another scheme, or nonsense, resolves to nothing', () {
       for (final url in [

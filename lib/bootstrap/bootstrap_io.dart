@@ -3,8 +3,11 @@ import 'dart:io';
 import 'dart:ui';
 
 import 'package:cc_data/cc_data.dart';
+import 'package:cc_domain/core/domain/entities/repo.dart';
+import 'package:cc_domain/core/domain/entities/workspace.dart';
 import 'package:cc_rpc/cc_rpc.dart'
     show RemoteRpcClient, RemoteRpcClientClosedException;
+import 'package:cc_ui/cc_ui.dart' show CcToastScope, CcToastVariant;
 import 'package:control_center/app/app_windows.dart'
     show AppWindows, runBootFailureWindow;
 import 'package:control_center/app/window_chrome.dart';
@@ -43,6 +46,13 @@ import 'package:control_center/core/utils/cc_infra_logging.dart';
 import 'package:control_center/di/notification_providers.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/identity/providers/identity_providers.dart';
+import 'package:control_center/features/pr_review/providers/pr_filter_providers.dart';
+import 'package:control_center/features/repos/presentation/repo_link_workspace_dialog.dart';
+import 'package:control_center/features/repos/presentation/unlinked_repo_dialog.dart';
+import 'package:control_center/features/repos/presentation/widgets/add_repo_dialog.dart';
+import 'package:control_center/features/repos/providers/repo_link_workspace_choices.dart';
+import 'package:control_center/features/repos/providers/repo_providers.dart';
+import 'package:control_center/features/workspaces/presentation/screens/workspace_list_screen.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/router/app_router.dart';
@@ -820,6 +830,12 @@ Future<void> _handleDeepLink(ProviderContainer container, String rawUrl) async {
   switch (DeepLinkHandler.resolve(rawUrl)) {
     case final PrDeepLink pr:
       await _openPrDeepLink(container, pr);
+    case final PullRequestsDeepLink pulls:
+      await _openPullRequestsDeepLink(container, pulls);
+    case InboxDeepLink():
+      _openInboxDeepLink(container);
+    case final RepoInboxDeepLink inbox:
+      await _openRepoInboxDeepLink(container, inbox);
     case SpaceDeepLink(:final workspaceId, :final spaceId):
       await _goToWorkspace(
         container,
@@ -864,38 +880,252 @@ Future<void> _goToWorkspace(
   container.read(routerProvider).go(route);
 }
 
-/// Resolves a `control-center://pr/<owner>/<repo>/<number>` deep link. When
-/// the target repo is registered in some workspace, switches the active
-/// workspace and repo to that target before navigating to the PR detail —
-/// otherwise the PR screen would render with the previously active repo's
-/// context and fetch the wrong PR.
-Future<void> _openPrDeepLink(ProviderContainer container, PrDeepLink pr) async {
+/// Where a repo-addressed deep link lands: the workspace (null to fall back to
+/// the active one) and the repo when that workspace links it. `dismissed`
+/// means the user backed out of a dialog, and the link does nothing.
+typedef _RepoLinkTarget = ({
+  String? workspaceId,
+  String? repoFullName,
+  bool dismissed,
+});
+
+/// Whether [r] is the `<owner>/<repo>` checkout a deep link names.
+bool _isLinkedRepo(Repo r, {required String owner, required String repo}) =>
+    r.remoteOwner.toLowerCase() == owner.toLowerCase() &&
+    r.remoteName.toLowerCase() == repo.toLowerCase();
+
+/// Activates the workspace and repo holding the `<owner>/<repo>` checkout a
+/// repo-addressed deep link names.
+///
+/// Both are switched before navigating: otherwise the target screen would
+/// render with the previously active repo's context and fetch the wrong data.
+/// When no workspace links the repo, [offerToLink] asks the user where to add
+/// it first.
+Future<_RepoLinkTarget> _activateLinkedRepo(
+  ProviderContainer container, {
+  required String owner,
+  required String repo,
+  bool offerToLink = true,
+}) async {
   final repoRepo = container.read(repoRepositoryProvider);
   final wsRepo = container.read(workspaceRepositoryProvider);
 
-  // Repos live inside a workspace, so the search walks workspaces in the
-  // operator's manual order and stops at the first one holding this checkout.
-  String? targetWorkspaceId;
+  // Repos live inside a workspace, and one checkout can be linked into
+  // several, so collect every workspace holding it in the operator's order.
+  final holders = <(Workspace, Repo)>[];
   for (final ws in await wsRepo.getAll()) {
-    final target = (await repoRepo.getAll(ws.id))
-        .where(
-          (r) =>
-              r.remoteOwner.toLowerCase() == pr.owner.toLowerCase() &&
-              r.remoteName.toLowerCase() == pr.repo.toLowerCase(),
-        )
-        .firstOrNull;
+    final target = (await repoRepo.getAll(
+      ws.id,
+    )).where((r) => _isLinkedRepo(r, owner: owner, repo: repo)).firstOrNull;
     if (target != null) {
-      targetWorkspaceId = ws.id;
-      await container.read(activeWorkspaceIdProvider.notifier).setActive(ws.id);
-      await container.read(activeRepoIdProvider.notifier).setActive(target.id);
-      break;
+      holders.add((ws, target));
     }
+  }
+  if (holders.isEmpty) {
+    final context = rootNavigatorKey.currentContext;
+    if (!offerToLink || context == null || !context.mounted) {
+      // Nothing to offer, or no window to ask in (the link arrived before the
+      // app finished mounting): fall back to the active workspace.
+      return (workspaceId: null, repoFullName: null, dismissed: false);
+    }
+    final workspaceId = await _linkUnlinkedRepo(
+      container,
+      context,
+      owner: owner,
+      repo: repo,
+    );
+    if (workspaceId == null) {
+      return (workspaceId: null, repoFullName: null, dismissed: true);
+    }
+    final linked = await _activateLinkedRepo(
+      container,
+      owner: owner,
+      repo: repo,
+      offerToLink: false,
+    );
+    if (linked.repoFullName != null) {
+      return linked;
+    }
+    // The user put no checkout of this repo in the workspace they chose: land
+    // there without it rather than back where the link found them.
+    await container
+        .read(activeWorkspaceIdProvider.notifier)
+        .setActive(workspaceId);
+    return (workspaceId: workspaceId, repoFullName: null, dismissed: false);
+  }
+
+  final workspaceId = await _chooseLinkWorkspace(
+    container,
+    repoFullName: holders.first.$2.fullName,
+    workspaces: [for (final (ws, _) in holders) ws],
+  );
+  if (workspaceId == null) {
+    return (workspaceId: null, repoFullName: null, dismissed: true);
+  }
+  final (_, target) = holders.firstWhere((h) => h.$1.id == workspaceId);
+  await container
+      .read(activeWorkspaceIdProvider.notifier)
+      .setActive(workspaceId);
+  await container.read(activeRepoIdProvider.notifier).setActive(target.id);
+  return (
+    workspaceId: workspaceId,
+    repoFullName: target.fullName,
+    dismissed: false,
+  );
+}
+
+/// Asks what a link to `<owner>/<repo>`, which no workspace links, should do:
+/// add its checkout to the active workspace, create a workspace and add it
+/// there, or nothing.
+///
+/// Resolves to the workspace the user chose, even when the checkout they
+/// picked turned out to be another repo or they backed out of picking one
+/// after creating the workspace. Null when they backed out otherwise.
+Future<String?> _linkUnlinkedRepo(
+  ProviderContainer container,
+  BuildContext context, {
+  required String owner,
+  required String repo,
+}) async {
+  final repoFullName = '$owner/$repo';
+  final activeId = container.read(activeWorkspaceIdProvider);
+  final active = activeId == null
+      ? null
+      : await container
+            .read(workspaceRepositoryProvider)
+            .getAll()
+            .then((all) => all.where((w) => w.id == activeId).firstOrNull)
+            // A repository that cannot answer still leaves creating one.
+            .onError((_, _) => null);
+  if (!context.mounted) {
+    return null;
+  }
+  final action = await showUnlinkedRepoDialog(
+    context: context,
+    repoFullName: repoFullName,
+    currentWorkspace: active,
+  );
+  if (action == null || !context.mounted) {
+    return null;
+  }
+  final workspaceId = switch (action) {
+    UnlinkedRepoAction.addToCurrentWorkspace => active?.id,
+    UnlinkedRepoAction.createWorkspace => await showAddWorkspaceDialog(
+      context,
+      initialName: repo,
+    ),
+  };
+  if (workspaceId == null || !context.mounted) {
+    return null;
+  }
+  final created = action == UnlinkedRepoAction.createWorkspace;
+  final l10n = AppLocalizations.of(context);
+  final outcome = await showAddRepoDialog(
+    context,
+    browser: container.read(directoryBrowserProvider),
+    register: container.read(addRepoFromServerPathProvider),
+    workspaceId: workspaceId,
+    intro: l10n.repoLinkChooseCheckout(repoFullName),
+  );
+  if (outcome == null) {
+    // Backing out of the checkout still leaves a workspace just created to
+    // land in; backing out of adding to the current one leaves nothing.
+    return created ? workspaceId : null;
+  }
+  if (!context.mounted) {
+    return workspaceId;
+  }
+  final toasts = CcToastScope.maybeOf(context);
+  if (outcome.failed.isNotEmpty) {
+    final first = outcome.failed.entries.first;
+    toasts?.show(
+      l10n.repositoriesAddFailed(
+        outcome.failed.length,
+        '${first.key}: ${first.value}',
+      ),
+      variant: CcToastVariant.danger,
+    );
+  }
+  if (outcome.added.isNotEmpty) {
+    final repos = await container
+        .read(repoRepositoryProvider)
+        .getAll(workspaceId)
+        .onError((_, _) => const <Repo>[]);
+    final addedIt = repos.any(
+      (r) =>
+          outcome.added.contains(r.id) &&
+          _isLinkedRepo(r, owner: owner, repo: repo),
+    );
+    toasts?.show(
+      addedIt
+          ? l10n.repositoriesAdded(outcome.added.length)
+          : l10n.repoLinkCheckoutMismatch(repoFullName),
+      variant: addedIt ? CcToastVariant.success : CcToastVariant.warning,
+    );
+  }
+  return workspaceId;
+}
+
+/// Picks which of [workspaces] (every one linking [repoFullName], in the
+/// operator's order) a link opens in: the only one, the remembered one, or the
+/// user's answer to the chooser. Null when the user dismissed the chooser.
+Future<String?> _chooseLinkWorkspace(
+  ProviderContainer container, {
+  required String repoFullName,
+  required List<Workspace> workspaces,
+}) async {
+  final candidates = [for (final ws in workspaces) ws.id];
+  final settled = repoLinkWorkspaceWithoutAsking(
+    candidates: candidates,
+    remembered: container
+        .read(repoLinkWorkspaceChoicesProvider)
+        .workspaceFor(repoFullName),
+  );
+  if (settled != null) {
+    return settled;
+  }
+  final context = rootNavigatorKey.currentContext;
+  if (context == null) {
+    // No window to ask in (the link arrived before the app finished
+    // mounting): fall back to the operator's workspace order.
+    return candidates.first;
+  }
+  final active = container.read(activeWorkspaceIdProvider);
+  final decision = await showRepoLinkWorkspaceDialog(
+    context: context,
+    repoFullName: repoFullName,
+    workspaces: workspaces,
+    initialWorkspaceId: candidates.contains(active)
+        ? active!
+        : candidates.first,
+  );
+  if (decision == null) {
+    return null;
+  }
+  if (decision.remember) {
+    await container
+        .read(repoLinkWorkspaceChoicesProvider.notifier)
+        .remember(repoFullName, decision.workspaceId);
+  }
+  return decision.workspaceId;
+}
+
+/// Resolves a `control-center://pr/<owner>/<repo>/<number>` deep link into the
+/// PR detail of the workspace holding that repo.
+Future<void> _openPrDeepLink(ProviderContainer container, PrDeepLink pr) async {
+  final linked = await _activateLinkedRepo(
+    container,
+    owner: pr.owner,
+    repo: pr.repo,
+  );
+  if (linked.dismissed) {
+    return;
   }
 
   // Navigate into the resolved workspace's PR detail; the workspace prefix in
   // the URL is what re-scopes the app. Fall back to the active workspace, then
   // the picker, if the PR's repo isn't linked anywhere.
-  final wsId = targetWorkspaceId ?? container.read(activeWorkspaceIdProvider);
+  final wsId = linked.workspaceId ?? container.read(activeWorkspaceIdProvider);
   container
       .read(routerProvider)
       .go(
@@ -912,4 +1142,70 @@ Future<void> _openPrDeepLink(ProviderContainer container, PrDeepLink pr) async {
                 commentId: pr.commentId,
               ),
       );
+}
+
+/// Resolves a `control-center://pulls/<owner>/<repo>` deep link into the pull
+/// request list of the workspace holding that repo, with it selected in the
+/// rail. An unlinked repo falls back to the active workspace's plain list, then
+/// the picker.
+Future<void> _openPullRequestsDeepLink(
+  ProviderContainer container,
+  PullRequestsDeepLink pulls,
+) async {
+  final linked = await _activateLinkedRepo(
+    container,
+    owner: pulls.owner,
+    repo: pulls.repo,
+  );
+  if (linked.dismissed) {
+    return;
+  }
+  final wsId = linked.workspaceId ?? container.read(activeWorkspaceIdProvider);
+  container
+      .read(routerProvider)
+      .go(
+        wsId == null
+            ? workspaceListRoute
+            : pullRequestsRoute(wsId, repo: linked.repoFullName),
+      );
+}
+
+/// Resolves a `control-center://inbox` deep link into the active workspace's
+/// inbox, or the picker when none is active. Clears the inbox's filters: the
+/// link asks for the whole inbox, and a repo filter left by an earlier
+/// [RepoInboxDeepLink] would otherwise still narrow it.
+void _openInboxDeepLink(ProviderContainer container) {
+  container.read(inboxListFiltersProvider.notifier).clear();
+  final wsId = container.read(activeWorkspaceIdProvider);
+  container
+      .read(routerProvider)
+      .go(wsId == null ? workspaceListRoute : inboxRoute(wsId));
+}
+
+/// Resolves a `control-center://inbox/<owner>/<repo>` deep link into the inbox
+/// of the workspace holding that repo, filtered to it. A repo left unlinked
+/// lands on an unfiltered inbox instead, then the picker.
+Future<void> _openRepoInboxDeepLink(
+  ProviderContainer container,
+  RepoInboxDeepLink inbox,
+) async {
+  final linked = await _activateLinkedRepo(
+    container,
+    owner: inbox.owner,
+    repo: inbox.repo,
+  );
+  if (linked.dismissed) {
+    return;
+  }
+  // Set before navigating so the inbox's first frame is already filtered.
+  final filters = container.read(inboxListFiltersProvider.notifier);
+  if (linked.repoFullName == null) {
+    filters.clear();
+  } else {
+    filters.showOnlyRepo(inbox.owner, inbox.repo);
+  }
+  final wsId = linked.workspaceId ?? container.read(activeWorkspaceIdProvider);
+  container
+      .read(routerProvider)
+      .go(wsId == null ? workspaceListRoute : inboxRoute(wsId));
 }

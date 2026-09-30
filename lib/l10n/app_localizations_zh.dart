@@ -14517,6 +14517,75 @@ class AppLocalizationsZh extends AppLocalizations {
   String failedToStartConflictFix(String error) {
     return '无法开始解决冲突：$error';
   }
+
+  @override
+  String get settingsLinks => '链接';
+
+  @override
+  String get linksSettingsDescription =>
+      '选择来自 Control Center 外部的链接在哪里打开，例如从 GitHub 打开的 pull request。';
+
+  @override
+  String get repoLinkRememberedTitle => '已记住的工作区';
+
+  @override
+  String get repoLinkRememberedHint =>
+      '当一个仓库关联到多个工作区时，打开指向它的链接会询问使用哪个工作区。你要求记住的选择会列在这里。';
+
+  @override
+  String get repoLinkRememberedEmpty => '尚无已记住的选择。';
+
+  @override
+  String get repoLinkForget => '忘记';
+
+  @override
+  String get repoLinkWorkspaceUnavailable => '工作区已不可用';
+
+  @override
+  String get repoLinkWorkspaceDialogTitle => '选择工作区';
+
+  @override
+  String repoLinkWorkspaceDialogBody(String repo) {
+    return '$repo 关联到多个工作区。要在哪个工作区中打开此链接？';
+  }
+
+  @override
+  String get repoLinkWorkspaceRemember => '记住我对此仓库的选择';
+
+  @override
+  String get repoLinkWorkspaceOpen => '打开';
+
+  @override
+  String get repoLinkUnlinkedTitle => '将仓库添加到工作区';
+
+  @override
+  String repoLinkUnlinkedBody(String repo) {
+    return '尚无工作区关联 $repo。将其添加到某个工作区即可打开此链接。';
+  }
+
+  @override
+  String repoLinkUnlinkedAddTo(String workspace) {
+    return '添加到 $workspace';
+  }
+
+  @override
+  String get repoLinkUnlinkedAddToHint => '在服务器上选择它的检出。';
+
+  @override
+  String get repoLinkUnlinkedCreate => '新工作区';
+
+  @override
+  String get repoLinkUnlinkedCreateHint => '为其命名，然后选择检出。';
+
+  @override
+  String repoLinkChooseCheckout(String repo) {
+    return '在运行服务器的机器上选择 $repo 的检出。';
+  }
+
+  @override
+  String repoLinkCheckoutMismatch(String repo) {
+    return '添加的仓库中没有 $repo，因此链接已在没有它的情况下打开。';
+  }
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -29199,5 +29268,74 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   @override
   String failedToStartConflictFix(String error) {
     return '無法開始解決衝突：$error';
+  }
+
+  @override
+  String get settingsLinks => '連結';
+
+  @override
+  String get linksSettingsDescription =>
+      '選擇來自 Control Center 外部的連結要在哪裡開啟，例如從 GitHub 開啟的 pull request。';
+
+  @override
+  String get repoLinkRememberedTitle => '已記住的工作區';
+
+  @override
+  String get repoLinkRememberedHint =>
+      '當一個存放庫連結到多個工作區時，開啟指向它的連結會詢問要使用哪個工作區。你要求記住的選擇會列在這裡。';
+
+  @override
+  String get repoLinkRememberedEmpty => '尚無已記住的選擇。';
+
+  @override
+  String get repoLinkForget => '忘記';
+
+  @override
+  String get repoLinkWorkspaceUnavailable => '工作區已無法使用';
+
+  @override
+  String get repoLinkWorkspaceDialogTitle => '選擇工作區';
+
+  @override
+  String repoLinkWorkspaceDialogBody(String repo) {
+    return '$repo 連結到多個工作區。要在哪個工作區開啟此連結？';
+  }
+
+  @override
+  String get repoLinkWorkspaceRemember => '記住我對此存放庫的選擇';
+
+  @override
+  String get repoLinkWorkspaceOpen => '開啟';
+
+  @override
+  String get repoLinkUnlinkedTitle => '將存放庫新增至工作區';
+
+  @override
+  String repoLinkUnlinkedBody(String repo) {
+    return '尚無工作區連結 $repo。將其新增至某個工作區即可開啟此連結。';
+  }
+
+  @override
+  String repoLinkUnlinkedAddTo(String workspace) {
+    return '新增至 $workspace';
+  }
+
+  @override
+  String get repoLinkUnlinkedAddToHint => '在伺服器上選取其 git checkout。';
+
+  @override
+  String get repoLinkUnlinkedCreate => '新工作區';
+
+  @override
+  String get repoLinkUnlinkedCreateHint => '為其命名，然後選取 git checkout。';
+
+  @override
+  String repoLinkChooseCheckout(String repo) {
+    return '在執行伺服器的機器上選取 $repo 的 git checkout。';
+  }
+
+  @override
+  String repoLinkCheckoutMismatch(String repo) {
+    return '新增的存放庫中沒有 $repo，因此連結在沒有它的情況下開啟。';
   }
 }

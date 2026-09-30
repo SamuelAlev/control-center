@@ -15231,4 +15231,73 @@ class AppLocalizationsAr extends AppLocalizations {
   String failedToStartConflictFix(String error) {
     return 'تعذّر بدء حل التعارضات: $error';
   }
+
+  @override
+  String get settingsLinks => 'الروابط';
+
+  @override
+  String get linksSettingsDescription =>
+      'اختر أين تُفتح الروابط القادمة من خارج Control Center، مثل طلب سحب تفتحه من GitHub.';
+
+  @override
+  String get repoLinkRememberedTitle => 'مساحات العمل المحفوظة';
+
+  @override
+  String get repoLinkRememberedHint =>
+      'عندما يكون المستودع مرتبطًا بأكثر من مساحة عمل واحدة، يسألك فتح رابط إليه عن مساحة العمل التي تريد استخدامها. تظهر هنا الاختيارات التي طلبت تذكّرها.';
+
+  @override
+  String get repoLinkRememberedEmpty => 'لا توجد اختيارات محفوظة بعد.';
+
+  @override
+  String get repoLinkForget => 'نسيان';
+
+  @override
+  String get repoLinkWorkspaceUnavailable => 'لم تعد مساحة العمل متاحة';
+
+  @override
+  String get repoLinkWorkspaceDialogTitle => 'اختر مساحة عمل';
+
+  @override
+  String repoLinkWorkspaceDialogBody(String repo) {
+    return '$repo مرتبط بأكثر من مساحة عمل واحدة. في أي منها يجب فتح هذا الرابط؟';
+  }
+
+  @override
+  String get repoLinkWorkspaceRemember => 'تذكّر اختياري لهذا المستودع';
+
+  @override
+  String get repoLinkWorkspaceOpen => 'فتح';
+
+  @override
+  String get repoLinkUnlinkedTitle => 'إضافة المستودع إلى مساحة عمل';
+
+  @override
+  String repoLinkUnlinkedBody(String repo) {
+    return 'لا توجد مساحة عمل مرتبطة بـ $repo بعد. أضفه إلى إحداها لفتح هذا الرابط.';
+  }
+
+  @override
+  String repoLinkUnlinkedAddTo(String workspace) {
+    return 'إضافة إلى $workspace';
+  }
+
+  @override
+  String get repoLinkUnlinkedAddToHint => 'اختر نسخة git الخاصة به على الخادم.';
+
+  @override
+  String get repoLinkUnlinkedCreate => 'مساحة عمل جديدة';
+
+  @override
+  String get repoLinkUnlinkedCreateHint => 'سمِّها، ثم اختر نسخة git.';
+
+  @override
+  String repoLinkChooseCheckout(String repo) {
+    return 'حدد نسخة git الخاصة بـ $repo على الجهاز الذي يشغّل الخادم.';
+  }
+
+  @override
+  String repoLinkCheckoutMismatch(String repo) {
+    return 'لا يوجد $repo بين المستودعات المضافة، لذا فُتح الرابط بدونه.';
+  }
 }

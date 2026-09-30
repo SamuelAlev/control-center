@@ -15017,4 +15017,74 @@ class AppLocalizationsHe extends AppLocalizations {
   String failedToStartConflictFix(String error) {
     return 'לא ניתן להתחיל את פתרון ההתנגשויות: $error';
   }
+
+  @override
+  String get settingsLinks => 'קישורים';
+
+  @override
+  String get linksSettingsDescription =>
+      'בחירה היכן ייפתחו קישורים שמגיעים מחוץ ל-Control Center, למשל בקשת משיכה שנפתחה מ-GitHub.';
+
+  @override
+  String get repoLinkRememberedTitle => 'סביבות עבודה שנשמרו';
+
+  @override
+  String get repoLinkRememberedHint =>
+      'כשמאגר מקושר ליותר מסביבת עבודה אחת, פתיחת קישור אליו תשאל באיזו סביבת עבודה להשתמש. הבחירות שביקשת לזכור מופיעות כאן.';
+
+  @override
+  String get repoLinkRememberedEmpty => 'עדיין אין בחירות שמורות.';
+
+  @override
+  String get repoLinkForget => 'שכח';
+
+  @override
+  String get repoLinkWorkspaceUnavailable => 'סביבת העבודה כבר לא זמינה';
+
+  @override
+  String get repoLinkWorkspaceDialogTitle => 'בחירת סביבת עבודה';
+
+  @override
+  String repoLinkWorkspaceDialogBody(String repo) {
+    return '$repo מקושר ליותר מסביבת עבודה אחת. באיזו לפתוח את הקישור?';
+  }
+
+  @override
+  String get repoLinkWorkspaceRemember => 'לזכור את הבחירה שלי עבור המאגר הזה';
+
+  @override
+  String get repoLinkWorkspaceOpen => 'פתיחה';
+
+  @override
+  String get repoLinkUnlinkedTitle => 'הוספת המאגר לסביבת עבודה';
+
+  @override
+  String repoLinkUnlinkedBody(String repo) {
+    return 'אף סביבת עבודה עדיין לא מקשרת את $repo. הוסיפו אותו לאחת כדי לפתוח את הקישור.';
+  }
+
+  @override
+  String repoLinkUnlinkedAddTo(String workspace) {
+    return 'הוספה ל־$workspace';
+  }
+
+  @override
+  String get repoLinkUnlinkedAddToHint => 'בחרו את העותק המקומי שלו בשרת.';
+
+  @override
+  String get repoLinkUnlinkedCreate => 'סביבת עבודה חדשה';
+
+  @override
+  String get repoLinkUnlinkedCreateHint =>
+      'תנו לה שם ואז בחרו את העותק המקומי.';
+
+  @override
+  String repoLinkChooseCheckout(String repo) {
+    return 'בחרו את העותק המקומי של $repo במחשב שמריץ את השרת.';
+  }
+
+  @override
+  String repoLinkCheckoutMismatch(String repo) {
+    return 'אף אחד מהמאגרים שנוספו אינו $repo, ולכן הקישור נפתח בלעדיו.';
+  }
 }

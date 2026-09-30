@@ -2,9 +2,9 @@
 // @name         Open in Control Center
 // @namespace    com.controlcenter
 // @version      0.1.0
-// @description  Adds a button to open GitHub pull requests in the Control Center desktop app
+// @description  Adds buttons to open GitHub pull requests, pull request lists and notifications in the Control Center desktop app
 // @author       Samuel Alev
-// @match        https://github.com/*/pull/*
+// @match        https://github.com/*
 // @icon         https://github.githubassets.com/favicons/favicon.svg
 // @grant        none
 // @run-at       document-end
@@ -13,89 +13,113 @@
 (function () {
   "use strict";
 
-  const BTN_ID = "cc-open-pr-btn";
-  // The button's fill IS the app's dashboard cloudscape shader (the web port
-  // lives in docs/src/components/shared/ShaderBackground.astro, itself a port
-  // of lib/shared/widgets/shader_background.dart). It renders on a WebGL2 canvas
-  // that fills the button; the label sits directly on top of it. To stay legible
-  // over the live scene the label takes the hero's own approach — ink text on
-  // the light morning-mist scene, white text on the dark ember scene — switched
-  // by a `data-cc-theme` attribute the shader keeps in sync with GitHub's theme.
-  // A text-shadow halo holds contrast over the brightest wisps (WCAG AA). The
-  // signal-orange accent (#fa500f, design_system_tokens.dart) is the focus ring.
+  const BTN_CLASS = "cc-open-btn";
+  const INBOX_BTN_ID = "cc-open-inbox-btn";
+  // Styled as a Primer default button with a KeybindingHint trailing visual,
+  // matching GitHub's own actions ("Code" and the merge status on a PR, "New
+  // pull request" on the list); on notifications it takes the `btn-sm` size
+  // of the actions beside it. Colors come from Primer's CSS variables, so
+  // light/dark/high-contrast themes follow GitHub automatically; the fallbacks
+  // are Primer's light values. `!important` keeps GitHub's link and `kbd`
+  // styles (accent color, hover underline, monospace keycap) off the button.
   const CSS = `
-#${BTN_ID} {
-  position: relative !important;
+a.${BTN_CLASS} {
   display: inline-flex !important;
   align-items: center !important;
-  padding: 5px 14px !important;
-  border: 1px solid rgba(0, 0, 0, 0.12) !important;
-  border-radius: 6px !important;
-  overflow: hidden !important;
-  isolation: isolate !important;
-  cursor: pointer !important;
+  justify-content: center !important;
+  gap: var(--control-medium-gap, 8px) !important;
+  box-sizing: border-box !important;
+  height: var(--control-medium-size, 32px) !important;
+  padding: 0 var(--control-medium-paddingInline-normal, 12px) !important;
+  border: var(--borderWidth-thin, 1px) solid var(--button-default-borderColor-rest, #d1d9e0) !important;
+  border-radius: var(--borderRadius-medium, 6px) !important;
+  background-color: var(--button-default-bgColor-rest, #f6f8fa) !important;
+  box-shadow: var(--button-default-shadow-resting, 0 1px 0 0 #1f23280a) !important;
+  color: var(--button-default-fgColor-rest, #25292e) !important;
+  font-family: inherit !important;
+  font-size: var(--text-body-size-medium, 14px) !important;
+  font-weight: var(--base-text-weight-medium, 500) !important;
+  line-height: 20px !important;
   white-space: nowrap !important;
   text-decoration: none !important;
-  transition: filter 0.15s ease, transform 0.1s ease !important;
+  cursor: pointer !important;
+  user-select: none !important;
+  transition: background-color 80ms cubic-bezier(0.65, 0, 0.35, 1), border-color 80ms cubic-bezier(0.65, 0, 0.35, 1) !important;
 }
-#${BTN_ID}[data-cc-theme="dark"] {
-  border-color: rgba(255, 255, 255, 0.16) !important;
+a.${BTN_CLASS}:hover {
+  background-color: var(--button-default-bgColor-hover, #eff2f5) !important;
+  border-color: var(--button-default-borderColor-hover, var(--button-default-borderColor-rest, #d1d9e0)) !important;
+  text-decoration: none !important;
 }
-#${BTN_ID} .cc-pr-shader {
-  position: absolute !important;
-  inset: 0 !important;
-  z-index: 0 !important;
-  display: block !important;
-  width: 100% !important;
-  height: 100% !important;
-  /* Fallback fill if WebGL2 is missing — morning-mist palette, no shapes. */
-  background:
-    radial-gradient(130% 140% at 80% 120%, #dac4ab, transparent 60%),
-    linear-gradient(180deg, #fdf8ef 0%, #ede1cf 130%) !important;
+a.${BTN_CLASS}:active {
+  background-color: var(--button-default-bgColor-active, #e6eaef) !important;
+  border-color: var(--button-default-borderColor-active, var(--button-default-borderColor-rest, #d1d9e0)) !important;
 }
-#${BTN_ID}[data-cc-theme="dark"] .cc-pr-shader {
-  /* Ember fallback — the dark scene's palette. */
-  background:
-    radial-gradient(130% 140% at 80% 120%, #eb8c52, transparent 58%),
-    linear-gradient(180deg, #1a1410 0%, #2a1d14 130%) !important;
+a.${BTN_CLASS}:focus-visible {
+  outline: 2px solid var(--focus-outlineColor, var(--fgColor-accent, #0969da)) !important;
+  outline-offset: -2px !important;
+  box-shadow: none !important;
 }
-#${BTN_ID} .cc-pr-content {
-  position: relative !important;
-  z-index: 1 !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  gap: 6px !important;
-  color: #1f1f1f !important;
-  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.55) !important;
-  font-size: 13px !important;
-  font-weight: 500 !important;
-  line-height: 20px !important;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
-}
-#${BTN_ID}[data-cc-theme="dark"] .cc-pr-content {
-  color: #ffffff !important;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6) !important;
-}
-#${BTN_ID} .cc-pr-content svg {
+a.${BTN_CLASS} svg {
   flex-shrink: 0 !important;
-  filter: drop-shadow(0 1px 1px rgba(255, 255, 255, 0.45)) !important;
 }
-#${BTN_ID}[data-cc-theme="dark"] .cc-pr-content svg {
-  filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.5)) !important;
+a.${BTN_CLASS} kbd {
+  display: inline-flex !important;
+  justify-content: center !important;
+  gap: 0.5ch !important;
+  min-width: var(--base-size-20, 20px) !important;
+  box-sizing: border-box !important;
+  margin: 0 !important;
+  padding: var(--base-size-4, 4px) !important;
+  border: var(--borderWidth-thin, 1px) solid var(--borderColor-default, #d1d9e0) !important;
+  border-radius: var(--borderRadius-medium, 6px) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--fgColor-muted, #59636e) !important;
+  font-family: inherit !important;
+  font-size: var(--text-body-size-small, 12px) !important;
+  font-weight: var(--base-text-weight-normal, 400) !important;
+  line-height: 10px !important;
+  vertical-align: baseline !important;
 }
-/* Hover/active stay inside the button box — brightness, not a glow around it. */
-#${BTN_ID}:hover {
-  filter: brightness(1.06) !important;
+a.${BTN_CLASS}.${BTN_CLASS}--small {
+  gap: var(--control-small-gap, 4px) !important;
+  height: var(--control-small-size, 28px) !important;
+  padding: 0 var(--control-small-paddingInline-normal, 12px) !important;
+  font-size: var(--text-body-size-small, 12px) !important;
 }
-#${BTN_ID}:active {
-  transform: translateY(0.5px) !important;
-  filter: brightness(0.97) !important;
+/* The notifications list header: at its end, past Refined GitHub's "Open all
+   unread", which pushes itself right with \`ml-auto\` and shows only while
+   nothing is selected. \`order\` keeps it last whichever script runs first. */
+#${INBOX_BTN_ID} {
+  order: 1 !important;
+  margin-left: auto !important;
 }
-#${BTN_ID}:focus-visible {
-  outline: 2px solid #fa500f !important;
-  outline-offset: 2px !important;
+.Box-header:has(> .js-notifications-mark-selected-actions[hidden] ~ .rgh-open-notifications-button) > #${INBOX_BTN_ID} {
+  margin-left: var(--base-size-8, 8px) !important;
+}
+/* A repo group's header: spaced like the actions after it. */
+a.${BTN_CLASS}.${BTN_CLASS}--group {
+  margin-right: var(--base-size-8, 8px) !important;
 }
 `;
+
+  // The shortcut that clicks the current page's main button (the whole inbox
+  // on notifications). A single character key like GitHub's own `.` (open in
+  // github.dev), and Shift-modified so it leaves the lists' `o` (open the
+  // selected pull request or notification) alone.
+  const SHORTCUT = { key: "O", ariaKeyshortcuts: "Shift+O", glyphs: ["⇧", "O"] };
+
+  // Refined GitHub's selectors for the notifications page, which it keeps
+  // current. The header matches the list's whether grouped by date or by
+  // repository, and on an unsaved filter; "Mark as done" is the action on
+  // each repo group's header.
+  const NOTIFICATIONS_HEADER =
+    ".js-check-all-container .js-bulk-action-toasts ~ div .Box-header";
+  const REPO_GROUP_MARK_DONE = ".js-grouped-notifications-mark-all-read-button";
+
+  // The owner and repo segments the app's deep links accept.
+  const REPO_NAME = /^([A-Za-z0-9_.-]+)\s*\/\s*([A-Za-z0-9_.-]+)$/;
 
   function injectStyles() {
     if (document.getElementById("cc-open-pr-styles")) return;
@@ -105,12 +129,90 @@
     document.head.appendChild(style);
   }
 
-  function parsePrInfo() {
-    const m = window.location.pathname.match(
-      /^\/([^/]+)\/([^/]+)\/pull\/(\d+)/,
-    );
-    if (!m) return null;
-    return { owner: m[1], repo: m[2], number: m[3] };
+  // The buttons for the current page, empty when it gets none: each one's
+  // element id, the deep link it opens, where it goes in GitHub's DOM, its
+  // style modifiers and tooltip, and whether it is the one `SHORTCUT` clicks.
+  function currentTargets() {
+    const path = window.location.pathname;
+    const pr = path.match(/^\/([^/]+)\/([^/]+)\/pull\/(\d+)(?:\/|$)/);
+    if (pr) {
+      return [
+        {
+          id: "cc-open-pr-btn",
+          href: `control-center://pr/${pr[1]}/${pr[2]}/${pr[3]}`,
+          place: placeInPrHeader,
+          shortcut: true,
+        },
+      ];
+    }
+    const pulls = path.match(/^\/([^/]+)\/([^/]+)\/pulls\/?$/);
+    if (pulls) {
+      return [
+        {
+          id: "cc-open-pulls-btn",
+          href: `control-center://pulls/${pulls[1]}/${pulls[2]}`,
+          place: placeBeforeNewPr,
+          shortcut: true,
+        },
+      ];
+    }
+    if (/^\/notifications\/?$/.test(path)) {
+      return notificationTargets();
+    }
+    return [];
+  }
+
+  // Notifications: the whole inbox from the list's header and, when grouped
+  // by repository, each repo's inbox from its group's header.
+  function notificationTargets() {
+    const targets = [
+      {
+        id: INBOX_BTN_ID,
+        href: "control-center://inbox",
+        place: placeInNotificationsHeader,
+        modifiers: ["small"],
+        title: "Open the inbox in Control Center",
+        shortcut: true,
+      },
+    ];
+    for (const markDone of document.querySelectorAll(REPO_GROUP_MARK_DONE)) {
+      const repo = repoOfGroup(markDone);
+      if (!repo) continue;
+      targets.push({
+        id: `${INBOX_BTN_ID}-${repo}`,
+        href: `control-center://inbox/${repo}`,
+        place: (btn) => placeInRepoGroup(btn, markDone),
+        modifiers: ["small", "group"],
+        title: `Open the inbox in Control Center, filtered to ${repo}`,
+        shortcut: false,
+      });
+    }
+    return targets;
+  }
+
+  // The `owner/repo` a notifications group's header names, or null when the
+  // group is not one repo's (grouped by date). Read from the element holding
+  // just the name, skipping the header's buttons and the group's rows, and
+  // the elements wrapping those rows, whose text is only theirs.
+  function repoOfGroup(markDone) {
+    const group = markDone.closest(".js-notifications-group");
+    if (!group) return null;
+    const row = ".notifications-list-item";
+    const walker = document.createTreeWalker(group, NodeFilter.SHOW_ELEMENT, {
+      acceptNode: (el) => {
+        if (el.matches(`${row}, button, a.${BTN_CLASS}`)) {
+          return NodeFilter.FILTER_REJECT;
+        }
+        return el.querySelector(row)
+          ? NodeFilter.FILTER_SKIP
+          : NodeFilter.FILTER_ACCEPT;
+      },
+    });
+    for (let el = walker.nextNode(); el; el = walker.nextNode()) {
+      const name = el.textContent.trim().match(REPO_NAME);
+      if (name) return `${name[1]}/${name[2]}`;
+    }
+    return null;
   }
 
   function buildIcon() {
@@ -140,434 +242,168 @@
     return svg;
   }
 
-  // ── Cloudscape shader ──────────────────────────────────────────────────
-  // Ported verbatim from docs/src/components/shared/ShaderBackground.astro
-  // (which ports assets/shaders/dashboard_background_{light,dark}.frag). One
-  // fragment program; the `u_dark` uniform selects the morning-mist or ember
-  // scene, driven off GitHub's color mode so the button matches the page theme.
-
-  const SHADER_VERT = `#version 300 es
-in vec2 a_pos;
-void main() { gl_Position = vec4(a_pos, 0.0, 1.0); }`;
-
-  const SHADER_FRAG = `#version 300 es
-precision highp float;
-uniform vec2 u_resolution;
-uniform float u_time;
-uniform float u_dark; // 0.0 = morning mist (light), 1.0 = ember (dark)
-out vec4 fragColor;
-
-float hash(vec2 p) {
-  p = fract(p * vec2(123.34, 456.21));
-  p += dot(p, p + 45.32);
-  return fract(p.x * p.y);
-}
-float noise(vec2 p) {
-  vec2 i = floor(p);
-  vec2 f = fract(p);
-  vec2 u = f * f * (3.0 - 2.0 * f);
-  float a = hash(i);
-  float b = hash(i + vec2(1.0, 0.0));
-  float c = hash(i + vec2(0.0, 1.0));
-  float d = hash(i + vec2(1.0, 1.0));
-  return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
-}
-float fbm(vec2 p) {
-  float v = 0.0;
-  float a = 0.5;
-  for (int i = 0; i < 4; i++) {
-    v += a * noise(p);
-    p = 0.8 * p * 2.0 + vec2(1.7, 9.2);
-    a *= 0.5;
-  }
-  return v;
-}
-float warpedFbm(vec2 p, float t) {
-  vec2 q = vec2(
-    fbm(p + vec2(0.0, 0.0) + t * 0.05),
-    fbm(p + vec2(5.2, 1.3) - t * 0.04)
-  );
-  vec2 r = vec2(
-    fbm(p + 4.0 * q + vec2(1.7, 9.2) + t * 0.03),
-    fbm(p + 4.0 * q + vec2(8.3, 2.8) - t * 0.02)
-  );
-  return fbm(p + 4.0 * r);
-}
-vec3 sceneColorLight(vec2 uv) {
-  float aspect = u_resolution.x / u_resolution.y;
-  vec2 p = vec2((uv.x - 0.5) * aspect, uv.y - 0.5);
-
-  float t = u_time * 0.20;
-  vec2 q = p * 1.6 + vec2(t * 0.15, -t * 0.05);
-  float n = warpedFbm(q, t);
-
-  vec3 canvasWhite  = vec3(0.988, 0.984, 0.976);
-  vec3 hazeIvory    = vec3(0.963, 0.941, 0.902);
-  vec3 warmSand     = vec3(0.929, 0.882, 0.812);
-  vec3 horizonTaupe = vec3(0.855, 0.769, 0.671);
-  vec3 emberCore    = vec3(0.980, 0.314, 0.059);
-  vec3 sunlitWisp   = vec3(1.000, 0.976, 0.918);
-
-  vec3 base = mix(canvasWhite, hazeIvory, smoothstep(0.05, 0.60, uv.y));
-  base = mix(base, warmSand, smoothstep(0.45, 0.92, uv.y));
-  base = mix(base, horizonTaupe, smoothstep(0.68, 1.02, uv.y) * 0.75);
-  base = mix(base, emberCore, smoothstep(0.90, 1.14, uv.y) * 0.22);
-
-  float cloud = smoothstep(0.35, 0.75, n);
-  float band  = smoothstep(0.15, 0.55, uv.y) * smoothstep(0.95, 0.45, uv.y);
-  float glow  = cloud * band;
-
-  vec3 color = base;
-  color = mix(color, sunlitWisp, glow * 0.50);
-  color = mix(color, sunlitWisp, pow(glow, 3.0) * 0.40);
-
-  float wisp = smoothstep(0.45, 0.15, n) * smoothstep(0.85, 0.05, uv.y);
-  vec3 cloudShade = vec3(0.792, 0.616, 0.537);
-  color = mix(color, cloudShade, wisp * 0.45);
-
-  return color;
-}
-vec3 sceneColorDark(vec2 uv) {
-  float aspect = u_resolution.x / u_resolution.y;
-  vec2 p = vec2((uv.x - 0.5) * aspect, uv.y - 0.5);
-
-  float t = u_time * 0.20;
-  vec2 q = p * 1.6 + vec2(t * 0.15, -t * 0.05);
-  float n = warpedFbm(q, t);
-
-  vec3 nearBlack = vec3(0.090, 0.082, 0.072);
-  vec3 warmBrown = vec3(0.200, 0.170, 0.140);
-  vec3 dustyRose = vec3(0.55, 0.38, 0.36);
-  vec3 ember     = vec3(0.92, 0.55, 0.32);
-  vec3 hot       = vec3(1.00, 0.78, 0.55);
-
-  vec3 base = mix(nearBlack, warmBrown, smoothstep(0.0, 0.55, uv.y));
-  base = mix(base, dustyRose, smoothstep(0.35, 0.85, uv.y) * 0.55);
-
-  float cloud = smoothstep(0.35, 0.75, n);
-  float band  = smoothstep(0.15, 0.55, uv.y) * smoothstep(0.95, 0.45, uv.y);
-  float glow  = cloud * band;
-
-  vec3 color = base;
-  color = mix(color, ember, glow * 0.85);
-  color = mix(color, hot, pow(glow, 3.0) * 0.65);
-
-  float wisp = smoothstep(0.45, 0.15, n) * smoothstep(0.55, 0.0, uv.y);
-  color = mix(color, nearBlack * 0.7, wisp * 0.35);
-
-  return color;
-}
-void main() {
-  vec2 uv = vec2(gl_FragCoord.x, u_resolution.y - gl_FragCoord.y) / u_resolution.xy;
-
-  bool dark = u_dark > 0.5;
-  vec3 color = dark ? sceneColorDark(uv) : sceneColorLight(uv);
-
-  vec2 vp = uv - 0.5;
-  vp.x *= u_resolution.x / u_resolution.y;
-  float vignette = smoothstep(1.0, 0.35, length(vp));
-  color *= mix(dark ? 0.82 : 0.92, 1.0, vignette);
-
-  float grain = (hash(gl_FragCoord.xy + u_time) - 0.5) * (dark ? 0.02 : 0.012);
-  color += grain;
-
-  fragColor = vec4(clamp(color, 0.0, 1.0), 1.0);
-}`;
-
-  // ~30 FPS is visually identical to 60 for this slow drift, half the GPU work.
-  const SHADER_FRAME_MS = 33;
-  // The button is tiny; soft clouds hide the resolution loss.
-  const SHADER_MAX_DPR = 1.5;
-
-  // Handle for the running shader so it can be torn down when the button is
-  // re-injected (React replaces the header DOM, detaching our canvas).
-  let activeShader = null;
-
-  // Resolve GitHub's effective theme: <html data-color-mode> is light/dark, or
-  // "auto" → follow the OS preference.
-  function ghPrefersDark() {
-    const mode = document.documentElement.getAttribute("data-color-mode");
-    if (mode === "dark") return true;
-    if (mode === "light") return false;
-    return !!(
-      window.matchMedia &&
-      window.matchMedia("(prefers-color-scheme: dark)").matches
-    );
-  }
-
-  function compileShader(gl, type, src) {
-    const sh = gl.createShader(type);
-    gl.shaderSource(sh, src);
-    gl.compileShader(sh);
-    if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
-      console.error("cc-shader compile failed:", gl.getShaderInfoLog(sh));
-      gl.deleteShader(sh);
-      return null;
-    }
-    return sh;
-  }
-
-  // Starts the cloudscape on `canvas`. Returns a handle with stop(), or null if
-  // WebGL2 is unavailable (the CSS fallback gradient stays visible).
-  function startShader(canvas) {
-    const gl = canvas.getContext("webgl2", {
-      antialias: false,
-      alpha: true,
-      depth: false,
-      premultipliedAlpha: false,
-    });
-    if (!gl) return null;
-
-    const vs = compileShader(gl, gl.VERTEX_SHADER, SHADER_VERT);
-    const fs = compileShader(gl, gl.FRAGMENT_SHADER, SHADER_FRAG);
-    if (!vs || !fs) return null;
-
-    const program = gl.createProgram();
-    gl.attachShader(program, vs);
-    gl.attachShader(program, fs);
-    gl.linkProgram(program);
-    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-      console.error("cc-shader link failed:", gl.getProgramInfoLog(program));
-      return null;
-    }
-
-    const buf = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
-    gl.bufferData(
-      gl.ARRAY_BUFFER,
-      new Float32Array([-1, -1, 3, -1, -1, 3]),
-      gl.STATIC_DRAW,
-    );
-    const loc = gl.getAttribLocation(program, "a_pos");
-    gl.enableVertexAttribArray(loc);
-    gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
-
-    const uRes = gl.getUniformLocation(program, "u_resolution");
-    const uTime = gl.getUniformLocation(program, "u_time");
-    const uDark = gl.getUniformLocation(program, "u_dark");
-
-    let dark = ghPrefersDark();
-    let raf = 0;
-    let startTs = 0;
-    let lastDraw = 0;
-    let visible = true;
-    let disposed = false;
-
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const scheme = window.matchMedia("(prefers-color-scheme: dark)");
-
-    function resize() {
-      const dpr = Math.min(window.devicePixelRatio || 1, SHADER_MAX_DPR);
-      const w = Math.max(1, Math.round(canvas.clientWidth * dpr));
-      const h = Math.max(1, Math.round(canvas.clientHeight * dpr));
-      if (canvas.width !== w || canvas.height !== h) {
-        canvas.width = w;
-        canvas.height = h;
-      }
-    }
-
-    function draw(seconds) {
-      gl.viewport(0, 0, canvas.width, canvas.height);
-      gl.useProgram(program);
-      gl.uniform2f(uRes, canvas.width, canvas.height);
-      gl.uniform1f(uTime, seconds);
-      gl.uniform1f(uDark, dark ? 1 : 0);
-      gl.drawArrays(gl.TRIANGLES, 0, 3);
-    }
-
-    // Speed 0 — a single frame at u_time = 0 (reduced-motion: keep the shapes).
-    function renderFrozen() {
-      dark = ghPrefersDark();
-      resize();
-      draw(0);
-    }
-
-    const frame = (ts) => {
-      if (disposed) return;
-      raf = requestAnimationFrame(frame);
-      if (startTs === 0) startTs = ts;
-      if (ts - lastDraw < SHADER_FRAME_MS) return;
-      if (!visible) return;
-      lastDraw = ts;
-      dark = ghPrefersDark();
-      resize();
-      draw((ts - startTs) / 1000);
-    };
-
-    const play = () => {
-      if (raf === 0 && !disposed && !reduce.matches) {
-        startTs = 0;
-        raf = requestAnimationFrame(frame);
-      }
-    };
-    const pause = () => {
-      if (raf !== 0) {
-        cancelAnimationFrame(raf);
-        raf = 0;
-      }
-    };
-
-    // Pause when the button scrolls out of view or the tab is hidden.
-    const io = new IntersectionObserver(
-      (entries) => {
-        for (const e of entries) visible = e.isIntersecting;
-        if (visible && !document.hidden) play();
-        else pause();
-      },
-      { threshold: 0 },
-    );
-    io.observe(canvas);
-
-    const ro = new ResizeObserver(() => {
-      if (reduce.matches) renderFrozen();
-    });
-    ro.observe(canvas);
-
-    const onVisibility = () => {
-      if (document.hidden) pause();
-      else if (visible) play();
-    };
-    document.addEventListener("visibilitychange", onVisibility);
-
-    // Keep the label color in sync with the scene (ink on mist, white on
-    // ember) via the host's data-cc-theme and re-render the frozen frame when
-    // the theme flips.
-    const host = canvas.parentElement;
-    const syncHostTheme = () => {
-      if (host) {
-        host.setAttribute("data-cc-theme", ghPrefersDark() ? "dark" : "light");
-      }
-    };
-    const onTheme = () => {
-      syncHostTheme();
-      if (reduce.matches) renderFrozen();
-    };
-    syncHostTheme();
-    const themeMo = new MutationObserver(onTheme);
-    themeMo.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["data-color-mode"],
-    });
-    scheme.addEventListener("change", onTheme);
-
-    const onReduceChange = () => {
-      if (reduce.matches) {
-        pause();
-        renderFrozen();
-      } else {
-        play();
-      }
-    };
-    reduce.addEventListener("change", onReduceChange);
-
-    if (reduce.matches) renderFrozen();
-    else play();
-
-    return {
-      stop() {
-        disposed = true;
-        pause();
-        io.disconnect();
-        ro.disconnect();
-        themeMo.disconnect();
-        document.removeEventListener("visibilitychange", onVisibility);
-        scheme.removeEventListener("change", onTheme);
-        reduce.removeEventListener("change", onReduceChange);
-        const lose = gl.getExtension("WEBGL_lose_context");
-        if (lose) lose.loseContext();
-      },
-    };
-  }
-
-  let actionsBarObserver = null;
-
-  function findActionsBar() {
-    return (
+  // PR page: first in the header's actions, left of the merge status and "Code".
+  function placeInPrHeader(btn) {
+    const actionsBar =
       document.querySelector(".prc-PageHeader-Actions-wawWm") ||
       document.querySelector(".gh-header-actions") ||
-      document.querySelector('[data-component="PH_Actions"]')
-    );
+      document.querySelector('[data-component="PH_Actions"]');
+    if (!actionsBar) return false;
+    actionsBar.insertAdjacentElement("afterbegin", btn);
+    return true;
   }
 
-  function addButton() {
-    if (document.getElementById(BTN_ID)) return;
+  // Pull request list: right before "New pull request". Found by its label, as
+  // Primer's class names are build hashes; it is a link when signed in and a
+  // disabled button when PR creation is restricted.
+  function placeBeforeNewPr(btn) {
+    const newPr = Array.from(document.querySelectorAll("a, button")).find(
+      (el) => el.textContent.trim() === "New pull request",
+    );
+    if (!newPr) return false;
+    newPr.insertAdjacentElement("beforebegin", btn);
+    return true;
+  }
 
-    const pr = parsePrInfo();
-    if (!pr) return;
+  // Notifications list: at the end of its header (see the CSS).
+  function placeInNotificationsHeader(btn) {
+    const header = document.querySelector(NOTIFICATIONS_HEADER);
+    if (!header) return false;
+    header.appendChild(btn);
+    return true;
+  }
 
-    const actionsBar = findActionsBar();
-    if (!actionsBar) return;
+  // A repo group: first of its header's actions, before Refined GitHub's
+  // "Open unread" when that is there, else before "Mark as done". Refined
+  // GitHub also inserts right before "Mark as done", so the order holds
+  // whichever script runs first.
+  function placeInRepoGroup(btn, markDone) {
+    if (!markDone.isConnected) return false;
+    const openUnread = markDone.previousElementSibling;
+    const anchor = openUnread?.matches(".rgh-open-notifications-button")
+      ? openUnread
+      : markDone;
+    anchor.insertAdjacentElement("beforebegin", btn);
+    return true;
+  }
 
-    // A previous button was removed (React replaced the header DOM). Tear down
-    // its shader so we don't leak a rAF loop driving a detached canvas.
-    if (activeShader) {
-      activeShader.stop();
-      activeShader = null;
-    }
+  // Each placed button's watch on its parent, by the button's id.
+  const removalObservers = new Map();
 
-    const btn = document.createElement("a");
-    btn.id = BTN_ID;
-    btn.setAttribute("aria-label", "Open in Control Center");
-    btn.href = `control-center://pr/${pr.owner}/${pr.repo}/${pr.number}`;
-    // Seed the label color before the shader runs (and the only signal the CSS
-    // fallback gets when WebGL2 is unavailable).
-    btn.setAttribute("data-cc-theme", ghPrefersDark() ? "dark" : "light");
+  function disconnectRemovalObservers() {
+    for (const observer of removalObservers.values()) observer.disconnect();
+    removalObservers.clear();
+  }
 
-    const canvas = document.createElement("canvas");
-    canvas.className = "cc-pr-shader";
-    canvas.setAttribute("aria-hidden", "true");
-
-    const content = document.createElement("span");
-    content.className = "cc-pr-content";
-    content.appendChild(buildIcon());
-    content.appendChild(document.createTextNode("Control Center"));
-
-    btn.appendChild(canvas);
-    btn.appendChild(content);
-
-    actionsBar.insertAdjacentElement("afterbegin", btn);
-
-    // Start the cloudscape (null if WebGL2 is unavailable → CSS fallback fill).
-    activeShader = startShader(canvas);
-
-    // Watch the actions bar for child changes. When React re-renders
-    // the header (tab switch, websocket update, etc.) it replaces the
-    // DOM contents, which removes our button. We detect that and re-inject.
-    disconnectActionsBarObserver();
-    actionsBarObserver = new MutationObserver((mutations) => {
+  // Watch the button's parent: when React re-renders the header (tab switch,
+  // websocket update, etc.) it replaces the DOM contents, which removes our
+  // button. We detect that and re-inject.
+  function watchRemoval(btn) {
+    removalObservers.get(btn.id)?.disconnect();
+    const observer = new MutationObserver((mutations) => {
       for (const m of mutations) {
         for (const node of m.removedNodes) {
-          if (node.nodeType === 1 && node.id === BTN_ID) {
-            setTimeout(upsertButton, 150);
+          if (node === btn) {
+            setTimeout(sync, 150);
             return;
           }
         }
       }
     });
-    actionsBarObserver.observe(actionsBar, { childList: true });
+    observer.observe(btn.parentElement, { childList: true });
+    removalObservers.set(btn.id, observer);
   }
 
-  function disconnectActionsBarObserver() {
-    if (actionsBarObserver) {
-      actionsBarObserver.disconnect();
-      actionsBarObserver = null;
+  function sync() {
+    injectStyles();
+    const targets = currentTargets();
+    const ids = new Set(targets.map((target) => target.id));
+    // A soft navigation to another kind of page, or a repo group marked done,
+    // can leave a button behind. Its watch goes first, so removing the button
+    // does not schedule a re-inject.
+    for (const [id, observer] of removalObservers) {
+      if (ids.has(id)) continue;
+      observer.disconnect();
+      removalObservers.delete(id);
+    }
+    for (const el of document.querySelectorAll(`a.${BTN_CLASS}`)) {
+      if (!ids.has(el.id)) el.remove();
+    }
+    for (const target of targets) {
+      const existing = document.getElementById(target.id);
+      if (existing) {
+        // Moving between two PRs can keep the header DOM; retarget the link.
+        if (existing.getAttribute("href") !== target.href) {
+          existing.setAttribute("href", target.href);
+        }
+        continue;
+      }
+      const btn = buildButton(target);
+      if (target.place(btn)) watchRemoval(btn);
     }
   }
 
-  function upsertButton() {
-    injectStyles();
-    if (document.getElementById(BTN_ID)) return;
-    addButton();
+  function buildButton(target) {
+    const btn = document.createElement("a");
+    btn.id = target.id;
+    btn.className = [
+      BTN_CLASS,
+      ...(target.modifiers ?? []).map((m) => `${BTN_CLASS}--${m}`),
+    ].join(" ");
+    btn.href = target.href;
+    if (target.title) btn.title = target.title;
+    btn.appendChild(buildIcon());
+    btn.appendChild(document.createTextNode("Open in Control Center"));
+    if (target.shortcut) {
+      btn.setAttribute("aria-keyshortcuts", SHORTCUT.ariaKeyshortcuts);
+      btn.appendChild(buildKeybindingHint());
+    }
+    return btn;
+  }
+
+  // Primer's KeybindingHint markup. Hidden from assistive tech: the button's
+  // aria-keyshortcuts announces the shortcut without it joining the name.
+  function buildKeybindingHint() {
+    const kbd = document.createElement("kbd");
+    kbd.setAttribute("aria-hidden", "true");
+    for (const glyph of SHORTCUT.glyphs) {
+      const key = document.createElement("span");
+      key.textContent = glyph;
+      kbd.appendChild(key);
+    }
+    return kbd;
+  }
+
+  // Ignores the key while the user is typing, the way GitHub's hotkeys do.
+  function isTypingTarget(el) {
+    return (
+      el instanceof Element &&
+      (el.closest("input, textarea, select") !== null ||
+        (el instanceof HTMLElement && el.isContentEditable))
+    );
+  }
+
+  function onKeydown(e) {
+    if (e.defaultPrevented || e.repeat || e.isComposing) return;
+    if (!e.shiftKey || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.key.toUpperCase() !== SHORTCUT.key) return;
+    if (isTypingTarget(e.target)) return;
+    const target = currentTargets().find((t) => t.shortcut);
+    const btn = target && document.getElementById(target.id);
+    if (!btn) return;
+    e.preventDefault();
+    btn.click();
   }
 
   function main() {
-    injectStyles();
-    // Delay to let React render the header after Turbo navigations
+    // Retry briefly while React renders the page after a navigation.
+    let tries = 25;
     const attempt = () => {
-      addButton();
-      if (!document.getElementById(BTN_ID)) {
-        setTimeout(attempt, 200);
-      }
+      sync();
+      const missing = currentTargets().some(
+        (target) => !document.getElementById(target.id),
+      );
+      if (missing && --tries > 0) setTimeout(attempt, 200);
     };
     attempt();
   }
@@ -579,12 +415,14 @@ void main() {
     main();
   }
 
+  document.addEventListener("keydown", onKeydown);
+
   // ── SPA navigation (Turbo) ──
   document.addEventListener("turbo:render", () => {
-    disconnectActionsBarObserver();
+    disconnectRemovalObservers();
     setTimeout(main, 300);
   });
 
   // ── Periodic fallback (catches edge cases where observers miss) ──
-  setInterval(upsertButton, 2000);
+  setInterval(sync, 2000);
 })();

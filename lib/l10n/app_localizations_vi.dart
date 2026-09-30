@@ -14983,4 +14983,76 @@ class AppLocalizationsVi extends AppLocalizations {
   String failedToStartConflictFix(String error) {
     return 'Không thể bắt đầu sửa xung đột: $error';
   }
+
+  @override
+  String get settingsLinks => 'Liên kết';
+
+  @override
+  String get linksSettingsDescription =>
+      'Chọn nơi mở các liên kết từ bên ngoài Control Center, chẳng hạn một pull request được mở từ GitHub.';
+
+  @override
+  String get repoLinkRememberedTitle => 'Không gian làm việc đã ghi nhớ';
+
+  @override
+  String get repoLinkRememberedHint =>
+      'Khi một kho lưu trữ được liên kết với nhiều không gian làm việc, việc mở liên kết tới kho đó sẽ hỏi bạn dùng không gian làm việc nào. Các lựa chọn bạn đã yêu cầu ghi nhớ được liệt kê ở đây.';
+
+  @override
+  String get repoLinkRememberedEmpty => 'Chưa có lựa chọn nào được ghi nhớ.';
+
+  @override
+  String get repoLinkForget => 'Quên';
+
+  @override
+  String get repoLinkWorkspaceUnavailable =>
+      'Không gian làm việc không còn khả dụng';
+
+  @override
+  String get repoLinkWorkspaceDialogTitle => 'Chọn không gian làm việc';
+
+  @override
+  String repoLinkWorkspaceDialogBody(String repo) {
+    return '$repo được liên kết với nhiều không gian làm việc. Mở liên kết này trong không gian làm việc nào?';
+  }
+
+  @override
+  String get repoLinkWorkspaceRemember =>
+      'Ghi nhớ lựa chọn của tôi cho kho lưu trữ này';
+
+  @override
+  String get repoLinkWorkspaceOpen => 'Mở';
+
+  @override
+  String get repoLinkUnlinkedTitle =>
+      'Thêm kho lưu trữ vào không gian làm việc';
+
+  @override
+  String repoLinkUnlinkedBody(String repo) {
+    return 'Chưa có không gian làm việc nào liên kết $repo. Hãy thêm vào một không gian để mở liên kết này.';
+  }
+
+  @override
+  String repoLinkUnlinkedAddTo(String workspace) {
+    return 'Thêm vào $workspace';
+  }
+
+  @override
+  String get repoLinkUnlinkedAddToHint => 'Chọn checkout của kho trên máy chủ.';
+
+  @override
+  String get repoLinkUnlinkedCreate => 'Không gian làm việc mới';
+
+  @override
+  String get repoLinkUnlinkedCreateHint => 'Đặt tên, rồi chọn checkout.';
+
+  @override
+  String repoLinkChooseCheckout(String repo) {
+    return 'Chọn checkout của $repo trên máy đang chạy máy chủ.';
+  }
+
+  @override
+  String repoLinkCheckoutMismatch(String repo) {
+    return 'Không kho lưu trữ nào vừa thêm là $repo, nên liên kết đã mở mà không có nó.';
+  }
 }
