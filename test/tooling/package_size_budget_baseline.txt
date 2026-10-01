@@ -11,7 +11,6 @@ packages/cc_domain/lib/features/pipelines/domain/templates/builtin_template_seed
 packages/cc_domain/lib/src/dtos/dtos.dart  4179
 packages/cc_infra/lib/src/chat/chat_bridge_service.dart  1868
 packages/cc_infra/lib/src/dispatch/dispatch_session.dart  2611
-packages/cc_infra/lib/src/ide/code_server_service.dart  1828
 packages/cc_infra/lib/src/messaging/messaging_service.dart  1713
 packages/cc_infra/lib/src/network/github/github_forge_pr_client.dart  1586
 packages/cc_infra/lib/src/network/github_graphql_client.dart  2351

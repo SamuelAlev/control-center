@@ -1,5 +1,6 @@
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/theme/app_fonts.dart';
+import 'package:control_center/shared/widgets/markdown/markdown_style.dart';
 import 'package:control_center/shared/widgets/pr_title_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -73,7 +74,12 @@ void main() {
       final chip = tester.widget<Container>(
         find.ancestor(of: find.text('Foo'), matching: find.byType(Container)),
       );
+      expect(chip.padding, kInlineCodeChipPadding);
       expect(chip.decoration, isA<BoxDecoration>());
+      expect(
+        (chip.decoration! as BoxDecoration).borderRadius,
+        BorderRadius.circular(kInlineCodeChipRadius),
+      );
     });
 
     testWidgets('fills the chip with the shared translucent code wash', (
@@ -147,15 +153,104 @@ void main() {
       expect(find.text('#42 Title'), findsOneWidget);
     });
 
-    testWidgets('keeps code runs ellipsizable as text spans', (tester) async {
-      // An ellipsizing line must not embed a WidgetSpan: the paragraph lays
-      // inline children out with the line's full max width and drops every
-      // placeholder past the truncation point (null paint offset), which used
-      // to render "refactor: migrate …" + dead space + "#5513".
+    testWidgets('pads ellipsized inline code like a markdown chip', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _wrap(
           const SizedBox(
-            width: 200,
+            width: 400,
+            child: PrTitleText(
+              'feat: support `ffy` env',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ),
+      );
+
+      // The whole title stays one string (backticks stripped) and the code
+      // run is its own chip, not a background painted on the glyphs.
+      expect(find.text('feat: support ffy env'), findsOneWidget);
+      final code = tester.widget<Text>(find.text('ffy'));
+      expect(code.style?.backgroundColor, isNull);
+      expect(code.style?.fontFamily, AppFonts.codeFamily);
+      expect(code.style?.fontWeight, CcTypography.regularWeight);
+
+      final chip = tester.widget<Container>(
+        find.ancestor(of: find.text('ffy'), matching: find.byType(Container)),
+      );
+      expect(chip.padding, kInlineCodeChipPadding);
+      final decoration = chip.decoration! as BoxDecoration;
+      expect(
+        decoration.borderRadius,
+        BorderRadius.circular(kInlineCodeChipRadius),
+      );
+      expect(decoration.color, DesignSystemTokens.light().hoverStrong);
+    });
+
+    testWidgets('keeps markdown chip padding in an RTL title', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Directionality(
+            textDirection: TextDirection.rtl,
+            child: CcTheme(
+              data: CcThemeData.light(),
+              child: const Scaffold(
+                body: Center(
+                  child: SizedBox(
+                    width: 400,
+                    child: PrTitleText(
+                      'feat: support `ffy` env',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final chip = tester.widget<Container>(
+        find.ancestor(of: find.text('ffy'), matching: find.byType(Container)),
+      );
+      expect(chip.padding, kInlineCodeChipPadding);
+      expect(find.text('feat: support ffy env'), findsOneWidget);
+    });
+
+    testWidgets('keeps a leading prefix on an ellipsized coded title', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          const SizedBox(
+            width: 400,
+            child: PrTitleText(
+              'use `Foo`',
+              leading: [TextSpan(text: '#42 ')],
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('#42 use Foo'), findsOneWidget);
+      expect(find.text('Foo'), findsOneWidget);
+    });
+
+    testWidgets('keeps a padded chip when an ellipsized title overflows', (
+      tester,
+    ) async {
+      // A long unbreakable code run used to inflate its placeholder to the
+      // line's full max width. Ellipsis then dropped the placeholder (null
+      // paint offset) and left "refactor: migrate …" followed by dead space.
+      await tester.pumpWidget(
+        _wrap(
+          const SizedBox(
+            width: 400,
             child: PrTitleText(
               'refactor: migrate `setDocumentTitleByViewTranslationKey` to metadata',
               maxLines: 1,
@@ -165,57 +260,32 @@ void main() {
         ),
       );
 
-      final span = tester
-          .widget<Text>(
-            find.descendant(
+      expect(tester.takeException(), isNull);
+      expect(find.textContaining('refactor: migrate'), findsOneWidget);
+      expect(find.textContaining('metadata'), findsNothing);
+
+      final chip = find.ancestor(
+        of: find.text('setDocumentTitleByViewTranslationKey'),
+        matching: find.byType(Container),
+      );
+      expect(chip, findsOneWidget);
+      expect(tester.widget<Container>(chip).padding, kInlineCodeChipPadding);
+
+      final paragraph = tester.renderObject<RenderParagraph>(
+        find
+            .descendant(
               of: find.byType(PrTitleText),
-              matching: find.byType(Text),
-            ),
-          )
-          .textSpan!;
-
-      final chips = <WidgetSpan>[];
-      TextSpan? codeSpan;
-      span.visitChildren((child) {
-        if (child is WidgetSpan) {
-          chips.add(child);
-        }
-        if (child is TextSpan &&
-            child.text == 'setDocumentTitleByViewTranslationKey') {
-          codeSpan = child;
-        }
-        return true;
-      });
-
-      // No placeholder children: nothing the ellipsis can drop, so the code
-      // content ellipsizes with the rest of the line instead of vanishing.
-      expect(chips, isEmpty);
-      final render = tester.renderObject<RenderParagraph>(
-        find.descendant(
-          of: find.byType(PrTitleText),
-          matching: find.byType(RichText),
-        ),
+              matching: find.byType(RichText),
+            )
+            .first,
       );
-      expect(render.firstChild, isNull);
-      expect(render.didExceedMaxLines, isTrue);
-
-      // The code run survives as one contiguous text run (ellipsis lands at
-      // the line end, not right before the code) and keeps the code look via
-      // the shared translucent wash.
-      expect(
-        span.toPlainText(),
-        'refactor: migrate setDocumentTitleByViewTranslationKey to metadata',
-      );
-      expect(
-        codeSpan!.style?.backgroundColor,
-        DesignSystemTokens.light().hoverStrong,
-      );
-      expect(codeSpan!.style?.fontFamily, AppFonts.codeFamily);
-      // A semibold title must not embolden the code run. The weight is
-      // inherited from the parent span unless the run sets its own, and a
-      // synthesized bold on the code face is what made title chips read
-      // heavier than the same code in the PR body.
-      expect(codeSpan!.style?.fontWeight, CcTypography.regularWeight);
+      final chipBox = paragraph.firstChild!;
+      final offset = (chipBox.parentData! as TextParentData).offset;
+      expect(offset, isNotNull);
+      // The chip sits after the prefix and does not consume the whole line.
+      expect(offset!.dx, greaterThan(8));
+      expect(chipBox.size.width, lessThan(paragraph.size.width - 8));
+      expect(paragraph.size.width, lessThanOrEqualTo(400));
     });
 
     testWidgets('keeps code at the regular weight inside a semibold title', (

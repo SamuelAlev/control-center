@@ -8,9 +8,6 @@ List<InlineSpan> _commitTitleSpans(
 ) {
   return [
     TextSpan(text: ' ', style: style),
-    // The subject wraps with the sentence and does not ellipsize, so code
-    // runs stay chips. An ellipsizing title has to degrade to text runs
-    // (see [PrTitleText]).
     ...buildInlineCodeSpans(context, title, baseStyle: style),
   ];
 }
