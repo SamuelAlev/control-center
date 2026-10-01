@@ -2211,7 +2211,6 @@
   "images": "Hình ảnh",
   "inactive": "Không hoạt động",
   "install": "Cài đặt",
-  "installRequired": "Cần cài đặt",
   "installedVersion": "Đã cài {version}",
   "@installedVersion": {
     "description": "Installed version label",
@@ -8799,5 +8798,11 @@
   "repoLinkUnlinkedCreate": "Không gian làm việc mới",
   "repoLinkUnlinkedCreateHint": "Đặt tên, rồi chọn checkout.",
   "repoLinkChooseCheckout": "Chọn checkout của {repo} trên máy đang chạy máy chủ.",
-  "repoLinkCheckoutMismatch": "Không kho lưu trữ nào vừa thêm là {repo}, nên liên kết đã mở mà không có nó."
+  "repoLinkCheckoutMismatch": "Không kho lưu trữ nào vừa thêm là {repo}, nên liên kết đã mở mà không có nó.",
+  "windowMinimize": "Thu nhỏ",
+  "windowMaximize": "Phóng to",
+  "windowRestore": "Khôi phục",
+  "nativeSandboxUnsupported": "Sandbox gốc chưa được hỗ trợ trên {platform}.",
+  "continueWithoutSandbox": "Tiếp tục không dùng sandbox",
+  "sandboxCheckAgain": "Kiểm tra lại"
 }

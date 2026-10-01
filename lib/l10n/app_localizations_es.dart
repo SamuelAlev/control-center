@@ -3675,9 +3675,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get install => 'Instalar';
 
   @override
-  String get installRequired => 'Instalación necesaria';
-
-  @override
   String installedVersion(String version) {
     return 'Instalado $version';
   }
@@ -15183,6 +15180,26 @@ class AppLocalizationsEs extends AppLocalizations {
   String repoLinkCheckoutMismatch(String repo) {
     return 'Ninguno de los repositorios añadidos es $repo, así que el enlace se abrió sin él.';
   }
+
+  @override
+  String get windowMinimize => 'Minimizar';
+
+  @override
+  String get windowMaximize => 'Maximizar';
+
+  @override
+  String get windowRestore => 'Restaurar';
+
+  @override
+  String nativeSandboxUnsupported(String platform) {
+    return 'El sandbox nativo aún no es compatible con $platform.';
+  }
+
+  @override
+  String get continueWithoutSandbox => 'Continuar sin sandbox';
+
+  @override
+  String get sandboxCheckAgain => 'Comprobar de nuevo';
 }
 
 /// The translations for Spanish Castilian, as used in Mexico (`es_MX`).

@@ -13,6 +13,7 @@ import 'package:control_center/features/soundscape/providers/soundscape_provider
 import 'package:control_center/features/subscriptions/presentation/widgets/subscription_usage_pill.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/widgets/window_caption_buttons.dart';
 import 'package:control_center/shared/widgets/window_drag_area.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
@@ -58,6 +59,10 @@ class ShellTitleBar extends ConsumerWidget {
     // have no in-window controls in this corner.
     final hasMacTrafficLights =
         !kIsWeb && defaultTargetPlatform == TargetPlatform.macOS;
+    // Where the app draws the window controls itself (Windows, Linux), they
+    // sit over this bar's end, in the root overlay; keep the bar's own
+    // controls clear of them.
+    final captionReserve = WindowCaptionScope.reservedWidthOf(context);
     return WindowDragArea(
       enableDoubleClickMaximize: true,
       // The primary window is not system-movable (that is what stops macOS
@@ -75,11 +80,13 @@ class ShellTitleBar extends ConsumerWidget {
             // PHYSICAL top-left whatever the app's text direction (the app
             // cannot observe the system locale), so the clearance is a
             // physical-left add-on over the direction-neutral symmetric inset.
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md).add(
-              EdgeInsets.only(
-                left: hasMacTrafficLights ? 80 - AppSpacing.md : 0,
-              ),
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md)
+                .add(
+                  EdgeInsets.only(
+                    left: hasMacTrafficLights ? 80 - AppSpacing.md : 0,
+                  ),
+                )
+                .add(EdgeInsetsDirectional.only(end: captionReserve)),
             child: Row(
               children: [
                 _buildNavButtons(context, ref),

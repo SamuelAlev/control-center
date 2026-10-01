@@ -3686,9 +3686,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get install => 'تثبيت';
 
   @override
-  String get installRequired => 'التثبيت مطلوب';
-
-  @override
   String installedVersion(String version) {
     return 'الإصدار المثبّت ⁨$version⁩';
   }
@@ -15300,4 +15297,24 @@ class AppLocalizationsAr extends AppLocalizations {
   String repoLinkCheckoutMismatch(String repo) {
     return 'لا يوجد $repo بين المستودعات المضافة، لذا فُتح الرابط بدونه.';
   }
+
+  @override
+  String get windowMinimize => 'تصغير';
+
+  @override
+  String get windowMaximize => 'تكبير';
+
+  @override
+  String get windowRestore => 'استعادة';
+
+  @override
+  String nativeSandboxUnsupported(String platform) {
+    return 'البيئة المعزولة الأصلية غير مدعومة على ⁨$platform⁩ بعد.';
+  }
+
+  @override
+  String get continueWithoutSandbox => 'المتابعة دون بيئة معزولة';
+
+  @override
+  String get sandboxCheckAgain => 'تحقق مرة أخرى';
 }

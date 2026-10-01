@@ -2211,7 +2211,6 @@
   "images": "الصور",
   "inactive": "غير نشطة",
   "install": "تثبيت",
-  "installRequired": "التثبيت مطلوب",
   "installedVersion": "الإصدار المثبّت ⁨{version}⁩",
   "@installedVersion": {
     "description": "Installed version label",
@@ -8799,5 +8798,11 @@
   "repoLinkUnlinkedCreate": "مساحة عمل جديدة",
   "repoLinkUnlinkedCreateHint": "سمِّها، ثم اختر نسخة git.",
   "repoLinkChooseCheckout": "حدد نسخة git الخاصة بـ {repo} على الجهاز الذي يشغّل الخادم.",
-  "repoLinkCheckoutMismatch": "لا يوجد {repo} بين المستودعات المضافة، لذا فُتح الرابط بدونه."
+  "repoLinkCheckoutMismatch": "لا يوجد {repo} بين المستودعات المضافة، لذا فُتح الرابط بدونه.",
+  "windowMinimize": "تصغير",
+  "windowMaximize": "تكبير",
+  "windowRestore": "استعادة",
+  "nativeSandboxUnsupported": "البيئة المعزولة الأصلية غير مدعومة على ⁨{platform}⁩ بعد.",
+  "continueWithoutSandbox": "المتابعة دون بيئة معزولة",
+  "sandboxCheckAgain": "تحقق مرة أخرى"
 }

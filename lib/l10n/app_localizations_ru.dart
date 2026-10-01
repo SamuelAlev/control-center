@@ -3680,9 +3680,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get install => 'Установить';
 
   @override
-  String get installRequired => 'Требуется установка';
-
-  @override
   String installedVersion(String version) {
     return 'Установлено $version';
   }
@@ -15279,4 +15276,24 @@ class AppLocalizationsRu extends AppLocalizations {
   String repoLinkCheckoutMismatch(String repo) {
     return 'Среди добавленных репозиториев нет $repo, поэтому ссылка открылась без него.';
   }
+
+  @override
+  String get windowMinimize => 'Свернуть';
+
+  @override
+  String get windowMaximize => 'Развернуть';
+
+  @override
+  String get windowRestore => 'Восстановить';
+
+  @override
+  String nativeSandboxUnsupported(String platform) {
+    return 'Нативная песочница пока не поддерживается на $platform.';
+  }
+
+  @override
+  String get continueWithoutSandbox => 'Продолжить без песочницы';
+
+  @override
+  String get sandboxCheckAgain => 'Проверить снова';
 }

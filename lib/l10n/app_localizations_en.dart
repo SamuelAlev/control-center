@@ -3635,9 +3635,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get install => 'Install';
 
   @override
-  String get installRequired => 'Installation required';
-
-  @override
   String installedVersion(String version) {
     return 'Installed $version';
   }
@@ -15043,6 +15040,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String repoLinkCheckoutMismatch(String repo) {
     return 'None of the added repositories is $repo, so the link opened without it.';
   }
+
+  @override
+  String get windowMinimize => 'Minimize';
+
+  @override
+  String get windowMaximize => 'Maximize';
+
+  @override
+  String get windowRestore => 'Restore';
+
+  @override
+  String nativeSandboxUnsupported(String platform) {
+    return 'Native sandbox is not supported on $platform yet.';
+  }
+
+  @override
+  String get continueWithoutSandbox => 'Continue without sandbox';
+
+  @override
+  String get sandboxCheckAgain => 'Check again';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).
@@ -15238,4 +15255,10 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   @override
   String get noProfilePrsMatchSearchHint =>
       'Try another title or pull request number';
+
+  @override
+  String get windowMinimize => 'Minimise';
+
+  @override
+  String get windowMaximize => 'Maximise';
 }

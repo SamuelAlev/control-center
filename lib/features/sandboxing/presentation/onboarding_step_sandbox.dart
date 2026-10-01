@@ -94,6 +94,10 @@ class _OnboardingStepSandboxState extends ConsumerState<OnboardingStepSandbox> {
       data: (result) {
         final native = result.capabilities[SandboxBackend.native];
         final available = native?.available == true;
+        // Tools this host lacks but could install (Linux without bubblewrap),
+        // as opposed to a platform with no native sandbox at all (Windows),
+        // where there is nothing to wait for.
+        final installable = !available && native?.requiresInstall == true;
         final installHint = available ? null : native?.installHint;
 
         return OnboardingStepLayout(
@@ -104,9 +108,13 @@ class _OnboardingStepSandboxState extends ConsumerState<OnboardingStepSandbox> {
                 ready: available,
                 title: available
                     ? l10n.nativeSandboxAvailable(result.platform)
-                    : l10n.nativeSandboxNeedsInstall,
+                    : installable
+                    ? l10n.nativeSandboxNeedsInstall
+                    : l10n.nativeSandboxUnsupported(result.platform),
                 subtitle: _platformDescription(result.platform),
-                description: available ? null : native?.note,
+                // On an unsupported platform the probe's note only repeats
+                // the subtitle.
+                description: installable ? native?.note : null,
                 installHint: installHint,
               ),
               const SizedBox(height: 20),
@@ -129,7 +137,10 @@ class _OnboardingStepSandboxState extends ConsumerState<OnboardingStepSandbox> {
                 child: Text(l10n.back),
               ),
               const Spacer(),
-              if (available)
+              // Skipping is a real choice only where a sandbox is (or could
+              // be) had, so only there does it ask the operator to accept the
+              // risk.
+              if (available || installable) ...[
                 CcButton(
                   onPressed: _confirmSkip,
                   variant: CcButtonVariant.ghost,
@@ -142,14 +153,29 @@ class _OnboardingStepSandboxState extends ConsumerState<OnboardingStepSandbox> {
                     ),
                   ),
                 ),
-              if (available) const SizedBox(width: 12),
-              CcButton(
-                onPressed: available ? _useNative : null,
-                variant: available
-                    ? CcButtonVariant.primary
-                    : CcButtonVariant.secondary,
-                child: Text(available ? l10n.useSandbox : l10n.installRequired),
-              ),
+                const SizedBox(width: 12),
+              ],
+              if (available)
+                CcButton(onPressed: _useNative, child: Text(l10n.useSandbox))
+              else if (installable)
+                // Probes the host again once the operator has installed the
+                // missing tools; the refreshed result lands on this step.
+                CcButton(
+                  onPressed: () => ref.invalidate(sandboxDetectionProvider),
+                  loading: detection.isRefreshing,
+                  child: Text(l10n.sandboxCheckAgain),
+                )
+              else
+                // Nothing to set up and nothing to opt out of: the subtitle
+                // already says agents run without isolation here, and the
+                // backend resolves to none on its own. No preference is
+                // written, so a later release that supports this platform
+                // turns the sandbox on without the operator undoing a "skip"
+                // they never chose.
+                CcButton(
+                  onPressed: widget.onContinue,
+                  child: Text(l10n.continueWithoutSandbox),
+                ),
             ],
           ),
         );

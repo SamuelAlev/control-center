@@ -2211,7 +2211,6 @@
   "images": "Bilder",
   "inactive": "Inaktiv",
   "install": "Installera",
-  "installRequired": "Installation krävs",
   "installedVersion": "Installerad {version}",
   "@installedVersion": {
     "description": "Installed version label",
@@ -8799,5 +8798,11 @@
   "repoLinkUnlinkedCreate": "Ny arbetsyta",
   "repoLinkUnlinkedCreateHint": "Namnge den och välj sedan checkouten.",
   "repoLinkChooseCheckout": "Välj checkouten av {repo} på maskinen som kör servern.",
-  "repoLinkCheckoutMismatch": "Inget av de tillagda arkiven är {repo}, så länken öppnades utan det."
+  "repoLinkCheckoutMismatch": "Inget av de tillagda arkiven är {repo}, så länken öppnades utan det.",
+  "windowMinimize": "Minimera",
+  "windowMaximize": "Maximera",
+  "windowRestore": "Återställ",
+  "nativeSandboxUnsupported": "Inbyggd sandlåda stöds inte på {platform} ännu.",
+  "continueWithoutSandbox": "Fortsätt utan sandlåda",
+  "sandboxCheckAgain": "Kontrollera igen"
 }

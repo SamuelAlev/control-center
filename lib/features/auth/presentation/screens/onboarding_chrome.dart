@@ -15,6 +15,7 @@ import 'package:control_center/features/auth/presentation/widgets/onboarding_ste
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/shader_background.dart';
+import 'package:control_center/shared/widgets/window_caption_buttons.dart';
 import 'package:control_center/shared/widgets/window_drag_area.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -53,11 +54,7 @@ class OnboardingScaffold extends StatelessWidget {
                     ),
                   ),
                 ),
-                const Positioned(
-                  top: 16,
-                  right: 16,
-                  child: OnboardingThemeToggle(),
-                ),
+                const WindowCaptionCorner(child: OnboardingThemeToggle()),
               ],
             ),
           ),

@@ -2211,7 +2211,6 @@
   "images": "تصاویر",
   "inactive": "غیرفعال",
   "install": "نصب",
-  "installRequired": "نصب لازم است",
   "installedVersion": "نصب‌شده ⁨{version}⁩",
   "@installedVersion": {
     "description": "Installed version label",
@@ -8799,5 +8798,11 @@
   "repoLinkUnlinkedCreate": "فضای کاری جدید",
   "repoLinkUnlinkedCreateHint": "نامی برایش بگذارید، سپس checkout را انتخاب کنید.",
   "repoLinkChooseCheckout": "checkout مربوط به {repo} را روی ماشینِ در حال اجرای سرور انتخاب کنید.",
-  "repoLinkCheckoutMismatch": "هیچ‌یک از مخزن‌های افزوده‌شده {repo} نیست، بنابراین پیوند بدون آن باز شد."
+  "repoLinkCheckoutMismatch": "هیچ‌یک از مخزن‌های افزوده‌شده {repo} نیست، بنابراین پیوند بدون آن باز شد.",
+  "windowMinimize": "کوچک کردن",
+  "windowMaximize": "بزرگ کردن",
+  "windowRestore": "بازیابی",
+  "nativeSandboxUnsupported": "سندباکس بومی هنوز روی ⁨{platform}⁩ پشتیبانی نمی‌شود.",
+  "continueWithoutSandbox": "ادامه بدون سندباکس",
+  "sandboxCheckAgain": "بررسی دوباره"
 }

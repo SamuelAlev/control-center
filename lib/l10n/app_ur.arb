@@ -2211,7 +2211,6 @@
   "images": "تصاویر",
   "inactive": "غیر فعال",
   "install": "انسٹال",
-  "installRequired": "انسٹالیشن درکار",
   "installedVersion": "انسٹال شدہ ⁨{version}⁩",
   "@installedVersion": {
     "description": "Installed version label",
@@ -8799,5 +8798,11 @@
   "repoLinkUnlinkedCreate": "نئی ورک اسپیس",
   "repoLinkUnlinkedCreateHint": "نام دیں، پھر چیک آؤٹ منتخب کریں۔",
   "repoLinkChooseCheckout": "سرور چلانے والی مشین پر {repo} کا چیک آؤٹ منتخب کریں۔",
-  "repoLinkCheckoutMismatch": "شامل کی گئی ریپوزٹریز میں سے کوئی بھی {repo} نہیں، اس لیے لنک اس کے بغیر کھلا۔"
+  "repoLinkCheckoutMismatch": "شامل کی گئی ریپوزٹریز میں سے کوئی بھی {repo} نہیں، اس لیے لنک اس کے بغیر کھلا۔",
+  "windowMinimize": "چھوٹا کریں",
+  "windowMaximize": "بڑا کریں",
+  "windowRestore": "بحال کریں",
+  "nativeSandboxUnsupported": "نیٹو سینڈ باکس ابھی ⁨{platform}⁩ پر معاون نہیں ہے۔",
+  "continueWithoutSandbox": "سینڈ باکس کے بغیر جاری رکھیں",
+  "sandboxCheckAgain": "دوبارہ چیک کریں"
 }

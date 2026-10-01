@@ -3677,9 +3677,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get install => 'Instalează';
 
   @override
-  String get installRequired => 'Instalare necesară';
-
-  @override
   String installedVersion(String version) {
     return 'Instalat $version';
   }
@@ -15248,4 +15245,24 @@ class AppLocalizationsRo extends AppLocalizations {
   String repoLinkCheckoutMismatch(String repo) {
     return 'Niciunul dintre depozitele adăugate nu este $repo, așa că linkul s-a deschis fără el.';
   }
+
+  @override
+  String get windowMinimize => 'Minimizare';
+
+  @override
+  String get windowMaximize => 'Maximizare';
+
+  @override
+  String get windowRestore => 'Restabilire';
+
+  @override
+  String nativeSandboxUnsupported(String platform) {
+    return 'Sandbox-ul nativ nu este încă acceptat pe $platform.';
+  }
+
+  @override
+  String get continueWithoutSandbox => 'Continuă fără sandbox';
+
+  @override
+  String get sandboxCheckAgain => 'Verifică din nou';
 }

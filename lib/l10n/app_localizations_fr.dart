@@ -3672,9 +3672,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get install => 'Installer';
 
   @override
-  String get installRequired => 'Installation requise';
-
-  @override
   String installedVersion(String version) {
     return 'Installé $version';
   }
@@ -15211,6 +15208,26 @@ class AppLocalizationsFr extends AppLocalizations {
   String repoLinkCheckoutMismatch(String repo) {
     return 'Aucun des dépôts ajoutés n\'est $repo : le lien s\'est donc ouvert sans lui.';
   }
+
+  @override
+  String get windowMinimize => 'Réduire';
+
+  @override
+  String get windowMaximize => 'Agrandir';
+
+  @override
+  String get windowRestore => 'Restaurer';
+
+  @override
+  String nativeSandboxUnsupported(String platform) {
+    return 'Le sandbox natif n\'est pas encore pris en charge sur $platform.';
+  }
+
+  @override
+  String get continueWithoutSandbox => 'Continuer sans sandbox';
+
+  @override
+  String get sandboxCheckAgain => 'Vérifier à nouveau';
 }
 
 /// The translations for French, as used in Canada (`fr_CA`).

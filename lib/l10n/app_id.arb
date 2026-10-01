@@ -2211,7 +2211,6 @@
   "images": "Gambar",
   "inactive": "Tidak aktif",
   "install": "Pasang",
-  "installRequired": "Instalasi diperlukan",
   "installedVersion": "Terpasang {version}",
   "@installedVersion": {
     "description": "Installed version label",
@@ -8799,5 +8798,11 @@
   "repoLinkUnlinkedCreate": "Ruang kerja baru",
   "repoLinkUnlinkedCreateHint": "Beri nama, lalu pilih checkout-nya.",
   "repoLinkChooseCheckout": "Pilih checkout {repo} di mesin yang menjalankan server.",
-  "repoLinkCheckoutMismatch": "Tidak ada repositori yang ditambahkan yang merupakan {repo}, jadi tautan dibuka tanpanya."
+  "repoLinkCheckoutMismatch": "Tidak ada repositori yang ditambahkan yang merupakan {repo}, jadi tautan dibuka tanpanya.",
+  "windowMinimize": "Minimalkan",
+  "windowMaximize": "Maksimalkan",
+  "windowRestore": "Pulihkan",
+  "nativeSandboxUnsupported": "Sandbox native belum didukung di {platform}.",
+  "continueWithoutSandbox": "Lanjutkan tanpa sandbox",
+  "sandboxCheckAgain": "Periksa lagi"
 }

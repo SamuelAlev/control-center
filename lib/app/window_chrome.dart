@@ -3,8 +3,9 @@ import 'dart:async';
 import 'package:control_center/app/window_geometry_watcher.dart';
 import 'package:control_center/app/window_placement.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
-import 'package:flutter/widgets.dart'
-    show Color, Offset, Rect, Size;
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, defaultTargetPlatform;
+import 'package:flutter/widgets.dart' show Color, Offset, Rect, Size;
 import 'package:nativeapi/nativeapi.dart'
     show DisplayManager, TitleBarStyle, Window, WindowManager;
 
@@ -99,6 +100,14 @@ bool isMainWindowTitle(String? title) =>
     title == serverSetupWindowTitle ||
     title == bootFailureWindowTitle;
 
+/// Whether hiding the primary window's title bar ([styleWindowOnShow]) also
+/// takes its window controls away, so the app draws its own
+/// (`WindowCaptionButtons`). macOS keeps the traffic lights over a hidden
+/// title bar. Windows loses its caption buttons with `WS_CAPTION`, and Linux
+/// drops the window decorations altogether.
+bool get primaryWindowDrawsOwnCaption =>
+    defaultTargetPlatform != TargetPlatform.macOS;
+
 const Offset _defaultPillPosition = Offset(700, 30);
 const Offset _defaultToolbarPosition = Offset(640, 72);
 const Offset _defaultSoundscapePosition = Offset(700, 114);
@@ -117,7 +126,8 @@ const Duration _fullScreenRestoreDelay = Duration(milliseconds: 300);
 
 /// Applies a window's chrome the moment it is about to show (called from
 /// `WindowManager.setWillShowHook`). The primary window restores its persisted
-/// geometry and hides its title bar (the app draws its own); the two HUDs become
+/// geometry and hides its title bar (the app draws its own, and its window
+/// controls too where [primaryWindowDrawsOwnCaption]); the two HUDs become
 /// fixed-size, frameless, transparent, always-on-top bars at their saved spot.
 void styleWindowOnShow(Window window, AppPreferences prefs) {
   switch (window.title) {

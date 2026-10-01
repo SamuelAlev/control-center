@@ -25,8 +25,10 @@ constexpr const wchar_t kSingleInstanceMutex[] =
     L"Local\\com.alev.control-center.singleinstance";
 
 // Must match kWindowClassName in win32_window.cpp and the title passed to
-// Win32Window::Create below — matching both targets our main window rather than
-// a plugin sub-window (e.g. the focus pill) that shares the generic class.
+// Win32Window::Create below. Together they find the running instance's runner
+// window (hidden; see FlutterWindow::OnCreate), which receives the handoff.
+// The class alone already rules out the app's own windows, whose primary one
+// carries the same title under the engine's FLUTTER_HOST_WINDOW class.
 constexpr const wchar_t kWindowClassName[] = L"FLUTTER_RUNNER_WIN32_WINDOW";
 constexpr const wchar_t kWindowTitle[] = L"Control Center";
 
@@ -137,10 +139,18 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
       ::Sleep(100);
     }
     if (primary != nullptr) {
+      // `primary` is the running instance's hidden runner window; the windows
+      // to raise are the app's own, and only that process can find them. A
+      // background process may not take the foreground on its own, so lend it
+      // ours (this launch is what the user just did).
+      DWORD primary_pid = 0;
+      ::GetWindowThreadProcessId(primary, &primary_pid);
+      ::AllowSetForegroundWindow(primary_pid);
       if (!deep_link_url.empty()) {
         ForwardDeepLinkToPrimary(primary, deep_link_url);
+      } else {
+        ::PostMessageW(primary, kRaiseAppWindowsMessage, 0, 0);
       }
-      ::SetForegroundWindow(primary);
     }
     if (instance_mutex != nullptr) {
       ::CloseHandle(instance_mutex);

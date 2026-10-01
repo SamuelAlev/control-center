@@ -2211,7 +2211,6 @@
   "images": "Εικόνες",
   "inactive": "Ανενεργό",
   "install": "Εγκατάσταση",
-  "installRequired": "Απαιτείται εγκατάσταση",
   "installedVersion": "Εγκατεστημένη {version}",
   "@installedVersion": {
     "description": "Installed version label",
@@ -8799,5 +8798,11 @@
   "repoLinkUnlinkedCreate": "Νέος χώρος εργασίας",
   "repoLinkUnlinkedCreateHint": "Δώστε του όνομα και έπειτα επιλέξτε το checkout.",
   "repoLinkChooseCheckout": "Επιλέξτε το checkout του {repo} στο μηχάνημα που εκτελεί τον διακομιστή.",
-  "repoLinkCheckoutMismatch": "Κανένα από τα αποθετήρια που προστέθηκαν δεν είναι το {repo}, οπότε ο σύνδεσμος άνοιξε χωρίς αυτό."
+  "repoLinkCheckoutMismatch": "Κανένα από τα αποθετήρια που προστέθηκαν δεν είναι το {repo}, οπότε ο σύνδεσμος άνοιξε χωρίς αυτό.",
+  "windowMinimize": "Ελαχιστοποίηση",
+  "windowMaximize": "Μεγιστοποίηση",
+  "windowRestore": "Επαναφορά",
+  "nativeSandboxUnsupported": "Το εγγενές sandbox δεν υποστηρίζεται ακόμη στο {platform}.",
+  "continueWithoutSandbox": "Συνέχεια χωρίς sandbox",
+  "sandboxCheckAgain": "Έλεγχος ξανά"
 }

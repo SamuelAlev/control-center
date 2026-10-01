@@ -3658,9 +3658,6 @@ class AppLocalizationsHu extends AppLocalizations {
   String get install => 'Telepítés';
 
   @override
-  String get installRequired => 'Telepítés szükséges';
-
-  @override
   String installedVersion(String version) {
     return 'Telepítve: $version';
   }
@@ -15147,4 +15144,24 @@ class AppLocalizationsHu extends AppLocalizations {
   String repoLinkCheckoutMismatch(String repo) {
     return 'A hozzáadott tárolók egyike sem a(z) $repo, ezért a hivatkozás nélküle nyílt meg.';
   }
+
+  @override
+  String get windowMinimize => 'Kis méret';
+
+  @override
+  String get windowMaximize => 'Teljes méret';
+
+  @override
+  String get windowRestore => 'Előző méret';
+
+  @override
+  String nativeSandboxUnsupported(String platform) {
+    return 'A natív homokozó még nem támogatott $platform rendszeren.';
+  }
+
+  @override
+  String get continueWithoutSandbox => 'Folytatás homokozó nélkül';
+
+  @override
+  String get sandboxCheckAgain => 'Újraellenőrzés';
 }

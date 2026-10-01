@@ -2211,7 +2211,6 @@
   "images": "Imej",
   "inactive": "Tidak aktif",
   "install": "Pasang",
-  "installRequired": "Pemasangan diperlukan",
   "installedVersion": "{version} dipasang",
   "@installedVersion": {
     "description": "Installed version label",
@@ -8799,5 +8798,11 @@
   "repoLinkUnlinkedCreate": "Ruang kerja baharu",
   "repoLinkUnlinkedCreateHint": "Namakannya, kemudian pilih checkout.",
   "repoLinkChooseCheckout": "Pilih checkout {repo} pada mesin yang menjalankan pelayan.",
-  "repoLinkCheckoutMismatch": "Tiada repositori yang ditambah ialah {repo}, jadi pautan dibuka tanpanya."
+  "repoLinkCheckoutMismatch": "Tiada repositori yang ditambah ialah {repo}, jadi pautan dibuka tanpanya.",
+  "windowMinimize": "Minimumkan",
+  "windowMaximize": "Maksimumkan",
+  "windowRestore": "Pulihkan",
+  "nativeSandboxUnsupported": "Kotak pasir natif belum disokong pada {platform}.",
+  "continueWithoutSandbox": "Teruskan tanpa kotak pasir",
+  "sandboxCheckAgain": "Semak semula"
 }

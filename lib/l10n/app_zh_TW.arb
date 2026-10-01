@@ -2211,7 +2211,6 @@
   "images": "圖片",
   "inactive": "未啟用",
   "install": "安裝",
-  "installRequired": "需要安裝",
   "installedVersion": "已安裝 {version}",
   "@installedVersion": {
     "description": "Installed version label",
@@ -8799,5 +8798,11 @@
   "repoLinkUnlinkedCreate": "新工作區",
   "repoLinkUnlinkedCreateHint": "為其命名，然後選取 git checkout。",
   "repoLinkChooseCheckout": "在執行伺服器的機器上選取 {repo} 的 git checkout。",
-  "repoLinkCheckoutMismatch": "新增的存放庫中沒有 {repo}，因此連結在沒有它的情況下開啟。"
+  "repoLinkCheckoutMismatch": "新增的存放庫中沒有 {repo}，因此連結在沒有它的情況下開啟。",
+  "windowMinimize": "最小化",
+  "windowMaximize": "最大化",
+  "windowRestore": "還原",
+  "nativeSandboxUnsupported": "原生沙盒尚未支援 {platform}。",
+  "continueWithoutSandbox": "不使用沙箱繼續",
+  "sandboxCheckAgain": "重新檢查"
 }

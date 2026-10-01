@@ -2211,7 +2211,6 @@
   "images": "Képek",
   "inactive": "Inaktív",
   "install": "Telepítés",
-  "installRequired": "Telepítés szükséges",
   "installedVersion": "Telepítve: {version}",
   "@installedVersion": {
     "description": "Installed version label",
@@ -8799,5 +8798,11 @@
   "repoLinkUnlinkedCreate": "Új munkaterület",
   "repoLinkUnlinkedCreateHint": "Nevezze el, majd válassza ki a checkoutot.",
   "repoLinkChooseCheckout": "Válassza ki a(z) {repo} checkoutját a szervert futtató gépen.",
-  "repoLinkCheckoutMismatch": "A hozzáadott tárolók egyike sem a(z) {repo}, ezért a hivatkozás nélküle nyílt meg."
+  "repoLinkCheckoutMismatch": "A hozzáadott tárolók egyike sem a(z) {repo}, ezért a hivatkozás nélküle nyílt meg.",
+  "windowMinimize": "Kis méret",
+  "windowMaximize": "Teljes méret",
+  "windowRestore": "Előző méret",
+  "nativeSandboxUnsupported": "A natív homokozó még nem támogatott {platform} rendszeren.",
+  "continueWithoutSandbox": "Folytatás homokozó nélkül",
+  "sandboxCheckAgain": "Újraellenőrzés"
 }

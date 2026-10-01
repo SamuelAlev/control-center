@@ -2211,7 +2211,6 @@
   "images": "Imagini",
   "inactive": "Inactiv",
   "install": "Instalează",
-  "installRequired": "Instalare necesară",
   "installedVersion": "Instalat {version}",
   "@installedVersion": {
     "description": "Installed version label",
@@ -8799,5 +8798,11 @@
   "repoLinkUnlinkedCreate": "Spațiu de lucru nou",
   "repoLinkUnlinkedCreateHint": "Denumește-l, apoi alege checkout-ul.",
   "repoLinkChooseCheckout": "Selectează checkout-ul pentru {repo} de pe mașina care rulează serverul.",
-  "repoLinkCheckoutMismatch": "Niciunul dintre depozitele adăugate nu este {repo}, așa că linkul s-a deschis fără el."
+  "repoLinkCheckoutMismatch": "Niciunul dintre depozitele adăugate nu este {repo}, așa că linkul s-a deschis fără el.",
+  "windowMinimize": "Minimizare",
+  "windowMaximize": "Maximizare",
+  "windowRestore": "Restabilire",
+  "nativeSandboxUnsupported": "Sandbox-ul nativ nu este încă acceptat pe {platform}.",
+  "continueWithoutSandbox": "Continuă fără sandbox",
+  "sandboxCheckAgain": "Verifică din nou"
 }

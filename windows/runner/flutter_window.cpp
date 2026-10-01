@@ -1,5 +1,6 @@
 #include "flutter_window.h"
 
+#include <cwchar>
 #include <optional>
 
 #include "flutter/generated_plugin_registrant.h"
@@ -41,13 +42,44 @@ bool FlutterWindow::OnCreate() {
     pending_deep_link_.clear();
   }
 
-  flutter_controller_->engine()->SetNextFrameCallback([&]() {
-    this->Show();
-  });
-
-  flutter_controller_->ForceRedraw();
+  // This window hosts the implicit view, which the app never draws into: every
+  // window it shows is a windowing-API window (lib/app/app_windows.dart), and
+  // each of those shows itself on its own first frame. So this one stays
+  // hidden. Showing it on the engine's next frame, as Flutter's template does,
+  // put an empty white window beside the app's own (Linux's runner hides its
+  // implicit window for the same reason). It still exists for the plugins that
+  // want a view, the app channel, and the single-instance handoff (main.cpp).
 
   return true;
+}
+
+void FlutterWindow::RaiseAppWindows() {
+  // The windowing-API windows live on this thread, as top-level windows of
+  // the engine's class. Only the app's main windows are raised, never the
+  // floating HUDs: the titles are lib/app/window_chrome.dart's, and the main
+  // ones (`isMainWindowTitle`) all start with the app's name, where the HUDs
+  // end with it.
+  ::EnumThreadWindows(
+      ::GetCurrentThreadId(),
+      [](HWND hwnd, LPARAM) -> BOOL {
+        constexpr wchar_t kHostWindowClass[] = L"FLUTTER_HOST_WINDOW";
+        constexpr wchar_t kMainTitlePrefix[] = L"Control Center";
+        wchar_t class_name[64];
+        wchar_t title[64];
+        if (!::IsWindowVisible(hwnd) ||
+            ::GetClassNameW(hwnd, class_name, 64) == 0 ||
+            wcscmp(class_name, kHostWindowClass) != 0 ||
+            ::GetWindowTextW(hwnd, title, 64) == 0 ||
+            wcsncmp(title, kMainTitlePrefix, wcslen(kMainTitlePrefix)) != 0) {
+          return TRUE;
+        }
+        if (::IsIconic(hwnd)) {
+          ::ShowWindow(hwnd, SW_RESTORE);
+        }
+        ::SetForegroundWindow(hwnd);
+        return TRUE;
+      },
+      0);
 }
 
 void FlutterWindow::OnDestroy() {
@@ -91,11 +123,16 @@ FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
               "openUrl",
               std::make_unique<flutter::EncodableValue>(url));
         }
-        ::SetForegroundWindow(hwnd);
+        RaiseAppWindows();
         return TRUE;
       }
       break;
     }
+
+    case kRaiseAppWindowsMessage:
+      // A second launch with nothing to hand over: bring the app forward.
+      RaiseAppWindows();
+      return 0;
   }
 
   return Win32Window::MessageHandler(hwnd, message, wparam, lparam);

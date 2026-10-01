@@ -3628,9 +3628,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String get install => 'انسٹال';
 
   @override
-  String get installRequired => 'انسٹالیشن درکار';
-
-  @override
   String installedVersion(String version) {
     return 'انسٹال شدہ ⁨$version⁩';
   }
@@ -15029,4 +15026,24 @@ class AppLocalizationsUr extends AppLocalizations {
   String repoLinkCheckoutMismatch(String repo) {
     return 'شامل کی گئی ریپوزٹریز میں سے کوئی بھی $repo نہیں، اس لیے لنک اس کے بغیر کھلا۔';
   }
+
+  @override
+  String get windowMinimize => 'چھوٹا کریں';
+
+  @override
+  String get windowMaximize => 'بڑا کریں';
+
+  @override
+  String get windowRestore => 'بحال کریں';
+
+  @override
+  String nativeSandboxUnsupported(String platform) {
+    return 'نیٹو سینڈ باکس ابھی ⁨$platform⁩ پر معاون نہیں ہے۔';
+  }
+
+  @override
+  String get continueWithoutSandbox => 'سینڈ باکس کے بغیر جاری رکھیں';
+
+  @override
+  String get sandboxCheckAgain => 'دوبارہ چیک کریں';
 }

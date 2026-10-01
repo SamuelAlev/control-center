@@ -18,6 +18,7 @@ import 'package:control_center/features/meetings/presentation/screens/meeting_to
 import 'package:control_center/features/soundscape/presentation/notifiers/soundscape_mini_player_controller.dart';
 import 'package:control_center/features/soundscape/presentation/screens/soundscape_mini_player_window.dart';
 import 'package:control_center/shared/widgets/foreground_ticker_gate.dart';
+import 'package:control_center/shared/widgets/window_caption_buttons.dart';
 import 'package:flutter/src/widgets/_window.dart'
     show Window, WindowController, WindowControllerDelegate;
 import 'package:flutter/widgets.dart';
@@ -83,6 +84,11 @@ class PrimaryWindow extends StatefulWidget {
 }
 
 class _PrimaryWindowState extends State<PrimaryWindow> {
+  // Closing the main window quits the app (and stops the spawned server)
+  // rather than leaving a headless engine running with no windows. Held here
+  // so the app-drawn close button can take the very same path.
+  static final WindowControllerDelegate _quitOnClose = _QuitOnCloseDelegate();
+
   final WindowController _controller = WindowController(
     // Shared with the restore path so the size the window is CREATED at and
     // the size it falls back to when there is nothing saved cannot drift
@@ -95,9 +101,12 @@ class _PrimaryWindowState extends State<PrimaryWindow> {
       minHeight: mainWindowMinSize.height,
     ),
     title: primaryWindowTitle,
-    // Closing the main window quits the app (and stops the spawned server)
-    // rather than leaving a headless engine running with no windows.
-    delegate: _QuitOnCloseDelegate(),
+    delegate: _quitOnClose,
+  );
+
+  late final WindowCaptionActions _caption = _ControllerCaptionActions(
+    _controller,
+    _quitOnClose,
   );
 
   @override
@@ -108,20 +117,56 @@ class _PrimaryWindowState extends State<PrimaryWindow> {
 
   @override
   Widget build(BuildContext context) {
+    // Mute every ticker in the main window while the app is backgrounded:
+    // frames scheduled into an unpresentable macOS surface accumulate native
+    // GPU memory (the idle 60GB leak). The always-on-top HUD windows stay
+    // ungated — they are meant to be watched while the operator is in
+    // another app.
+    final Widget app = ForegroundTickerGate(
+      child: sentryReportingActive
+          ? SentryWidget(child: const ControlCenterApp())
+          : const ControlCenterApp(),
+    );
     return Window(
       controller: _controller,
-      // Mute every ticker in the main window while the app is backgrounded:
-      // frames scheduled into an unpresentable macOS surface accumulate native
-      // GPU memory (the idle 60GB leak). The always-on-top HUD windows stay
-      // ungated — they are meant to be watched while the operator is in
-      // another app.
-      child: ForegroundTickerGate(
-        child: sentryReportingActive
-            ? SentryWidget(child: const ControlCenterApp())
-            : const ControlCenterApp(),
-      ),
+      child: primaryWindowDrawsOwnCaption
+          ? WindowCaptionScope(actions: _caption, child: app)
+          : app,
     );
   }
+}
+
+/// [WindowCaptionActions] over the primary window's own controller, which
+/// tracks the platform window's state and notifies on every change to it.
+class _ControllerCaptionActions implements WindowCaptionActions {
+  _ControllerCaptionActions(this._controller, this._delegate);
+
+  final WindowController _controller;
+  final WindowControllerDelegate _delegate;
+
+  @override
+  bool get isMaximized => _controller.isMaximized;
+
+  @override
+  bool get isActive => _controller.isActivated;
+
+  @override
+  void minimize() => _controller.setMinimized(true);
+
+  @override
+  void toggleMaximize() => _controller.setMaximized(!_controller.isMaximized);
+
+  // A native close button sends the platform's close request, which the
+  // controller hands to its delegate; this goes straight to the delegate.
+  @override
+  void close() => _delegate.onWindowCloseRequested(_controller);
+
+  @override
+  void addListener(VoidCallback listener) => _controller.addListener(listener);
+
+  @override
+  void removeListener(VoidCallback listener) =>
+      _controller.removeListener(listener);
 }
 
 /// Renders [app] in a standalone native window for the pre-app server-setup
@@ -154,7 +199,9 @@ void runServerSetupWindow(Widget app) {
 /// server): whatever failed may be exactly the thing those would need.
 void runBootFailureWindow(Object error, StackTrace stack) {
   runWidget(
-    ViewCollection(views: [_BootFailureWindow(error: error, stack: stack)]),
+    ViewCollection(
+      views: [_BootFailureWindow(error: error, stack: stack)],
+    ),
   );
 }
 

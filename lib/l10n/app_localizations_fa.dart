@@ -3631,9 +3631,6 @@ class AppLocalizationsFa extends AppLocalizations {
   String get install => 'نصب';
 
   @override
-  String get installRequired => 'نصب لازم است';
-
-  @override
   String installedVersion(String version) {
     return 'نصب‌شده ⁨$version⁩';
   }
@@ -15029,4 +15026,24 @@ class AppLocalizationsFa extends AppLocalizations {
   String repoLinkCheckoutMismatch(String repo) {
     return 'هیچ‌یک از مخزن‌های افزوده‌شده $repo نیست، بنابراین پیوند بدون آن باز شد.';
   }
+
+  @override
+  String get windowMinimize => 'کوچک کردن';
+
+  @override
+  String get windowMaximize => 'بزرگ کردن';
+
+  @override
+  String get windowRestore => 'بازیابی';
+
+  @override
+  String nativeSandboxUnsupported(String platform) {
+    return 'سندباکس بومی هنوز روی ⁨$platform⁩ پشتیبانی نمی‌شود.';
+  }
+
+  @override
+  String get continueWithoutSandbox => 'ادامه بدون سندباکس';
+
+  @override
+  String get sandboxCheckAgain => 'بررسی دوباره';
 }

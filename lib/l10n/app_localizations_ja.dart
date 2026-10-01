@@ -3579,9 +3579,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get install => 'インストール';
 
   @override
-  String get installRequired => 'インストールが必要です';
-
-  @override
   String installedVersion(String version) {
     return 'インストール済み $version';
   }
@@ -14762,4 +14759,24 @@ class AppLocalizationsJa extends AppLocalizations {
   String repoLinkCheckoutMismatch(String repo) {
     return '追加したリポジトリに $repo が含まれていないため、リンクはリポジトリなしで開きました。';
   }
+
+  @override
+  String get windowMinimize => '最小化';
+
+  @override
+  String get windowMaximize => '最大化';
+
+  @override
+  String get windowRestore => '元のサイズに戻す';
+
+  @override
+  String nativeSandboxUnsupported(String platform) {
+    return 'ネイティブサンドボックスは$platformではまだサポートされていません。';
+  }
+
+  @override
+  String get continueWithoutSandbox => 'サンドボックスなしで続行';
+
+  @override
+  String get sandboxCheckAgain => '再確認';
 }

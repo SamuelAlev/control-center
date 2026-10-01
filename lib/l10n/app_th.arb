@@ -2299,7 +2299,6 @@
   "images": "ภาพ",
   "inactive": "ไม่ได้ใช้งาน",
   "install": "ติดตั้ง",
-  "installRequired": "ต้องติดตั้ง",
   "installedVersion": "ติดตั้ง {version} แล้ว",
   "@installedVersion": {
     "description": "Installed version label",
@@ -9211,5 +9210,11 @@
   "repoLinkUnlinkedCreate": "เวิร์กสเปซใหม่",
   "repoLinkUnlinkedCreateHint": "ตั้งชื่อ แล้วเลือกเช็กเอาต์",
   "repoLinkChooseCheckout": "เลือกเช็กเอาต์ของ {repo} บนเครื่องที่รันเซิร์ฟเวอร์",
-  "repoLinkCheckoutMismatch": "ไม่มีรีโพสิทอรีที่เพิ่มรายการใดเป็น {repo} จึงเปิดลิงก์โดยไม่มีรีโพสิทอรีนี้"
+  "repoLinkCheckoutMismatch": "ไม่มีรีโพสิทอรีที่เพิ่มรายการใดเป็น {repo} จึงเปิดลิงก์โดยไม่มีรีโพสิทอรีนี้",
+  "windowMinimize": "ย่อเล็กสุด",
+  "windowMaximize": "ขยายใหญ่สุด",
+  "windowRestore": "คืนค่า",
+  "nativeSandboxUnsupported": "แซนด์บ็อกซ์เนทีฟยังไม่รองรับบน {platform}",
+  "continueWithoutSandbox": "ดำเนินการต่อโดยไม่ใช้แซนด์บ็อกซ์",
+  "sandboxCheckAgain": "ตรวจสอบอีกครั้ง"
 }

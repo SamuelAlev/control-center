@@ -3669,9 +3669,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get install => 'Instalar';
 
   @override
-  String get installRequired => 'Instalação necessária';
-
-  @override
   String installedVersion(String version) {
     return 'Instalado $version';
   }
@@ -15165,6 +15162,26 @@ class AppLocalizationsPt extends AppLocalizations {
   String repoLinkCheckoutMismatch(String repo) {
     return 'Nenhum dos repositórios adicionados é $repo, então o link abriu sem ele.';
   }
+
+  @override
+  String get windowMinimize => 'Minimizar';
+
+  @override
+  String get windowMaximize => 'Maximizar';
+
+  @override
+  String get windowRestore => 'Restaurar';
+
+  @override
+  String nativeSandboxUnsupported(String platform) {
+    return 'Sandbox nativo ainda não é compatível com $platform.';
+  }
+
+  @override
+  String get continueWithoutSandbox => 'Continuar sem sandbox';
+
+  @override
+  String get sandboxCheckAgain => 'Verificar novamente';
 }
 
 /// The translations for Portuguese, as used in Portugal (`pt_PT`).

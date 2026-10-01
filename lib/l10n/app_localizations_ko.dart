@@ -3583,9 +3583,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get install => '설치';
 
   @override
-  String get installRequired => '설치 필요';
-
-  @override
   String installedVersion(String version) {
     return '$version 설치됨';
   }
@@ -14757,4 +14754,24 @@ class AppLocalizationsKo extends AppLocalizations {
   String repoLinkCheckoutMismatch(String repo) {
     return '추가된 리포지토리 중 $repo이(가) 없어 리포지토리 없이 링크를 열었습니다.';
   }
+
+  @override
+  String get windowMinimize => '최소화';
+
+  @override
+  String get windowMaximize => '최대화';
+
+  @override
+  String get windowRestore => '이전 크기로 복원';
+
+  @override
+  String nativeSandboxUnsupported(String platform) {
+    return '$platform에서는 아직 네이티브 샌드박스를 지원하지 않습니다.';
+  }
+
+  @override
+  String get continueWithoutSandbox => '샌드박스 없이 계속';
+
+  @override
+  String get sandboxCheckAgain => '다시 확인';
 }

@@ -3634,9 +3634,6 @@ class AppLocalizationsHe extends AppLocalizations {
   String get install => 'התקנה';
 
   @override
-  String get installRequired => 'נדרשת התקנה';
-
-  @override
   String installedVersion(String version) {
     return 'מותקנת גרסה ⁨$version⁩';
   }
@@ -15087,4 +15084,24 @@ class AppLocalizationsHe extends AppLocalizations {
   String repoLinkCheckoutMismatch(String repo) {
     return 'אף אחד מהמאגרים שנוספו אינו $repo, ולכן הקישור נפתח בלעדיו.';
   }
+
+  @override
+  String get windowMinimize => 'מזער';
+
+  @override
+  String get windowMaximize => 'הגדל';
+
+  @override
+  String get windowRestore => 'שחזר';
+
+  @override
+  String nativeSandboxUnsupported(String platform) {
+    return 'ארגז חול מקורי עדיין לא נתמך ב־⁨$platform⁩.';
+  }
+
+  @override
+  String get continueWithoutSandbox => 'המשך ללא ארגז חול';
+
+  @override
+  String get sandboxCheckAgain => 'בדוק שוב';
 }

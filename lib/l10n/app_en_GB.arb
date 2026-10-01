@@ -89,5 +89,7 @@
   "profileTeamMembers": "Members: {count}",
   "noPrsByTeamInWorkspace": "No pull requests by {team} in this workspace",
   "profilePrStateFilterLabel": "Filter pull requests by state",
-  "noProfilePrsMatchSearchHint": "Try another title or pull request number"
+  "noProfilePrsMatchSearchHint": "Try another title or pull request number",
+  "windowMinimize": "Minimise",
+  "windowMaximize": "Maximise"
 }

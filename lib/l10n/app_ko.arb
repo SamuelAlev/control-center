@@ -2211,7 +2211,6 @@
   "images": "이미지",
   "inactive": "비활성",
   "install": "설치",
-  "installRequired": "설치 필요",
   "installedVersion": "{version} 설치됨",
   "@installedVersion": {
     "description": "Installed version label",
@@ -8799,5 +8798,11 @@
   "repoLinkUnlinkedCreate": "새 워크스페이스",
   "repoLinkUnlinkedCreateHint": "이름을 지정한 다음 체크아웃을 선택합니다.",
   "repoLinkChooseCheckout": "서버가 실행 중인 머신에서 {repo}의 체크아웃을 선택하세요.",
-  "repoLinkCheckoutMismatch": "추가된 리포지토리 중 {repo}이(가) 없어 리포지토리 없이 링크를 열었습니다."
+  "repoLinkCheckoutMismatch": "추가된 리포지토리 중 {repo}이(가) 없어 리포지토리 없이 링크를 열었습니다.",
+  "windowMinimize": "최소화",
+  "windowMaximize": "최대화",
+  "windowRestore": "이전 크기로 복원",
+  "nativeSandboxUnsupported": "{platform}에서는 아직 네이티브 샌드박스를 지원하지 않습니다.",
+  "continueWithoutSandbox": "샌드박스 없이 계속",
+  "sandboxCheckAgain": "다시 확인"
 }

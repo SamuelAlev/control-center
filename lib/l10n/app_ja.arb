@@ -2211,7 +2211,6 @@
   "images": "画像",
   "inactive": "非アクティブ",
   "install": "インストール",
-  "installRequired": "インストールが必要です",
   "installedVersion": "インストール済み {version}",
   "@installedVersion": {
     "description": "Installed version label",
@@ -8799,5 +8798,11 @@
   "repoLinkUnlinkedCreate": "新しいワークスペース",
   "repoLinkUnlinkedCreateHint": "名前を付けてから、チェックアウトを選択します。",
   "repoLinkChooseCheckout": "サーバーが稼働しているマシン上の {repo} のチェックアウトを選択してください。",
-  "repoLinkCheckoutMismatch": "追加したリポジトリに {repo} が含まれていないため、リンクはリポジトリなしで開きました。"
+  "repoLinkCheckoutMismatch": "追加したリポジトリに {repo} が含まれていないため、リンクはリポジトリなしで開きました。",
+  "windowMinimize": "最小化",
+  "windowMaximize": "最大化",
+  "windowRestore": "元のサイズに戻す",
+  "nativeSandboxUnsupported": "ネイティブサンドボックスは{platform}ではまだサポートされていません。",
+  "continueWithoutSandbox": "サンドボックスなしで続行",
+  "sandboxCheckAgain": "再確認"
 }

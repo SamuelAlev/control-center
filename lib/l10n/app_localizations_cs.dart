@@ -3678,9 +3678,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get install => 'Nainstalovat';
 
   @override
-  String get installRequired => 'Vyžadována instalace';
-
-  @override
   String installedVersion(String version) {
     return 'Nainstalováno $version';
   }
@@ -15251,4 +15248,24 @@ class AppLocalizationsCs extends AppLocalizations {
   String repoLinkCheckoutMismatch(String repo) {
     return 'Žádný z přidaných repozitářů není $repo, proto se odkaz otevřel bez něj.';
   }
+
+  @override
+  String get windowMinimize => 'Minimalizovat';
+
+  @override
+  String get windowMaximize => 'Maximalizovat';
+
+  @override
+  String get windowRestore => 'Obnovit';
+
+  @override
+  String nativeSandboxUnsupported(String platform) {
+    return 'Nativní sandbox zatím není na $platform podporován.';
+  }
+
+  @override
+  String get continueWithoutSandbox => 'Pokračovat bez sandboxu';
+
+  @override
+  String get sandboxCheckAgain => 'Zkontrolovat znovu';
 }

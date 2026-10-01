@@ -2211,7 +2211,6 @@
   "images": "Obrázky",
   "inactive": "Neaktivní",
   "install": "Nainstalovat",
-  "installRequired": "Vyžadována instalace",
   "installedVersion": "Nainstalováno {version}",
   "@installedVersion": {
     "description": "Installed version label",
@@ -8799,5 +8798,11 @@
   "repoLinkUnlinkedCreate": "Nový pracovní prostor",
   "repoLinkUnlinkedCreateHint": "Pojmenujte ho a pak vyberte checkout.",
   "repoLinkChooseCheckout": "Vyberte checkout repozitáře {repo} na stroji se serverem.",
-  "repoLinkCheckoutMismatch": "Žádný z přidaných repozitářů není {repo}, proto se odkaz otevřel bez něj."
+  "repoLinkCheckoutMismatch": "Žádný z přidaných repozitářů není {repo}, proto se odkaz otevřel bez něj.",
+  "windowMinimize": "Minimalizovat",
+  "windowMaximize": "Maximalizovat",
+  "windowRestore": "Obnovit",
+  "nativeSandboxUnsupported": "Nativní sandbox zatím není na {platform} podporován.",
+  "continueWithoutSandbox": "Pokračovat bez sandboxu",
+  "sandboxCheckAgain": "Zkontrolovat znovu"
 }

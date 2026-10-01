@@ -2211,7 +2211,6 @@
   "images": "Görseller",
   "inactive": "Etkin değil",
   "install": "Yükle",
-  "installRequired": "Yükleme gerekli",
   "installedVersion": "Yüklü {version}",
   "@installedVersion": {
     "description": "Installed version label",
@@ -8799,5 +8798,11 @@
   "repoLinkUnlinkedCreate": "Yeni çalışma alanı",
   "repoLinkUnlinkedCreateHint": "Ad verin, ardından checkout'u seçin.",
   "repoLinkChooseCheckout": "Sunucunun çalıştığı makinede {repo} checkout'unu seçin.",
-  "repoLinkCheckoutMismatch": "Eklenen depoların hiçbiri {repo} değil, bu nedenle bağlantı onsuz açıldı."
+  "repoLinkCheckoutMismatch": "Eklenen depoların hiçbiri {repo} değil, bu nedenle bağlantı onsuz açıldı.",
+  "windowMinimize": "Simge durumuna küçült",
+  "windowMaximize": "Ekranı kapla",
+  "windowRestore": "Geri getir",
+  "nativeSandboxUnsupported": "Yerel sandbox henüz {platform} üzerinde desteklenmiyor.",
+  "continueWithoutSandbox": "Sandbox olmadan devam et",
+  "sandboxCheckAgain": "Tekrar kontrol et"
 }

@@ -3644,9 +3644,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get install => 'Yükle';
 
   @override
-  String get installRequired => 'Yükleme gerekli';
-
-  @override
   String installedVersion(String version) {
     return 'Yüklü $version';
   }
@@ -15085,4 +15082,24 @@ class AppLocalizationsTr extends AppLocalizations {
   String repoLinkCheckoutMismatch(String repo) {
     return 'Eklenen depoların hiçbiri $repo değil, bu nedenle bağlantı onsuz açıldı.';
   }
+
+  @override
+  String get windowMinimize => 'Simge durumuna küçült';
+
+  @override
+  String get windowMaximize => 'Ekranı kapla';
+
+  @override
+  String get windowRestore => 'Geri getir';
+
+  @override
+  String nativeSandboxUnsupported(String platform) {
+    return 'Yerel sandbox henüz $platform üzerinde desteklenmiyor.';
+  }
+
+  @override
+  String get continueWithoutSandbox => 'Sandbox olmadan devam et';
+
+  @override
+  String get sandboxCheckAgain => 'Tekrar kontrol et';
 }

@@ -3022,10 +3022,6 @@
     "description": "Label for inactive policies"
   },
   "install": "Install",
-  "installRequired": "Installation required",
-  "@installRequired": {
-    "description": "Locale string for installRequired"
-  },
   "installedVersion": "Installed {version}",
   "@installedVersion": {
     "description": "Installed version label",
@@ -13756,5 +13752,17 @@
   "repoLinkChooseCheckout": "Select the checkout of {repo} on the machine running the server.",
   "@repoLinkChooseCheckout": {"description": "The dialog shown when a link names a repository no workspace links, and the add-repository step it leads to", "placeholders": {"repo": {"type": "String", "example": "acme/widgets"}}},
   "repoLinkCheckoutMismatch": "None of the added repositories is {repo}, so the link opened without it.",
-  "@repoLinkCheckoutMismatch": {"description": "The dialog shown when a link names a repository no workspace links, and the add-repository step it leads to", "placeholders": {"repo": {"type": "String", "example": "acme/widgets"}}}
+  "@repoLinkCheckoutMismatch": {"description": "The dialog shown when a link names a repository no workspace links, and the add-repository step it leads to", "placeholders": {"repo": {"type": "String", "example": "acme/widgets"}}},
+  "windowMinimize": "Minimize",
+  "@windowMinimize": {"description": "Tooltip and accessible name of the app-drawn minimize button in the window's title bar (Windows, Linux)"},
+  "windowMaximize": "Maximize",
+  "@windowMaximize": {"description": "Tooltip and accessible name of the app-drawn maximize button in the window's title bar (Windows, Linux)"},
+  "windowRestore": "Restore",
+  "@windowRestore": {"description": "Tooltip and accessible name of the app-drawn button that restores a maximized window to its previous size (Windows, Linux)"},
+  "nativeSandboxUnsupported": "Native sandbox is not supported on {platform} yet.",
+  "@nativeSandboxUnsupported": {"description": "Onboarding sandbox step title when the host platform has no native sandbox at all (nothing to install)", "placeholders": {"platform": {"type": "String", "example": "Windows (x86_64)"}}},
+  "continueWithoutSandbox": "Continue without sandbox",
+  "@continueWithoutSandbox": {"description": "Onboarding sandbox step button on a platform with no native sandbox: agents will run without isolation"},
+  "sandboxCheckAgain": "Check again",
+  "@sandboxCheckAgain": {"description": "Onboarding sandbox step button that re-detects the sandbox after the user installed the missing tools"}
 }

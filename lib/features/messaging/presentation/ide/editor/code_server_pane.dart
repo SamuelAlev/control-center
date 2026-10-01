@@ -6,6 +6,7 @@ import 'package:cc_ui/cc_ui.dart';
 // out of the desktop VM build (which gets the stub and never constructs it).
 import 'package:control_center/features/messaging/presentation/ide/editor/browser_webview_stub.dart'
     if (dart.library.js_interop) 'package:control_center/features/messaging/presentation/ide/editor/browser_webview_web.dart';
+import 'package:control_center/features/messaging/presentation/ide/editor/code_server_webview.dart';
 import 'package:control_center/features/messaging/providers/code_server_session_provider.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
@@ -13,7 +14,6 @@ import 'package:control_center/shared/utils/open_url.dart';
 import 'package:control_center/shared/widgets/media_proxy_scope.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
-import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Embedded code-server (VS Code in the browser) editor tab: the full VS Code UI on the
@@ -156,7 +156,9 @@ class _CodeServerPaneState extends ConsumerState<CodeServerPane> {
 
     const web = kIsWeb;
     if (web) {
-      // Proxied URL embeds inline in the web bundle's <iframe>.
+      // Proxied URL embeds inline in the web bundle's <iframe>. Not covered
+      // like the native webview: the parent cannot read the iframe's console
+      // for the bridge's chrome-hidden marker.
       return BrowserWebView(src: embedUrl, reloadToken: _reloadToken);
     }
     if (!_nativeWebviewSupported) {
@@ -167,21 +169,17 @@ class _CodeServerPaneState extends ConsumerState<CodeServerPane> {
         ctaLabel: l10n.ideCodeServerOpenInBrowser,
       );
     }
-    // macOS / Windows / mobile: real InAppWebView on the proxied URL. Cookies
-    // persist for the session (NOT incognito, unlike the browser pane) so
-    // code-server's session cookie survives the tab's lifetime.
+    // macOS / Windows / mobile: real InAppWebView on the proxied URL, kept
+    // under the same "preparing" state until the bridge extension has hidden
+    // code-server's side bars (see [CodeServerWebView]).
+    final preparing = _Installing(label: l10n.ideCodeServerInstalling);
     return _ready
-        ? ClipRect(
-            child: InAppWebView(
-              key: ValueKey(result.sessionId),
-              initialUrlRequest: URLRequest(url: WebUri(embedUrl)),
-              initialSettings: InAppWebViewSettings(
-                isInspectable: kDebugMode,
-                allowsInlineMediaPlayback: true,
-              ),
-            ),
+        ? CodeServerWebView(
+            key: ValueKey(result.sessionId),
+            url: embedUrl,
+            cover: preparing,
           )
-        : const Center(child: CcSpinner());
+        : preparing;
   }
 
   Widget _errorCard(BuildContext context, Object error) {

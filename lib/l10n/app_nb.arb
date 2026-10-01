@@ -2211,7 +2211,6 @@
   "images": "Bilder",
   "inactive": "Inaktiv",
   "install": "Installer",
-  "installRequired": "Installasjon kreves",
   "installedVersion": "Installert {version}",
   "@installedVersion": {
     "description": "Installed version label",
@@ -8799,5 +8798,11 @@
   "repoLinkUnlinkedCreate": "Nytt arbeidsområde",
   "repoLinkUnlinkedCreateHint": "Gi det et navn, og velg deretter utsjekkingen.",
   "repoLinkChooseCheckout": "Velg utsjekkingen av {repo} på maskinen som kjører serveren.",
-  "repoLinkCheckoutMismatch": "Ingen av arkivene som ble lagt til, er {repo}, så lenken ble åpnet uten det."
+  "repoLinkCheckoutMismatch": "Ingen av arkivene som ble lagt til, er {repo}, så lenken ble åpnet uten det.",
+  "windowMinimize": "Minimer",
+  "windowMaximize": "Maksimer",
+  "windowRestore": "Gjenopprett",
+  "nativeSandboxUnsupported": "Innebygd sandkasse støttes ikke på {platform} ennå.",
+  "continueWithoutSandbox": "Fortsett uten sandkasse",
+  "sandboxCheckAgain": "Sjekk på nytt"
 }

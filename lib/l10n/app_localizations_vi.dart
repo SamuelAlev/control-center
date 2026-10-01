@@ -3638,9 +3638,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get install => 'Cài đặt';
 
   @override
-  String get installRequired => 'Cần cài đặt';
-
-  @override
   String installedVersion(String version) {
     return 'Đã cài $version';
   }
@@ -15055,4 +15052,24 @@ class AppLocalizationsVi extends AppLocalizations {
   String repoLinkCheckoutMismatch(String repo) {
     return 'Không kho lưu trữ nào vừa thêm là $repo, nên liên kết đã mở mà không có nó.';
   }
+
+  @override
+  String get windowMinimize => 'Thu nhỏ';
+
+  @override
+  String get windowMaximize => 'Phóng to';
+
+  @override
+  String get windowRestore => 'Khôi phục';
+
+  @override
+  String nativeSandboxUnsupported(String platform) {
+    return 'Sandbox gốc chưa được hỗ trợ trên $platform.';
+  }
+
+  @override
+  String get continueWithoutSandbox => 'Tiếp tục không dùng sandbox';
+
+  @override
+  String get sandboxCheckAgain => 'Kiểm tra lại';
 }

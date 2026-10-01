@@ -1592,10 +1592,6 @@
     "description": "Label for inactive policies"
   },
   "install": "Installeren",
-  "installRequired": "Installatie vereist",
-  "@installRequired": {
-    "description": "Locale string for installRequired"
-  },
   "installedVersion": "Geïnstalleerd {version}",
   "@installedVersion": {
     "description": "Installed version label",
@@ -7989,5 +7985,11 @@
   "repoLinkUnlinkedCreate": "Nieuwe werkruimte",
   "repoLinkUnlinkedCreateHint": "Geef een naam en kies daarna de checkout.",
   "repoLinkChooseCheckout": "Selecteer de checkout van {repo} op de machine die de server draait.",
-  "repoLinkCheckoutMismatch": "Geen van de toegevoegde repository's is {repo}, dus de link is zonder geopend."
+  "repoLinkCheckoutMismatch": "Geen van de toegevoegde repository's is {repo}, dus de link is zonder geopend.",
+  "windowMinimize": "Minimaliseren",
+  "windowMaximize": "Maximaliseren",
+  "windowRestore": "Vorig formaat",
+  "nativeSandboxUnsupported": "Native sandbox wordt nog niet ondersteund op {platform}.",
+  "continueWithoutSandbox": "Doorgaan zonder sandbox",
+  "sandboxCheckAgain": "Opnieuw controleren"
 }

@@ -3618,9 +3618,6 @@ class AppLocalizationsTh extends AppLocalizations {
   String get install => 'ติดตั้ง';
 
   @override
-  String get installRequired => 'ต้องติดตั้ง';
-
-  @override
   String installedVersion(String version) {
     return 'ติดตั้ง $version แล้ว';
   }
@@ -14949,4 +14946,24 @@ class AppLocalizationsTh extends AppLocalizations {
   String repoLinkCheckoutMismatch(String repo) {
     return 'ไม่มีรีโพสิทอรีที่เพิ่มรายการใดเป็น $repo จึงเปิดลิงก์โดยไม่มีรีโพสิทอรีนี้';
   }
+
+  @override
+  String get windowMinimize => 'ย่อเล็กสุด';
+
+  @override
+  String get windowMaximize => 'ขยายใหญ่สุด';
+
+  @override
+  String get windowRestore => 'คืนค่า';
+
+  @override
+  String nativeSandboxUnsupported(String platform) {
+    return 'แซนด์บ็อกซ์เนทีฟยังไม่รองรับบน $platform';
+  }
+
+  @override
+  String get continueWithoutSandbox => 'ดำเนินการต่อโดยไม่ใช้แซนด์บ็อกซ์';
+
+  @override
+  String get sandboxCheckAgain => 'ตรวจสอบอีกครั้ง';
 }

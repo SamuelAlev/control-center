@@ -2211,7 +2211,6 @@
   "images": "图片",
   "inactive": "非活跃",
   "install": "安装",
-  "installRequired": "需要安装",
   "installedVersion": "已安装 {version}",
   "@installedVersion": {
     "description": "Installed version label",
@@ -8799,5 +8798,11 @@
   "repoLinkUnlinkedCreate": "新工作区",
   "repoLinkUnlinkedCreateHint": "为其命名，然后选择检出。",
   "repoLinkChooseCheckout": "在运行服务器的机器上选择 {repo} 的检出。",
-  "repoLinkCheckoutMismatch": "添加的仓库中没有 {repo}，因此链接已在没有它的情况下打开。"
+  "repoLinkCheckoutMismatch": "添加的仓库中没有 {repo}，因此链接已在没有它的情况下打开。",
+  "windowMinimize": "最小化",
+  "windowMaximize": "最大化",
+  "windowRestore": "还原",
+  "nativeSandboxUnsupported": "{platform} 上尚不支持原生沙盒。",
+  "continueWithoutSandbox": "不使用沙箱继续",
+  "sandboxCheckAgain": "重新检查"
 }

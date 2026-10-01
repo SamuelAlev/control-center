@@ -3679,9 +3679,6 @@ class AppLocalizationsEl extends AppLocalizations {
   String get install => 'Εγκατάσταση';
 
   @override
-  String get installRequired => 'Απαιτείται εγκατάσταση';
-
-  @override
   String installedVersion(String version) {
     return 'Εγκατεστημένη $version';
   }
@@ -15230,4 +15227,24 @@ class AppLocalizationsEl extends AppLocalizations {
   String repoLinkCheckoutMismatch(String repo) {
     return 'Κανένα από τα αποθετήρια που προστέθηκαν δεν είναι το $repo, οπότε ο σύνδεσμος άνοιξε χωρίς αυτό.';
   }
+
+  @override
+  String get windowMinimize => 'Ελαχιστοποίηση';
+
+  @override
+  String get windowMaximize => 'Μεγιστοποίηση';
+
+  @override
+  String get windowRestore => 'Επαναφορά';
+
+  @override
+  String nativeSandboxUnsupported(String platform) {
+    return 'Το εγγενές sandbox δεν υποστηρίζεται ακόμη στο $platform.';
+  }
+
+  @override
+  String get continueWithoutSandbox => 'Συνέχεια χωρίς sandbox';
+
+  @override
+  String get sandboxCheckAgain => 'Έλεγχος ξανά';
 }

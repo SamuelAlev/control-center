@@ -3681,9 +3681,6 @@ class AppLocalizationsUk extends AppLocalizations {
   String get install => 'Установити';
 
   @override
-  String get installRequired => 'Потрібне встановлення';
-
-  @override
   String installedVersion(String version) {
     return 'Установлено $version';
   }
@@ -15275,4 +15272,24 @@ class AppLocalizationsUk extends AppLocalizations {
   String repoLinkCheckoutMismatch(String repo) {
     return 'Серед доданих репозиторіїв немає $repo, тому посилання відкрилося без нього.';
   }
+
+  @override
+  String get windowMinimize => 'Згорнути';
+
+  @override
+  String get windowMaximize => 'Розгорнути';
+
+  @override
+  String get windowRestore => 'Відновити';
+
+  @override
+  String nativeSandboxUnsupported(String platform) {
+    return 'Нативна пісочниця поки не підтримується на $platform.';
+  }
+
+  @override
+  String get continueWithoutSandbox => 'Продовжити без пісочниці';
+
+  @override
+  String get sandboxCheckAgain => 'Перевірити знову';
 }

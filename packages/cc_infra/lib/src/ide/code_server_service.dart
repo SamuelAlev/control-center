@@ -1394,7 +1394,7 @@ final RegExp _portLine = RegExp(r'127\.0\.0\.1:(\d{2,5})');
 /// Version of the bundled bridge extension. Bump it (here + in the package.json
 /// and .vsix manifest below) to force a reinstall of the shipped source; the
 /// installer skips work once `extensions.json` lists this version.
-const String _bridgeExtensionVersion = '0.0.10';
+const String _bridgeExtensionVersion = '0.0.11';
 
 /// `package.json` for the bundled bridge extension. It runs in code-server's
 /// SERVER-SIDE Node extension host (`main`, activated on startup), so it has
@@ -1405,7 +1405,7 @@ const String _bridgeExtensionPackageJson = '''
   "displayName": "Control Center IDE Bridge",
   "description": "Hands in-editor file navigation back to the Control Center app shell so it owns the tabs.",
   "publisher": "control-center",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "engines": { "vscode": "^1.80.0" },
   "extensionKind": ["workspace"],
   "categories": ["Other"],
@@ -1433,7 +1433,7 @@ const String _bridgeVsixManifest = '''
 <?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
   <Metadata>
-    <Identity Language="en-US" Id="cc-ide-bridge" Version="0.0.10" Publisher="control-center"/>
+    <Identity Language="en-US" Id="cc-ide-bridge" Version="0.0.11" Publisher="control-center"/>
     <DisplayName>Control Center IDE Bridge</DisplayName>
     <Description xml:space="preserve">Hands in-editor file navigation to the Control Center app shell.</Description>
     <Tags>__ext_control-center</Tags>
@@ -1458,9 +1458,11 @@ const String _bridgeVsixManifest = '''
 /// file; navigation POSTs the target to `CC_IDE_REPORT_URL` (app opens a tab)
 /// and closes the drifted editor. Also reports dirty state, consumes
 /// `CC_IDE_COMMANDS_URL` SSE (`save`), keeps side bars/panel closed on
-/// activate + user editor focus (skips programmatic selection), and registers
-/// a working-tree quick-diff provider so the gutter shows git changes.
-const String _bridgeExtensionSource = r'''
+/// activate + user editor focus (skips programmatic selection), logs a
+/// chrome-hidden marker the app waits on before showing the editor, and
+/// registers a working-tree quick-diff provider so the gutter shows git changes.
+const String _bridgeExtensionSource =
+    r'''
 const vscode = require('vscode');
 const http = require('http');
 const https = require('https');
@@ -1606,24 +1608,33 @@ function subscribeCommands(commandsUrl) {
   return { dispose: function () { closed = true; } };
 }
 
+// Logged once the boot-time hide below has settled. The remote extension host
+// forwards console output to its own window's renderer console, so the app's
+// webview sees it for exactly this window and only then uncovers the editor.
+const CHROME_HIDDEN_MARKER = '''
+    "'$codeServerChromeHiddenMarker';"
+    r'''
+
+function runQuietly(command) {
+  return Promise.resolve()
+    .then(function () { return vscode.commands.executeCommand(command); })
+    .catch(function () {});
+}
+
 function closeChrome() {
   // Close the primary (Explorer) and secondary (auxiliary) side bars AND the
   // bottom panel (Problems / Output / Terminal) so the embedded editor is just
   // the code — the app shell owns that chrome. All three commands are CLOSES,
   // not toggles: idempotent (a no-op when already closed), so they can never
-  // accidentally re-open.
-  try {
-    vscode.commands.executeCommand('workbench.action.closeSidebar');
-  } catch (e) {}
-  try {
-    vscode.commands.executeCommand('workbench.action.closeAuxiliaryBar');
-  } catch (e) {}
-  try {
-    vscode.commands.executeCommand('workbench.action.closePanel');
-  } catch (e) {}
+  // accidentally re-open. Resolves once all three have run.
+  return Promise.all([
+    runQuietly('workbench.action.closeSidebar'),
+    runQuietly('workbench.action.closeAuxiliaryBar'),
+    runQuietly('workbench.action.closePanel'),
+  ]);
 }
 
-function hideChromeOnBoot() {
+async function hideChromeOnBoot() {
   // Opening a folder (?folder=) restores the Explorer as the workbench finishes
   // booting, the secondary side bar can reappear once a view (e.g. chat)
   // resolves into it, and the panel can pop for a diagnostic. A couple of
@@ -1631,7 +1642,9 @@ function hideChromeOnBoot() {
   // resolving after the retries) are handled by the selection listener below.
   closeChrome();
   setTimeout(closeChrome, 250);
-  setTimeout(closeChrome, 800);
+  await new Promise(function (resolve) { setTimeout(resolve, 800); });
+  await closeChrome();
+  console.log(CHROME_HIDDEN_MARKER);
 }
 
 function shouldHideFromSelection(e) {

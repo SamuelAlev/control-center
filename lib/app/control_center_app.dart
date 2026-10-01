@@ -23,6 +23,7 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/router/app_router.dart';
 import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/widgets/app_shortcuts.dart';
+import 'package:control_center/shared/widgets/window_caption_buttons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -137,7 +138,8 @@ class ControlCenterApp extends ConsumerWidget {
           AppLocalizations.delegate,
           GlobalMaterialLocalizations.delegate, // ignore: deprecated_member_use
           GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate, // ignore: deprecated_member_use
+          // ignore: deprecated_member_use
+          GlobalCupertinoLocalizations.delegate,
         ],
         builder: (context, child) {
           // The one chokepoint for intl: bare DateFormat/NumberFormat calls
@@ -179,6 +181,16 @@ class ControlCenterApp extends ConsumerWidget {
                         OverlayEntry(
                           builder: (context) => CcToastScope(
                             child: child ?? const SizedBox.shrink(),
+                          ),
+                        ),
+                        // The app-drawn window controls (desktop windows whose
+                        // native ones went with the hidden title bar), above
+                        // every route and dialog like a real caption. Only the
+                        // buttons hit-test; nothing renders on the web.
+                        OverlayEntry(
+                          builder: (context) => const Align(
+                            alignment: AlignmentDirectional.topEnd,
+                            child: WindowCaptionButtons(),
                           ),
                         ),
                       ],

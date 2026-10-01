@@ -3694,9 +3694,6 @@ class AppLocalizationsPl extends AppLocalizations {
   String get install => 'Zainstaluj';
 
   @override
-  String get installRequired => 'Wymagana instalacja';
-
-  @override
   String installedVersion(String version) {
     return 'Zainstalowano $version';
   }
@@ -15303,4 +15300,24 @@ class AppLocalizationsPl extends AppLocalizations {
   String repoLinkCheckoutMismatch(String repo) {
     return 'Żadne z dodanych repozytoriów nie jest $repo, więc link otwarto bez niego.';
   }
+
+  @override
+  String get windowMinimize => 'Minimalizuj';
+
+  @override
+  String get windowMaximize => 'Maksymalizuj';
+
+  @override
+  String get windowRestore => 'Przywróć';
+
+  @override
+  String nativeSandboxUnsupported(String platform) {
+    return 'Natywny sandbox nie jest jeszcze obsługiwany na $platform.';
+  }
+
+  @override
+  String get continueWithoutSandbox => 'Kontynuuj bez piaskownicy';
+
+  @override
+  String get sandboxCheckAgain => 'Sprawdź ponownie';
 }

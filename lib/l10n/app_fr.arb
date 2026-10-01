@@ -1595,10 +1595,6 @@
     "description": "Label for inactive policies"
   },
   "install": "Installer",
-  "installRequired": "Installation requise",
-  "@installRequired": {
-    "description": "Locale string for installRequired"
-  },
   "installedVersion": "Installé {version}",
   "@installedVersion": {
     "description": "Installed version label",
@@ -7983,5 +7979,11 @@
   "repoLinkUnlinkedCreate": "Nouvel espace de travail",
   "repoLinkUnlinkedCreateHint": "Nommez-le, puis choisissez la copie locale.",
   "repoLinkChooseCheckout": "Sélectionnez la copie locale de {repo} sur la machine qui exécute le serveur.",
-  "repoLinkCheckoutMismatch": "Aucun des dépôts ajoutés n'est {repo} : le lien s'est donc ouvert sans lui."
+  "repoLinkCheckoutMismatch": "Aucun des dépôts ajoutés n'est {repo} : le lien s'est donc ouvert sans lui.",
+  "windowMinimize": "Réduire",
+  "windowMaximize": "Agrandir",
+  "windowRestore": "Restaurer",
+  "nativeSandboxUnsupported": "Le sandbox natif n'est pas encore pris en charge sur {platform}.",
+  "continueWithoutSandbox": "Continuer sans sandbox",
+  "sandboxCheckAgain": "Vérifier à nouveau"
 }

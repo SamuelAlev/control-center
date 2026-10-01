@@ -16,7 +16,7 @@ lib/features/agents/presentation/screens/agent_registry_screen.dart  609
 lib/features/agents/presentation/widgets/agent_form_dialog.dart  780
 lib/features/agents/presentation/widgets/agent_logs_tab.dart  483
 lib/features/agents/presentation/widgets/org_chart_view.dart  514
-lib/features/auth/presentation/screens/onboarding_chrome.dart  267
+lib/features/auth/presentation/screens/onboarding_chrome.dart  264
 lib/features/auth/presentation/screens/onboarding_screen.dart  551
 lib/features/calendar/presentation/screens/calendar_screen.dart  671
 lib/features/calendar/presentation/widgets/calendar_event_detail_panel.dart  1059

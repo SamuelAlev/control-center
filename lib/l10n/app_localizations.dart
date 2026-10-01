@@ -6336,12 +6336,6 @@ abstract class AppLocalizations {
   /// **'Install'**
   String get install;
 
-  /// Locale string for installRequired
-  ///
-  /// In en, this message translates to:
-  /// **'Installation required'**
-  String get installRequired;
-
   /// Installed version label
   ///
   /// In en, this message translates to:
@@ -25575,6 +25569,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'None of the added repositories is {repo}, so the link opened without it.'**
   String repoLinkCheckoutMismatch(String repo);
+
+  /// Tooltip and accessible name of the app-drawn minimize button in the window's title bar (Windows, Linux)
+  ///
+  /// In en, this message translates to:
+  /// **'Minimize'**
+  String get windowMinimize;
+
+  /// Tooltip and accessible name of the app-drawn maximize button in the window's title bar (Windows, Linux)
+  ///
+  /// In en, this message translates to:
+  /// **'Maximize'**
+  String get windowMaximize;
+
+  /// Tooltip and accessible name of the app-drawn button that restores a maximized window to its previous size (Windows, Linux)
+  ///
+  /// In en, this message translates to:
+  /// **'Restore'**
+  String get windowRestore;
+
+  /// Onboarding sandbox step title when the host platform has no native sandbox at all (nothing to install)
+  ///
+  /// In en, this message translates to:
+  /// **'Native sandbox is not supported on {platform} yet.'**
+  String nativeSandboxUnsupported(String platform);
+
+  /// Onboarding sandbox step button on a platform with no native sandbox: agents will run without isolation
+  ///
+  /// In en, this message translates to:
+  /// **'Continue without sandbox'**
+  String get continueWithoutSandbox;
+
+  /// Onboarding sandbox step button that re-detects the sandbox after the user installed the missing tools
+  ///
+  /// In en, this message translates to:
+  /// **'Check again'**
+  String get sandboxCheckAgain;
 }
 
 class _AppLocalizationsDelegate

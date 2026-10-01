@@ -2211,7 +2211,6 @@
   "images": "Зображення",
   "inactive": "Неактивний",
   "install": "Установити",
-  "installRequired": "Потрібне встановлення",
   "installedVersion": "Установлено {version}",
   "@installedVersion": {
     "description": "Installed version label",
@@ -8799,5 +8798,11 @@
   "repoLinkUnlinkedCreate": "Новий робочий простір",
   "repoLinkUnlinkedCreateHint": "Дайте назву, а потім виберіть checkout.",
   "repoLinkChooseCheckout": "Виберіть checkout {repo} на машині, де запущено сервер.",
-  "repoLinkCheckoutMismatch": "Серед доданих репозиторіїв немає {repo}, тому посилання відкрилося без нього."
+  "repoLinkCheckoutMismatch": "Серед доданих репозиторіїв немає {repo}, тому посилання відкрилося без нього.",
+  "windowMinimize": "Згорнути",
+  "windowMaximize": "Розгорнути",
+  "windowRestore": "Відновити",
+  "nativeSandboxUnsupported": "Нативна пісочниця поки не підтримується на {platform}.",
+  "continueWithoutSandbox": "Продовжити без пісочниці",
+  "sandboxCheckAgain": "Перевірити знову"
 }

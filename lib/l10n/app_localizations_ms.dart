@@ -3646,9 +3646,6 @@ class AppLocalizationsMs extends AppLocalizations {
   String get install => 'Pasang';
 
   @override
-  String get installRequired => 'Pemasangan diperlukan';
-
-  @override
   String installedVersion(String version) {
     return '$version dipasang';
   }
@@ -15105,4 +15102,24 @@ class AppLocalizationsMs extends AppLocalizations {
   String repoLinkCheckoutMismatch(String repo) {
     return 'Tiada repositori yang ditambah ialah $repo, jadi pautan dibuka tanpanya.';
   }
+
+  @override
+  String get windowMinimize => 'Minimumkan';
+
+  @override
+  String get windowMaximize => 'Maksimumkan';
+
+  @override
+  String get windowRestore => 'Pulihkan';
+
+  @override
+  String nativeSandboxUnsupported(String platform) {
+    return 'Kotak pasir natif belum disokong pada $platform.';
+  }
+
+  @override
+  String get continueWithoutSandbox => 'Teruskan tanpa kotak pasir';
+
+  @override
+  String get sandboxCheckAgain => 'Semak semula';
 }

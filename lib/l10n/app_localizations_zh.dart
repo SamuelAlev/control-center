@@ -3539,9 +3539,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get install => '安装';
 
   @override
-  String get installRequired => '需要安装';
-
-  @override
   String installedVersion(String version) {
     return '已安装 $version';
   }
@@ -14586,6 +14583,26 @@ class AppLocalizationsZh extends AppLocalizations {
   String repoLinkCheckoutMismatch(String repo) {
     return '添加的仓库中没有 $repo，因此链接已在没有它的情况下打开。';
   }
+
+  @override
+  String get windowMinimize => '最小化';
+
+  @override
+  String get windowMaximize => '最大化';
+
+  @override
+  String get windowRestore => '还原';
+
+  @override
+  String nativeSandboxUnsupported(String platform) {
+    return '$platform 上尚不支持原生沙盒。';
+  }
+
+  @override
+  String get continueWithoutSandbox => '不使用沙箱继续';
+
+  @override
+  String get sandboxCheckAgain => '重新检查';
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -18286,9 +18303,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get install => '安裝';
-
-  @override
-  String get installRequired => '需要安裝';
 
   @override
   String installedVersion(String version) {
@@ -29338,4 +29352,24 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String repoLinkCheckoutMismatch(String repo) {
     return '新增的存放庫中沒有 $repo，因此連結在沒有它的情況下開啟。';
   }
+
+  @override
+  String get windowMinimize => '最小化';
+
+  @override
+  String get windowMaximize => '最大化';
+
+  @override
+  String get windowRestore => '還原';
+
+  @override
+  String nativeSandboxUnsupported(String platform) {
+    return '原生沙盒尚未支援 $platform。';
+  }
+
+  @override
+  String get continueWithoutSandbox => '不使用沙箱繼續';
+
+  @override
+  String get sandboxCheckAgain => '重新檢查';
 }

@@ -16,6 +16,11 @@
 // running one. Shared by main.cpp (sender) and flutter_window.cpp (receiver).
 constexpr ULONG_PTR kDeepLinkCopyDataTag = 0x6363646CUL;  // 'ccdl'
 
+// Posted by a second app instance that has no deep link to hand over: the
+// running instance raises its windows. Private to this window's class, so a
+// WM_APP value cannot collide. Shared like kDeepLinkCopyDataTag.
+constexpr UINT kRaiseAppWindowsMessage = WM_APP + 1;
+
 class FlutterWindow : public Win32Window {
  public:
   explicit FlutterWindow(const flutter::DartProject& project);
@@ -30,6 +35,10 @@ class FlutterWindow : public Win32Window {
                          LPARAM const lparam) noexcept override;
 
  private:
+  // Brings the app's visible main windows to the front. This window is never
+  // shown, so raising it (rather than them) would do nothing.
+  static void RaiseAppWindows();
+
   flutter::DartProject project_;
   std::unique_ptr<flutter::FlutterViewController> flutter_controller_;
   std::string pending_deep_link_;

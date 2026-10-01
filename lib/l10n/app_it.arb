@@ -1595,10 +1595,6 @@
     "description": "Label for inactive policies"
   },
   "install": "Installa",
-  "installRequired": "Installazione necessaria",
-  "@installRequired": {
-    "description": "Locale string for installRequired"
-  },
   "installedVersion": "Installato {version}",
   "@installedVersion": {
     "description": "Installed version label",
@@ -7986,5 +7982,11 @@
   "repoLinkUnlinkedCreate": "Nuovo spazio di lavoro",
   "repoLinkUnlinkedCreateHint": "Dagli un nome, poi scegli il checkout.",
   "repoLinkChooseCheckout": "Seleziona il checkout di {repo} sulla macchina che esegue il server.",
-  "repoLinkCheckoutMismatch": "Nessuno dei repository aggiunti è {repo}, quindi il link si è aperto senza."
+  "repoLinkCheckoutMismatch": "Nessuno dei repository aggiunti è {repo}, quindi il link si è aperto senza.",
+  "windowMinimize": "Riduci a icona",
+  "windowMaximize": "Ingrandisci",
+  "windowRestore": "Ripristina",
+  "nativeSandboxUnsupported": "Il sandbox nativo non è ancora supportato su {platform}.",
+  "continueWithoutSandbox": "Continua senza sandbox",
+  "sandboxCheckAgain": "Controlla di nuovo"
 }

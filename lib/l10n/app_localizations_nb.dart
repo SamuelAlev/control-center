@@ -3648,9 +3648,6 @@ class AppLocalizationsNb extends AppLocalizations {
   String get install => 'Installer';
 
   @override
-  String get installRequired => 'Installasjon kreves';
-
-  @override
   String installedVersion(String version) {
     return 'Installert $version';
   }
@@ -15092,4 +15089,24 @@ class AppLocalizationsNb extends AppLocalizations {
   String repoLinkCheckoutMismatch(String repo) {
     return 'Ingen av arkivene som ble lagt til, er $repo, så lenken ble åpnet uten det.';
   }
+
+  @override
+  String get windowMinimize => 'Minimer';
+
+  @override
+  String get windowMaximize => 'Maksimer';
+
+  @override
+  String get windowRestore => 'Gjenopprett';
+
+  @override
+  String nativeSandboxUnsupported(String platform) {
+    return 'Innebygd sandkasse støttes ikke på $platform ennå.';
+  }
+
+  @override
+  String get continueWithoutSandbox => 'Fortsett uten sandkasse';
+
+  @override
+  String get sandboxCheckAgain => 'Sjekk på nytt';
 }

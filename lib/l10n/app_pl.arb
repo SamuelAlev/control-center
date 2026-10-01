@@ -2211,7 +2211,6 @@
   "images": "Obrazy",
   "inactive": "Nieaktywny",
   "install": "Zainstaluj",
-  "installRequired": "Wymagana instalacja",
   "installedVersion": "Zainstalowano {version}",
   "@installedVersion": {
     "description": "Installed version label",
@@ -8799,5 +8798,11 @@
   "repoLinkUnlinkedCreate": "Nowy obszar roboczy",
   "repoLinkUnlinkedCreateHint": "Nadaj nazwę, a potem wybierz checkout.",
   "repoLinkChooseCheckout": "Wybierz checkout {repo} na maszynie, na której działa serwer.",
-  "repoLinkCheckoutMismatch": "Żadne z dodanych repozytoriów nie jest {repo}, więc link otwarto bez niego."
+  "repoLinkCheckoutMismatch": "Żadne z dodanych repozytoriów nie jest {repo}, więc link otwarto bez niego.",
+  "windowMinimize": "Minimalizuj",
+  "windowMaximize": "Maksymalizuj",
+  "windowRestore": "Przywróć",
+  "nativeSandboxUnsupported": "Natywny sandbox nie jest jeszcze obsługiwany na {platform}.",
+  "continueWithoutSandbox": "Kontynuuj bez piaskownicy",
+  "sandboxCheckAgain": "Sprawdź ponownie"
 }

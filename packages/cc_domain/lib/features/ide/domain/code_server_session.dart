@@ -148,3 +148,10 @@ enum CodeServerStatus {
   /// should show guidance (install instructions) rather than spin forever.
   unavailable,
 }
+
+/// Console line the bundled bridge extension logs once its boot-time hide of
+/// the side bars and panel has settled. code-server forwards each window's
+/// extension-host console output to that window's own renderer console, so an
+/// embedding webview that sees this line knows its editor is down to just the
+/// code and can stop covering it.
+const String codeServerChromeHiddenMarker = 'cc-ide-bridge:chrome-hidden';

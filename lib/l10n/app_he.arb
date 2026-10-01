@@ -2211,7 +2211,6 @@
   "images": "תמונות",
   "inactive": "לא פעיל",
   "install": "התקנה",
-  "installRequired": "נדרשת התקנה",
   "installedVersion": "מותקנת גרסה ⁨{version}⁩",
   "@installedVersion": {
     "description": "Installed version label",
@@ -8799,5 +8798,11 @@
   "repoLinkUnlinkedCreate": "סביבת עבודה חדשה",
   "repoLinkUnlinkedCreateHint": "תנו לה שם ואז בחרו את העותק המקומי.",
   "repoLinkChooseCheckout": "בחרו את העותק המקומי של {repo} במחשב שמריץ את השרת.",
-  "repoLinkCheckoutMismatch": "אף אחד מהמאגרים שנוספו אינו {repo}, ולכן הקישור נפתח בלעדיו."
+  "repoLinkCheckoutMismatch": "אף אחד מהמאגרים שנוספו אינו {repo}, ולכן הקישור נפתח בלעדיו.",
+  "windowMinimize": "מזער",
+  "windowMaximize": "הגדל",
+  "windowRestore": "שחזר",
+  "nativeSandboxUnsupported": "ארגז חול מקורי עדיין לא נתמך ב־⁨{platform}⁩.",
+  "continueWithoutSandbox": "המשך ללא ארגז חול",
+  "sandboxCheckAgain": "בדוק שוב"
 }
