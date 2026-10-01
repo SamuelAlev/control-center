@@ -1,0 +1,132 @@
+---
+title: Review compute (cohorts, axes and deterministic diffs)
+description: What the review compute pass produces server-side — cohorts, API-contract and visual diffs, per-axis gates — and how that folds into the Review tab.
+slug: pt-BR/manual/guias/computacao-de-revisao
+---
+
+The PR's **Review** tab is the review pipeline's live progress while it works,
+then the artifact it published, with the actions on it. One tab with two states,
+because they are the same thing at two times. It is not a default tab: a PR has
+no review until someone asks for one, so **Ask AI** is what opens it.
+
+Behind that tab, `cc_server` builds file cohorts, runs the deterministic axes
+and serves them over the `review_studio.*` RPC operations (`cohorts`,
+`blastRadius`, `cohortImpact`, `ciSignals`, `dependencyDiffs`,
+`setContractDecision`, `approveVisual`, `compute` and their `watch*` twins).
+A persisted layout that still names `pr.reviewStudio` opens this same Review
+tab.
+
+On the Review tab:
+
+- The consolidating agent publishes an ordinary conversation artifact with
+  `publish_artifact`, so the tab renders it through the same artifact viewer a
+  chat bubble opens — there is no review-shaped copy of the artifact system.
+- Findings sit in a rail beside it, and the verdict rides a slim bar above the
+  artifact rather than a dashboard header.
+- A stale banner appears when the PR head moved past the review.
+
+See [Use AI-powered review](/pt-BR/manual/guias/revisao-com-ia/) for the flow and
+[Review and merge a PR](/pt-BR/manual/guias/revisar-e-fazer-merge-de-pr/) for acting on it.
+
+## Cohorts
+
+Cohorts group the PR's changed files into content-derived buckets of files that
+belong together by meaning, ranked by impact so the riskiest group reads first.
+They are recomputed on every head-SHA change and replaced wholesale; each cohort
+has a push-stable key, so a summary and review progress survive a rebase.
+
+If the repo is not code-indexed, cohorts fall back to path grouping. To index a
+repo, use **Settings → Workspace → Repositories** — each repo row carries an
+**Index code** action that runs the `index_code` pipeline and reports progress in
+place.
+
+The code graph only parses languages with a shipped grammar (Dart, JS/TS, PHP,
+Python, Rust, Zig, C/C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly,
+MATLAB, Ada). A repo in any other language can never produce semantic cohorts,
+however often you index it.
+
+An agent can record a markdown summary for a cohort with `set_cohort_summary`
+and attach a structured walkthrough diagram with `add_review_diagram` — a typed
+sequence, entity-relation or state-machine object, never mermaid text. Every
+edge is cross-checked against the real code graph, and an edge the graph cannot
+corroborate is marked unverified rather than drawn as fact.
+
+## The API-contract axis
+
+The contract axis diffs only **explicit** spec files. It matches the six default
+names — `openapi.yaml`, `openapi.yml`, `openapi.json`, `swagger.yaml`,
+`swagger.yml`, `swagger.json` — plus any changed file whose name contains
+`openapi` or `swagger` and ends in `.yaml`, `.yml` or `.json`. A contract
+inferred from handler code is out of scope and GraphQL schemas are not diffed.
+
+Each change is classified — endpoint, parameter, schema and response additions,
+removals and modifications — and carries a severity: **breaking** (removed
+endpoint or param, tightened type, new required param), non-breaking (additive),
+or informational. A rejected change fails the contract gate, as does a breaking
+change left undecided; breaking-but-approved warns; no breaking changes passes. A
+diff marked **derived (advisory)** never gates.
+
+Approving or rejecting a change is `review_studio.setContractDecision`.
+
+## The visual axis
+
+If the PR changes UI components in a Flutter repo with a Widgetbook app, the
+compute pass renders the changed components before and after via a headless
+`flutter test` golden pass in the PR's base and head worktrees, then diffs the
+pixels.
+
+:::note[This needs a Flutter SDK on the server host]
+The pure-Dart server cannot render Flutter widgets in-process, so it shells out
+to `flutter test`. The SDK has to be installed on the machine running
+`cc_server` — not on your client. Without it the axis reports **unavailable**
+with the reason "no Flutter SDK on host". It never reports a pass it did not
+earn.
+:::
+
+Snapshots marked **changed** or **removed** hold the visual gate until approved;
+**unchanged**, **added** and **approved** snapshots clear it. Unavailability has
+one of four reasons: no Flutter SDK on host, no Widgetbook app in repo, no
+golden-testable use-cases, or a golden harness error.
+
+Approving an intended change is `review_studio.approveVisual`.
+
+## The axes and the verdict
+
+| Axis         | Driven by                      |
+| ------------ | ------------------------------ |
+| Correctness  | Reviewer agents (tokens)       |
+| Security     | Reviewer agents (tokens)       |
+| Test gap     | Reviewer agents (tokens)       |
+| Visual       | Deterministic (golden harness) |
+| API contract | Deterministic (spec diff)      |
+
+The three token axes are recorded when a lead agent calls `finalize_review`; the
+two deterministic axes are recorded by the compute pass.
+
+Each axis reports one of:
+
+| State           | Meaning                                            |
+| --------------- | -------------------------------------------------- |
+| **Pass**        | Ran, nothing blocking found                        |
+| **Warn**        | Ran, non-blocking concerns                         |
+| **Fail**        | Ran, found a blocking problem                      |
+| **Partial**     | Ran but could not complete; results are incomplete |
+| **Unavailable** | Could not run at all                               |
+
+Only **pass** and **warn** clear a gated axis. **Partial** and **unavailable**
+are deliberately distinct from **fail** and neither clears a gate.
+
+The axes aggregate into **Ship**, **Hold** or **Block**, and they can only make
+the verdict _more_ severe — it is never downgraded. A gated axis that **fails**
+forces **Block**; one that is **partial** or **unavailable** forces at least
+**Hold**. So a blocking axis that could not run _holds_ the verdict: absence of
+evidence never greens a gate.
+
+The verdict on the Review tab is the one `finalize_review` posted.
+
+## Related guides
+
+- [Use AI-powered review](/pt-BR/manual/guias/revisao-com-ia/)
+- [Dispatch reviewer agents](/pt-BR/manual/guias/despachar-revisores/)
+- [Review and merge a PR](/pt-BR/manual/guias/revisar-e-fazer-merge-de-pr/)
+- [Search code with the code graph](/pt-BR/manual/guias/pesquisar-codigo/)

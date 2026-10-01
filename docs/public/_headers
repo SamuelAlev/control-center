@@ -19,3 +19,22 @@
   Access-Control-Allow-Methods: GET
   Access-Control-Expose-Headers: ETag
   Cache-Control: public, max-age=3600
+
+# Machine copies of pages (markdown twins, llms-full.txt, the MCP page index)
+# stay out of search indexes, so they never compete with the HTML they
+# duplicate. Agents still fetch them. The Worker sets the same header on the
+# copies it serves itself (src/worker.ts).
+/*.md
+  X-Robots-Tag: noindex
+
+/llms-full.txt
+  X-Robots-Tag: noindex
+
+/*/llms-full.txt
+  X-Robots-Tag: noindex
+
+/agentic/*
+  X-Robots-Tag: noindex
+
+/manual-routes.json
+  X-Robots-Tag: noindex

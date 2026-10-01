@@ -1,8 +1,9 @@
-import { appendVary } from './agentic/negotiation.ts';
+import { appendVary, markdownAssetPath } from './agentic/negotiation.ts';
 import {
-  isSiteLocale, localeChoiceParameter, localeFromPath, localizePath,
-  siteLanguageDefaults, siteLocales, unlocalizedPath, type SiteLocale,
+  isSiteLocale, localeChoiceParameter, localeFromPath,
+  siteLanguageDefaults, siteLocales, type SiteLocale,
 } from './data/locales.ts';
+import { localizeSitePath, manualRedirect, unlocalizeSitePath, type ManualRoutes } from './data/manual-paths.ts';
 
 const cookieName = 'cc-locale';
 const languages = siteLocales.map(({ id }) => ({ id, tag: new Intl.Locale(id).maximize() }));
@@ -76,25 +77,81 @@ export interface LocaleNegotiation {
   cookie?: string;
 }
 
-/** Apply only to HTML requests. Explicit localized URLs remain cacheable. */
-export function negotiateLocale(request: Request): LocaleNegotiation | null {
+/**
+ * A permanent redirect for a localized manual URL that is not canonical: the
+ * prefixed English path every locale used before its slugs were translated,
+ * or another locale's slug under this prefix.
+ */
+export function redirectManual(request: Request, routes: ManualRoutes): Response | null {
   if (request.method !== 'GET' && request.method !== 'HEAD') return null;
   const url = new URL(request.url);
-  const unprefixed = unlocalizedPath(url.pathname);
-  const path = unprefixed.replace(/\/index\.html$/, '/').replace(/\.html$/, '/');
+  const target = manualRedirect(url.pathname, routes);
+  if (!target) return null;
+  url.pathname = target;
+  return new Response(null, { status: 301, headers: { Location: url.pathname + url.search } });
+}
+
+function decodePath(path: string): string {
+  try {
+    return decodeURI(path).normalize('NFC');
+  } catch {
+    return path;
+  }
+}
+
+/** Paths compare decoded: the request is percent-encoded, translated slugs are not. */
+const samePath = (a: string, b: string) => decodePath(a) === decodePath(b);
+
+/** The agent indexes each language publishes under its prefix. */
+const AGENT_INDEXES = new Set(['/llms.txt', '/llms-full.txt']);
+
+/**
+ * How to name the resource at [pathname] in any language, or null when it is
+ * English-only: the landing page and manual (HTML or `.md` twin) and the
+ * llms.txt indexes are translated.
+ */
+function localizedResource(
+  pathname: string,
+  routes: ManualRoutes,
+): { locale: SiteLocale; in: (locale: SiteLocale) => string } | null {
+  const decoded = decodePath(pathname);
+  const twin = decoded.endsWith('.md');
+  // `/fr-FR.md` is the French landing page's twin: read the language off its page.
+  const pagePath = twin ? (decoded === '/index.md' ? '/' : decoded.slice(0, -'.md'.length) + '/') : decoded;
+  const locale = localeFromPath(pagePath);
+  const path = unlocalizeSitePath(pagePath, routes).replace(/\/index\.html$/, '/').replace(/\.html$/, '/');
+  if (AGENT_INDEXES.has(path)) return { locale, in: target => (target === 'en-US' ? path : `/${target}${path}`) };
   if (path !== '/' && path !== '/manual' && !path.startsWith('/manual/')) return null;
   if (path.slice(path.lastIndexOf('/') + 1).includes('.')) return null;
+  return {
+    locale,
+    in: target => {
+      const page = localizeSitePath(path, target, routes);
+      return twin ? markdownAssetPath(page) ?? page : page;
+    },
+  };
+}
 
-  const explicit = unprefixed !== url.pathname;
+/**
+ * Apply to page, markdown-twin and llms.txt requests (browsers and agents
+ * alike). Explicit localized URLs remain cacheable.
+ */
+export function negotiateLocale(request: Request, routes: ManualRoutes): LocaleNegotiation | null {
+  if (request.method !== 'GET' && request.method !== 'HEAD') return null;
+  const url = new URL(request.url);
+  const resource = localizedResource(url.pathname, routes);
+  if (!resource) return null;
+
+  const explicit = resource.locale !== 'en-US';
   const choice = url.searchParams.get(localeChoiceParameter);
   const selected = isSiteLocale(choice) ? choice : undefined;
   if (explicit && !selected) return null;
-  const locale = explicit ? localeFromPath(url.pathname) :
+  const locale = explicit ? resource.locale :
     selected ?? cookieLocale(request.headers.get('Cookie')) ?? preferredLanguage(request.headers.get('Accept-Language'));
   const cookie = selected ? `${cookieName}=${locale}; Path=/; Max-Age=31536000; HttpOnly; SameSite=Lax${url.protocol === 'https:' ? '; Secure' : ''}` : undefined;
-  const target = localizePath(path, locale);
+  const target = resource.in(locale);
   const decision: LocaleNegotiation = { redirect: null, cookie };
-  if (target !== url.pathname) {
+  if (!samePath(target, url.pathname)) {
     url.pathname = target;
     if (selected && locale !== 'en-US') url.searchParams.delete(localeChoiceParameter);
     decision.redirect = applyLocaleHeaders(new Response(null, {

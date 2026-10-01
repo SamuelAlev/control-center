@@ -8,6 +8,7 @@
     "start": "astro dev",
     "build": "astro build && node scripts/fix-wrangler.mjs",
     "test": "node --test \"test/*.test.ts\"",
+    "i18n": "node scripts/manual-i18n.ts",
     "preview": "astro preview",
     "astro": "astro",
     "generate-types": "wrangler types"
@@ -16,6 +17,7 @@
     "@astrojs/cloudflare": "^14.3.3",
     "@astrojs/mdx": "^8.0.2",
     "@astrojs/rss": "^4.0.19",
+    "@astrojs/sitemap": "^3.7.3",
     "@astrojs/starlight": "^0.41.11",
     "@tailwindcss/vite": "^4.3.3",
     "astro": "^7.3.5",

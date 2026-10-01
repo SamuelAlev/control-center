@@ -28,6 +28,7 @@
  * server puts in its text content block.
  */
 
+import { siteLanguageDefaults, siteLocales } from '../data/locales.ts';
 import { markdownAssetPath } from './negotiation.ts';
 
 /** The three tools this surface shares with the docs MCP server. */
@@ -82,6 +83,8 @@ export interface WebMcpDeps {
   loadPagefind?: () => Promise<PagefindModule | null>;
   /** Perform a real navigation. Absent means the tool is not offered. */
   navigate?: (url: string) => void;
+  /** The current page's site language (default en-US): the tools' default `locale`. */
+  locale?: string;
 }
 
 /** A tool descriptor in the shape `registerTool` accepts. */
@@ -230,20 +233,48 @@ async function fetchText(
   path: string,
   signal?: AbortSignal,
   accept = 'text/plain, text/markdown;q=0.9, */*;q=0.1',
+  language?: string,
 ): Promise<string> {
   const url = `${deps.origin ?? ''}${path}`;
-  const response = await deps.fetch(url, { signal, headers: { Accept: accept } });
+  const response = await deps.fetch(url, {
+    signal,
+    headers: language ? { Accept: accept, 'Accept-Language': language } : { Accept: accept },
+    ...(language ? { credentials: 'omit' as const } : {}),
+  });
   if (!response.ok) throw new Error(`${url} responded ${response.status}`);
   return response.text();
 }
 
 /**
- * The site index, refetched per call so a tool never serves a stale list.
- * The site origin is inferred from the document rather than taken from
- * `deps.origin`, which is only a fetch base and is normally ''.
+ * The site language for an agent-supplied tag (`fr-FR`, or a bare `fr` for its
+ * main region), or undefined when the site is not published in it. Mirrors the
+ * HTTP server's `resolveLocale` without pulling its modules into the page.
  */
-async function loadIndex(deps: WebMcpDeps, signal?: AbortSignal): Promise<IndexedPage[]> {
-  return parseLlmsIndex(await fetchText(deps, '/llms.txt', signal));
+export function resolveSiteLocale(tag: string): string | undefined {
+  const exact = siteLocales.find(({ id }) => id.toLowerCase() === tag.toLowerCase());
+  if (exact) return exact.id;
+  const language = tag.split('-')[0].toLowerCase();
+  const candidates = siteLocales.filter(({ id }) => id.split('-')[0].toLowerCase() === language);
+  return (candidates.find(({ id }) => siteLanguageDefaults.has(id)) ?? candidates[0])?.id;
+}
+
+/** The language a call asked for, the page's, or an error message for an unknown one. */
+function callLocale(deps: WebMcpDeps, input: Record<string, unknown>): { locale: string } | { error: string } {
+  if (input.locale === undefined) return { locale: deps.locale ?? 'en-US' };
+  const locale = typeof input.locale === 'string' ? resolveSiteLocale(input.locale) : undefined;
+  return locale
+    ? { locale }
+    : { error: `Unsupported locale ${JSON.stringify(input.locale)}. Use one of: ${siteLocales.map(({ id }) => id).join(', ')}.` };
+}
+
+/**
+ * One language's site index (`/llms.txt`, `/<locale>/llms.txt`), refetched per
+ * call so a tool never serves a stale list. The site origin is inferred from
+ * the document rather than taken from `deps.origin`, which is only a fetch
+ * base and is normally ''.
+ */
+async function loadIndex(deps: WebMcpDeps, locale: string, signal?: AbortSignal): Promise<IndexedPage[]> {
+  return parseLlmsIndex(await fetchText(deps, locale === 'en-US' ? '/llms.txt' : `/${locale}/llms.txt`, signal));
 }
 
 /* ------------------------------------------------------------------ */
@@ -316,9 +347,14 @@ export function browserPagefindLoader(): () => Promise<PagefindModule | null> {
 /* The tool table                                                      */
 /* ------------------------------------------------------------------ */
 
+const LOCALE_PROPERTY = {
+  type: 'string',
+  description: `Language of the pages, as a BCP 47 tag: ${siteLocales.map(({ id }) => id).join(', ')}. A bare language (e.g. "fr") picks its main region. Defaults to this page's language. English-only pages are included in every language.`,
+};
+
 const LIST_PAGES_SCHEMA: JsonSchema = {
   type: 'object',
-  properties: {},
+  properties: { locale: LOCALE_PROPERTY },
   additionalProperties: false,
 };
 
@@ -327,8 +363,9 @@ const GET_PAGE_SCHEMA: JsonSchema = {
   properties: {
     path: {
       type: 'string',
-      description: 'Site path with trailing slash, e.g. /manual/quick-start/.',
+      description: 'Site path with trailing slash, e.g. /manual/quick-start/. An English path returns its translation in `locale`.',
     },
+    locale: LOCALE_PROPERTY,
   },
   required: ['path'],
   additionalProperties: false,
@@ -339,6 +376,7 @@ const SEARCH_SCHEMA: JsonSchema = {
   properties: {
     query: { type: 'string', description: 'Words to search for.' },
     limit: { type: 'integer', description: 'Max results (default 10, max 25).', minimum: 1, maximum: 25 },
+    locale: LOCALE_PROPERTY,
   },
   required: ['query'],
   additionalProperties: false,
@@ -372,8 +410,10 @@ export function createWebMcpTools(deps: WebMcpDeps): WebMcpToolDefinition[] {
         'List every page published on this site (usectrl.dev, the Control Center product and docs site): path, title and one-line description. Use this to find the page you need, then fetch it with get_page_markdown.',
       inputSchema: LIST_PAGES_SCHEMA,
       annotations: { readOnlyHint: true },
-      async execute(_input, options) {
-        const pages = await loadIndex(deps, options?.signal);
+      async execute(input, options) {
+        const language = callLocale(deps, input);
+        if ('error' in language) return language.error;
+        const pages = await loadIndex(deps, language.locale, options?.signal);
         return JSON.stringify(
           pages.map((p) => ({ path: p.path, title: p.title, description: p.description, section: p.section })),
           null,
@@ -393,13 +433,17 @@ export function createWebMcpTools(deps: WebMcpDeps): WebMcpToolDefinition[] {
         if (typeof raw !== 'string' || raw.trim().length === 0) {
           return 'Missing or invalid argument: path (string, trailing slash, e.g. /manual/quick-start/). Call list_pages for valid values.';
         }
+        const language = callLocale(deps, input);
+        if ('error' in language) return language.error;
         const path = normalizePath(raw);
         const asset = isContentPage(path) ? markdownAssetPath(path) : null;
         if (!asset) {
           return `No page at ${path}. Call list_pages for the full route list, or search_pages to find it by content.`;
         }
         try {
-          return await fetchText(deps, asset, options?.signal, 'text/markdown, text/plain;q=0.9');
+          // The Worker moves an English twin to its translation by Accept-Language;
+          // no cookies, so the reader's saved site language cannot override it.
+          return await fetchText(deps, asset, options?.signal, 'text/markdown, text/plain;q=0.9', language.locale);
         } catch {
           return `No page at ${path}. Call list_pages for the full route list, or search_pages to find it by content.`;
         }
@@ -418,10 +462,13 @@ export function createWebMcpTools(deps: WebMcpDeps): WebMcpToolDefinition[] {
           return 'Missing or invalid argument: query (non-empty string).';
         }
         const limit = clampLimit(input.limit);
+        const language = callLocale(deps, input);
+        if ('error' in language) return language.error;
 
         let hits: SearchHit[] = [];
         let source = 'llms.txt';
-        const pagefind = loadPagefind ? await loadPagefind() : null;
+        // Pagefind searches this page's language; another one uses its index.
+        const pagefind = loadPagefind && language.locale === (deps.locale ?? 'en-US') ? await loadPagefind() : null;
         if (pagefind) {
           try {
             const found = await pagefind.search(query);
@@ -447,7 +494,7 @@ export function createWebMcpTools(deps: WebMcpDeps): WebMcpToolDefinition[] {
         // No index, or the index matched nothing: the curated list is a real
         // second corpus, so try it rather than reporting an empty result.
         if (hits.length === 0) {
-          hits = searchIndex(await loadIndex(deps, options?.signal), query, limit);
+          hits = searchIndex(await loadIndex(deps, language.locale, options?.signal), query, limit);
           source = 'llms.txt';
         }
 
@@ -474,7 +521,7 @@ export function createWebMcpTools(deps: WebMcpDeps): WebMcpToolDefinition[] {
           return 'Missing or invalid argument: path (string), e.g. /manual/install/. Call list_pages for valid values.';
         }
         const path = normalizePath(raw);
-        const pages = await loadIndex(deps, options?.signal);
+        const pages = await loadIndex(deps, deps.locale ?? 'en-US', options?.signal);
         const page = pages.find((p) => normalizePath(p.path) === path);
         if (!page) {
           return `No page at ${path}, so nothing was opened. Call list_pages for the full route list.`;

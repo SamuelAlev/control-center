@@ -3,6 +3,8 @@ title: Connect an OpenID Connect provider
 description: Wire any OIDC issuer — Pocket ID, Keycloak, Auth0, Zitadel — to Control Center sign-in.
 ---
 
+import SsoCheck from "../../../../components/manual/SsoCheck.astro";
+
 Use this guide when your identity provider speaks **OpenID Connect** rather
 than SAML. Any OIDC-certified issuer works — Pocket ID, Keycloak, Auth0,
 Zitadel, Google Workspace and friends all follow the same steps; only the
@@ -35,7 +37,8 @@ spot where your provider shows the values differs.
    press **Save connection**.
 6. Press **Test connection** — the server fetches the issuer's discovery
    document and confirms its endpoints, so a green toast means everything
-   short of the browser round-trip works.
+   short of the browser round-trip works. To check the client registration
+   too, use the [checker below](#check-your-configuration-from-this-page).
 7. Take a login: the web connect screen shows **Sign in with OpenID
    Connect**, or open `https://<your-server>/oidc/login` directly.
 
@@ -77,3 +80,15 @@ it (LAN, VPN, Tailscale, or a tunnel). **SCIM provisioning is the
 exception**: the IdP calls your server directly, which requires a tunnel or
 a public URL — see [provision users with SCIM](/manual/guides/sso-scim).
 :::
+
+## Check your configuration from this page
+
+The checker below runs in your browser. It fetches your issuer's discovery
+document directly, so this site never sees it, and applies the server's
+rules: an https issuer that matches the document, endpoints on the issuer's
+own origin, PKCE S256 and the token auth method your client type needs. With
+a client ID and server address, it can open a test sign-in that shows
+whether the client and its redirect URI are registered. It never asks for
+the client secret.
+
+<SsoCheck kind="oidc" />

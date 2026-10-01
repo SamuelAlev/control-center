@@ -2,12 +2,18 @@
 import ProductMedia from './ProductMedia.astro';
 import { approvalCapture } from '../../data/captures';
 import type { LandingCopy } from '../../data/landing';
+import { localeFromPath } from '../../data/locales';
+import { localizeSitePath } from '../../data/manual-paths';
+import { getManualRoutes } from '../../data/manual-routes';
 interface Props { copy: LandingCopy }
 const { copy: t } = Astro.props;
+// Manual links go straight to this language's translated page.
+const routes = await getManualRoutes();
+const localized = (href: string) => localizeSitePath(href, localeFromPath(Astro.url.pathname), routes);
 ---
 <section class="landing-boundaries landing-section" id="boundaries" aria-labelledby="boundaries-title">
   <div class="landing-wrap boundaries-layout">
-    <div class="approval-copy"><h2 id="boundaries-title">{t.boundaries.title}</h2><p>{t.boundaries.description}</p><p class="approval-note">{t.boundaries.note}</p><a class="landing-text-link" href="/manual/guides/configure-guardrails/">{t.boundaries.link}<span aria-hidden="true">↗</span></a></div>
+    <div class="approval-copy"><h2 id="boundaries-title">{t.boundaries.title}</h2><p>{t.boundaries.description}</p><p class="approval-note">{t.boundaries.note}</p><a class="landing-text-link" href={localized('/manual/guides/configure-guardrails/')}>{t.boundaries.link}<span aria-hidden="true">↗</span></a></div>
     <div class="approval-preview" data-enter><ProductMedia kind="action-approval" description={t.boundaries.media} label={t.tour.imageLanguage} capture={approvalCapture} playback="thumb" playLabel={t.tour.videoPlay} closeLabel={t.tour.close} /></div>
   </div>
 </section>

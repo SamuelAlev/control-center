@@ -20,12 +20,23 @@
  *    any page it happens to land on, without parsing HTML.
  * 5. A five-minute edge-cached GitHub star count in the HTML navigation,
  *    with no browser request or stale count when GitHub is unavailable.
+ * 6. Translated manual slugs — a 301 from each locale's pre-translation
+ *    `/<locale>/manual/…` URL to its translated one, and language negotiation
+ *    (Accept-Language, cookie, `?lang=`) that lands browsers and agents alike
+ *    on the translated page, markdown twin or llms.txt, with a
+ *    `Content-Language` header on every text response.
+ * 7. The docs MCP server (/mcp, /.well-known/mcp), answering from the build's
+ *    per-language page index so the content collection never enters this
+ *    bundle.
  *
  * Anything this file does not explicitly handle is delegated to the adapter
  * untouched.
  */
 import adapter from '@astrojs/cloudflare/entrypoints/server';
-import { applyLocaleHeaders, negotiateLocale } from './locale-negotiation.ts';
+import { applyLocaleHeaders, negotiateLocale, redirectManual } from './locale-negotiation.ts';
+import { localeFromPath } from './data/locales.ts';
+import type { ManualRoutes } from './data/manual-paths.ts';
+import { MCP_PATHS, serveMcp } from './agentic/mcp-http.ts';
 import { renderRepoStars } from './data/repo-stars.ts';
 import { appendDiscoveryLinks } from './agentic/api-catalog.ts';
 import {
@@ -44,6 +55,24 @@ interface AgenticEnv {
 }
 
 const METHODS: Record<string, true> = { GET: true, HEAD: true };
+
+let manualRoutes: Promise<ManualRoutes> | undefined;
+
+/**
+ * The translated manual slugs, from the build's `/manual-routes.json` (see
+ * src/pages/manual-routes.json.ts), fetched once per isolate. Without them the
+ * site still serves every page; only slug-aware redirects fall back to the
+ * prefixed English paths.
+ */
+function loadManualRoutes(env: AgenticEnv, origin: string): Promise<ManualRoutes> {
+  manualRoutes ??= env.ASSETS.fetch(new URL('/manual-routes.json', origin))
+    .then(response => (response.ok ? (response.json() as Promise<ManualRoutes>) : Promise.reject(new Error(`HTTP ${response.status}`))))
+    .catch(() => {
+      manualRoutes = undefined;
+      return {};
+    });
+  return manualRoutes;
+}
 
 const content = {
   async fetch(request: Request, env: AgenticEnv, ctx: unknown, accept: AcceptPreference): Promise<Response> {
@@ -113,17 +142,42 @@ const content = {
   },
 };
 
+/**
+ * Language and indexing headers on a successful text response (page, markdown
+ * twin, llms.txt): `Content-Language` from its URL, so agents and search
+ * engines need not guess; and `noindex` on a machine copy fetched at its own
+ * URL (`<page>.md`, llms-full.txt), so it never competes with the HTML it
+ * duplicates. A twin negotiated at the page's URL stays indexable: that URL is
+ * the page's.
+ */
+function withAgentHeaders(response: Response, pathname: string): Response {
+  const type = response.headers.get('Content-Type') ?? '';
+  if (!response.ok || !/^text\/(html|markdown|plain)/.test(type)) return response;
+  const headers = new Headers(response.headers);
+  // A `.md` twin's language is its page's: `/fr-FR.md` is the French landing page.
+  const locale = localeFromPath(pathname.replace(/\.md$/, '/'));
+  if (!headers.has('Content-Language')) headers.set('Content-Language', locale === 'en-US' ? 'en' : locale);
+  if (pathname.endsWith('.md') || pathname.endsWith('/llms-full.txt')) headers.set('X-Robots-Tag', 'noindex');
+  return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+}
+
 export default {
   async fetch(request: Request, env: AgenticEnv, ctx: unknown): Promise<Response> {
+    const url = new URL(request.url);
+    if (MCP_PATHS.has(url.pathname)) return serveMcp(request, env.ASSETS);
     const accept = METHODS[request.method] ? parseAccept(request.headers.get('Accept')) : { markdown: false, json: false };
-    // Machine representations retain their existing URLs and negotiation.
-    const locale = accept.markdown || accept.json ? null : negotiateLocale(request);
+    const routes = await loadManualRoutes(env, url.origin);
+    // Pre-translation manual URLs move permanently, for every representation.
+    const moved = redirectManual(request, routes);
+    if (moved) return moved;
+    // Pages, markdown twins and llms.txt follow the reader's language; JSON
+    // machine files keep their URLs.
+    const locale = accept.json ? null : negotiateLocale(request, routes);
     if (locale?.redirect) return locale.redirect;
-    const response = await content.fetch(request, env, ctx, accept);
+    let response = withAgentHeaders(await content.fetch(request, env, ctx, accept), url.pathname);
     if (request.method === 'GET' && response.status === 200 &&
         (response.headers.get('Content-Type') ?? '').includes('text/html')) {
-      const html = renderRepoStars(response);
-      return locale ? applyLocaleHeaders(html, locale) : html;
+      response = renderRepoStars(response);
     }
     return locale ? applyLocaleHeaders(response, locale) : response;
   },

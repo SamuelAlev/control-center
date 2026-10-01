@@ -1,0 +1,64 @@
+---
+title: Concepts
+description: How Control Center works and why it is built this way — the background reading behind the guides.
+slug: id-ID/panduan-pengguna/konsep
+---
+
+These pages explain **how Control Center works and why**. They are for understanding,
+not for doing: no page here is a procedure to follow. When you want to accomplish a
+specific task, go to the [how-to guides](/id-ID/panduan-pengguna/panduan-praktis/); when you want to look
+something up, go to the [reference](/id-ID/panduan-pengguna/referensi/).
+
+Read them in any order. If you are new, the core model is the place to start.
+
+## Core model
+
+The four ideas everything else is built on.
+
+- [Workspaces and isolation](/id-ID/panduan-pengguna/konsep/ruang-kerja/) — the tenant boundary and why it is enforced by the database layout rather than by query discipline
+- [The agent model](/id-ID/panduan-pengguna/konsep/model-agen/) — what an agent is made of: identity, role, skills, capabilities, adapter and model
+- [Agent dispatch lifecycle](/id-ID/panduan-pengguna/konsep/siklus-hidup-pengiriman/) — what happens between your message and the agent's first token
+- [Modes](/id-ID/panduan-pengguna/konsep/mode/) — how `chat`, `plan`, `review` and `orchestrate` change what an agent may do
+- [Tool context and prompt caching](/id-ID/panduan-pengguna/konsep/konteks-alat/) — why an agent sees a subset of its tools, how it reaches the rest and what keeps the provider cache warm
+- [Code intelligence](/id-ID/panduan-pengguna/konsep/kecerdasan-kode/) — the code graph, language server, structural search and debugger
+- [Conversation history](/id-ID/panduan-pengguna/konsep/riwayat-percakapan/) — persistence, compaction and forking a transcript
+
+## Safety and control
+
+What an agent is allowed to touch and who decides.
+
+- [Sandbox and security](/id-ID/panduan-pengguna/konsep/sandbox-dan-keamanan/) — what actually constrains an agent run today
+- [Guardrails](/id-ID/panduan-pengguna/konsep/pagar-pengaman/) — one policy engine for every mutating action and how a rule is resolved
+- [Authorization](/id-ID/panduan-pengguna/konsep/otorisasi/) — roles, the permission catalog and the audit trail
+- [Rigs and enclosures](/id-ID/panduan-pengguna/konsep/rigs/) — why agents get disposable VMs instead of your machine, and what the boundary actually is
+
+## Directing the work
+
+Turning intent into work that gets done.
+
+- [Tickets and delegation](/id-ID/panduan-pengguna/konsep/tiket/) — the vendor-neutral unit of work the whole fleet shares
+- [Pipelines and automation](/id-ID/panduan-pengguna/konsep/pipeline/) — DAG workflows, triggers and resumable runs
+- [Orchestration](/id-ID/panduan-pengguna/konsep/orkestrasi/) — one goal, one approval, a generated pipeline
+- [AI review](/id-ID/panduan-pengguna/konsep/tinjauan-ai/) — how a PR becomes a reviewed one: review spaces, peer consensus, axes and the Ship/Hold/Block verdict
+- [PR conversations](/id-ID/panduan-pengguna/konsep/percakapan-pr/) — answering a GitHub mention or `ai-review` label from the forge itself
+- [Memory and knowledge](/id-ID/panduan-pengguna/konsep/memori-dan-pengetahuan/) — facts, policies and what an agent is allowed to know
+- [Evals and quality](/id-ID/panduan-pengguna/konsep/evaluasi-dan-kualitas/) — eval suites and the Quality tab
+
+## People and reach
+
+Working with other humans and reaching the fleet from elsewhere.
+
+- [Multiplayer and presence](/id-ID/panduan-pengguna/konsep/multiplayer/) — humans and agents as co-equal participants and what gates access
+- [Single sign-on](/id-ID/panduan-pengguna/konsep/masuk-tunggal/) — SAML and OIDC logins
+- [Chat bridges](/id-ID/panduan-pengguna/konsep/jembatan-chat/) — why the Slack bridge dials out and what authorizes a message from chat
+- [Remote control and mobile](/id-ID/panduan-pengguna/konsep/kontrol-jarak-jauh/) — how a phone reaches your server and the security model around it
+- [Meetings and transcription](/id-ID/panduan-pengguna/konsep/rapat/) — on-device recording, transcription and summarization
+- [Calendar and scheduling](/id-ID/panduan-pengguna/konsep/kalender/) — Google Calendar sync and meeting alerts
+
+## Under the hood
+
+The shape of the system itself.
+
+- [Architecture](/id-ID/panduan-pengguna/konsep/arsitektur/) — layering, the shared kernel, ports and adapters
+- [Deployment and clients](/id-ID/panduan-pengguna/konsep/deployment/) — how the desktop, web and phone clients relate to one server
+- [Domain events](/id-ID/panduan-pengguna/konsep/peristiwa-domain/) — the in-process bus features talk over

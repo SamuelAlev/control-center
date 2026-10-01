@@ -1,0 +1,64 @@
+---
+title: Concepts
+description: How Control Center works and why it is built this way — the background reading behind the guides.
+slug: hu-HU/kezikonyv/fogalmak
+---
+
+These pages explain **how Control Center works and why**. They are for understanding,
+not for doing: no page here is a procedure to follow. When you want to accomplish a
+specific task, go to the [how-to guides](/hu-HU/kezikonyv/gyakorlati-utmutatok/); when you want to look
+something up, go to the [reference](/hu-HU/kezikonyv/referencia/).
+
+Read them in any order. If you are new, the core model is the place to start.
+
+## Core model
+
+The four ideas everything else is built on.
+
+- [Workspaces and isolation](/hu-HU/kezikonyv/fogalmak/munkateruletek/) — the tenant boundary and why it is enforced by the database layout rather than by query discipline
+- [The agent model](/hu-HU/kezikonyv/fogalmak/ugynokmodell/) — what an agent is made of: identity, role, skills, capabilities, adapter and model
+- [Agent dispatch lifecycle](/hu-HU/kezikonyv/fogalmak/ugynokinditas-eletciklusa/) — what happens between your message and the agent's first token
+- [Modes](/hu-HU/kezikonyv/fogalmak/modok/) — how `chat`, `plan`, `review` and `orchestrate` change what an agent may do
+- [Tool context and prompt caching](/hu-HU/kezikonyv/fogalmak/eszkozkontextus/) — why an agent sees a subset of its tools, how it reaches the rest and what keeps the provider cache warm
+- [Code intelligence](/hu-HU/kezikonyv/fogalmak/kodintelligencia/) — the code graph, language server, structural search and debugger
+- [Conversation history](/hu-HU/kezikonyv/fogalmak/beszelgetesi-elozmenyek/) — persistence, compaction and forking a transcript
+
+## Safety and control
+
+What an agent is allowed to touch and who decides.
+
+- [Sandbox and security](/hu-HU/kezikonyv/fogalmak/homokozo-es-biztonsag/) — what actually constrains an agent run today
+- [Guardrails](/hu-HU/kezikonyv/fogalmak/korlatok/) — one policy engine for every mutating action and how a rule is resolved
+- [Authorization](/hu-HU/kezikonyv/fogalmak/jogosultsag/) — roles, the permission catalog and the audit trail
+- [Rigs and enclosures](/hu-HU/kezikonyv/fogalmak/allomasok/) — why agents get disposable VMs instead of your machine, and what the boundary actually is
+
+## Directing the work
+
+Turning intent into work that gets done.
+
+- [Tickets and delegation](/hu-HU/kezikonyv/fogalmak/jegyek/) — the vendor-neutral unit of work the whole fleet shares
+- [Pipelines and automation](/hu-HU/kezikonyv/fogalmak/pipeline-ok/) — DAG workflows, triggers and resumable runs
+- [Orchestration](/hu-HU/kezikonyv/fogalmak/orchestracio/) — one goal, one approval, a generated pipeline
+- [AI review](/hu-HU/kezikonyv/fogalmak/mi-atnezes/) — how a PR becomes a reviewed one: review spaces, peer consensus, axes and the Ship/Hold/Block verdict
+- [PR conversations](/hu-HU/kezikonyv/fogalmak/pr-beszelgetesek/) — answering a GitHub mention or `ai-review` label from the forge itself
+- [Memory and knowledge](/hu-HU/kezikonyv/fogalmak/memoria-es-tudas/) — facts, policies and what an agent is allowed to know
+- [Evals and quality](/hu-HU/kezikonyv/fogalmak/kiertekelesek-es-minoseg/) — eval suites and the Quality tab
+
+## People and reach
+
+Working with other humans and reaching the fleet from elsewhere.
+
+- [Multiplayer and presence](/hu-HU/kezikonyv/fogalmak/tobbszereplos-mod/) — humans and agents as co-equal participants and what gates access
+- [Single sign-on](/hu-HU/kezikonyv/fogalmak/egyszeri-bejelentkezes/) — SAML and OIDC logins
+- [Chat bridges](/hu-HU/kezikonyv/fogalmak/csevegohidak/) — why the Slack bridge dials out and what authorizes a message from chat
+- [Remote control and mobile](/hu-HU/kezikonyv/fogalmak/tavoli-vezerles/) — how a phone reaches your server and the security model around it
+- [Meetings and transcription](/hu-HU/kezikonyv/fogalmak/megbeszelesek/) — on-device recording, transcription and summarization
+- [Calendar and scheduling](/hu-HU/kezikonyv/fogalmak/naptar/) — Google Calendar sync and meeting alerts
+
+## Under the hood
+
+The shape of the system itself.
+
+- [Architecture](/hu-HU/kezikonyv/fogalmak/architektura/) — layering, the shared kernel, ports and adapters
+- [Deployment and clients](/hu-HU/kezikonyv/fogalmak/telepites/) — how the desktop, web and phone clients relate to one server
+- [Domain events](/hu-HU/kezikonyv/fogalmak/domainesemenyek/) — the in-process bus features talk over

@@ -1,0 +1,64 @@
+---
+title: Concepts
+description: How Control Center works and why it is built this way — the background reading behind the guides.
+slug: th-TH/คู่มือ/แนวคิด
+---
+
+These pages explain **how Control Center works and why**. They are for understanding,
+not for doing: no page here is a procedure to follow. When you want to accomplish a
+specific task, go to the [how-to guides](/th-TH/คู่มือ/วิธีทำ/); when you want to look
+something up, go to the [reference](/th-TH/คู่มือ/อ้างอิง/).
+
+Read them in any order. If you are new, the core model is the place to start.
+
+## Core model
+
+The four ideas everything else is built on.
+
+- [Workspaces and isolation](/th-TH/คู่มือ/แนวคิด/เวิร์กสเปซ/) — the tenant boundary and why it is enforced by the database layout rather than by query discipline
+- [The agent model](/th-TH/คู่มือ/แนวคิด/โมเดลเอเจนต์/) — what an agent is made of: identity, role, skills, capabilities, adapter and model
+- [Agent dispatch lifecycle](/th-TH/คู่มือ/แนวคิด/วงจรชีวิตการสั่งงาน/) — what happens between your message and the agent's first token
+- [Modes](/th-TH/คู่มือ/แนวคิด/โหมด/) — how `chat`, `plan`, `review` and `orchestrate` change what an agent may do
+- [Tool context and prompt caching](/th-TH/คู่มือ/แนวคิด/บริบทเครื่องมือ/) — why an agent sees a subset of its tools, how it reaches the rest and what keeps the provider cache warm
+- [Code intelligence](/th-TH/คู่มือ/แนวคิด/ความฉลาดของโค้ด/) — the code graph, language server, structural search and debugger
+- [Conversation history](/th-TH/คู่มือ/แนวคิด/ประวัติการสนทนา/) — persistence, compaction and forking a transcript
+
+## Safety and control
+
+What an agent is allowed to touch and who decides.
+
+- [Sandbox and security](/th-TH/คู่มือ/แนวคิด/แซนด์บ็อกซ์และความปลอดภัย/) — what actually constrains an agent run today
+- [Guardrails](/th-TH/คู่มือ/แนวคิด/กฎคุม/) — one policy engine for every mutating action and how a rule is resolved
+- [Authorization](/th-TH/คู่มือ/แนวคิด/การอนุญาต/) — roles, the permission catalog and the audit trail
+- [Rigs and enclosures](/th-TH/คู่มือ/แนวคิด/ริก/) — why agents get disposable VMs instead of your machine, and what the boundary actually is
+
+## Directing the work
+
+Turning intent into work that gets done.
+
+- [Tickets and delegation](/th-TH/คู่มือ/แนวคิด/ตั๋วงาน/) — the vendor-neutral unit of work the whole fleet shares
+- [Pipelines and automation](/th-TH/คู่มือ/แนวคิด/ไปป์ไลน์/) — DAG workflows, triggers and resumable runs
+- [Orchestration](/th-TH/คู่มือ/แนวคิด/การประสานงาน/) — one goal, one approval, a generated pipeline
+- [AI review](/th-TH/คู่มือ/แนวคิด/รีวิวด้วย-ai/) — how a PR becomes a reviewed one: review spaces, peer consensus, axes and the Ship/Hold/Block verdict
+- [PR conversations](/th-TH/คู่มือ/แนวคิด/การสนทนาบน-pr/) — answering a GitHub mention or `ai-review` label from the forge itself
+- [Memory and knowledge](/th-TH/คู่มือ/แนวคิด/หน่วยความจำและความรู้/) — facts, policies and what an agent is allowed to know
+- [Evals and quality](/th-TH/คู่มือ/แนวคิด/การประเมินและคุณภาพ/) — eval suites and the Quality tab
+
+## People and reach
+
+Working with other humans and reaching the fleet from elsewhere.
+
+- [Multiplayer and presence](/th-TH/คู่มือ/แนวคิด/การทำงานร่วมกันแบบหลายคน/) — humans and agents as co-equal participants and what gates access
+- [Single sign-on](/th-TH/คู่มือ/แนวคิด/การลงชื่อเข้าใช้ครั้งเดียว/) — SAML and OIDC logins
+- [Chat bridges](/th-TH/คู่มือ/แนวคิด/สะพานแชท/) — why the Slack bridge dials out and what authorizes a message from chat
+- [Remote control and mobile](/th-TH/คู่มือ/แนวคิด/ควบคุมระยะไกล/) — how a phone reaches your server and the security model around it
+- [Meetings and transcription](/th-TH/คู่มือ/แนวคิด/การประชุม/) — on-device recording, transcription and summarization
+- [Calendar and scheduling](/th-TH/คู่มือ/แนวคิด/ปฏิทิน/) — Google Calendar sync and meeting alerts
+
+## Under the hood
+
+The shape of the system itself.
+
+- [Architecture](/th-TH/คู่มือ/แนวคิด/สถาปัตยกรรม/) — layering, the shared kernel, ports and adapters
+- [Deployment and clients](/th-TH/คู่มือ/แนวคิด/การปรับใช้/) — how the desktop, web and phone clients relate to one server
+- [Domain events](/th-TH/คู่มือ/แนวคิด/เหตุการณ์โดเมน/) — the in-process bus features talk over

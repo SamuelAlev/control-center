@@ -26,6 +26,7 @@
     findModelContext,
     registerWebMcpTools,
   } from '../../agentic/webmcp-tools.ts';
+  import { localeFromPath } from '../../data/locales.ts';
 
   (() => {
     'use strict';
@@ -52,6 +53,8 @@
           navigate: (url: string) => {
             window.location.assign(url);
           },
+          // The tools answer in this page's language unless asked otherwise.
+          locale: localeFromPath(window.location.pathname),
         });
 
         await registerWebMcpTools(context, tools, controller.signal);

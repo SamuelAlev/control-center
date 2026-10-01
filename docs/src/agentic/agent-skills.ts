@@ -97,7 +97,7 @@ export function skillUrlPath(name: string): string {
 const SITE_ACCESS: SkillSource = {
   name: 'usectrl-dev-agent-access',
   description:
-    'Read usectrl.dev, the Control Center documentation site, without parsing HTML: markdown twins via Accept: text/markdown or a .md suffix, /llms.txt and /llms-full.txt, a read-only docs MCP server at /mcp, an OpenAPI document, an RFC 9727 API catalog and structured JSON errors.',
+    'Read usectrl.dev, the Control Center documentation site, without parsing HTML and in your user\'s language: markdown twins via Accept: text/markdown or a .md suffix, /llms.txt and /llms-full.txt per language, a read-only docs MCP server at /mcp, an OpenAPI document, an RFC 9727 API catalog and structured JSON errors.',
   body: `# Read usectrl.dev without parsing HTML
 
 usectrl.dev is the documentation and marketing site for Control Center, a
@@ -136,6 +136,25 @@ contains a dot is an asset, a feed or a machine file and has no twin.
 | \`GET /sitemap-index.xml\` | Every published route |
 | \`GET /rss.xml\` | The changelog feed |
 
+## Read it in your user's language
+
+The landing page, the manual and both llms.txt files are published in every
+site language (\`fr-FR\`, \`ja-JP\`, \`pt-BR\`, … — \`/llms.txt\` lists them all
+under "Other languages").
+
+- Send \`Accept-Language\` with any request for \`/\`, a \`/manual/…\` page, its
+  \`.md\` twin, \`/llms.txt\` or \`/llms-full.txt\`: the response is a 302 to the
+  same resource in that language. Follow redirects.
+- Or ask for the language directly: \`/fr-FR/llms.txt\`, \`/fr-FR/llms-full.txt\`,
+  \`/fr-FR/\`. Manual pages live under translated slugs
+  (\`/fr-FR/manuel/guides/creer-agent/\`); \`GET /manual-routes.json\` maps each
+  English page to every language's path.
+- Every page, twin and index carries \`Content-Language\`, and each twin ends
+  with its canonical URL, its language and, for a translation, the English
+  original.
+- Pages that only exist in English (comparison, changelog, developers) are the
+  same in every language and marked as English in each language's index.
+
 ## Query the site over MCP
 
 A read-only MCP server for this site's content is served over the Streamable
@@ -148,13 +167,15 @@ HTTP transport at both \`/mcp\` and \`/.well-known/mcp\`.
 - \`GET\` returns a plain discovery card. No SSE stream is offered here, so do
   not wait on one.
 
-Three tools:
+Three tools, each with an optional \`locale\` (a BCP 47 tag such as \`fr-FR\`, or a
+bare \`fr\` for its main region). Without one, the request's
+\`Accept-Language\` decides, else English:
 
 | Tool | What it does |
 | --- | --- |
-| \`list_pages\` | Every page: path, title and one-line description |
-| \`get_page_markdown\` | One page as markdown, selected by \`path\` |
-| \`search_pages\` | Full-text search with titles weighted above bodies; returns matching paths with snippets |
+| \`list_pages\` | Every page in that language: path, title, one-line description and language |
+| \`get_page_markdown\` | One page as markdown, selected by \`path\`; an English path returns its translation |
+| \`search_pages\` | Full-text search over that language's pages, titles weighted above bodies; returns matching paths with snippets |
 
 \`get_page_markdown\` takes a site path with a trailing slash, for example \`/\`
 for the landing page or \`/manual/guides/mcp-server/\` for a docs page. A path

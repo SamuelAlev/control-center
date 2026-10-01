@@ -1,0 +1,64 @@
+---
+title: Concepts
+description: How Control Center works and why it is built this way — the background reading behind the guides.
+slug: el-GR/εγχειρίδιο/έννοιες
+---
+
+These pages explain **how Control Center works and why**. They are for understanding,
+not for doing: no page here is a procedure to follow. When you want to accomplish a
+specific task, go to the [how-to guides](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/); when you want to look
+something up, go to the [reference](/el-GR/εγχειρίδιο/αναφορά/).
+
+Read them in any order. If you are new, the core model is the place to start.
+
+## Core model
+
+The four ideas everything else is built on.
+
+- [Workspaces and isolation](/el-GR/εγχειρίδιο/έννοιες/χώροι-εργασίας/) — the tenant boundary and why it is enforced by the database layout rather than by query discipline
+- [The agent model](/el-GR/εγχειρίδιο/έννοιες/μοντέλο-πρακτόρων/) — what an agent is made of: identity, role, skills, capabilities, adapter and model
+- [Agent dispatch lifecycle](/el-GR/εγχειρίδιο/έννοιες/κύκλος-ζωής-αποστολής/) — what happens between your message and the agent's first token
+- [Modes](/el-GR/εγχειρίδιο/έννοιες/λειτουργίες/) — how `chat`, `plan`, `review` and `orchestrate` change what an agent may do
+- [Tool context and prompt caching](/el-GR/εγχειρίδιο/έννοιες/πλαίσιο-εργαλείων/) — why an agent sees a subset of its tools, how it reaches the rest and what keeps the provider cache warm
+- [Code intelligence](/el-GR/εγχειρίδιο/έννοιες/νοημοσύνη-κώδικα/) — the code graph, language server, structural search and debugger
+- [Conversation history](/el-GR/εγχειρίδιο/έννοιες/ιστορικό-συνομιλιών/) — persistence, compaction and forking a transcript
+
+## Safety and control
+
+What an agent is allowed to touch and who decides.
+
+- [Sandbox and security](/el-GR/εγχειρίδιο/έννοιες/sandbox-και-ασφάλεια/) — what actually constrains an agent run today
+- [Guardrails](/el-GR/εγχειρίδιο/έννοιες/περιορισμοί/) — one policy engine for every mutating action and how a rule is resolved
+- [Authorization](/el-GR/εγχειρίδιο/έννοιες/εξουσιοδότηση/) — roles, the permission catalog and the audit trail
+- [Rigs and enclosures](/el-GR/εγχειρίδιο/έννοιες/σταθμοί/) — why agents get disposable VMs instead of your machine, and what the boundary actually is
+
+## Directing the work
+
+Turning intent into work that gets done.
+
+- [Tickets and delegation](/el-GR/εγχειρίδιο/έννοιες/εισιτήρια/) — the vendor-neutral unit of work the whole fleet shares
+- [Pipelines and automation](/el-GR/εγχειρίδιο/έννοιες/pipeline/) — DAG workflows, triggers and resumable runs
+- [Orchestration](/el-GR/εγχειρίδιο/έννοιες/ενορχήστρωση/) — one goal, one approval, a generated pipeline
+- [AI review](/el-GR/εγχειρίδιο/έννοιες/έλεγχος-με-ai/) — how a PR becomes a reviewed one: review spaces, peer consensus, axes and the Ship/Hold/Block verdict
+- [PR conversations](/el-GR/εγχειρίδιο/έννοιες/συνομιλίες-pr/) — answering a GitHub mention or `ai-review` label from the forge itself
+- [Memory and knowledge](/el-GR/εγχειρίδιο/έννοιες/μνήμη-και-γνώση/) — facts, policies and what an agent is allowed to know
+- [Evals and quality](/el-GR/εγχειρίδιο/έννοιες/αξιολογήσεις-και-ποιότητα/) — eval suites and the Quality tab
+
+## People and reach
+
+Working with other humans and reaching the fleet from elsewhere.
+
+- [Multiplayer and presence](/el-GR/εγχειρίδιο/έννοιες/συνεργασία/) — humans and agents as co-equal participants and what gates access
+- [Single sign-on](/el-GR/εγχειρίδιο/έννοιες/ενιαία-σύνδεση/) — SAML and OIDC logins
+- [Chat bridges](/el-GR/εγχειρίδιο/έννοιες/γέφυρες-συνομιλίας/) — why the Slack bridge dials out and what authorizes a message from chat
+- [Remote control and mobile](/el-GR/εγχειρίδιο/έννοιες/απομακρυσμένος-έλεγχος/) — how a phone reaches your server and the security model around it
+- [Meetings and transcription](/el-GR/εγχειρίδιο/έννοιες/συσκέψεις/) — on-device recording, transcription and summarization
+- [Calendar and scheduling](/el-GR/εγχειρίδιο/έννοιες/ημερολόγιο/) — Google Calendar sync and meeting alerts
+
+## Under the hood
+
+The shape of the system itself.
+
+- [Architecture](/el-GR/εγχειρίδιο/έννοιες/αρχιτεκτονική/) — layering, the shared kernel, ports and adapters
+- [Deployment and clients](/el-GR/εγχειρίδιο/έννοιες/ανάπτυξη/) — how the desktop, web and phone clients relate to one server
+- [Domain events](/el-GR/εγχειρίδιο/έννοιες/γεγονότα-τομέα/) — the in-process bus features talk over

@@ -5,20 +5,25 @@
 // from the spec description).
 import type { APIRoute } from 'astro';
 import { getCollection } from 'astro:content';
+import { localeFromPath, siteLocales } from '../data/locales';
 import { releases } from '../data/changelog';
 import { vsTools } from '../data/compare';
 import { buildOpenApi } from '../agentic/openapi';
 
 export const prerender = true;
 
+/** The English manual only: each locale's copy would repeat every page. */
+const isEnglishDoc = (id: string) => localeFromPath(`/${id}`) === 'en-US';
+
 export const GET: APIRoute = async ({ site }) => {
   const origin = (site ?? new URL('https://usectrl.dev/')).toString().replace(/\/$/, '');
-  const docEntries = await getCollection('docs', ({ id, data }) => id !== '404' && !id.endsWith('/404') && !data.draft);
+  const docEntries = await getCollection('docs', ({ id, data }) => id !== '404' && !id.endsWith('/404') && !data.draft && isEnglishDoc(id));
   const doc = buildOpenApi({
     origin,
     version: releases[0]?.version ?? '0.0.1',
     compareToolIds: vsTools.map((t) => t.id),
     docSlugs: docEntries.map((e) => e.id).sort(),
+    locales: siteLocales.map(({ id }) => id).sort((a, b) => (a === 'en-US' ? -1 : b === 'en-US' ? 1 : a.localeCompare(b))),
   });
   return new Response(JSON.stringify(doc, null, 2), {
     headers: {

@@ -1,0 +1,64 @@
+---
+title: Concepts
+description: How Control Center works and why it is built this way — the background reading behind the guides.
+slug: he-IL/מדריך-למשתמש/מושגים
+---
+
+These pages explain **how Control Center works and why**. They are for understanding,
+not for doing: no page here is a procedure to follow. When you want to accomplish a
+specific task, go to the [how-to guides](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/); when you want to look
+something up, go to the [reference](/he-IL/מדריך-למשתמש/עזר/).
+
+Read them in any order. If you are new, the core model is the place to start.
+
+## Core model
+
+The four ideas everything else is built on.
+
+- [Workspaces and isolation](/he-IL/מדריך-למשתמש/מושגים/סביבות-עבודה/) — the tenant boundary and why it is enforced by the database layout rather than by query discipline
+- [The agent model](/he-IL/מדריך-למשתמש/מושגים/מודל-הסוכן/) — what an agent is made of: identity, role, skills, capabilities, adapter and model
+- [Agent dispatch lifecycle](/he-IL/מדריך-למשתמש/מושגים/מחזור-חיי-שליחה/) — what happens between your message and the agent's first token
+- [Modes](/he-IL/מדריך-למשתמש/מושגים/מצבים/) — how `chat`, `plan`, `review` and `orchestrate` change what an agent may do
+- [Tool context and prompt caching](/he-IL/מדריך-למשתמש/מושגים/הקשר-כלים/) — why an agent sees a subset of its tools, how it reaches the rest and what keeps the provider cache warm
+- [Code intelligence](/he-IL/מדריך-למשתמש/מושגים/אינטליגנציית-קוד/) — the code graph, language server, structural search and debugger
+- [Conversation history](/he-IL/מדריך-למשתמש/מושגים/היסטוריית-שיחה/) — persistence, compaction and forking a transcript
+
+## Safety and control
+
+What an agent is allowed to touch and who decides.
+
+- [Sandbox and security](/he-IL/מדריך-למשתמש/מושגים/ארגז-חול-ואבטחה/) — what actually constrains an agent run today
+- [Guardrails](/he-IL/מדריך-למשתמש/מושגים/מעקות-בטיחות/) — one policy engine for every mutating action and how a rule is resolved
+- [Authorization](/he-IL/מדריך-למשתמש/מושגים/הרשאות/) — roles, the permission catalog and the audit trail
+- [Rigs and enclosures](/he-IL/מדריך-למשתמש/מושגים/תחנות/) — why agents get disposable VMs instead of your machine, and what the boundary actually is
+
+## Directing the work
+
+Turning intent into work that gets done.
+
+- [Tickets and delegation](/he-IL/מדריך-למשתמש/מושגים/כרטיסים/) — the vendor-neutral unit of work the whole fleet shares
+- [Pipelines and automation](/he-IL/מדריך-למשתמש/מושגים/פייפליינים/) — DAG workflows, triggers and resumable runs
+- [Orchestration](/he-IL/מדריך-למשתמש/מושגים/תזמור/) — one goal, one approval, a generated pipeline
+- [AI review](/he-IL/מדריך-למשתמש/מושגים/סקירת-ai/) — how a PR becomes a reviewed one: review spaces, peer consensus, axes and the Ship/Hold/Block verdict
+- [PR conversations](/he-IL/מדריך-למשתמש/מושגים/שיחות-בקשות-משיכה/) — answering a GitHub mention or `ai-review` label from the forge itself
+- [Memory and knowledge](/he-IL/מדריך-למשתמש/מושגים/זיכרון-וידע/) — facts, policies and what an agent is allowed to know
+- [Evals and quality](/he-IL/מדריך-למשתמש/מושגים/הערכות-ואיכות/) — eval suites and the Quality tab
+
+## People and reach
+
+Working with other humans and reaching the fleet from elsewhere.
+
+- [Multiplayer and presence](/he-IL/מדריך-למשתמש/מושגים/רב-משתמשים/) — humans and agents as co-equal participants and what gates access
+- [Single sign-on](/he-IL/מדריך-למשתמש/מושגים/כניסה-מאוחדת/) — SAML and OIDC logins
+- [Chat bridges](/he-IL/מדריך-למשתמש/מושגים/גשרי-צאט/) — why the Slack bridge dials out and what authorizes a message from chat
+- [Remote control and mobile](/he-IL/מדריך-למשתמש/מושגים/שליטה-מרחוק/) — how a phone reaches your server and the security model around it
+- [Meetings and transcription](/he-IL/מדריך-למשתמש/מושגים/פגישות/) — on-device recording, transcription and summarization
+- [Calendar and scheduling](/he-IL/מדריך-למשתמש/מושגים/לוח-שנה/) — Google Calendar sync and meeting alerts
+
+## Under the hood
+
+The shape of the system itself.
+
+- [Architecture](/he-IL/מדריך-למשתמש/מושגים/ארכיטקטורה/) — layering, the shared kernel, ports and adapters
+- [Deployment and clients](/he-IL/מדריך-למשתמש/מושגים/פריסה/) — how the desktop, web and phone clients relate to one server
+- [Domain events](/he-IL/מדריך-למשתמש/מושגים/אירועי-תחום/) — the in-process bus features talk over

@@ -1,0 +1,64 @@
+---
+title: Concepts
+description: How Control Center works and why it is built this way — the background reading behind the guides.
+slug: de-DE/handbuch/konzepte
+---
+
+These pages explain **how Control Center works and why**. They are for understanding,
+not for doing: no page here is a procedure to follow. When you want to accomplish a
+specific task, go to the [how-to guides](/de-DE/handbuch/anleitungen/); when you want to look
+something up, go to the [reference](/de-DE/handbuch/referenz/).
+
+Read them in any order. If you are new, the core model is the place to start.
+
+## Core model
+
+The four ideas everything else is built on.
+
+- [Workspaces and isolation](/de-DE/handbuch/konzepte/arbeitsbereiche/) — the tenant boundary and why it is enforced by the database layout rather than by query discipline
+- [The agent model](/de-DE/handbuch/konzepte/agentenmodell/) — what an agent is made of: identity, role, skills, capabilities, adapter and model
+- [Agent dispatch lifecycle](/de-DE/handbuch/konzepte/ausfuehrungs-lebenszyklus/) — what happens between your message and the agent's first token
+- [Modes](/de-DE/handbuch/konzepte/modi/) — how `chat`, `plan`, `review` and `orchestrate` change what an agent may do
+- [Tool context and prompt caching](/de-DE/handbuch/konzepte/tool-kontext/) — why an agent sees a subset of its tools, how it reaches the rest and what keeps the provider cache warm
+- [Code intelligence](/de-DE/handbuch/konzepte/code-intelligenz/) — the code graph, language server, structural search and debugger
+- [Conversation history](/de-DE/handbuch/konzepte/unterhaltungsverlauf/) — persistence, compaction and forking a transcript
+
+## Safety and control
+
+What an agent is allowed to touch and who decides.
+
+- [Sandbox and security](/de-DE/handbuch/konzepte/sandbox-und-sicherheit/) — what actually constrains an agent run today
+- [Guardrails](/de-DE/handbuch/konzepte/schutzregeln/) — one policy engine for every mutating action and how a rule is resolved
+- [Authorization](/de-DE/handbuch/konzepte/autorisierung/) — roles, the permission catalog and the audit trail
+- [Rigs and enclosures](/de-DE/handbuch/konzepte/rigs/) — why agents get disposable VMs instead of your machine, and what the boundary actually is
+
+## Directing the work
+
+Turning intent into work that gets done.
+
+- [Tickets and delegation](/de-DE/handbuch/konzepte/tickets/) — the vendor-neutral unit of work the whole fleet shares
+- [Pipelines and automation](/de-DE/handbuch/konzepte/pipelines/) — DAG workflows, triggers and resumable runs
+- [Orchestration](/de-DE/handbuch/konzepte/orchestrierung/) — one goal, one approval, a generated pipeline
+- [AI review](/de-DE/handbuch/konzepte/ki-review/) — how a PR becomes a reviewed one: review spaces, peer consensus, axes and the Ship/Hold/Block verdict
+- [PR conversations](/de-DE/handbuch/konzepte/pr-unterhaltungen/) — answering a GitHub mention or `ai-review` label from the forge itself
+- [Memory and knowledge](/de-DE/handbuch/konzepte/gedaechtnis-und-wissen/) — facts, policies and what an agent is allowed to know
+- [Evals and quality](/de-DE/handbuch/konzepte/evals-und-qualitaet/) — eval suites and the Quality tab
+
+## People and reach
+
+Working with other humans and reaching the fleet from elsewhere.
+
+- [Multiplayer and presence](/de-DE/handbuch/konzepte/multiplayer/) — humans and agents as co-equal participants and what gates access
+- [Single sign-on](/de-DE/handbuch/konzepte/sso/) — SAML and OIDC logins
+- [Chat bridges](/de-DE/handbuch/konzepte/chat-bruecken/) — why the Slack bridge dials out and what authorizes a message from chat
+- [Remote control and mobile](/de-DE/handbuch/konzepte/fernsteuerung/) — how a phone reaches your server and the security model around it
+- [Meetings and transcription](/de-DE/handbuch/konzepte/besprechungen/) — on-device recording, transcription and summarization
+- [Calendar and scheduling](/de-DE/handbuch/konzepte/kalender/) — Google Calendar sync and meeting alerts
+
+## Under the hood
+
+The shape of the system itself.
+
+- [Architecture](/de-DE/handbuch/konzepte/architektur/) — layering, the shared kernel, ports and adapters
+- [Deployment and clients](/de-DE/handbuch/konzepte/bereitstellung/) — how the desktop, web and phone clients relate to one server
+- [Domain events](/de-DE/handbuch/konzepte/domain-ereignisse/) — the in-process bus features talk over

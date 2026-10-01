@@ -83,6 +83,7 @@ describe('buildApiCatalog', () => {
       version: 'v0.0.1-rc.1',
       compareToolIds: ['conductor'],
       docSlugs: ['manual'],
+      locales: ['en-US', 'fr-FR'],
     }) as { paths: Record<string, unknown> };
     const published = new Set(Object.keys(spec.paths));
     const pathsUsed = new Set<string>();

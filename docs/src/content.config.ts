@@ -15,8 +15,10 @@ export const collections = {
 		loader: docsLoader({
 			// Match landing URLs exactly, including BCP-47 region casing. Lowercase
 			// locale folders collide with landing output on case-insensitive disks.
+			// A locale's manual mirrors the English file names and sets its
+			// translated URL as `slug` (checked by scripts/manual-i18n.ts).
 			generateId: ({ entry, data }) => data.slug
-				? String(data.slug)
+				? String(data.slug).normalize('NFC')
 				: entry.replace(/\.[^.]+$/, '').replace(/\/index$/, ''),
 		}),
 		// Optional freshness dates surfaced in the TechArticle JSON-LD (see the
@@ -26,6 +28,9 @@ export const collections = {
 			extend: z.object({
 				datePublished: z.coerce.date().optional(),
 				dateModified: z.coerce.date().optional(),
+				// Locale manual pages: git blob id of the English revision this page
+				// was translated from (scripts/manual-i18n.ts). Absent until translated.
+				sourceHash: z.string().regex(/^[0-9a-f]{40}$/).optional(),
 			}),
 		}),
 	}),

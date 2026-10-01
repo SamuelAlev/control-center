@@ -9,7 +9,9 @@ function localizeLink(link: HTMLAnchorElement) {
 
   const choice = link.dataset.siteLocale;
   if (isSiteLocale(choice)) {
-    url.pathname = localizePath(location.pathname, choice);
+    // Translated pages carry their exact destination: manual slugs differ per
+    // locale and only the server knows them.
+    if (!('siteLocaleExact' in link.dataset)) url.pathname = localizePath(location.pathname, choice);
     url.search = location.search;
     url.searchParams.set(localeChoiceParameter, choice);
     url.hash = location.hash;

@@ -2,14 +2,18 @@
 import StructuredData from '../shared/StructuredData.astro';
 import type { LandingCopy } from '../../data/landing';
 import type { SiteLocale } from '../../data/locales';
+import { localizeSitePath } from '../../data/manual-paths';
+import { getManualRoutes } from '../../data/manual-routes';
 interface Props { copy: LandingCopy; locale: SiteLocale }
 const { copy: t, locale } = Astro.props;
+// Manual links go straight to this language's translated page.
+const routes = await getManualRoutes();
 const schema = { '@context': 'https://schema.org', '@type': 'FAQPage', url: new URL(Astro.url.pathname, Astro.site).href, inLanguage: locale, mainEntity: t.faq.items.map(faq => ({ '@type': 'Question', name: faq.question, acceptedAnswer: { '@type': 'Answer', text: faq.answer } })) };
 ---
 <section class="landing-faq landing-section" id="faq" aria-labelledby="faq-title">
   <div class="landing-wrap">
     <header class="section-intro"><h2 id="faq-title">{t.faq.title}</h2><p>{t.faq.description}</p></header>
-    <div class="faq-grid">{t.faq.items.map(faq => <article><h3>{faq.question}</h3><p>{faq.answer}</p>{faq.links?.map(link => <a class="landing-text-link" href={link.href}>{link.label}<span aria-hidden="true">↗</span></a>)}</article>)}</div>
+    <div class="faq-grid">{t.faq.items.map(faq => <article><h3>{faq.question}</h3><p>{faq.answer}</p>{faq.links?.map(link => <a class="landing-text-link" href={localizeSitePath(link.href, locale, routes)}>{link.label}<span aria-hidden="true">↗</span></a>)}</article>)}</div>
   </div>
   <StructuredData schema={schema} />
 </section>

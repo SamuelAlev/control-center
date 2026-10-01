@@ -1,0 +1,64 @@
+---
+title: Concepts
+description: How Control Center works and why it is built this way — the background reading behind the guides.
+slug: ro-RO/manual/concepte
+---
+
+These pages explain **how Control Center works and why**. They are for understanding,
+not for doing: no page here is a procedure to follow. When you want to accomplish a
+specific task, go to the [how-to guides](/ro-RO/manual/ghiduri-practice/); when you want to look
+something up, go to the [reference](/ro-RO/manual/referinta/).
+
+Read them in any order. If you are new, the core model is the place to start.
+
+## Core model
+
+The four ideas everything else is built on.
+
+- [Workspaces and isolation](/ro-RO/manual/concepte/spatii-de-lucru/) — the tenant boundary and why it is enforced by the database layout rather than by query discipline
+- [The agent model](/ro-RO/manual/concepte/modelul-agentilor/) — what an agent is made of: identity, role, skills, capabilities, adapter and model
+- [Agent dispatch lifecycle](/ro-RO/manual/concepte/ciclul-de-viata-al-trimiterii/) — what happens between your message and the agent's first token
+- [Modes](/ro-RO/manual/concepte/moduri/) — how `chat`, `plan`, `review` and `orchestrate` change what an agent may do
+- [Tool context and prompt caching](/ro-RO/manual/concepte/contextul-instrumentelor/) — why an agent sees a subset of its tools, how it reaches the rest and what keeps the provider cache warm
+- [Code intelligence](/ro-RO/manual/concepte/intelligence-pentru-cod/) — the code graph, language server, structural search and debugger
+- [Conversation history](/ro-RO/manual/concepte/istoricul-conversatiilor/) — persistence, compaction and forking a transcript
+
+## Safety and control
+
+What an agent is allowed to touch and who decides.
+
+- [Sandbox and security](/ro-RO/manual/concepte/sandbox-si-securitate/) — what actually constrains an agent run today
+- [Guardrails](/ro-RO/manual/concepte/guardrail-uri/) — one policy engine for every mutating action and how a rule is resolved
+- [Authorization](/ro-RO/manual/concepte/autorizare/) — roles, the permission catalog and the audit trail
+- [Rigs and enclosures](/ro-RO/manual/concepte/statii/) — why agents get disposable VMs instead of your machine, and what the boundary actually is
+
+## Directing the work
+
+Turning intent into work that gets done.
+
+- [Tickets and delegation](/ro-RO/manual/concepte/tichete/) — the vendor-neutral unit of work the whole fleet shares
+- [Pipelines and automation](/ro-RO/manual/concepte/pipeline-uri/) — DAG workflows, triggers and resumable runs
+- [Orchestration](/ro-RO/manual/concepte/orchestrare/) — one goal, one approval, a generated pipeline
+- [AI review](/ro-RO/manual/concepte/revizuire-ia/) — how a PR becomes a reviewed one: review spaces, peer consensus, axes and the Ship/Hold/Block verdict
+- [PR conversations](/ro-RO/manual/concepte/conversatii-pr/) — answering a GitHub mention or `ai-review` label from the forge itself
+- [Memory and knowledge](/ro-RO/manual/concepte/memorie-si-cunostinte/) — facts, policies and what an agent is allowed to know
+- [Evals and quality](/ro-RO/manual/concepte/eval-uri-si-calitate/) — eval suites and the Quality tab
+
+## People and reach
+
+Working with other humans and reaching the fleet from elsewhere.
+
+- [Multiplayer and presence](/ro-RO/manual/concepte/multiplayer/) — humans and agents as co-equal participants and what gates access
+- [Single sign-on](/ro-RO/manual/concepte/autentificare-unica/) — SAML and OIDC logins
+- [Chat bridges](/ro-RO/manual/concepte/punti-de-chat/) — why the Slack bridge dials out and what authorizes a message from chat
+- [Remote control and mobile](/ro-RO/manual/concepte/control-remote/) — how a phone reaches your server and the security model around it
+- [Meetings and transcription](/ro-RO/manual/concepte/intalniri/) — on-device recording, transcription and summarization
+- [Calendar and scheduling](/ro-RO/manual/concepte/calendar/) — Google Calendar sync and meeting alerts
+
+## Under the hood
+
+The shape of the system itself.
+
+- [Architecture](/ro-RO/manual/concepte/arhitectura/) — layering, the shared kernel, ports and adapters
+- [Deployment and clients](/ro-RO/manual/concepte/implementare/) — how the desktop, web and phone clients relate to one server
+- [Domain events](/ro-RO/manual/concepte/evenimente-de-domeniu/) — the in-process bus features talk over

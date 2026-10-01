@@ -3,19 +3,22 @@ import BrandMark from '../shared/BrandMark.astro';
 import RepoStar from '../shared/RepoStar.astro';
 import { DEMO_HREF } from '../../data/demo';
 import type { LandingCopy } from '../../data/landing';
-import { landingPath, manualPath, type SiteLocale } from '../../data/locales';
+import { landingPath, type SiteLocale } from '../../data/locales';
+import { manualPath } from '../../data/manual-paths';
+import { getManualRoutes } from '../../data/manual-routes';
 import { repoStarLabels } from '../../data/repo-star-label';
 import '../../styles/navigation.css';
 interface Props { copy: LandingCopy; locale: SiteLocale; embedded?: boolean; starLabel?: string }
 const { copy: t, locale, embedded = false, starLabel = repoStarLabels[locale] } = Astro.props;
 const home = landingPath(locale);
+const routes = await getManualRoutes();
 const section = (hash: string) => Astro.url.pathname === home ? hash : `${home}${hash}`;
 const Container = embedded ? 'div' : 'header';
 const links = [
   { href: section('#product'), text: t.nav.product },
   { href: section('#workflows'), text: t.nav.workflows },
   { href: section('#features'), text: t.nav.features },
-  { href: manualPath(locale), text: t.nav.docs },
+  { href: manualPath(locale, routes), text: t.nav.docs },
 ];
 ---
 <Container class:list={['landing-nav', { 'landing-nav--embedded': embedded }]} id="nav">

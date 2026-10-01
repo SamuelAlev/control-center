@@ -187,11 +187,17 @@ header.header {
 .sl-markdown-content pre code:not(:where(.not-content *)) { border: 0; overflow-wrap: normal; }
 .expressive-code :is(.frame, pre, .copy button) { border-radius: var(--cc-radius); }
 
-/* Tables and artifacts use the landing's square product-window frame. */
-.sl-markdown-content table:not(:where(.not-content *)) {
-  inline-size: 100%;
+/* Tables and artifacts use the landing's square product-window frame. The frame
+   is the scroll wrapper from src/table-scroll.ts, so the table inside
+   stays a real table and fills it instead of Starlight's `display: block`. */
+.sl-markdown-content .table-scroll:not(:where(.not-content *)) {
+  overflow-x: auto;
   border: 1px solid var(--cc-border);
   background: var(--cc-panel);
+}
+.sl-markdown-content table:not(:where(.not-content *)) {
+  display: table;
+  inline-size: 100%;
   font-size: .875rem;
 }
 .sl-markdown-content :is(th, td):not(:where(.not-content *)) {

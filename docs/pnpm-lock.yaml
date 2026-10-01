@@ -175,6 +175,9 @@ importers:
       '@astrojs/rss':
         specifier: ^4.0.19
         version: 4.0.19
+      '@astrojs/sitemap':
+        specifier: ^3.7.3
+        version: 3.7.3
       '@astrojs/starlight':
         specifier: ^0.41.11
         version: 0.41.11(astro@7.3.5(@types/node@24.13.1)(jiti@2.7.0))(supports-color@10.2.2)

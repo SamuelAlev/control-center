@@ -1,0 +1,64 @@
+---
+title: Concepts
+description: How Control Center works and why it is built this way — the background reading behind the guides.
+slug: ar-SA/دليل-المستخدم/مفاهيم
+---
+
+These pages explain **how Control Center works and why**. They are for understanding,
+not for doing: no page here is a procedure to follow. When you want to accomplish a
+specific task, go to the [how-to guides](/ar-SA/دليل-المستخدم/أدلة-إرشادية/); when you want to look
+something up, go to the [reference](/ar-SA/دليل-المستخدم/مرجع/).
+
+Read them in any order. If you are new, the core model is the place to start.
+
+## Core model
+
+The four ideas everything else is built on.
+
+- [Workspaces and isolation](/ar-SA/دليل-المستخدم/مفاهيم/مساحات-العمل/) — the tenant boundary and why it is enforced by the database layout rather than by query discipline
+- [The agent model](/ar-SA/دليل-المستخدم/مفاهيم/نموذج-الوكيل/) — what an agent is made of: identity, role, skills, capabilities, adapter and model
+- [Agent dispatch lifecycle](/ar-SA/دليل-المستخدم/مفاهيم/دورة-حياة-الإرسال/) — what happens between your message and the agent's first token
+- [Modes](/ar-SA/دليل-المستخدم/مفاهيم/أوضاع/) — how `chat`, `plan`, `review` and `orchestrate` change what an agent may do
+- [Tool context and prompt caching](/ar-SA/دليل-المستخدم/مفاهيم/سياق-الأدوات/) — why an agent sees a subset of its tools, how it reaches the rest and what keeps the provider cache warm
+- [Code intelligence](/ar-SA/دليل-المستخدم/مفاهيم/ذكاء-الشفرة/) — the code graph, language server, structural search and debugger
+- [Conversation history](/ar-SA/دليل-المستخدم/مفاهيم/سجل-المحادثة/) — persistence, compaction and forking a transcript
+
+## Safety and control
+
+What an agent is allowed to touch and who decides.
+
+- [Sandbox and security](/ar-SA/دليل-المستخدم/مفاهيم/بيئة-معزولة-وأمان/) — what actually constrains an agent run today
+- [Guardrails](/ar-SA/دليل-المستخدم/مفاهيم/ضوابط/) — one policy engine for every mutating action and how a rule is resolved
+- [Authorization](/ar-SA/دليل-المستخدم/مفاهيم/تفويض/) — roles, the permission catalog and the audit trail
+- [Rigs and enclosures](/ar-SA/دليل-المستخدم/مفاهيم/منصات/) — why agents get disposable VMs instead of your machine, and what the boundary actually is
+
+## Directing the work
+
+Turning intent into work that gets done.
+
+- [Tickets and delegation](/ar-SA/دليل-المستخدم/مفاهيم/تذاكر/) — the vendor-neutral unit of work the whole fleet shares
+- [Pipelines and automation](/ar-SA/دليل-المستخدم/مفاهيم/خطوط-الأنابيب/) — DAG workflows, triggers and resumable runs
+- [Orchestration](/ar-SA/دليل-المستخدم/مفاهيم/تنسيق/) — one goal, one approval, a generated pipeline
+- [AI review](/ar-SA/دليل-المستخدم/مفاهيم/مراجعة-بالذكاء-الاصطناعي/) — how a PR becomes a reviewed one: review spaces, peer consensus, axes and the Ship/Hold/Block verdict
+- [PR conversations](/ar-SA/دليل-المستخدم/مفاهيم/محادثات-طلبات-السحب/) — answering a GitHub mention or `ai-review` label from the forge itself
+- [Memory and knowledge](/ar-SA/دليل-المستخدم/مفاهيم/ذاكرة-ومعرفة/) — facts, policies and what an agent is allowed to know
+- [Evals and quality](/ar-SA/دليل-المستخدم/مفاهيم/تقييمات-وجودة/) — eval suites and the Quality tab
+
+## People and reach
+
+Working with other humans and reaching the fleet from elsewhere.
+
+- [Multiplayer and presence](/ar-SA/دليل-المستخدم/مفاهيم/تعدد-اللاعبين/) — humans and agents as co-equal participants and what gates access
+- [Single sign-on](/ar-SA/دليل-المستخدم/مفاهيم/تسجيل-الدخول-الموحد/) — SAML and OIDC logins
+- [Chat bridges](/ar-SA/دليل-المستخدم/مفاهيم/جسور-الدردشة/) — why the Slack bridge dials out and what authorizes a message from chat
+- [Remote control and mobile](/ar-SA/دليل-المستخدم/مفاهيم/تحكم-عن-بعد/) — how a phone reaches your server and the security model around it
+- [Meetings and transcription](/ar-SA/دليل-المستخدم/مفاهيم/اجتماعات/) — on-device recording, transcription and summarization
+- [Calendar and scheduling](/ar-SA/دليل-المستخدم/مفاهيم/تقويم/) — Google Calendar sync and meeting alerts
+
+## Under the hood
+
+The shape of the system itself.
+
+- [Architecture](/ar-SA/دليل-المستخدم/مفاهيم/بنية/) — layering, the shared kernel, ports and adapters
+- [Deployment and clients](/ar-SA/دليل-المستخدم/مفاهيم/نشر/) — how the desktop, web and phone clients relate to one server
+- [Domain events](/ar-SA/دليل-المستخدم/مفاهيم/أحداث-النطاق/) — the in-process bus features talk over

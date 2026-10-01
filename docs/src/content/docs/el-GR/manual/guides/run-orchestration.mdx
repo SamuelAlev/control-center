@@ -1,0 +1,126 @@
+---
+title: Run an orchestration
+description: Ask an orchestrator for a plan, review and edit it in Plan Studio, approve it once and let a generated pipeline do the work.
+slug: el-GR/εγχειρίδιο/οδηγοί-πρακτικής/εκτέλεση-ενορχήστρωσης
+---
+
+This guide shows you how to turn one big goal into a whole-team plan that runs
+itself. See [Orchestration](/el-GR/εγχειρίδιο/έννοιες/ενορχήστρωση/) for how it works.
+
+## When to use an orchestration
+
+Reach for an orchestration when the ask is bigger than one agent and you don't
+already know the exact steps. For a single task, message an agent in a
+[space](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/συνομιλία-με-πράκτορα/); for a process you can spell out by
+hand, build a [pipeline template](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/δημιουργία-pipeline/).
+
+## Step 1: Ask for the plan
+
+1. Open (or create) a space and an **anchor ticket**. Every proposal requires
+   one (`propose_orchestration` takes `ticket_id`); the shared space comes from
+   that ticket.
+2. Optionally switch the composer's mode dropdown to **Orchestrate**. That mode
+   narrows the agent to reading and proposing — memory, the code graph, repo and
+   ticket reads, `propose_orchestration`, and the playbook tools — so it cannot
+   start writing code instead of planning.
+3. @-mention your orchestrator (usually the CEO agent) and state the goal in
+   plain language:
+
+> @ceo Research the competitive landscape for an offline-first meeting recorder
+> and write a one-page positioning doc.
+
+The orchestrator answers with a structured **proposal** card in the space: the
+roles it needs, the work broken into sub-tickets, an optional research and
+discussion phase, a synthesis step that produces the deliverable and a budget.
+
+Because the proposal is a typed object, the app validates it (well-formed roles,
+declared output schemas, a DAG with no cycles) before anything runs. A proposal
+that fails validation cannot be approved.
+
+## Step 2: Review and edit the proposal
+
+The in-chat card offers three actions: **Approve plan**, **Reject** and
+**Open** — which opens the plan in Plan Studio as an editor tab. The card
+itself cannot be edited.
+
+To change anything, press **Open** and work in the right-hand inspector:
+
+- **Title**, **description**, **role**, **dependencies** and **output schema**
+  of any work step. Role here means which of the plan's existing role keys
+  owns the step — you cannot pin a role to a named agent or edit the hire
+  list from the inspector, and you cannot edit the budget.
+
+Two things are read-only: structural nodes (research, discussion, synthesis) and
+any node whose work has already run. Editing is possible only while the
+orchestration is still `proposed`.
+
+Press **Estimate** in the approval bar for cost, duration and blast-radius
+ranges before you commit. See
+[Work in Plan Studio](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/plan-studio/) for the full editor.
+
+:::note[The budget is not a spending limit]
+A proposal's budget is compared against the _estimate_ in the approval bar: when
+the estimate's high end exceeds it, the total turns red with an over-budget
+warning. Nothing checks spend while the plan executes, so it will not stop or
+fail a run. For an actual spend stop, use per-agent budget policies — see
+[Manage costs](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διαχείριση-κόστους/).
+:::
+
+## Step 3: Approve
+
+Approve the plan, from the chat card or from Plan Studio's approval bar.
+**This is the only decision you make.** Approving is operator-only — there is no
+MCP tool for it, so an agent can propose and revise but never approve its own
+plan.
+
+From here a deterministic materializer (a pure function, no LLM) turns the
+proposal into a real [pipeline](/el-GR/εγχειρίδιο/έννοιες/pipeline/) and creates the
+scaffolding:
+
+- hires any new roles (and records the hired agent ids so a crash mid-approval
+  can resume without duplicate hires)
+- groups the roles into a **team**
+- creates a **project** and files the parent ticket under it
+- starts the **pipeline run** that drives it all
+
+The status moves to `approved`, then `executing`.
+
+## Step 4: Watch it run
+
+The sub-tickets execute as pipeline steps; if you enabled a discussion round,
+each role posts a position first. Progress surfaces where you already look:
+
+- the **parent ticket** the orchestration was anchored on
+- the shared **space** the team talks in, where the plan's row tracks each
+  node's state
+- the **pipeline run** detail, with its usual waterfall and per-step cost — see
+  [Monitor pipeline runs](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/παρακολούθηση-pipeline/)
+- the **project** the parent ticket was filed under
+
+Once the sub-tickets are done, the status moves to `synthesizing` and the
+synthesis step produces the deliverable. That text is posted in the shared
+space and the parent ticket is marked complete, then `completed`.
+
+## Stop it early
+
+Press **Cancel orchestration** on the in-chat card, or **Cancel run** in Plan
+Studio's approval bar. Cancellation tears down the in-flight work.
+
+An orchestration fails when materialization fails, or when its generated
+pipeline run fails (research, discussion, synthesis, or persist — those steps
+do not continue on fail). Generated **work** steps always continue on fail, so
+one failed sub-ticket does not fail the run. There is no budget-exceeded
+failure path and no "every sub-ticket failed" threshold.
+
+## Related guides
+
+- [Work in Plan Studio](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/plan-studio/): edit, estimate, diff and approve the plan
+- [Create and manage tickets](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/διαχείριση-εισιτηρίων/): the parent ticket an orchestration is anchored on
+- [Organize work with projects](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/έργα/): where the parent ticket is filed
+- [Monitor pipeline runs](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/παρακολούθηση-pipeline/): what a materialized orchestration looks like in the engine
+- [Build an agent team](/el-GR/εγχειρίδιο/οδηγοί-πρακτικής/δημιουργία-ομάδας/): the roles an orchestration fills or hires
+
+## Related concepts
+
+- [Orchestration](/el-GR/εγχειρίδιο/έννοιες/ενορχήστρωση/)
+- [Modes](/el-GR/εγχειρίδιο/έννοιες/λειτουργίες/)

@@ -2,8 +2,14 @@
 import Paraglider from './Paraglider.astro';
 import { WEB_APP_URL } from '../../data/site';
 import type { LandingCopy } from '../../data/landing';
+import { localeFromPath } from '../../data/locales';
+import { localizeSitePath } from '../../data/manual-paths';
+import { getManualRoutes } from '../../data/manual-routes';
 interface Props { copy: LandingCopy }
 const { copy: t } = Astro.props;
+// Manual links go straight to this language's translated page.
+const routes = await getManualRoutes();
+const localized = (href: string) => localizeSitePath(href, localeFromPath(Astro.url.pathname), routes);
 const platforms = [ { name: 'macOS', id: 'macos', note: t.install.mac }, { name: 'Windows', id: 'windows', note: t.install.windows }, { name: 'Linux', id: 'linux', note: t.install.linux } ];
 ---
 <section class="landing-install landing-section" id="install" aria-labelledby="install-title">
@@ -14,6 +20,6 @@ const platforms = [ { name: 'macOS', id: 'macos', note: t.install.mac }, { name:
     </div>
     <div class="install-platforms">{platforms.map(platform => <a href={`/download/${platform.id}`} class="install-platform" data-acquisition-event="release_page_click" data-acquisition-placement="download" data-acquisition-platform={platform.id}><h3>{platform.name}<span aria-hidden="true">↓</span></h3><p>{platform.note}</p><span class="install-link">{t.nav.download}<span aria-hidden="true">↓</span></span></a>)}</div>
     <div class="install-remote"><a href={WEB_APP_URL}><strong>{t.install.web}<span aria-hidden="true">↗</span></strong><span>{t.install.webNote}</span></a><a href="https://remote.usectrl.dev"><strong>{t.install.phone}<span aria-hidden="true">↗</span></strong><span>{t.install.phoneNote}</span></a></div>
-    <div class="install-links"><p>{t.install.selfHost} <a href="/manual/guides/run-headless-server/">{t.install.server}<span aria-hidden="true"> ↗</span></a></p><a href="/manual/quick-start/">{t.install.guide}<span aria-hidden="true"> ↗</span></a></div>
+    <div class="install-links"><p>{t.install.selfHost} <a href={localized('/manual/guides/run-headless-server/')}>{t.install.server}<span aria-hidden="true"> ↗</span></a></p><a href={localized('/manual/quick-start/')}>{t.install.guide}<span aria-hidden="true"> ↗</span></a></div>
   </div>
 </section>

@@ -5,10 +5,13 @@
  *
  * - `src/pages/index.md.ts` / `src/pages/[...slug].md.ts` — the public
  *   `<page>.md` assets the worker serves for `Accept: text/markdown`,
- * - `src/agentic/mcp.ts` (via the page index) — the docs MCP server.
+ * - `src/pages/agentic/pages/[locale].json.ts` — each language's page index,
+ *   which the docs MCP server (src/worker.ts) reads at request time,
+ * - the per-language `llms.txt` / `llms-full.txt`.
  *
- * Format per page: H1, blockquoted description, body, then a canonical-URL
- * footer so an agent always knows where the twin came from.
+ * Format per page: H1, blockquoted description, body, then a footer with the
+ * canonical URL and language (plus the English original of a translation) so
+ * an agent always knows where the twin came from.
  */
 import { getCollection } from 'astro:content';
 import { releases } from '../data/changelog';
@@ -16,7 +19,9 @@ import { columns, tools, vsTools, compareSummary, compareReviewed, reviewScopeNo
 import { sitePages } from '../data/pages';
 import { OVERVIEW, REPO_URL } from '../data/site';
 import { landingCopy } from '../data/landing';
-import { siteLocales, type SiteLocale } from '../data/locales';
+import { localeFromPath, siteLocales, type SiteLocale } from '../data/locales';
+import { localeManualPage, localizeSitePath, type ManualRoutes } from '../data/manual-paths';
+import { getManualRoutes } from '../data/manual-routes';
 import { htmlToMarkdown } from './html-to-markdown';
 
 export interface MarkdownPage {
@@ -25,6 +30,10 @@ export interface MarkdownPage {
   title: string;
   description?: string;
   markdown: string;
+  /** The page's language. English-only pages (compare, changelog, …) are `en-US`. */
+  locale: SiteLocale;
+  /** The English page this one translates (itself for English pages); only translated pages (landing, manual) have one. */
+  englishPath?: string;
 }
 
 const stripHtml = (html: string) => html.replace(/<[^>]+>/g, '');
@@ -33,27 +42,29 @@ const stripImports = (body: string) => body.replace(/^import\s[^\n]*$/gm, '').tr
 const LANDING_TITLE = landingCopy['en-US'].meta.title;
 const LANDING_DESCRIPTION = landingCopy['en-US'].meta.description;
 
-function landingMarkdown(origin: string, locale: SiteLocale = 'en-US'): string {
+function landingMarkdown(origin: string, routes: ManualRoutes, locale: SiteLocale = 'en-US'): string {
   const t = landingCopy[locale];
+  // Manual links land on this language's translated page.
+  const at = (href: string) => `${origin}${localizeSitePath(href, locale, routes)}`;
   const out = [
     `# ${t.meta.title}`, '', `> ${t.meta.description}`, '',
     ...(locale === 'en-US' ? [OVERVIEW, ''] : [t.hero.description, '', t.surfaces.description, '']),
     `## ${t.grid.title}`, '', t.grid.description, '',
     ...[...t.grid.items, ...t.grid.supporting].flatMap(feature => [
-      `### [${feature.title}](${origin}${feature.href})`, '', feature.description, '',
+      `### [${feature.title}](${at(feature.href)})`, '', feature.description, '',
     ]),
     `## ${t.boundaries.title}`, '', t.boundaries.description, '', t.boundaries.note, '',
     `## ${t.faq.title}`, '',
     ...t.faq.items.flatMap(faq => [
       `### ${faq.question}`, '', faq.answer, '',
-      ...(faq.links?.map(link => `[${link.label}](${origin}${link.href})`) ?? []), '',
+      ...(faq.links?.map(link => `[${link.label}](${at(link.href)})`) ?? []), '',
     ]),
     `## ${t.install.title.replace('\n', ' ')}`, '', t.install.description, '',
     `- [${t.nav.download} · macOS](${origin}/download/macos)`,
     `- [${t.nav.download} · Windows](${origin}/download/windows)`,
     `- [${t.nav.download} · Linux](${origin}/download/linux)`,
     `- [${t.install.release}](${REPO_URL}/releases/latest)`,
-    `- [${t.install.guide}](${origin}/manual/quick-start/)`,
+    `- [${t.install.guide}](${at('/manual/quick-start/')})`,
     `- [${t.footer.source}](${REPO_URL})`, '',
   ];
   return out.join('\n');
@@ -151,21 +162,25 @@ function changelogMarkdown(): string {
 
 /** Every page that answers `Accept: text/markdown`, keyed by site path. */
 export async function getMarkdownPages(origin: string): Promise<MarkdownPage[]> {
+  const routes = await getManualRoutes();
   const pages: MarkdownPage[] = [
-    { path: '/', title: LANDING_TITLE, description: LANDING_DESCRIPTION, markdown: landingMarkdown(origin) },
+    { path: '/', title: LANDING_TITLE, description: LANDING_DESCRIPTION, markdown: landingMarkdown(origin, routes), locale: 'en-US', englishPath: '/' },
     ...siteLocales.filter(language => language.id !== 'en-US').map(language => ({
       path: language.path,
       title: landingCopy[language.id].meta.title,
       description: landingCopy[language.id].meta.description,
-      markdown: landingMarkdown(origin, language.id),
+      markdown: landingMarkdown(origin, routes, language.id),
+      locale: language.id,
+      englishPath: '/',
     })),
     {
       path: '/compare/',
       title: 'Compare Control Center',
       description: 'Feature matrix against the alternatives.',
       markdown: compareIndexMarkdown(origin),
+      locale: 'en-US',
     },
-    { path: '/changelog/', title: 'Changelog', description: 'Release notes, newest first.', markdown: changelogMarkdown() },
+    { path: '/changelog/', title: 'Changelog', description: 'Release notes, newest first.', markdown: changelogMarkdown(), locale: 'en-US' },
   ];
 
   for (const t of vsTools) {
@@ -176,6 +191,7 @@ export async function getMarkdownPages(origin: string): Promise<MarkdownPage[]> 
         title: `Control Center vs ${t.name}`,
         description: t.verdict,
         markdown,
+        locale: 'en-US',
       });
     }
   }
@@ -185,7 +201,7 @@ export async function getMarkdownPages(origin: string): Promise<MarkdownPage[]> 
     for (const s of page.sections) {
       out.push(`## ${s.title}`, '', htmlToMarkdown(s.html), '');
     }
-    pages.push({ path: `/${page.id}/`, title: page.heading, description: page.description, markdown: out.join('\n') });
+    pages.push({ path: `/${page.id}/`, title: page.heading, description: page.description, markdown: out.join('\n'), locale: 'en-US' });
   }
 
   const entries = (await getCollection('docs', ({ id, data }) => id !== '404' && !id.endsWith('/404') && !data.draft)).sort(
@@ -193,16 +209,36 @@ export async function getMarkdownPages(origin: string): Promise<MarkdownPage[]> 
   );
   for (const e of entries) {
     const desc = e.data.description ? `> ${e.data.description}\n\n` : '';
+    const english = localeManualPage((e.filePath ?? '').replace(/^src\/content\/docs\//, ''))?.id ?? e.id;
     pages.push({
       path: `/${e.id}/`,
       title: e.data.title,
       description: e.data.description,
       markdown: [`# ${e.data.title}`, '', desc + stripImports(e.body ?? '(empty page)'), ''].join('\n'),
+      locale: localeFromPath(`/${e.id}`),
+      englishPath: `/${english}/`,
     });
   }
 
   return pages.map((p) => ({
     ...p,
-    markdown: `${p.markdown.trimEnd()}\n\n---\nCanonical page: ${origin}${p.path}\n`,
+    markdown: [
+      `${p.markdown.trimEnd()}`,
+      '',
+      '---',
+      `Canonical page: ${origin}${p.path}`,
+      `Language: ${p.locale}`,
+      ...(p.englishPath && p.englishPath !== p.path ? [`English original: ${origin}${p.englishPath}`] : []),
+      '',
+    ].join('\n'),
   }));
+}
+
+/**
+ * The pages a reader of [locale] can use: that language's landing page and
+ * manual, plus the English-only pages (compare, changelog, …) every language
+ * links to.
+ */
+export function pagesForLocale(pages: MarkdownPage[], locale: SiteLocale): MarkdownPage[] {
+  return pages.filter(page => page.locale === locale || (page.locale === 'en-US' && !page.englishPath));
 }

@@ -1,8 +1,14 @@
 /**
- * Shared HTTP transport for the docs MCP server, mounted at /.well-known/mcp
- * and /mcp. Protocol: MCP Streamable HTTP with plain application/json
- * responses (no SSE stream is opened); notifications get 202; GET gets a
- * discovery card.
+ * HTTP transport for the docs MCP server, served by the Worker
+ * (src/worker.ts) at /.well-known/mcp and /mcp. Protocol: MCP Streamable
+ * HTTP with plain application/json responses (no SSE stream is opened);
+ * notifications get 202; GET gets a discovery card.
+ *
+ * Pages come from the build's per-language index
+ * (`/agentic/pages/<locale>.json`, see src/pages/agentic/pages/), read through
+ * the assets binding and cached per isolate, so the Worker never bundles the
+ * content collection. The request's Accept-Language picks the default
+ * language; a tool's `locale` argument overrides it.
  *
  * CORS is wide open on purpose: the server is read-only, serves only public
  * site content and holds no sessions or credentials, so a cross-origin page
@@ -10,26 +16,37 @@
  * spec's Origin check addresses does not apply to a stateless public read
  * surface.)
  */
-import type { APIRoute } from 'astro';
-import { getMarkdownPages } from './markdown-pages';
-import { createMcpHandler, type McpPage } from './mcp';
-import { MCP_SERVER as SERVER } from './mcp-server-card';
+import { preferredLanguage } from '../locale-negotiation.ts';
+import { createMcpHandler, type McpPage } from './mcp.ts';
+import { MCP_SERVER as SERVER } from './mcp-server-card.ts';
 
-// The page index is build-time data; compute it once per isolate.
-let pagesPromise: Promise<McpPage[]> | null = null;
-const getPages = (): Promise<McpPage[]> => {
-  pagesPromise ??= getMarkdownPages('https://usectrl.dev').then((pages) =>
-    pages.map((p): McpPage => ({ path: p.path, title: p.title, description: p.description, markdown: p.markdown })),
-  );
-  return pagesPromise;
-};
+/** Paths the MCP endpoint answers on. */
+export const MCP_PATHS: ReadonlySet<string> = new Set(['/mcp', '/mcp/', '/.well-known/mcp', '/.well-known/mcp/']);
 
-const handler = createMcpHandler(getPages, { ...SERVER, origin: 'https://usectrl.dev' });
+export interface AssetFetcher {
+  fetch(input: string | URL | Request): Promise<Response>;
+}
+
+const indexes = new Map<string, Promise<McpPage[]>>();
+
+/** One language's page index, fetched once per isolate (and again after a failure). */
+function pagesFor(assets: AssetFetcher, origin: string, locale: string): Promise<McpPage[]> {
+  let index = indexes.get(locale);
+  if (!index) {
+    index = assets.fetch(new URL(`/agentic/pages/${locale}.json`, origin)).then(response => {
+      if (!response.ok) throw new Error(`page index for ${locale} responded ${response.status}`);
+      return response.json() as Promise<McpPage[]>;
+    });
+    index.catch(() => indexes.delete(locale));
+    indexes.set(locale, index);
+  }
+  return index;
+}
 
 const CORS: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Accept, Authorization, MCP-Protocol-Version, MCP-Session-Id',
+  'Access-Control-Allow-Headers': 'Content-Type, Accept, Accept-Language, Authorization, MCP-Protocol-Version, MCP-Session-Id',
 };
 
 const json = (status: number, body: unknown): Response =>
@@ -38,11 +55,15 @@ const json = (status: number, body: unknown): Response =>
     headers: { 'Content-Type': 'application/json; charset=utf-8', ...CORS },
   });
 
-export const mcpOptions: APIRoute = () => new Response(null, { status: 204, headers: CORS });
-
-export const mcpGet: APIRoute = () => json(200, handler.info());
-
-export const mcpPost: APIRoute = async ({ request }) => {
+/** Answers one MCP HTTP request. */
+export async function serveMcp(request: Request, assets: AssetFetcher): Promise<Response> {
+  const origin = new URL(request.url).origin;
+  const handler = createMcpHandler(locale => pagesFor(assets, origin, locale), { ...SERVER, origin: 'https://usectrl.dev' });
+  if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
+  if (request.method === 'GET' || request.method === 'HEAD') return json(200, handler.info());
+  if (request.method !== 'POST') {
+    return new Response(null, { status: 405, headers: { Allow: 'GET, POST, OPTIONS', ...CORS } });
+  }
   // Spec posture: a client that sends Accept lists application/json (or */*)
   // — we always answer JSON. A missing header is tolerated so simple probes
   // (curl, audit bots) still complete the handshake.
@@ -60,7 +81,8 @@ export const mcpPost: APIRoute = async ({ request }) => {
   } catch {
     return json(400, { jsonrpc: '2.0', id: null, error: { code: -32700, message: 'Parse error: body must be JSON.' } });
   }
-  const outcome = await handler.handle(body);
+  const acceptLanguage = request.headers.get('Accept-Language');
+  const outcome = await handler.handle(body, { locale: acceptLanguage ? preferredLanguage(acceptLanguage) : undefined });
   if (outcome.status === 202) return new Response(null, { status: 202, headers: CORS });
   return json(outcome.status, outcome.body);
-};
+}

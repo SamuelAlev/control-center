@@ -1,0 +1,155 @@
+---
+title: Tickets and delegation
+description: Why a ticket tracks work without dispatching it, how delegation is guarded and what the vendor mirror does and does not own.
+slug: fr-CA/manuel/concepts/tickets
+---
+
+A ticket is the unit of work Control Center tracks. It is deliberately a _dumb_
+artifact: a title, a body, a status, an owner and a place in a tree. It is not
+the thing agents execute against — agent work lives in conversations and the
+structured output of a run lives on the run log.
+
+## Assignment records ownership; it dispatches nothing
+
+This is the single most important thing to get right about tickets.
+
+Setting `assignedAgentId` writes a field and publishes a `TicketAssigned`
+[domain event](/fr-CA/manuel/concepts/evenements-de-domaine/). That event is an audit and
+notification signal and a pipeline trigger. **Assignment to an agent starts no
+run.** There is no ticket dispatcher that watches `assignedAgentId` and wakes
+that agent.
+
+The exception is a team: when `assignedTeamId` is set, `TeamRoutingService`
+dispatches the team leader with the operating protocol and roster.
+
+If you want a specific agent to work on a ticket, you ask it in a conversation,
+or a pipeline step dispatches it, or another agent delegates to it. Assigning a
+ticket to an agent and waiting is the one thing that will never produce work.
+
+## Mirror and overlay
+
+A ticket can be purely local or backed by an external tracker and it carries
+both on one row.
+
+The **mirror** — provider, external key, URL, title, description, priority,
+labels, raw and normalized status, timestamps — is a cache when the ticket is
+remote. The remote is the source of truth there and a refresh rewrites the
+mirror wholesale.
+
+The **overlay** — assignment, delegation, space link, parent, project, linked
+PRs — is Control Center-only. The tracker knows nothing about it and a refresh
+never touches it.
+
+That split is what makes it safe to sync at all: a vendor pull can be
+destructive to the mirror without ever losing the orchestration metadata layered
+on top.
+
+## The lifecycle graph binds agents, not you
+
+Statuses run `backlog → open → inProgress → inReview → done`, with `blocked` as
+a side loop and `failed` / `cancelled` as the other terminal states.
+
+The transition graph is enforced **only on the agent and automation path** —
+MCP tools and reconcilers. An illegal transition there is logged and ignored, so
+a confused agent cannot walk a ticket backwards out of a terminal state.
+
+Every user-driven change in the UI passes `force: true` and bypasses the graph
+entirely. A human may move a ticket to any status the picker lists — including
+reopening a terminal one. The picker does not offer `failed`; agents set that
+through `fail_ticket`. The graph is a guard rail for automation, not a rule
+about how work is allowed to go.
+
+`TicketWorkflowService` owns every mutation through a single chokepoint that
+loads the row, asserts it belongs to the caller's workspace and writes with an
+expected `version` so two concurrent edits cannot silently overwrite each other.
+
+For the full status table, transitions, field list and relation kinds, see
+[Ticket lifecycle](/fr-CA/manuel/reference/cycle-de-vie-des-tickets/).
+
+## Provenance: how a ticket came to exist
+
+Every ticket has an `originKind`. The enum has five values — `manual`,
+`pipelineStep`, `agentDelegation`, `externalSync`, `recovery` — but only two
+are written today: `manual` (the default on `createTicket`, including
+delegated children) and `externalSync` (the sync engine, on a vendor pull).
+`TicketWorkflowService.createTicket` does not take an origin argument, so
+`pipelineStep`, `agentDelegation` and `recovery` never land on a row.
+
+## Guarded delegation
+
+Delegation is where an agent creates work for another agent and it is the place
+privilege could leak, so the guards live server-side at a chokepoint rather than
+in prompt instructions.
+
+`delegate_task` routes through `TicketWorkflowService.delegateGuarded`, which
+computes the child's depth and root from the parent chain and then runs all
+four `DelegationGuards` checks: a hop that would exceed a **depth cap of 3**, a
+hop back to an agent already in the chain (**cycle detection**), an **autonomy
+ceiling** (the delegate's effective level in the space must not exceed the
+delegator's) and a **budget envelope** (delegation bills the delegator's
+remaining hard-stop budget and cannot mint more). Production wiring supplies
+both resolver ports. Autonomy and budget skip when `from_agent_id` is omitted
+(unlimited / no-policy budget also passes). A refusal is thrown as a
+`DelegationRefusedException` whose message reaches the delegating agent
+verbatim — a loud denial, never a silent no-op.
+
+`delegate_ticket` is the older, **unguarded** sibling: it calls `createTicket`
+directly and skips every guard. Prefer `delegate_task`.
+
+Do not confuse the delegation depth cap (3, on `delegate_task` chains) with the
+built-in harness's subagent nesting cap (2). They are different limits on
+different mechanisms.
+
+## Hierarchy, links and projects
+
+Parent and sub-issue relationships live on `tickets.parent_ticket_id`, owned by
+`setParent` / `clearParent`. They are **not** `ticket_links` rows, so anything
+reading a ticket's relations has to merge both sources.
+
+`ticket_links` holds the directional edges between otherwise unrelated tickets:
+
+| Link type     | Meaning                                 |
+| ------------- | --------------------------------------- |
+| `blocks`      | The source blocks the target            |
+| `relatesTo`   | The two tickets are related (symmetric) |
+| `duplicateOf` | The source is a duplicate of the target |
+
+A **project** is a workspace-scoped grouping of tickets toward a shared goal.
+Projects are Control Center-only and never sync to an external provider.
+
+## Collaborators
+
+`TicketCollaborator` rows are how more than one principal is attached to a
+ticket, at a role of `assignee`, `collaborator`, or `reviewer`. Humans and
+agents are co-equal rows — a `principalId` plus a `collaboratorType` — with no
+sentinel value for "the user" and no foreign key to either table.
+
+## External sync
+
+Control Center's ticket is primary. Deleting a ticket is **local only**, so a
+vendor-backed ticket you delete is not deleted on the tracker and may reappear
+on the next sync. Collaborators and child tickets cascade.
+
+Adapter credentials resolve from the server's credential stores (a Linear key or
+GitHub token pasted in Settings is picked up on the next request; the
+environment only seeds those stores).
+
+## Tickets and pipelines
+
+No pipeline node creates, completes or cancels tickets — the palette has no
+such step and the engine does not call `TicketWorkflowService`. A pipeline
+trigger can still fire on `TicketAssigned`, `TicketCompleted`,
+`TicketFailed`, or `TicketCancelled` (those four are the ticket events
+`EventPayloadMapper` actually maps). There is no `pipelineRunId` column on
+the ticket; pipeline coupling lives on the agent run log.
+
+## See also
+
+- [Pipelines and automation](/fr-CA/manuel/concepts/pipelines/): ticket events can trigger a pipeline
+- [Orchestration](/fr-CA/manuel/concepts/orchestration/): where a DAG of sub-tickets comes from
+- [The agent model](/fr-CA/manuel/concepts/modele-agent/): who a ticket is assigned to
+- [Domain events](/fr-CA/manuel/concepts/evenements-de-domaine/): the ticket lifecycle events
+- [Ticket lifecycle](/fr-CA/manuel/reference/cycle-de-vie-des-tickets/): statuses, fields, transitions, relations
+- [Create and manage tickets](/fr-CA/manuel/guides/gerer-tickets/)
+- [Delegate work to agents](/fr-CA/manuel/guides/deleguer-tickets/)
+- [Organize work with projects](/fr-CA/manuel/guides/projets/)

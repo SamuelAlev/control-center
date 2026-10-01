@@ -2,16 +2,19 @@
 import BrandMark from '../shared/BrandMark.astro';
 import ThemeToggle from '../shared/ThemeToggle.astro';
 import type { LandingCopy } from '../../data/landing';
-import { landingPath, manualPath, type SiteLocale } from '../../data/locales';
+import { landingPath, type SiteLocale } from '../../data/locales';
+import { manualPath } from '../../data/manual-paths';
+import { getManualRoutes } from '../../data/manual-routes';
 import LanguagePicker from '../shared/LanguagePicker.astro';
 import { REPO_URL } from '../../data/site';
 interface Props { copy: LandingCopy; locale: SiteLocale }
 const { copy: t, locale } = Astro.props;
+const routes = await getManualRoutes();
 ---
 <footer class="landing-footer">
   <div class="landing-wrap">
     <div class="footer-main"><div><a class="landing-brand" href={landingPath(locale)}><BrandMark /><span>Control Center</span></a><p>{t.footer.tagline}</p><a class="landing-text-link" href={REPO_URL}>{t.footer.source}<span aria-hidden="true">↗</span></a></div>
-      <nav aria-label={t.footer.resources} class="footer-links"><a href={manualPath(locale)}>{t.nav.docs}</a><a href="/compare/">{t.footer.compare}</a><a href="/changelog">{t.footer.changelog}</a><a href="/about">{t.footer.about}</a><a href="/contact">{t.footer.contact}</a></nav>
+      <nav aria-label={t.footer.resources} class="footer-links"><a href={manualPath(locale, routes)}>{t.nav.docs}</a><a href="/compare/">{t.footer.compare}</a><a href="/changelog">{t.footer.changelog}</a><a href="/about">{t.footer.about}</a><a href="/contact">{t.footer.contact}</a></nav>
       <div class="footer-preferences"><ThemeToggle labels={{ group: t.nav.appearance, auto: t.nav.system, light: t.nav.light, dark: t.nav.dark }} /><LanguagePicker locale={locale} label={t.nav.language} navigationLabel={t.footer.resources} /></div>
     </div>
     <div class="footer-base"><p>© 2026 Control Center. {t.footer.made}</p><nav aria-label={`${t.footer.privacy} / ${t.footer.terms}`}><a href="/privacy">{t.footer.privacy}</a><a href="/terms">{t.footer.terms}</a><a href="/licenses">{t.footer.licenses}</a><a href="/acknowledgements">{t.footer.acknowledgements}</a></nav><a href="#top" class="footer-top" aria-label={t.footer.top}>↑</a></div>

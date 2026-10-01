@@ -1,0 +1,492 @@
+---
+/**
+ * SsoCheck — an in-page checker for a SAML or OpenID Connect connection.
+ *
+ * Everything runs in the reader's browser (src/scripts/sso-check/): SAML
+ * metadata is parsed in the tab, OIDC discovery is fetched straight from the
+ * issuer, and the only other request goes to the reader's own server's
+ * public `/auth/providers` probe. The docs site never receives the input.
+ * The rules mirror the server's (`cc_saml`, `OidcService`), so a clean report
+ * here predicts a clean "Test connection" in the app; the optional test
+ * sign-in then exercises the IdP side the server test cannot reach.
+ */
+interface Props {
+  kind: 'saml' | 'oidc';
+}
+const { kind } = Astro.props;
+const id = (name: string) => `sso-check-${kind}-${name}`;
+const saml = kind === 'saml';
+---
+
+<div class="not-content sso-check" data-sso-check={kind}>
+  <p class="sso-check__scope">
+    <span class="sso-check__badge">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2" /><path d="M8 21h8M12 17v4" /></svg>
+      Runs in your browser
+    </span>
+    <span>
+      {saml
+        ? 'Your metadata is read in this tab and never uploaded. Add a server address and your browser also asks that server which sign-in methods it offers.'
+        : 'Your browser fetches the discovery document straight from your issuer. Add a server address and it also asks that server which sign-in methods it offers. This site never receives what you type.'}
+    </span>
+  </p>
+
+  <form class="sso-check__form" novalidate>
+    {saml ? (
+      <div class="sso-check__field">
+        <div class="sso-check__label-row">
+          <label class="sso-check__label" for={id('metadata')}>IdP metadata XML</label>
+          <label class="sso-check__file">
+            <input type="file" accept=".xml,text/xml,application/xml,application/samlmetadata+xml" data-file />
+            Load a file
+          </label>
+        </div>
+        <textarea
+          id={id('metadata')}
+          data-input="metadata"
+          rows="8"
+          spellcheck="false"
+          autocomplete="off"
+          placeholder='<md:EntityDescriptor entityID="…">'
+          aria-describedby={id('metadata-error')}
+          dir="ltr"
+        ></textarea>
+        <p class="sso-check__error" id={id('metadata-error')} data-error-for="metadata" hidden></p>
+      </div>
+    ) : (
+      <>
+        <div class="sso-check__field">
+          <label class="sso-check__label" for={id('issuer')}>Issuer URL</label>
+          <input
+            id={id('issuer')}
+            data-input="issuer"
+            type="url"
+            inputmode="url"
+            spellcheck="false"
+            autocomplete="off"
+            placeholder="https://id.example.com/realms/acme"
+            aria-describedby={id('issuer-error')}
+            dir="ltr"
+          />
+          <p class="sso-check__error" id={id('issuer-error')} data-error-for="issuer" hidden></p>
+        </div>
+        <div class="sso-check__row">
+          <div class="sso-check__field">
+            <label class="sso-check__label" for={id('client')}>Client ID <span class="sso-check__optional">(optional)</span></label>
+            <input id={id('client')} data-input="client" type="text" spellcheck="false" autocomplete="off" aria-describedby={id('client-hint')} dir="ltr" />
+            <p class="sso-check__hint" id={id('client-hint')}>Needed for the test sign-in.</p>
+          </div>
+          <div class="sso-check__field">
+            <label class="sso-check__label" for={id('groups')}>Groups claim <span class="sso-check__optional">(optional)</span></label>
+            <input id={id('groups')} data-input="groups" type="text" spellcheck="false" autocomplete="off" placeholder="groups" dir="ltr" />
+          </div>
+        </div>
+        <fieldset class="sso-check__field sso-check__choice" aria-describedby={id('type-hint')}>
+          <legend class="sso-check__label">Client type</legend>
+          <label><input type="radio" name={id('type')} value="public" data-input="type" checked /> Public, PKCE only</label>
+          <label><input type="radio" name={id('type')} value="confidential" data-input="type" /> Confidential, has a client secret</label>
+          <p class="sso-check__hint" id={id('type-hint')}>Never paste the secret here. The check only needs to know whether one exists.</p>
+        </fieldset>
+      </>
+    )}
+
+    <div class="sso-check__row">
+      <div class="sso-check__field">
+        <label class="sso-check__label" for={id('origin')}>Server address <span class="sso-check__optional">(optional)</span></label>
+        <input
+          id={id('origin')}
+          data-input="origin"
+          type="url"
+          inputmode="url"
+          spellcheck="false"
+          autocomplete="off"
+          placeholder="https://cc.example.com"
+          aria-describedby={`${id('origin-hint')} ${id('origin-error')}`}
+          dir="ltr"
+        />
+        <p class="sso-check__hint" id={id('origin-hint')}>The address your users open. Adds a reachability check and a test sign-in.</p>
+        <p class="sso-check__error" id={id('origin-error')} data-error-for="origin" hidden></p>
+      </div>
+      {saml && (
+        <div class="sso-check__field">
+          <label class="sso-check__label" for={id('entity')}>SP entity ID <span class="sso-check__optional">(optional)</span></label>
+          <input id={id('entity')} data-input="entity" type="text" spellcheck="false" autocomplete="off" placeholder="<server address>/saml" aria-describedby={id('entity-hint')} dir="ltr" />
+          <p class="sso-check__hint" id={id('entity-hint')}>Only if you pinned one in the app.</p>
+        </div>
+      )}
+    </div>
+
+    {!saml && (
+      <details class="sso-check__details" data-discovery>
+        <summary>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+          Paste the discovery document instead
+        </summary>
+        <div class="sso-check__field">
+          <label class="sso-check__label" for={id('discovery')}>Discovery document JSON</label>
+          <textarea id={id('discovery')} data-input="discovery" rows="6" spellcheck="false" autocomplete="off" placeholder='{"issuer": "https://…"}' aria-describedby={id('discovery-hint')} dir="ltr"></textarea>
+          <p class="sso-check__hint" id={id('discovery-hint')}>
+            For providers that block other sites from reading it. <a data-discovery-link target="_blank" rel="noopener noreferrer" hidden>Open the discovery document</a>
+          </p>
+        </div>
+      </details>
+    )}
+
+    <div class="sso-check__actions">
+      <button type="submit" class="sso-check__button sso-check__button--primary" data-submit>{saml ? 'Check metadata' : 'Check issuer'}</button>
+    </div>
+  </form>
+
+  <p class="sso-check__summary" role="status" data-summary></p>
+  <ol class="sso-check__results" data-results hidden></ol>
+
+  <section class="sso-check__probe" data-probe aria-labelledby={id('probe-title')} hidden>
+    <h3 id={id('probe-title')}>Test sign-in at your {saml ? 'IdP' : 'provider'}</h3>
+    <p data-probe-intro></p>
+    <ul>
+      {saml ? (
+        <>
+          <li><strong>Your IdP's sign-in page:</strong> it recognizes Control Center's entity ID. You can close the tab.</li>
+          <li><strong>An error at your IdP:</strong> it names what to fix, usually an unknown entity ID (Entra: AADSTS700016) or a user not assigned to the app.</li>
+          <li><strong>Your server's "Sign-in failed" page:</strong> also a pass. The IdP accepted the request and posted back to your ACS URL; your server refuses it only because this page started the sign-in, not your server.</li>
+        </>
+      ) : (
+        <>
+          <li><strong>Your provider's sign-in or consent page:</strong> the client ID and redirect URI are registered. You can close the tab.</li>
+          <li><strong>An error at your provider:</strong> it names what to fix, usually a redirect URI that is not registered or an unknown client ID.</li>
+          <li><strong>Your server's "Sign-in failed" page:</strong> also a pass. The provider accepted the request and sent you back; your server refuses it only because this page started the sign-in, not your server.</li>
+        </>
+      )}
+    </ul>
+    <a class="sso-check__button" data-probe-link target="_blank" rel="noopener noreferrer">
+      Open test sign-in
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /></svg>
+      <span class="sso-check__sr">(opens in a new tab)</span>
+    </a>
+  </section>
+
+  <template data-icon="pass"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="m9 12 2 2 4-4" /></svg></template>
+  <template data-icon="warn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" /><path d="M12 9v4M12 17h.01" /></svg></template>
+  <template data-icon="fail"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="m15 9-6 6M9 9l6 6" /></svg></template>
+  <template data-icon="info"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="M12 16v-4M12 8h.01" /></svg></template>
+</div>
+
+<script>
+  import '../../scripts/sso-check/ui.ts';
+</script>
+
+<style is:global>
+  /* Global, because result rows are built by the script and carry no scope attribute. */
+  .sso-check {
+    margin-block: var(--cc-space-6);
+    border: 1px solid var(--cc-border);
+    background: var(--cc-panel);
+    color: var(--cc-muted);
+    font-size: .875rem;
+    line-height: 1.6;
+  }
+  .sso-check svg {
+    inline-size: 1em;
+    block-size: 1em;
+    flex: none;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .sso-check code {
+    padding: 1px 5px;
+    background: var(--cc-surface);
+    color: var(--cc-fg);
+    font-family: var(--cc-font-mono);
+    font-size: .8125rem;
+    overflow-wrap: anywhere;
+  }
+  .sso-check__sr {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .sso-check__scope {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--cc-space-2) var(--cc-space-3);
+    margin: 0;
+    padding: var(--cc-space-3) var(--cc-space-4);
+    border-block-end: 1px solid var(--cc-border);
+    background: var(--cc-rail);
+    font-size: .8125rem;
+    line-height: 1.5;
+  }
+  .sso-check__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 10px;
+    border: 1px solid var(--cc-border);
+    border-radius: 999px;
+    background: var(--cc-panel);
+    color: var(--cc-fg);
+    font-size: .75rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .sso-check__form {
+    display: grid;
+    gap: var(--cc-space-4);
+    padding: var(--cc-space-4);
+  }
+  .sso-check__row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+    gap: var(--cc-space-4);
+  }
+  .sso-check__field {
+    display: grid;
+    align-content: start;
+    gap: 6px;
+    min-inline-size: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+  .sso-check__label-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--cc-space-2);
+  }
+  .sso-check__label {
+    padding: 0;
+    color: var(--cc-fg);
+    font-size: .8125rem;
+    font-weight: 600;
+  }
+  .sso-check__optional { color: var(--cc-muted); font-weight: 400; }
+  .sso-check__hint,
+  .sso-check__error {
+    margin: 0;
+    font-size: .75rem;
+    line-height: 1.5;
+  }
+  .sso-check__error {
+    display: flex;
+    align-items: start;
+    gap: 6px;
+    color: var(--cc-danger-strong);
+    font-weight: 600;
+  }
+  .sso-check__error svg { margin-block-start: .2em; }
+  .sso-check__error[hidden] { display: none; }
+  .sso-check__hint a { color: var(--cc-fg); text-underline-offset: 3px; }
+  .sso-check__hint a[hidden] { display: none; }
+
+  .sso-check :is(input[type='text'], input[type='url'], textarea) {
+    box-sizing: border-box;
+    inline-size: 100%;
+    min-block-size: 40px;
+    margin: 0;
+    padding: 8px 12px;
+    border: 0;
+    border-block-end: 1px solid var(--cc-line-strong);
+    border-radius: 0;
+    background: var(--cc-surface);
+    color: var(--cc-fg);
+    /* Every field holds a machine value (URL, ID, XML, JSON): mono lane. */
+    font: .8125rem/1.5 var(--cc-font-mono);
+    transition: border-color var(--cc-motion-fast) var(--cc-ease);
+  }
+  .sso-check textarea[data-input] {
+    min-block-size: 9rem;
+    resize: vertical;
+  }
+  .sso-check :is(input, textarea)::placeholder { color: var(--cc-idle); opacity: 1; }
+  .sso-check :is(input[type='text'], input[type='url'], textarea):hover { border-block-end-color: var(--cc-fg); }
+  .sso-check :is(input[type='text'], input[type='url'], textarea):focus-visible {
+    outline: 2px solid var(--cc-accent);
+    outline-offset: 0;
+  }
+  .sso-check [aria-invalid='true'] {
+    outline: 2px solid var(--cc-danger);
+    outline-offset: 0;
+  }
+
+  .sso-check__choice label {
+    display: flex;
+    align-items: center;
+    gap: var(--cc-space-2);
+    min-block-size: 32px;
+    color: var(--cc-fg);
+    cursor: pointer;
+  }
+  .sso-check__choice input { margin: 0; accent-color: var(--cc-accent); }
+  @media (pointer: coarse) {
+    .sso-check__choice label { min-block-size: 44px; }
+  }
+
+  .sso-check__file {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    min-block-size: 32px;
+    padding: 0 12px;
+    border: 1px solid var(--cc-border);
+    background: var(--cc-panel);
+    color: var(--cc-fg);
+    font-size: .8125rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color var(--cc-motion-fast) var(--cc-ease);
+  }
+  .sso-check__file:hover { border-color: var(--cc-fg); }
+  .sso-check__file:focus-within {
+    outline: 2px solid var(--cc-accent);
+    outline-offset: 2px;
+  }
+  .sso-check__file input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .sso-check__details summary {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    inline-size: fit-content;
+    min-block-size: 32px;
+    color: var(--cc-fg);
+    font-size: .8125rem;
+    font-weight: 600;
+    cursor: pointer;
+    list-style: none;
+  }
+  .sso-check__details summary::-webkit-details-marker { display: none; }
+  /* Navigation glyph: points along the reading direction, turns down when open. */
+  .sso-check__details summary svg { transition: rotate var(--cc-motion-fast) var(--cc-ease); }
+  .sso-check__details summary svg:dir(rtl) { scale: -1 1; }
+  .sso-check__details[open] summary svg { rotate: 90deg; }
+  .sso-check__details[open] summary svg:dir(rtl) { rotate: -90deg; }
+  .sso-check__details[open] summary { margin-block-end: var(--cc-space-2); }
+
+  .sso-check__actions { display: flex; flex-wrap: wrap; gap: var(--cc-space-3); }
+  .sso-check__button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--cc-space-2);
+    min-block-size: 40px;
+    padding: 0 var(--cc-space-4);
+    border: 1px solid var(--cc-border);
+    border-radius: 0;
+    background: var(--cc-panel);
+    color: var(--cc-fg);
+    font: 600 .875rem/1 var(--cc-font-sans);
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color var(--cc-motion-fast) var(--cc-ease), border-color var(--cc-motion-fast) var(--cc-ease), color var(--cc-motion-fast) var(--cc-ease);
+  }
+  .sso-check__button:hover { border-color: var(--cc-fg); }
+  .sso-check__button:active { transform: translateY(1px); }
+  .sso-check__button--primary { background: var(--cc-fg); border-color: var(--cc-fg); color: var(--cc-bg); }
+  .sso-check__button--primary:hover { background: var(--cc-accent-fill); border-color: var(--cc-accent-fill); color: var(--cc-accent-on); }
+  .sso-check__button:disabled { cursor: progress; opacity: .64; transform: none; }
+  .sso-check__button[aria-disabled='true'] { pointer-events: none; opacity: .64; }
+
+  .sso-check__summary {
+    margin: 0;
+    padding: var(--cc-space-3) var(--cc-space-4);
+    border-block-start: 1px solid var(--cc-border);
+    color: var(--cc-fg);
+    font-size: .8125rem;
+    font-weight: 600;
+  }
+  .sso-check__summary:empty { display: none; }
+
+  .sso-check__results {
+    margin: 0;
+    padding: 0 var(--cc-space-4) var(--cc-space-2);
+    list-style: none;
+  }
+  .sso-check__results[hidden] { display: none; }
+  .sso-check__result {
+    display: grid;
+    grid-template-columns: 18px minmax(0, 1fr);
+    gap: var(--cc-space-3);
+    margin: 0;
+    padding-block: var(--cc-space-3);
+    border-block-start: 1px solid var(--cc-border-soft);
+    animation: sso-check-in var(--cc-motion-base) var(--cc-ease-emphasized) both;
+  }
+  .sso-check__result:first-child { border-block-start: 0; }
+  .sso-check__result > svg { inline-size: 18px; block-size: 18px; margin-block-start: 2px; }
+  .sso-check__title { margin: 0; color: var(--cc-fg); font-weight: 600; }
+  .sso-check__status { margin-inline-end: var(--cc-space-1); font-size: .75rem; font-weight: 600; }
+  .sso-check__detail { margin: 2px 0 0; max-inline-size: 68ch; }
+  .sso-check__values {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    gap: 2px var(--cc-space-3);
+    margin: var(--cc-space-2) 0 0;
+    font-size: .8125rem;
+  }
+  .sso-check__values dt { color: var(--cc-muted); }
+  /* RTL carve-out: URLs, entity IDs and dates read left to right. */
+  .sso-check__values dd {
+    margin: 0;
+    color: var(--cc-fg);
+    font-family: var(--cc-font-mono);
+    overflow-wrap: anywhere;
+  }
+  @media (max-width: 30rem) {
+    .sso-check__values { grid-template-columns: minmax(0, 1fr); }
+    .sso-check__values dd + dt { margin-block-start: var(--cc-space-1); }
+  }
+
+  .sso-check__result[data-status='pass'] > svg { color: var(--cc-success); }
+  .sso-check__result[data-status='pass'] .sso-check__status { color: var(--cc-success-strong); }
+  .sso-check__result[data-status='warn'] > svg { color: var(--cc-warn); }
+  .sso-check__result[data-status='warn'] .sso-check__status { color: var(--cc-warn-strong); }
+  .sso-check__result[data-status='fail'] > svg { color: var(--cc-danger); }
+  .sso-check__result[data-status='fail'] .sso-check__status { color: var(--cc-danger-strong); }
+  .sso-check__result[data-status='info'] > svg,
+  .sso-check__result[data-status='info'] .sso-check__status { color: var(--cc-muted); }
+
+  .sso-check__probe {
+    padding: var(--cc-space-4);
+    border-block-start: 1px solid var(--cc-border);
+    background: var(--cc-rail);
+    animation: sso-check-in var(--cc-motion-base) var(--cc-ease-emphasized) both;
+  }
+  .sso-check__probe[hidden] { display: none; }
+  .sso-check__probe h3 {
+    margin: 0 0 var(--cc-space-1);
+    color: var(--cc-fg);
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.4;
+  }
+  .sso-check__probe p { margin: 0; max-inline-size: 68ch; }
+  .sso-check__probe ul { margin: var(--cc-space-3) 0 var(--cc-space-4); padding-inline-start: 1.25rem; }
+  .sso-check__probe li + li { margin-block-start: var(--cc-space-1); }
+  .sso-check__probe strong { color: var(--cc-fg); font-weight: 600; }
+
+  @keyframes sso-check-in {
+    from { opacity: 0; transform: translateY(4px); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    @keyframes sso-check-in {
+      from { opacity: 0; }
+    }
+    .sso-check__button:active { transform: none; }
+  }
+</style>

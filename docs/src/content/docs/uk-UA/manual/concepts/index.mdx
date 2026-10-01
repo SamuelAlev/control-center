@@ -1,0 +1,64 @@
+---
+title: Concepts
+description: How Control Center works and why it is built this way — the background reading behind the guides.
+slug: uk-UA/керівництво/поняття
+---
+
+These pages explain **how Control Center works and why**. They are for understanding,
+not for doing: no page here is a procedure to follow. When you want to accomplish a
+specific task, go to the [how-to guides](/uk-UA/керівництво/практичні-посібники/); when you want to look
+something up, go to the [reference](/uk-UA/керівництво/довідка/).
+
+Read them in any order. If you are new, the core model is the place to start.
+
+## Core model
+
+The four ideas everything else is built on.
+
+- [Workspaces and isolation](/uk-UA/керівництво/поняття/робочі-простори/) — the tenant boundary and why it is enforced by the database layout rather than by query discipline
+- [The agent model](/uk-UA/керівництво/поняття/модель-агента/) — what an agent is made of: identity, role, skills, capabilities, adapter and model
+- [Agent dispatch lifecycle](/uk-UA/керівництво/поняття/життєвий-цикл-запуску/) — what happens between your message and the agent's first token
+- [Modes](/uk-UA/керівництво/поняття/режими/) — how `chat`, `plan`, `review` and `orchestrate` change what an agent may do
+- [Tool context and prompt caching](/uk-UA/керівництво/поняття/контекст-інструментів/) — why an agent sees a subset of its tools, how it reaches the rest and what keeps the provider cache warm
+- [Code intelligence](/uk-UA/керівництво/поняття/інтелект-коду/) — the code graph, language server, structural search and debugger
+- [Conversation history](/uk-UA/керівництво/поняття/історія-розмов/) — persistence, compaction and forking a transcript
+
+## Safety and control
+
+What an agent is allowed to touch and who decides.
+
+- [Sandbox and security](/uk-UA/керівництво/поняття/пісочниця-та-безпека/) — what actually constrains an agent run today
+- [Guardrails](/uk-UA/керівництво/поняття/обмеження/) — one policy engine for every mutating action and how a rule is resolved
+- [Authorization](/uk-UA/керівництво/поняття/авторизація/) — roles, the permission catalog and the audit trail
+- [Rigs and enclosures](/uk-UA/керівництво/поняття/rigs/) — why agents get disposable VMs instead of your machine, and what the boundary actually is
+
+## Directing the work
+
+Turning intent into work that gets done.
+
+- [Tickets and delegation](/uk-UA/керівництво/поняття/тікети/) — the vendor-neutral unit of work the whole fleet shares
+- [Pipelines and automation](/uk-UA/керівництво/поняття/конвеєри/) — DAG workflows, triggers and resumable runs
+- [Orchestration](/uk-UA/керівництво/поняття/оркестрація/) — one goal, one approval, a generated pipeline
+- [AI review](/uk-UA/керівництво/поняття/ші-перевірка/) — how a PR becomes a reviewed one: review spaces, peer consensus, axes and the Ship/Hold/Block verdict
+- [PR conversations](/uk-UA/керівництво/поняття/розмови-в-pr/) — answering a GitHub mention or `ai-review` label from the forge itself
+- [Memory and knowledge](/uk-UA/керівництво/поняття/памʼять-і-знання/) — facts, policies and what an agent is allowed to know
+- [Evals and quality](/uk-UA/керівництво/поняття/eval-і-якість/) — eval suites and the Quality tab
+
+## People and reach
+
+Working with other humans and reaching the fleet from elsewhere.
+
+- [Multiplayer and presence](/uk-UA/керівництво/поняття/спільна-робота/) — humans and agents as co-equal participants and what gates access
+- [Single sign-on](/uk-UA/керівництво/поняття/єдиний-вхід/) — SAML and OIDC logins
+- [Chat bridges](/uk-UA/керівництво/поняття/чат-мости/) — why the Slack bridge dials out and what authorizes a message from chat
+- [Remote control and mobile](/uk-UA/керівництво/поняття/віддалене-керування/) — how a phone reaches your server and the security model around it
+- [Meetings and transcription](/uk-UA/керівництво/поняття/зустрічі/) — on-device recording, transcription and summarization
+- [Calendar and scheduling](/uk-UA/керівництво/поняття/календар/) — Google Calendar sync and meeting alerts
+
+## Under the hood
+
+The shape of the system itself.
+
+- [Architecture](/uk-UA/керівництво/поняття/архітектура/) — layering, the shared kernel, ports and adapters
+- [Deployment and clients](/uk-UA/керівництво/поняття/розгортання/) — how the desktop, web and phone clients relate to one server
+- [Domain events](/uk-UA/керівництво/поняття/доменні-події/) — the in-process bus features talk over

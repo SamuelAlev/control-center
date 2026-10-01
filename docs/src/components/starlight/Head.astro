@@ -10,6 +10,11 @@
  * Breadcrumb URLs use the current locale's landing page and manual index.
  * Section levels like `/manual/guides/` have no index, so the trail
  * includes only existing landing, manual index and article pages.
+ *
+ * Translations say so: a locale page's article is the `translationOfWork` of
+ * its English original, which lists every translation as `workTranslation`.
+ * Pages the route middleware keeps out of the index (Starlight's prefixed
+ * English fallbacks, untranslated copies) carry no structured data.
  */
 import Default from '@astrojs/starlight/components/Head.astro';
 import StructuredData from '../shared/StructuredData.astro';
@@ -17,19 +22,30 @@ import WebMcpScript from '../shared/WebMcpScript.astro';
 import AcquisitionScript from '../shared/AcquisitionScript.astro';
 import SiteLocaleScript from '../shared/SiteLocaleScript.astro';
 import { cdn } from '../../data/cdn';
-import { landingPath, localeFromPath, manualPath } from '../../data/locales';
+import { landingPath, localeFromPath, siteLocales } from '../../data/locales';
+import { localeManualPage, localizeSitePath, manualPath } from '../../data/manual-paths';
+import { getManualRoutes } from '../../data/manual-routes';
 
 const { starlightRoute } = Astro.locals;
 const { entry, entryMeta } = starlightRoute;
 const locale = localeFromPath(Astro.url.pathname);
 const siteHref = new URL('/', Astro.site).href;
 const landingHref = new URL(landingPath(locale), Astro.site).href;
-const docsHref = new URL(manualPath(locale), Astro.site).href;
+const routes = await getManualRoutes();
+const docsHref = new URL(manualPath(locale, routes), Astro.site).href;
 const canonical = new URL(Astro.url.pathname, Astro.site).href;
 const { title, description, datePublished, dateModified } = entry.data;
 
 // The 404 entry isn't a real article — skip structured data there.
 const isError = entry.id === '404' || entry.id.endsWith('/404');
+const indexed = !isError && !starlightRoute.isFallback;
+
+const englishId = localeManualPage((entry.filePath ?? '').replace(/^src\/content\/docs\//, ''))?.id ?? entry.id;
+const urlIn = (target: (typeof siteLocales)[number]['id']) =>
+  new URL(localizeSitePath(`/${englishId}/`, target, routes), Astro.site).href;
+const translation = locale === 'en-US'
+  ? { workTranslation: siteLocales.filter(({ id }) => id !== 'en-US').map(({ id }) => ({ '@type': 'TechArticle', '@id': urlIn(id), url: urlIn(id), inLanguage: id })) }
+  : { translationOfWork: { '@type': 'TechArticle', '@id': urlIn('en-US'), url: urlIn('en-US'), inLanguage: 'en' } };
 
 const crumbs = [{ name: Astro.locals.t('docs.home'), item: landingHref }];
 if (canonical !== docsHref) crumbs.push({ name: Astro.locals.t('docs.documentation'), item: docsHref });
@@ -39,6 +55,7 @@ const schema = [
   {
     '@context': 'https://schema.org',
     '@type': 'TechArticle',
+    '@id': canonical,
     headline: title,
     ...(description ? { description } : {}),
     url: canonical,
@@ -47,6 +64,7 @@ const schema = [
     ...(datePublished ? { datePublished: datePublished.toISOString() } : {}),
     ...(dateModified ? { dateModified: dateModified.toISOString() } : {}),
     inLanguage: entryMeta.lang,
+    ...translation,
     isPartOf: { '@type': 'WebSite', name: 'Control Center', url: siteHref },
     publisher: {
       '@type': 'Organization',
@@ -70,7 +88,7 @@ const schema = [
 
 <Default><slot /></Default>
 {isError && <meta name="robots" content="noindex, follow" />}
-{!isError && <StructuredData schema={schema} />}
+{indexed && <StructuredData schema={schema} />}
 {/* WebMCP tools on every docs page — the marketing half is covered by
     MarketingLayout. Unconditional: the tools are just as useful from the
     404 page, where an agent most needs to find the right route. */}

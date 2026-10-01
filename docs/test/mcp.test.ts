@@ -150,3 +150,58 @@ describe('MCP tools', () => {
     assert.match(body.result.content[0].text, /list_pages/);
   });
 });
+
+describe('MCP languages', () => {
+  const INDEXES: Record<string, McpPage[]> = {
+    'en-US': [
+      { path: '/', title: 'Control Center', markdown: '# Control Center', locale: 'en-US', englishPath: '/' },
+      { path: '/manual/install/', title: 'Install', markdown: '# Install\n\nDownload the app.', locale: 'en-US', englishPath: '/manual/install/' },
+      { path: '/compare/', title: 'Compare', markdown: '# Compare', locale: 'en-US' },
+    ],
+    'fr-FR': [
+      { path: '/fr-FR/', title: 'Control Center', markdown: '# Control Center (fr)', locale: 'fr-FR', englishPath: '/' },
+      { path: '/fr-FR/manuel/installer/', title: 'Installer', markdown: "# Installer\n\nTéléchargez l'application.", locale: 'fr-FR', englishPath: '/manual/install/' },
+      { path: '/compare/', title: 'Compare', markdown: '# Compare', locale: 'en-US' },
+    ],
+    'ja-JP': [
+      { path: '/ja-JP/マニュアル/インストール/', title: 'インストール', markdown: '# インストール', locale: 'ja-JP', englishPath: '/manual/install/' },
+    ],
+  };
+  const handler = createMcpHandler(async (locale) => INDEXES[locale] ?? [], SERVER);
+  const call = async (name: string, args: Record<string, unknown>, locale?: string) => {
+    const outcome = await handler.handle({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name, arguments: args } }, { locale });
+    return (outcome.body as { result: { isError?: boolean; content: { text: string }[] } }).result;
+  };
+
+  it('answers in the request language, else English', async () => {
+    assert.match((await call('get_page_markdown', { path: '/manual/install/' }, 'fr-FR')).content[0].text, /Installer/);
+    assert.match((await call('get_page_markdown', { path: '/manual/install/' })).content[0].text, /# Install/);
+    const list = JSON.parse((await call('list_pages', {}, 'fr-FR')).content[0].text) as { path: string; locale: string }[];
+    assert.deepEqual(list.map(p => p.path), ['/fr-FR/', '/fr-FR/manuel/installer/', '/compare/']);
+  });
+
+  it('lets the locale argument override the request, including a bare language', async () => {
+    assert.match((await call('get_page_markdown', { path: '/manual/install/', locale: 'ja' }, 'fr-FR')).content[0].text, /インストール/);
+    assert.match((await call('search_pages', { query: 'application', locale: 'fr' })).content[0].text, /installer/);
+  });
+
+  it('serves a localized path in its own language and moves it to another on request', async () => {
+    assert.match((await call('get_page_markdown', { path: '/fr-FR/manuel/installer/' })).content[0].text, /Installer/);
+    assert.match((await call('get_page_markdown', { path: encodeURI('/ja-JP/マニュアル/インストール/') })).content[0].text, /インストール/);
+    assert.match((await call('get_page_markdown', { path: '/fr-FR/manuel/installer/', locale: 'ja-JP' })).content[0].text, /インストール/);
+  });
+
+  it('rejects a language the site is not published in', async () => {
+    const result = await call('list_pages', { locale: 'xx' });
+    assert.equal(result.isError, true);
+    assert.match(result.content[0].text, /fr-FR/);
+  });
+
+  it('advertises its languages and the locale argument', async () => {
+    const card = handler.info() as { languages: string[] };
+    assert.ok(card.languages.includes('fr-FR') && card.languages.includes('en-US'));
+    const listed = await handler.handle({ jsonrpc: '2.0', id: 1, method: 'tools/list' });
+    const tools = (listed.body as { result: { tools: { inputSchema: { properties: object } }[] } }).result.tools;
+    for (const tool of tools) assert.ok('locale' in tool.inputSchema.properties);
+  });
+});

@@ -1,0 +1,102 @@
+---
+title: Build your first pipeline
+description: Create a pipeline template, configure its step, allow manual runs and start one.
+slug: zh-HK/手冊/教學/第一條管線
+---
+
+## What you will build
+
+By the end of this tutorial, you will have:
+
+- A saved pipeline template that dispatches an agent with a prompt
+- Manual runs enabled on it, so it can be started by hand
+- One completed run, with the step's input and output visible
+
+Prerequisites: [Dispatch your first agent](/zh-HK/手冊/教學/第一個代理/) completed, so you have an agent with an adapter and a model.
+
+A pipeline is a DAG of steps. Templates define the graph; runs are executions. For the model behind it, read [Pipelines and automation](/zh-HK/手冊/概念/管線/); for the full step vocabulary, [Pipeline step kinds](/zh-HK/手冊/參考/管線步驟/).
+
+## Step 1: Create a template
+
+1. Go to **Settings → Workspace → Pipeline templates**
+2. Click **New template**
+
+The editor opens on a seeded skeleton named **New pipeline** (id `pipeline_N`).
+Click the title in the header and rename it — for this tutorial,
+`code_quality_check` is a good name. There is no id dialog and no description
+field.
+
+The canvas is not blank. A new template comes pre-wired as **Trigger → Step →
+terminal**, where "Step" is a prompt-agent node and the terminal is an
+invisible sentinel that the editor rewires to every reachable sink.
+
+You configure the Step that is already there.
+
+## Step 2: Configure the step
+
+1. Click the **Step** node on the canvas
+2. In the **Node config** panel on the right, set:
+   - **Agent**: your agent from the previous tutorial
+   - **Prompt template**: "Review the code on the current branch for quality issues. List what you find."
+3. Leave **Triggers from** alone — the node is already wired to fire after Trigger
+
+## Step 3: Save
+
+Press **Save** in the editor header.
+
+**Checkpoint.** The "Unsaved changes" caption clears.
+
+## Step 4: Allow manual runs
+
+1. Click the dashed **Add a trigger** tile on the canvas (or drag **Manual run**
+   from the Triggers section of the node library) and pick **Manual run**.
+2. Select that node. In the inspector on the right, turn on **Enabled** —
+   "Show on the run page and start by hand."
+
+This is not optional and it is easy to miss. A new template is created with **no trigger row at all**, so until you turn this on the run page will not list it and there is nothing to start. The switch writes the trigger immediately; it does not wait for another save.
+
+The same switch is behind **Manual run** in the editor header, where it sits alongside the template's declared inputs.
+
+## Step 5: Run it
+
+1. Click **Pipelines** in the sidebar
+2. Click **Run pipeline** in the header
+3. Pick `code_quality_check` in the left rail
+4. Click **Run pipeline** on the form — your template declares no inputs, so there is nothing to fill in
+
+**Checkpoint.** A toast confirms the run started and Control Center opens the run detail.
+
+The engine creates the run record, completes the trigger, schedules the step, dispatches the agent and completes the run when the terminal's incoming branch finishes.
+
+## Step 6: Inspect the result
+
+Click the step in the run to open its detail panel:
+
+- **Started** and **Finished** timestamps and **Duration**
+- **Input**: the state passed into the step
+- **Output**: what it produced — here, the agent's response
+- **Agent activity**, with a link through to the conversation the step drove
+
+**Checkpoint.** The step reads completed and its output holds the agent's review.
+
+## Adding more steps
+
+Nodes are added by dragging an entry from the node library on the left onto
+the canvas, or by pressing **Add step** (`+`) just past a node. Drag from a
+node's output port onto another node to connect them, or select the new node
+and tick its upstream step under **Triggers from**.
+
+The terminal node is not drawn and cannot be selected. The editor rewires it
+to every reachable sink, so a node you add after the seeded Step still runs.
+
+## Recap
+
+You created a template, configured the prompt-agent node it was seeded with, saved it, made it manually runnable, started a run and read the step's input and output.
+
+Pipelines get much larger than this — conditional routers, parallel branches, join nodes, for-each fan-out, human gates — but the shape never changes: steps in a DAG, passing state.
+
+**Next:** [Bridge Slack to your workspace](/zh-HK/手冊/教學/第一個聊天橋接/), the last tutorial in this sequence.
+
+- [Set up pipeline triggers](/zh-HK/手冊/操作指南/管線觸發器/) to start pipelines from events or a schedule
+- [Pipelines and automation](/zh-HK/手冊/概念/管線/) for the model underneath
+- [Pipeline step kinds](/zh-HK/手冊/參考/管線步驟/) for every step type

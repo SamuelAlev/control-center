@@ -1,16 +1,21 @@
 ---
-import { landingPath, localeChoiceParameter, localizePath, siteLocales, unlocalizedPath, type SiteLocale } from '../../data/locales';
+import { landingPath, localeChoiceParameter, siteLocales, type SiteLocale } from '../../data/locales';
+import { isTranslatedSitePath, localizeSitePath } from '../../data/manual-paths';
+import { getManualRoutes } from '../../data/manual-routes';
 interface Props { locale: SiteLocale; label: string; navigationLabel: string }
 const { locale, label, navigationLabel } = Astro.props;
 const current = siteLocales.find(language => language.id === locale)!;
-// Marketing leaves are English-only; choosing another language goes to its landing page.
-const translated = unlocalizedPath(Astro.url.pathname) === '/';
-const destination = (language: SiteLocale) => translated ? localizePath(Astro.url.pathname, language) : landingPath(language);
+const routes = await getManualRoutes();
+// The landing page and manual are translated (the manual under each locale's
+// slugs, resolved here and kept by the client script). Marketing leaves are
+// English-only; choosing another language there goes to its landing page.
+const translated = isTranslatedSitePath(Astro.url.pathname, routes);
+const destination = (language: SiteLocale) => translated ? localizeSitePath(Astro.url.pathname, language, routes) : landingPath(language);
 ---
 <details class="landing-languages" data-landing-disclosure>
   <summary aria-label={`${label}: ${current.name}`}><span lang={locale} dir="auto">{current.name}</span><svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m4 6 4 4 4-4" /></svg></summary>
   <nav aria-label={`${label} (${navigationLabel})`}>
-    {siteLocales.map(language => <a href={`${destination(language.id)}?${localeChoiceParameter}=${language.id}`} data-site-locale={language.id} lang={language.id} hreflang={language.id} aria-current={translated && language.id === locale ? 'page' : undefined}><span dir="auto">{language.name}</span></a>)}
+    {siteLocales.map(language => <a href={`${destination(language.id)}?${localeChoiceParameter}=${language.id}`} data-site-locale={language.id} data-site-locale-exact={translated ? '' : undefined} lang={language.id} hreflang={language.id} aria-current={translated && language.id === locale ? 'page' : undefined}><span dir="auto">{language.name}</span></a>)}
   </nav>
 </details>
 <style>

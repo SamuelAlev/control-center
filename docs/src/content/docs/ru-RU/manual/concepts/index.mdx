@@ -1,0 +1,64 @@
+---
+title: Concepts
+description: How Control Center works and why it is built this way — the background reading behind the guides.
+slug: ru-RU/руководство/понятия
+---
+
+These pages explain **how Control Center works and why**. They are for understanding,
+not for doing: no page here is a procedure to follow. When you want to accomplish a
+specific task, go to the [how-to guides](/ru-RU/руководство/практические-руководства/); when you want to look
+something up, go to the [reference](/ru-RU/руководство/справка/).
+
+Read them in any order. If you are new, the core model is the place to start.
+
+## Core model
+
+The four ideas everything else is built on.
+
+- [Workspaces and isolation](/ru-RU/руководство/понятия/рабочие-пространства/) — the tenant boundary and why it is enforced by the database layout rather than by query discipline
+- [The agent model](/ru-RU/руководство/понятия/модель-агента/) — what an agent is made of: identity, role, skills, capabilities, adapter and model
+- [Agent dispatch lifecycle](/ru-RU/руководство/понятия/жизненный-цикл-запуска/) — what happens between your message and the agent's first token
+- [Modes](/ru-RU/руководство/понятия/режимы/) — how `chat`, `plan`, `review` and `orchestrate` change what an agent may do
+- [Tool context and prompt caching](/ru-RU/руководство/понятия/контекст-инструментов/) — why an agent sees a subset of its tools, how it reaches the rest and what keeps the provider cache warm
+- [Code intelligence](/ru-RU/руководство/понятия/интеллект-кода/) — the code graph, language server, structural search and debugger
+- [Conversation history](/ru-RU/руководство/понятия/история-разговоров/) — persistence, compaction and forking a transcript
+
+## Safety and control
+
+What an agent is allowed to touch and who decides.
+
+- [Sandbox and security](/ru-RU/руководство/понятия/песочница-и-безопасность/) — what actually constrains an agent run today
+- [Guardrails](/ru-RU/руководство/понятия/ограничения/) — one policy engine for every mutating action and how a rule is resolved
+- [Authorization](/ru-RU/руководство/понятия/авторизация/) — roles, the permission catalog and the audit trail
+- [Rigs and enclosures](/ru-RU/руководство/понятия/rigs/) — why agents get disposable VMs instead of your machine, and what the boundary actually is
+
+## Directing the work
+
+Turning intent into work that gets done.
+
+- [Tickets and delegation](/ru-RU/руководство/понятия/тикеты/) — the vendor-neutral unit of work the whole fleet shares
+- [Pipelines and automation](/ru-RU/руководство/понятия/конвейеры/) — DAG workflows, triggers and resumable runs
+- [Orchestration](/ru-RU/руководство/понятия/оркестрация/) — one goal, one approval, a generated pipeline
+- [AI review](/ru-RU/руководство/понятия/ии-проверка/) — how a PR becomes a reviewed one: review spaces, peer consensus, axes and the Ship/Hold/Block verdict
+- [PR conversations](/ru-RU/руководство/понятия/разговоры-в-pr/) — answering a GitHub mention or `ai-review` label from the forge itself
+- [Memory and knowledge](/ru-RU/руководство/понятия/память-и-знания/) — facts, policies and what an agent is allowed to know
+- [Evals and quality](/ru-RU/руководство/понятия/eval-и-качество/) — eval suites and the Quality tab
+
+## People and reach
+
+Working with other humans and reaching the fleet from elsewhere.
+
+- [Multiplayer and presence](/ru-RU/руководство/понятия/совместная-работа/) — humans and agents as co-equal participants and what gates access
+- [Single sign-on](/ru-RU/руководство/понятия/единый-вход/) — SAML and OIDC logins
+- [Chat bridges](/ru-RU/руководство/понятия/чат-мосты/) — why the Slack bridge dials out and what authorizes a message from chat
+- [Remote control and mobile](/ru-RU/руководство/понятия/удалённое-управление/) — how a phone reaches your server and the security model around it
+- [Meetings and transcription](/ru-RU/руководство/понятия/встречи/) — on-device recording, transcription and summarization
+- [Calendar and scheduling](/ru-RU/руководство/понятия/календарь/) — Google Calendar sync and meeting alerts
+
+## Under the hood
+
+The shape of the system itself.
+
+- [Architecture](/ru-RU/руководство/понятия/архитектура/) — layering, the shared kernel, ports and adapters
+- [Deployment and clients](/ru-RU/руководство/понятия/развёртывание/) — how the desktop, web and phone clients relate to one server
+- [Domain events](/ru-RU/руководство/понятия/доменные-события/) — the in-process bus features talk over

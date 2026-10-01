@@ -1,0 +1,64 @@
+---
+title: Concepts
+description: How Control Center works and why it is built this way — the background reading behind the guides.
+slug: ko-KR/매뉴얼/개념
+---
+
+These pages explain **how Control Center works and why**. They are for understanding,
+not for doing: no page here is a procedure to follow. When you want to accomplish a
+specific task, go to the [how-to guides](/ko-KR/매뉴얼/사용-가이드/); when you want to look
+something up, go to the [reference](/ko-KR/매뉴얼/레퍼런스/).
+
+Read them in any order. If you are new, the core model is the place to start.
+
+## Core model
+
+The four ideas everything else is built on.
+
+- [Workspaces and isolation](/ko-KR/매뉴얼/개념/워크스페이스/) — the tenant boundary and why it is enforced by the database layout rather than by query discipline
+- [The agent model](/ko-KR/매뉴얼/개념/에이전트-모델/) — what an agent is made of: identity, role, skills, capabilities, adapter and model
+- [Agent dispatch lifecycle](/ko-KR/매뉴얼/개념/디스패치-수명주기/) — what happens between your message and the agent's first token
+- [Modes](/ko-KR/매뉴얼/개념/모드/) — how `chat`, `plan`, `review` and `orchestrate` change what an agent may do
+- [Tool context and prompt caching](/ko-KR/매뉴얼/개념/도구-컨텍스트/) — why an agent sees a subset of its tools, how it reaches the rest and what keeps the provider cache warm
+- [Code intelligence](/ko-KR/매뉴얼/개념/코드-인텔리전스/) — the code graph, language server, structural search and debugger
+- [Conversation history](/ko-KR/매뉴얼/개념/대화-기록/) — persistence, compaction and forking a transcript
+
+## Safety and control
+
+What an agent is allowed to touch and who decides.
+
+- [Sandbox and security](/ko-KR/매뉴얼/개념/샌드박스와-보안/) — what actually constrains an agent run today
+- [Guardrails](/ko-KR/매뉴얼/개념/가드레일/) — one policy engine for every mutating action and how a rule is resolved
+- [Authorization](/ko-KR/매뉴얼/개념/권한-부여/) — roles, the permission catalog and the audit trail
+- [Rigs and enclosures](/ko-KR/매뉴얼/개념/리그/) — why agents get disposable VMs instead of your machine, and what the boundary actually is
+
+## Directing the work
+
+Turning intent into work that gets done.
+
+- [Tickets and delegation](/ko-KR/매뉴얼/개념/티켓/) — the vendor-neutral unit of work the whole fleet shares
+- [Pipelines and automation](/ko-KR/매뉴얼/개념/파이프라인/) — DAG workflows, triggers and resumable runs
+- [Orchestration](/ko-KR/매뉴얼/개념/오케스트레이션/) — one goal, one approval, a generated pipeline
+- [AI review](/ko-KR/매뉴얼/개념/ai-리뷰/) — how a PR becomes a reviewed one: review spaces, peer consensus, axes and the Ship/Hold/Block verdict
+- [PR conversations](/ko-KR/매뉴얼/개념/pr-대화/) — answering a GitHub mention or `ai-review` label from the forge itself
+- [Memory and knowledge](/ko-KR/매뉴얼/개념/메모리와-지식/) — facts, policies and what an agent is allowed to know
+- [Evals and quality](/ko-KR/매뉴얼/개념/평가와-품질/) — eval suites and the Quality tab
+
+## People and reach
+
+Working with other humans and reaching the fleet from elsewhere.
+
+- [Multiplayer and presence](/ko-KR/매뉴얼/개념/멀티플레이어/) — humans and agents as co-equal participants and what gates access
+- [Single sign-on](/ko-KR/매뉴얼/개념/싱글-사인온/) — SAML and OIDC logins
+- [Chat bridges](/ko-KR/매뉴얼/개념/채팅-브리지/) — why the Slack bridge dials out and what authorizes a message from chat
+- [Remote control and mobile](/ko-KR/매뉴얼/개념/원격-제어/) — how a phone reaches your server and the security model around it
+- [Meetings and transcription](/ko-KR/매뉴얼/개념/회의/) — on-device recording, transcription and summarization
+- [Calendar and scheduling](/ko-KR/매뉴얼/개념/캘린더/) — Google Calendar sync and meeting alerts
+
+## Under the hood
+
+The shape of the system itself.
+
+- [Architecture](/ko-KR/매뉴얼/개념/아키텍처/) — layering, the shared kernel, ports and adapters
+- [Deployment and clients](/ko-KR/매뉴얼/개념/배포/) — how the desktop, web and phone clients relate to one server
+- [Domain events](/ko-KR/매뉴얼/개념/도메인-이벤트/) — the in-process bus features talk over

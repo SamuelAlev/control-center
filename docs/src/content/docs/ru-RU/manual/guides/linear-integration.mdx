@@ -1,0 +1,34 @@
+---
+title: Set up Linear integration
+description: Store a Linear API key on the server so agents can call Linear, and choose Linear as the ticketing provider for new tickets.
+slug: ru-RU/руководство/практические-руководства/интеграция-linear
+---
+
+Paste a Linear API key on the server against your user, the same way you connect
+a forge. Tickets, projects, links, collaborators, delegation and assignment all
+work against Control Center's own database with no external service required —
+see [Create and manage tickets](/ru-RU/руководство/практические-руководства/управлять-тикетами/).
+
+## Store your Linear key
+
+**Ticketing API key** lives at **Settings → Workspace → General**, on the
+Ticketing card. It stores the key on the server against your user id. The
+server's own key for unattended work comes from `LINEAR_API_KEY` or the
+**Provider apps** card and is injected as `TICKETING_API_KEY` only when that
+agent has the **Allow ticketing API calls** capability.
+
+## Stamp new tickets as Linear
+
+**Ticketing provider** (onboarding's first step, and
+`/workspaces/<workspaceId>/api-keys`) offers `local` and `linear`. Picking
+`linear` stamps `provider: linear` on tickets you create from then on.
+
+## Related guides
+
+- [Create and manage tickets](/ru-RU/руководство/практические-руководства/управлять-тикетами/)
+- [Set up GitHub integration](/ru-RU/руководство/практические-руководства/интеграция-github/)
+- [Manage API keys](/ru-RU/руководство/практические-руководства/api-ключи/)
+
+## Related concepts
+
+- [Tickets and delegation](/ru-RU/руководство/понятия/тикеты/)

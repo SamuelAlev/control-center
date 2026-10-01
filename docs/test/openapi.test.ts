@@ -8,6 +8,7 @@ const INPUTS = {
   version: 'v0.0.1-rc.1',
   compareToolIds: ['conductor', 'cursor'],
   docSlugs: ['manual', 'manual/guides/mcp-server'],
+  locales: ['en-US', 'fr-FR', 'ja-JP'],
 };
 
 describe('buildOpenApi', () => {
@@ -47,6 +48,19 @@ describe('buildOpenApi', () => {
     const landing = doc.paths['/'].get;
     const accept = (landing.parameters as { name: string }[]).find((p) => p.name === 'Accept');
     assert.ok(accept, 'landing page must document the Accept parameter');
+  });
+
+  it('documents every language surface and its negotiation', () => {
+    for (const path of ['/{locale}/', '/{locale}/{page}', '/{locale}/llms.txt', '/{locale}/llms-full.txt', '/manual-routes.json', '/agentic/pages/{locale}.json']) {
+      assert.ok(doc.paths[path], `missing path ${path}`);
+    }
+    for (const path of ['/', '/manual/{page}', '/index.md', '/llms.txt', '/llms-full.txt', '/mcp', '/.well-known/mcp']) {
+      const op = doc.paths[path].post ?? doc.paths[path].get;
+      const params = (op?.parameters ?? []) as { name: string }[];
+      assert.ok(params.some(p => p.name === 'Accept-Language'), `${path} must document Accept-Language`);
+    }
+    const locale = (doc.paths['/{locale}/'].get?.parameters as { name: string; schema: { enum: string[] } }[]).find(p => p.name === 'locale');
+    assert.deepEqual(locale?.schema.enum, ['fr-FR', 'ja-JP'], 'English lives at the unprefixed URL');
   });
 
   it('documents 404s as JSON + markdown + HTML', () => {

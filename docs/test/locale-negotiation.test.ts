@@ -1,9 +1,18 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { applyLocaleHeaders, negotiateLocale, preferredLanguage } from '../src/locale-negotiation.ts';
+import type { ManualRoutes } from '../src/data/manual-paths.ts';
+import { applyLocaleHeaders, negotiateLocale as negotiate, preferredLanguage, redirectManual } from '../src/locale-negotiation.ts';
 
 const request = (path: string, headers: HeadersInit = {}, method = 'GET') =>
   new Request(`https://usectrl.dev${path}`, { headers, method });
+
+const routes: ManualRoutes = {
+  'de-DE': { manual: 'handbuch', 'manual/install': 'handbuch/installieren' },
+  'fr-CA': { manual: 'manuel', 'manual/install': 'manuel/installer' },
+  'fr-FR': { manual: 'manuel', 'manual/install': 'manuel/installation' },
+  'ja-JP': { manual: 'マニュアル', 'manual/install': 'マニュアル/インストール' },
+};
+const negotiateLocale = (req: Request) => negotiate(req, routes);
 
 describe('preferredLanguage', () => {
   it('uses English when no supported preference is available', () => {
@@ -48,14 +57,14 @@ describe('server locale negotiation', () => {
     assert.equal(negotiateLocale(request('/', headers))?.redirect?.headers.get('Location'), '/fr-CA/');
     const response = negotiateLocale(request('/manual/install/?download=desktop', headers))?.redirect;
     assert.equal(response?.status, 302);
-    assert.equal(response.headers.get('Location'), '/fr-CA/manual/install/?download=desktop');
+    assert.equal(response.headers.get('Location'), '/fr-CA/manuel/installer/?download=desktop');
     assert.equal(response.headers.get('Cache-Control'), 'private, no-store');
     assert.equal(response.headers.get('Vary'), 'Accept, Accept-Language, Cookie');
   });
 
   it('puts a saved choice before the browser language', () => {
     const headers = { Cookie: 'session=opaque; cc-locale=de-DE', 'Accept-Language': 'fr-FR' };
-    assert.equal(negotiateLocale(request('/manual/', headers))?.redirect?.headers.get('Location'), '/de-DE/manual/');
+    assert.equal(negotiateLocale(request('/manual/', headers))?.redirect?.headers.get('Location'), '/de-DE/handbuch/');
     assert.equal(negotiateLocale(request('/', { ...headers, Cookie: 'cc-locale=en-US' }))?.redirect, null);
   });
 
@@ -65,9 +74,16 @@ describe('server locale negotiation', () => {
   });
 
   it('honors explicit URLs without changing their cacheable response', () => {
-    assert.equal(negotiateLocale(request('/ja-JP/manual/install/', {
+    assert.equal(negotiateLocale(request(encodeURI('/ja-JP/マニュアル/インストール/'), {
       Cookie: 'cc-locale=de-DE', 'Accept-Language': 'fr',
     })), null);
+  });
+
+  it('lands on translated manual slugs, percent-encoded', () => {
+    const response = negotiateLocale(request('/manual/install/', { 'Accept-Language': 'ja' }))?.redirect;
+    assert.equal(response?.headers.get('Location'), encodeURI('/ja-JP/マニュアル/インストール/'));
+    const choice = negotiateLocale(request(`${encodeURI('/ja-JP/マニュアル/インストール/')}?lang=ja-JP`));
+    assert.equal(choice?.redirect, null);
   });
 
   it('serves explicit English immediately and persists it without a redirect loop', () => {
@@ -83,7 +99,7 @@ describe('server locale negotiation', () => {
   });
 
   it('persists a picker choice while keeping a conflicting URL authoritative', () => {
-    const decision = negotiateLocale(request('/fr-FR/manual/?lang=de-DE'));
+    const decision = negotiateLocale(request('/fr-FR/manuel/?lang=de-DE'));
     assert.equal(decision?.redirect, null);
     assert.match(decision?.cookie ?? '', /^cc-locale=fr-FR;/);
   });
@@ -102,10 +118,23 @@ describe('server locale negotiation', () => {
   });
 
   it('leaves unrelated pages, assets and mutating methods alone', () => {
-    for (const path of ['/privacy/', '/download/server', '/api/test', '/manual/install.md', '/manual/logo.svg']) {
+    for (const path of ['/privacy/', '/download/server', '/api/test', '/compare.md', '/manual/logo.svg', '/openapi.json']) {
       assert.equal(negotiateLocale(request(path, { 'Accept-Language': 'fr' })), null, path);
     }
     assert.equal(negotiateLocale(request('/', {}, 'POST')), null);
+  });
+
+  it('sends agents to the translated markdown twin and llms.txt', () => {
+    const french = { 'Accept-Language': 'fr-FR' };
+    assert.equal(negotiateLocale(request('/manual/install.md', french))?.redirect?.headers.get('Location'), '/fr-FR/manuel/installation.md');
+    assert.equal(negotiateLocale(request('/index.md', french))?.redirect?.headers.get('Location'), '/fr-FR.md');
+    assert.equal(negotiateLocale(request('/llms.txt', french))?.redirect?.headers.get('Location'), '/fr-FR/llms.txt');
+    assert.equal(negotiateLocale(request('/llms-full.txt', { 'Accept-Language': 'ja' }))?.redirect?.headers.get('Location'), '/ja-JP/llms-full.txt');
+    assert.equal(negotiateLocale(request('/llms.txt'))?.redirect, null);
+    // Explicit language URLs stay put, whatever the reader prefers.
+    for (const path of ['/fr-FR.md', '/fr-FR/llms.txt', '/fr-FR/manuel/installation.md']) {
+      assert.equal(negotiateLocale(request(path, { 'Accept-Language': 'de' })), null, path);
+    }
   });
 
   it('supports HEAD and development HTTP cookies', () => {
@@ -114,5 +143,25 @@ describe('server locale negotiation', () => {
     assert.equal(response.body, null);
     const decision = negotiateLocale(new Request('http://localhost:4332/?lang=en-US'));
     assert.match(decision?.cookie ?? '', /SameSite=Lax$/);
+  });
+});
+
+describe('pre-translation manual URLs', () => {
+  it('move permanently to the translated slug, keeping the query', () => {
+    const response = redirectManual(request('/fr-CA/manual/install/?download=desktop'), routes);
+    assert.equal(response?.status, 301);
+    assert.equal(response?.headers.get('Location'), '/fr-CA/manuel/installer/?download=desktop');
+    assert.equal(redirectManual(request('/ja-JP/manual/install/'), routes)?.headers.get('Location'), encodeURI('/ja-JP/マニュアル/インストール/'));
+  });
+
+  it('follow another locale\'s slug to this locale\'s page', () => {
+    assert.equal(redirectManual(request('/de-DE/manuel/installer/'), routes)?.headers.get('Location'), '/de-DE/handbuch/installieren/');
+  });
+
+  it('leave canonical, untranslated and non-manual URLs alone', () => {
+    for (const path of ['/fr-CA/manuel/installer/', encodeURI('/ja-JP/マニュアル/'), '/manual/install/', '/fr-CA/', '/privacy/', '/it-IT/manual/install/']) {
+      assert.equal(redirectManual(request(path), routes), null, path);
+    }
+    assert.equal(redirectManual(request('/fr-CA/manual/install/', {}, 'POST'), routes), null);
   });
 });

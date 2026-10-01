@@ -8,14 +8,20 @@ import mdx from "@astrojs/mdx";
 
 import cloudflare from "@astrojs/cloudflare";
 
+import sitemap from "@astrojs/sitemap";
+
 import {
   bundledComponents,
   dartDependencies,
 } from "./src/data/third-party.build.mjs";
 import { readFileSync, readdirSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 
 import { cdn } from "./src/data/cdn.ts";
 import { siteLocales, siteRtl } from "./src/data/locales.ts";
+import { manualRedirect, sitemapAlternates } from "./src/data/manual-paths.ts";
+import { manualTranslations, readManualRoutes } from "./scripts/manual-i18n.ts";
+import { tableScroll } from "./src/table-scroll.ts";
 
 function thirdPartyManifest() {
   const id = "virtual:third-party";
@@ -45,7 +51,49 @@ const uiLocales = Object.fromEntries(
   ]),
 );
 const ui = uiLocales.en;
+
+/**
+ * Keeps the docs out of the Worker. Pages are prerendered and the MCP server
+ * reads the build's page index (src/agentic/mcp-http.ts), yet the Worker build
+ * would carry every docs page: Astro emits the content data store and one
+ * chunk per MDX page as server entries, and Starlight's middleware imports
+ * `astro:content` for its UI strings (30 MB gzip with the translated manual,
+ * over Cloudflare's limit). In the build's `ssr` environment only, those
+ * entries are empty and `astro:content` is this stand-in: the i18n collection
+ * Starlight reads, and a loud error for anything else.
+ */
+function serverContentStandIn() {
+  const id = "\0cc:server-content";
+  return {
+    name: "cc-server-content-stand-in",
+    enforce: "pre",
+    apply: "build",
+    applyToEnvironment: (environment) => environment.name === "ssr",
+    resolveId: (source) => (source === "astro:content" ? id : null),
+    transform(code, source) {
+      // After every loader: the data store (a devalue-flattened Map) and the
+      // MDX module map, emptied.
+      if (source === "\0astro:data-layer-content") return 'export default JSON.parse(\'[["Map"]]\');';
+      if (source.endsWith("/.astro/content-modules.mjs")) return "export default new Map();";
+      return null;
+    },
+    load(source) {
+      if (source !== id) return null;
+      const i18n = Object.entries(uiLocales).map(([lang, data]) => ({ id: lang, collection: "i18n", data }));
+      return [
+        `const i18n = ${JSON.stringify(i18n)};`,
+        "export async function getCollection(collection) {",
+        "  if (collection === 'i18n') return i18n;",
+        "  throw new Error(`astro:content \"${collection}\" is build-time only on this site: prerender the route that reads it.`);",
+        "}",
+      ].join("\n");
+    },
+  };
+}
 const socialImageAlt = ui["docs.socialImageAlt"];
+
+// Each locale's translated manual slugs, from the locale pages' `slug` frontmatter.
+const manualRoutes = readManualRoutes(fileURLToPath(new URL(".", import.meta.url)));
 
 /** @typedef {{label: string, slug?: string, collapsed?: boolean, items?: SidebarItem[]}} SidebarItem */
 /** Resolve locale keys into Starlight's native label/translations fields.
@@ -70,13 +118,20 @@ export default defineConfig({
   base: "/",
   site,
 
+
   integrations: [
+    // Fails the build while any part of the manual is untranslated or stale.
+    manualTranslations(),
+    // Frames each Markdown and MDX table in a scroll wrapper (a Sätteri plugin).
+    tableScroll(),
     starlight({
       title: Object.fromEntries([
         ["en", ui["docs.siteTitle"]],
         ...siteLocales.map(({ id }) => [id, uiLocales[id]?.["docs.siteTitle"] || ui["docs.siteTitle"]]),
       ]),
       defaultLocale: "root",
+      // Translated manual slugs: sidebar, prev/next, hreflang (src/data/manual-paths.ts).
+      routeMiddleware: "./src/starlight-route-data.ts",
       locales: Object.fromEntries(
         siteLocales.map(({ id, name }) => [
           id === "en-US" ? "root" : id,
@@ -664,11 +719,18 @@ export default defineConfig({
         },
       ].map(localizeSidebar),
     }),
+    // Replaces Starlight's sitemap, which pairs locales by URL prefix: manual
+    // pages pair by translated slug, and Starlight's prefixed English fallback
+    // of a translated page (a Worker redirect) is left out.
+    sitemap({
+      filter: (page) => manualRedirect(new URL(page).pathname, manualRoutes) === null,
+      serialize: (item) => ({ ...item, links: sitemapAlternates(item.url, manualRoutes) }),
+    }),
     mdx(),
   ],
 
   vite: {
-    plugins: [tailwindcss(), thirdPartyManifest()],
+    plugins: [tailwindcss(), thirdPartyManifest(), serverContentStandIn()],
   },
 
   adapter: cloudflare(),

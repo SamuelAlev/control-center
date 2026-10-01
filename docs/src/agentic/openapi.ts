@@ -22,6 +22,8 @@ export interface OpenApiInputs {
   compareToolIds: string[];
   /** Docs slugs, e.g. 'manual/guides/mcp-server' (for the enum on /manual/{page}). */
   docSlugs: string[];
+  /** BCP 47 tags the landing page and manual are published in, en-US first. */
+  locales: string[];
 }
 
 const MARKDOWN_NOTE =
@@ -58,7 +60,27 @@ const htmlOnlyResponse = {
 
 const notFoundRef = { $ref: '#/components/responses/NotFound' } as const;
 
-export function buildOpenApi({ origin, version, compareToolIds, docSlugs }: OpenApiInputs): Record<string, unknown> {
+const LANGUAGE_NOTE =
+  'The landing page, manual and llms.txt are published in every site language under `/{locale}/` (manual pages under translated slugs; /manual-routes.json maps them). On an unprefixed URL the Worker answers 302 to the reader\u2019s language: `?lang=`, then the `cc-locale` cookie, then `Accept-Language`, else English. `/{locale}/` URLs are never redirected. Responses carry `Content-Language`.';
+
+const acceptLanguageParam = {
+  name: 'Accept-Language',
+  in: 'header',
+  required: false,
+  description: `Picks the language this unprefixed URL redirects to (302, \`Vary: Accept-Language\`). ${LANGUAGE_NOTE}`,
+  schema: { type: 'string', examples: ['fr-FR', 'ja', 'pt-BR;q=0.9, en;q=0.5'] },
+} as const;
+
+const redirectToLanguage = {
+  description: 'The same resource in the reader\u2019s language, at its `/{locale}/` URL.',
+  headers: { Location: { schema: { type: 'string' }, description: 'The localized URL (percent-encoded).' } },
+} as const;
+
+const contentLanguageHeader = {
+  'Content-Language': { schema: { type: 'string' }, description: 'The response\u2019s language: `en` or a site locale such as `fr-FR`.' },
+} as const;
+
+export function buildOpenApi({ origin, version, compareToolIds, docSlugs, locales }: OpenApiInputs): Record<string, unknown> {
   const pageGet = (operationId: string, summary: string, description: string, extraParams: unknown[] = []) => ({
     get: {
       operationId,
@@ -67,6 +89,39 @@ export function buildOpenApi({ origin, version, compareToolIds, docSlugs }: Open
       tags: ['Content'],
       parameters: [acceptParam, ...extraParams],
       responses: { '200': { ...htmlResponse }, '404': notFoundRef },
+    },
+  });
+
+  /** A translated resource at its English URL: negotiated to the reader's language. */
+  const translatedGet = (operationId: string, summary: string, description: string, extraParams: unknown[] = []) => {
+    const page = pageGet(operationId, summary, `${description} ${LANGUAGE_NOTE}`, [acceptLanguageParam, ...extraParams]);
+    return {
+      get: {
+        ...page.get,
+        responses: { '200': { ...htmlResponse, headers: { ...htmlResponse.headers, ...contentLanguageHeader } }, '302': redirectToLanguage, '404': notFoundRef },
+      },
+    };
+  };
+
+  const localeParam = {
+    name: 'locale',
+    in: 'path',
+    required: true,
+    description: 'A site language other than English (English lives at the unprefixed URL).',
+    schema: { type: 'string', enum: locales.filter((locale) => locale !== 'en-US') },
+  } as const;
+
+  const textGet = (operationId: string, summary: string, description: string, extraParams: unknown[] = [], negotiated = false) => ({
+    get: {
+      operationId,
+      summary,
+      description,
+      tags: ['Agent'],
+      ...(extraParams.length || negotiated ? { parameters: [...(negotiated ? [acceptLanguageParam] : []), ...extraParams] } : {}),
+      responses: {
+        '200': { description: 'The text.', headers: contentLanguageHeader, content: { 'text/plain': { schema: { type: 'string' } } } },
+        ...(negotiated ? { '302': redirectToLanguage } : {}),
+      },
     },
   });
 
@@ -85,7 +140,7 @@ export function buildOpenApi({ origin, version, compareToolIds, docSlugs }: Open
     info: {
       title: 'Control Center website API',
       version,
-      description: `Machine-readable surface of usectrl.dev — the Control Center website. ${MARKDOWN_NOTE} The product's own API (110 MCP tools over Streamable HTTP) runs inside the self-hosted cc_server, not on this origin; see ${origin}/manual/guides/mcp-server/.`,
+      description: `Machine-readable surface of usectrl.dev — the Control Center website. ${MARKDOWN_NOTE} ${LANGUAGE_NOTE} Languages: ${locales.join(', ')}. The product's own API (110 MCP tools over Streamable HTTP) runs inside the self-hosted cc_server, not on this origin; see ${origin}/manual/guides/mcp-server/.`,
       contact: { name: 'Control Center maintainers', url: 'https://github.com/SamuelAlev/control-center/issues' },
       license: { name: 'MIT', url: 'https://github.com/SamuelAlev/control-center/blob/main/LICENSE' },
     },
@@ -98,7 +153,25 @@ export function buildOpenApi({ origin, version, compareToolIds, docSlugs }: Open
       { name: 'Errors', description: 'Structured error behavior for every unpublished path.' },
     ],
     paths: {
-      '/': pageGet('getLandingPage', 'Landing page', `What the product is, the five pillars, downloads. ${MARKDOWN_NOTE}`),
+      '/': translatedGet('getLandingPage', 'Landing page', `What the product is, the five pillars, downloads. ${MARKDOWN_NOTE}`),
+      '/{locale}/': pageGet('getLocalizedLandingPage', 'Landing page in one language', `The landing page in a site language. ${MARKDOWN_NOTE}`, [localeParam]),
+      '/{locale}/{page}': pageGet(
+        'getLocalizedDocsPage',
+        'Documentation page in one language',
+        `One manual page under its translated slug, e.g. /fr-FR/manuel/guides/creer-agent/; /manual-routes.json maps every English page to each language's slug. The prefixed English path a language used before its slugs were translated answers 301 to the translated one. ${MARKDOWN_NOTE}`,
+        [
+          localeParam,
+          {
+            name: 'page',
+            in: 'path',
+            required: true,
+            description: 'Translated slug path; may span multiple segments and use the language\u2019s own script (percent-encoded).',
+            style: 'simple',
+            allowReserved: true,
+            schema: { type: 'string' },
+          },
+        ],
+      ),
       '/about': pageGet('getAboutPage', 'About', `What Control Center is, how it is built, who maintains it. ${MARKDOWN_NOTE}`),
       '/contact': pageGet('getContactPage', 'Contact', `How to reach the maintainers (GitHub issues; security and privacy process). ${MARKDOWN_NOTE}`),
       '/developers': pageGet(
@@ -139,7 +212,7 @@ export function buildOpenApi({ origin, version, compareToolIds, docSlugs }: Open
           schema: { type: 'string', enum: compareToolIds },
         },
       ]),
-      '/manual/{page}': pageGet('getDocsPage', 'Documentation page', `One manual page (tutorial, guide, concept or reference). ${MARKDOWN_NOTE}`, [
+      '/manual/{page}': translatedGet('getDocsPage', 'Documentation page', `One manual page (tutorial, guide, concept or reference). ${MARKDOWN_NOTE}`, [
         {
           name: 'page',
           in: 'path',
@@ -154,31 +227,61 @@ export function buildOpenApi({ origin, version, compareToolIds, docSlugs }: Open
         get: {
           operationId: 'getLandingMarkdown',
           summary: 'Landing page as markdown',
-          description: 'The direct markdown twin of /. Content pages that have a twin also answer at `<path>.md`; legal pages and /demo do not.',
+          description: `The direct markdown twin of /. Content pages that have a twin also answer at \`<path>.md\`; legal pages and /demo do not. ${LANGUAGE_NOTE}`,
           tags: ['Content'],
-          responses: { '200': markdownResponse },
+          parameters: [acceptLanguageParam],
+          responses: { '200': { ...markdownResponse, headers: { ...markdownResponse.headers, ...contentLanguageHeader } }, '302': redirectToLanguage },
         },
       },
-      '/llms.txt': {
+      '/llms.txt': textGet(
+        'getLlmsTxt',
+        'Curated site index for LLMs',
+        `The llmstxt.org index: product summary, when-to-use guidance, developer resources and every docs page with a one-line description, plus each other language\u2019s index. ${LANGUAGE_NOTE}`,
+        [],
+        true,
+      ),
+      '/{locale}/llms.txt': textGet(
+        'getLocalizedLlmsTxt',
+        'Curated site index in one language',
+        'The llms.txt index in a site language: its landing copy and manual under translated URLs; English-only pages are marked.',
+        [localeParam],
+      ),
+      '/llms-full.txt': textGet(
+        'getLlmsFullTxt',
+        'Entire site as one text file',
+        `Product overview, FAQ, comparison matrix, changelog and every manual page body in one download. ${LANGUAGE_NOTE}`,
+        [],
+        true,
+      ),
+      '/{locale}/llms-full.txt': textGet(
+        'getLocalizedLlmsFullTxt',
+        'Entire site in one language as one text file',
+        'Overview, FAQ and every manual page body in a site language, in one download.',
+        [localeParam],
+      ),
+      '/manual-routes.json': {
         get: {
-          operationId: 'getLlmsTxt',
-          summary: 'Curated site index for LLMs',
+          operationId: 'getManualRoutes',
+          summary: 'Translated manual slugs',
           description:
-            'The llmstxt.org index: product summary, when-to-use guidance, developer resources and every docs page with a one-line description.',
+            'Every language\u2019s manual URL for each English page: `{ "<locale>": { "<English id>": "<translated path>" } }`, e.g. `{ "fr-FR": { "manual/install": "manuel/installer" } }`. Prefix the path with `/<locale>/`.',
           tags: ['Agent'],
           responses: {
-            '200': { description: 'The index.', content: { 'text/plain': { schema: { type: 'string' } } } },
+            '200': { description: 'The slug table.', content: { 'application/json': { schema: { type: 'object', additionalProperties: { type: 'object', additionalProperties: { type: 'string' } } } } } },
           },
         },
       },
-      '/llms-full.txt': {
+      '/agentic/pages/{locale}.json': {
         get: {
-          operationId: 'getLlmsFullTxt',
-          summary: 'Entire site as one text file',
-          description: 'Product overview, FAQ, comparison matrix, changelog and every manual page body in one download.',
+          operationId: 'getPageIndex',
+          summary: 'One language\u2019s page index',
+          description:
+            'Every page a reader of one language can use (its landing page and manual plus the English-only pages), as markdown with title, description, language and English original. The docs MCP server answers from these.',
           tags: ['Agent'],
+          parameters: [{ name: 'locale', in: 'path', required: true, description: 'Any site language, en-US included.', schema: { type: 'string', enum: locales } }],
           responses: {
-            '200': { description: 'The full dump.', content: { 'text/plain': { schema: { type: 'string' } } } },
+            '200': { description: 'The page index.', content: { 'application/json': { schema: { type: 'array', items: { type: 'object' } } } } },
+            '404': notFoundRef,
           },
         },
       },
@@ -208,6 +311,13 @@ export function buildOpenApi({ origin, version, compareToolIds, docSlugs }: Open
               description:
                 'MCP clients send `application/json, text/event-stream`; this server always answers application/json. A missing header is tolerated. A header that lists neither application/json nor */* is answered 406.',
               schema: { type: 'string', default: 'application/json, text/event-stream' },
+            },
+            {
+              name: 'Accept-Language',
+              in: 'header',
+              required: false,
+              description: `Default language of the pages tool calls return (a tool's \`locale\` argument overrides it); English when absent. Languages: ${locales.join(', ')}.`,
+              schema: { type: 'string', examples: ['fr-FR', 'ja'] },
             },
           ],
           requestBody: {
@@ -346,6 +456,13 @@ export function buildOpenApi({ origin, version, compareToolIds, docSlugs }: Open
               description:
                 'MCP clients send `application/json, text/event-stream`; this server always answers application/json. A missing header is tolerated. A header that lists neither application/json nor */* is answered 406.',
               schema: { type: 'string', default: 'application/json, text/event-stream' },
+            },
+            {
+              name: 'Accept-Language',
+              in: 'header',
+              required: false,
+              description: `Default language of the pages tool calls return (a tool's \`locale\` argument overrides it); English when absent. Languages: ${locales.join(', ')}.`,
+              schema: { type: 'string', examples: ['fr-FR', 'ja'] },
             },
           ],
           requestBody: {

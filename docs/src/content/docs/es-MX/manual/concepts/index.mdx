@@ -1,0 +1,64 @@
+---
+title: Concepts
+description: How Control Center works and why it is built this way — the background reading behind the guides.
+slug: es-MX/manual/conceptos
+---
+
+These pages explain **how Control Center works and why**. They are for understanding,
+not for doing: no page here is a procedure to follow. When you want to accomplish a
+specific task, go to the [how-to guides](/es-MX/manual/guias/); when you want to look
+something up, go to the [reference](/es-MX/manual/referencia/).
+
+Read them in any order. If you are new, the core model is the place to start.
+
+## Core model
+
+The four ideas everything else is built on.
+
+- [Workspaces and isolation](/es-MX/manual/conceptos/espacios-de-trabajo/) — the tenant boundary and why it is enforced by the database layout rather than by query discipline
+- [The agent model](/es-MX/manual/conceptos/modelo-de-agentes/) — what an agent is made of: identity, role, skills, capabilities, adapter and model
+- [Agent dispatch lifecycle](/es-MX/manual/conceptos/ciclo-de-vida-del-despacho/) — what happens between your message and the agent's first token
+- [Modes](/es-MX/manual/conceptos/modos/) — how `chat`, `plan`, `review` and `orchestrate` change what an agent may do
+- [Tool context and prompt caching](/es-MX/manual/conceptos/contexto-de-herramientas/) — why an agent sees a subset of its tools, how it reaches the rest and what keeps the provider cache warm
+- [Code intelligence](/es-MX/manual/conceptos/inteligencia-de-codigo/) — the code graph, language server, structural search and debugger
+- [Conversation history](/es-MX/manual/conceptos/historial-de-conversacion/) — persistence, compaction and forking a transcript
+
+## Safety and control
+
+What an agent is allowed to touch and who decides.
+
+- [Sandbox and security](/es-MX/manual/conceptos/sandbox-y-seguridad/) — what actually constrains an agent run today
+- [Guardrails](/es-MX/manual/conceptos/barandillas/) — one policy engine for every mutating action and how a rule is resolved
+- [Authorization](/es-MX/manual/conceptos/autorizacion/) — roles, the permission catalog and the audit trail
+- [Rigs and enclosures](/es-MX/manual/conceptos/rigs/) — why agents get disposable VMs instead of your machine, and what the boundary actually is
+
+## Directing the work
+
+Turning intent into work that gets done.
+
+- [Tickets and delegation](/es-MX/manual/conceptos/tickets/) — the vendor-neutral unit of work the whole fleet shares
+- [Pipelines and automation](/es-MX/manual/conceptos/pipelines/) — DAG workflows, triggers and resumable runs
+- [Orchestration](/es-MX/manual/conceptos/orquestacion/) — one goal, one approval, a generated pipeline
+- [AI review](/es-MX/manual/conceptos/revision-con-ia/) — how a PR becomes a reviewed one: review spaces, peer consensus, axes and the Ship/Hold/Block verdict
+- [PR conversations](/es-MX/manual/conceptos/conversaciones-de-pr/) — answering a GitHub mention or `ai-review` label from the forge itself
+- [Memory and knowledge](/es-MX/manual/conceptos/memoria-y-conocimiento/) — facts, policies and what an agent is allowed to know
+- [Evals and quality](/es-MX/manual/conceptos/evaluaciones-y-calidad/) — eval suites and the Quality tab
+
+## People and reach
+
+Working with other humans and reaching the fleet from elsewhere.
+
+- [Multiplayer and presence](/es-MX/manual/conceptos/multijugador/) — humans and agents as co-equal participants and what gates access
+- [Single sign-on](/es-MX/manual/conceptos/sso/) — SAML and OIDC logins
+- [Chat bridges](/es-MX/manual/conceptos/puentes-de-chat/) — why the Slack bridge dials out and what authorizes a message from chat
+- [Remote control and mobile](/es-MX/manual/conceptos/control-remoto/) — how a phone reaches your server and the security model around it
+- [Meetings and transcription](/es-MX/manual/conceptos/reuniones/) — on-device recording, transcription and summarization
+- [Calendar and scheduling](/es-MX/manual/conceptos/calendario/) — Google Calendar sync and meeting alerts
+
+## Under the hood
+
+The shape of the system itself.
+
+- [Architecture](/es-MX/manual/conceptos/arquitectura/) — layering, the shared kernel, ports and adapters
+- [Deployment and clients](/es-MX/manual/conceptos/implementacion/) — how the desktop, web and phone clients relate to one server
+- [Domain events](/es-MX/manual/conceptos/eventos-de-dominio/) — the in-process bus features talk over

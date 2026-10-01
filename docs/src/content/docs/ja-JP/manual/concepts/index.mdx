@@ -1,0 +1,64 @@
+---
+title: Concepts
+description: How Control Center works and why it is built this way — the background reading behind the guides.
+slug: ja-JP/マニュアル/コンセプト
+---
+
+These pages explain **how Control Center works and why**. They are for understanding,
+not for doing: no page here is a procedure to follow. When you want to accomplish a
+specific task, go to the [how-to guides](/ja-JP/マニュアル/ハウツーガイド/); when you want to look
+something up, go to the [reference](/ja-JP/マニュアル/リファレンス/).
+
+Read them in any order. If you are new, the core model is the place to start.
+
+## Core model
+
+The four ideas everything else is built on.
+
+- [Workspaces and isolation](/ja-JP/マニュアル/コンセプト/ワークスペース/) — the tenant boundary and why it is enforced by the database layout rather than by query discipline
+- [The agent model](/ja-JP/マニュアル/コンセプト/エージェントモデル/) — what an agent is made of: identity, role, skills, capabilities, adapter and model
+- [Agent dispatch lifecycle](/ja-JP/マニュアル/コンセプト/ディスパッチライフサイクル/) — what happens between your message and the agent's first token
+- [Modes](/ja-JP/マニュアル/コンセプト/モード/) — how `chat`, `plan`, `review` and `orchestrate` change what an agent may do
+- [Tool context and prompt caching](/ja-JP/マニュアル/コンセプト/ツールコンテキスト/) — why an agent sees a subset of its tools, how it reaches the rest and what keeps the provider cache warm
+- [Code intelligence](/ja-JP/マニュアル/コンセプト/コードインテリジェンス/) — the code graph, language server, structural search and debugger
+- [Conversation history](/ja-JP/マニュアル/コンセプト/会話履歴/) — persistence, compaction and forking a transcript
+
+## Safety and control
+
+What an agent is allowed to touch and who decides.
+
+- [Sandbox and security](/ja-JP/マニュアル/コンセプト/サンドボックスとセキュリティ/) — what actually constrains an agent run today
+- [Guardrails](/ja-JP/マニュアル/コンセプト/ガードレール/) — one policy engine for every mutating action and how a rule is resolved
+- [Authorization](/ja-JP/マニュアル/コンセプト/認可/) — roles, the permission catalog and the audit trail
+- [Rigs and enclosures](/ja-JP/マニュアル/コンセプト/リグ/) — why agents get disposable VMs instead of your machine, and what the boundary actually is
+
+## Directing the work
+
+Turning intent into work that gets done.
+
+- [Tickets and delegation](/ja-JP/マニュアル/コンセプト/チケット/) — the vendor-neutral unit of work the whole fleet shares
+- [Pipelines and automation](/ja-JP/マニュアル/コンセプト/パイプライン/) — DAG workflows, triggers and resumable runs
+- [Orchestration](/ja-JP/マニュアル/コンセプト/オーケストレーション/) — one goal, one approval, a generated pipeline
+- [AI review](/ja-JP/マニュアル/コンセプト/ai-レビュー/) — how a PR becomes a reviewed one: review spaces, peer consensus, axes and the Ship/Hold/Block verdict
+- [PR conversations](/ja-JP/マニュアル/コンセプト/pr-会話/) — answering a GitHub mention or `ai-review` label from the forge itself
+- [Memory and knowledge](/ja-JP/マニュアル/コンセプト/メモリとナレッジ/) — facts, policies and what an agent is allowed to know
+- [Evals and quality](/ja-JP/マニュアル/コンセプト/評価と品質/) — eval suites and the Quality tab
+
+## People and reach
+
+Working with other humans and reaching the fleet from elsewhere.
+
+- [Multiplayer and presence](/ja-JP/マニュアル/コンセプト/マルチプレイヤー/) — humans and agents as co-equal participants and what gates access
+- [Single sign-on](/ja-JP/マニュアル/コンセプト/シングルサインオン/) — SAML and OIDC logins
+- [Chat bridges](/ja-JP/マニュアル/コンセプト/チャットブリッジ/) — why the Slack bridge dials out and what authorizes a message from chat
+- [Remote control and mobile](/ja-JP/マニュアル/コンセプト/リモートコントロール/) — how a phone reaches your server and the security model around it
+- [Meetings and transcription](/ja-JP/マニュアル/コンセプト/ミーティング/) — on-device recording, transcription and summarization
+- [Calendar and scheduling](/ja-JP/マニュアル/コンセプト/カレンダー/) — Google Calendar sync and meeting alerts
+
+## Under the hood
+
+The shape of the system itself.
+
+- [Architecture](/ja-JP/マニュアル/コンセプト/アーキテクチャ/) — layering, the shared kernel, ports and adapters
+- [Deployment and clients](/ja-JP/マニュアル/コンセプト/デプロイメント/) — how the desktop, web and phone clients relate to one server
+- [Domain events](/ja-JP/マニュアル/コンセプト/ドメインイベント/) — the in-process bus features talk over
