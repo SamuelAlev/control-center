@@ -20,10 +20,8 @@ import 'package:cc_domain/core/domain/entities/directory_listing.dart';
 import 'package:cc_domain/core/domain/ports/directory_browser_port.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 import 'package:cc_ui/cc_ui.dart';
-import 'package:control_center/features/repos/providers/repo_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:flutter/widgets.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// The outcome of a batch registration: the repo ids that were created and
 /// the per-path error for every pick that failed.
@@ -54,7 +52,7 @@ Future<RepoAddOutcome> registerReposFromPaths(
 /// Takes its [browser] + [register] dependencies as parameters rather than
 /// reading providers directly: the dialog is presented into the ROOT overlay,
 /// which sits ABOVE the app's `ProviderScope`, so a `ref` here would throw
-/// "No ProviderScope found". [addRepos] captures both from the caller's
+/// "No ProviderScope found". `addRepos` captures both from the caller's
 /// `WidgetRef` (which is under the scope) and passes them in.
 class AddRepoDialog extends StatefulWidget {
   /// Creates an [AddRepoDialog].
@@ -494,55 +492,4 @@ class _FolderRow extends StatelessWidget {
       },
     );
   }
-}
-
-/// The add-repo entry point on every platform: shows the server-filesystem
-/// browser dialog and returns the batch outcome, or null when cancelled.
-///
-/// The browse + register dependencies are read from [ref] HERE (under the app's
-/// `ProviderScope`) and handed to the dialog, because the dialog itself is
-/// mounted in the root overlay above that scope and so cannot read providers.
-/// [workspaceId] names the workspace the repos are registered into — repos are
-/// workspace-scoped, so it is threaded all the way to the register call rather
-/// than resolved from an ambient "active workspace".
-Future<RepoAddOutcome?> addRepos(
-  BuildContext context,
-  WidgetRef ref,
-  String workspaceId,
-) => showAddRepoDialog(
-  context,
-  browser: ref.read(directoryBrowserProvider),
-  register: ref.read(addRepoFromServerPathProvider),
-  workspaceId: workspaceId,
-);
-
-/// [addRepos] for a caller holding the dependencies rather than a [WidgetRef]
-/// (a deep link resolved outside the widget tree), with an optional [intro]
-/// replacing the generic instructions.
-Future<RepoAddOutcome?> showAddRepoDialog(
-  BuildContext context, {
-  required DirectoryBrowserPort browser,
-  required Future<String> Function(String workspaceId, String path) register,
-  required String workspaceId,
-  String? intro,
-}) {
-  final l10n = AppLocalizations.of(context);
-  return showCcDialog<RepoAddOutcome?>(
-    context: context,
-    builder: (dialogContext) => CcDialog(
-      title: l10n.addRepository,
-      content: SizedBox(
-        width: 460,
-        child: AddRepoDialog(
-          browser: browser,
-          register: register,
-          workspaceId: workspaceId,
-          intro: intro,
-          onDone: (outcome) => Navigator.pop(dialogContext, outcome),
-          onCancel: () => Navigator.pop(dialogContext),
-        ),
-      ),
-      actions: const [],
-    ),
-  );
 }

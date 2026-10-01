@@ -61,7 +61,12 @@ void main() {
     'desktop spawns cc_server and reads a seeded ticket over loopback RPC',
     () async {
       final tmp = Directory.systemTemp.createTempSync('fork_a');
-      addTearDown(() => tmp.deleteSync(recursive: true));
+      // Registered first so it runs last (tear-downs are LIFO), after the
+      // client and the spawned server have stopped. A drift isolate can still
+      // be checkpointing its WAL into this tree when unlink starts, and Linux
+      // answers that race with ENOTEMPTY. Retry, the same way the in-process
+      // server suites do.
+      addTearDown(() => _deleteTempDir(tmp));
 
       const deviceId = 'desktop-thin-local';
       const psk = 'fork-a-psk-please-and-thank-you-0123456789';
@@ -135,4 +140,24 @@ void main() {
     timeout: const Timeout(Duration(minutes: 4)),
     skip: skipReason,
   );
+}
+
+/// Deletes [dir], retrying the Linux ENOTEMPTY race a concurrent WAL
+/// checkpoint causes. The last attempt still throws, so a directory that
+/// never becomes removable fails the test.
+Future<void> _deleteTempDir(Directory dir) async {
+  for (var attempt = 0; attempt < 8; attempt++) {
+    try {
+      if (!dir.existsSync()) {
+        return;
+      }
+      dir.deleteSync(recursive: true);
+      return;
+    } on FileSystemException {
+      if (attempt == 7) {
+        rethrow;
+      }
+      await Future<void>.delayed(Duration(milliseconds: 50 * (attempt + 1)));
+    }
+  }
 }

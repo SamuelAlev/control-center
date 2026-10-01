@@ -1,6 +1,6 @@
 import 'package:cc_domain/core/domain/entities/workspace.dart';
 import 'package:cc_ui/cc_ui.dart';
-import 'package:control_center/features/workspaces/presentation/screens/workspace_list_screen.dart';
+import 'package:control_center/features/workspaces/presentation/widgets/show_add_workspace_dialog.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/router/routes.dart';

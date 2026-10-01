@@ -6,9 +6,9 @@ import 'package:control_center/di/providers.dart';
 
 import 'package:control_center/features/pr_review/providers/pr_list_providers.dart'
     show repoAccessForWorkspaceProvider;
-import 'package:control_center/features/repos/presentation/widgets/add_repo_dialog.dart';
 import 'package:control_center/features/repos/presentation/widgets/repo_index_button.dart';
 import 'package:control_center/features/repos/presentation/widgets/repo_scripts_dialog.dart';
+import 'package:control_center/features/repos/presentation/widgets/show_add_repo_dialog.dart';
 import 'package:control_center/features/repos/providers/repo_providers.dart';
 import 'package:control_center/features/settings/settings_shortcuts.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';

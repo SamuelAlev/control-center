@@ -49,10 +49,10 @@ import 'package:control_center/features/identity/providers/identity_providers.da
 import 'package:control_center/features/pr_review/providers/pr_filter_providers.dart';
 import 'package:control_center/features/repos/presentation/repo_link_workspace_dialog.dart';
 import 'package:control_center/features/repos/presentation/unlinked_repo_dialog.dart';
-import 'package:control_center/features/repos/presentation/widgets/add_repo_dialog.dart';
+import 'package:control_center/features/repos/presentation/widgets/show_add_repo_dialog.dart';
 import 'package:control_center/features/repos/providers/repo_link_workspace_choices.dart';
 import 'package:control_center/features/repos/providers/repo_providers.dart';
-import 'package:control_center/features/workspaces/presentation/screens/workspace_list_screen.dart';
+import 'package:control_center/features/workspaces/presentation/widgets/show_add_workspace_dialog.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/router/app_router.dart';

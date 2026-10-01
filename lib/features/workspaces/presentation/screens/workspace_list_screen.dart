@@ -7,7 +7,7 @@ import 'package:control_center/features/agents/providers/agent_providers.dart';
 import 'package:control_center/features/repos/providers/repo_providers.dart';
 import 'package:control_center/features/shell/presentation/layout/shell_title_bar.dart';
 import 'package:control_center/features/shell/presentation/widgets/app_sidebar_header.dart';
-import 'package:control_center/features/workspaces/presentation/widgets/add_workspace_form.dart';
+import 'package:control_center/features/workspaces/presentation/widgets/show_add_workspace_dialog.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/router/routes.dart';
@@ -1357,30 +1357,6 @@ class _PanelHeader extends StatelessWidget {
       ),
     );
   }
-}
-
-/// Shows the add-workspace dialog, its name field starting at [initialName].
-///
-/// Returns the new workspace id when one is created, or null when cancelled.
-Future<String?> showAddWorkspaceDialog(
-  BuildContext context, {
-  String? initialName,
-}) {
-  final l10n = AppLocalizations.of(context);
-  return showCcDialog<String?>(
-    context: context,
-    builder: (dialogContext) => CcDialog(
-      title: l10n.addWorkspace,
-      content: SizedBox(
-        width: 420,
-        child: AddWorkspaceForm(
-          initialName: initialName,
-          onCreated: (id) => Navigator.pop(dialogContext, id),
-          onCancel: () => Navigator.pop(dialogContext),
-        ),
-      ),
-    ),
-  );
 }
 
 T? _firstOrNull<T>(List<T> list, bool Function(T) test) {

@@ -145,8 +145,8 @@ lib/features/pr_review/presentation/widgets/workflow_job_detail.dart  1068
 lib/features/pr_review/presentation/widgets/workflow_run_canvas.dart  458
 lib/features/remote_control/presentation/widgets/server_pairing_panel.dart  399
 lib/features/repos/presentation/settings/repos_settings_view.dart  579
-lib/features/repos/presentation/widgets/add_repo_dialog.dart  528
-lib/features/repos/presentation/widgets/repo_scripts_dialog.dart  537
+lib/features/repos/presentation/widgets/add_repo_dialog.dart  495
+lib/features/repos/presentation/widgets/repo_scripts_dialog.dart  536
 lib/features/service_status/presentation/widgets/service_status_indicator.dart  726
 lib/features/settings/presentation/screens/keybindings_settings_screen.dart  290
 lib/features/settings/presentation/widgets/adapter_enforcement_section.dart  354
@@ -187,5 +187,5 @@ lib/features/ticketing/presentation/widgets/ticket_relations_card.dart  385
 lib/features/ticketing/presentation/widgets/ticket_visuals.dart  320
 lib/features/user_profiles/presentation/screens/user_profile_screen.dart  358
 lib/features/user_profiles/presentation/widgets/github_profile_metrics_charts.dart  1132
-lib/features/workspaces/presentation/screens/workspace_list_screen.dart  1389
+lib/features/workspaces/presentation/screens/workspace_list_screen.dart  1369
 lib/features/messaging/presentation/widgets/space_folders_list.dart  539
